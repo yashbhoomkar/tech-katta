@@ -15,9 +15,10 @@ function Brand() {
   );
 }
 
-function Sidebar({ activeCategory, onCategoryChange }) {
+function Sidebar({ activeCategory, onCategoryChange, collapsed, mobileOpen, onClose }) {
   return (
-    <aside className="sidebar">
+    <>
+      <aside className={'sidebar ' + (collapsed ? 'sidebar-collapsed' : '') + (mobileOpen ? ' sidebar-mobile-open' : '')}>
       <div className="sidebar-inner">
         <Brand />
         <div className="side-section">
@@ -33,7 +34,8 @@ function Sidebar({ activeCategory, onCategoryChange }) {
             <button
               key={category.id}
               className={'side-link side-button ' + (activeCategory === category.id ? 'active' : '')}
-              onClick={() => onCategoryChange(category.id)}
+              onClick={() => onCategoryChange(activeCategory === category.id ? null : category.id)}
+              aria-pressed={activeCategory === category.id}
             >
               <span className="side-index">→</span>
               <span>{category.label}</span>
@@ -51,12 +53,25 @@ function Sidebar({ activeCategory, onCategoryChange }) {
         </div>
       </div>
     </aside>
+      {mobileOpen && <button className="sidebar-overlay" type="button" aria-label="Close sidebar" onClick={onClose} />}
+    </>
   );
 }
 
-function Header({ query, onQueryChange }) {
+function Header({ query, onQueryChange, sidebarCollapsed, onToggleSidebar }) {
   return (
     <header className="topbar">
+      <button
+        className="sidebar-toggle"
+        type="button"
+        onClick={onToggleSidebar}
+        aria-label={sidebarCollapsed ? 'Open sidebar' : 'Collapse sidebar'}
+        aria-expanded={!sidebarCollapsed}
+        title={sidebarCollapsed ? 'Open sidebar' : 'Collapse sidebar'}
+      >
+        <span className="sidebar-toggle-icon">{sidebarCollapsed ? '→' : '←'}</span>
+        <span className="sidebar-toggle-label">{sidebarCollapsed ? 'Menu' : 'Collapse'}</span>
+      </button>
       <div className="mobile-brand"><Brand /></div>
       <div className="topbar-copy"><span className="eyebrow">A living engineering notebook</span></div>
       <label className="search-box">
@@ -135,13 +150,34 @@ function App() {
   const location = useLocation();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const isArticle = location.pathname.startsWith('/learn/');
 
+  const handleSidebarToggle = () => {
+    if (window.matchMedia('(max-width: 980px)').matches) {
+      setMobileSidebarOpen((open) => !open);
+      return;
+    }
+    setSidebarCollapsed((collapsed) => !collapsed);
+  };
+
   return (
-    <div className="app-frame">
-      <Sidebar activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
+    <div className={'app-frame ' + (sidebarCollapsed ? 'sidebar-layout-collapsed' : '')}>
+      <Sidebar
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        collapsed={sidebarCollapsed}
+        mobileOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+      />
       <div className={isArticle ? 'content-article' : 'content-area'}>
-        <Header query={query} onQueryChange={setQuery} />
+        <Header
+          query={query}
+          onQueryChange={setQuery}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={handleSidebarToggle}
+        />
         <Routes>
           <Route path="/" element={<Home query={query} activeCategory={activeCategory} onCategoryChange={setActiveCategory} />} />
           <Route path="/learn/:slug" element={<Article />} />
