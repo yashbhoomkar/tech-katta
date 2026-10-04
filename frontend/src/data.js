@@ -126,6 +126,19 @@ export const articleContent = {
         diagram: 'motivating',
       },
       {
+        id: 'my-experience',
+        title: 'My experience learning Kafka',
+        paragraphs: [
+          'The first time I worked with Kafka, I expected the API to be the hard part. It was not. The difficult part was building the right mental model for what Kafka was actually doing underneath the API.',
+          'I kept running into the same question in different forms: if a consumer has already read a message, where did that message go? Once I understood that Kafka stores the record independently of the consumer and that the consumer is really maintaining a position in a log, a lot of the system started making sense.',
+          'Another thing that took time was understanding partitions. At first, “more consumers means more throughput” sounded reasonable. Then I learned that the partition count is the real unit of parallelism for a consumer group. Adding consumers beyond the available partitions does not magically create more parallel work.',
+        ],
+        callout: {
+          title: 'The mistake I kept making',
+          text: 'I was initially thinking about Kafka like a traditional queue. The more useful mental model is a distributed log that many independent consumers can read and replay.',
+        },
+      },
+      {
         id: 'basic-terminology',
         title: 'Basic terminology and architecture',
         paragraphs: [
@@ -246,6 +259,25 @@ export const articleContent = {
         ],
       },
       {
+        id: 'problems-i-faced',
+        title: 'Problems I faced',
+        paragraphs: [
+          'The problems I ran into were usually not syntax errors. They were problems caused by assumptions about Kafka.',
+          'The first was getting the local setup right. A Kafka client can connect to a broker and still fail in confusing ways when the broker advertises an address that the client cannot actually reach. Debugging that taught me to distinguish between “the broker is running” and “the broker is reachable using the address it advertises.”',
+          'The second was understanding offsets. I expected a consumer restart to simply continue from the latest message I had seen. That assumption breaks as soon as offset commits, consumer groups, retention, and replay enter the picture. Watching a consumer process the same record again forced me to understand that processing a message and committing its offset are separate operations.',
+          'The third was partitioning. I could see messages flowing, but I did not immediately see why records with the same key kept landing together or why one hot key could make an otherwise well-provisioned topic uneven. That was the point where partitioning stopped being an implementation detail and became a system-design decision.',
+          'The fourth was failure handling. A consumer can fail after processing a record but before its offset is committed. That creates the possibility of processing the same record again. Thinking through that failure window made delivery semantics feel much less abstract.',
+          'Those problems were useful because each one forced me to stop memorizing Kafka terminology and instead reason about the lifecycle of a record: where it is stored, which partition owns it, which consumer is reading it, and what has actually been committed.',
+        ],
+        bullets: [
+          'Broker connectivity is not the same thing as successful client communication.',
+          'Reading a record is not the same thing as committing its offset.',
+          'Consumer parallelism is bounded by partition count.',
+          'A consumer crash can cause a record to be processed again.',
+          'A poor partition key can create a hot partition and uneven load.',
+        ],
+      },
+      {
         id: 'retries-and-failures',
         title: 'Retries and failed consumers',
         paragraphs: [
@@ -275,6 +307,19 @@ export const articleContent = {
             '  },',
             '});',
           ].join('\n'),
+        },
+      },
+      {
+        id: 'what-clicked',
+        title: 'What finally clicked for me',
+        paragraphs: [
+          'Kafka became much easier once I stopped trying to remember every configuration option and reduced the system to a few questions.',
+          'Where is the record stored? The answer is a partition. How is it ordered? By its position inside that partition. Who is reading it? A consumer in a group. Where has that consumer reached? Its offset. What happens if the broker fails? Another replica can take over.',
+          'That mental model is now the way I approach Kafka. When I see a new Kafka feature or configuration, I first ask which part of the log, partition, consumer, offset, or replication model it changes. That makes the details much easier to reason about.',
+        ],
+        callout: {
+          title: 'My takeaway',
+          text: 'Kafka stopped feeling complicated when I started tracing one record from producer → partition → broker replica → consumer → committed offset.',
         },
       },
       {
