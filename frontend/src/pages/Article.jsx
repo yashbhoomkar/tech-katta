@@ -1,5 +1,5 @@
 import { NavLink, useParams } from 'react-router-dom';
-import { getArticle, kafkaFacts, kafkaSections } from '../data.js';
+import { getArticle, getArticleFacts, getArticleSections } from '../data.js';
 
 export default function Article() {
   const { slug } = useParams();
@@ -18,16 +18,24 @@ export default function Article() {
     );
   }
 
-  const isKafka = slug === 'kafka';
+  const sections = getArticleSections(slug);
+  const facts = getArticleFacts(slug);
 
   return (
     <main className="article-page">
       <div className="article-header">
         <NavLink className="back-link" to="/">← All notes</NavLink>
-        <div className="article-kicker"><span>{article.eyebrow}</span><span>·</span><span>{article.readTime}</span></div>
+        <div className="article-kicker">
+          <span>{article.eyebrow}</span>
+          <span>·</span>
+          <span>{article.readTime}</span>
+        </div>
         <h1>{article.title}<span>.</span></h1>
         <p className="article-lede">{article.description}</p>
-        <div className="article-byline"><span>Tech Katta</span><span>Updated {article.updated}</span></div>
+        <div className="article-byline">
+          <span>Tech Katta</span>
+          <span>Updated {article.updated}</span>
+        </div>
       </div>
 
       <div className="article-layout">
@@ -36,37 +44,57 @@ export default function Article() {
             <span className="callout-mark">↳</span>
             <div>
               <strong>The mental model</strong>
-              <p>{isKafka ? 'Kafka is a distributed append-only log where storage, consumption, and ordering are separate concerns.' : 'Start with the primitive, then reason about what it buys you at scale.'}</p>
+              <p>
+                {slug === 'kafka-basics'
+                  ? 'Kafka is a distributed append-only log: producers append records, partitions provide ordered storage and parallelism, and consumers track their position with offsets.'
+                  : 'Start with the primitive, then reason about what it buys you at scale.'}
+              </p>
             </div>
           </div>
 
-          {isKafka && (
+          {facts.length > 0 && (
             <div className="fact-grid">
-              {kafkaFacts.map(([label, value]) => (
-                <div className="fact" key={label}><span>{label}</span><strong>{value}</strong></div>
+              {facts.map(([label, value]) => (
+                <div className="fact" key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
               ))}
             </div>
           )}
 
-          {(isKafka ? kafkaSections : []).map((section, index) => (
+          {sections.map((section, index) => (
             <section className="article-section" id={section.id} key={section.id}>
               <span className="section-number">{String(index + 1).padStart(2, '0')}</span>
               <div>
                 <h2>{section.title}</h2>
                 {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                {index === 1 && (
+                {slug === 'kafka-basics' && index === 1 && (
                   <pre className="code-block"><code>{['Producer', '   │', '   ▼', 'Topic', ' ├── Partition 0 ──► Consumer A', ' ├── Partition 1 ──► Consumer B', ' └── Partition 2 ──► Consumer C'].join('\n')}</code></pre>
                 )}
               </div>
             </section>
           ))}
 
-          <div className="article-end"><span>End of note</span><NavLink to="/">Browse more →</NavLink></div>
+          {sections.length === 0 && (
+            <div className="article-not-found">
+              <span className="eyebrow">Coming soon</span>
+              <h1>This note is not published yet.</h1>
+              <p>The deep dive will land after the basics.</p>
+            </div>
+          )}
+
+          <div className="article-end">
+            <span>End of note</span>
+            <NavLink to="/">Browse more →</NavLink>
+          </div>
         </article>
 
         <aside className="toc">
           <div className="toc-title">On this page</div>
-          {isKafka ? kafkaSections.map((section) => <a key={section.id} href={'#' + section.id}>{section.title}</a>) : null}
+          {sections.map((section) => (
+            <a key={section.id} href={'#' + section.id}>{section.title}</a>
+          ))}
           <div className="toc-divider" />
           <span className="toc-note">Built from first principles.<br />No interview-theatre.</span>
         </aside>
