@@ -152,6 +152,7 @@ function Home({ query, activeCategory, onCategoryChange }) {
         <div className="eyebrow">Learn Technology</div>
         <h1>Understand the tools that shape modern systems.</h1>
         <p>Practical notes on distributed systems, databases, AI infrastructure, and backend engineering — written while learning, with enough depth to be useful later.</p>
+        <div className="eyebrow">Updated Oct 5, 2026 · CI/CD test</div>
       </section>
 
       <div className="library-toolbar">
