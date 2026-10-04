@@ -1,3 +1,4 @@
+import React from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { getArticle, getArticleFacts, getArticleSections } from '../data.js';
 
