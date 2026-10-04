@@ -1,12 +1,115 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { getArticle, getArticleFacts, getArticleSections } from '../data.js';
+import { getArticle, getArticleContent } from '../data.js';
+import {
+  KafkaArchitectureDiagram,
+  KafkaConsumerGroupDiagram,
+  KafkaMotivatingDiagram,
+  KafkaPartitionDiagram,
+  KafkaReplicationDiagram,
+  KafkaRetryDiagram,
+} from '../components/ArticleDiagrams.jsx';
+
+const diagrams = {
+  motivating: KafkaMotivatingDiagram,
+  architecture: KafkaArchitectureDiagram,
+  partitions: KafkaPartitionDiagram,
+  'consumer-group': KafkaConsumerGroupDiagram,
+  replication: KafkaReplicationDiagram,
+  retry: KafkaRetryDiagram,
+};
+
+function CodeBlock({ code, language = 'text', label = 'Example' }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="code-example">
+      <div className="code-example-header">
+        <span>{label}</span>
+        <div className="code-example-tools">
+          <span>{language}</span>
+          <button type="button" onClick={copyCode}>{copied ? 'Copied' : 'Copy'}</button>
+        </div>
+      </div>
+      <pre><code>{code}</code></pre>
+    </div>
+  );
+}
+
+function DiagramBlock({ name }) {
+  const Component = diagrams[name];
+  return Component ? <Component /> : null;
+}
+
+function ContentBlock({ block }) {
+  if (!block) return null;
+
+  if (block.type === 'paragraph') {
+    return <p>{block.text}</p>;
+  }
+
+  if (block.type === 'bullets') {
+    return (
+      <ul className="article-list">
+        {block.items.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    );
+  }
+
+  if (block.type === 'diagram') {
+    return <DiagramBlock name={block.name} />;
+  }
+
+  if (block.type === 'code') {
+    return <CodeBlock code={block.code} language={block.language} label={block.label} />;
+  }
+
+  if (block.type === 'callout') {
+    return (
+      <aside className="article-callout">
+        <span className="callout-mark">↳</span>
+        <div>
+          <strong>{block.title}</strong>
+          <p>{block.text}</p>
+        </div>
+      </aside>
+    );
+  }
+
+  return null;
+}
+
+function Subsection({ subsection }) {
+  return (
+    <div className="article-subsection">
+      <h3>{subsection.title}</h3>
+      {subsection.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      {subsection.bullets && (
+        <ul className="article-list">
+          {subsection.bullets.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      )}
+      {subsection.diagram && <DiagramBlock name={subsection.diagram} />}
+    </div>
+  );
+}
 
 export default function Article() {
   const { slug } = useParams();
   const article = getArticle(slug);
+  const content = getArticleContent(slug);
 
-  if (!article) {
+  if (!article || !content) {
     return (
       <main className="article-page">
         <NavLink className="back-link" to="/">← Back to library</NavLink>
@@ -19,12 +122,15 @@ export default function Article() {
     );
   }
 
-  const sections = getArticleSections(slug);
-  const facts = getArticleFacts(slug);
+  const tocItems = content.sections.map((section) => ({
+    id: section.id,
+    title: section.title,
+    subsections: section.subsections || [],
+  }));
 
   return (
     <main className="article-page">
-      <div className="article-header">
+      <header className="article-header">
         <NavLink className="back-link" to="/">← All notes</NavLink>
         <div className="article-kicker">
           <span>{article.eyebrow}</span>
@@ -37,67 +143,74 @@ export default function Article() {
           <span>Tech Katta</span>
           <span>Updated {article.updated}</span>
         </div>
-      </div>
+      </header>
 
-      <div className="article-layout">
+      <div className="article-shell">
         <article className="article-content">
-          <div className="article-callout">
-            <span className="callout-mark">↳</span>
-            <div>
-              <strong>The mental model</strong>
-              <p>
-                {slug === 'kafka-basics'
-                  ? 'Kafka is a distributed append-only log: producers append records, partitions provide ordered storage and parallelism, and consumers track their position with offsets.'
-                  : 'Start with the primitive, then reason about what it buys you at scale.'}
-              </p>
-            </div>
+          <div className="article-introduction">
+            {content.introduction.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
 
-          {facts.length > 0 && (
-            <div className="fact-grid">
-              {facts.map(([label, value]) => (
-                <div className="fact" key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {sections.map((section, index) => (
+          {content.sections.map((section, index) => (
             <section className="article-section" id={section.id} key={section.id}>
-              <span className="section-number">{String(index + 1).padStart(2, '0')}</span>
-              <div>
+              <div className="section-heading-row">
+                <span className="section-number">{String(index + 1).padStart(2, '0')}</span>
                 <h2>{section.title}</h2>
-                {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                {slug === 'kafka-basics' && index === 1 && (
-                  <pre className="code-block"><code>{['Producer', '   │', '   ▼', 'Topic', ' ├── Partition 0 ──► Consumer A', ' ├── Partition 1 ──► Consumer B', ' └── Partition 2 ──► Consumer C'].join('\n')}</code></pre>
+              </div>
+
+              <div className="section-body">
+                {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                {section.bullets && (
+                  <ul className="article-list">
+                    {section.bullets.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
                 )}
+                {section.diagram && <DiagramBlock name={section.diagram} />}
+                {section.code && <CodeBlock {...section.code} />}
+                {section.callout && <ContentBlock block={{ type: 'callout', ...section.callout }} />}
+                {section.subsections?.map((subsection) => (
+                  <Subsection key={subsection.title} subsection={subsection} />
+                ))}
               </div>
             </section>
           ))}
 
-          {sections.length === 0 && (
-            <div className="article-not-found">
-              <span className="eyebrow">Coming soon</span>
-              <h1>This note is not published yet.</h1>
-              <p>The deep dive will land after the basics.</p>
+          <section className="knowledge-check">
+            <div className="section-heading-row">
+              <span className="section-number">?</span>
+              <h2>Test your understanding</h2>
             </div>
-          )}
+            <div className="question-grid">
+              {content.knowledgeCheck.map((question, index) => (
+                <div className="question-card" key={question}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <p>{question}</p>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <div className="article-end">
-            <span>End of note</span>
+            <div>
+              <span className="eyebrow">End of note</span>
+              <h2>Build the mental model first. Go deeper when the system demands it.</h2>
+            </div>
             <NavLink to="/">Browse more →</NavLink>
           </div>
         </article>
 
-        <aside className="toc">
+        <aside className="toc" aria-label="On this page">
           <div className="toc-title">On this page</div>
-          {sections.map((section) => (
-            <a key={section.id} href={'#' + section.id}>{section.title}</a>
+          {tocItems.map((item) => (
+            <div key={item.id} className="toc-group">
+              <a href={'#' + item.id}>{item.title}</a>
+              {item.subsections.map((subsection) => (
+                <span key={subsection.title}>{subsection.title}</span>
+              ))}
+            </div>
           ))}
           <div className="toc-divider" />
-          <span className="toc-note">Built from first principles.<br />No interview-theatre.</span>
+          <span className="toc-note">Learned from first principles.<br />Written for future me.</span>
         </aside>
       </div>
     </main>
