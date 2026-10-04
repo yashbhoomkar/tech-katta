@@ -17,6 +17,14 @@ const articles = [
   { slug: 'clickhouse', title: 'ClickHouse', eyebrow: 'Analytics', status: 'soon', readTime: '9 min read' },
 ];
 
+app.get('/', (_request, response) => {
+  response.json({ status: 'ok', service: 'tech-katta-api', message: 'Tech Katta API is operational' });
+});
+
+app.get('/health', (_request, response) => {
+  response.json({ status: 'ok', service: 'tech-katta-api' });
+});
+
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', service: 'tech-katta-api' });
 });
