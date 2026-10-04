@@ -15,7 +15,5 @@
     "vite": "^7.1.9",
     "@excalidraw/excalidraw": "^0.18.1"
   },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^6.1.1"
-  }
+  "devDependencies": {}
 }
