@@ -1235,3 +1235,32 @@ a { color: inherit; text-decoration: none; }
     min-height: 260px;
   }
 }
+
+
+/* Keep embedded Excalidraw visually native to the dark Tech Katta canvas. */
+.excalidraw-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0d0f15;
+}
+
+.excalidraw-frame .excalidraw {
+  width: 100%;
+  height: 100%;
+  background: #0d0f15;
+}
+
+.excalidraw-frame .excalidraw .App {
+  background: #0d0f15 !important;
+}
+
+.excalidraw-frame .excalidraw canvas {
+  background: #0d0f15 !important;
+}
+
+.excalidraw-loading {
+  background: #0d0f15;
+}
