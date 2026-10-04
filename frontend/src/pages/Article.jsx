@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { getArticle, getArticleContent } from '../data.js';
 import {
@@ -28,15 +28,15 @@ function CodeBlock({ code, language = 'text', label = 'Example' }) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
     } catch {
-      setCopied(false);
+      // Clipboard permissions are optional.
     }
   }
 
   return (
-    <div className="code-example">
-      <div className="code-example-header">
+    <div className="doc-code">
+      <div className="doc-code-bar">
         <span>{label}</span>
-        <div className="code-example-tools">
+        <div>
           <span>{language}</span>
           <button type="button" onClick={copyCode}>{copied ? 'Copied' : 'Copy'}</button>
         </div>
@@ -46,60 +46,31 @@ function CodeBlock({ code, language = 'text', label = 'Example' }) {
   );
 }
 
-function DiagramBlock({ name }) {
+function Diagram({ name }) {
   const Component = diagrams[name];
-  return Component ? <Component /> : null;
+  return Component ? <figure className="doc-figure"><Component /></figure> : null;
 }
 
-function ContentBlock({ block }) {
-  if (!block) return null;
-
-  if (block.type === 'paragraph') {
-    return <p>{block.text}</p>;
-  }
-
-  if (block.type === 'bullets') {
-    return (
-      <ul className="article-list">
-        {block.items.map((item) => <li key={item}>{item}</li>)}
-      </ul>
-    );
-  }
-
-  if (block.type === 'diagram') {
-    return <DiagramBlock name={block.name} />;
-  }
-
-  if (block.type === 'code') {
-    return <CodeBlock code={block.code} language={block.language} label={block.label} />;
-  }
-
-  if (block.type === 'callout') {
-    return (
-      <aside className="article-callout">
-        <span className="callout-mark">↳</span>
-        <div>
-          <strong>{block.title}</strong>
-          <p>{block.text}</p>
-        </div>
-      </aside>
-    );
-  }
-
-  return null;
+function Callout({ block }) {
+  return (
+    <aside className="doc-callout">
+      <strong>{block.title}</strong>
+      <p>{block.text}</p>
+    </aside>
+  );
 }
 
 function Subsection({ subsection }) {
   return (
-    <div className="article-subsection">
+    <div className="doc-subsection">
       <h3>{subsection.title}</h3>
       {subsection.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
       {subsection.bullets && (
-        <ul className="article-list">
+        <ul className="doc-list">
           {subsection.bullets.map((item) => <li key={item}>{item}</li>)}
         </ul>
       )}
-      {subsection.diagram && <DiagramBlock name={subsection.diagram} />}
+      {subsection.diagram && <Diagram name={subsection.diagram} />}
     </div>
   );
 }
@@ -108,103 +79,103 @@ export default function Article() {
   const { slug } = useParams();
   const article = getArticle(slug);
   const content = getArticleContent(slug);
+  const [progress, setProgress] = useState(0);
+  const [markedRead, setMarkedRead] = useState(() => localStorage.getItem('tk-read-' + slug) === '1');
+
+  const tocItems = useMemo(
+    () => content?.sections.map((section) => ({ id: section.id, title: section.title, subsections: section.subsections || [] })) || [],
+    [content]
+  );
+
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0);
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   if (!article || !content) {
     return (
       <main className="article-page">
-        <NavLink className="back-link" to="/">← Back to library</NavLink>
-        <div className="article-not-found">
-          <span className="eyebrow">404</span>
-          <h1>That note does not exist yet.</h1>
-          <p>Go back to the library and pick a published article.</p>
-        </div>
+        <NavLink className="article-back" to="/">← Back to library</NavLink>
+        <h1>That note does not exist yet.</h1>
       </main>
     );
   }
 
-  const tocItems = content.sections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    subsections: section.subsections || [],
-  }));
-
-  const [activeSection, setActiveSection] = useState(tocItems[0]?.id || '');
-
-  useEffect(() => {
-    const elements = content.sections
-      .map((section) => document.getElementById(section.id))
-      .filter(Boolean);
-
-    if (!elements.length) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-        if (visible[0]) setActiveSection(visible[0].target.id);
-      },
-      { rootMargin: '-18% 0px -68% 0px', threshold: 0 }
-    );
-
-    elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, [content.sections]);
+  function markRead() {
+    const next = !markedRead;
+    setMarkedRead(next);
+    localStorage.setItem('tk-read-' + slug, next ? '1' : '0');
+  }
 
   return (
     <main className="article-page">
-      <header className="article-header">
-        <NavLink className="back-link" to="/">← All notes</NavLink>
-        <div className="article-kicker">
-          <span>{article.eyebrow}</span>
-          <span>·</span>
-          <span>{article.readTime}</span>
-        </div>
-        <h1>{article.title}<span>.</span></h1>
-        <p className="article-lede">{article.description}</p>
-        <div className="article-byline">
-          <span>Tech Katta</span>
-          <span>Updated {article.updated}</span>
-        </div>
-      </header>
+      <div className="article-column">
+        <header className="article-hero">
+          <div className="article-breadcrumb">
+            <NavLink to="/">Key Technologies</NavLink>
+            <span>/</span>
+            <span>{article.title}</span>
+          </div>
 
-      <div className="article-shell">
-        <article className="article-content">
-          <div className="article-introduction">
+          <h1>{article.title}</h1>
+          <p className="article-summary">{article.description}</p>
+
+          <div className="article-meta">
+            <span>{article.readTime}</span>
+            <span>•</span>
+            <span>Updated {article.updated}</span>
+          </div>
+
+          <div className="article-progress-mobile">
+            <div className="progress-track"><span style={{ width: progress + '%' }} /></div>
+            <span>{Math.round(progress)}% read</span>
+          </div>
+        </header>
+
+        <div className="article-body">
+          <div className="article-intro">
             {content.introduction.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
 
-          {content.sections.map((section, index) => (
-            <section className="article-section" id={section.id} key={section.id}>
-              <div className="section-heading-row">
-                <h2>{section.title}</h2>
-              </div>
+          {content.sections.map((section) => (
+            <section className="doc-section" id={section.id} key={section.id}>
+              <h2>{section.title}</h2>
 
-              <div className="section-body">
-                {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                {section.bullets && (
-                  <ul className="article-list">
-                    {section.bullets.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                )}
-                {section.diagram && <DiagramBlock name={section.diagram} />}
-                {section.code && <CodeBlock {...section.code} />}
-                {section.callout && <ContentBlock block={{ type: 'callout', ...section.callout }} />}
-                {section.subsections?.map((subsection) => (
-                  <Subsection key={subsection.title} subsection={subsection} />
-                ))}
-              </div>
+              {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+
+              {section.bullets && (
+                <ul className="doc-list">
+                  {section.bullets.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              )}
+
+              {section.diagram && <Diagram name={section.diagram} />}
+              {section.code && <CodeBlock {...section.code} />}
+              {section.callout && <Callout block={section.callout} />}
+
+              {section.subsections?.map((subsection) => (
+                <Subsection key={subsection.title} subsection={subsection} />
+              ))}
             </section>
           ))}
 
-          <section className="knowledge-check">
-            <div className="section-heading-row">
+          <section className="knowledge-section">
+            <div className="knowledge-heading">
+              <span className="eyebrow">Knowledge check</span>
               <h2>Test your understanding</h2>
+              <p>Answer these without looking back to find the gaps in your mental model.</p>
             </div>
-            <div className="question-grid">
+
+            <div className="knowledge-list">
               {content.knowledgeCheck.map((question, index) => (
-                <div className="question-card" key={question}>
+                <div className="knowledge-item" key={question}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <p>{question}</p>
                 </div>
@@ -212,35 +183,42 @@ export default function Article() {
             </div>
           </section>
 
-          <div className="article-end">
-            <div>
-              <span className="eyebrow">End of note</span>
-              <h2>Build the mental model first. Go deeper when the system demands it.</h2>
+          <footer className="article-footer">
+            <div className="article-footer-main">
+              <span className="eyebrow">Summary</span>
+              <p>Kafka is a distributed, replicated append-only log. Topics organize streams, partitions provide ordering and parallelism, consumer groups distribute work, offsets track progress, and replication provides fault tolerance.</p>
             </div>
-            <NavLink to="/">Browse more →</NavLink>
-          </div>
-        </article>
+            <div className="article-footer-actions">
+              <button type="button" className={'read-button' + (markedRead ? ' is-read' : '')} onClick={markRead}>
+                {markedRead ? '✓ Read' : 'Mark as read'}
+              </button>
+              <NavLink to="/">Back to library</NavLink>
+            </div>
+          </footer>
+        </div>
+      </div>
 
-        <aside className="toc" aria-label="On this page">
-          <div className="toc-title">On this page</div>
+      <aside className="article-rail">
+        <div className="reading-progress">
+          <div className="rail-heading">Reading progress</div>
+          <div className="progress-track vertical">
+            <span style={{ height: progress + '%' }} />
+          </div>
+          <span className="progress-label">{Math.round(progress)}%</span>
+        </div>
+
+        <nav className="article-toc" aria-label="On this page">
+          <div className="rail-heading">On this page</div>
           {tocItems.map((item) => (
-            <div key={item.id} className="toc-group">
-              <a
-                href={'#' + item.id}
-                className={activeSection === item.id ? 'is-active' : ''}
-              >
-                <span className="toc-dot" />
-                {item.title}
-              </a>
+            <div className="toc-group" key={item.id}>
+              <a href={'#' + item.id}>{item.title}</a>
               {item.subsections.map((subsection) => (
-                <span key={subsection.title}>{subsection.title}</span>
+                <a className="toc-subsection" href={'#' + item.id} key={subsection.title}>{subsection.title}</a>
               ))}
             </div>
           ))}
-          <div className="toc-divider" />
-          <span className="toc-note">Learned from first principles.<br />Written for future me.</span>
-        </aside>
-      </div>
+        </nav>
+      </aside>
     </main>
   );
 }
