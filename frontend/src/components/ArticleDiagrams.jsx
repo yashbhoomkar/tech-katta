@@ -183,7 +183,18 @@ export default function ExcalidrawDiagram({ type, height = 380 }) {
           appState: {
             theme: 'dark',
             viewBackgroundColor: '#0d0f15',
+            viewBackgroundColorSource: { type: 'custom' },
             gridModeEnabled: false,
+            zenModeEnabled: true,
+            viewModeEnabled: true,
+            exportWithDarkMode: true,
+          },
+        }}
+        initialState={{
+          viewport: {
+            target: elements,
+            fit: 'scale-down',
+            animation: false,
           },
         }}
         theme="dark"
@@ -191,15 +202,6 @@ export default function ExcalidrawDiagram({ type, height = 380 }) {
         interaction={false}
         zenModeEnabled
         ui={false}
-        excalidrawAPI={(api) => {
-          window.setTimeout(() => {
-            api.setViewport({
-              target: api.getSceneElements(),
-              fit: 'contain',
-              animation: false,
-            });
-          }, 0);
-        }}
       />
     </div>
   );
