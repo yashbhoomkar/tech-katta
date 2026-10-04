@@ -25,7 +25,7 @@ function Sidebar({ activeCategory, onCategoryChange, collapsed, mobileOpen, onCl
           <div className="side-label">Start here</div>
           <NavLink to="/" end className={({ isActive }) => 'side-link ' + (isActive ? 'active' : '')}>
             <span className="side-index">00</span>
-            Overview
+            <span className="side-link-label">Overview</span>
           </NavLink>
         </div>
         <div className="side-section">
@@ -34,7 +34,10 @@ function Sidebar({ activeCategory, onCategoryChange, collapsed, mobileOpen, onCl
             <button
               key={category.id}
               className={'side-link side-button ' + (activeCategory === category.id ? 'active' : '')}
-              onClick={() => onCategoryChange(activeCategory === category.id ? null : category.id)}
+              onClick={() => {
+                onCategoryChange(activeCategory === category.id ? null : category.id);
+                onClose();
+              }}
               aria-pressed={activeCategory === category.id}
             >
               <span className="side-index">→</span>
