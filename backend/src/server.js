@@ -31,6 +31,7 @@ app.get('/health', (_request, response) => {
   response.json({
     status: 'ok',
     service: 'tech-katta-api',
+    version: '2026.10.05',
     db: isDBConnected() ? 'connected' : 'disconnected',
   });
 });
