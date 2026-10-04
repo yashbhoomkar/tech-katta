@@ -1,5 +1,5 @@
 export const categories = [
-  { id: 'distributed-systems', label: 'Distributed Systems', count: 1 },
+  { id: 'distributed-systems', label: 'Distributed Systems', count: 2 },
   { id: 'databases', label: 'Databases', count: 2 },
   { id: 'ai-infra', label: 'AI Infrastructure', count: 2 },
   { id: 'cloud-devops', label: 'Cloud & DevOps', count: 1 },
@@ -8,15 +8,26 @@ export const categories = [
 
 export const articles = [
   {
-    slug: 'kafka',
-    title: 'Kafka',
+    slug: 'kafka-basics',
+    title: 'Kafka Basics',
     eyebrow: 'Messaging',
-    description: 'What Kafka actually gives you: an append-only log, consumer groups, partitioning, and the mechanics behind scalable event streaming.',
+    description: 'A first-principles introduction to Kafka: brokers, topics, partitions, producers, consumers, offsets, and consumer groups.',
     category: 'distributed-systems',
     tags: ['Kafka', 'Messaging', 'Streaming'],
-    readTime: '12 min read',
+    readTime: '10 min read',
     status: 'published',
     updated: 'October 2026',
+  },
+  {
+    slug: 'kafka',
+    title: 'Kafka',
+    eyebrow: 'Messaging deep dive',
+    description: 'Go beyond the primitives into delivery semantics, replication, failure handling, and the design trade-offs behind production Kafka systems.',
+    category: 'distributed-systems',
+    tags: ['Kafka', 'Distributed Systems', 'Reliability'],
+    readTime: '12 min read',
+    status: 'soon',
+    updated: 'Coming next',
   },
   {
     slug: 'cassandra',
@@ -97,48 +108,90 @@ export const articles = [
   },
 ];
 
-export const kafkaSections = [
+export const kafkaBasicsSections = [
   {
-    id: 'what-is-kafka',
-    title: 'What is Kafka?',
+    id: 'kafka-mental-model',
+    title: 'Start with the mental model',
     body: [
-      'Kafka is easiest to understand as a distributed, append-only log. Producers append records to topics; Kafka stores those records in partitioned logs; consumers read from those partitions at their own pace.',
-      'The useful mental shift is to stop thinking of Kafka as a traditional message queue. A record does not simply disappear when one consumer reads it. Retention is independent of consumption, which lets multiple consumers replay the same stream and lets a consumer recover from a previous offset.',
+      'Kafka is a distributed event-streaming platform built around a durable, append-only log. Producers write records; Kafka stores those records; consumers read them later. The important idea is that reading a record does not normally delete it.',
+      'That makes Kafka different from a simple work queue. The stored stream can be read by multiple independent consumers and can be replayed from an earlier position when an application needs to rebuild state or recover from a failure.',
     ],
   },
   {
-    id: 'partitions',
+    id: 'topics-and-partitions',
     title: 'Topics and partitions',
     body: [
-      'A topic is a logical stream. A topic is split into partitions so Kafka can distribute writes and reads across brokers. Ordering is guaranteed within a partition, not across the entire topic.',
-      'The partition key is therefore an architectural decision. If events for the same entity must stay ordered, route them to the same partition using a stable key such as userId, accountId, or orderId.',
+      'A topic is the logical name for a stream of records. Kafka splits a topic into partitions so that data and traffic can be distributed across brokers and processed in parallel.',
+      'A partition is an ordered sequence. Kafka guarantees ordering within a partition, so the partition key becomes an architectural decision. Events that must remain ordered for the same entity should use a stable key that maps them to the same partition.',
+    ],
+  },
+  {
+    id: 'producers',
+    title: 'Producers',
+    body: [
+      'A producer publishes records to a topic. It can choose a partition explicitly or let Kafka select one using a partitioning strategy, commonly based on the record key.',
+      'Producers also control important reliability behavior through acknowledgement and batching settings. In production, the goal is usually to balance throughput, latency, and durability rather than maximizing one metric in isolation.',
+    ],
+  },
+  {
+    id: 'consumers',
+    title: 'Consumers and offsets',
+    body: [
+      'A consumer reads records from Kafka and tracks its position using an offset. The offset is the record position within a partition, so a consumer can stop and later continue from where it left off.',
+      'Because the record remains in Kafka according to the topic retention policy, a consumer can also move backward and replay data. This is one of Kafka’s most useful properties when recovering state or adding a new downstream consumer.',
     ],
   },
   {
     id: 'consumer-groups',
     title: 'Consumer groups',
     body: [
-      'A consumer group turns partitions into units of parallel work. Within a group, a partition is assigned to at most one active consumer at a time, so adding consumers can increase throughput until the number of consumers reaches the number of partitions.',
-      'Different consumer groups see the same records independently. Analytics, search indexing, notifications, and downstream services can each maintain their own position.',
+      'A consumer group is a set of consumers cooperating to process a topic. Within one group, each partition is assigned to at most one active consumer at a time.',
+      'This creates a simple scaling rule: you can add consumers to increase parallelism, but a group cannot actively process more partitions in parallel than the topic has partitions. Different groups, meanwhile, can independently consume the same topic for different purposes.',
     ],
   },
   {
-    id: 'delivery-semantics',
-    title: 'Delivery semantics',
+    id: 'brokers-and-replication',
+    title: 'Brokers and replication',
     body: [
-      'Kafka gives you the building blocks for at-most-once, at-least-once, and effectively-once processing patterns. In practice, the application must still think about retries, idempotency, commit timing, and what happens when a consumer crashes between processing and committing an offset.',
-      'A robust design usually assumes retries can happen and makes the side effect idempotent. Exactly-once semantics are a deliberate design choice, not a default property of every end-to-end system.',
+      'Kafka runs as a cluster of brokers. Partitions are distributed across those brokers, and partitions can be replicated so that the cluster can tolerate broker failures.',
+      'Think of a partition as the unit of both storage and replication. The leader handles normal reads and writes for the partition while replicas provide redundancy and can take over when the cluster elects a new leader.',
+    ],
+  },
+  {
+    id: 'simple-flow',
+    title: 'Putting the pieces together',
+    body: [
+      'The basic flow is: a producer publishes a record to a topic, Kafka places it into a partition, and a consumer in a group reads it and advances its offset.',
+      'Once that model is clear, most of Kafka’s production concepts become easier to reason about: retention answers how long the log stays around, partitions answer how work scales, consumer groups answer how work is shared, and replication answers how the data survives broker failure.',
     ],
   },
 ];
 
 export const kafkaFacts = [
+  ['Core idea', 'Durable append-only log'],
   ['Ordering', 'Per partition'],
   ['Scaling unit', 'Partition'],
-  ['Parallelism', 'Consumer group members'],
-  ['Retention', 'Independent of consumption'],
+  ['Progress', 'Consumer offset'],
 ];
+
+export const articleSections = {
+  kafka: [],
+  'kafka-basics': kafkaBasicsSections,
+};
+
+export const articleFacts = {
+  kafka: kafkaFacts,
+  'kafka-basics': kafkaFacts,
+};
 
 export function getArticle(slug) {
   return articles.find((article) => article.slug === slug);
+}
+
+export function getArticleSections(slug) {
+  return articleSections[slug] || [];
+}
+
+export function getArticleFacts(slug) {
+  return articleFacts[slug] || [];
 }
