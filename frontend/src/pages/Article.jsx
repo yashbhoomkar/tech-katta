@@ -154,7 +154,6 @@ export default function Article() {
           {content.sections.map((section, index) => (
             <section className="article-section" id={section.id} key={section.id}>
               <div className="section-heading-row">
-                <span className="section-number">{String(index + 1).padStart(2, '0')}</span>
                 <h2>{section.title}</h2>
               </div>
 
@@ -177,7 +176,6 @@ export default function Article() {
 
           <section className="knowledge-check">
             <div className="section-heading-row">
-              <span className="section-number">?</span>
               <h2>Test your understanding</h2>
             </div>
             <div className="question-grid">
