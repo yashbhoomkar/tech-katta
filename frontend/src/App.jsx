@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { articles as initialArticles, categories as initialCategories } from './data.js';
-import { fetchArticles, fetchCategories } from './api.js';
+import { articles, categories } from './data.js';
 import Article from './pages/Article.jsx';
 
 function Brand() {
@@ -16,7 +15,7 @@ function Brand() {
   );
 }
 
-function Sidebar({ categories, collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange }) {
+function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange }) {
   const navigate = useNavigate();
 
   function chooseCategory(categoryId) {
@@ -133,7 +132,7 @@ function Header({ isArticle, onOpenSidebar }) {
   );
 }
 
-function Home({ articles, categories, query, activeCategory, onCategoryChange }) {
+function Home({ query, activeCategory, onCategoryChange }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState(query);
 
@@ -145,7 +144,7 @@ function Home({ articles, categories, query, activeCategory, onCategoryChange })
       const haystack = [article.title, article.eyebrow, article.description, ...article.tags].join(' ').toLowerCase();
       return categoryMatch && haystack.includes(normalized);
     });
-  }, [articles, search, activeCategory]);
+  }, [search, activeCategory]);
 
   return (
     <main className="home-page">
@@ -213,33 +212,9 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const [articlesList, setArticlesList] = useState(initialArticles);
-  const [categoriesList, setCategoriesList] = useState(initialCategories);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchCategories().then((cats) => {
-      if (isMounted && cats && Array.isArray(cats) && cats.length > 0) {
-        setCategoriesList(cats);
-      }
-    });
-
-    fetchArticles().then((arts) => {
-      if (isMounted && arts && Array.isArray(arts) && arts.length > 0) {
-        setArticlesList(arts);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   return (
     <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
       <Sidebar
-        categories={categoriesList}
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
         onToggle={() => setSidebarCollapsed((value) => !value)}
@@ -255,8 +230,6 @@ export default function App() {
             path="/"
             element={
               <Home
-                articles={articlesList}
-                categories={categoriesList}
                 query=""
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
