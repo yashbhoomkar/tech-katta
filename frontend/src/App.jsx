@@ -1,5 +1,5 @@
+import React, { useMemo, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { useMemo, useState } from 'react';
 import { articles, categories } from './data.js';
 import Article from './pages/Article.jsx';
 
