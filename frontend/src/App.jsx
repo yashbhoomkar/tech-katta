@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { articles, categories } from './data.js';
 import Article from './pages/Article.jsx';
@@ -15,266 +15,222 @@ function Brand() {
   );
 }
 
-function Sidebar({ activeCategory, onCategoryChange, collapsed, mobileOpen, onClose, onToggle }) {
+function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange }) {
   const navigate = useNavigate();
 
-  const selectCategory = (categoryId) => {
-    const next = activeCategory === categoryId ? null : categoryId;
-    onCategoryChange(next);
+  function chooseCategory(categoryId) {
+    onCategoryChange(activeCategory === categoryId ? null : categoryId);
     navigate('/');
     onClose();
-  };
+  }
 
-  const goHome = () => {
+  function goHome() {
     onCategoryChange(null);
     navigate('/');
     onClose();
-  };
+  }
 
   return (
     <>
-      <aside className={'sidebar' + (collapsed ? ' sidebar-collapsed' : '') + (mobileOpen ? ' sidebar-mobile-open' : '')}>
-        <div className="sidebar-inner">
-          <div className="sidebar-head">
-            <Brand />
-            <button
-              className="sidebar-collapse"
-              type="button"
-              onClick={onToggle}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? '→' : '←'}
-            </button>
+      <aside className={'learning-sidebar' + (collapsed ? ' is-collapsed' : '') + (mobileOpen ? ' is-mobile-open' : '')}>
+        <div className="sidebar-top">
+          <button className="back-to-main" type="button" onClick={goHome}>
+            <span>←</span>
+            <span className="sidebar-label-text">Back to Tech Katta</span>
+          </button>
+
+          <button
+            className="sidebar-toggle"
+            type="button"
+            onClick={onToggle}
+            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          >
+            {collapsed ? '→' : '←'}
+          </button>
+        </div>
+
+        <div className="sidebar-scroll">
+          <Brand />
+
+          <div className="sidebar-program-title">
+            Learn Technology
+            <span>In a Hurry</span>
           </div>
 
-          <nav className="sidebar-nav" aria-label="Primary navigation">
-            <div className="side-section">
-              <div className="side-label">Start here</div>
+          <nav className="sidebar-nav" aria-label="Learning navigation">
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Start Here</div>
               <button
-                className={'side-link ' + (!activeCategory ? 'active' : '')}
+                className={'sidebar-link' + (!activeCategory ? ' is-active' : '')}
                 type="button"
                 onClick={goHome}
+                title={collapsed ? 'Overview' : undefined}
               >
-                <span className="side-index">00</span>
-                <span className="side-link-label">Overview</span>
+                <span className="sidebar-link-index">01</span>
+                <span className="sidebar-link-text">Overview</span>
               </button>
             </div>
 
-            <div className="side-section">
-              <div className="side-label">Topics</div>
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Topic Tracks</div>
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  className={'side-link ' + (activeCategory === category.id ? 'active' : '')}
+                  className={'sidebar-link' + (activeCategory === category.id ? ' is-active' : '')}
                   type="button"
-                  onClick={() => selectCategory(category.id)}
+                  onClick={() => chooseCategory(category.id)}
                   aria-pressed={activeCategory === category.id}
                   title={collapsed ? category.label : undefined}
                 >
-                  <span className="side-index">→</span>
-                  <span className="side-link-label">{category.label}</span>
-                  <span className="side-count">{category.count}</span>
+                  <span className="sidebar-link-index">→</span>
+                  <span className="sidebar-link-text">{category.label}</span>
+                  <span className="sidebar-link-count">{category.count}</span>
                 </button>
               ))}
             </div>
 
-            <div className="side-section side-coming-up">
-              <div className="side-label">Coming up</div>
-              <div className="side-note">
-                <span className="pulse-dot" />
-                <span className="side-note-copy">New notes every time I learn something worth keeping.</span>
-              </div>
+            <div className="sidebar-section sidebar-future">
+              <div className="sidebar-section-title">Coming Up</div>
+              <p><span className="sidebar-status-dot" />New notes when I learn something worth keeping.</p>
             </div>
           </nav>
+        </div>
 
-          <div className="sidebar-footer">
-            <a href="https://github.com/yashbhoomkar/tech-katta" target="_blank" rel="noreferrer">GitHub ↗</a>
-            <span>© 2026</span>
-          </div>
+        <div className="sidebar-bottom">
+          <a href="https://github.com/yashbhoomkar/tech-katta" target="_blank" rel="noreferrer">GitHub ↗</a>
+          <span>© 2026</span>
         </div>
       </aside>
+
       {mobileOpen && (
-        <button
-          className="sidebar-overlay"
-          type="button"
-          aria-label="Close navigation"
-          onClick={onClose}
-        />
+        <button className="sidebar-overlay" type="button" aria-label="Close navigation" onClick={onClose} />
       )}
     </>
   );
 }
 
-function Header({ query, onQueryChange, onToggleMobileSidebar, isArticle, collapsed }) {
-  const searchRef = useRef(null);
-
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
+function Header({ isArticle, onOpenSidebar }) {
   return (
-    <header className="topbar">
-      <button
-        className="mobile-menu-button"
-        type="button"
-        onClick={onToggleMobileSidebar}
-        aria-label="Open navigation"
-      >
+    <header className="site-header">
+      <button className="mobile-sidebar-button" type="button" onClick={onOpenSidebar} aria-label="Open navigation">
         <span />
         <span />
         <span />
       </button>
 
-      <div className="topbar-context">
-        {isArticle ? (
-          <>
-            <span>Key Technologies</span>
-            <span className="context-separator">/</span>
-            <strong>Kafka Basics</strong>
-          </>
-        ) : (
-          <span>A living engineering notebook</span>
-        )}
+      <div className="header-breadcrumb">
+        <span>Learn Technology</span>
+        {isArticle && <><span className="breadcrumb-separator">/</span><strong>Kafka Basics</strong></>}
       </div>
 
-      <label className="search-box">
-        <span className="search-prefix">/</span>
-        <input
-          ref={searchRef}
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search articles"
-          aria-label="Search articles"
-        />
-        <kbd>⌘ K</kbd>
-      </label>
+      <div className="header-actions">
+        <NavLink to="/">Library</NavLink>
+        <a href="https://github.com/yashbhoomkar/tech-katta" target="_blank" rel="noreferrer">GitHub ↗</a>
+      </div>
     </header>
   );
 }
 
 function Home({ query, activeCategory, onCategoryChange }) {
   const navigate = useNavigate();
+  const [search, setSearch] = useState(query);
 
   const visibleArticles = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = search.trim().toLowerCase();
     return articles.filter((article) => {
       const categoryMatch = !activeCategory || article.category === activeCategory;
       if (!normalized) return categoryMatch;
-      const haystack = [article.title, article.eyebrow, article.description, ...article.tags]
-        .join(' ')
-        .toLowerCase();
+      const haystack = [article.title, article.eyebrow, article.description, ...article.tags].join(' ').toLowerCase();
       return categoryMatch && haystack.includes(normalized);
     });
-  }, [query, activeCategory]);
+  }, [search, activeCategory]);
 
   return (
-    <main className="page-shell">
-      <section className="hero">
-        <div className="hero-kicker">/ tech katta</div>
-        <h1>Understand the stack.<span>One note at a time.</span></h1>
-        <p>
-          A practical knowledge base for the systems, tools, and ideas I am learning —
-          written down in a way I would want to read six months later.
-        </p>
-        <div className="hero-meta">
-          <span><b>{articles.filter((article) => article.status === 'published').length}</b> published</span>
-          <span><b>{articles.length}</b> notes planned</span>
-          <span><b>{categories.length}</b> topic tracks</span>
-        </div>
+    <main className="home-page">
+      <section className="home-hero">
+        <div className="eyebrow">Learn Technology</div>
+        <h1>Understand the tools that shape modern systems.</h1>
+        <p>Practical notes on distributed systems, databases, AI infrastructure, and backend engineering — written while learning, with enough depth to be useful later.</p>
       </section>
 
-      <div className="section-heading">
+      <div className="library-toolbar">
         <div>
-          <span className="eyebrow">Library</span>
-          <h2>{activeCategory ? categories.find((c) => c.id === activeCategory)?.label : 'All notes'}</h2>
+          <div className="eyebrow">Library</div>
+          <h2>{activeCategory ? categories.find((category) => category.id === activeCategory)?.label : 'All notes'}</h2>
         </div>
-        {activeCategory && (
-          <button className="clear-filter" onClick={() => onCategoryChange(null)} type="button">
-            Clear filter ×
-          </button>
-        )}
+        <label className="library-search">
+          <span>⌕</span>
+          <input value={search} onChange={(event) => { setSearch(event.target.value); }} placeholder="Search notes" aria-label="Search notes" />
+        </label>
       </div>
 
-      <section className="article-grid">
-        {visibleArticles.map((article, index) => (
+      {activeCategory && (
+        <div className="active-filter">
+          <span>Showing {categories.find((category) => category.id === activeCategory)?.label}</span>
+          <button type="button" onClick={() => onCategoryChange(null)}>Clear ×</button>
+        </div>
+      )}
+
+      <section className="library-list">
+        {visibleArticles.map((article) => (
           <button
-            className={'article-card ' + (article.status === 'soon' ? 'is-soon' : '')}
-            key={article.slug}
             type="button"
-            onClick={() => article.status === 'published' && navigate('/learn/' + article.slug)}
+            key={article.slug}
+            className={'library-item' + (article.status === 'soon' ? ' is-soon' : '')}
             disabled={article.status === 'soon'}
+            onClick={() => article.status === 'published' && navigate('/learn/' + article.slug)}
           >
-            <div className="card-topline">
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <span className={article.status === 'published' ? 'status-live' : 'status-soon'}>
-                {article.status === 'published' ? 'Published' : 'Coming soon'}
-              </span>
-            </div>
-            <div className="card-body">
-              <span className="card-eyebrow">{article.eyebrow}</span>
+            <div className="library-item-main">
+              <span className="library-item-kicker">{article.eyebrow}</span>
               <h3>{article.title}</h3>
               <p>{article.description}</p>
-            </div>
-            <div className="card-footer">
-              <div className="tag-row">
-                {article.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}
+              <div className="library-tags">
+                {article.tags.map((tag) => <span key={tag}>{tag}</span>)}
               </div>
-              <span>{article.readTime}</span>
+            </div>
+            <div className="library-item-meta">
+              <span className={article.status === 'published' ? 'published-dot' : 'soon-dot'} />
+              <span>{article.status === 'published' ? article.readTime : 'Coming soon'}</span>
+              <span className="library-arrow">→</span>
             </div>
           </button>
         ))}
       </section>
 
-      {visibleArticles.length === 0 && (
-        <div className="empty-state">
-          Nothing matched “{query}”. Try a different concept or clear the topic filter.
-        </div>
+      {!visibleArticles.length && (
+        <div className="empty-state">Nothing matched “{search}”.</div>
       )}
     </main>
   );
 }
 
-function App() {
+export default function App() {
   const location = useLocation();
-  const [query, setQuery] = useState('');
+  const isArticle = location.pathname.startsWith('/learn/');
   const [activeCategory, setActiveCategory] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const isArticle = location.pathname.startsWith('/learn/');
 
   return (
-    <div className={'app-frame' + (sidebarCollapsed ? ' sidebar-layout-collapsed' : '')}>
+    <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
       <Sidebar
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
-        onClose={() => setMobileSidebarOpen(false)}
         onToggle={() => setSidebarCollapsed((value) => !value)}
+        onClose={() => setMobileSidebarOpen(false)}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
       />
 
-      <div className={isArticle ? 'content-article' : 'content-area'}>
-        <Header
-          query={query}
-          onQueryChange={setQuery}
-          onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
-          isArticle={isArticle}
-          collapsed={sidebarCollapsed}
-        />
+      <div className="site-main">
+        <Header isArticle={isArticle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
         <Routes>
           <Route
             path="/"
             element={
               <Home
-                query={query}
+                query=""
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
               />
@@ -286,5 +242,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
