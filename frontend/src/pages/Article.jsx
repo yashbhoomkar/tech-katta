@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { getArticle, getArticleContent } from '../data.js';
+import { getArticle as getFallbackArticle, getArticleContent as getFallbackContent } from '../data.js';
+import { fetchArticleBySlug } from '../api.js';
 import {
   KafkaArchitectureDiagram,
   KafkaConsumerGroupDiagram,
@@ -77,10 +78,25 @@ function Subsection({ subsection }) {
 
 export default function Article() {
   const { slug } = useParams();
-  const article = getArticle(slug);
-  const content = getArticleContent(slug);
+  const [article, setArticle] = useState(() => getFallbackArticle(slug));
+  const [content, setContent] = useState(() => getFallbackContent(slug));
   const [progress, setProgress] = useState(0);
   const [markedRead, setMarkedRead] = useState(() => localStorage.getItem('tk-read-' + slug) === '1');
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchArticleBySlug(slug).then((remoteData) => {
+      if (isMounted && remoteData) {
+        setArticle(remoteData);
+        if (remoteData.content) {
+          setContent(remoteData.content);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
 
   const tocItems = useMemo(
     () => content?.sections.map((section) => ({ id: section.id, title: section.title, subsections: section.subsections || [] })) || [],

@@ -10,13 +10,27 @@ export async function checkApiHealth() {
   }
 }
 
-export async function fetchArticles() {
+export async function fetchCategories() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/articles`);
+    const res = await fetch(`${API_BASE_URL}/api/categories`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
-    console.warn('Backend fetch failed, fallback to local data:', err);
+    console.warn('Backend fetchCategories failed, fallback to local cache:', err);
+    return null;
+  }
+}
+
+export async function fetchArticles(params = {}) {
+  try {
+    const url = new URL(`${API_BASE_URL}/api/articles`);
+    if (params.category) url.searchParams.set('category', params.category);
+    if (params.search) url.searchParams.set('search', params.search);
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('Backend fetchArticles failed, fallback to local cache:', err);
     return null;
   }
 }
@@ -27,7 +41,7 @@ export async function fetchArticleBySlug(slug) {
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {
-    console.warn(`Backend fetch for ${slug} failed:`, err);
+    console.warn(`Backend fetchArticleBySlug for ${slug} failed:`, err);
     return null;
   }
 }
