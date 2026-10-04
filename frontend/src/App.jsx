@@ -138,7 +138,7 @@ function App() {
   const isArticle = location.pathname.startsWith('/learn/');
 
   return (
-    <div className="app-frame">
+    <div className={isArticle ? "app-frame article-frame" : "app-frame"}>
       {!isArticle && <Sidebar activeCategory={activeCategory} onCategoryChange={setActiveCategory} />}
       <div className={isArticle ? 'content-article' : 'content-area'}>
         {!isArticle && <Header query={query} onQueryChange={setQuery} />}
