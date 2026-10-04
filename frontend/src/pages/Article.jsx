@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { getArticle, getArticleContent } from '../data.js';
 import {
@@ -128,6 +128,30 @@ export default function Article() {
     subsections: section.subsections || [],
   }));
 
+  const [activeSection, setActiveSection] = useState(tocItems[0]?.id || '');
+
+  useEffect(() => {
+    const elements = content.sections
+      .map((section) => document.getElementById(section.id))
+      .filter(Boolean);
+
+    if (!elements.length) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: '-18% 0px -68% 0px', threshold: 0 }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [content.sections]);
+
   return (
     <main className="article-page">
       <header className="article-header">
@@ -201,7 +225,13 @@ export default function Article() {
           <div className="toc-title">On this page</div>
           {tocItems.map((item) => (
             <div key={item.id} className="toc-group">
-              <a href={'#' + item.id}>{item.title}</a>
+              <a
+                href={'#' + item.id}
+                className={activeSection === item.id ? 'is-active' : ''}
+              >
+                <span className="toc-dot" />
+                {item.title}
+              </a>
               {item.subsections.map((subsection) => (
                 <span key={subsection.title}>{subsection.title}</span>
               ))}
