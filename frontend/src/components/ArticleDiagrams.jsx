@@ -174,28 +174,6 @@ export default function ExcalidrawDiagram({ type, height = 380 }) {
     return <div className="excalidraw-loading" style={{ height }} aria-label="Loading diagram" />;
   }
 
-  const handleReady = (api) => {
-    // Excalidraw keeps editor theme and canvas background as separate state.
-    // Set both after mount so the embedded canvas always matches Tech Katta.
-    api.updateScene({
-      appState: {
-        theme: 'dark',
-        viewBackgroundColor: '#0d0f15',
-        gridModeEnabled: false,
-        zenModeEnabled: true,
-        viewModeEnabled: true,
-      },
-    });
-
-    requestAnimationFrame(() => {
-      api.setViewport({
-        target: api.getSceneElements(),
-        fit: 'scale-down',
-        animation: false,
-      });
-    });
-  };
-
   return (
     <div className="excalidraw-frame" style={{ height }}>
       <Excalidraw
@@ -208,13 +186,13 @@ export default function ExcalidrawDiagram({ type, height = 380 }) {
             zenModeEnabled: true,
             viewModeEnabled: true,
           },
+          scrollToContent: true,
         }}
         theme="dark"
         viewModeEnabled
         interaction={false}
         zenModeEnabled
         ui={false}
-        excalidrawAPI={handleReady}
       />
     </div>
   );
