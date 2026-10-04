@@ -186,13 +186,21 @@ export default function ExcalidrawDiagram({ type, height = 380 }) {
             zenModeEnabled: true,
             viewModeEnabled: true,
           },
-          scrollToContent: true,
         }}
         theme="dark"
         viewModeEnabled
         interaction={false}
         zenModeEnabled
         ui={false}
+        excalidrawAPI={(api) => {
+          requestAnimationFrame(() => {
+            api.scrollToContent(api.getSceneElements(), {
+              fitToViewport: true,
+              viewportZoomFactor: 0.82,
+              animate: false,
+            });
+          });
+        }}
       />
     </div>
   );
