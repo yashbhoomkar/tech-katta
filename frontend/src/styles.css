@@ -1,5 +1,6 @@
 :root {
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
   color: #f4f2ff;
   background: #05071c;
   font-synthesis: none;
@@ -553,4 +554,99 @@ a { color: inherit; text-decoration: none; }
 .toc-group span,
 .toc-note {
   font-weight: 400;
+}
+
+
+/* Final article type scale */
+.article-page,
+.article-page button,
+.article-page input {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.article-page {
+  font-weight: 400;
+  color: var(--text);
+}
+
+.article-header h1 {
+  font-size: clamp(56px, 6.2vw, 84px);
+  line-height: .96;
+  font-weight: 700;
+  letter-spacing: -.055em;
+}
+
+.article-lede {
+  max-width: 760px;
+  font-size: 17px;
+  line-height: 1.7;
+  font-weight: 400;
+  color: #aeb0c1;
+}
+
+.article-introduction p,
+.section-body > p,
+.article-subsection p {
+  font-size: 16px;
+  line-height: 1.82;
+  font-weight: 400;
+  color: #b8bac9;
+}
+
+.article-section h2,
+.knowledge-check h2 {
+  font-size: clamp(29px, 3vw, 36px);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
+
+.article-subsection h3 {
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+.article-list li {
+  font-size: 15px;
+  line-height: 1.75;
+  font-weight: 400;
+  color: #b8bac9;
+}
+
+.article-callout p {
+  font-size: 13px;
+  line-height: 1.72;
+  font-weight: 400;
+}
+
+.article-byline,
+.article-kicker {
+  font-weight: 500;
+}
+
+.toc,
+.toc a,
+.toc-group span,
+.toc-note {
+  font-weight: 400;
+}
+
+.toc-title {
+  font-weight: 600;
+}
+
+.sidebar,
+.sidebar button,
+.sidebar a {
+  font-weight: 400;
+}
+
+.brand strong {
+  font-weight: 650;
+}
+
+.side-label {
+  font-weight: 600;
 }
