@@ -1264,3 +1264,12 @@ a { color: inherit; text-decoration: none; }
 .excalidraw-loading {
   background: #0d0f15;
 }
+/* Excalidraw 0.18.1 applies an invert filter to its dark-theme canvas. Tech Katta
+   uses explicitly dark scene colors, so disable that transform for embedded diagrams. */
+.excalidraw-frame .excalidraw {
+  --theme-filter: none !important;
+}
+
+.excalidraw-frame .excalidraw canvas {
+  filter: none !important;
+}
