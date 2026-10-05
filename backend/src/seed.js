@@ -28,6 +28,26 @@ async function seed() {
     await categoriesCollection.createIndex({ id: 1 }, { unique: true });
     await articlesCollection.createIndex({ slug: 1 }, { unique: true });
 
+    // Migrate the previous slug before syncing the canonical article document.
+    const legacySlug = 'distributed-system-components';
+    const canonicalSlug = 'distributed-system-components-overview';
+    const legacyArticle = await articlesCollection.findOne({ slug: legacySlug });
+    const canonicalArticle = await articlesCollection.findOne({ slug: canonicalSlug });
+
+    if (legacyArticle && !canonicalArticle) {
+      await articlesCollection.updateOne(
+        { _id: legacyArticle._id },
+        {
+          $set: {
+            slug: canonicalSlug,
+            title: 'Distributed System Components: An Overview',
+          },
+        }
+      );
+    } else if (legacyArticle && canonicalArticle) {
+      await articlesCollection.deleteOne({ _id: legacyArticle._id });
+    }
+
     // Seed categories
     console.log(`Seeding ${categories.length} categories...`);
     for (const cat of categories) {
