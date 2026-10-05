@@ -31,3 +31,14 @@ export async function fetchArticleBySlug(slug) {
     return null;
   }
 }
+
+export async function fetchCategories() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/categories`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('Backend categories fetch failed, fallback to local data:', err);
+    return null;
+  }
+}
