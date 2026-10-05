@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
 import { categories, articles, articleContent } from './data.js';
+import { normalizeArticleContent } from './contentSchema.js';
 
 dotenv.config();
 
@@ -42,7 +43,8 @@ async function seed() {
     for (const art of articles) {
       const doc = {
         ...art,
-        content: articleContent[art.slug] || null,
+        content: normalizeArticleContent(articleContent[art.slug] || null),
+        contentSchemaVersion: 2,
         updatedAt: new Date(),
       };
       await articlesCollection.updateOne(
