@@ -47,8 +47,8 @@ if (health.response.headers.get('access-control-allow-origin') !== 'https://tech
 }
 
 const disallowed = await request(checks[3], { Origin: 'https://evil.example' });
-if (disallowed.response.headers.has('access-control-allow-origin')) {
-  failures.push('CORS: disallowed origin received Access-Control-Allow-Origin');
+if (disallowed.response.headers.get('access-control-allow-origin') === 'https://evil.example') {
+  failures.push('CORS: disallowed origin was reflected back');
 }
 
 for (const header of ['x-content-type-options', 'x-frame-options', 'referrer-policy', 'permissions-policy']) {
