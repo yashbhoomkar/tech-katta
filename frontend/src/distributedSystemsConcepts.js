@@ -76,7 +76,8 @@ export const distributedSystemsConcepts = {
         'Crash failure: a process or machine stops responding.',
         'Network failure: messages cannot reach their destination.',
         'Slow failure: a component responds, but too slowly to be useful.',
-        'Network partition: groups of machines cannot communicate with one another.'
+        'Network partition: groups of machines cannot communicate with one another.',
+        'Crash-recovery: a node stops and later restarts, potentially retaining durable state from before the crash. Recovery logic, write-ahead logs, replay, and reconciliation determine what state is safe to expose after restart.'
       ],
       code: {
         language: 'text',
@@ -163,7 +164,7 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'A quorum is a rule that requires agreement from enough replicas before an operation is considered successful. It is a common way to balance availability and consistency in replicated systems.',
         'Suppose there are three replicas. A write quorum of two means a write needs acknowledgements from at least two replicas. A read quorum of two means a read consults at least two replicas. Because the two sets must overlap, a read can often observe the latest value under the system’s assumptions.',
-        'Quorum rules are not a substitute for understanding the database’s actual consistency model. The meaning of a successful quorum depends on how replicas, timestamps, conflicts, and failures are handled. An overlapping read and write quorum does not, by itself, prove linearizability: a coordinator can fail mid-write, replicas can have divergent versions, and the system still needs a defined conflict-resolution, read-repair, hinted-handoff, or consensus mechanism depending on the database.',
+        'Quorum rules are not a substitute for understanding the database’s actual consistency model. The meaning of a successful quorum depends on how replicas, timestamps, conflicts, and failures are handled. An overlapping read and write quorum does not, by itself, prove linearizability: a coordinator can fail mid-write, replicas can have divergent versions, and the database may need conflict resolution, repair, or consensus depending on the guarantee being offered. For example, Cassandra’s ordinary quorum reads and writes are not the same thing as its Paxos-based lightweight transactions.',
         'Quorum is therefore a coordination primitive, not a complete correctness proof. When evaluating a quorum-based database, ask what happens when a write is partially acknowledged, a replica is stale, a coordinator dies, or concurrent writes conflict.'
       ],
       code: {
@@ -196,7 +197,7 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'A local database transaction can atomically update several rows because one database controls the operation. A distributed transaction is harder because the participating resources are independent.',
         'Consider placing an order. The system needs to reserve inventory and charge the customer. What happens if payment succeeds but the inventory service fails? The system needs a strategy for reaching a correct business outcome.',
-        'Two-phase commit coordinates a prepare phase and a commit phase across participants, but it can block around coordinator failures. The Saga pattern takes a different approach: each service commits its local transaction and later actions compensate for failures when necessary.',
+        'Two-phase commit (2PC) is an atomic-commit protocol: participants first prepare and then commit or abort together. It can block around coordinator failures, and 2PC alone does not magically provide every ACID property—the participating databases still determine their own isolation and durability guarantees. The Saga pattern takes a different approach: each service commits its local transaction and later actions compensate for failures when necessary.'
         'A Saga does not provide the isolation of a single ACID transaction. Other transactions can observe intermediate states, and concurrent workflows can create lost updates or conflicting business decisions unless the application adds reservations, version checks, semantic locks, or other coordination. Compensation also is not the same as rollback: once an external side effect such as an email or payment has happened, the system may need a new business action to compensate it rather than erase history.'
       ],
       code: {
@@ -211,17 +212,17 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'Sometimes independent machines need to agree on ownership or membership. Examples include electing one leader, ensuring only one worker performs a scheduled task, or discovering which nodes are currently part of a cluster.',
         'Distributed locks and leases are common coordination mechanisms. A lock says that one participant owns a resource; a lease adds an expiry so ownership can eventually disappear if the holder stops renewing it.',
-        'Coordination is dangerous when treated as a simple mutex. Network delays and pauses can make a process believe it still owns something when another process has already taken over. Correct designs therefore use fencing, epochs, or other mechanisms where stale owners could cause damage.'
+        'Coordination is dangerous when treated as a simple mutex. Network delays and pauses can make a process believe it still owns something when another process has already taken over. Correct designs therefore use fencing, epochs, or other mechanisms where stale owners could cause damage. A fencing token is a monotonically increasing generation number issued on each successful lease acquisition. The protected storage system must reject operations carrying an older token, so a paused client cannot resume later and overwrite work performed by the newer owner.'
       ],
       code: {
         language: 'text',
-        label: 'Leader-based coordination',
-        code: 'Worker A ─┐\nWorker B ─┼→ Coordination service → Leader = B\nWorker C ─┘\n\nOnly B should perform the singleton job.'
+        label: 'Lease with fencing tokens',
+        code: 'Client A acquires lease → token 41\nClient A pauses (GC / VM freeze)\nLease expires\nClient B acquires lease → token 42\n\nClient B writes with token 42 → ACCEPT\nClient A wakes and writes with token 41 → REJECT\n\nStorage must enforce: token >= current generation.'
       }
     },
     {
       id: 'failure-models',
-      title: '14. Failure models: crash faults vs Byzantine faults',
+      title: '13. Failure models: crash faults vs Byzantine faults',
       paragraphs: [
         'Not every distributed system assumes the same kind of failure. In the crash-fault model, a node may stop responding or become unavailable, but it does not intentionally send contradictory or malicious messages. Raft and many production databases are designed around this crash-fault model.',
         'Byzantine fault tolerance considers a stronger adversary: a faulty node may lie, send different values to different peers, or behave arbitrarily. Byzantine protocols require substantially more coordination and replicas. They are relevant when participants cannot be trusted, such as some blockchain, cross-organization, or adversarial environments.',
@@ -234,7 +235,7 @@ export const distributedSystemsConcepts = {
     },
     {
       id: 'real-world-mapping',
-      title: '15. Where these concepts appear in real systems',
+      title: '14. Where these concepts appear in real systems',
       paragraphs: [
         'These concepts are not isolated theory. Production infrastructure combines them in different ways. Seeing the mapping makes it easier to recognize the same distributed-systems problem inside a new technology.'
       ],
@@ -251,7 +252,7 @@ export const distributedSystemsConcepts = {
     },
     {
       id: 'cap-theorem',
-      title: '16. CAP theorem and PACELC',
+      title: '15. CAP theorem and PACELC',
       paragraphs: [
         'CAP becomes useful only after you understand replication, consistency, and network partitions. The theorem describes a fundamental trade-off that appears when a partition prevents parts of a distributed system from communicating.',
         'Consistency means that operations observe a single coherent view according to the chosen consistency guarantee. Availability means requests receive a response rather than being rejected indefinitely. Partition tolerance means the system continues operating despite communication failures between nodes.',
@@ -279,6 +280,8 @@ export const distributedSystemsConcepts = {
     'During a network partition, what trade-off does CAP force the system to make?',
     'How is linearizability different from serializability?',
     'Why can a Saga expose intermediate state even though each local transaction is atomic?',
-    'What additional question does PACELC ask when the system is not partitioned?'
+    'What additional question does PACELC ask when the system is not partitioned?',
+    'Why does a lease need a fencing token when stale clients can still reach the protected resource?',
+    'What state must a node recover or reconcile after a crash-and-restart?'
   ]
 };
