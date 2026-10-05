@@ -342,6 +342,43 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!mobileSidebarOpen) return undefined;
+
+    let startX = null;
+    let startY = null;
+
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+    };
+
+    const onTouchEnd = (event) => {
+      if (startX === null || startY === null || event.changedTouches.length !== 1) return;
+
+      const endX = event.changedTouches[0].clientX;
+      const endY = event.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      startX = null;
+      startY = null;
+
+      if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2 && deltaX < 0) {
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [mobileSidebarOpen]);
+
   return (
     <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
       <Sidebar
