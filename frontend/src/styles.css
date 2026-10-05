@@ -624,7 +624,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .article-intro p,
-.doc-section > p,
+.doc-section-content > p,
 .doc-subsection > p {
   max-width: var(--reading-width);
   margin: 0 0 20px;
@@ -722,6 +722,113 @@ a { color: inherit; text-decoration: none; }
   padding-left: 5px;
   font-size: 15px;
   line-height: 1.75;
+}
+
+.doc-media {
+  max-width: 760px;
+  margin: 28px 0 32px;
+}
+
+.doc-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.doc-media figcaption {
+  margin-top: 9px;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.doc-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #08090d;
+}
+
+.doc-video-frame iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+}
+
+.doc-quote {
+  max-width: 720px;
+  margin: 28px 0 30px;
+  padding: 18px 20px;
+  border-left: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.doc-quote p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.doc-quote cite {
+  display: block;
+  margin-top: 9px;
+  color: var(--dim);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.doc-divider {
+  max-width: 720px;
+  margin: 34px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.doc-table-wrap {
+  max-width: 760px;
+  margin: 28px 0 32px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.doc-table th,
+.doc-table td {
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-table th:last-child,
+.doc-table td:last-child {
+  border-right: 0;
+}
+
+.doc-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.doc-table th {
+  color: var(--text);
+  background: var(--panel-soft);
+  font-weight: 650;
 }
 
 .doc-callout {
