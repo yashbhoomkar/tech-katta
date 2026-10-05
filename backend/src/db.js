@@ -4,8 +4,10 @@ let client = null;
 let db = null;
 let isConnected = false;
 let reconnectTimer = null;
+let shuttingDown = false;
 
 export async function connectDB() {
+  shuttingDown = false;
   const uri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB || 'techkatta';
 
@@ -42,9 +44,11 @@ export async function connectDB() {
     }
 
     client.on('close', () => {
-      console.warn('⚠️ MongoDB connection closed. Will retry connecting...');
       isConnected = false;
-      startAutoReconnect();
+      if (!shuttingDown) {
+        console.warn('⚠️ MongoDB connection closed. Will retry connecting...');
+        startAutoReconnect();
+      }
     });
 
     return db;
@@ -75,6 +79,7 @@ export function isDBConnected() {
 }
 
 export async function closeDB() {
+  shuttingDown = true;
   if (reconnectTimer) {
     clearInterval(reconnectTimer);
     reconnectTimer = null;
