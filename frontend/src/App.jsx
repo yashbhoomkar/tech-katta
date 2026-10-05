@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { articles as fallbackArticles, categories as fallbackCategories } from './data.js';
 import { fetchArticles, fetchCategories } from './api.js';
 import Article from './pages/Article.jsx';
@@ -16,17 +16,15 @@ function Brand() {
   );
 }
 
-function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange, categories }) {
+function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }) {
   const navigate = useNavigate();
 
-  function chooseCategory(categoryId) {
-    onCategoryChange(activeCategory === categoryId ? null : categoryId);
-    navigate('/');
+  function chooseUnit(unitId) {
+    navigate('/unit/' + unitId);
     onClose();
   }
 
   function goHome() {
-    onCategoryChange(null);
     navigate('/');
     onClose();
   }
@@ -62,32 +60,31 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onC
           <nav className="sidebar-nav" aria-label="Learning navigation">
             <div className="sidebar-section">
               <div className="sidebar-section-title">Start Here</div>
-              <button
-                className={'sidebar-link' + (!activeCategory ? ' is-active' : '')}
-                type="button"
-                onClick={goHome}
+              <NavLink
+                className={'sidebar-link' + (activeUnit ? '' : ' is-active')}
+                to="/"
                 title={collapsed ? 'Overview' : undefined}
+                onClick={onClose}
               >
                 <span className="sidebar-link-index">01</span>
                 <span className="sidebar-link-text">Overview</span>
-              </button>
+              </NavLink>
             </div>
 
             <div className="sidebar-section">
-              <div className="sidebar-section-title">Topic Tracks</div>
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  className={'sidebar-link' + (activeCategory === category.id ? ' is-active' : '')}
-                  type="button"
-                  onClick={() => chooseCategory(category.id)}
-                  aria-pressed={activeCategory === category.id}
-                  title={collapsed ? category.label : undefined}
+              <div className="sidebar-section-title">Units</div>
+              {units.map((unit) => (
+                <NavLink
+                  key={unit.id}
+                  className={'sidebar-link' + (activeUnit === unit.id ? ' is-active' : '')}
+                  to={'/unit/' + unit.id}
+                  title={collapsed ? unit.label : undefined}
+                  onClick={onClose}
                 >
                   <span className="sidebar-link-index">→</span>
-                  <span className="sidebar-link-text">{category.label}</span>
-                  <span className="sidebar-link-count">{category.count}</span>
-                </button>
+                  <span className="sidebar-link-text">{unit.label}</span>
+                  <span className="sidebar-link-count">{unit.count}</span>
+                </NavLink>
               ))}
             </div>
 
@@ -111,7 +108,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onC
   );
 }
 
-function Header({ isArticle, articleSlug, articleTitle, onOpenSidebar }) {
+function Header({ isArticle, unitId, unitLabel, articleSlug, articleTitle, onOpenSidebar }) {
   return (
     <header className="site-header">
       <button className="mobile-sidebar-button" type="button" onClick={onOpenSidebar} aria-label="Open navigation">
@@ -122,6 +119,12 @@ function Header({ isArticle, articleSlug, articleTitle, onOpenSidebar }) {
 
       <div className="header-breadcrumb">
         <NavLink to="/" className="breadcrumb-link">Learn Technology</NavLink>
+        {unitId && (
+          <>
+            <span className="breadcrumb-separator">/</span>
+            <NavLink to={'/unit/' + unitId} className="breadcrumb-link">{unitLabel || 'Unit'}</NavLink>
+          </>
+        )}
         {isArticle && (
           <>
             <span className="breadcrumb-separator">/</span>
@@ -140,19 +143,17 @@ function Header({ isArticle, articleSlug, articleTitle, onOpenSidebar }) {
   );
 }
 
-function Home({ query, activeCategory, onCategoryChange, articles, categories }) {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState(query);
+function Home({ units }) {
+  const [search, setSearch] = useState('');
 
-  const visibleArticles = useMemo(() => {
+  const visibleUnits = useMemo(() => {
     const normalized = search.trim().toLowerCase();
-    return articles.filter((article) => {
-      const categoryMatch = !activeCategory || article.category === activeCategory;
-      if (!normalized) return categoryMatch;
-      const haystack = [article.title, article.eyebrow, article.description, ...article.tags].join(' ').toLowerCase();
-      return categoryMatch && haystack.includes(normalized);
+    if (!normalized) return units;
+    return units.filter((unit) => {
+      const haystack = [unit.label, unit.description].join(' ').toLowerCase();
+      return haystack.includes(normalized);
     });
-  }, [search, activeCategory]);
+  }, [search, units]);
 
   return (
     <main className="home-page">
@@ -165,35 +166,119 @@ function Home({ query, activeCategory, onCategoryChange, articles, categories })
 
       <div className="library-toolbar">
         <div>
-          <div className="eyebrow">Library</div>
-          <h2>{activeCategory ? categories.find((category) => category.id === activeCategory)?.label : 'All notes'}</h2>
+          <div className="eyebrow">Learning path</div>
+          <h2>Units</h2>
         </div>
         <label className="library-search">
           <span>⌕</span>
-          <input value={search} onChange={(event) => { setSearch(event.target.value); }} placeholder="Search notes" aria-label="Search notes" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search units"
+            aria-label="Search units"
+          />
         </label>
       </div>
 
-      {activeCategory && (
-        <div className="active-filter">
-          <span>Showing {categories.find((category) => category.id === activeCategory)?.label}</span>
-          <button type="button" onClick={() => onCategoryChange(null)}>Clear ×</button>
-        </div>
-      )}
+      <section className="unit-grid" aria-label="Technology units">
+        {visibleUnits.map((unit, index) => (
+          <NavLink key={unit.id} to={'/unit/' + unit.id} className="unit-card">
+            <div className="unit-card-main">
+              <div className="unit-card-index">{String(index + 1).padStart(2, '0')}</div>
+              <div>
+                <span className="unit-card-kicker">Unit</span>
+                <h3>{unit.label}</h3>
+                <p>{unit.description}</p>
+              </div>
+            </div>
+            <div className="unit-card-meta">
+              <span>{unit.count} {unit.count === 1 ? 'chapter' : 'chapters'}</span>
+              <span className="library-arrow">→</span>
+            </div>
+          </NavLink>
+        ))}
+      </section>
 
-      <section className="library-list">
-        {visibleArticles.map((article) => {
+      {!visibleUnits.length && (
+        <div className="empty-state">Nothing matched “{search}”.</div>
+      )}
+    </main>
+  );
+}
+
+function UnitPage({ units, articles }) {
+  const { unitId } = useParams();
+  const unit = units.find((item) => item.id === unitId);
+  const [search, setSearch] = useState('');
+
+  const chapters = useMemo(() => {
+    const normalized = search.trim().toLowerCase();
+    return articles
+      .filter((article) => article.category === unitId)
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+      .filter((article) => {
+        if (!normalized) return true;
+        const haystack = [article.title, article.eyebrow, article.description, ...(article.tags || [])].join(' ').toLowerCase();
+        return haystack.includes(normalized);
+      });
+  }, [articles, search, unitId]);
+
+  if (!unit) {
+    return (
+      <main className="unit-page">
+        <NavLink className="article-back" to="/">← Back to units</NavLink>
+        <h1>That unit does not exist yet.</h1>
+      </main>
+    );
+  }
+
+  const publishedCount = articles.filter((article) => article.category === unitId && article.status === 'published').length;
+
+  return (
+    <main className="unit-page">
+      <section className="unit-hero">
+        <div className="eyebrow">Unit</div>
+        <h1>{unit.label}</h1>
+        <p>{unit.description}</p>
+        <div className="unit-hero-meta">
+          <span>{unit.count} {unit.count === 1 ? 'chapter' : 'chapters'}</span>
+          <span>•</span>
+          <span>{publishedCount} published</span>
+        </div>
+      </section>
+
+      <div className="library-toolbar">
+        <div>
+          <div className="eyebrow">Chapters</div>
+          <h2>{unit.label}</h2>
+        </div>
+        <label className="library-search">
+          <span>⌕</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search chapters"
+            aria-label="Search chapters"
+          />
+        </label>
+      </div>
+
+      <section className="unit-chapter-list" aria-label={unit.label + ' chapters'}>
+        {chapters.map((article, index) => {
           const content = (
             <>
-              <div className="library-item-main">
-                <span className="library-item-kicker">{article.eyebrow}</span>
-                <h3><strong>{article.title}</strong></h3>
-                <p>{article.description}</p>
-                <div className="library-tags">
-                  {article.tags.map((tag) => <span key={tag}>{tag}</span>)}
+              <div className="unit-chapter-main">
+                <div className="unit-chapter-number">{String(index + 1).padStart(2, '0')}</div>
+                <div>
+                  <span className="library-item-kicker">{article.eyebrow}</span>
+                  <h3>{article.title}</h3>
+                  <p>{article.description}</p>
+                  <div className="library-tags">
+                    {article.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                  </div>
                 </div>
               </div>
-              <div className="library-item-meta">
+              <div className="unit-chapter-meta">
                 <span className={article.status === 'published' ? 'published-dot' : 'soon-dot'} />
                 <span>{article.status === 'published' ? article.readTime : 'Coming soon'}</span>
                 <span className="library-arrow">→</span>
@@ -202,22 +287,18 @@ function Home({ query, activeCategory, onCategoryChange, articles, categories })
           );
 
           return article.status === 'published' ? (
-            <NavLink
-              key={article.slug}
-              to={'/learn/' + article.slug}
-              className="library-item"
-            >
+            <NavLink key={article.slug} to={'/learn/' + article.slug} className="unit-chapter">
               {content}
             </NavLink>
           ) : (
-            <div key={article.slug} className="library-item is-soon">
+            <div key={article.slug} className="unit-chapter is-soon">
               {content}
             </div>
           );
         })}
       </section>
 
-      {!visibleArticles.length && (
+      {!chapters.length && (
         <div className="empty-state">Nothing matched “{search}”.</div>
       )}
     </main>
@@ -229,15 +310,16 @@ export default function App() {
   const [articles, setArticles] = useState(fallbackArticles);
   const [categories, setCategories] = useState(fallbackCategories);
   const isArticle = location.pathname.startsWith('/learn/');
+  const unitMatch = location.pathname.match(/^\/unit\/([^/]+)/);
+  const activeUnit = unitMatch ? unitMatch[1] : null;
   const articleSlug = isArticle ? location.pathname.split('/learn/')[1] : null;
-  const articleTitle = articles.find((article) => article.slug === articleSlug)?.title;
-  const categoriesWithCounts = categories.map((category) => ({
+  const article = articles.find((item) => item.slug === articleSlug);
+  const articleTitle = article?.title;
+  const unitId = article?.category || activeUnit;
+  const units = categories.map((category) => ({
     ...category,
-    count: articles.filter((article) => article.category === category.id).length,
+    count: articles.filter((articleItem) => articleItem.category === category.id).length,
   }));
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -249,33 +331,30 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
-  return (
-    <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
-        onToggle={() => setSidebarCollapsed((value) => !value)}
-        onClose={() => setMobileSidebarOpen(false)}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-        categories={categoriesWithCounts}
-      />
+  const unitLabel = units.find((unit) => unit.id === unitId)?.label;
 
+  return (
+    <div className="site-frame">
+      <Sidebar
+        collapsed={false}
+        mobileOpen={false}
+        onToggle={() => {}}
+        onClose={() => {}}
+        activeUnit={activeUnit || article?.category || null}
+        units={units}
+      />
       <div className="site-main">
-        <Header isArticle={isArticle} articleSlug={articleSlug} articleTitle={articleTitle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
+        <Header
+          isArticle={isArticle}
+          unitId={unitId}
+          unitLabel={unitLabel}
+          articleSlug={articleSlug}
+          articleTitle={articleTitle}
+          onOpenSidebar={() => {}}
+        />
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Home
-                query=""
-                activeCategory={activeCategory}
-                onCategoryChange={setActiveCategory}
-                articles={articles}
-                categories={categoriesWithCounts}
-              />
-            }
-          />
+          <Route path="/" element={<Home units={units} />} />
+          <Route path="/unit/:unitId" element={<UnitPage units={units} articles={articles} />} />
           <Route path="/learn/:slug" element={<Article />} />
         </Routes>
       </div>
