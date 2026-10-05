@@ -79,9 +79,9 @@ export const articles = [
     updated: 'October 2026',
   },
   {
-    slug: 'distributed-system-components',
+    slug: 'distributed-system-components-overview',
     order: 2,
-    title: 'Distributed System Components',
+    title: 'Distributed System Components: An Overview',
     eyebrow: 'Architecture · Components',
     description: 'Learn how production distributed systems are assembled from edge routing, stateless compute, load balancing, service discovery, caches, databases, messaging, object storage, coordination, observability, and overload control.',
     category: 'distributed-systems',
