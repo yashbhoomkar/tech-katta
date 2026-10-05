@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { articles, categories } from './data.js';
+import { articles as fallbackArticles, categories as fallbackCategories } from './data.js';
+import { fetchArticles, fetchCategories } from './api.js';
 import Article from './pages/Article.jsx';
 
 function Brand() {
@@ -15,7 +16,7 @@ function Brand() {
   );
 }
 
-function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange }) {
+function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onCategoryChange, categories }) {
   const navigate = useNavigate();
 
   function chooseCategory(categoryId) {
@@ -132,7 +133,7 @@ function Header({ isArticle, onOpenSidebar }) {
   );
 }
 
-function Home({ query, activeCategory, onCategoryChange }) {
+function Home({ query, activeCategory, onCategoryChange, articles, categories }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState(query);
 
@@ -208,10 +209,25 @@ function Home({ query, activeCategory, onCategoryChange }) {
 
 export default function App() {
   const location = useLocation();
+  const [articles, setArticles] = useState(fallbackArticles);
+  const [categories, setCategories] = useState(fallbackCategories);
+  const [contentLoading, setContentLoading] = useState(true);
   const isArticle = location.pathname.startsWith('/learn/');
   const [activeCategory, setActiveCategory] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchArticles(), fetchCategories()]).then(([remoteArticles, remoteCategories]) => {
+      if (!active) return;
+      if (remoteArticles?.length) setArticles(remoteArticles);
+      if (remoteCategories?.length) setCategories(remoteCategories);
+    }).finally(() => {
+      if (active) setContentLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
@@ -222,6 +238,7 @@ export default function App() {
         onClose={() => setMobileSidebarOpen(false)}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
+        categories={categories}
       />
 
       <div className="site-main">
@@ -234,6 +251,8 @@ export default function App() {
                 query=""
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
+                articles={articles}
+                categories={categories}
               />
             }
           />
