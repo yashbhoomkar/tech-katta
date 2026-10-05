@@ -33,6 +33,9 @@ jobs:
             echo "📦 Installing production dependencies..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
 
+            echo "🌱 Syncing article content to MongoDB..."
+            sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
+
             echo "🔄 Restarting tech-katta-api service..."
             sudo systemctl restart tech-katta-api
 
