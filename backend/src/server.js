@@ -31,7 +31,7 @@ app.get('/health', (_request, response) => {
   response.json({
     status: 'ok',
     service: 'tech-katta-api',
-    version: '2026.10.05',
+    version: '2026.10.05-ci-test-2',
     db: isDBConnected() ? 'connected' : 'disconnected',
   });
 });
@@ -40,6 +40,7 @@ app.get('/api/health', (_request, response) => {
   response.json({
     status: 'ok',
     service: 'tech-katta-api',
+    version: '2026.10.05-ci-test-2',
     db: isDBConnected() ? 'connected' : 'disconnected',
   });
 });
