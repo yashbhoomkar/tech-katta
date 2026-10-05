@@ -111,7 +111,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onC
   );
 }
 
-function Header({ isArticle, articleTitle, onOpenSidebar }) {
+function Header({ isArticle, articleSlug, articleTitle, onOpenSidebar }) {
   return (
     <header className="site-header">
       <button className="mobile-sidebar-button" type="button" onClick={onOpenSidebar} aria-label="Open navigation">
@@ -121,8 +121,15 @@ function Header({ isArticle, articleTitle, onOpenSidebar }) {
       </button>
 
       <div className="header-breadcrumb">
-        <span>Learn Technology</span>
-        {isArticle && <><span className="breadcrumb-separator">/</span><strong>{articleTitle || 'Article'}</strong></>}
+        <NavLink to="/" className="breadcrumb-link">Learn Technology</NavLink>
+        {isArticle && (
+          <>
+            <span className="breadcrumb-separator">/</span>
+            <NavLink to={'/learn/' + articleSlug} className="breadcrumb-link breadcrumb-current" aria-current="page">
+              <strong>{articleTitle || 'Article'}</strong>
+            </NavLink>
+          </>
+        )}
       </div>
 
       <div className="header-actions">
@@ -255,7 +262,7 @@ export default function App() {
       />
 
       <div className="site-main">
-        <Header isArticle={isArticle} articleTitle={articleTitle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
+        <Header isArticle={isArticle} articleSlug={articleSlug} articleTitle={articleTitle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
         <Routes>
           <Route
             path="/"
