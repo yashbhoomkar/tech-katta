@@ -1,5 +1,6 @@
 import { kafkaAdvancedSections } from './kafkaAdvancedContent.js';
 import { distributedSystemsConcepts } from './distributedSystemsConcepts.js';
+import { distributedSystemComponents } from './distributedSystemComponents.js';
 
 /*
  * Article authoring schema:
@@ -32,7 +33,7 @@ import { distributedSystemsConcepts } from './distributedSystemsConcepts.js';
  * Every section is independently collapsible in the UI and starts expanded.
  */
 export const categories = [
-  { id: 'distributed-systems', label: 'Distributed Systems', count: 3 },
+  { id: 'distributed-systems', label: 'Distributed Systems', count: 4 },
   { id: 'databases', label: 'Databases', count: 2 },
   { id: 'ai-infra', label: 'AI Infrastructure', count: 2 },
   { id: 'cloud-devops', label: 'Cloud & DevOps', count: 1 },
@@ -48,6 +49,17 @@ export const articles = [
     category: 'distributed-systems',
     tags: ['Distributed Systems', 'Fundamentals', 'System Design'],
     readTime: '25 min read',
+    status: 'published',
+    updated: 'October 2026',
+  },
+  {
+    slug: 'distributed-system-components',
+    title: 'Distributed System Components',
+    eyebrow: 'Architecture · Components',
+    description: 'Learn how production distributed systems are assembled from edge routing, stateless compute, load balancing, service discovery, caches, databases, messaging, object storage, coordination, observability, and overload control.',
+    category: 'distributed-systems',
+    tags: ['Distributed Systems', 'Architecture', 'System Design'],
+    readTime: '28 min read',
     status: 'published',
     updated: 'October 2026',
   },
@@ -154,6 +166,7 @@ export const articles = [
 
 export const articleContent = {
   'distributed-systems-concepts': distributedSystemsConcepts,
+  'distributed-system-components': distributedSystemComponents,
   'kafka-basics': {
     introduction: [
       'Kafka is a distributed event streaming platform built around a durable, append-only log. Applications publish records to Kafka, Kafka stores them, and consumers read those records at their own pace.',
