@@ -82,7 +82,10 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
                   onClick={onClose}
                 >
                   <span className="sidebar-link-index">→</span>
-                  <span className="sidebar-link-text">{unit.label}</span>
+                  <span className="sidebar-link-text">
+                    {unit.label}
+                    {unit.allUpcoming && <span className="sidebar-upcoming-badge">UPCOMING</span>}
+                  </span>
                   <span className="sidebar-link-count">{unit.count}</span>
                 </NavLink>
               ))}
