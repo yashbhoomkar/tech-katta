@@ -111,7 +111,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeCategory, onC
   );
 }
 
-function Header({ isArticle, onOpenSidebar }) {
+function Header({ isArticle, articleTitle, onOpenSidebar }) {
   return (
     <header className="site-header">
       <button className="mobile-sidebar-button" type="button" onClick={onOpenSidebar} aria-label="Open navigation">
@@ -122,7 +122,7 @@ function Header({ isArticle, onOpenSidebar }) {
 
       <div className="header-breadcrumb">
         <span>Learn Technology</span>
-        {isArticle && <><span className="breadcrumb-separator">/</span><strong>Kafka Basics</strong></>}
+        {isArticle && <><span className="breadcrumb-separator">/</span><strong>{articleTitle || 'Article'}</strong></>}
       </div>
 
       <div className="header-actions">
@@ -211,8 +211,9 @@ export default function App() {
   const location = useLocation();
   const [articles, setArticles] = useState(fallbackArticles);
   const [categories, setCategories] = useState(fallbackCategories);
-  const [contentLoading, setContentLoading] = useState(true);
   const isArticle = location.pathname.startsWith('/learn/');
+  const articleSlug = isArticle ? location.pathname.split('/learn/')[1] : null;
+  const articleTitle = articles.find((article) => article.slug === articleSlug)?.title;
   const [activeCategory, setActiveCategory] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -224,7 +225,6 @@ export default function App() {
       if (remoteArticles?.length) setArticles(remoteArticles);
       if (remoteCategories?.length) setCategories(remoteCategories);
     }).finally(() => {
-      if (active) setContentLoading(false);
     });
     return () => { active = false; };
   }, []);
@@ -242,7 +242,7 @@ export default function App() {
       />
 
       <div className="site-main">
-        <Header isArticle={isArticle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
+        <Header isArticle={isArticle} articleTitle={articleTitle} onOpenSidebar={() => setMobileSidebarOpen(true)} />
         <Routes>
           <Route
             path="/"
