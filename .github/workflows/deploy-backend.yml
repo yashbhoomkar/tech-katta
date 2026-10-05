@@ -29,17 +29,16 @@ jobs:
           script: |
             echo "🚀 Updating Tech Katta Backend on VPS..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta && git fetch origin main && git reset --hard origin/main'
-            
+
             echo "📦 Installing production dependencies..."
-            cd /opt/tech-katta/backend
-            sudo -u techkatta npm ci --omit=dev
-            
+            sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
+
             echo "🔄 Restarting tech-katta-api service..."
             sudo systemctl restart tech-katta-api
-            
+
             echo "🩺 Verifying service status and health check..."
             sleep 2
             sudo systemctl is-active --quiet tech-katta-api || (echo "❌ Service is not active!" && exit 1)
             curl -fsS http://127.0.0.1:5000/api/health || (echo "❌ Local health check failed!" && exit 1)
-            
+
             echo "✅ Deployment successful and verified!"
