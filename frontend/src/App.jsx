@@ -179,7 +179,11 @@ function Home({ units }) {
 
       <section className="unit-grid" aria-label="Technology units">
         {visibleUnits.map((unit) => (
-          <NavLink key={unit.id} to={'/unit/' + unit.id} className="unit-card">
+          <NavLink
+            key={unit.id}
+            to={'/unit/' + unit.id}
+            className={'unit-card' + (unit.allUpcoming ? ' is-all-upcoming' : '')}
+          >
             <div className="unit-card-main">
               <div className="unit-card-index">{String(units.findIndex((item) => item.id === unit.id) + 1).padStart(2, '0')}</div>
               <div>
@@ -311,10 +315,16 @@ export default function App() {
   const articleSlug = isArticle ? location.pathname.split('/learn/')[1] : null;
   const article = articles.find((item) => item.slug === articleSlug);
   const unitId = article?.category || activeUnitFromPath;
-  const units = categories.map((category) => ({
-    ...category,
-    count: articles.filter((articleItem) => articleItem.category === category.id).length,
-  }));
+  const units = categories.map((category) => {
+    const unitArticles = articles.filter((articleItem) => articleItem.category === category.id);
+    const publishedCount = unitArticles.filter((articleItem) => articleItem.status === 'published').length;
+    return {
+      ...category,
+      count: unitArticles.length,
+      publishedCount,
+      allUpcoming: unitArticles.length > 0 && publishedCount === 0,
+    };
+  });
   const activeUnit = article?.category || activeUnitFromPath;
   const unitLabel = units.find((unit) => unit.id === unitId)?.label;
 
