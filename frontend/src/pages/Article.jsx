@@ -368,7 +368,7 @@ export default function Article() {
               >
                 <h2>{section.title}</h2>
                 <span className="doc-section-chevron" aria-hidden="true">
-                  {expandedSections[section.id] === false ? '›' : '⌄'}
+                  {expandedSections[section.id] === false ? '⌄' : '⌃'}
                 </span>
               </button>
 
