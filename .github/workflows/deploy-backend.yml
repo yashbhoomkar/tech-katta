@@ -66,6 +66,6 @@ jobs:
             curl -fsS http://127.0.0.1:5000/api/health || (echo "❌ Local health check failed!" && exit 1)
 
             echo "🌐 Running production smoke tests..."
-            node /opt/tech-katta/scripts/production-smoke.mjs
+            node /opt/tech-katta/backend/scripts/production-smoke.mjs
 
             echo "✅ Deployment successful and verified!"
