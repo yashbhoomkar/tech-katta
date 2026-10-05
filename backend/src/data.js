@@ -202,7 +202,7 @@ export const articles = [
 
 export const articleContent = {
   'distributed-systems-concepts': distributedSystemsConcepts,
-  'distributed-system-components': distributedSystemComponents,
+  'distributed-system-components-overview': distributedSystemComponents,
   'kafka-basics': {
     introduction: [
       'Kafka is a distributed event streaming platform built around a durable, append-only log. Applications publish records to Kafka, Kafka stores them, and consumers read those records at their own pace.',
