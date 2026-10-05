@@ -18,6 +18,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate backend JavaScript
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Syntax-check backend
+        working-directory: backend
+        run: |
+          node --check src/server.js
+          node --check src/db.js
+          node --check src/seed.js
+
       - name: Deploy to Ubuntu VPS via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -32,6 +48,11 @@ jobs:
 
             echo "📦 Installing production dependencies..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
+
+            echo "⚙️ Enforcing production runtime configuration..."
+            sudo mkdir -p /etc/systemd/system/tech-katta-api.service.d
+            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
+            sudo systemctl daemon-reload
 
             echo "🌱 Syncing article content to MongoDB..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
