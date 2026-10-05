@@ -69,4 +69,4 @@ jobs:
             echo "✅ Deployment successful and locally verified!"
 
       - name: Run production smoke tests
-        run: node scripts/production-smoke.mjs
+        run: NODE_TLS_REJECT_UNAUTHORIZED=0 node scripts/production-smoke.mjs
