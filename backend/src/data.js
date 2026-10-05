@@ -33,17 +33,42 @@ import { distributedSystemComponents } from './distributedSystemComponents.js';
  * Every section is independently collapsible in the UI and starts expanded.
  */
 export const categories = [
-  { id: 'distributed-systems', label: 'Distributed Systems', count: 4 },
-  { id: 'databases', label: 'Databases', count: 2 },
-  { id: 'ai-infra', label: 'AI Infrastructure', count: 2 },
-  { id: 'cloud-devops', label: 'Cloud & DevOps', count: 1 },
-  { id: 'backend', label: 'Backend Engineering', count: 2 },
+  {
+    id: 'distributed-systems',
+    label: 'Distributed Systems',
+    description: 'Communication, failures, replication, consensus, messaging, and the architecture of systems that run across machines.',
+    count: 4,
+  },
+  {
+    id: 'databases',
+    label: 'Databases',
+    description: 'Storage engines, data modeling, partitioning, replication, consistency, and the trade-offs behind modern databases.',
+    count: 2,
+  },
+  {
+    id: 'ai-infra',
+    label: 'AI Infrastructure',
+    description: 'The systems behind retrieval, model serving, embeddings, search, evaluation, and reliable AI applications.',
+    count: 2,
+  },
+  {
+    id: 'cloud-devops',
+    label: 'Cloud & DevOps',
+    description: 'The infrastructure layer: networking, containers, deployment, observability, and operating services in production.',
+    count: 1,
+  },
+  {
+    id: 'backend',
+    label: 'Backend Engineering',
+    description: 'Backend runtime and platform fundamentals for building, deploying, and scaling reliable services.',
+    count: 2,
+  },
 ];
 
 export const articles = [
   {
     slug: 'distributed-systems-concepts',
-    title: 'Distributed Systems Concepts',
+    order: 1,\n    title: 'Distributed Systems Concepts',
     eyebrow: 'Basics · Concepts',
     description: 'Build the mental model behind distributed systems through communication, latency, failures, replication, consistency, partitioning, consensus, transactions, coordination, and CAP.',
     category: 'distributed-systems',
@@ -54,7 +79,7 @@ export const articles = [
   },
   {
     slug: 'distributed-system-components',
-    title: 'Distributed System Components',
+    order: 2,\n    title: 'Distributed System Components',
     eyebrow: 'Architecture · Components',
     description: 'Learn how production distributed systems are assembled from edge routing, stateless compute, load balancing, service discovery, caches, databases, messaging, object storage, coordination, observability, and overload control.',
     category: 'distributed-systems',
@@ -65,7 +90,7 @@ export const articles = [
   },
   {
     slug: 'kafka-basics',
-    title: 'Kafka Fundamentals',
+    order: 3,\n    title: 'Kafka Fundamentals',
     eyebrow: 'Key Technologies',
     description: 'Build a production-aware mental model of Kafka: topics, partitions, consumer groups, offsets, delivery semantics, replication, retention, and failure handling.',
     category: 'distributed-systems',
@@ -76,7 +101,7 @@ export const articles = [
   },
   {
     slug: 'kafka',
-    title: 'Kafka',
+    order: 4,\n    title: 'Kafka',
     eyebrow: 'Messaging deep dive',
     description: 'Go beyond the primitives into delivery semantics, replication, failure handling, and the design trade-offs behind production Kafka systems.',
     category: 'distributed-systems',
@@ -87,7 +112,7 @@ export const articles = [
   },
   {
     slug: 'cassandra',
-    title: 'Cassandra',
+    order: 1,\n    title: 'Cassandra',
     eyebrow: 'Wide-column storage',
     description: 'A practical mental model for partition keys, replication, consistency, and why Cassandra asks you to model around queries.',
     category: 'databases',
@@ -98,7 +123,7 @@ export const articles = [
   },
   {
     slug: 'clickhouse',
-    title: 'ClickHouse',
+    order: 2,\n    title: 'ClickHouse',
     eyebrow: 'Analytics',
     description: 'Why a columnar OLAP engine creates a very different storage and query problem from a transactional database.',
     category: 'databases',
@@ -109,7 +134,7 @@ export const articles = [
   },
   {
     slug: 'rag',
-    title: 'RAG pipelines',
+    order: 1,\n    title: 'RAG pipelines',
     eyebrow: 'AI infrastructure',
     description: 'From ingestion and chunking to embeddings, retrieval, reranking, and evaluation: a systems view of retrieval-augmented generation.',
     category: 'ai-infra',
@@ -120,7 +145,7 @@ export const articles = [
   },
   {
     slug: 'solr',
-    title: 'Solr',
+    order: 2,\n    title: 'Solr',
     eyebrow: 'Search',
     description: 'The pieces behind a production search system: indexing, analyzers, replicas, query-time ranking, and operational trade-offs.',
     category: 'ai-infra',
@@ -131,7 +156,7 @@ export const articles = [
   },
   {
     slug: 'nginx',
-    title: 'Nginx',
+    order: 1,\n    title: 'Nginx',
     eyebrow: 'Edge',
     description: 'Reverse proxies, TLS termination, connection handling, and why Nginx still sits in front of so many services.',
     category: 'cloud-devops',
@@ -142,7 +167,7 @@ export const articles = [
   },
   {
     slug: 'docker',
-    title: 'Docker',
+    order: 1,\n    title: 'Docker',
     eyebrow: 'Runtime',
     description: 'Containers as packaging, process isolation, images, layers, networking, and the production details that matter on a small VPS.',
     category: 'backend',
@@ -153,7 +178,7 @@ export const articles = [
   },
   {
     slug: 'kubernetes',
-    title: 'Kubernetes',
+    order: 2,\n    title: 'Kubernetes',
     eyebrow: 'Orchestration',
     description: 'The control plane, reconciliation loops, deployments, services, scheduling, and the abstractions underneath the YAML.',
     category: 'backend',
