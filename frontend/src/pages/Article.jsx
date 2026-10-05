@@ -126,6 +126,10 @@ function ListBlock({ block }) {
   );
 }
 
+function HeadingBlock({ block }) {
+  return <h3 className="doc-inline-heading">{block.text}</h3>;
+}
+
 function QuoteBlock({ block }) {
   return (
     <blockquote className="doc-quote">
@@ -172,6 +176,8 @@ function Block({ block }) {
       return <ImageBlock block={block} />;
     case 'video':
       return <VideoBlock block={block} />;
+    case 'heading':
+      return <HeadingBlock block={block} />;
     case 'quote':
       return <QuoteBlock block={block} />;
     case 'table':
