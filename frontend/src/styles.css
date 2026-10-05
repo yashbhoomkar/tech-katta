@@ -1591,3 +1591,63 @@ a { color: inherit; text-decoration: none; }
     min-width: 0;
   }
 }
+
+
+@media (max-width: 760px) {
+  .unit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unit-page {
+    width: min(100% - 40px, 840px);
+    padding-top: 34px;
+  }
+
+  .unit-card {
+    min-height: 0;
+  }
+
+  .unit-chapter {
+    min-height: 0;
+    flex-direction: column;
+    gap: 17px;
+    padding: 23px 0;
+  }
+
+  .unit-chapter-meta {
+    justify-content: flex-start;
+    align-items: center;
+    align-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .unit-page {
+    width: calc(100% - 28px);
+    padding: 24px 0 80px;
+  }
+
+  .unit-hero {
+    padding-top: 8px;
+  }
+
+  .unit-hero h1 {
+    font-size: 50px;
+  }
+
+  .unit-hero p {
+    font-size: 15px;
+  }
+
+  .unit-card {
+    padding: 20px;
+  }
+
+  .unit-card h3 {
+    font-size: 23px;
+  }
+
+  .unit-chapter-main h3 {
+    font-size: 25px;
+  }
+}
