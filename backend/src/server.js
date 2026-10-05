@@ -102,7 +102,7 @@ app.get('/api/health', (_request, response) => {
   response.json({
     status: 'ok',
     service: 'tech-katta-api',
-    version: '2026.10.05-ci-test-2',
+    version: '2026.10.05-production',
     db: isDBConnected() ? 'connected' : 'disconnected',
   });
 });
@@ -134,13 +134,14 @@ app.get('/api/articles', async (request, response) => {
       const query = {};
 
       if (category && typeof category === 'string') {
-        query.category = category;
+        query.category = category.slice(0, 100);
       }
 
       if (search && typeof search === 'string') {
         const q = search.trim().slice(0, 100);
-        const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\const q = search.trim();
+        const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\const q = search.trim();
         query.$or = [');
+        if (escaped) query.$or = [');
         if (escaped) query.$or = [
           { title: { $regex: q, $options: 'i' } },
           { eyebrow: { $regex: q, $options: 'i' } },
@@ -168,7 +169,7 @@ app.get('/api/articles', async (request, response) => {
     result = result.filter((item) => item.category === category);
   }
   if (search && typeof search === 'string') {
-    const q = search.trim().toLowerCase();
+    const q = search.trim().slice(0, 100).toLowerCase();
     result = result.filter((item) => {
       const haystack = [item.title, item.eyebrow, item.description, ...(item.tags || [])].join(' ').toLowerCase();
       return haystack.includes(q);
