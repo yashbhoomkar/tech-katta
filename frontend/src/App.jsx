@@ -228,7 +228,6 @@ export default function App() {
       if (!active) return;
       if (remoteArticles?.length) setArticles(remoteArticles);
       if (remoteCategories?.length) setCategories(remoteCategories);
-    }).finally(() => {
     });
     return () => { active = false; };
   }, []);
