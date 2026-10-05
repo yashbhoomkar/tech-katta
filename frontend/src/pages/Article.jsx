@@ -236,7 +236,7 @@ function normalizeContent(rawContent) {
     }
 
     section.subsections?.forEach((subsection) => {
-      blocks.push({ type: 'text', paragraphs: [`### ${subsection.title}`] });
+      blocks.push({ type: 'heading', text: subsection.title });
       if (subsection.paragraphs?.length) {
         blocks.push({ type: 'text', paragraphs: subsection.paragraphs });
       }
