@@ -108,7 +108,9 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'Replication creates an immediate question: if there are several copies of the same data, what should a read return?',
         'Imagine changing your profile name from Alice to Yash. The write reaches the primary immediately, but a replica is still catching up. If your next read is routed to that replica, you may see Alice for a short time. This is an example of eventual consistency.',
-        'Strong consistency provides a stronger guarantee: after a successful write, subsequent reads observe the write according to the system’s consistency contract. Stronger guarantees can require more coordination and can reduce availability or increase latency under failures.'
+        'Strong consistency provides a stronger guarantee: after a successful write, subsequent reads observe the write according to the system’s consistency contract. Stronger guarantees can require more coordination and can reduce availability or increase latency under failures.',
+        'Linearizability is a specific strong consistency guarantee for individual operations: each operation appears to take effect at one instant between its invocation and response, while respecting real-time order. Serializability is different: it is a transaction isolation property that says the outcome is equivalent to some serial execution of concurrent transactions. A database can provide serializable transactions without every standalone read/write operation being linearizable.',
+        'Read-after-write consistency is narrower than linearizability. It guarantees that a client can observe its own completed write, but does not by itself define a single real-time order for every client.'
       ],
       code: {
         language: 'text',
@@ -145,7 +147,9 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'When events travel through different machines, they can arrive in a different order from the order in which they were produced. A payment service might emit PaymentCompleted while another consumer has not yet observed OrderCreated.',
         'Sometimes ordering is required only for one entity. For example, all events for one bank account should be processed in order, while events for different accounts can be processed concurrently. This is much easier to scale than requiring one global order for every event.',
-        'Distributed systems therefore distinguish between local ordering, per-key ordering, and global ordering. Logical clocks such as Lamport clocks provide a way to reason about causality without assuming perfectly synchronized physical clocks.'
+        'Distributed systems therefore distinguish between local ordering, per-key ordering, and global ordering. Logical clocks such as Lamport clocks provide a way to reason about causality without assuming perfectly synchronized physical clocks.',
+        'A Lamport clock can tell us that one event happened before another in the observed causal order, but it cannot tell us whether two events were truly concurrent. Vector clocks can represent that richer relationship, at the cost of metadata that grows with the number of tracked participants.',
+        'Modern distributed databases also use Hybrid Logical Clocks (HLCs): they combine physical-clock readings with a logical component so timestamps preserve causality while remaining close to wall-clock time. Systems such as CockroachDB use HLC-style timestamps; Google Spanner takes a different approach with TrueTime and bounded clock uncertainty.'
       ],
       code: {
         language: 'text',
@@ -159,7 +163,8 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'A quorum is a rule that requires agreement from enough replicas before an operation is considered successful. It is a common way to balance availability and consistency in replicated systems.',
         'Suppose there are three replicas. A write quorum of two means a write needs acknowledgements from at least two replicas. A read quorum of two means a read consults at least two replicas. Because the two sets must overlap, a read can often observe the latest value under the system’s assumptions.',
-        'Quorum rules are not a substitute for understanding the database’s actual consistency model. The meaning of a successful quorum depends on how replicas, timestamps, conflicts, and failures are handled.'
+        'Quorum rules are not a substitute for understanding the database’s actual consistency model. The meaning of a successful quorum depends on how replicas, timestamps, conflicts, and failures are handled. An overlapping read and write quorum does not, by itself, prove linearizability: a coordinator can fail mid-write, replicas can have divergent versions, and the system still needs a defined conflict-resolution, read-repair, hinted-handoff, or consensus mechanism depending on the database.',
+        'Quorum is therefore a coordination primitive, not a complete correctness proof. When evaluating a quorum-based database, ask what happens when a write is partially acknowledged, a replica is stale, a coordinator dies, or concurrent writes conflict.'
       ],
       code: {
         language: 'text',
@@ -191,7 +196,8 @@ export const distributedSystemsConcepts = {
       paragraphs: [
         'A local database transaction can atomically update several rows because one database controls the operation. A distributed transaction is harder because the participating resources are independent.',
         'Consider placing an order. The system needs to reserve inventory and charge the customer. What happens if payment succeeds but the inventory service fails? The system needs a strategy for reaching a correct business outcome.',
-        'Two-phase commit coordinates a prepare phase and a commit phase across participants, but it can block around coordinator failures. The Saga pattern takes a different approach: each service commits its local transaction and later actions compensate for failures when necessary.'
+        'Two-phase commit coordinates a prepare phase and a commit phase across participants, but it can block around coordinator failures. The Saga pattern takes a different approach: each service commits its local transaction and later actions compensate for failures when necessary.',
+        'A Saga does not provide the isolation of a single ACID transaction. Other transactions can observe intermediate states, and concurrent workflows can create lost updates or conflicting business decisions unless the application adds reservations, version checks, semantic locks, or other coordination. Compensation also is not the same as rollback: once an external side effect such as an email or payment has happened, the system may need a new business action to compensate it rather than erase history.'
       ],
       code: {
         language: 'text',
@@ -214,12 +220,43 @@ export const distributedSystemsConcepts = {
       }
     },
     {
+      id: 'failure-models',
+      title: '14. Failure models: crash faults vs Byzantine faults',
+      paragraphs: [
+        'Not every distributed system assumes the same kind of failure. In the crash-fault model, a node may stop responding or become unavailable, but it does not intentionally send contradictory or malicious messages. Raft and many production databases are designed around this crash-fault model.',
+        'Byzantine fault tolerance considers a stronger adversary: a faulty node may lie, send different values to different peers, or behave arbitrarily. Byzantine protocols require substantially more coordination and replicas. They are relevant when participants cannot be trusted, such as some blockchain, cross-organization, or adversarial environments.',
+        'For ordinary services running inside one organization, crash and network failures are usually the practical starting point. Choosing a stronger failure model than the system actually needs can add significant complexity and cost.'
+      ],
+      callout: {
+        title: 'Failure model matters',
+        text: 'Before choosing a consensus protocol, define what a faulty node is allowed to do. “Node is down” and “node can lie to every peer” are very different assumptions.'
+      }
+    },
+    {
+      id: 'real-world-mapping',
+      title: '15. Where these concepts appear in real systems',
+      paragraphs: [
+        'These concepts are not isolated theory. Production infrastructure combines them in different ways. Seeing the mapping makes it easier to recognize the same distributed-systems problem inside a new technology.'
+      ],
+      table: {
+        headers: ['Concept', 'Representative systems', 'What to look for'],
+        rows: [
+          ['Coordination and leases', 'ZooKeeper, etcd, Consul', 'Leader election, membership, leases, fencing'],
+          ['Quorums and tunable consistency', 'Cassandra, ScyllaDB', 'Replication factor, read/write consistency levels, conflict resolution'],
+          ['Consensus logs', 'Raft-based systems, Kafka KRaft', 'Majority agreement, leader election, replicated metadata/log'],
+          ['Partitioning + replication', 'Kafka, CockroachDB', 'Partition ownership, replicas, rebalancing, failure recovery'],
+          ['Strongly coordinated distributed transactions', 'Spanner, CockroachDB', 'Consensus, timestamps, transaction ordering, commit protocol']
+        ]
+      }
+    },
+    {
       id: 'cap-theorem',
-      title: '13. CAP theorem',
+      title: '16. CAP theorem and PACELC',
       paragraphs: [
         'CAP becomes useful only after you understand replication, consistency, and network partitions. The theorem describes a fundamental trade-off that appears when a partition prevents parts of a distributed system from communicating.',
         'Consistency means that operations observe a single coherent view according to the chosen consistency guarantee. Availability means requests receive a response rather than being rejected indefinitely. Partition tolerance means the system continues operating despite communication failures between nodes.',
-        'A network partition is not a theoretical edge case. Networks fail, links break, and machines become unreachable. When a partition occurs, a system that cannot sacrifice consistency may reject some operations; a system that prioritizes availability may allow divergent states that converge later.'
+        'A network partition is not a theoretical edge case. Networks fail, links break, and machines become unreachable. When a partition occurs, a system that cannot sacrifice consistency may reject some operations; a system that prioritizes availability may allow divergent states that converge later.',
+        'CAP describes behavior during a partition. PACELC adds the other half of the design question: Else, when there is no partition, do you prefer lower Latency or stronger Consistency? That is why two systems can both tolerate partitions but make different normal-path trade-offs—one may avoid coordination to keep writes fast, while another pays coordination latency to provide stronger guarantees.'
       ],
       code: {
         language: 'text',
@@ -239,6 +276,9 @@ export const distributedSystemsConcepts = {
     'Why can a distributed system be partially failed without being completely down?',
     'Why does a bad partition key create a hot partition?',
     'What problem does consensus solve that simple replication does not?',
-    'During a network partition, what trade-off does CAP force the system to make?'
+    'During a network partition, what trade-off does CAP force the system to make?',
+    'How is linearizability different from serializability?',
+    'Why can a Saga expose intermediate state even though each local transaction is atomic?',
+    'What additional question does PACELC ask when the system is not partitioned?'
   ]
 };
