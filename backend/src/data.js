@@ -1,3 +1,33 @@
+/*
+ * Article authoring schema:
+ *
+ * content: {
+ *   introduction?: string[],
+ *   sections: [
+ *     {
+ *       id: 'unique-section-id',
+ *       title: 'Section title',
+ *       blocks: [
+ *         { type: 'text', paragraphs: ['Paragraph 1', 'Paragraph 2'] },
+ *         { type: 'list', items: ['Item 1', 'Item 2'], ordered?: false },
+ *         { type: 'heading', text: 'Inline heading' },
+ *         { type: 'diagram', name: 'diagram-registry-key' },
+ *         { type: 'code', language: 'javascript', label: 'Example', code: '...' },
+ *         { type: 'callout', title: 'Important', text: '...' },
+ *         { type: 'image', src: '/images/example.png', alt: '...' },
+ *         { type: 'video', url: 'https://www.youtube.com/watch?v=...' },
+ *         { type: 'quote', text: '...', author?: '...' },
+ *         { type: 'table', headers: ['A', 'B'], rows: [['1', '2']] },
+ *         { type: 'divider' }
+ *       ]
+ *     }
+ *   ],
+ *   knowledgeCheck?: string[],
+ *   summary?: string
+ * }
+ *
+ * Every section is independently collapsible in the UI and starts expanded.
+ */
 export const categories = [
   { id: 'distributed-systems', label: 'Distributed Systems', count: 2 },
   { id: 'databases', label: 'Databases', count: 2 },
