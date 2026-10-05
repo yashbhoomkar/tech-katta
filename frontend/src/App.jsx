@@ -9,7 +9,7 @@ function Brand() {
     <NavLink to="/" className="brand" aria-label="Tech Katta home">
       <span className="brand-mark">tk</span>
       <span className="brand-copy">
-        <strong>tech katta</strong>
+        <strong>Tech Katta</strong>
         <small>learn. build. explain.</small>
       </span>
     </NavLink>
