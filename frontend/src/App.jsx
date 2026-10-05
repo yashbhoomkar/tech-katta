@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { articles as fallbackArticles, categories as fallbackCategories } from './data.js';
 import { fetchArticles, fetchCategories } from './api.js';
 import Article from './pages/Article.jsx';
@@ -362,6 +362,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home units={units} />} />
           <Route path="/unit/:unitId" element={<UnitPage units={units} articles={articles} />} />
+          <Route
+            path="/learn/distributed-system-components"
+            element={<Navigate to="/learn/distributed-system-components-overview" replace />}
+          />
           <Route path="/learn/:slug" element={<Article />} />
         </Routes>
       </div>
