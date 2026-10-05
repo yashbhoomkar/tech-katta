@@ -409,6 +409,19 @@ a { color: inherit; text-decoration: none; }
   transform: translateY(-1px);
 }
 
+.unit-card.is-all-upcoming,
+.unit-card.is-all-upcoming .unit-card-index,
+.unit-card.is-all-upcoming .unit-card-kicker,
+.unit-card.is-all-upcoming h3,
+.unit-card.is-all-upcoming p,
+.unit-card.is-all-upcoming .unit-card-meta {
+  color: #f1eff8;
+}
+
+.unit-card.is-all-upcoming .library-arrow {
+  color: #f1eff8;
+}
+
 .unit-card-main {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
