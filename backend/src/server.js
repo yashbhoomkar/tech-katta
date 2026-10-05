@@ -139,15 +139,16 @@ app.get('/api/articles', async (request, response) => {
 
       if (search && typeof search === 'string') {
         const q = search.trim().slice(0, 100);
-        const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\const q = search.trim();
-        query.$or = [');
-        if (escaped) query.$or = [');
-        if (escaped) query.$or = [
-          { title: { $regex: q, $options: 'i' } },
-          { eyebrow: { $regex: q, $options: 'i' } },
-          { description: { $regex: q, $options: 'i' } },
-          { tags: { $regex: escaped, $options: 'i' } },
-        ];
+        const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+
+        if (escaped) {
+          query.$or = [
+            { title: { $regex: escaped, $options: 'i' } },
+            { eyebrow: { $regex: escaped, $options: 'i' } },
+            { description: { $regex: escaped, $options: 'i' } },
+            { tags: { $regex: escaped, $options: 'i' } },
+          ];
+        }
       }
 
       const articles = await db
