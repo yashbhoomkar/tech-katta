@@ -214,6 +214,10 @@ export default function App() {
   const isArticle = location.pathname.startsWith('/learn/');
   const articleSlug = isArticle ? location.pathname.split('/learn/')[1] : null;
   const articleTitle = articles.find((article) => article.slug === articleSlug)?.title;
+  const categoriesWithCounts = categories.map((category) => ({
+    ...category,
+    count: articles.filter((article) => article.category === category.id).length,
+  }));
   const [activeCategory, setActiveCategory] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -238,7 +242,7 @@ export default function App() {
         onClose={() => setMobileSidebarOpen(false)}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
-        categories={categories}
+        categories={categoriesWithCounts}
       />
 
       <div className="site-main">
@@ -252,7 +256,7 @@ export default function App() {
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
                 articles={articles}
-                categories={categories}
+                categories={categoriesWithCounts}
               />
             }
           />
