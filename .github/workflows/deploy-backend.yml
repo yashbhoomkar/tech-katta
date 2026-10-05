@@ -65,4 +65,7 @@ jobs:
             sudo systemctl is-active --quiet tech-katta-api || (echo "❌ Service is not active!" && exit 1)
             curl -fsS http://127.0.0.1:5000/api/health || (echo "❌ Local health check failed!" && exit 1)
 
+            echo "🌐 Running production smoke tests..."
+            node scripts/production-smoke.mjs
+
             echo "✅ Deployment successful and verified!"
