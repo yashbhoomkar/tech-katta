@@ -175,29 +175,39 @@ function Home({ query, activeCategory, onCategoryChange, articles, categories })
       )}
 
       <section className="library-list">
-        {visibleArticles.map((article) => (
-          <button
-            type="button"
-            key={article.slug}
-            className={'library-item' + (article.status === 'soon' ? ' is-soon' : '')}
-            disabled={article.status === 'soon'}
-            onClick={() => article.status === 'published' && navigate('/learn/' + article.slug)}
-          >
-            <div className="library-item-main">
-              <span className="library-item-kicker">{article.eyebrow}</span>
-              <h3>{article.title}</h3>
-              <p>{article.description}</p>
-              <div className="library-tags">
-                {article.tags.map((tag) => <span key={tag}>{tag}</span>)}
+        {visibleArticles.map((article) => {
+          const content = (
+            <>
+              <div className="library-item-main">
+                <span className="library-item-kicker">{article.eyebrow}</span>
+                <h3><strong>{article.title}</strong></h3>
+                <p>{article.description}</p>
+                <div className="library-tags">
+                  {article.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                </div>
               </div>
+              <div className="library-item-meta">
+                <span className={article.status === 'published' ? 'published-dot' : 'soon-dot'} />
+                <span>{article.status === 'published' ? article.readTime : 'Coming soon'}</span>
+                <span className="library-arrow">→</span>
+              </div>
+            </>
+          );
+
+          return article.status === 'published' ? (
+            <NavLink
+              key={article.slug}
+              to={'/learn/' + article.slug}
+              className="library-item"
+            >
+              {content}
+            </NavLink>
+          ) : (
+            <div key={article.slug} className="library-item is-soon">
+              {content}
             </div>
-            <div className="library-item-meta">
-              <span className={article.status === 'published' ? 'published-dot' : 'soon-dot'} />
-              <span>{article.status === 'published' ? article.readTime : 'Coming soon'}</span>
-              <span className="library-arrow">→</span>
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </section>
 
       {!visibleArticles.length && (
