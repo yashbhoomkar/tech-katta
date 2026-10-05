@@ -1,5 +1,7 @@
+import { distributedSystemsConcepts } from './distributedSystemsConcepts.js';
+
 export const categories = [
-  { id: 'distributed-systems', label: 'Distributed Systems', count: 2 },
+  { id: 'distributed-systems', label: 'Distributed Systems', count: 3 },
   { id: 'databases', label: 'Databases', count: 2 },
   { id: 'ai-infra', label: 'AI Infrastructure', count: 2 },
   { id: 'cloud-devops', label: 'Cloud & DevOps', count: 1 },
@@ -7,6 +9,17 @@ export const categories = [
 ];
 
 export const articles = [
+  {
+    slug: 'distributed-systems-concepts',
+    title: 'Distributed Systems Concepts',
+    eyebrow: 'Basics · Concepts',
+    description: 'Build the mental model behind distributed systems through communication, latency, failures, replication, consistency, partitioning, consensus, transactions, coordination, and CAP.',
+    category: 'distributed-systems',
+    tags: ['Distributed Systems', 'Fundamentals', 'System Design'],
+    readTime: '25 min read',
+    status: 'published',
+    updated: 'October 2026',
+  },
   {
     slug: 'kafka-basics',
     title: 'Kafka Fundamentals',
@@ -109,6 +122,7 @@ export const articles = [
 ];
 
 export const articleContent = {
+  'distributed-systems-concepts': distributedSystemsConcepts,
   'kafka-basics': {
     introduction: [
       'Kafka is a distributed event streaming platform built around a durable, append-only log. Applications publish records to Kafka, Kafka stores them, and consumers read those records at their own pace.',
