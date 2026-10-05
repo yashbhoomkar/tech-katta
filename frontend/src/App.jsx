@@ -7,7 +7,7 @@ import Article from './pages/Article.jsx';
 function Brand() {
   return (
     <NavLink to="/" className="brand" aria-label="Tech Katta home">
-      <span className="brand-mark">tk</span>
+      <span className="brand-mark">TK</span>
       <span className="brand-copy">
         <strong>Tech Katta</strong>
         <small>learn. build. explain.</small>
