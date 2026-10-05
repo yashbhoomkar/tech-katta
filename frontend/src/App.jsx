@@ -61,7 +61,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
             <div className="sidebar-section">
               <div className="sidebar-section-title">Start Here</div>
               <NavLink
-                className={'sidebar-link' + (activeUnit ? '' : ' is-active')}
+                className={'sidebar-link' + (!activeUnit ? ' is-active' : '')}
                 to="/"
                 title={collapsed ? 'Overview' : undefined}
                 onClick={onClose}
@@ -108,7 +108,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
   );
 }
 
-function Header({ isArticle, unitId, unitLabel, articleSlug, articleTitle, onOpenSidebar }) {
+function Header({ unitId, unitLabel, isArticle, articleSlug, articleTitle, onOpenSidebar }) {
   return (
     <header className="site-header">
       <button className="mobile-sidebar-button" type="button" onClick={onOpenSidebar} aria-label="Open navigation">
@@ -149,10 +149,7 @@ function Home({ units }) {
   const visibleUnits = useMemo(() => {
     const normalized = search.trim().toLowerCase();
     if (!normalized) return units;
-    return units.filter((unit) => {
-      const haystack = [unit.label, unit.description].join(' ').toLowerCase();
-      return haystack.includes(normalized);
-    });
+    return units.filter((unit) => [unit.label, unit.description].join(' ').toLowerCase().includes(normalized));
   }, [search, units]);
 
   return (
@@ -181,10 +178,10 @@ function Home({ units }) {
       </div>
 
       <section className="unit-grid" aria-label="Technology units">
-        {visibleUnits.map((unit, index) => (
+        {visibleUnits.map((unit) => (
           <NavLink key={unit.id} to={'/unit/' + unit.id} className="unit-card">
             <div className="unit-card-main">
-              <div className="unit-card-index">{String(index + 1).padStart(2, '0')}</div>
+              <div className="unit-card-index">{String(units.findIndex((item) => item.id === unit.id) + 1).padStart(2, '0')}</div>
               <div>
                 <span className="unit-card-kicker">Unit</span>
                 <h3>{unit.label}</h3>
@@ -199,9 +196,7 @@ function Home({ units }) {
         ))}
       </section>
 
-      {!visibleUnits.length && (
-        <div className="empty-state">Nothing matched “{search}”.</div>
-      )}
+      {!visibleUnits.length && <div className="empty-state">Nothing matched “{search}”.</div>}
     </main>
   );
 }
@@ -265,10 +260,11 @@ function UnitPage({ units, articles }) {
 
       <section className="unit-chapter-list" aria-label={unit.label + ' chapters'}>
         {chapters.map((article, index) => {
+          const chapterNumber = article.order ?? index + 1;
           const content = (
             <>
               <div className="unit-chapter-main">
-                <div className="unit-chapter-number">{String(index + 1).padStart(2, '0')}</div>
+                <div className="unit-chapter-number">{String(chapterNumber).padStart(2, '0')}</div>
                 <div>
                   <span className="library-item-kicker">{article.eyebrow}</span>
                   <h3>{article.title}</h3>
@@ -298,9 +294,7 @@ function UnitPage({ units, articles }) {
         })}
       </section>
 
-      {!chapters.length && (
-        <div className="empty-state">Nothing matched “{search}”.</div>
-      )}
+      {!chapters.length && <div className="empty-state">Nothing matched “{search}”.</div>}
     </main>
   );
 }
@@ -309,17 +303,20 @@ export default function App() {
   const location = useLocation();
   const [articles, setArticles] = useState(fallbackArticles);
   const [categories, setCategories] = useState(fallbackCategories);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const isArticle = location.pathname.startsWith('/learn/');
   const unitMatch = location.pathname.match(/^\/unit\/([^/]+)/);
-  const activeUnit = unitMatch ? unitMatch[1] : null;
+  const activeUnitFromPath = unitMatch ? unitMatch[1] : null;
   const articleSlug = isArticle ? location.pathname.split('/learn/')[1] : null;
   const article = articles.find((item) => item.slug === articleSlug);
-  const articleTitle = article?.title;
-  const unitId = article?.category || activeUnit;
+  const unitId = article?.category || activeUnitFromPath;
   const units = categories.map((category) => ({
     ...category,
     count: articles.filter((articleItem) => articleItem.category === category.id).length,
   }));
+  const activeUnit = article?.category || activeUnitFromPath;
+  const unitLabel = units.find((unit) => unit.id === unitId)?.label;
 
   useEffect(() => {
     let active = true;
@@ -331,26 +328,25 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
-  const unitLabel = units.find((unit) => unit.id === unitId)?.label;
-
   return (
-    <div className="site-frame">
+    <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
       <Sidebar
-        collapsed={false}
-        mobileOpen={false}
-        onToggle={() => {}}
-        onClose={() => {}}
-        activeUnit={activeUnit || article?.category || null}
+        collapsed={sidebarCollapsed}
+        mobileOpen={mobileSidebarOpen}
+        onToggle={() => setSidebarCollapsed((value) => !value)}
+        onClose={() => setMobileSidebarOpen(false)}
+        activeUnit={activeUnit}
         units={units}
       />
+
       <div className="site-main">
         <Header
           isArticle={isArticle}
           unitId={unitId}
           unitLabel={unitLabel}
           articleSlug={articleSlug}
-          articleTitle={articleTitle}
-          onOpenSidebar={() => {}}
+          articleTitle={article?.title}
+          onOpenSidebar={() => setMobileSidebarOpen(true)}
         />
         <Routes>
           <Route path="/" element={<Home units={units} />} />
