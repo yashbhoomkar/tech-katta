@@ -41,9 +41,9 @@ export const categories = [
 export const articles = [
   {
     slug: 'kafka-basics',
-    title: 'Kafka Basics',
+    title: 'Kafka Fundamentals',
     eyebrow: 'Key Technologies',
-    description: 'Learn the mental model behind Kafka, how topics and partitions work, how consumers scale with groups, and why offsets and replication matter.',
+    description: 'Build a production-aware mental model of Kafka: topics, partitions, consumer groups, offsets, delivery semantics, replication, retention, and failure handling.',
     category: 'distributed-systems',
     tags: ['Kafka', 'Messaging', 'Streaming'],
     readTime: '10 min read',
@@ -57,7 +57,7 @@ export const articles = [
     description: 'Go beyond the primitives into delivery semantics, replication, failure handling, and the design trade-offs behind production Kafka systems.',
     category: 'distributed-systems',
     tags: ['Kafka', 'Distributed Systems', 'Reliability'],
-    readTime: '12 min read',
+    readTime: '16 min read',
     status: 'soon',
     updated: 'Coming next',
   },
