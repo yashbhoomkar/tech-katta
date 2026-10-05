@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
 import { connectDB, getDB, isDBConnected } from './db.js';
+import { normalizeArticleContent } from './contentSchema.js';
 import {
   categories as fallbackCategories,
   articles as fallbackArticles,
@@ -122,7 +123,7 @@ app.get('/api/articles/:slug', async (request, response) => {
       const db = getDB();
       const article = await db.collection('articles').findOne({ slug }, { projection: { _id: 0 } });
       if (article) {
-        return response.json(article);
+        return response.json({ ...article, content: normalizeArticleContent(article.content) });
       }
     }
   } catch (err) {
@@ -135,7 +136,7 @@ app.get('/api/articles/:slug', async (request, response) => {
   const content = getFallbackContent(slug);
   return response.json({
     ...article,
-    content,
+    content: normalizeArticleContent(content),
   });
 });
 
