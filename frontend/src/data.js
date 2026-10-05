@@ -48,9 +48,9 @@ export const articles = [
     updated: 'October 2026',
   },
   {
-    slug: 'distributed-system-components',
+    slug: 'distributed-system-components-overview',
     order: 2,
-    title: 'Distributed System Components',
+    title: 'Distributed System Components: An Overview',
     eyebrow: 'Architecture · Components',
     description: 'Learn how production distributed systems are assembled from edge routing, stateless compute, load balancing, service discovery, caches, databases, messaging, object storage, coordination, observability, and overload control.',
     category: 'distributed-systems',
@@ -171,7 +171,7 @@ export const articles = [
 
 export const articleContent = {
   'distributed-systems-concepts': distributedSystemsConcepts,
-  'distributed-system-components': distributedSystemComponents,
+  'distributed-system-components-overview': distributedSystemComponents,
   'kafka-basics': {
     introduction: [
       'Kafka is a distributed event streaming platform built around a durable, append-only log. Applications publish records to Kafka, Kafka stores them, and consumers read those records at their own pace.',
