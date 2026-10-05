@@ -216,6 +216,22 @@ a { color: inherit; text-decoration: none; }
   font-size: 10px;
 }
 
+.sidebar-upcoming-badge {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 2px 5px;
+  border: 1px solid rgba(245, 158, 11, .45);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, .12);
+  color: #f59e0b;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 7px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: .09em;
+  vertical-align: middle;
+}
+
 .sidebar-future p {
   margin: 0 8px;
   color: var(--dim);
