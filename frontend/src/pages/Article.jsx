@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { getArticle, getArticleContent } from '../data.js';
+import { categories as fallbackCategories, getArticle, getArticleContent } from '../data.js';
 import { fetchArticleBySlug } from '../api.js';
 import {
   KafkaArchitectureDiagram,
@@ -268,6 +268,7 @@ export default function Article() {
   const fallbackContent = getArticleContent(slug);
   const article = remoteArticle || fallbackArticle;
   const rawContent = remoteArticle?.content || fallbackContent;
+  const unitLabel = fallbackCategories.find((category) => category.id === article?.category)?.label || article?.category || 'Unit';
   const content = useMemo(() => normalizeContent(rawContent), [rawContent]);
 
   useEffect(() => {
@@ -327,7 +328,7 @@ export default function Article() {
       <div className="article-column">
         <header className="article-hero">
           <div className="article-breadcrumb">
-            <NavLink to="/">Key Technologies</NavLink>
+            <NavLink to={'/unit/' + article.category}>{unitLabel}</NavLink>
             <span>/</span>
             <span>{article.title}</span>
           </div>
