@@ -184,6 +184,7 @@ function Home({ units }) {
             to={'/unit/' + unit.id}
             className={'unit-card' + (unit.allUpcoming ? ' is-all-upcoming' : '')}
           >
+            {unit.allUpcoming && <span className="unit-upcoming-badge">UPCOMING</span>}
             <div className="unit-card-main">
               <div className="unit-card-index">{String(units.findIndex((item) => item.id === unit.id) + 1).padStart(2, '0')}</div>
               <div>
