@@ -1,3 +1,5 @@
+import { kafkaAdvancedSections } from './kafkaAdvancedContent.js';
+
 /*
  * Article authoring schema:
  *
@@ -44,7 +46,7 @@ export const articles = [
     description: 'Learn the mental model behind Kafka, how topics and partitions work, how consumers scale with groups, and why offsets and replication matter.',
     category: 'distributed-systems',
     tags: ['Kafka', 'Messaging', 'Streaming'],
-    readTime: '12 min read',
+    readTime: '10 min read',
     status: 'published',
     updated: 'October 2026',
   },
@@ -181,7 +183,7 @@ export const articleContent = {
           {
             title: 'Topic vs partition',
             paragraphs: [
-              'Think of a topic as the name of the stream and a partition as one ordered lane within that stream. A topic can have many partitions, and a partition lives on a broker.',
+              'Think of a topic as the name of the stream and a partition as one ordered lane within that stream. A partition is replicated across brokers, so it is better to think of the partition as a logical log rather than as something that permanently lives on one broker.',
               'Ordering exists within a partition, not across the entire topic. That single fact explains why choosing a partition key is an architectural decision rather than a minor producer setting.',
             ],
             diagram: 'partitions',
@@ -189,7 +191,7 @@ export const articleContent = {
           {
             title: 'What is stored in a record?',
             paragraphs: [
-              'A Kafka record can contain a key, value, timestamp, and headers. The value is the business payload; headers are useful for metadata; the key is often the most important field for system design because it influences partition placement.',
+              'A Kafka record can contain a key, value, timestamp, and headers. The value is the business payload; headers are useful for metadata; the key is often the most important field for system design because it influences partition placement. In the sports example, the match ID is the natural key when all events for one match must remain ordered.',
             ],
           },
         ],
@@ -233,7 +235,7 @@ export const articleContent = {
         paragraphs: [
           'Kafka can replicate each partition across multiple brokers. One replica acts as the leader for normal client traffic while the other replicas follow the leader and maintain copies of the partition log.',
           'Replication is what lets Kafka survive a broker failure without losing the entire partition. When the leader fails, an in-sync follower can be promoted to serve as the new leader.',
-          'For durability-sensitive workloads, producer acknowledgement settings and the topic replication factor matter together. A common production baseline is replication factor 3 with acknowledgements configured so the producer does not treat a message as safely written too early.',
+          'For durability-sensitive workloads, producer acknowledgement settings and the topic replication factor matter together. A common baseline is replication factor 3 with acks=all and min.insync.replicas=2: the leader acknowledges only after the record is written to all currently in-sync replicas, and the broker refuses writes when fewer than two in-sync replicas remain. The ISR (in-sync replica set) is the replicas considered caught up enough to participate in safe leadership and acknowledgement decisions. Unclean leader election should normally remain disabled for data where losing acknowledged records is unacceptable.',
         ],
         diagram: 'replication',
         callout: {
@@ -241,6 +243,7 @@ export const articleContent = {
           text: 'Partition = ordered log. Replica = another copy of that log. Leader = the replica currently serving normal writes.',
         },
       },
+      ...kafkaAdvancedSections,
       {
         id: 'queue-vs-stream',
         title: 'Kafka as a queue vs a stream',
@@ -312,7 +315,7 @@ export const articleContent = {
         title: 'Retries and failed consumers',
         paragraphs: [
           'Kafka producers can retry transient send failures. Consumers are different: Kafka does not automatically give your application a full retry and dead-letter workflow, so production systems commonly model retries using additional topics.',
-          'A failed record can move to a retry topic and be attempted again later. Messages that repeatedly fail can be isolated in a dead-letter topic so operators can inspect and replay them without blocking the main consumer.',
+          'A failed record can move to a retry topic and be attempted again later. Messages that repeatedly fail can be isolated in a dead-letter topic so operators can inspect and replay them without blocking the main consumer. The trade-off is ordering: if record A is delayed on a retry topic while record B continues through the main path, B can be processed before A. Retry-topic designs therefore need an explicit ordering policy rather than assuming the original partition order survives unchanged.',
         ],
         diagram: 'retry',
       },
@@ -327,7 +330,10 @@ export const articleContent = {
           language: 'javascript',
           label: 'Consume from a group',
           code: [
+            "const kafka = new Kafka({ brokers: ['localhost:9092'] });",
             "const consumer = kafka.consumer({ groupId: 'orders-workers' });",
+            '',
+            'await consumer.connect();',
             '',
             'await consumer.subscribe({ topic: \'orders\' });',
             '',
