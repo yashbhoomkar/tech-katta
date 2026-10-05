@@ -267,7 +267,8 @@ export default function Article() {
   const fallbackArticle = getArticle(slug);
   const fallbackContent = getArticleContent(slug);
   const article = remoteArticle || fallbackArticle;
-  const content = normalizeContent(remoteArticle?.content || fallbackContent);
+  const rawContent = remoteArticle?.content || fallbackContent;
+  const content = useMemo(() => normalizeContent(rawContent), [rawContent]);
 
   useEffect(() => {
     let active = true;
