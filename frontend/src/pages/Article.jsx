@@ -81,6 +81,19 @@ export default function Article() {
   const content = getArticleContent(slug);
   const [progress, setProgress] = useState(0);
   const [markedRead, setMarkedRead] = useState(() => localStorage.getItem('tk-read-' + slug) === '1');
+  const [expandedSections, setExpandedSections] = useState({});
+
+  useEffect(() => {
+    if (!content?.sections) return;
+    setExpandedSections(Object.fromEntries(content.sections.map((section) => [section.id, true])));
+  }, [content]);
+
+  function toggleSection(sectionId) {
+    setExpandedSections((current) => ({
+      ...current,
+      [sectionId]: !current[sectionId],
+    }));
+  }
 
   const tocItems = useMemo(
     () => content?.sections.map((section) => ({ id: section.id, title: section.title, subsections: section.subsections || [] })) || [],
@@ -145,24 +158,41 @@ export default function Article() {
           </div>
 
           {content.sections.map((section) => (
-            <section className="doc-section" id={section.id} key={section.id}>
-              <h2>{section.title}</h2>
+            <section
+              className={'doc-section' + (!expandedSections[section.id] ? ' is-collapsed' : '')}
+              id={section.id}
+              key={section.id}
+            >
+              <button
+                type="button"
+                className="doc-section-heading"
+                onClick={() => toggleSection(section.id)}
+                aria-expanded={expandedSections[section.id] !== false}
+                aria-controls={'section-content-' + section.id}
+              >
+                <h2>{section.title}</h2>
+                <span className="doc-section-chevron" aria-hidden="true">
+                  {expandedSections[section.id] === false ? '›' : '⌄'}
+                </span>
+              </button>
 
-              {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              <div className="doc-section-content" id={'section-content-' + section.id}>
+                {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
 
-              {section.bullets && (
-                <ul className="doc-list">
-                  {section.bullets.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              )}
+                {section.bullets && (
+                  <ul className="doc-list">
+                    {section.bullets.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                )}
 
-              {section.diagram && <Diagram name={section.diagram} />}
-              {section.code && <CodeBlock {...section.code} />}
-              {section.callout && <Callout block={section.callout} />}
+                {section.diagram && <Diagram name={section.diagram} />}
+                {section.code && <CodeBlock {...section.code} />}
+                {section.callout && <Callout block={section.callout} />}
 
-              {section.subsections?.map((subsection) => (
-                <Subsection key={subsection.title} subsection={subsection} />
-              ))}
+                {section.subsections?.map((subsection) => (
+                  <Subsection key={subsection.title} subsection={subsection} />
+                ))}
+              </div>
             </section>
           ))}
 
