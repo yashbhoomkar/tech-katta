@@ -189,7 +189,7 @@ app.get('/api/articles/:slug', async (request, response) => {
       const db = getDB();
       const article = await db.collection('articles').findOne({ slug }, { projection: { _id: 0 } });
       if (article) {
-        return response.json({ ...article, content: normalizeArticleContent(article.content) });
+        return response.json({ ...article, content: normalizeArticleContent(article.content, slug) });
       }
     }
   } catch (err) {
@@ -202,7 +202,7 @@ app.get('/api/articles/:slug', async (request, response) => {
   const content = getFallbackContent(slug);
   return response.json({
     ...article,
-    content: normalizeArticleContent(content),
+    content: normalizeArticleContent(content, slug),
   });
 });
 
