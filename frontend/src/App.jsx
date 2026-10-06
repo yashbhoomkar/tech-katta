@@ -375,6 +375,13 @@ export default function App() {
         return;
       }
 
+      // On the home page, a right swipe opens the navigation instead of
+      // navigating browser history. Other pages retain back/forward gestures.
+      if (location.pathname === '/' && deltaX > 0) {
+        setMobileSidebarOpen(true);
+        return;
+      }
+
       // Let horizontally scrollable content (code, tables, diagrams, etc.) keep
       // its native swipe behavior instead of treating the gesture as navigation.
       if (target instanceof Element) {
