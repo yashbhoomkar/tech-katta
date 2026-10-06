@@ -18,6 +18,7 @@ const diagrams = {
   partitions: KafkaPartitionDiagram,
   'consumer-group': KafkaConsumerGroupDiagram,
   replication: KafkaReplicationDiagram,
+  'distributed-architecture': DistributedSystemsArchitectureDiagram,
   retry: KafkaRetryDiagram,
 };
 
