@@ -8,6 +8,7 @@ import {
   KafkaMotivatingDiagram,
   KafkaPartitionDiagram,
   KafkaReplicationDiagram,
+  DistributedSystemsArchitectureDiagram,
   KafkaRetryDiagram,
 } from '../components/ArticleDiagrams.jsx';
 
