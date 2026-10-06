@@ -282,6 +282,35 @@ export default function Article() {
   }, [slug]);
 
   useEffect(() => {
+    if (!article) return undefined;
+
+    const title = `${article.title} — Tech Katta`;
+    const description = article.description || 'Engineering notes by Yash Bhoomkar.';
+    document.title = title;
+
+    const setMeta = (selector, attribute, value) => {
+      let element = document.head.querySelector(selector);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, selector.includes('property=') ? selector.match(/property="([^"]+)"/)?.[1] : selector.match(/name="([^"]+)"/)?.[1]);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', value);
+    };
+
+    setMeta('meta[name="description"]', 'name', description);
+    setMeta('meta[property="og:title"]', 'property', title);
+    setMeta('meta[property="og:description"]', 'property', description);
+    setMeta('meta[property="og:url"]', 'property', `https://tech.katta.cc/learn/${slug}`);
+    setMeta('meta[name="twitter:title"]', 'name', title);
+    setMeta('meta[name="twitter:description"]', 'name', description);
+
+    return () => {
+      document.title = 'Tech Katta — Engineering notes by Yash Bhoomkar';
+    };
+  }, [article, slug]);
+
+  useEffect(() => {
     if (!content?.sections) return;
     setExpandedSections(Object.fromEntries(content.sections.map((section) => [section.id, true])));
   }, [content]);
@@ -406,7 +435,7 @@ export default function Article() {
           <footer className="article-footer">
             <div className="article-footer-main">
               <span className="eyebrow">In short</span>
-              <p>{content.summary || 'This article is part of the Tech Katta engineering knowledge base.'}</p>
+              <p>{content.summary || 'This note is part of Tech Katta.'}</p>
             </div>
             <div className="article-footer-actions">
               <button type="button" className={'read-button' + (markedRead ? ' is-read' : '')} onClick={markRead}>
