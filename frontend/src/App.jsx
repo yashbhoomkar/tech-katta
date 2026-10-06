@@ -10,7 +10,7 @@ function Brand() {
       <span className="brand-mark">TK</span>
       <span className="brand-copy">
         <strong>Tech Katta</strong>
-        <small>learn. build. explain.</small>
+        <small>notes on building systems</small>
       </span>
     </NavLink>
   );
@@ -53,13 +53,13 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
           <Brand />
 
           <div className="sidebar-program-title">
-            Learn Technology
-            <span>In a Hurry</span>
+            Engineering notes
+            <span>things I’m learning, building, and trying to understand</span>
           </div>
 
           <nav className="sidebar-nav" aria-label="Learning navigation">
             <div className="sidebar-section">
-              <div className="sidebar-section-title">Start Here</div>
+              <div className="sidebar-section-title">Library</div>
               <NavLink
                 className={'sidebar-link' + (!activeUnit ? ' is-active' : '')}
                 to="/"
@@ -67,12 +67,12 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
                 onClick={onClose}
               >
                 <span className="sidebar-link-index">01</span>
-                <span className="sidebar-link-text">Overview</span>
+                <span className="sidebar-link-text">All notes</span>
               </NavLink>
             </div>
 
             <div className="sidebar-section">
-              <div className="sidebar-section-title">Units</div>
+              <div className="sidebar-section-title">Topics</div>
               {units.map((unit) => (
                 <NavLink
                   key={unit.id}
@@ -92,8 +92,8 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
             </div>
 
             <div className="sidebar-section sidebar-future">
-              <div className="sidebar-section-title">Coming Up</div>
-              <p><span className="sidebar-status-dot" />New notes when I learn something worth keeping.</p>
+              <div className="sidebar-section-title">Next</div>
+              <p><span className="sidebar-status-dot" />New notes as I learn something worth keeping.</p>
             </div>
           </nav>
         </div>
@@ -158,23 +158,23 @@ function Home({ units }) {
   return (
     <main className="home-page">
       <section className="home-hero">
-        <div className="eyebrow">Learn Technology</div>
-        <h1>Understand the tools that shape modern systems.</h1>
-        <p>Practical notes on distributed systems, databases, AI infrastructure, and backend engineering — written while learning, with enough depth to be useful later.</p>
-        <div className="eyebrow">Updated Oct 5, 2026 · CI/CD test #2</div>
+        <div className="eyebrow">Yash’s engineering notes</div>
+        <h1>Things I learn, build, and eventually understand.</h1>
+        <p>Notes on distributed systems, databases, AI infrastructure, and backend engineering. I write these as I learn them — partly to make the ideas stick, partly so I can come back to them six months later.</p>
+        <div className="home-note">Last updated October 5, 2026</div>
       </section>
 
       <div className="library-toolbar">
         <div>
-          <div className="eyebrow">Learning path</div>
-          <h2>Units</h2>
+          <div className="eyebrow">What I’m studying</div>
+          <h2>Topics</h2>
         </div>
         <label className="library-search">
           <span>⌕</span>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search units"
+            placeholder="Search topics"
             aria-label="Search units"
           />
         </label>
@@ -240,7 +240,7 @@ function UnitPage({ units, articles }) {
   return (
     <main className="unit-page">
       <section className="unit-hero">
-        <div className="eyebrow">Unit</div>
+        <div className="eyebrow">Topic</div>
         <h1>{unit.label}</h1>
         <p>{unit.description}</p>
         <div className="unit-hero-meta">
@@ -252,7 +252,7 @@ function UnitPage({ units, articles }) {
 
       <div className="library-toolbar">
         <div>
-          <div className="eyebrow">Chapters</div>
+          <div className="eyebrow">Notes in this topic</div>
           <h2>{unit.label}</h2>
         </div>
         <label className="library-search">
@@ -260,7 +260,7 @@ function UnitPage({ units, articles }) {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search chapters"
+            placeholder="Search notes"
             aria-label="Search chapters"
           />
         </label>
