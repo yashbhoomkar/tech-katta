@@ -121,7 +121,7 @@ function Header({ unitId, unitLabel, isArticle, articleSlug, articleTitle, onOpe
       </button>
 
       <div className="header-breadcrumb">
-        <NavLink to="/" className="breadcrumb-link">Learn Technology</NavLink>
+        <NavLink to="/" className="breadcrumb-link">Notes</NavLink>
         {unitId && (
           <>
             <span className="breadcrumb-separator">/</span>
