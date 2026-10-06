@@ -1694,3 +1694,118 @@ a { color: inherit; text-decoration: none; }
     font-size: 25px;
   }
 }
+
+
+/* --- Editorial / authored layer ---
+   Keep the interface quiet. The content should feel written, not generated. */
+.home-note {
+  margin-top: 22px;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: .01em;
+}
+
+.home-hero {
+  margin-bottom: 64px;
+}
+
+.home-hero h1 {
+  max-width: 720px;
+  font-weight: 620;
+  letter-spacing: -.045em;
+}
+
+.home-hero p {
+  max-width: 680px;
+  color: #aeb1bd;
+}
+
+.unit-card {
+  min-height: 205px;
+  border-radius: 4px;
+  background: transparent;
+  border-color: var(--line-soft);
+  box-shadow: none;
+}
+
+.unit-card:hover {
+  transform: none;
+  background: rgba(255,255,255,.018);
+  border-color: var(--line);
+}
+
+.unit-card h3 {
+  font-weight: 600;
+}
+
+.library-search {
+  border-radius: 4px;
+  background: transparent;
+}
+
+.unit-chapter {
+  min-height: 154px;
+  padding: 24px 2px;
+}
+
+.unit-chapter:hover {
+  background: rgba(255,255,255,.018);
+}
+
+.unit-chapter-main h3,
+.library-item h3 {
+  font-weight: 600;
+}
+
+.article-hero h1 {
+  font-weight: 620;
+  letter-spacing: -.052em;
+}
+
+.article-summary {
+  color: #adb0bb;
+}
+
+.article-meta {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
+.doc-section-heading h2 {
+  font-weight: 620;
+  letter-spacing: -.035em;
+}
+
+.doc-section-chevron {
+  border: 0;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+
+.doc-section-heading:hover .doc-section-chevron {
+  background: transparent;
+  color: var(--accent);
+}
+
+.knowledge-section {
+  border-top: 1px solid var(--line);
+}
+
+.article-footer {
+  border-top-color: var(--line);
+}
+
+/* Avoid the “component library” look: pills are reserved for status only. */
+.library-tags span {
+  border-radius: 3px;
+}
+
+/* Subtle paper-like separation rather than repeated cards. */
+.doc-callout,
+.doc-table-wrap,
+.doc-code,
+.doc-media {
+  border-radius: 4px;
+}
