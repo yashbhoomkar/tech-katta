@@ -387,9 +387,9 @@ export default function Article() {
           {content.knowledgeCheck?.length > 0 && (
             <section className="knowledge-section">
               <div className="knowledge-heading">
-                <span className="eyebrow">Knowledge check</span>
-                <h2>Test your understanding</h2>
-                <p>Answer these without looking back to find the gaps in your mental model.</p>
+                <span className="eyebrow">A few things to think about</span>
+                <h2>Before you move on</h2>
+                <p>Try answering these without looking back. If one feels fuzzy, that’s probably the part worth revisiting.</p>
               </div>
 
               <div className="knowledge-list">
@@ -405,7 +405,7 @@ export default function Article() {
 
           <footer className="article-footer">
             <div className="article-footer-main">
-              <span className="eyebrow">Summary</span>
+              <span className="eyebrow">In short</span>
               <p>{content.summary || 'This article is part of the Tech Katta engineering knowledge base.'}</p>
             </div>
             <div className="article-footer-actions">
@@ -420,7 +420,7 @@ export default function Article() {
 
       <aside className="article-rail">
         <div className="reading-progress">
-          <div className="rail-heading">Reading progress</div>
+          <div className="rail-heading">Progress</div>
           <div className="progress-track vertical">
             <span style={{ height: progress + '%' }} />
           </div>
@@ -428,7 +428,7 @@ export default function Article() {
         </div>
 
         <nav className="article-toc" aria-label="On this page">
-          <div className="rail-heading">On this page</div>
+          <div className="rail-heading">In this note</div>
           {tocItems.map((item) => (
             <div className="toc-group" key={item.id}>
               <a href={'#' + item.id}>{item.title}</a>
