@@ -343,15 +343,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!mobileSidebarOpen) return undefined;
-
     let startX = null;
     let startY = null;
+    let startTarget = null;
 
     const onTouchStart = (event) => {
       if (event.touches.length !== 1) return;
       startX = event.touches[0].clientX;
       startY = event.touches[0].clientY;
+      startTarget = event.target;
     };
 
     const onTouchEnd = (event) => {
@@ -361,13 +361,32 @@ export default function App() {
       const endY = event.changedTouches[0].clientY;
       const deltaX = endX - startX;
       const deltaY = endY - startY;
+      const target = startTarget;
 
       startX = null;
       startY = null;
+      startTarget = null;
 
-      if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2 && deltaX < 0) {
-        setMobileSidebarOpen(false);
+      if (Math.abs(deltaX) < 70 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.25) return;
+
+      if (mobileSidebarOpen) {
+        if (deltaX < 0) setMobileSidebarOpen(false);
+        return;
       }
+
+      // Let horizontally scrollable content (code, tables, diagrams, etc.) keep
+      // its native swipe behavior instead of treating the gesture as navigation.
+      if (target instanceof Element) {
+        const horizontalScroller = target.closest(
+          '.doc-code, .doc-table-wrap, .doc-figure, .diagram-static-frame, [data-horizontal-scroll]'
+        );
+        if (horizontalScroller && horizontalScroller.scrollWidth > horizontalScroller.clientWidth + 2) {
+          return;
+        }
+      }
+
+      // Match Chrome-style mobile navigation: right = back, left = forward.
+      navigate(deltaX > 0 ? -1 : 1);
     };
 
     window.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -377,7 +396,7 @@ export default function App() {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [mobileSidebarOpen]);
+  }, [mobileSidebarOpen, navigate]);
 
   return (
     <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
