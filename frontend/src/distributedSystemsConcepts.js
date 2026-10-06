@@ -21,7 +21,7 @@ export const distributedSystemsConcepts = {
       code: {
         language: 'text',
         label: 'From one process to a distributed system',
-        code: 'Before:\nClient → Application → Database\n\nAfter:\nClient → Load Balancer → API servers\n                         ↓\n                    Database cluster\n                         ↓\n                       Cache\n                         ↓\n                       Queue'
+        code: 'Before:\nClient → Application → Database\n\nAfter:\nClient\n  ↓\nLoad Balancer\n  ↓\nAPI servers\n  ├──────────────→ Cache\n  │                 │\n  │            cache miss\n  │                 ↓\n  │           Database cluster\n  │\n  └──────────────→ Queue\n                      ↓\n                   Workers\n                      ↓\n              Database / Services'
       },
       callout: {
         title: 'Mental model',
