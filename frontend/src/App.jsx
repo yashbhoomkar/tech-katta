@@ -309,6 +309,7 @@ function UnitPage({ units, articles }) {
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [articles, setArticles] = useState(fallbackArticles);
   const [categories, setCategories] = useState(fallbackCategories);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
