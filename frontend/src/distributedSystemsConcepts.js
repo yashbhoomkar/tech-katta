@@ -18,11 +18,7 @@ export const distributedSystemsConcepts = {
         'We separate components so they can evolve and scale independently.',
         'We place computation closer to users when geographic latency matters.'
       ],
-      code: {
-        language: 'text',
-        label: 'From one process to a distributed system',
-        code: 'Before:\nClient → Application → Database\n\nAfter:\nClient\n  ↓\nLoad Balancer\n  ↓\nAPI servers\n  ├──────────────→ Cache\n  │                 │\n  │            cache miss\n  │                 ↓\n  │           Database cluster\n  │\n  └──────────────→ Queue\n                      ↓\n                   Workers\n                      ↓\n              Database / Services'
-      },
+      diagram: 'distributed-architecture',
       callout: {
         title: 'Mental model',
         text: 'A distributed system is a collection of independent computers that cooperate over a network to provide a service.'
