@@ -63,7 +63,7 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose, activeUnit, units }
               <NavLink
                 className={'sidebar-link' + (!activeUnit ? ' is-active' : '')}
                 to="/"
-                title={collapsed ? 'Overview' : undefined}
+                title={collapsed ? 'All notes' : undefined}
                 onClick={onClose}
               >
                 <span className="sidebar-link-index">01</span>
@@ -160,7 +160,7 @@ function Home({ units }) {
       <section className="home-hero">
         <div className="eyebrow">Yash’s engineering notes</div>
         <h1>Things I learn, build, and eventually understand.</h1>
-        <p>Notes on distributed systems, databases, AI infrastructure, and backend engineering. I write these as I learn them — partly to make the ideas stick, partly so I can come back to them six months later.</p>
+        <p>Mostly distributed systems and backend infrastructure, with notes from databases and AI systems when they intersect with something I’m building or trying to understand.</p>
         <div className="home-note">Last updated October 5, 2026</div>
       </section>
 
@@ -175,12 +175,12 @@ function Home({ units }) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search topics"
-            aria-label="Search units"
+            aria-label="Search topics"
           />
         </label>
       </div>
 
-      <section className="unit-grid" aria-label="Technology units">
+      <section className="unit-grid" aria-label="Technology topics">
         {visibleUnits.map((unit) => (
           <NavLink
             key={unit.id}
@@ -191,13 +191,13 @@ function Home({ units }) {
             <div className="unit-card-main">
               <div className="unit-card-index">{String(units.findIndex((item) => item.id === unit.id) + 1).padStart(2, '0')}</div>
               <div>
-                <span className="unit-card-kicker">Unit</span>
+                <span className="unit-card-kicker">Topic</span>
                 <h3>{unit.label}</h3>
                 <p>{unit.description}</p>
               </div>
             </div>
             <div className="unit-card-meta">
-              <span>{unit.count} {unit.count === 1 ? 'chapter' : 'chapters'}</span>
+              <span>{unit.count} {unit.count === 1 ? 'note' : 'notes'}</span>
               <span className="library-arrow">→</span>
             </div>
           </NavLink>
@@ -244,7 +244,7 @@ function UnitPage({ units, articles }) {
         <h1>{unit.label}</h1>
         <p>{unit.description}</p>
         <div className="unit-hero-meta">
-          <span>{unit.count} {unit.count === 1 ? 'chapter' : 'chapters'}</span>
+          <span>{unit.count} {unit.count === 1 ? 'note' : 'notes'}</span>
           <span>•</span>
           <span>{publishedCount} published</span>
         </div>
