@@ -80,14 +80,39 @@ function normalizeBlock(block) {
   }
 }
 
-export function normalizeArticleContent(content) {
+function isDistributedArchitectureAsciiDiagram(block) {
+  if (block?.type !== 'code' || typeof block.code !== 'string') return false;
+
+  const code = block.code;
+  return (
+    code.includes('Before:') &&
+    code.includes('Client') &&
+    code.includes('Load Balancer') &&
+    code.includes('API servers') &&
+    code.includes('Cache') &&
+    code.includes('Queue') &&
+    code.includes('Workers')
+  );
+}
+
+export function normalizeArticleContent(content, slug = '') {
   if (!content || typeof content !== 'object') return null;
 
   const sections = Array.isArray(content.sections)
     ? content.sections.map((section, sectionIndex) => {
-        const blocks = Array.isArray(section.blocks)
+        let blocks = Array.isArray(section.blocks)
           ? section.blocks.map(normalizeBlock).filter(Boolean)
           : legacySectionToBlocks(section).map(normalizeBlock).filter(Boolean);
+
+        // Presentation-only compatibility mapping. The MongoDB document is
+        // never modified: this changes only the API response representation.
+        if (slug === 'distributed-systems-concepts') {
+          blocks = blocks.map((block) =>
+            isDistributedArchitectureAsciiDiagram(block)
+              ? { type: 'diagram', name: 'distributed-architecture' }
+              : block
+          );
+        }
 
         return {
           id: section.id || `section-${sectionIndex + 1}`,
