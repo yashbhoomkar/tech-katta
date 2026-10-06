@@ -21,6 +21,10 @@ const DIAGRAMS = {
     src: '/diagrams/kafka-replication.svg',
     alt: 'Kafka replication showing a leader and follower replicas',
   },
+  'distributed-architecture': {
+    src: '/diagrams/distributed-system-evolution.svg',
+    alt: 'Distributed system architecture evolving from one application into load-balanced stateless compute, cache, database, queue, and workers',
+  },
   retry: {
     src: '/diagrams/kafka-retry.svg',
     alt: 'Kafka retry and dead-letter flow for failed consumers',
@@ -62,6 +66,10 @@ export function KafkaConsumerGroupDiagram() {
 
 export function KafkaReplicationDiagram() {
   return <ExcalidrawDiagram type="replication" height={330} />;
+}
+
+export function DistributedSystemsArchitectureDiagram() {
+  return <ExcalidrawDiagram type="distributed-architecture" height={520} />;
 }
 
 export function KafkaRetryDiagram() {
