@@ -34,6 +34,8 @@ jobs:
           node --check src/server.js
           node --check src/db.js
           node --check src/seed.js
+          node --check src/vercelClient.js
+          node --check scripts/vercel-control.mjs
 
       - name: Validate VPS overflow monitor
         run: bash -n scripts/vps-overflow-router.sh
