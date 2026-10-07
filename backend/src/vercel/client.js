@@ -4,9 +4,7 @@ const VERCEL_API_BASE = 'https://api.vercel.com';
 
 function getConfig() {
   const token = process.env.VERCEL_ACCESS_TOKEN?.trim();
-  if (!token) {
-    throw new Error('VERCEL_ACCESS_TOKEN is required.');
-  }
+  if (!token) throw new Error('VERCEL_ACCESS_TOKEN is required.');
 
   return {
     token,
@@ -14,17 +12,23 @@ function getConfig() {
   };
 }
 
-function withTeamId(path, teamId) {
-  if (!teamId) return path;
-  const separator = path.includes('?') ? '&' : '?';
-  return `${path}${separator}teamId=${encodeURIComponent(teamId)}`;
+function buildUrl(path, query = {}, teamId = '') {
+  const url = new URL(path, VERCEL_API_BASE);
+  const params = { ...query };
+  if (teamId && !params.teamId) params.teamId = teamId;
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value);
+    }
+  }
+  return url;
 }
 
-export async function vercelRequest(path, { method = 'GET', body } = {}) {
+export async function vercelRequest(path, { method = 'GET', query = {}, body } = {}) {
   const { token, teamId } = getConfig();
-  const url = new URL(withTeamId(path, teamId), VERCEL_API_BASE);
 
-  const response = await fetch(url, {
+  const response = await fetch(buildUrl(path, query, teamId), {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -34,18 +38,16 @@ export async function vercelRequest(path, { method = 'GET', body } = {}) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
-  const text = await response.text();
+  const raw = await response.text();
   let payload;
-
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
+  try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
 
   if (!response.ok) {
-    const detail = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    throw new Error(`Vercel API ${response.status}: ${detail}`);
+    const message = payload?.error?.message || `Vercel API request failed with HTTP ${response.status}`;
+    const error = new Error(message);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
 
   return payload;
