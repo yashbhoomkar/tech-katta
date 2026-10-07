@@ -36,26 +36,26 @@ if (!command) {
   try {
     switch (command) {
       case 'project':
-        if (!args[0]) return usage();
+        if (!args[0]) { usage(); break; }
         print(await getProject(args[0]));
         break;
       case 'projects':
         print(await listProjects());
         break;
       case 'deployment':
-        if (!args[0]) return usage();
+        if (!args[0]) { usage(); break; }
         print(await getDeployment(args[0]));
         break;
       case 'deployments':
-        if (!args[0]) return usage();
+        if (!args[0]) { usage(); break; }
         print(await listDeployments({ projectId: args[0] }));
         break;
       case 'events':
-        if (!args[0]) return usage();
+        if (!args[0]) { usage(); break; }
         print(await getDeploymentEvents(args[0]));
         break;
       case 'domains':
-        if (!args[0]) return usage();
+        if (!args[0]) { usage(); break; }
         print(await listProjectDomains(args[0]));
         break;
       default:
