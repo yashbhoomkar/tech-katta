@@ -1,5 +1,6 @@
 import readline from 'node:readline';
 import {
+  cancelDeployment,
   getDeployment,
   getDeploymentEvents,
   getProject,
@@ -63,6 +64,15 @@ const tools = [
     },
   },
   {
+    name: 'vercel_cancel_deployment',
+    description: 'Cancel a currently running Vercel deployment.',
+    inputSchema: {
+      type: 'object',
+      properties: { idOrUrl: { type: 'string' } },
+      required: ['idOrUrl'],
+    },
+  },
+  {
     name: 'vercel_list_project_domains',
     description: 'List domains configured for a Vercel project.',
     inputSchema: {
@@ -105,6 +115,8 @@ async function callTool(name, args = {}) {
       return getDeployment(args.idOrUrl);
     case 'vercel_get_deployment_events':
       return getDeploymentEvents(args.idOrUrl, { limit: args.limit });
+    case 'vercel_cancel_deployment':
+      return cancelDeployment(args.idOrUrl);
     case 'vercel_list_project_domains':
       return listProjectDomains(args.projectId);
     default:
@@ -122,7 +134,7 @@ async function handle(message) {
       result: {
         protocolVersion: '2025-06-18',
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'tech-katta-vercel', version: '1.0.0' },
+        serverInfo: { name: 'tech-katta-vercel', version: '1.1.0' },
       },
     };
   }

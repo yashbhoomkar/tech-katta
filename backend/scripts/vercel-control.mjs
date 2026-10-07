@@ -1,4 +1,5 @@
 import {
+  cancelDeployment,
   getDeployment,
   getDeploymentEvents,
   getProject,
@@ -20,6 +21,7 @@ function usage() {
   npm run vercel:control -- deployment <deployment-id>
   npm run vercel:control -- deployments <project-id>
   npm run vercel:control -- events <deployment-id>
+  npm run vercel:control -- cancel <deployment-id>
   npm run vercel:control -- domains <project-id>
 
 Required environment:
@@ -53,6 +55,10 @@ if (!command) {
       case 'events':
         if (!args[0]) { usage(); break; }
         print(await getDeploymentEvents(args[0]));
+        break;
+      case 'cancel':
+        if (!args[0]) { usage(); break; }
+        print(await cancelDeployment(args[0]));
         break;
       case 'domains':
         if (!args[0]) { usage(); break; }

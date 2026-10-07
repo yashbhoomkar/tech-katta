@@ -94,6 +94,13 @@ export function getDeploymentEvents(idOrUrl, { limit = 100 } = {}) {
   });
 }
 
+export function cancelDeployment(idOrUrl) {
+  return vercelRequest(`/v12/deployments/${encodeURIComponent(idOrUrl)}/cancel`, {
+    method: 'PATCH',
+    query: scopedQuery(),
+  });
+}
+
 export function listProjectDomains(projectId) {
   return vercelRequest(`/v9/projects/${encodeURIComponent(projectId)}/domains`, {
     query: scopedQuery(),
@@ -106,5 +113,6 @@ export const vercel = {
   getDeployment,
   listDeployments,
   getDeploymentEvents,
+  cancelDeployment,
   listProjectDomains,
 };
