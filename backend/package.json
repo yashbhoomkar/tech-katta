@@ -7,8 +7,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "seed": "node src/seed.js",
-    "vercel:control": "node scripts/vercel-control.mjs",
-    "vercel:mcp": "node scripts/vercel-mcp.mjs"
+    "vercel:projects": "node src/vercel/index.js projects",
+    "vercel:deployments": "node src/vercel/index.js deployments",
+    "vercel:inspect": "node src/vercel/index.js inspect-configured-project"
   },
   "dependencies": {
     "cors": "^2.8.5",
