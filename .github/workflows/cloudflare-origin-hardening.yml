@@ -100,15 +100,44 @@ jobs:
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
 
+            echo "Preflight: non-interactive sudo"
             sudo -n true
-            sudo systemctl is-active --quiet nginx
-            sudo systemctl is-active --quiet tech-katta-api
-            sudo ufw status verbose | grep -q '^Status: active'
-            sudo grep -Eq '^IPV6=yes$' /etc/default/ufw
-            sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
-            sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
-            sudo nginx -V 2>&1 | grep -q -- '--with-http_realip_module'
-            sudo nginx -T 2>&1 | grep -Fq 'include /etc/nginx/conf.d/*.conf;'
+            echo "Preflight: Nginx and API services"
+            sudo systemctl is-active nginx
+            sudo systemctl is-active tech-katta-api
+            echo "Preflight: UFW status and IPv6 support"
+            sudo ufw status verbose
+            if ! sudo ufw status verbose | grep -q '^Status: active'; then
+              echo "ERROR: UFW is not active; refusing changes."
+              exit 1
+            fi
+            if ! sudo grep -Fqx 'IPV6=yes' /etc/default/ufw; then
+              echo "ERROR: UFW IPv6 is not enabled; refusing a partial IPv4-only firewall."
+              exit 1
+            fi
+            echo "Preflight: preserve existing SSH rules"
+            sudo ufw status | grep -E '^22/tcp'
+            if ! sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+              echo "ERROR: Existing IPv4 SSH allow rule was not found."
+              exit 1
+            fi
+            if ! sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'; then
+              echo "ERROR: Existing IPv6 SSH allow rule was not found."
+              exit 1
+            fi
+            echo "Preflight: Nginx build flags"
+            sudo nginx -V 2>&1
+            if ! sudo nginx -V 2>&1 | grep -q -- '--with-http_realip_module'; then
+              echo "ERROR: Nginx real-IP module is unavailable."
+              exit 1
+            fi
+            echo "Preflight: Nginx include paths"
+            sudo nginx -T 2>&1 | grep -E 'include .*conf\.d|include .*sites-enabled' || true
+            if ! sudo nginx -T 2>&1 | grep -Fq 'include /etc/nginx/conf.d/*.conf;'; then
+              echo "ERROR: /etc/nginx/conf.d/*.conf is not included; refusing to install a config that Nginx will not load."
+              exit 1
+            fi
+            echo "All Nginx/UFW preflight checks passed."
 
             sudo mkdir -p "$BACKUP_DIR"
             if sudo test -f "$TARGET"; then
