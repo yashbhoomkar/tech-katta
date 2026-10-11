@@ -398,10 +398,11 @@ jobs:
           import urllib.request
 
           base = "https://tech-api.katta.cc"
+          user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
           for path in ("/api/health", "/api/categories"):
               request = urllib.request.Request(
                   base + path,
-                  headers={"Cache-Control": "no-cache", "Origin": "https://tech.katta.cc"},
+                  headers={"Cache-Control": "no-cache", "Origin": "https://tech.katta.cc", "User-Agent": user_agent},
               )
               with urllib.request.urlopen(request, timeout=15) as response:
                   body = response.read().decode("utf-8")
