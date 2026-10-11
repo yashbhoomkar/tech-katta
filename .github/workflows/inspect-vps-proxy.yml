@@ -68,8 +68,8 @@ jobs:
 
           if outside:
               print("::warning::Public DNS includes addresses outside Cloudflare proxy ranges; do not restrict the origin firewall to Cloudflare yet.")
-              else:
-                  print("All public DNS addresses belong to Cloudflare official proxy ranges.")
+          else:
+              print("All public DNS addresses belong to Cloudflare official proxy ranges.")
           PY
 
       - name: Inspect proxy and firewall configuration
