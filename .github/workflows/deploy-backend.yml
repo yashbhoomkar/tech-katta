@@ -88,9 +88,10 @@ jobs:
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
 
             echo "⚙️ Enforcing production runtime configuration..."
-            sudo mkdir -p /etc/systemd/system/tech-katta-api.service.d
-            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
-            sudo systemctl daemon-reload
+            sudo -n true || (echo "❌ Deployment user cannot run sudo non-interactively as root." && exit 1)
+            sudo -n mkdir -p /etc/systemd/system/tech-katta-api.service.d || (echo "❌ Failed to create the API systemd drop-in directory." && exit 1)
+            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null || (echo "❌ Failed to write the API production environment drop-in." && exit 1)
+            sudo -n systemctl daemon-reload || (echo "❌ systemd daemon-reload failed." && sudo -n systemctl --failed --no-pager || true; exit 1)
 
             if [ "$CONTENT_SYNC_REQUIRED" = "true" ]; then
               echo "🌱 Content source changed or manual sync requested; syncing article content to MongoDB..."
