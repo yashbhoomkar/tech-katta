@@ -1,11 +1,10 @@
 import process from 'node:process';
 
 const API_BASE = 'https://api.vercel.com';
-const DEFAULT_TEAM_ID = 'team_ESVBoCGScxPRCW4TxwcTeJCg';
 
 function getConfig() {
   const token = process.env.VERCEL_ACCESS_TOKEN?.trim();
-  const teamId = process.env.VERCEL_TEAM_ID?.trim() || DEFAULT_TEAM_ID;
+  const teamId = process.env.VERCEL_TEAM_ID?.trim() || undefined;
 
   if (!token) {
     throw new Error('VERCEL_ACCESS_TOKEN is required.');
@@ -110,7 +109,7 @@ Commands:
 
 Environment:
   VERCEL_ACCESS_TOKEN  Required. Never commit this value.
-  VERCEL_TEAM_ID       Optional. Defaults to the Tech Katta Vercel team.
+  VERCEL_TEAM_ID       Optional. Scopes requests to an explicit Vercel team.
 `);
 }
 

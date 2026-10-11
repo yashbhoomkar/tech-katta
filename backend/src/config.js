@@ -55,6 +55,7 @@ export function loadConfig(env = process.env) {
     nodeEnv,
     isProduction,
     port: parsePort(env.PORT),
+    host: env.HOST?.trim() || '127.0.0.1',
     frontendOrigin: parseFrontendOrigin(env.FRONTEND_ORIGIN, isProduction),
     mongoUri: env.MONGODB_URI?.trim() || '',
     mongoDb: env.MONGODB_DB?.trim() || DEFAULT_DATABASE_NAME,

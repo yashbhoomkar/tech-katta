@@ -101,3 +101,30 @@ test('malformed JSON requests count toward the rate limit', async () => {
     rateLimiter.close();
   }
 });
+
+
+test('health endpoints remain available when the public rate limit is exhausted', async () => {
+  const rateLimiter = createRateLimiter({ limit: 1 });
+  const app = createApp({
+    getDB: () => null,
+    isDBConnected: () => true,
+    rateLimiter,
+    logger: { info() {}, error() {} },
+  });
+
+  try {
+    await withServer(app, async (baseUrl) => {
+      const firstPublicResponse = await fetch(baseUrl);
+      assert.equal(firstPublicResponse.status, 200);
+
+      const throttledPublicResponse = await fetch(baseUrl);
+      assert.equal(throttledPublicResponse.status, 429);
+
+      const healthResponse = await fetch(`${baseUrl}/api/health`);
+      assert.equal(healthResponse.status, 200);
+      assert.equal((await healthResponse.json()).version, '0.1.0');
+    });
+  } finally {
+    rateLimiter.close();
+  }
+});

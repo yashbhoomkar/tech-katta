@@ -1,4 +1,5 @@
 import cors from 'cors';
+import { createRequire } from 'node:module';
 import express from 'express';
 import { loadConfig } from './config.js';
 import { createContentRouter } from './routes/content.js';
@@ -6,6 +7,9 @@ import { createHealthRouter } from './routes/health.js';
 import { createErrorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRequestLogger } from './middleware/requestLogger.js';
 import { rateLimit } from './middleware/rateLimit.js';
+
+const require = createRequire(import.meta.url);
+const { version: appVersion } = require('../package.json');
 
 /**
  * Build the HTTP application without starting a listener or opening connections.
@@ -55,6 +59,17 @@ export function createApp({
   // checks remain reliable even when public traffic is being throttled.
   app.use('/health', createHealthRouter({ isDBConnected }));
 
+  const healthResponse = (_request, response) => {
+    response.json({
+      status: 'ok',
+      service: 'tech-katta-api',
+      version: appVersion,
+      db: isDBConnected() ? 'connected' : 'disconnected',
+    });
+  };
+  app.get('/health', healthResponse);
+  app.get('/api/health', healthResponse);
+
   // Rate-limit before parsing bodies so malformed/oversized payloads cannot
   // bypass request limits by causing the JSON parser to short-circuit routing.
   app.use(rateLimiter);
@@ -66,24 +81,6 @@ export function createApp({
       service: 'tech-katta-api',
       db: isDBConnected() ? 'connected' : 'disconnected',
       message: 'Tech Katta API is operational',
-    });
-  });
-
-  app.get('/health', (_request, response) => {
-    response.json({
-      status: 'ok',
-      service: 'tech-katta-api',
-      version: '2026.10.05-production',
-      db: isDBConnected() ? 'connected' : 'disconnected',
-    });
-  });
-
-  app.get('/api/health', (_request, response) => {
-    response.json({
-      status: 'ok',
-      service: 'tech-katta-api',
-      version: '2026.10.05-production',
-      db: isDBConnected() ? 'connected' : 'disconnected',
     });
   });
 
