@@ -51,7 +51,7 @@ jobs:
   bounded-load-smoke:
     name: Bounded production GET load probe
     needs: browser-smoke
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_load_test == true)
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_load_test == true) || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'test/production-browser-load-verification')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
