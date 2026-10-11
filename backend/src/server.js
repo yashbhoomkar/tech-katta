@@ -1,17 +1,19 @@
 import dotenv from 'dotenv';
 import { connectDB, getDB, isDBConnected, closeDB } from './db.js';
+import { loadConfig } from './config.js';
 import { createApp } from './app.js';
 
 dotenv.config();
 
-const port = Number(process.env.PORT || 5000);
+const config = loadConfig();
+const { port } = config;
 let server;
 let isShuttingDown = false;
 
 async function startServer() {
   await connectDB();
 
-  const app = createApp({ getDB, isDBConnected });
+  const app = createApp({ getDB, isDBConnected, config });
   server = app.listen(port, '127.0.0.1', () => {
     console.log(`Tech Katta API listening on port ${port}`);
   });

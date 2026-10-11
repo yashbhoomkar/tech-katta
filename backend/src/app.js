@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import { loadConfig } from './config.js';
 import { createContentRouter } from './routes/content.js';
 import { createHealthRouter } from './routes/health.js';
 import { createRequestLogger } from './middleware/requestLogger.js';
@@ -16,26 +17,23 @@ export function createApp({
   isDBConnected,
   rateLimiter = rateLimit,
   logger = console,
+  config = loadConfig(),
 } = {}) {
   if (typeof getDB !== 'function' || typeof isDBConnected !== 'function') {
     throw new TypeError('createApp requires getDB and isDBConnected dependencies.');
   }
 
-  const app = express();
-  const frontendOrigin = process.env.FRONTEND_ORIGIN?.trim();
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  if (isProduction && !frontendOrigin) {
-    throw new Error('FRONTEND_ORIGIN must be configured in production.');
+  if (!config || typeof config.frontendOrigin !== 'string' || !config.frontendOrigin) {
+    throw new TypeError('createApp requires validated runtime configuration.');
   }
 
-  const allowedOrigin = frontendOrigin || 'http://localhost:5173';
+  const app = express();
 
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
 
   app.use(cors({
-    origin: allowedOrigin,
+    origin: config.frontendOrigin,
     methods: ['GET', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],
   }));
@@ -83,7 +81,7 @@ export function createApp({
     });
   });
 
-  app.use('/api', createContentRouter({ getDB, isDBConnected }));
+  app.use('/api', createContentRouter({ getDB, isDBConnected, logger }));
 
   return app;
 }
