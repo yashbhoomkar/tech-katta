@@ -143,18 +143,14 @@ jobs:
             sudo mkdir -p "$BACKUP_DIR"
             echo "Rollback directory ready."
             sudo rm -f "$BACKUP" "$ABSENT"
-            TARGET_STATE="$(sudo sh -c 'if [ -f "$1" ]; then printf present; else printf absent; fi' sh "$TARGET")"
-            case "$TARGET_STATE" in
-              present)
-                echo "Existing real-IP config found; backing it up."
-                sudo cp -a "$TARGET" "$BACKUP"
-                ;;
-              absent)
-                echo "No existing real-IP config; recording absence for rollback."
-                sudo touch "$ABSENT"
-                ;;
-              *) echo "ERROR: could not determine current Nginx config state."; exit 1 ;;
-            esac
+            TARGET_STATE="$(sudo stat -c '%F' "$TARGET" 2>/dev/null || echo absent)"
+            if [ "$TARGET_STATE" = "regular file" ]; then
+              echo "Existing real-IP config found; backing it up."
+              sudo cp -a "$TARGET" "$BACKUP"
+            else
+              echo "No existing real-IP config; recording absence for rollback."
+              sudo touch "$ABSENT"
+            fi
             echo "Rollback artifact preparation passed."
 
             echo "Fetching official Cloudflare ranges from the VPS"
@@ -198,12 +194,16 @@ jobs:
             PY
 
             restore_previous() {
-              BACKUP_STATE="$(sudo sh -c 'if [ -f "$1" ]; then printf backup; elif [ -f "$2" ]; then printf absent; else printf missing; fi' sh "$BACKUP" "$ABSENT")"
-              case "$BACKUP_STATE" in
-                backup) sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET" ;;
-                absent) sudo rm -f "$TARGET" ;;
-                *) echo "ERROR: no valid Nginx rollback artifact."; return 1 ;;
-              esac
+              BACKUP_STATE="$(sudo stat -c '%F' "$BACKUP" 2>/dev/null || echo absent)"
+              ABSENT_STATE="$(sudo stat -c '%F' "$ABSENT" 2>/dev/null || echo absent)"
+              if [ "$BACKUP_STATE" = "regular file" ]; then
+                sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+              elif [ "$ABSENT_STATE" = "regular file" ]; then
+                sudo rm -f "$TARGET"
+              else
+                echo "ERROR: no valid Nginx rollback artifact."
+                return 1
+              fi
               sudo nginx -t && sudo systemctl reload nginx || true
             }
 
@@ -289,12 +289,16 @@ jobs:
             BACKUP_DIR=/tmp/tech-katta-cloudflare-realip-backups
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
-            BACKUP_STATE="$(sudo sh -c 'if [ -f "$1" ]; then printf backup; elif [ -f "$2" ]; then printf absent; else printf missing; fi' sh "$BACKUP" "$ABSENT")"
-            case "$BACKUP_STATE" in
-              backup) sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET" ;;
-              absent) sudo rm -f "$TARGET" ;;
-              *) echo "No verified rollback artifact found; refusing to guess."; exit 1 ;;
-            esac
+            BACKUP_STATE="$(sudo stat -c '%F' "$BACKUP" 2>/dev/null || echo absent)"
+            ABSENT_STATE="$(sudo stat -c '%F' "$ABSENT" 2>/dev/null || echo absent)"
+            if [ "$BACKUP_STATE" = "regular file" ]; then
+              sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+            elif [ "$ABSENT_STATE" = "regular file" ]; then
+              sudo rm -f "$TARGET"
+            else
+              echo "No verified rollback artifact found; refusing to guess."
+              exit 1
+            fi
             sudo nginx -t
             sudo systemctl reload nginx
             curl -fsS --max-time 5 http://127.0.0.1:5000/api/health
