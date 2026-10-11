@@ -142,8 +142,9 @@ jobs:
             echo "Preflight passed; preparing rollback artifacts at $BACKUP_DIR"
             sudo mkdir -p "$BACKUP_DIR"
             echo "Rollback directory ready."
-            sudo rm -f "$BACKUP" "$ABSENT"
+            echo "Checking current Nginx real-IP config state."
             TARGET_STATE="$(sudo stat -c '%F' "$TARGET" 2>/dev/null || echo absent)"
+            echo "Nginx config state: $TARGET_STATE"
             if [ "$TARGET_STATE" = "regular file" ]; then
               echo "Existing real-IP config found; backing it up."
               sudo cp -a "$TARGET" "$BACKUP"
