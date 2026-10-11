@@ -1,4 +1,5 @@
 import { distributedSystemsConcepts } from './distributedSystemsConcepts.js';
+import { kafkaAdvancedSections } from './kafkaAdvancedContent.js';
 import { distributedSystemComponents } from './distributedSystemComponents.js';
 
 export const categories = [
@@ -412,5 +413,11 @@ export function getArticle(slug) {
 }
 
 export function getArticleContent(slug) {
-  return articleContent[slug] || null;
+  const content = articleContent[slug] || null;
+  if (!content || slug !== 'kafka-basics') return content;
+
+  return {
+    ...content,
+    sections: [...(content.sections || []), ...kafkaAdvancedSections],
+  };
 }
