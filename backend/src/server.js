@@ -6,7 +6,7 @@ import { createApp } from './app.js';
 dotenv.config();
 
 const config = loadConfig();
-const { port } = config;
+const { port, host } = config;
 let server;
 let isShuttingDown = false;
 
@@ -14,7 +14,7 @@ async function startServer() {
   await connectDB({ uri: config.mongoUri, dbName: config.mongoDb });
 
   const app = createApp({ getDB, isDBConnected, config });
-  server = app.listen(port, '127.0.0.1', () => {
+  server = app.listen(port, host, () => {
     console.log(`Tech Katta API listening on port ${port}`);
   });
 }
