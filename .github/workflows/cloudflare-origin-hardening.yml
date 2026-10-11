@@ -1,0 +1,426 @@
+name: Cloudflare Origin Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cloudflare-origin-hardening.yml
+  pull_request:
+    paths:
+      - .github/workflows/cloudflare-origin-hardening.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-origin-hardening
+  cancel-in-progress: false
+
+jobs:
+  validate-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm production mutations are skipped for pull requests
+        run: echo "Pull request event: production Nginx and UFW changes are deliberately skipped."
+
+  harden:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify public DNS uses official Cloudflare proxy ranges
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import ipaddress
+          import json
+          import socket
+          import urllib.request
+
+          host = "tech-api.katta.cc"
+          request = urllib.request.Request(
+              "https://api.cloudflare.com/client/v4/ips",
+              headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
+          )
+          with urllib.request.urlopen(request, timeout=15) as response:
+              payload = json.load(response)
+          if not payload.get("success"):
+              raise SystemExit("Cloudflare IP-range API did not return success.")
+
+          result = payload.get("result", {})
+          ranges = [
+              ipaddress.ip_network(cidr)
+              for cidr in result.get("ipv4_cidrs", []) + result.get("ipv6_cidrs", [])
+          ]
+          if sum(net.version == 4 for net in ranges) < 5 or sum(net.version == 6 for net in ranges) < 2:
+              raise SystemExit("Cloudflare IP-range response is unexpectedly incomplete.")
+
+          addresses = sorted({
+              ipaddress.ip_address(item[4][0])
+              for item in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+          })
+          if not addresses:
+              raise SystemExit(f"No DNS addresses found for {host}.")
+
+          outside = [
+              str(address) for address in addresses
+              if not any(address.version == net.version and address in net for net in ranges)
+          ]
+          print(f"Resolved {host} to {len(addresses)} address(es).")
+          for address in addresses:
+              print(f"- {address}: Cloudflare edge")
+          if outside:
+              raise SystemExit("DNS returned non-Cloudflare address(es); refusing origin changes: " + ", ".join(outside))
+          print("DNS preflight passed.")
+          PY
+
+      - name: Configure Nginx real-client IP handling
+        id: nginx
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: \${{ secrets.VPS_USER || 'yash' }}
+          key: \${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          command_timeout: 5m
+          script: |
+            set -eu
+            RUN_ID="\${{ github.run_id }}"
+            TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
+            BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
+            BACKUP="$BACKUP_DIR/$RUN_ID.conf"
+            ABSENT="$BACKUP_DIR/$RUN_ID.absent"
+
+            sudo -n true
+            sudo systemctl is-active --quiet nginx
+            sudo systemctl is-active --quiet tech-katta-api
+            sudo ufw status verbose | grep -q '^Status: active'
+            sudo grep -Eq '^IPV6=yes$' /etc/default/ufw
+            sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
+            sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
+            sudo nginx -V 2>&1 | grep -q -- '--with-http_realip_module'
+            sudo nginx -T 2>&1 | grep -Fq 'include /etc/nginx/conf.d/*.conf;'
+
+            sudo mkdir -p "$BACKUP_DIR"
+            if sudo test -f "$TARGET"; then
+              sudo cp -a "$TARGET" "$BACKUP"
+              sudo rm -f "$ABSENT"
+            else
+              sudo touch "$ABSENT"
+              sudo rm -f "$BACKUP"
+            fi
+
+            python3 - <<'PY'
+            import ipaddress
+            import json
+            import urllib.request
+
+            request = urllib.request.Request(
+                "https://api.cloudflare.com/client/v4/ips",
+                headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
+            )
+            with urllib.request.urlopen(request, timeout=15) as response:
+                payload = json.load(response)
+            if not payload.get("success"):
+                raise SystemExit("Cloudflare IP-range API did not return success.")
+
+            result = payload.get("result", {})
+            v4 = [ipaddress.ip_network(x) for x in result.get("ipv4_cidrs", [])]
+            v6 = [ipaddress.ip_network(x) for x in result.get("ipv6_cidrs", [])]
+            if len(v4) < 5 or len(v6) < 2 or any(n.version != 4 for n in v4) or any(n.version != 6 for n in v6):
+                raise SystemExit("Cloudflare IPv4/IPv6 CIDR response failed validation.")
+
+            lines = [
+                "# Managed by .github/workflows/cloudflare-origin-hardening.yml",
+                "# Trust CF-Connecting-IP only when the immediate peer is in an official Cloudflare range.",
+            ]
+            lines.extend(f"set_real_ip_from {net};" for net in sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen)))
+            lines.extend(["real_ip_header CF-Connecting-IP;", "real_ip_recursive on;", ""])
+            with open("/tmp/tech-katta-cloudflare-realip.conf", "w", encoding="utf-8") as output:
+                output.write("\n".join(lines))
+            with open("/tmp/tech-katta-cloudflare-cidrs.txt", "w", encoding="utf-8") as output:
+                for net in sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen)):
+                    output.write(f"{net}\n")
+            print(f"Validated Cloudflare ranges: IPv4={len(v4)}, IPv6={len(v6)}.")
+            PY
+
+            restore_previous() {
+              if sudo test -f "$BACKUP"; then
+                sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+              elif sudo test -f "$ABSENT"; then
+                sudo rm -f "$TARGET"
+              fi
+              sudo nginx -t && sudo systemctl reload nginx || true
+            }
+
+            sudo install -o root -g root -m 0644 /tmp/tech-katta-cloudflare-realip.conf "$TARGET"
+            if ! sudo nginx -t; then
+              echo "Nginx syntax check failed; restoring the prior config."
+              restore_previous
+              exit 1
+            fi
+            if ! sudo systemctl reload nginx; then
+              echo "Nginx reload failed; restoring the prior config."
+              restore_previous
+              exit 1
+            fi
+            if ! curl -fsS --max-time 5 http://127.0.0.1:5000/api/health >/dev/null; then
+              echo "Local API health failed after reload; restoring the prior config."
+              restore_previous
+              exit 1
+            fi
+            echo "Nginx real-IP config installed; nginx -t, reload, and local API health passed."
+            echo "Rollback artifacts: $BACKUP or $ABSENT (run id $RUN_ID)."
+
+      - name: Verify API health and spoofed-XFF rate-limit attribution
+        id: verify
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+
+          base = "https://tech-api.katta.cc"
+          for path in ("/api/health", "/api/categories"):
+              request = urllib.request.Request(base + path, headers={"Cache-Control": "no-cache"})
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  body = response.read().decode("utf-8")
+                  print(f"{path}: HTTP {response.status}")
+                  if response.status != 200:
+                      raise SystemExit(f"{path} failed.")
+                  if path == "/api/health":
+                      payload = json.loads(body)
+                      if payload.get("status") != "ok" or payload.get("db") != "connected":
+                          raise SystemExit("API health or database connectivity is not healthy.")
+
+          remaining = []
+          spoofed_values = ("198.51.100.10", "203.0.113.20", "192.0.2.30")
+          for spoofed in spoofed_values:
+              request = urllib.request.Request(
+                  base + "/api/categories",
+                  headers={
+                      "X-Forwarded-For": spoofed,
+                      "Cache-Control": "no-cache",
+                      "Pragma": "no-cache",
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  if response.status != 200:
+                      raise SystemExit(f"Rate-limit probe returned HTTP {response.status}.")
+                  value = response.headers.get("X-RateLimit-Remaining")
+                  if value is None or not value.isdigit():
+                      raise SystemExit("Rate-limit response header is missing or invalid.")
+                  remaining.append(int(value))
+          print("Rate-limit remaining for three differing spoofed X-Forwarded-For values: " + " -> ".join(map(str, remaining)))
+          if not (remaining[1] == remaining[0] - 1 and remaining[2] == remaining[1] - 1):
+              raise SystemExit("Spoofed-XFF rate-limit attribution did not produce one consistent bucket; firewall restriction will be skipped.")
+          print("Spoofed-XFF rate-limit attribution passed.")
+          PY
+
+      - name: Roll back Nginx real-IP config if attribution verification fails
+        if: failure() && steps.nginx.outcome == 'success' && steps.verify.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: \${{ secrets.VPS_USER || 'yash' }}
+          key: \${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -eu
+            RUN_ID="\${{ github.run_id }}"
+            TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
+            BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
+            BACKUP="$BACKUP_DIR/$RUN_ID.conf"
+            ABSENT="$BACKUP_DIR/$RUN_ID.absent"
+            if sudo test -f "$BACKUP"; then
+              sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+            elif sudo test -f "$ABSENT"; then
+              sudo rm -f "$TARGET"
+            else
+              echo "No verified rollback artifact found; refusing to guess."
+              exit 1
+            fi
+            sudo nginx -t
+            sudo systemctl reload nginx
+            curl -fsS --max-time 5 http://127.0.0.1:5000/api/health
+            echo "Nginx real-IP change rolled back after failed rate-limit verification."
+
+      - name: Restrict origin HTTP/HTTPS ingress to Cloudflare ranges
+        id: firewall
+        if: steps.verify.outcome == 'success'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: \${{ secrets.VPS_USER || 'yash' }}
+          key: \${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -eu
+            RUN_ID="\${{ github.run_id }}"
+            RANGES=/tmp/tech-katta-cloudflare-cidrs.txt
+            STATE_DIR=/etc/tech-katta
+            STATE="$STATE_DIR/cloudflare-origin-cidrs.txt"
+            STATUS=/tmp/tech-katta-ufw-before.txt
+            CHANGED=0
+            FINISHED=0
+
+            rollback_firewall() {
+              rc=$?
+              if [ "$rc" -ne 0 ] && [ "$CHANGED" -eq 1 ] && [ "$FINISHED" -eq 0 ]; then
+                echo "Firewall operation failed; restoring public web reachability. SSH rules are left untouched."
+                sudo ufw allow 80/tcp || true
+                sudo ufw allow 443/tcp || true
+              fi
+              exit "$rc"
+            }
+            trap rollback_firewall EXIT
+
+            sudo -n true
+            sudo ufw status verbose | grep -q '^Status: active'
+            sudo grep -Eq '^IPV6=yes$' /etc/default/ufw
+            sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
+            sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
+
+            python3 - <<'PY'
+            import ipaddress
+            import json
+            import urllib.request
+
+            request = urllib.request.Request(
+                "https://api.cloudflare.com/client/v4/ips",
+                headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
+            )
+            with urllib.request.urlopen(request, timeout=15) as response:
+                payload = json.load(response)
+            if not payload.get("success"):
+                raise SystemExit("Cloudflare IP-range API did not return success.")
+            result = payload.get("result", {})
+            v4 = [ipaddress.ip_network(x) for x in result.get("ipv4_cidrs", [])]
+            v6 = [ipaddress.ip_network(x) for x in result.get("ipv6_cidrs", [])]
+            if len(v4) < 5 or len(v6) < 2 or any(n.version != 4 for n in v4) or any(n.version != 6 for n in v6):
+                raise SystemExit("Cloudflare IPv4/IPv6 CIDR response failed validation.")
+            nets = sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen))
+            with open("/tmp/tech-katta-cloudflare-cidrs.txt", "w", encoding="utf-8") as output:
+                for net in nets:
+                    output.write(f"{net}\n")
+            print(f"Validated {len(v4)} IPv4 and {len(v6)} IPv6 Cloudflare ranges.")
+            PY
+
+            sudo install -d -o root -g root -m 0755 "$STATE_DIR"
+            if sudo test -f "$STATE"; then
+              sudo cat "$STATE" > /tmp/tech-katta-cloudflare-cidrs-old.txt
+            else
+              : > /tmp/tech-katta-cloudflare-cidrs-old.txt
+            fi
+            sudo ufw status > "$STATUS"
+            CHANGED=1
+
+            while IFS= read -r cidr; do
+              [ -n "$cidr" ] || continue
+              if ! grep -F "$cidr" "$STATUS" | grep -Fq '80/tcp'; then
+                sudo ufw allow from "$cidr" to any port 80 proto tcp comment 'Cloudflare origin ingress'
+              fi
+              if ! grep -F "$cidr" "$STATUS" | grep -Fq '443/tcp'; then
+                sudo ufw allow from "$cidr" to any port 443 proto tcp comment 'Cloudflare origin ingress'
+              fi
+            done < /tmp/tech-katta-cloudflare-cidrs.txt
+
+            while IFS= read -r old_cidr; do
+              [ -n "$old_cidr" ] || continue
+              if ! grep -Fxq "$old_cidr" /tmp/tech-katta-cloudflare-cidrs.txt; then
+                sudo ufw --force delete allow from "$old_cidr" to any port 80 proto tcp || true
+                sudo ufw --force delete allow from "$old_cidr" to any port 443 proto tcp || true
+              fi
+            done < /tmp/tech-katta-cloudflare-cidrs-old.txt
+
+            STATUS="$(sudo ufw status)"
+            if printf '%s\n' "$STATUS" | grep -Eq '^80/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+              sudo ufw --force delete allow 80/tcp
+            fi
+            STATUS="$(sudo ufw status)"
+            if printf '%s\n' "$STATUS" | grep -Eq '^443/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+              sudo ufw --force delete allow 443/tcp
+            fi
+
+            STATUS="$(sudo ufw status)"
+            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
+            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
+            if printf '%s\n' "$STATUS" | grep -Eq '^(80|443)/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+              echo "A public Anywhere HTTP/HTTPS allow rule remains."
+              exit 1
+            fi
+            while IFS= read -r cidr; do
+              [ -n "$cidr" ] || continue
+              for port in 80/tcp 443/tcp; do
+                if ! printf '%s\n' "$STATUS" | grep -F "$cidr" | grep -Fq "$port"; then
+                  echo "Missing expected Cloudflare firewall rule: $port from $cidr"
+                  exit 1
+                fi
+              done
+            done < /tmp/tech-katta-cloudflare-cidrs.txt
+
+            sudo install -o root -g root -m 0644 /tmp/tech-katta-cloudflare-cidrs.txt "$STATE"
+            echo "UFW now allows web-origin traffic only from the current official Cloudflare IPv4/IPv6 ranges. SSH rules were preserved."
+            sudo ufw status verbose
+            FINISHED=1
+
+      - name: Verify public API after firewall change
+        id: post-firewall
+        if: steps.firewall.outcome == 'success'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          base = "https://tech-api.katta.cc"
+          for path in ("/api/health", "/api/categories"):
+              request = urllib.request.Request(
+                  base + path,
+                  headers={"Cache-Control": "no-cache", "Origin": "https://tech.katta.cc"},
+              )
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  body = response.read().decode("utf-8")
+                  print(f"{path}: HTTP {response.status}")
+                  if response.status != 200:
+                      raise SystemExit(f"{path} failed after firewall restriction.")
+                  if response.headers.get("Access-Control-Allow-Origin") != "https://tech.katta.cc":
+                      raise SystemExit("Production frontend CORS origin is not present.")
+                  if path == "/api/health":
+                      health = json.loads(body)
+                      if health.get("status") != "ok" or health.get("db") != "connected":
+                          raise SystemExit("API health or database connectivity failed after firewall restriction.")
+          print("Post-firewall public API, database, and CORS smoke checks passed.")
+          PY
+
+      - name: Re-open public web access if post-firewall smoke fails
+        if: failure() && steps.firewall.outcome == 'success' && steps.post-firewall.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: \${{ secrets.VPS_USER || 'yash' }}
+          key: \${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -eu
+            echo "Post-firewall smoke failed. Restoring public web reachability; SSH rules remain unchanged."
+            sudo ufw allow 80/tcp
+            sudo ufw allow 443/tcp
+            sudo ufw status verbose
+            curl -fsS --max-time 5 http://127.0.0.1:5000/api/health
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "Cloudflare proxy preflight, Nginx real-IP configuration, spoofed-XFF rate-limit verification, Cloudflare-only IPv4/IPv6 UFW restrictions, and post-firewall API/CORS checks passed."
+          echo "The workflow refreshes the official Cloudflare CIDR list weekly. SSH port 22 was not modified."
