@@ -66,7 +66,7 @@ try {
   }
 
 
-  // Exercise the mobile touch handler in a real Chromium browser with a
+  // Exercise the mobile touch handler against the branch's isolated Vite build in Chromium with a
   // mobile viewport and touch support. This simulates touch events; it is not
   // a physical-device test.
   const mobilePage = await browser.newPage({
