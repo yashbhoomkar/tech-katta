@@ -3,6 +3,8 @@ import cors from 'cors';
 import express from 'express';
 import { connectDB, getDB, isDBConnected, closeDB } from './db.js';
 import { createContentRouter } from './routes/content.js';
+import { createHealthRouter } from './routes/health.js';
+import { createRequestLogger } from './middleware/requestLogger.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 dotenv.config();
@@ -37,7 +39,8 @@ app.use((_request, response, next) => {
 });
 
 app.use(express.json({ limit: '50kb' }));
-
+app.use(createRequestLogger());
+app.use('/health', createHealthRouter({ isDBConnected }));
 
 app.use(rateLimit);
 
