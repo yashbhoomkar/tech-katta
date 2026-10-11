@@ -25,7 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Confirm production mutations are skipped for pull requests
-        run: echo "Pull request event: production Nginx and UFW changes are deliberately skipped."
+        run: |
+          echo "Pull request event: production Nginx and UFW changes are deliberately skipped."
 
   harden:
     if: github.event_name != 'pull_request'
