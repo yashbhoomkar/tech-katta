@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { connectDB, getDB, isDBConnected, closeDB } from './db.js';
 import { normalizeArticleContent } from './contentSchema.js';
+import { readPrimaryOrFallback } from './contentSource.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import {
   categories as fallbackCategories,
@@ -74,77 +75,91 @@ app.get('/api/health', (_request, response) => {
   });
 });
 
+function respondContentUnavailable(response, route, error) {
+  console.error(`Content query failed for ${route}:`, error.message);
+  response.setHeader('Cache-Control', 'no-store');
+  response.setHeader('Retry-After', '5');
+  return response.status(503).json({
+    error: 'Content service temporarily unavailable',
+  });
+}
+
 app.get('/api/categories', async (_request, response) => {
   try {
-    if (isDBConnected()) {
-      const db = getDB();
-      const categories = await db
+    const categories = await readPrimaryOrFallback({
+      databaseConnected: isDBConnected(),
+      readDatabase: () => getDB()
         .collection('categories')
         .find({}, { projection: { _id: 0 } })
-        .toArray();
-      if (categories && categories.length > 0) {
-        return response.json(categories);
-      }
-    }
+        .toArray(),
+      readFallback: () => fallbackCategories,
+    });
+
+    return response.json(categories);
   } catch (err) {
-    console.error('Error fetching categories from DB:', err.message);
+    return respondContentUnavailable(response, 'categories', err);
   }
-  return response.json(fallbackCategories);
 });
 
 app.get('/api/articles', async (request, response) => {
   const { category, search } = request.query;
+  const query = {};
+
+  if (typeof category === 'string' && category) {
+    query.category = category.slice(0, 100);
+  }
+
+  if (typeof search === 'string') {
+    const q = search.trim().slice(0, 100);
+    const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+
+    if (escaped) {
+      query.$or = [
+        { title: { $regex: escaped, $options: 'i' } },
+        { eyebrow: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+  }
+
+  const readFallback = () => {
+    let result = [...fallbackArticles];
+
+    if (typeof category === 'string' && category) {
+      result = result.filter((item) => item.category === category);
+    }
+
+    if (typeof search === 'string') {
+      const q = search.trim().slice(0, 100).toLowerCase();
+      result = result.filter((item) => {
+        const haystack = [
+          item.title,
+          item.eyebrow,
+          item.description,
+          ...(item.tags || []),
+        ].join(' ').toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    return result;
+  };
 
   try {
-    if (isDBConnected()) {
-      const db = getDB();
-      const query = {};
-
-      if (category && typeof category === 'string') {
-        query.category = category.slice(0, 100);
-      }
-
-      if (search && typeof search === 'string') {
-        const q = search.trim().slice(0, 100);
-        const escaped = q.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
-
-        if (escaped) {
-          query.$or = [
-            { title: { $regex: escaped, $options: 'i' } },
-            { eyebrow: { $regex: escaped, $options: 'i' } },
-            { description: { $regex: escaped, $options: 'i' } },
-            { tags: { $regex: escaped, $options: 'i' } },
-          ];
-        }
-      }
-
-      const articles = await db
+    const articles = await readPrimaryOrFallback({
+      databaseConnected: isDBConnected(),
+      readDatabase: () => getDB()
         .collection('articles')
         .find(query, { projection: { _id: 0, content: 0 } })
-        .toArray();
-
-      if (articles && articles.length > 0) {
-        return response.json(articles);
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching articles from DB:', err.message);
-  }
-
-  // Fallback
-  let result = [...fallbackArticles];
-  if (category) {
-    result = result.filter((item) => item.category === category);
-  }
-  if (search && typeof search === 'string') {
-    const q = search.trim().slice(0, 100).toLowerCase();
-    result = result.filter((item) => {
-      const haystack = [item.title, item.eyebrow, item.description, ...(item.tags || [])].join(' ').toLowerCase();
-      return haystack.includes(q);
+        .toArray(),
+      readFallback,
     });
-  }
 
-  return response.json(result);
+    return response.json(articles);
+  } catch (err) {
+    return respondContentUnavailable(response, 'articles', err);
+  }
 });
 
 app.get('/api/articles/:slug', async (request, response) => {
@@ -152,25 +167,31 @@ app.get('/api/articles/:slug', async (request, response) => {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return response.sendStatus(404);
 
   try {
-    if (isDBConnected()) {
-      const db = getDB();
-      const article = await db.collection('articles').findOne({ slug }, { projection: { _id: 0 } });
-      if (article) {
-        return response.json({ ...article, content: normalizeArticleContent(article.content, slug) });
-      }
-    }
-  } catch (err) {
-    console.error(`Error fetching article "${slug}" from DB:`, err.message);
-  }
+    const article = await readPrimaryOrFallback({
+      databaseConnected: isDBConnected(),
+      readDatabase: () => getDB()
+        .collection('articles')
+        .findOne({ slug }, { projection: { _id: 0 } }),
+      readFallback: () => {
+        const fallbackArticle = getFallbackArticle(slug);
+        if (!fallbackArticle) return null;
 
-  // Fallback
-  const article = getFallbackArticle(slug);
-  if (!article) return response.sendStatus(404);
-  const content = getFallbackContent(slug);
-  return response.json({
-    ...article,
-    content: normalizeArticleContent(content, slug),
-  });
+        return {
+          ...fallbackArticle,
+          content: getFallbackContent(slug),
+        };
+      },
+    });
+
+    if (!article) return response.sendStatus(404);
+
+    return response.json({
+      ...article,
+      content: normalizeArticleContent(article.content, slug),
+    });
+  } catch (err) {
+    return respondContentUnavailable(response, `article ${slug}`, err);
+  }
 });
 
 let server;
