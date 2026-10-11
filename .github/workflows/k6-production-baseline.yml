@@ -1,0 +1,57 @@
+name: k6 Production Baseline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/load/**"
+      - ".github/workflows/k6-production-baseline.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tests/load/**"
+      - ".github/workflows/k6-production-baseline.yml"
+  workflow_dispatch:
+    inputs:
+      run_production_baseline:
+        description: "Run the bounded 50-second baseline against the production frontend/API"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k6-baseline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate k6 script without sending traffic
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+      - name: Inspect script (no requests sent)
+        run: k6 inspect tests/load/tech-katta-baseline.js
+
+  production-baseline:
+    name: Bounded production baseline
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_production_baseline == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+      - name: Run bounded production baseline
+        env:
+          FRONTEND_URL: https://tech.katta.cc
+          API_URL: https://tech-api.katta.cc
+        run: k6 run tests/load/tech-katta-baseline.js
