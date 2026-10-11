@@ -25,6 +25,7 @@ test('createApp wires health, API, CORS, security headers, and JSON errors', asy
     const liveResponse = await fetch(`${baseUrl}/health/live`);
     assert.equal(liveResponse.status, 200);
     assert.equal((await liveResponse.json()).status, 'ok');
+    assert.ok(liveResponse.headers.get('x-request-id'));
 
     const readyResponse = await fetch(`${baseUrl}/health/ready`);
     assert.equal(readyResponse.status, 503);
@@ -49,7 +50,17 @@ test('createApp wires health, API, CORS, security headers, and JSON errors', asy
       body: '{invalid json',
     });
     assert.equal(malformedResponse.status, 400);
+    assert.ok(malformedResponse.headers.get('x-request-id'));
     assert.deepEqual(await malformedResponse.json(), { error: 'Invalid JSON body' });
+
+    const oversizedResponse = await fetch(`${baseUrl}/api/articles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'x'.repeat(60 * 1024) }),
+    });
+    assert.equal(oversizedResponse.status, 413);
+    assert.ok(oversizedResponse.headers.get('x-request-id'));
+    assert.deepEqual(await oversizedResponse.json(), { error: 'Request body too large' });
   } finally {
     rateLimiter.close();
     await new Promise((resolve, reject) => {

@@ -41,6 +41,12 @@ export function createErrorHandler({ logger = console } = {}) {
       });
     }
 
+    if (error?.type === 'entity.too.large') {
+      return response.status(413).json({
+        error: 'Request body too large',
+      });
+    }
+
     if (error instanceof NotFoundError || error.statusCode === 404 || error.status === 404) {
       return response.status(404).json({ error: 'Not found' });
     }

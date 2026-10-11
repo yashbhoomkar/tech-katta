@@ -48,8 +48,9 @@ export function createApp({
     next();
   });
 
-  app.use(express.json({ limit: '50kb' }));
+  // Assign a request ID before parsers so malformed/oversized bodies are observable.
   app.use(createRequestLogger({ logger }));
+  app.use(express.json({ limit: '50kb' }));
   app.use('/health', createHealthRouter({ isDBConnected }));
 
   // Health probes remain outside the general rate limiter for reliable checks.
