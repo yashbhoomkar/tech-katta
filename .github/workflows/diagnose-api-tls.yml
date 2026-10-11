@@ -30,6 +30,8 @@ jobs:
             set -eu
             echo '=== Nginx service ==='
             sudo systemctl is-active nginx
+            echo '=== Nginx configuration validation ==='
+            sudo nginx -t
             echo '=== API virtual-host certificate directives ==='
             sudo nginx -T 2>/dev/null | grep -n -B 5 -A 12 'server_name tech-api.katta.cc' || true
             echo '=== Configured certificate metadata (paths, issuer, subject, dates, SAN only) ==='
