@@ -1,54 +1,64 @@
 # Tech Katta
 
-A dark-only technology knowledge base for articles, notes, architecture deep dives, and practical engineering lessons.
+A dark-only technology knowledge base for distributed systems, backend engineering, architecture deep dives, and practical engineering lessons.
 
-The visual direction is inspired by the **information architecture** of long-form engineering learning sites: persistent topic navigation, focused reading pages, and an in-page table of contents. The implementation and visual identity are original to Tech Katta.
-
-## Structure
+## Repository structure
 
 ```text
 tech-katta/
-├── backend/      # Node.js / Express API scaffold
-└── frontend/     # Vite / React knowledge base UI
+├── backend/   # Node.js 22, Express 5, MongoDB Atlas API
+└── frontend/  # Vite + React knowledge base UI
 ```
 
 ## Frontend
 
-- Vite
-- React
+- Vite and React
 - React Router
 - Dark-only UI
-- Topic filtering
-- Article search
-- Long-form article layout
+- Topic filtering and article search
+- Long-form article layout and table of contents
 - Responsive mobile layout
 - SPA rewrite for article routes
 
 ## Backend
 
-- Node.js
-- Express
-- Health endpoint
-- Article metadata endpoints
-- Docker production scaffold
-- Localhost-only host port intended for Nginx
+The backend is a **layered monolith**, not a microservices system. HTTP routing, content application logic, MongoDB access, runtime configuration, and error handling have separate responsibilities.
 
-## Planned production architecture
+- Node.js 22 and Express 5
+- MongoDB Atlas as the primary content store
+- Local fallback content when MongoDB is known to be disconnected
+- Validated runtime configuration and graceful shutdown
+- CORS restricted to the frontend origin
+- Request IDs, structured request logging, security headers, and process-local rate limiting
+- Liveness/readiness health endpoints and automated Node.js tests
+
+Start with **[Backend architecture and operations](backend/README.md)** for the request flow, file responsibilities, environment variables, local development commands, health checks, and operational constraints.
+
+## Production topology
 
 ```text
-tech.katta.cc
-      |
-    Vercel
-      |
-      v
-tech-api.katta.cc
-      |
-   Nginx / VPS
-      |
- Docker / Node
+Reader
+  |
+  +--> tech.katta.cc
+  |      |
+  |      v
+  |    Vercel frontend
+  |
+  +--> tech-api.katta.cc
+         |
+         v
+       Nginx on VPS
+         |
+         v
+       Node.js / Express (127.0.0.1:5000)
+         |
+         v
+       MongoDB Atlas
 ```
 
-MongoDB can be introduced later when the article catalog needs dynamic publishing/admin workflows. The initial frontend keeps the published reading experience deterministic and fast.
+DNS is managed through Cloudflare. Do not assume the API origin is protected by Cloudflare proxying; verify the current DNS/proxy and origin-firewall configuration separately.
+
+The VPS deployment is driven by GitHub Actions. The application must pass backend CI and the deployment smoke checks before production changes are considered verified. A passing unit-test run alone does not prove production availability or load capacity.
 
 ## Content philosophy
 
