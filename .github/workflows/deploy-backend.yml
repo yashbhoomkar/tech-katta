@@ -113,34 +113,12 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            echo "🛡️ Installing VPS-first overflow monitor..."
-            sudo install -m 0755 /opt/tech-katta/scripts/vps-overflow-router.sh /usr/local/bin/tech-katta-overflow-router
-            sudo tee /etc/systemd/system/tech-katta-overflow.service >/dev/null <<'EOF'
-            [Unit]
-            Description=Tech Katta VPS-first overflow state monitor
-            After=network-online.target tech-katta-api.service
-            Wants=network-online.target
-
-            [Service]
-            Type=oneshot
-            ExecStart=/usr/local/bin/tech-katta-overflow-router
-            EOF
-
-            sudo tee /etc/systemd/system/tech-katta-overflow.timer >/dev/null <<'EOF'
-            [Unit]
-            Description=Run Tech Katta overflow monitor every 30 seconds
-
-            [Timer]
-            OnBootSec=30s
-            OnUnitActiveSec=30s
-            Unit=tech-katta-overflow.service
-
-            [Install]
-            WantedBy=timers.target
-            EOF
-
-            sudo systemctl daemon-reload
-            sudo systemctl enable --now tech-katta-overflow.timer
+            echo "🛑 Disabling the placeholder overflow monitor until routing is implemented..."
+            # The monitor only writes a state file; Nginx does not consume it and no
+            # production secondary is configured. Do not schedule a no-op every 30s.
+            sudo systemctl disable --now tech-katta-overflow.timer 2>/dev/null || true
+            sudo systemctl stop tech-katta-overflow.service 2>/dev/null || true
+            echo "ℹ️ Overflow routing remains disabled until a compatible secondary and proxy integration are verified."
 
             echo "🔄 Restarting tech-katta-api service..."
             sudo systemctl restart tech-katta-api
@@ -149,7 +127,10 @@ jobs:
             sleep 2
             sudo systemctl is-active --quiet tech-katta-api || (echo "❌ Service is not active!" && exit 1)
             curl -fsS http://127.0.0.1:5000/api/health || (echo "❌ Local health check failed!" && exit 1)
-            sudo systemctl is-active --quiet tech-katta-overflow.timer || (echo "❌ Overflow monitor timer is not active!" && exit 1)
+            if sudo systemctl is-active --quiet tech-katta-overflow.timer; then
+              echo "❌ Placeholder overflow timer is still active!"
+              exit 1
+            fi
 
             if ! sudo ss -lntp | grep -Fq '127.0.0.1:5000'; then
               echo "❌ API is not listening on the loopback interface!"
