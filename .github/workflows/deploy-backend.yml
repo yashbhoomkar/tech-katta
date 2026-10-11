@@ -71,14 +71,11 @@ jobs:
 
       - name: Deploy to Ubuntu VPS via SSH
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          CONTENT_SYNC_REQUIRED: ${{ steps.content_sync.outputs.required }}
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          envs: CONTENT_SYNC_REQUIRED
           script_stop: true
           script: |
             echo "🚀 Updating Tech Katta Backend on VPS..."
@@ -93,7 +90,8 @@ jobs:
             printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null || (echo "❌ Failed to write the API production environment drop-in." && exit 1)
             sudo -n systemctl daemon-reload || (echo "❌ systemd daemon-reload failed." && sudo -n systemctl --failed --no-pager || true; exit 1)
 
-            if [ "$CONTENT_SYNC_REQUIRED" = "true" ]; then
+            echo "Content sync required: ${{ steps.content_sync.outputs.required }}"
+            if [ "${{ steps.content_sync.outputs.required }}" = "true" ]; then
               echo "🌱 Content source changed or manual sync requested; syncing article content to MongoDB..."
               sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
             else
