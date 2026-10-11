@@ -8,19 +8,25 @@ test('uses safe development defaults when optional values are absent', () => {
   assert.equal(config.port, 5000);
   assert.equal(config.nodeEnv, 'development');
   assert.equal(config.frontendOrigin, 'http://localhost:5173');
+  assert.equal(config.mongoUri, '');
+  assert.equal(config.mongoDb, 'techkatta');
   assert.equal(Object.isFrozen(config), true);
 });
 
-test('parses an explicit valid port and production frontend origin', () => {
+test('parses explicit runtime and database configuration', () => {
   const config = loadConfig({
     NODE_ENV: 'production',
     PORT: '8080',
     FRONTEND_ORIGIN: 'https://tech.katta.cc',
+    MONGODB_URI: 'mongodb+srv://example.invalid/techkatta',
+    MONGODB_DB: 'techkatta-prod',
   });
 
   assert.equal(config.port, 8080);
   assert.equal(config.isProduction, true);
   assert.equal(config.frontendOrigin, 'https://tech.katta.cc');
+  assert.equal(config.mongoUri, 'mongodb+srv://example.invalid/techkatta');
+  assert.equal(config.mongoDb, 'techkatta-prod');
 });
 
 test('fails fast when production frontend origin is missing', () => {

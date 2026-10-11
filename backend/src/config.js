@@ -1,5 +1,6 @@
 const DEFAULT_PORT = 5000;
 const DEFAULT_FRONTEND_ORIGIN = 'http://localhost:5173';
+const DEFAULT_DATABASE_NAME = 'techkatta';
 
 function parsePort(value) {
   const normalized = typeof value === 'string' ? value.trim() : value;
@@ -43,8 +44,8 @@ function parseFrontendOrigin(value, isProduction) {
 
 /**
  * Parse and validate process configuration once at startup.
- * Pass the returned immutable object into application construction so app code
- * does not read process.env directly.
+ * Pass the returned immutable object into application and infrastructure
+ * initialization so runtime modules do not independently parse environment vars.
  */
 export function loadConfig(env = process.env) {
   const nodeEnv = env.NODE_ENV?.trim() || 'development';
@@ -55,5 +56,7 @@ export function loadConfig(env = process.env) {
     isProduction,
     port: parsePort(env.PORT),
     frontendOrigin: parseFrontendOrigin(env.FRONTEND_ORIGIN, isProduction),
+    mongoUri: env.MONGODB_URI?.trim() || '',
+    mongoDb: env.MONGODB_DB?.trim() || DEFAULT_DATABASE_NAME,
   });
 }

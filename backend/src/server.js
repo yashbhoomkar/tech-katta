@@ -11,7 +11,7 @@ let server;
 let isShuttingDown = false;
 
 async function startServer() {
-  await connectDB();
+  await connectDB({ uri: config.mongoUri, dbName: config.mongoDb });
 
   const app = createApp({ getDB, isDBConnected, config });
   server = app.listen(port, '127.0.0.1', () => {
