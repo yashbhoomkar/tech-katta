@@ -9,6 +9,12 @@ on:
       - 'scripts/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
+    inputs:
+      sync_content:
+        description: 'Explicitly sync article/category data to MongoDB'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -18,6 +24,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate backend JavaScript
         uses: actions/setup-node@v4
@@ -44,13 +52,33 @@ jobs:
       - name: Validate VPS overflow monitor
         run: bash -n scripts/vps-overflow-router.sh
 
+      - name: Determine whether content sync is required
+        id: content_sync
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          MANUAL_SYNC_CONTENT: ${{ inputs.sync_content }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "required=${MANUAL_SYNC_CONTENT:-false}" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" | grep -Eq '^(backend/src/data\.js|backend/src/.*Content\.js|backend/src/distributedSystemsConcepts\.js|backend/src/distributedSystemComponents\.js|backend/src/contentSchema\.js|backend/src/seed\.js)$'; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy to Ubuntu VPS via SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          CONTENT_SYNC_REQUIRED: ${{ steps.content_sync.outputs.required }}
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
+          envs: CONTENT_SYNC_REQUIRED
           script_stop: true
           script: |
             echo "🚀 Updating Tech Katta Backend on VPS..."
@@ -64,8 +92,12 @@ jobs:
             printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
             sudo systemctl daemon-reload
 
-            echo "🌱 Syncing article content to MongoDB..."
-            sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
+            if [ "$CONTENT_SYNC_REQUIRED" = "true" ]; then
+              echo "🌱 Content source changed or manual sync requested; syncing article content to MongoDB..."
+              sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
+            else
+              echo "⏭️ Skipping MongoDB seed: no content source changes detected."
+            fi
 
             echo "🛡️ Installing VPS-first overflow monitor..."
             sudo install -m 0755 /opt/tech-katta/scripts/vps-overflow-router.sh /usr/local/bin/tech-katta-overflow-router
