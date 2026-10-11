@@ -69,7 +69,7 @@ jobs:
             echo "required=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Deploy to Ubuntu VPS via SSH
+      - name: Prepare VPS checkout, dependencies, and runtime config
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
@@ -78,7 +78,7 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            echo "🚀 Updating Tech Katta Backend on VPS..."
+            echo "🚀 Preparing Tech Katta Backend on VPS..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta && git fetch origin main && git reset --hard origin/main'
 
             echo "📦 Installing production dependencies..."
@@ -89,15 +89,30 @@ jobs:
             sudo -n mkdir -p /etc/systemd/system/tech-katta-api.service.d || (echo "❌ Failed to create the API systemd drop-in directory." && exit 1)
             printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null || (echo "❌ Failed to write the API production environment drop-in." && exit 1)
             sudo -n systemctl daemon-reload || (echo "❌ systemd daemon-reload failed." && sudo -n systemctl --failed --no-pager || true; exit 1)
+            echo "✅ Runtime configuration installed."
 
-            echo "Content sync required: ${{ steps.content_sync.outputs.required }}"
-            if [ "${{ steps.content_sync.outputs.required }}" = "true" ]; then
-              echo "🌱 Content source changed or manual sync requested; syncing article content to MongoDB..."
-              sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
-            else
-              echo "⏭️ Skipping MongoDB seed: no content source changes detected."
-            fi
+      - name: Sync MongoDB content when required
+        if: steps.content_sync.outputs.required == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "🌱 Content source changed or manual sync requested; syncing article content to MongoDB..."
+            sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm run seed'
 
+      - name: Restart and verify Tech Katta API
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
             echo "🛡️ Installing VPS-first overflow monitor..."
             sudo install -m 0755 /opt/tech-katta/scripts/vps-overflow-router.sh /usr/local/bin/tech-katta-overflow-router
             sudo tee /etc/systemd/system/tech-katta-overflow.service >/dev/null <<'EOF'
