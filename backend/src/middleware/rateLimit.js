@@ -66,7 +66,6 @@ export function createRateLimiter({
     bucket.count += 1;
     buckets.set(clientIp, bucket);
 
-    pruneExpired(currentTime);
     enforceCapacity();
 
     response.setHeader('X-RateLimit-Limit', limit);
