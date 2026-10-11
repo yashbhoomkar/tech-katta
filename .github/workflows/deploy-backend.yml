@@ -105,6 +105,17 @@ jobs:
             curl -fsS http://127.0.0.1:5000/api/health || (echo "❌ Local health check failed!" && exit 1)
             sudo systemctl is-active --quiet tech-katta-overflow.timer || (echo "❌ Overflow monitor timer is not active!" && exit 1)
 
+            if ! sudo ss -lntp | grep -Fq '127.0.0.1:5000'; then
+              echo "❌ API is not listening on the loopback interface!"
+              sudo ss -lntp | grep ':5000' || true
+              exit 1
+            fi
+
+            if sudo ss -lntp | grep -Fq '0.0.0.0:5000'; then
+              echo "❌ API is exposed on all IPv4 interfaces!"
+              exit 1
+            fi
+
             echo "✅ Deployment successful and locally verified!"
 
       - name: Run production smoke tests

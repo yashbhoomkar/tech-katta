@@ -78,7 +78,7 @@ let server;
 async function startServer() {
   await connectDB();
 
-  server = app.listen(port, '0.0.0.0', () => {
+  server = app.listen(port, '127.0.0.1', () => {
     console.log(`Tech Katta API listening on port ${port}`);
   });
 }
