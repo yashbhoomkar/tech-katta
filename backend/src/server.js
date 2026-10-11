@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { connectDB, getDB, isDBConnected, closeDB } from './db.js';
 import { normalizeArticleContent } from './contentSchema.js';
+import { rateLimit } from './middleware/rateLimit.js';
 import {
   categories as fallbackCategories,
   articles as fallbackArticles,
@@ -43,40 +44,6 @@ app.use((_request, response, next) => {
 
 app.use(express.json({ limit: '50kb' }));
 
-const RATE_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT = 120;
-const rateBuckets = new Map();
-
-function rateLimit(request, response, next) {
-  const forwardedFor = request.get('x-forwarded-for');
-  const clientIp = (forwardedFor?.split(',')[0] || request.ip || 'unknown').trim();
-  const now = Date.now();
-  let bucket = rateBuckets.get(clientIp);
-
-  if (!bucket || now - bucket.startedAt >= RATE_WINDOW_MS) {
-    bucket = { startedAt: now, count: 0 };
-  }
-
-  bucket.count += 1;
-  rateBuckets.set(clientIp, bucket);
-
-  response.setHeader('X-RateLimit-Limit', RATE_LIMIT);
-  response.setHeader('X-RateLimit-Remaining', Math.max(0, RATE_LIMIT - bucket.count));
-
-  if (bucket.count > RATE_LIMIT) {
-    const retryAfter = Math.ceil((RATE_WINDOW_MS - (now - bucket.startedAt)) / 1000);
-    response.setHeader('Retry-After', retryAfter);
-    return response.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  if (rateBuckets.size > 10000) {
-    for (const [ip, entry] of rateBuckets) {
-      if (now - entry.startedAt >= RATE_WINDOW_MS) rateBuckets.delete(ip);
-    }
-  }
-
-  return next();
-}
 
 app.use(rateLimit);
 
