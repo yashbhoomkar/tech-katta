@@ -108,6 +108,34 @@ test('service normalizes article content without mutating repository data', asyn
   assert.equal(storedArticle.content.sections[0].blocks, undefined);
 });
 
+test('service preserves explicit diagram blocks without slug-specific presentation rewrites', async () => {
+  const asciiBlock = {
+    type: 'code',
+    language: 'text',
+    label: 'From one process to a distributed system',
+    code: 'Before: Client → Application → Database\nAfter: Client → Load Balancer → API servers',
+  };
+  const storedArticle = {
+    slug: 'distributed-systems-concepts',
+    content: {
+      sections: [{
+        title: 'Architecture',
+        blocks: [asciiBlock, { type: 'diagram', name: 'distributed-architecture' }],
+      }],
+    },
+  };
+  const service = createContentService({
+    repository: { async getArticleBySlug() { return storedArticle; } },
+  });
+
+  const result = await service.getArticle('distributed-systems-concepts');
+
+  assert.deepEqual(result.content.sections[0].blocks, [
+    asciiBlock,
+    { type: 'diagram', name: 'distributed-architecture' },
+  ]);
+});
+
 test('controller forwards supported article filters to the service', async () => {
   let observedFilters;
   const controller = createContentController({

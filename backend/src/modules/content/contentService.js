@@ -24,7 +24,7 @@ export function createContentService({ repository }) {
 
       return {
         ...article,
-        content: normalizeArticleContent(article.content, slug),
+        content: normalizeArticleContent(article.content),
       };
     },
   };
