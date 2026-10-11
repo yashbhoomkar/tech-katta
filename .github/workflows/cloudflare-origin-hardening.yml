@@ -96,7 +96,7 @@ jobs:
             set -eu
             RUN_ID="${{ github.run_id }}"
             TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
-            BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
+            BACKUP_DIR=/tmp/tech-katta-cloudflare-realip-backups
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
 
@@ -141,6 +141,7 @@ jobs:
 
             echo "Preflight passed; preparing rollback artifacts at $BACKUP_DIR"
             sudo mkdir -p "$BACKUP_DIR"
+            echo "Rollback directory ready."
             if sudo test -f "$TARGET"; then
               echo "Existing real-IP config found; backing it up."
               sudo cp -a "$TARGET" "$BACKUP"
@@ -280,7 +281,7 @@ jobs:
             set -eu
             RUN_ID="${{ github.run_id }}"
             TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
-            BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
+            BACKUP_DIR=/tmp/tech-katta-cloudflare-realip-backups
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
             if sudo test -f "$BACKUP"; then
