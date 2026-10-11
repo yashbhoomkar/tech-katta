@@ -105,6 +105,7 @@ try {
     await swipe({ startX: 60, endX: 190 });
     await mobilePage.waitForFunction(
       () => document.querySelector('.learning-sidebar')?.classList.contains('is-mobile-open'),
+      undefined,
       { timeout: 5000 },
     );
     console.log('PASS mobile-emulated touch: home right swipe opens sidebar');
@@ -144,11 +145,13 @@ try {
     await mobilePage.locator('.mobile-sidebar-button').click();
     await mobilePage.waitForFunction(
       () => document.querySelector('.learning-sidebar')?.classList.contains('is-mobile-open'),
+      undefined,
       { timeout: 5000 },
     );
     await swipe({ startX: 300, endX: 170 });
     await mobilePage.waitForFunction(
       () => !document.querySelector('.learning-sidebar')?.classList.contains('is-mobile-open'),
+      undefined,
       { timeout: 5000 },
     );
     if (mobileRoute() !== '/learn/distributed-system-components-overview') {
