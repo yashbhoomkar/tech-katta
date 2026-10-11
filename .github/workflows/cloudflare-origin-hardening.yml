@@ -139,26 +139,36 @@ jobs:
             fi
             echo "All Nginx/UFW preflight checks passed."
 
+            echo "Preflight passed; preparing rollback artifacts at $BACKUP_DIR"
             sudo mkdir -p "$BACKUP_DIR"
             if sudo test -f "$TARGET"; then
+              echo "Existing real-IP config found; backing it up."
               sudo cp -a "$TARGET" "$BACKUP"
               sudo rm -f "$ABSENT"
             else
+              echo "No existing real-IP config; recording absence for rollback."
               sudo touch "$ABSENT"
               sudo rm -f "$BACKUP"
             fi
+            echo "Rollback artifact preparation passed."
 
+            echo "Fetching official Cloudflare ranges from the VPS"
             python3 - <<'PY'
             import ipaddress
             import json
+            import sys
             import urllib.request
 
             request = urllib.request.Request(
                 "https://api.cloudflare.com/client/v4/ips",
                 headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
             )
-            with urllib.request.urlopen(request, timeout=15) as response:
-                payload = json.load(response)
+            try:
+                with urllib.request.urlopen(request, timeout=15) as response:
+                    payload = json.load(response)
+            except Exception as exc:
+                print(f"ERROR: Could not retrieve Cloudflare ranges: {type(exc).__name__}: {exc}", file=sys.stderr)
+                raise
             if not payload.get("success"):
                 raise SystemExit("Cloudflare IP-range API did not return success.")
 
