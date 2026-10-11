@@ -60,10 +60,13 @@ jobs:
           if sum(net.version == 4 for net in ranges) < 5 or sum(net.version == 6 for net in ranges) < 2:
               raise SystemExit("Cloudflare IP-range response is unexpectedly incomplete.")
 
-          addresses = sorted({
-              ipaddress.ip_address(item[4][0])
-              for item in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
-          })
+          addresses = sorted(
+              {
+                  ipaddress.ip_address(item[4][0])
+                  for item in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+              },
+              key=lambda address: (address.version, int(address)),
+          )
           if not addresses:
               raise SystemExit(f"No DNS addresses found for {host}.")
 
