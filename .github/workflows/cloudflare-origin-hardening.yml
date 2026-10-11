@@ -142,7 +142,7 @@ jobs:
             echo "Preflight passed; preparing rollback artifacts at $BACKUP_DIR"
             sudo mkdir -p "$BACKUP_DIR"
             echo "Rollback directory ready."
-            if sudo test -f "$TARGET"; then
+            if test -f "$TARGET"; then
               echo "Existing real-IP config found; backing it up."
               sudo cp -a "$TARGET" "$BACKUP"
               sudo rm -f "$ABSENT"
@@ -194,9 +194,9 @@ jobs:
             PY
 
             restore_previous() {
-              if sudo test -f "$BACKUP"; then
+              if test -f "$BACKUP"; then
                 sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
-              elif sudo test -f "$ABSENT"; then
+              elif test -f "$ABSENT"; then
                 sudo rm -f "$TARGET"
               fi
               sudo nginx -t && sudo systemctl reload nginx || true
@@ -284,9 +284,9 @@ jobs:
             BACKUP_DIR=/tmp/tech-katta-cloudflare-realip-backups
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
-            if sudo test -f "$BACKUP"; then
+            if test -f "$BACKUP"; then
               sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
-            elif sudo test -f "$ABSENT"; then
+            elif test -f "$ABSENT"; then
               sudo rm -f "$TARGET"
             else
               echo "No verified rollback artifact found; refusing to guess."
@@ -361,7 +361,7 @@ jobs:
             PY
 
             sudo install -d -o root -g root -m 0755 "$STATE_DIR"
-            if sudo test -f "$STATE"; then
+            if test -f "$STATE"; then
               sudo cat "$STATE" > /tmp/tech-katta-cloudflare-cidrs-old.txt
             else
               : > /tmp/tech-katta-cloudflare-cidrs-old.txt
