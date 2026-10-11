@@ -393,7 +393,11 @@ export default function App() {
         }
       }
 
-      // Match Chrome-style mobile navigation: right = back, left = forward.
+      // The home page has no previous/next article context; left swipe must not
+      // activate a stale forward-history entry from an earlier route.
+      if (location.pathname === '/' && deltaX < 0) return;
+
+      // Match Chrome-style mobile navigation on article/unit pages.
       navigate(deltaX > 0 ? -1 : 1);
     };
 
