@@ -38,7 +38,7 @@ jobs:
             sudo nginx -T 2>/dev/null | sed -n '/server_name[^;]*tech-api\.katta\.cc/,+60p' | grep -E 'server_name|listen|location|proxy_pass|proxy_set_header (Host|X-Forwarded-For|X-Real-IP|CF-Connecting-IP)|proxy_protocol|real_ip_header|set_real_ip_from' || true
 
             echo "=== Relevant listening ports ==="
-            sudo ss -lntp | grep -E ':(22|80|443|5000)\\b' || true
+            sudo ss -lntp | grep -E ':(22|80|443|5000)([[:space:]]|$)' || true
 
             echo "=== UFW status ==="
             sudo ufw status verbose || true
