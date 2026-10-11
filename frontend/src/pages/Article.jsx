@@ -286,14 +286,21 @@ export default function Article() {
 
     const title = `${article.title} — Tech Katta`;
     const description = article.description || 'Engineering notes by Yash Bhoomkar.';
+    const originalTitle = document.title;
+    const originalMeta = new Map();
+    const createdMeta = new Set();
     document.title = title;
 
     const setMeta = (selector, attribute, value) => {
       let element = document.head.querySelector(selector);
       if (!element) {
         element = document.createElement('meta');
-        element.setAttribute(attribute, selector.includes('property=') ? selector.match(/property="([^"]+)"/)?.[1] : selector.match(/name="([^"]+)"/)?.[1]);
+        const key = selector.match(/(?:name|property)="([^"]+)"/)?.[1];
+        element.setAttribute(attribute, key);
         document.head.appendChild(element);
+        createdMeta.add(element);
+      } else if (!originalMeta.has(element)) {
+        originalMeta.set(element, element.getAttribute('content'));
       }
       element.setAttribute('content', value);
     };
@@ -306,7 +313,12 @@ export default function Article() {
     setMeta('meta[name="twitter:description"]', 'name', description);
 
     return () => {
-      document.title = 'Tech Katta — Engineering notes by Yash Bhoomkar';
+      document.title = originalTitle;
+      createdMeta.forEach((element) => element.remove());
+      originalMeta.forEach((content, element) => {
+        if (content === null) element.removeAttribute('content');
+        else element.setAttribute('content', content);
+      });
     };
   }, [article, slug]);
 

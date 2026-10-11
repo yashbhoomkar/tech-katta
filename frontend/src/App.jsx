@@ -404,7 +404,7 @@ export default function App() {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [mobileSidebarOpen, navigate]);
+  }, [location.pathname, mobileSidebarOpen, navigate]);
 
   return (
     <div className={'site-frame' + (sidebarCollapsed ? ' nav-collapsed' : '')}>
