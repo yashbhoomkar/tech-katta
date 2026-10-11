@@ -3,6 +3,8 @@ const checks = [
   { name: 'frontend unit route', url: 'https://tech.katta.cc/unit/distributed-systems', expected: 200, includes: '<div id="root">' },
   { name: 'frontend article route', url: 'https://tech.katta.cc/learn/distributed-system-components-overview', expected: 200, includes: '<div id="root">' },
   { name: 'api health', url: 'https://tech-api.katta.cc/api/health', expected: 200, json: (body) => body.status === 'ok' && body.service === 'tech-katta-api' && body.db === 'connected' },
+  { name: 'api liveness', url: 'https://tech-api.katta.cc/health/live', expected: 200, json: (body) => body.status === 'ok' && body.service === 'tech-katta-api' },
+  { name: 'api readiness', url: 'https://tech-api.katta.cc/health/ready', expected: 200, json: (body) => body.status === 'ready' && body.service === 'tech-katta-api' && body.db === 'connected' },
   { name: 'api categories', url: 'https://tech-api.katta.cc/api/categories', expected: 200, json: (body) => Array.isArray(body) && body.some((item) => item.id === 'distributed-systems') },
   { name: 'api articles', url: 'https://tech-api.katta.cc/api/articles', expected: 200, json: (body) => Array.isArray(body) && body.some((item) => item.slug === 'distributed-system-components-overview') },
   { name: 'api article by canonical slug', url: 'https://tech-api.katta.cc/api/articles/distributed-system-components-overview', expected: 200, json: (body) => body.slug === 'distributed-system-components-overview' && Array.isArray(body.content?.sections) },
