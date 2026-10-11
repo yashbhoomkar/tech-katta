@@ -339,8 +339,8 @@ jobs:
             while IFS= read -r old_cidr; do
               [ -n "$old_cidr" ] || continue
               if ! grep -Fxq "$old_cidr" /tmp/tech-katta-cloudflare-cidrs.txt; then
-                sudo ufw --force delete allow from "$old_cidr" to any port 80 proto tcp || true
-                sudo ufw --force delete allow from "$old_cidr" to any port 443 proto tcp || true
+                sudo ufw --force delete allow from "$old_cidr" to any port 80 proto tcp
+                sudo ufw --force delete allow from "$old_cidr" to any port 443 proto tcp
               fi
             done < /tmp/tech-katta-cloudflare-cidrs-old.txt
 
@@ -410,7 +410,7 @@ jobs:
           ):
               result = subprocess.run(
                   [
-                      "curl", "--silent", "--show-error", "--connect-timeout", "4",
+                      "curl", "--noproxy", "*", "--silent", "--show-error", "--connect-timeout", "4",
                       "--max-time", "8", "--resolve", f"tech-api.katta.cc:{port}:129.121.133.47",
                       "-o", "/dev/null", "-w", "%{http_code}", url,
                   ],
