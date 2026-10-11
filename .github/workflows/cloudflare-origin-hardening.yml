@@ -145,17 +145,14 @@ jobs:
             echo "Checking current Nginx real-IP config state."
             TARGET_STATE="$(sudo stat -c '%F' "$TARGET" 2>/dev/null || echo absent)"
             echo "Nginx config state: $TARGET_STATE"
-            case "$TARGET_STATE" in
-              "regular file")
-                echo "Existing real-IP config found; backing it up."
-                sudo cp -a "$TARGET" "$BACKUP"
-                ;;
-              absent)
-                echo "No existing real-IP config; recording absence for rollback."
-                sudo touch "$ABSENT"
-                ;;
-              *) echo "ERROR: could not determine current Nginx config state."; exit 1 ;;
-            esac
+            if ! [ "$TARGET_STATE" = "regular file" ]; then
+              echo "No existing real-IP config; recording absence for rollback."
+              sudo touch "$ABSENT"
+            fi
+            if ! [ "$TARGET_STATE" = absent ]; then
+              echo "Existing real-IP config found; backing it up."
+              sudo cp -a "$TARGET" "$BACKUP"
+            fi
             echo "Rollback artifact preparation passed."
 
             echo "Fetching official Cloudflare ranges from the VPS"
@@ -201,11 +198,16 @@ jobs:
             restore_previous() {
               BACKUP_STATE="$(sudo stat -c '%F' "$BACKUP" 2>/dev/null || echo absent)"
               ABSENT_STATE="$(sudo stat -c '%F' "$ABSENT" 2>/dev/null || echo absent)"
-              case "$BACKUP_STATE:$ABSENT_STATE" in
-                "regular file":*) sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET" ;;
-                absent:"regular file") sudo rm -f "$TARGET" ;;
-                *) echo "ERROR: no valid Nginx rollback artifact."; return 1 ;;
-              esac
+              if ! [ "$BACKUP_STATE" = "regular file" ]; then
+                if ! [ "$ABSENT_STATE" = "regular file" ]; then
+                  echo "ERROR: no valid Nginx rollback artifact."
+                  return 1
+                fi
+                sudo rm -f "$TARGET"
+              fi
+              if ! [ "$BACKUP_STATE" = absent ]; then
+                sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+              fi
               sudo nginx -t && sudo systemctl reload nginx || true
             }
 
@@ -293,11 +295,16 @@ jobs:
             ABSENT="$BACKUP_DIR/$RUN_ID.absent"
             BACKUP_STATE="$(sudo stat -c '%F' "$BACKUP" 2>/dev/null || echo absent)"
             ABSENT_STATE="$(sudo stat -c '%F' "$ABSENT" 2>/dev/null || echo absent)"
-            case "$BACKUP_STATE:$ABSENT_STATE" in
-              "regular file":*) sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET" ;;
-              absent:"regular file") sudo rm -f "$TARGET" ;;
-              *) echo "No verified rollback artifact found; refusing to guess."; exit 1 ;;
-            esac
+            if ! [ "$BACKUP_STATE" = "regular file" ]; then
+              if ! [ "$ABSENT_STATE" = "regular file" ]; then
+                echo "No verified rollback artifact found; refusing to guess."
+                exit 1
+              fi
+              sudo rm -f "$TARGET"
+            fi
+            if ! [ "$BACKUP_STATE" = absent ]; then
+              sudo install -o root -g root -m 0644 "$BACKUP" "$TARGET"
+            fi
             sudo nginx -t
             sudo systemctl reload nginx
             curl -fsS --max-time 5 http://127.0.0.1:5000/api/health
