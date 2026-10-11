@@ -1,0 +1,52 @@
+name: Diagnose API TLS Certificate (Read Only)
+
+on:
+  push:
+    branches:
+      - diag/api-tls-certificate
+    paths:
+      - '.github/workflows/diagnose-api-tls.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect VPS TLS and ACME configuration (read only)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -eu
+            echo "=== Services and listeners ==="
+            sudo -n systemctl is-active nginx
+            sudo -n ss -lntp | grep -E ':(80|443)\\b' || true
+
+            echo "=== Nginx TLS / HTTP / ACME directives (private-key paths redacted) ==="
+            sudo -n nginx -T 2>&1 | grep -E 'server_name|listen .*443|listen .*80|ssl_certificate |proxy_pass|return 301|well-known' | sed -E 's#(ssl_certificate_key ).*;#\\1[redacted];#' || true
+
+            echo "=== Certbot availability ==="
+            if command -v certbot >/dev/null 2>&1; then
+              sudo -n certbot --version
+              sudo -n certbot certificates || true
+            else
+              echo "certbot is not installed"
+            fi
+
+            echo "=== Certificate directories ==="
+            sudo -n find /etc/letsencrypt/live -maxdepth 2 -type l -printf '%p -> %l\\n' 2>/dev/null || true
+            sudo -n systemctl list-timers --all --no-pager | grep -i certbot || true
+
+            echo "=== Certificates referenced by Nginx ==="
+            for cert in $(sudo -n nginx -T 2>/dev/null | awk '/ssl_certificate / && $1 != "ssl_certificate_key" { print $2 }' | tr -d ';' | sort -u); do
+              if sudo -n test -r "$cert"; then
+                echo "certificate path: $cert"
+                sudo -n openssl x509 -in "$cert" -noout -subject -issuer -dates -ext subjectAltName || true
+              fi
+            done
