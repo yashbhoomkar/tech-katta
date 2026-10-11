@@ -78,24 +78,30 @@ try {
   mobilePage.on('pageerror', (error) => mobilePageErrors.push(error.message));
 
   const swipe = async ({ startX, startY = 420, endX, endY = 420, selector = '.site-main' }) => {
-    await mobilePage.evaluate(({ startX, startY, endX, endY, selector }) => {
-      if (typeof Touch === 'undefined' || typeof TouchEvent === 'undefined') {
-        throw new Error('Chromium does not expose Touch/TouchEvent in the mobile context');
-      }
-      const target = document.querySelector(selector) || document.body;
-      const startTouch = new Touch({
-        identifier: 1, target, clientX: startX, clientY: startY,
-      });
-      const endTouch = new Touch({
-        identifier: 1, target, clientX: endX, clientY: endY,
-      });
-      target.dispatchEvent(new TouchEvent('touchstart', {
-        bubbles: true, cancelable: true, touches: [startTouch], changedTouches: [startTouch],
-      }));
-      target.dispatchEvent(new TouchEvent('touchend', {
-        bubbles: true, cancelable: true, touches: [], changedTouches: [endTouch],
-      }));
-    }, { startX, startY, endX, endY, selector });
+    try {
+      await mobilePage.evaluate(({ startX, startY, endX, endY, selector }) => {
+        if (typeof Touch === 'undefined' || typeof TouchEvent === 'undefined') {
+          throw new Error('Chromium does not expose Touch/TouchEvent in the mobile context');
+        }
+        const target = document.querySelector(selector) || document.body;
+        const startTouch = new Touch({
+          identifier: 1, target, clientX: startX, clientY: startY,
+        });
+        const endTouch = new Touch({
+          identifier: 1, target, clientX: endX, clientY: endY,
+        });
+        target.dispatchEvent(new TouchEvent('touchstart', {
+          bubbles: true, cancelable: true, touches: [startTouch], changedTouches: [startTouch],
+        }));
+        target.dispatchEvent(new TouchEvent('touchend', {
+          bubbles: true, cancelable: true, touches: [], changedTouches: [endTouch],
+        }));
+      }, { startX, startY, endX, endY, selector });
+    } catch (error) {
+      // A successful history gesture can destroy the current execution context
+      // before Playwright's evaluate promise resolves.
+      if (!/execution context was destroyed|navigation/i.test(error.message)) throw error;
+    }
   };
 
   const mobileRoute = () => new URL(mobilePage.url()).pathname;
