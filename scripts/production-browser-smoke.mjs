@@ -134,6 +134,22 @@ try {
     await mobilePage.waitForURL((url) => url.pathname === '/learn/distributed-system-components-overview', { timeout: 5000 });
     console.log('PASS mobile-emulated touch: article left swipe navigates forward');
 
+    // Return to home while retaining forward history. Home left swipe must not
+    // navigate forward into a previously visited unit.
+    await mobilePage.goBack({ waitUntil: 'domcontentloaded' });
+    await mobilePage.goBack({ waitUntil: 'domcontentloaded' });
+    await mobilePage.waitForURL((url) => url.pathname === '/', { timeout: 5000 });
+    await swipe({ startX: 300, endX: 170 });
+    await mobilePage.waitForTimeout(300);
+    if (mobileRoute() !== '/') {
+      failures.push('mobile touch: home left swipe navigated into forward history');
+    } else {
+      console.log('PASS mobile-emulated touch: home left swipe does not activate forward history');
+    }
+    await mobilePage.goForward({ waitUntil: 'domcontentloaded' });
+    await mobilePage.goForward({ waitUntil: 'domcontentloaded' });
+    await mobilePage.waitForURL((url) => url.pathname === '/learn/distributed-system-components-overview', { timeout: 5000 });
+
     await swipe({ startX: 60, endX: 110 });
     await swipe({ startX: 60, startY: 300, endX: 170, endY: 400 });
     if (mobileRoute() !== '/learn/distributed-system-components-overview') {
