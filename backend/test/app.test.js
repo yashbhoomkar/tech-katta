@@ -128,3 +128,39 @@ test('health endpoints remain available when the public rate limit is exhausted'
     rateLimiter.close();
   }
 });
+
+test('rate limiter ignores spoofed leftmost X-Forwarded-For when one trusted proxy appends the peer IP', async () => {
+  const rateLimiter = createRateLimiter({ limit: 1 });
+  const app = createApp({
+    getDB: () => null,
+    isDBConnected: () => false,
+    rateLimiter,
+    logger: { info() {}, error() {} },
+  });
+
+  try {
+    await withServer(app, async (baseUrl) => {
+      // Simulates Nginx's $proxy_add_x_forwarded_for behavior:
+      // the client controls the leftmost value, while Nginx appends the
+      // actual peer address as the rightmost value.
+      const firstResponse = await fetch(baseUrl, {
+        headers: { 'X-Forwarded-For': '198.51.100.88, 203.0.113.10' },
+      });
+      assert.equal(firstResponse.status, 200);
+      assert.equal(firstResponse.headers.get('x-ratelimit-remaining'), '0');
+
+      const spoofedRetry = await fetch(baseUrl, {
+        headers: { 'X-Forwarded-For': '192.0.2.200, 203.0.113.10' },
+      });
+      assert.equal(spoofedRetry.status, 429);
+      assert.equal(spoofedRetry.headers.get('retry-after') !== null, true);
+
+      const differentPeer = await fetch(baseUrl, {
+        headers: { 'X-Forwarded-For': '198.51.100.88, 203.0.113.11' },
+      });
+      assert.equal(differentPeer.status, 200);
+    });
+  } finally {
+    rateLimiter.close();
+  }
+});
