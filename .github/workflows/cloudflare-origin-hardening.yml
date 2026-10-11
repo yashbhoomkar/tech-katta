@@ -299,10 +299,16 @@ jobs:
 
             rollback_firewall() {
               rc=$?
-              if [ "$rc" -ne 0 ] && [ "$CHANGED" -eq 1 ] && [ "$FINISHED" -eq 0 ]; then
-                echo "Firewall operation failed; restoring public web reachability. SSH rules are left untouched."
-                sudo ufw allow 80/tcp || true
-                sudo ufw allow 443/tcp || true
+              if ! [ "$rc" -eq 0 ]; then
+                if ! [ "$CHANGED" -eq 1 ]; then
+                  :
+                else
+                  if ! [ "$FINISHED" -eq 1 ]; then
+                    echo "Firewall operation failed; restoring public web reachability. SSH rules are left untouched."
+                    sudo ufw allow 80/tcp || true
+                    sudo ufw allow 443/tcp || true
+                  fi
+                fi
               fi
               exit "$rc"
             }
@@ -321,11 +327,8 @@ jobs:
             echo "Using the validated Cloudflare CIDR list generated during the Nginx preflight."
 
             sudo install -d -o root -g root -m 0755 "$STATE_DIR"
-            if test -f "$STATE"; then
-              sudo cat "$STATE" > /tmp/tech-katta-cloudflare-cidrs-old.txt
-            else
-              : > /tmp/tech-katta-cloudflare-cidrs-old.txt
-            fi
+            : > /tmp/tech-katta-cloudflare-cidrs-old.txt
+            sudo cat "$STATE" > /tmp/tech-katta-cloudflare-cidrs-old.txt 2>/dev/null || true
             sudo ufw status > "$STATUS"
             CHANGED=1
 
@@ -348,18 +351,24 @@ jobs:
             done < /tmp/tech-katta-cloudflare-cidrs-old.txt
 
             STATUS="$(sudo ufw status)"
-            if printf '%s\n' "$STATUS" | grep -Eq '^80/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+            if ! printf '%s\n' "$STATUS" | grep -Eq '^80/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+              :
+            else
               sudo ufw --force delete allow 80/tcp
             fi
             STATUS="$(sudo ufw status)"
-            if printf '%s\n' "$STATUS" | grep -Eq '^443/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+            if ! printf '%s\n' "$STATUS" | grep -Eq '^443/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+              :
+            else
               sudo ufw --force delete allow 443/tcp
             fi
 
             STATUS="$(sudo ufw status)"
             printf '%s\n' "$STATUS" | grep -Eq '^22/tcp[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'
             printf '%s\n' "$STATUS" | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere \(v6\)'
-            if printf '%s\n' "$STATUS" | grep -Eq '^(80|443)/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+            if ! printf '%s\n' "$STATUS" | grep -Eq '^(80|443)/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
+              :
+            else
               echo "A public Anywhere HTTP/HTTPS allow rule remains."
               exit 1
             fi
