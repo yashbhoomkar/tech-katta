@@ -1,0 +1,64 @@
+name: Production Browser and Bounded Load Verification
+
+on:
+  push:
+    branches:
+      - test/production-browser-load-verification
+    paths:
+      - 'scripts/production-browser-smoke.mjs'
+      - 'scripts/production-load-smoke.mjs'
+      - '.github/workflows/production-verification.yml'
+  pull_request:
+    paths:
+      - 'scripts/production-browser-smoke.mjs'
+      - 'scripts/production-load-smoke.mjs'
+      - '.github/workflows/production-verification.yml'
+  workflow_dispatch:
+    inputs:
+      run_load_test:
+        description: 'Run the bounded GET-only production load probe (maximum 60 requests, concurrency 3)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    name: Real Chromium browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated Playwright dependency
+        run: |
+          npm install --prefix /tmp/tech-katta-playwright playwright
+          /tmp/tech-katta-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test production SPA routes and browser-origin API access
+        env:
+          PLAYWRIGHT_MODULE: /tmp/tech-katta-playwright/node_modules/playwright/index.mjs
+          FRONTEND_URL: https://tech.katta.cc
+          API_URL: https://tech-api.katta.cc
+        run: node scripts/production-browser-smoke.mjs
+
+  bounded-load-smoke:
+    name: Bounded production GET load probe
+    needs: browser-smoke
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_load_test == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run bounded GET-only probe
+        env:
+          API_URL: https://tech-api.katta.cc
+          LOAD_CONCURRENCY: '3'
+          LOAD_MAX_REQUESTS: '60'
+        run: node scripts/production-load-smoke.mjs
