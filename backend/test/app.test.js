@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
-import { after, test } from 'node:test';
+import { test } from 'node:test';
 import { createApp } from '../src/app.js';
 import { createRateLimiter } from '../src/middleware/rateLimit.js';
 
-test('createApp wires health, API, CORS, and security middleware without starting a process', async () => {
+test('createApp wires health, API, CORS, security headers, and JSON errors', async () => {
   const rateLimiter = createRateLimiter({ limit: 20 });
   const app = createApp({
     getDB: () => null,
     isDBConnected: () => false,
     rateLimiter,
-    logger: { info() {} },
+    logger: { info() {}, error() {} },
   });
   const server = app.listen(0, '127.0.0.1');
 
@@ -38,6 +38,18 @@ test('createApp wires health, API, CORS, and security middleware without startin
     assert.equal(rootResponse.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(rootResponse.headers.get('x-powered-by'), null);
     assert.equal((await rootResponse.json()).service, 'tech-katta-api');
+
+    const missingResponse = await fetch(`${baseUrl}/does-not-exist`);
+    assert.equal(missingResponse.status, 404);
+    assert.deepEqual(await missingResponse.json(), { error: 'Not found' });
+
+    const malformedResponse = await fetch(`${baseUrl}/api/articles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{invalid json',
+    });
+    assert.equal(malformedResponse.status, 400);
+    assert.deepEqual(await malformedResponse.json(), { error: 'Invalid JSON body' });
   } finally {
     rateLimiter.close();
     await new Promise((resolve, reject) => {

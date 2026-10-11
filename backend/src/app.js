@@ -3,6 +3,7 @@ import express from 'express';
 import { loadConfig } from './config.js';
 import { createContentRouter } from './routes/content.js';
 import { createHealthRouter } from './routes/health.js';
+import { createErrorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRequestLogger } from './middleware/requestLogger.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
@@ -81,7 +82,9 @@ export function createApp({
     });
   });
 
-  app.use('/api', createContentRouter({ getDB, isDBConnected, logger }));
+  app.use('/api', createContentRouter({ getDB, isDBConnected }));
+  app.use(notFoundHandler);
+  app.use(createErrorHandler({ logger }));
 
   return app;
 }

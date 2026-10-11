@@ -3,12 +3,15 @@ import test from 'node:test';
 import { createContentController } from '../src/modules/content/contentController.js';
 import { createContentRepository } from '../src/modules/content/contentRepository.js';
 import { createContentService } from '../src/modules/content/contentService.js';
+import { ContentUnavailableError } from '../src/errors.js';
+import { createErrorHandler } from '../src/middleware/errorHandler.js';
 import { categories as fallbackCategories } from '../src/data.js';
 
 function responseRecorder() {
   return {
     statusCode: 200,
     headers: {},
+    headersSent: false,
     body: undefined,
     status(code) {
       this.statusCode = code;
@@ -16,6 +19,9 @@ function responseRecorder() {
     },
     setHeader(name, value) {
       this.headers[name.toLowerCase()] = value;
+    },
+    getHeader(name) {
+      return this.headers[name.toLowerCase()];
     },
     json(body) {
       this.body = body;
@@ -111,13 +117,12 @@ test('controller forwards supported article filters to the service', async () =>
         return [{ slug: 'sample-article' }];
       },
     },
-    logger: { error() {} },
   });
   const response = responseRecorder();
 
   await controller.listArticles({
     query: { category: 'systems', search: 'cache' },
-  }, response);
+  }, response, () => {});
 
   assert.deepEqual(observedFilters, {
     category: 'systems',
@@ -127,21 +132,27 @@ test('controller forwards supported article filters to the service', async () =>
   assert.equal(response.statusCode, 200);
 });
 
-test('controller returns a generic retryable error without leaking database details', async () => {
+test('controller forwards content failures to the shared error handler', async () => {
   const controller = createContentController({
     service: {
       async getCategories() {
         throw new Error('secret MongoDB connection string');
       },
     },
-    logger: { error() {} },
   });
   const response = responseRecorder();
+  let forwardedError;
 
-  await controller.listCategories({}, response);
+  await controller.listCategories({}, response, (error) => {
+    forwardedError = error;
+  });
+
+  assert.ok(forwardedError instanceof ContentUnavailableError);
+  const errorHandler = createErrorHandler({ logger: { error() {} } });
+  errorHandler(forwardedError, { method: 'GET', path: '/api/categories' }, response, () => {});
 
   assert.equal(response.statusCode, 503);
-  assert.equal(response.headers['retry-after'], '5');
+  assert.equal(response.headers['retry-after'], 5);
   assert.equal(response.headers['cache-control'], 'no-store');
   assert.deepEqual(response.body, {
     error: 'Content service temporarily unavailable',
@@ -151,6 +162,7 @@ test('controller returns a generic retryable error without leaking database deta
 
 test('controller rejects malformed slugs before calling the service', async () => {
   let serviceCalled = false;
+  let forwardedError;
   const controller = createContentController({
     service: {
       async getArticle() {
@@ -158,12 +170,13 @@ test('controller rejects malformed slugs before calling the service', async () =
         return null;
       },
     },
-    logger: { error() {} },
   });
   const response = responseRecorder();
 
-  await controller.getArticle({ params: { slug: '../admin' } }, response);
+  await controller.getArticle({ params: { slug: '../admin' } }, response, (error) => {
+    forwardedError = error;
+  });
 
-  assert.equal(response.statusCode, 404);
+  assert.equal(forwardedError.statusCode, 404);
   assert.equal(serviceCalled, false);
 });

@@ -4,10 +4,14 @@ import express from 'express';
 import test from 'node:test';
 import { categories as fallbackCategories } from '../src/data.js';
 import { createContentRouter } from '../src/routes/content.js';
+import { createErrorHandler, notFoundHandler } from '../src/middleware/errorHandler.js';
 
 async function withApi(dependencies, run) {
   const app = express();
+  app.use(express.json({ limit: '50kb' }));
   app.use('/api', createContentRouter(dependencies));
+  app.use(notFoundHandler);
+  app.use(createErrorHandler({ logger: { error() {} } }));
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
 
@@ -91,7 +95,7 @@ test('returns a generic 503 when a connected database query fails', async () => 
   });
 });
 
-test('returns 404 for a missing database article instead of falling back', async () => {
+test('returns 404 JSON for a missing database article instead of falling back', async () => {
   const db = fakeDatabase();
   await withApi({
     isDBConnected: () => true,
@@ -99,5 +103,6 @@ test('returns 404 for a missing database article instead of falling back', async
   }, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/articles/distributed-system-components-overview`);
     assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: 'Not found' });
   });
 });

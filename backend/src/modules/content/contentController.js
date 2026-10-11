@@ -1,34 +1,26 @@
+import { ContentUnavailableError, NotFoundError } from '../../errors.js';
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-function respondContentUnavailable(response, route, error, logger) {
-  logger.error(`Content query failed for ${route}:`, error.message);
-  response.setHeader('Cache-Control', 'no-store');
-  response.setHeader('Retry-After', '5');
-
-  return response.status(503).json({
-    error: 'Content service temporarily unavailable',
-  });
-}
-
 /**
- * Content controller: translates HTTP input into service calls and service
- * outcomes into the existing public API response contract.
+ * Content controller: translates HTTP input into service calls and passes
+ * failures to the application's shared error boundary.
  */
-export function createContentController({ service, logger = console }) {
+export function createContentController({ service }) {
   if (!service) {
     throw new TypeError('Content controller requires a service.');
   }
 
   return {
-    async listCategories(_request, response) {
+    async listCategories(_request, response, next) {
       try {
         return response.json(await service.getCategories());
       } catch (error) {
-        return respondContentUnavailable(response, 'categories', error, logger);
+        return next(new ContentUnavailableError('categories', error));
       }
     },
 
-    async listArticles(request, response) {
+    async listArticles(request, response, next) {
       try {
         const articles = await service.getArticles({
           category: request.query.category,
@@ -36,20 +28,20 @@ export function createContentController({ service, logger = console }) {
         });
         return response.json(articles);
       } catch (error) {
-        return respondContentUnavailable(response, 'articles', error, logger);
+        return next(new ContentUnavailableError('articles', error));
       }
     },
 
-    async getArticle(request, response) {
+    async getArticle(request, response, next) {
       const { slug } = request.params;
-      if (!SLUG_PATTERN.test(slug)) return response.sendStatus(404);
+      if (!SLUG_PATTERN.test(slug)) return next(new NotFoundError());
 
       try {
         const article = await service.getArticle(slug);
-        if (!article) return response.sendStatus(404);
+        if (!article) return next(new NotFoundError());
         return response.json(article);
       } catch (error) {
-        return respondContentUnavailable(response, `article ${slug}`, error, logger);
+        return next(new ContentUnavailableError(`article ${slug}`, error));
       }
     },
   };
