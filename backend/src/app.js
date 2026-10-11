@@ -48,13 +48,17 @@ export function createApp({
     next();
   });
 
-  // Assign a request ID before parsers so malformed/oversized bodies are observable.
+  // Assign a request ID before any middleware that can reject the request.
   app.use(createRequestLogger({ logger }));
-  app.use(express.json({ limit: '50kb' }));
+
+  // Keep health probes outside the general rate limiter so infrastructure
+  // checks remain reliable even when public traffic is being throttled.
   app.use('/health', createHealthRouter({ isDBConnected }));
 
-  // Health probes remain outside the general rate limiter for reliable checks.
+  // Rate-limit before parsing bodies so malformed/oversized payloads cannot
+  // bypass request limits by causing the JSON parser to short-circuit routing.
   app.use(rateLimiter);
+  app.use(express.json({ limit: '50kb' }));
 
   app.get('/', (_request, response) => {
     response.json({
