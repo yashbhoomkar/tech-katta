@@ -156,44 +156,8 @@ jobs:
             echo "Rollback artifact preparation passed."
 
             echo "Fetching official Cloudflare ranges from the VPS"
-            python3 - <<'PY'
-            import ipaddress
-            import json
-            import sys
-            import urllib.request
-
-            request = urllib.request.Request(
-                "https://api.cloudflare.com/client/v4/ips",
-                headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
-            )
-            try:
-                with urllib.request.urlopen(request, timeout=15) as response:
-                    payload = json.load(response)
-            except Exception as exc:
-                print(f"ERROR: Could not retrieve Cloudflare ranges: {type(exc).__name__}: {exc}", file=sys.stderr)
-                raise
-            if not payload.get("success"):
-                raise SystemExit("Cloudflare IP-range API did not return success.")
-
-            result = payload.get("result", {})
-            v4 = [ipaddress.ip_network(x) for x in result.get("ipv4_cidrs", [])]
-            v6 = [ipaddress.ip_network(x) for x in result.get("ipv6_cidrs", [])]
-            if len(v4) < 5 or len(v6) < 2 or any(n.version != 4 for n in v4) or any(n.version != 6 for n in v6):
-                raise SystemExit("Cloudflare IPv4/IPv6 CIDR response failed validation.")
-
-            lines = [
-                "# Managed by .github/workflows/cloudflare-origin-hardening.yml",
-                "# Trust CF-Connecting-IP only when the immediate peer is in an official Cloudflare range.",
-            ]
-            lines.extend(f"set_real_ip_from {net};" for net in sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen)))
-            lines.extend(["real_ip_header CF-Connecting-IP;", "real_ip_recursive on;", ""])
-            with open("/tmp/tech-katta-cloudflare-realip.conf", "w", encoding="utf-8") as output:
-                output.write("\n".join(lines))
-            with open("/tmp/tech-katta-cloudflare-cidrs.txt", "w", encoding="utf-8") as output:
-                for net in sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen)):
-                    output.write(f"{net}\n")
-            print(f"Validated Cloudflare ranges: IPv4={len(v4)}, IPv6={len(v6)}.")
-            PY
+            curl -fsS --max-time 15 https://api.cloudflare.com/client/v4/ips -o /tmp/tech-katta-cloudflare-ips.json
+            python3 -c 'import ipaddress,json; p=json.load(open("/tmp/tech-katta-cloudflare-ips.json")); r=p.get("result",{}); v4=[ipaddress.ip_network(x) for x in r.get("ipv4_cidrs",[])]; v6=[ipaddress.ip_network(x) for x in r.get("ipv6_cidrs",[])]; assert p.get("success") and len(v4)>=5 and len(v6)>=2 and all(n.version==4 for n in v4) and all(n.version==6 for n in v6); nets=sorted(v4+v6,key=lambda n:(n.version,int(n.network_address),n.prefixlen)); open("/tmp/tech-katta-cloudflare-cidrs.txt","w").write("".join(str(n)+"\n" for n in nets)); open("/tmp/tech-katta-cloudflare-realip.conf","w").write("# Managed by .github/workflows/cloudflare-origin-hardening.yml\n# Trust CF-Connecting-IP only from official Cloudflare ranges.\n"+"".join("set_real_ip_from "+str(n)+";\n" for n in nets)+"real_ip_header CF-Connecting-IP;\nreal_ip_recursive on;\n"); print("Validated Cloudflare ranges: IPv4=%d, IPv6=%d."%(len(v4),len(v6)))'
 
             restore_previous() {
               BACKUP_STATE="$(sudo stat -c '%F' "$BACKUP" 2>/dev/null || echo absent)"
@@ -348,30 +312,11 @@ jobs:
             sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'
             sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere \(v6\)'
 
-            python3 - <<'PY'
-            import ipaddress
-            import json
-            import urllib.request
-
-            request = urllib.request.Request(
-                "https://api.cloudflare.com/client/v4/ips",
-                headers={"User-Agent": "Tech-Katta-Origin-Hardening/1.0"},
-            )
-            with urllib.request.urlopen(request, timeout=15) as response:
-                payload = json.load(response)
-            if not payload.get("success"):
-                raise SystemExit("Cloudflare IP-range API did not return success.")
-            result = payload.get("result", {})
-            v4 = [ipaddress.ip_network(x) for x in result.get("ipv4_cidrs", [])]
-            v6 = [ipaddress.ip_network(x) for x in result.get("ipv6_cidrs", [])]
-            if len(v4) < 5 or len(v6) < 2 or any(n.version != 4 for n in v4) or any(n.version != 6 for n in v6):
-                raise SystemExit("Cloudflare IPv4/IPv6 CIDR response failed validation.")
-            nets = sorted(v4 + v6, key=lambda n: (n.version, int(n.network_address), n.prefixlen))
-            with open("/tmp/tech-katta-cloudflare-cidrs.txt", "w", encoding="utf-8") as output:
-                for net in nets:
-                    output.write(f"{net}\n")
-            print(f"Validated {len(v4)} IPv4 and {len(v6)} IPv6 Cloudflare ranges.")
-            PY
+            if ! test -s "$RANGES"; then
+              echo "ERROR: Cloudflare CIDR file is missing; refusing firewall changes."
+              exit 1
+            fi
+            echo "Using the validated Cloudflare CIDR list generated during the Nginx preflight."
 
             sudo install -d -o root -g root -m 0755 "$STATE_DIR"
             if test -f "$STATE"; then
