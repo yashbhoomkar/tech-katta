@@ -5,11 +5,13 @@ let db = null;
 let isConnected = false;
 let reconnectTimer = null;
 let shuttingDown = false;
+let activeConnectionOptions = null;
 
-export async function connectDB() {
+export async function connectDB(options = {}) {
   shuttingDown = false;
-  const uri = process.env.MONGODB_URI;
-  const dbName = process.env.MONGODB_DB || 'techkatta';
+  const uri = options.uri ?? process.env.MONGODB_URI;
+  const dbName = options.dbName ?? process.env.MONGODB_DB ?? 'techkatta';
+  activeConnectionOptions = { uri, dbName };
 
   if (!uri) {
     console.warn('⚠️ MONGODB_URI not provided. Falling back to local data store.');
@@ -63,9 +65,9 @@ export async function connectDB() {
 function startAutoReconnect() {
   if (reconnectTimer) return;
   reconnectTimer = setInterval(async () => {
-    if (!isConnected) {
+    if (!isConnected && !shuttingDown) {
       console.log('🔄 Retrying MongoDB connection in background...');
-      await connectDB();
+      await connectDB(activeConnectionOptions || {});
     }
   }, 15000);
 }
@@ -87,7 +89,8 @@ export async function closeDB() {
   if (client) {
     await client.close();
     client = null;
-    db = null;
-    isConnected = false;
   }
+  db = null;
+  isConnected = false;
+  activeConnectionOptions = null;
 }
