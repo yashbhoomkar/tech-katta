@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Verify public DNS is proxied by Cloudflare
+      - name: Report whether public DNS uses Cloudflare proxy
         shell: bash
         run: |
           python3 - <<'PY'
@@ -67,7 +67,9 @@ jobs:
                   outside.append(address)
 
           if outside:
-              raise SystemExit("Public DNS includes addresses outside Cloudflare's official proxy ranges.")
+              print("::warning::Public DNS includes addresses outside Cloudflare proxy ranges; do not restrict the origin firewall to Cloudflare yet.")
+              else:
+                  print("All public DNS addresses belong to Cloudflare official proxy ranges.")
           PY
 
       - name: Inspect proxy and firewall configuration
