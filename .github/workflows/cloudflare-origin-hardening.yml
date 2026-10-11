@@ -159,7 +159,8 @@ jobs:
               sudo nginx -t && sudo systemctl reload nginx || true
             }
 
-            sudo install -o root -g root -m 0644 /tmp/tech-katta-cloudflare-realip.conf "$TARGET"
+            sudo install -o root -g root -m 0644 /tmp/tech-katta-cloudflare-realip.conf "$TARGET.new"
+            sudo mv -f "$TARGET.new" "$TARGET"
             if ! sudo nginx -t; then
               echo "Nginx syntax check failed; restoring the prior config."
               restore_previous
@@ -381,6 +382,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json
+          import subprocess
           import urllib.request
 
           base = "https://tech-api.katta.cc"
@@ -400,7 +402,31 @@ jobs:
                       health = json.loads(body)
                       if health.get("status") != "ok" or health.get("db") != "connected":
                           raise SystemExit("API health or database connectivity failed after firewall restriction.")
-          print("Post-firewall public API, database, and CORS smoke checks passed.")
+
+          # Bypass Cloudflare deliberately and ensure the origin is no longer directly reachable.
+          for port, url in (
+              (80, "http://tech-api.katta.cc/api/health"),
+              (443, "https://tech-api.katta.cc/api/health"),
+          ):
+              result = subprocess.run(
+                  [
+                      "curl", "--silent", "--show-error", "--connect-timeout", "4",
+                      "--max-time", "8", "--resolve", f"tech-api.katta.cc:{port}:129.121.133.47",
+                      "-o", "/dev/null", "-w", "%{http_code}", url,
+                  ],
+                  capture_output=True,
+                  text=True,
+                  timeout=10,
+              )
+              if result.returncode == 0:
+                  raise SystemExit(f"Direct origin port {port} is still reachable (HTTP {result.stdout}).")
+              if result.returncode not in (7, 28):
+                  raise SystemExit(
+                      f"Unexpected direct-origin probe result on port {port}: "
+                      f"curl exit {result.returncode}; refusing to claim origin isolation."
+                  )
+              print(f"Direct origin port {port}: blocked (curl exit {result.returncode}).")
+          print("Post-firewall public API, database, CORS, and direct-origin isolation checks passed.")
           PY
 
       - name: Re-open public web access if post-firewall smoke fails
