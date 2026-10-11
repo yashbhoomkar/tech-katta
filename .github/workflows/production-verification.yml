@@ -38,6 +38,10 @@ jobs:
         run: |
           npm install --prefix /tmp/tech-katta-playwright playwright
           /tmp/tech-katta-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Diagnose public API TLS certificate chain
+        run: |
+          echo | openssl s_client -connect tech-api.katta.cc:443 -servername tech-api.katta.cc -verify_return_error 2>&1 | tail -n 35 || true
+          curl -sS -o /dev/null -w 'API_TLS_HTTP_STATUS=%{http_code}\n' --max-time 15 https://tech-api.katta.cc/api/health || true
       - name: Test production SPA routes and browser-origin API access
         env:
           PLAYWRIGHT_MODULE: /tmp/tech-katta-playwright/node_modules/playwright/index.mjs
