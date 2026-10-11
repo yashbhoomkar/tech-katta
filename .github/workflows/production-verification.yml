@@ -12,7 +12,6 @@ on:
     paths:
       - 'scripts/production-browser-smoke.mjs'
       - 'scripts/production-load-smoke.mjs'
-      - '.github/workflows/production-verification.yml'
   workflow_dispatch:
     inputs:
       run_load_test:
