@@ -27,6 +27,7 @@ async function seed() {
     // Create unique indexes
     await categoriesCollection.createIndex({ id: 1 }, { unique: true });
     await articlesCollection.createIndex({ slug: 1 }, { unique: true });
+    await articlesCollection.createIndex({ category: 1, slug: 1 });
 
     // Migrate the previous slug before syncing the canonical article document.
     const legacySlug = 'distributed-system-components';

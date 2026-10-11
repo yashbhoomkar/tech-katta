@@ -8,6 +8,12 @@ import {
   getArticleContent as getFallbackContent,
 } from '../data.js';
 
+function parsePositiveInteger(value) {
+  if (typeof value !== 'string' || !/^\\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function createContentRouter({ getDB, isDBConnected }) {
   const router = express.Router();
 
@@ -39,8 +45,24 @@ export function createContentRouter({ getDB, isDBConnected }) {
 
   router.get('/articles', async (request, response) => {
     const { category, search } = request.query;
-    const query = {};
+    const paginationEnabled = request.query.page !== undefined || request.query.limit !== undefined;
+    const pageValue = request.query.page === undefined ? 1 : parsePositiveInteger(request.query.page);
+    const limitValue = request.query.limit === undefined ? 20 : parsePositiveInteger(request.query.limit);
 
+    if (paginationEnabled && (!pageValue || !limitValue)) {
+      return response.status(400).json({
+        error: 'page and limit must be positive integers',
+      });
+    }
+
+    const page = pageValue || 1;
+    const limit = paginationEnabled ? Math.min(limitValue || 20, 100) : null;
+    const offset = paginationEnabled ? (page - 1) * limit : 0;
+    if (paginationEnabled && !Number.isSafeInteger(offset)) {
+      return response.status(400).json({ error: 'page is too large' });
+    }
+
+    const query = {};
     if (typeof category === 'string' && category) {
       query.category = category.slice(0, 100);
     }
@@ -59,6 +81,7 @@ export function createContentRouter({ getDB, isDBConnected }) {
       }
     }
 
+    let totalCount = null;
     const readFallback = () => {
       let result = [...fallbackArticles];
 
@@ -79,18 +102,40 @@ export function createContentRouter({ getDB, isDBConnected }) {
         });
       }
 
+      if (paginationEnabled) {
+        totalCount = result.length;
+        result.sort((a, b) => a.slug.localeCompare(b.slug));
+        return result.slice(offset, offset + limit);
+      }
+
       return result;
     };
 
     try {
       const articles = await readPrimaryOrFallback({
         databaseConnected: isDBConnected(),
-        readDatabase: () => getDB()
-          .collection('articles')
-          .find(query, { projection: { _id: 0, content: 0 } })
-          .toArray(),
+        readDatabase: async () => {
+          const collection = getDB().collection('articles');
+          let cursor = collection.find(query, { projection: { _id: 0, content: 0 } });
+
+          if (paginationEnabled) {
+            cursor = cursor.sort({ slug: 1 }).skip(offset).limit(limit);
+            totalCount = await collection.countDocuments(query);
+          }
+
+          return cursor.toArray();
+        },
         readFallback,
       });
+
+      if (paginationEnabled) {
+        response.set({
+          'X-Total-Count': String(totalCount),
+          'X-Page': String(page),
+          'X-Page-Size': String(limit),
+          'X-Total-Pages': String(Math.ceil(totalCount / limit)),
+        });
+      }
 
       return response.json(articles);
     } catch (err) {

@@ -10,6 +10,7 @@ const checks = [
   { name: 'api article by canonical slug', url: 'https://tech-api.katta.cc/api/articles/distributed-system-components-overview', expected: 200, json: (body) => body.slug === 'distributed-system-components-overview' && Array.isArray(body.content?.sections) },
   { name: 'api search regex safety', url: 'https://tech-api.katta.cc/api/articles?search=%5B', expected: 200, json: (body) => Array.isArray(body) },
   { name: 'api invalid slug', url: 'https://tech-api.katta.cc/api/articles/INVALID%20SLUG', expected: 404 },
+  { name: 'api pagination', url: 'https://tech-api.katta.cc/api/articles?page=1&limit=5', expected: 200, json: (body) => Array.isArray(body) && body.length <= 5 },
 ];
 
 const failures = [];
@@ -41,6 +42,19 @@ async function request(check, headers = {}) {
 
 for (const check of checks) {
   await request(check);
+}
+
+const paginated = await request(checks.find((check) => check.name === 'api pagination'), { Origin: 'https://tech.katta.cc' });
+for (const header of ['x-total-count', 'x-page', 'x-page-size', 'x-total-pages']) {
+  if (!paginated.response.headers.has(header)) {
+    failures.push(`pagination: missing ${header} response header`);
+  }
+}
+const exposedHeaders = (paginated.response.headers.get('access-control-expose-headers') || '').toLowerCase();
+for (const header of ['x-total-count', 'x-page', 'x-page-size', 'x-total-pages']) {
+  if (!exposedHeaders.includes(header)) {
+    failures.push(`pagination: ${header} is not exposed through CORS`);
+  }
 }
 
 const health = await request(checks[3], { Origin: 'https://tech.katta.cc' });

@@ -27,6 +27,7 @@ app.use(cors({
   origin: allowedOrigin,
   methods: ['GET', 'OPTIONS'],
   allowedHeaders: ['Content-Type'],
+  exposedHeaders: ['X-Request-Id', 'X-Total-Count', 'X-Page', 'X-Page-Size', 'X-Total-Pages'],
 }));
 
 app.use((_request, response, next) => {
