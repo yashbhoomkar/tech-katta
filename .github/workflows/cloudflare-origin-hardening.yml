@@ -117,11 +117,11 @@ jobs:
             fi
             echo "Preflight: preserve existing SSH rules"
             sudo ufw status | grep -E '^22/tcp'
-            if ! sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+            if ! sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
               echo "ERROR: Existing IPv4 SSH allow rule was not found."
               exit 1
             fi
-            if ! sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'; then
+            if ! sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere \(v6\)'; then
               echo "ERROR: Existing IPv6 SSH allow rule was not found."
               exit 1
             fi
@@ -321,8 +321,8 @@ jobs:
             sudo -n true
             sudo ufw status verbose | grep -q '^Status: active'
             sudo grep -Eq '^IPV6=yes$' /etc/default/ufw
-            sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
-            sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
+            sudo ufw status | grep -Eq '^22/tcp[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'
+            sudo ufw status | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere \(v6\)'
 
             python3 - <<'PY'
             import ipaddress
@@ -377,18 +377,18 @@ jobs:
             done < /tmp/tech-katta-cloudflare-cidrs-old.txt
 
             STATUS="$(sudo ufw status)"
-            if printf '%s\n' "$STATUS" | grep -Eq '^80/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+            if printf '%s\n' "$STATUS" | grep -Eq '^80/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
               sudo ufw --force delete allow 80/tcp
             fi
             STATUS="$(sudo ufw status)"
-            if printf '%s\n' "$STATUS" | grep -Eq '^443/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+            if printf '%s\n' "$STATUS" | grep -Eq '^443/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
               sudo ufw --force delete allow 443/tcp
             fi
 
             STATUS="$(sudo ufw status)"
-            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp[[:space:]]+ALLOW IN[[:space:]]+Anywhere'
-            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW IN[[:space:]]+Anywhere \(v6\)'
-            if printf '%s\n' "$STATUS" | grep -Eq '^(80|443)/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW IN[[:space:]]+Anywhere'; then
+            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'
+            printf '%s\n' "$STATUS" | grep -Eq '^22/tcp \(v6\)[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere \(v6\)'
+            if printf '%s\n' "$STATUS" | grep -Eq '^(80|443)/tcp([[:space:]]+\(v6\))?[[:space:]]+ALLOW([[:space:]]+IN)?[[:space:]]+Anywhere'; then
               echo "A public Anywhere HTTP/HTTPS allow rule remains."
               exit 1
             fi
