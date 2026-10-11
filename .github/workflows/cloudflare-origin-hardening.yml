@@ -90,7 +90,7 @@ jobs:
           username: ${{ secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          script_stop: true
+          script_stop: false
           command_timeout: 5m
           script: |
             set -eu
@@ -251,7 +251,7 @@ jobs:
           username: ${{ secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          script_stop: true
+          script_stop: false
           script: |
             set -eu
             RUN_ID="${{ github.run_id }}"
@@ -286,7 +286,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 10m
-          script_stop: true
+          script_stop: false
           script: |
             set -eu
             RUN_ID="${{ github.run_id }}"
@@ -449,7 +449,7 @@ jobs:
           username: ${{ secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          script_stop: true
+          script_stop: false
           script: |
             set -eu
             echo "Post-firewall smoke failed. Restoring public web reachability; SSH rules remain unchanged."
