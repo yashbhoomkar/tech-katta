@@ -82,15 +82,15 @@ jobs:
         id: nginx
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
-          username: \${{ secrets.VPS_USER || 'yash' }}
-          key: \${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script_stop: true
           command_timeout: 5m
           script: |
             set -eu
-            RUN_ID="\${{ github.run_id }}"
+            RUN_ID="${{ github.run_id }}"
             TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
             BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
@@ -227,14 +227,14 @@ jobs:
         if: failure() && steps.nginx.outcome == 'success' && steps.verify.outcome == 'failure'
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
-          username: \${{ secrets.VPS_USER || 'yash' }}
-          key: \${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script_stop: true
           script: |
             set -eu
-            RUN_ID="\${{ github.run_id }}"
+            RUN_ID="${{ github.run_id }}"
             TARGET=/etc/nginx/conf.d/cloudflare-realip.conf
             BACKUP_DIR=/var/backups/tech-katta-cloudflare-realip
             BACKUP="$BACKUP_DIR/$RUN_ID.conf"
@@ -257,15 +257,15 @@ jobs:
         if: steps.verify.outcome == 'success'
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
-          username: \${{ secrets.VPS_USER || 'yash' }}
-          key: \${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 10m
           script_stop: true
           script: |
             set -eu
-            RUN_ID="\${{ github.run_id }}"
+            RUN_ID="${{ github.run_id }}"
             RANGES=/tmp/tech-katta-cloudflare-cidrs.txt
             STATE_DIR=/etc/tech-katta
             STATE="$STATE_DIR/cloudflare-origin-cidrs.txt"
@@ -406,9 +406,9 @@ jobs:
         if: failure() && steps.firewall.outcome == 'success' && steps.post-firewall.outcome == 'failure'
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: \${{ secrets.VPS_HOST || '129.121.133.47' }}
-          username: \${{ secrets.VPS_USER || 'yash' }}
-          key: \${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script_stop: true
           script: |
