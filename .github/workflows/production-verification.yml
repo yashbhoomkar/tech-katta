@@ -39,7 +39,7 @@ jobs:
           npm install --prefix /tmp/tech-katta-playwright playwright
           /tmp/tech-katta-playwright/node_modules/.bin/playwright install --with-deps chromium
       - name: Repair invalid public API certificate for this dedicated verification branch
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'test/production-browser-load-verification'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/test/production-browser-load-verification') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'test/production-browser-load-verification')
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
