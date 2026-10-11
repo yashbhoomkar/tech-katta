@@ -147,7 +147,7 @@ jobs:
             echo "Nginx config state: $TARGET_STATE"
             if ! [ "$TARGET_STATE" = "regular file" ]; then
               echo "No existing real-IP config; recording absence for rollback."
-              sudo touch "$ABSENT"
+              printf 'absent\n' | sudo tee "$ABSENT" >/dev/null
             fi
             if ! [ "$TARGET_STATE" = absent ]; then
               echo "Existing real-IP config found; backing it up."
@@ -205,8 +205,9 @@ jobs:
           import urllib.request
 
           base = "https://tech-api.katta.cc"
+          user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
           for path in ("/api/health", "/api/categories"):
-              request = urllib.request.Request(base + path, headers={"Cache-Control": "no-cache"})
+              request = urllib.request.Request(base + path, headers={"Cache-Control": "no-cache", "User-Agent": user_agent})
               with urllib.request.urlopen(request, timeout=15) as response:
                   body = response.read().decode("utf-8")
                   print(f"{path}: HTTP {response.status}")
@@ -224,6 +225,7 @@ jobs:
                   base + "/api/categories",
                   headers={
                       "X-Forwarded-For": spoofed,
+                      "User-Agent": user_agent,
                       "Cache-Control": "no-cache",
                       "Pragma": "no-cache",
                   },
