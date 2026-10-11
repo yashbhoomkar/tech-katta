@@ -37,6 +37,23 @@ jobs:
         run: |
           npm install --prefix /tmp/tech-katta-playwright playwright
           /tmp/tech-katta-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Build frontend for isolated mobile gesture checks
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+      - name: Start local frontend preview for mobile gesture checks
+        run: |
+          npm run preview --prefix frontend -- --host 127.0.0.1 > /tmp/tech-katta-preview.log 2>&1 &
+          echo $! > /tmp/tech-katta-preview.pid
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              echo "Local frontend preview is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/tech-katta-preview.log
+          exit 1
       - name: Diagnose public API TLS certificate chain
         run: |
           echo | openssl s_client -connect tech-api.katta.cc:443 -servername tech-api.katta.cc -verify_return_error 2>&1 | tail -n 35 || true
@@ -46,6 +63,7 @@ jobs:
           PLAYWRIGHT_MODULE: /tmp/tech-katta-playwright/node_modules/playwright/index.mjs
           FRONTEND_URL: https://tech.katta.cc
           API_URL: https://tech-api.katta.cc
+          MOBILE_FRONTEND_URL: http://127.0.0.1:4173
         run: node scripts/production-browser-smoke.mjs
 
   bounded-load-smoke:
