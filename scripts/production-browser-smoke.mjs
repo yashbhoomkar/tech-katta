@@ -2,6 +2,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 
 const origin = process.env.FRONTEND_URL ?? 'https://tech.katta.cc';
 const apiOrigin = process.env.API_URL ?? 'https://tech-api.katta.cc';
+const mobileOrigin = process.env.MOBILE_FRONTEND_URL ?? origin;
 const failures = [];
 const pageErrors = [];
 const consoleErrors = [];
@@ -99,7 +100,7 @@ try {
 
   const mobileRoute = () => new URL(mobilePage.url()).pathname;
   try {
-    await mobilePage.goto(new URL('/', origin).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await mobilePage.goto(new URL('/', mobileOrigin).toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await mobilePage.waitForSelector('.site-main', { timeout: 15000 });
 
     await swipe({ startX: 60, endX: 190 });
@@ -119,10 +120,10 @@ try {
       console.log('PASS mobile-emulated touch: home left swipe leaves navigation unchanged');
     }
 
-    await mobilePage.goto(new URL('/unit/distributed-systems', origin).toString(), {
+    await mobilePage.goto(new URL('/unit/distributed-systems', mobileOrigin).toString(), {
       waitUntil: 'domcontentloaded', timeout: 30000,
     });
-    await mobilePage.goto(new URL('/learn/distributed-system-components-overview', origin).toString(), {
+    await mobilePage.goto(new URL('/learn/distributed-system-components-overview', mobileOrigin).toString(), {
       waitUntil: 'domcontentloaded', timeout: 30000,
     });
 
