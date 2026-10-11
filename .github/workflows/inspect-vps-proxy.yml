@@ -1,0 +1,47 @@
+name: Inspect VPS Proxy Security
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-vps-proxy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inspect-vps-proxy
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    name: Read-only VPS proxy diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect proxy and firewall configuration
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -eu
+            echo "=== Nginx service ==="
+            sudo systemctl is-active nginx
+
+            echo "=== Tech Katta API proxy directives ==="
+            sudo nginx -T 2>/dev/null | sed -n '/server_name[^;]*tech-api\.katta\.cc/,+60p' | grep -E 'server_name|listen|location|proxy_pass|proxy_set_header (Host|X-Forwarded-For|X-Real-IP|CF-Connecting-IP)|proxy_protocol|real_ip_header|set_real_ip_from' || true
+
+            echo "=== Relevant listening ports ==="
+            sudo ss -lntp | grep -E ':(22|80|443|5000)\\b' || true
+
+            echo "=== UFW status ==="
+            sudo ufw status verbose || true
+
+            echo "=== API service status ==="
+            sudo systemctl is-active tech-katta-api
