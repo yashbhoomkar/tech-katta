@@ -6,6 +6,7 @@ test('uses safe development defaults when optional values are absent', () => {
   const config = loadConfig({});
 
   assert.equal(config.port, 5000);
+  assert.equal(config.host, '127.0.0.1');
   assert.equal(config.nodeEnv, 'development');
   assert.equal(config.frontendOrigin, 'http://localhost:5173');
   assert.equal(config.mongoUri, '');
@@ -17,12 +18,14 @@ test('parses explicit runtime and database configuration', () => {
   const config = loadConfig({
     NODE_ENV: 'production',
     PORT: '8080',
+    HOST: '0.0.0.0',
     FRONTEND_ORIGIN: 'https://tech.katta.cc',
     MONGODB_URI: 'mongodb+srv://example.invalid/techkatta',
     MONGODB_DB: 'techkatta-prod',
   });
 
   assert.equal(config.port, 8080);
+  assert.equal(config.host, '0.0.0.0');
   assert.equal(config.isProduction, true);
   assert.equal(config.frontendOrigin, 'https://tech.katta.cc');
   assert.equal(config.mongoUri, 'mongodb+srv://example.invalid/techkatta');
