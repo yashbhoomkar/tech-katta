@@ -1,0 +1,55 @@
+name: Inspect VPS Ledger Database View
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-ledger-runtime-db.yml"
+      - ".github/maintenance/inspect-ledger-runtime-db.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inspect-ledger-runtime-db
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Read-only ledger and backup comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax-check and encode read-only inspector
+        shell: bash
+        run: |
+          node --check .github/maintenance/inspect-ledger-runtime-db.mjs
+          printf 'LEDGER_INSPECT_SCRIPT_B64=' >> "$GITHUB_ENV"
+          base64 -w0 .github/maintenance/inspect-ledger-runtime-db.mjs >> "$GITHUB_ENV"
+          printf '\n' >> "$GITHUB_ENV"
+
+      - name: Inspect the VPS runtime's database view without writes
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          envs: LEDGER_INSPECT_SCRIPT_B64
+          script: |
+            set -eu
+            INSPECT_SCRIPT="/opt/tech-katta/backend/.ledger-inspect-$$.mjs"
+            trap 'sudo -n -u techkatta rm -f "$INSPECT_SCRIPT" || true' EXIT
+            printf '%s' "$LEDGER_INSPECT_SCRIPT_B64" | base64 -d | sudo -n -u techkatta tee "$INSPECT_SCRIPT" >/dev/null
+            sudo -n -u techkatta bash -lc "cd /opt/tech-katta/backend && node '$INSPECT_SCRIPT'"
