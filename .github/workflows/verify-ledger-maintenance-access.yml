@@ -1,0 +1,88 @@
+name: Verify Ledger Maintenance Access
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-ledger-maintenance-access
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify MongoDB unique-index capability through VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify isolated unique-index probe using the VPS runtime credentials
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -eu
+            sudo -u techkatta bash -lc 'cd /opt/tech-katta/backend && node --input-type=module' <<'NODE'
+            import 'dotenv/config';
+            import { MongoClient } from 'mongodb';
+
+            const uri = process.env.MONGODB_URI;
+            if (!uri) {
+              throw new Error('MONGODB_URI is not available to the techkatta runtime user; no database operation was attempted.');
+            }
+
+            const databaseName = 'techkatta_history';
+            const collectionName = '__tech_katta_ledger_unique_probe_${{ github.run_id }}';
+            const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+            let collectionCreated = false;
+
+            try {
+              await client.connect();
+              const database = client.db(databaseName);
+              const auth = await database.command({ connectionStatus: 1, showPrivileges: true });
+              const roles = auth.authInfo?.authenticatedUserRoles ?? [];
+              console.log('MongoDB connected. Authenticated role names:', JSON.stringify(
+                roles.map(({ role, db }) => ({ role, db }))
+              ));
+
+              await database.createCollection(collectionName);
+              collectionCreated = true;
+              const probe = database.collection(collectionName);
+              await probe.createIndex({ key: 1 }, { name: 'key_unique_probe', unique: true });
+
+              const indexes = await probe.listIndexes().toArray();
+              const index = indexes.find((item) => item.name === 'key_unique_probe');
+              if (index?.unique !== true) {
+                throw new Error('MongoDB did not report unique:true for the isolated probe index.');
+              }
+              console.log('Index metadata verified: unique:true.');
+
+              await probe.insertOne({ key: 'duplicate-probe' });
+              let duplicateRejected = false;
+              try {
+                await probe.insertOne({ key: 'duplicate-probe' });
+              } catch (error) {
+                if (error?.code === 11000) duplicateRejected = true;
+                else throw error;
+              }
+              if (!duplicateRejected) {
+                throw new Error('The unique index did not reject a duplicate key.');
+              }
+              console.log('Constraint verified: duplicate key rejected with MongoDB code 11000.');
+            } finally {
+              if (collectionCreated) {
+                try {
+                  await client.db(databaseName).dropCollection(collectionName);
+                  console.log('Temporary probe collection removed.');
+                } catch (error) {
+                  console.error('CLEANUP WARNING: temporary probe collection could not be removed; manual cleanup may be required. MongoDB code:', error?.code ?? 'unknown');
+                  throw error;
+                }
+              }
+              await client.close();
+            }
+            NODE
