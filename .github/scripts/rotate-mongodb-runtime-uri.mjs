@@ -20,10 +20,6 @@ try {
   if (!rotationId || !/^\d+$/.test(rotationId)) {
     throw new Error('Missing or invalid rotation identifier.');
   }
-  if (fs.existsSync(backupPath) || fs.existsSync(tempPath)) {
-    throw new Error('A rotation temporary file already exists for this run.');
-  }
-
   const original = fs.readFileSync(envPath, 'utf8');
     const uriLines = original.match(/^MONGODB_URI=.*$/gm) ?? [];
   if (uriLines.length !== 1) {
@@ -62,9 +58,9 @@ try {
   if (client) {
     try { await client.close(); } catch {}
   }
-  try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
+  try { fs.unlinkSync(tempPath); } catch {}
   if (!envUpdated) {
-    try { if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath); } catch {}
+    try { fs.unlinkSync(backupPath); } catch {}
   }
   console.error('Credential rotation preflight/config update failed. Secret values suppressed. Error type:', error?.name ?? 'Error', 'code:', error?.code ?? 'none');
   process.exitCode = 1;
