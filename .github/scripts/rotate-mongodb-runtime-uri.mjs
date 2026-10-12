@@ -54,9 +54,7 @@ try {
   const updated = original.replace(/^MONGODB_URI=.*$/m, `MONGODB_URI=${JSON.stringify(uri)}`);
   fs.copyFileSync(envPath, backupPath, fs.constants.COPYFILE_EXCL);
   fs.chmodSync(backupPath, 0o600);
-  fs.chownSync(backupPath, stat.uid, stat.gid);
   fs.writeFileSync(tempPath, updated, { mode: stat.mode & 0o777, flag: 'wx' });
-  fs.chownSync(tempPath, stat.uid, stat.gid);
   fs.chmodSync(tempPath, stat.mode & 0o777);
   fs.renameSync(tempPath, envPath);
 
