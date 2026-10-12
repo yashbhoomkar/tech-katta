@@ -5,6 +5,8 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/ci-backend.yml"
+      - ".github/scripts/**"
+      - ".github/workflows/rotate-mongodb-runtime-credential.yml"
   push:
     branches:
       - main
@@ -37,5 +39,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install locked dependencies
         run: npm ci
+      - name: Syntax-check guarded MongoDB rotation helper
+        run: node --check ../.github/scripts/rotate-mongodb-runtime-uri.mjs
       - name: Run backend tests
         run: npm test
