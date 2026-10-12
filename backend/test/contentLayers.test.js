@@ -208,3 +208,73 @@ test('controller rejects malformed slugs before calling the service', async () =
   assert.equal(forwardedError.statusCode, 404);
   assert.equal(serviceCalled, false);
 });
+
+
+test('article search query preserves case-insensitive substring fields and category intersection', async () => {
+  let observedQuery;
+  const repository = createContentRepository({
+    isDBConnected: () => true,
+    getDB: () => ({
+      collection(name) {
+        assert.equal(name, 'articles');
+        return {
+          find(query) {
+            observedQuery = query;
+            return { toArray: async () => [] };
+          },
+        };
+      },
+    }),
+  });
+
+  await repository.getArticles({ category: 'distributed-systems', search: '  KAFKA  ' });
+
+  assert.equal(observedQuery.category, 'distributed-systems');
+  assert.deepEqual(observedQuery.$or, [
+    { title: { $regex: 'KAFKA', $options: 'i' } },
+    { eyebrow: { $regex: 'KAFKA', $options: 'i' } },
+    { description: { $regex: 'KAFKA', $options: 'i' } },
+    { tags: { $regex: 'KAFKA', $options: 'i' } },
+  ]);
+});
+
+test('fallback article search remains case-insensitive substring matching across article fields', async () => {
+  const repository = createContentRepository({
+    isDBConnected: () => false,
+    getDB: () => { throw new Error('must not query disconnected database'); },
+  });
+
+  const titleMatches = await repository.getArticles({ search: 'KAFKA' });
+  assert.deepEqual(titleMatches.map(({ slug }) => slug).sort(), ['kafka', 'kafka-basics']);
+
+  const eyebrowMatches = await repository.getArticles({ search: 'technologies' });
+  assert.ok(eyebrowMatches.some(({ slug }) => slug === 'kafka-basics'));
+
+  const descriptionMatches = await repository.getArticles({ search: 'PRODUCTION-AWARE' });
+  assert.ok(descriptionMatches.some(({ slug }) => slug === 'kafka-basics'));
+
+  const tagMatches = await repository.getArticles({ search: 'STREAMING' });
+  assert.ok(tagMatches.some(({ slug }) => slug === 'kafka-basics'));
+});
+
+test('fallback search combines category and literal substring filters and treats blank search as no filter', async () => {
+  const repository = createContentRepository({
+    isDBConnected: () => false,
+    getDB: () => { throw new Error('must not query disconnected database'); },
+  });
+
+  const matching = await repository.getArticles({
+    category: 'distributed-systems',
+    search: 'kafka',
+  });
+  assert.deepEqual(matching.map(({ slug }) => slug).sort(), ['kafka', 'kafka-basics']);
+
+  const noMatch = await repository.getArticles({
+    category: 'databases',
+    search: 'kafka',
+  });
+  assert.deepEqual(noMatch, []);
+
+  const blankSearch = await repository.getArticles({ search: '   ' });
+  assert.equal(blankSearch.length, (await repository.getArticles({})).length);
+});
