@@ -6,16 +6,16 @@ on:
     paths:
       - "tests/load/**"
       - ".github/workflows/k6-production-baseline.yml"
-  push:
-    branches: [main]
-    paths:
-      - "tests/load/**"
-      - ".github/workflows/k6-production-baseline.yml"
   workflow_dispatch:
     inputs:
       run_production_baseline:
-        description: "Run the bounded 50-second baseline against the production frontend/API"
-        required: false
+        description: "Opt in to the bounded 50-second baseline against production"
+        required: true
+        type: boolean
+        default: false
+      confirm_production_target:
+        description: "Confirm the target is the live production frontend/API"
+        required: true
         type: boolean
         default: false
 
@@ -42,7 +42,7 @@ jobs:
 
   production-baseline:
     name: Bounded production baseline
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_production_baseline == true)
+    if: github.event_name == 'workflow_dispatch' && inputs.run_production_baseline == true && inputs.confirm_production_target == true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
