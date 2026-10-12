@@ -11,6 +11,7 @@ const backupPath = `${envPath}.rotation-backup-${rotationId}`;
 const tempPath = `${envPath}.rotation-new-${rotationId}`;
 
 let client;
+let envUpdated = false;
 
 try {
   if (!uri || !/^mongodb(?:\+srv)?:\/\//.test(uri) || /[\r\n]/.test(uri)) {
@@ -24,8 +25,7 @@ try {
   }
 
   const original = fs.readFileSync(envPath, 'utf8');
-  const stat = fs.statSync(envPath);
-  const uriLines = original.match(/^MONGODB_URI=.*$/gm) ?? [];
+    const uriLines = original.match(/^MONGODB_URI=.*$/gm) ?? [];
   if (uriLines.length !== 1) {
     throw new Error('Expected exactly one MONGODB_URI line in the runtime env file.');
   }
@@ -51,11 +51,10 @@ try {
   client = null;
 
   const updated = original.replace(/^MONGODB_URI=.*$/m, `MONGODB_URI=${JSON.stringify(uri)}`);
-  fs.copyFileSync(envPath, backupPath, fs.constants.COPYFILE_EXCL);
-  fs.chmodSync(backupPath, 0o600);
-  fs.writeFileSync(tempPath, updated, { mode: stat.mode & 0o777, flag: 'wx' });
-  fs.chmodSync(tempPath, stat.mode & 0o777);
+  fs.writeFileSync(backupPath, original, { mode: 0o600, flag: 'wx' });
+  fs.writeFileSync(tempPath, updated, { mode: 0o600, flag: 'wx' });
   fs.renameSync(tempPath, envPath);
+  envUpdated = true;
 
   console.log('Rotated URI passed MongoDB preflight with exactly readWrite on techkatta; env file atomically updated.');
   console.log('Temporary rollback backup retained until post-restart health checks pass.');
@@ -64,6 +63,9 @@ try {
     try { await client.close(); } catch {}
   }
   try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
+  if (!envUpdated) {
+    try { if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath); } catch {}
+  }
   console.error('Credential rotation preflight/config update failed. Secret values suppressed. Error type:', error?.name ?? 'Error', 'code:', error?.code ?? 'none');
   process.exitCode = 1;
 }
