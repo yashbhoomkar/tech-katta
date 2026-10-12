@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import path from 'node:path';
 
 const require = createRequire('/opt/tech-katta/backend/package.json');
 const { MongoClient } = require('mongodb');
