@@ -104,7 +104,8 @@ try {
   }
 
   for (const spec of allSpecs) {
-    const backupId = spec.collection + ':' + spec.id;
+    const backupPrefix = spec.collection === 'frontend_git_commits' ? 'frontend' : 'backend';
+    const backupId = backupPrefix + ':' + spec.id;
     const row = await backup.findOne({ _id: backupId });
     const checks = {
       exists: Boolean(row),
