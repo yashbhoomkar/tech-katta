@@ -106,9 +106,18 @@ try {
   for (const spec of allSpecs) {
     const backupId = spec.collection + ':' + spec.id;
     const row = await backup.findOne({ _id: backupId });
-    if (!row || row.sourceCollection !== spec.collection || row.originalId !== spec.id ||
-        row.key !== spec.key || row.value !== spec.value) {
-      throw new Error('Backup validation failed for ' + backupId + '; aborting without mutation.');
+    const checks = {
+      exists: Boolean(row),
+      sourceCollectionMatches: row?.sourceCollection === spec.collection,
+      originalIdMatches: row?.originalId === spec.id,
+      keyMatches: row?.key === spec.key,
+      valueMatches: row?.value === spec.value,
+    };
+    console.log('Backup preflight row:', JSON.stringify({ backupId, checks }));
+    if (!Object.values(checks).every(Boolean)) {
+      throw new Error('Backup validation failed for ' + backupId + '; mismatched fields: ' +
+        Object.entries(checks).filter(([, matches]) => !matches).map(([field]) => field).join(', ') +
+        '; aborting without mutation.');
     }
   }
 
