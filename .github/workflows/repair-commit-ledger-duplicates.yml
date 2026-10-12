@@ -40,8 +40,6 @@ jobs:
 
       - name: Run guarded migration through the VPS runtime credentials
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          LEDGER_REPAIR_SCRIPT_B64: ${{ env.LEDGER_REPAIR_SCRIPT_B64 }}
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
