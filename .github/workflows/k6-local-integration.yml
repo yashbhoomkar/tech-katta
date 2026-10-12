@@ -99,8 +99,10 @@ jobs:
           cat /tmp/tech-katta-local-frontend.log
           exit 1
 
-      - name: Inspect local k6 profile
-        run: k6 inspect tests/load/tech-katta-local-smoke.js
+      - name: Inspect local k6 profiles
+        run: |
+          k6 inspect tests/load/tech-katta-local-smoke.js
+          k6 inspect tests/load/tech-katta-local-rate-limit.js
 
       - name: Run bounded local-only k6 smoke
         env:
@@ -109,6 +111,18 @@ jobs:
         run: |
           set -o pipefail
           k6 run tests/load/tech-katta-local-smoke.js | tee /tmp/tech-katta-local-k6.log
+
+      # The smoke profile performs 60 rate-limited API reads. Wait for its
+      # 60-second window to expire before independently verifying 429 behavior.
+      - name: Wait for prior local API-read window to expire
+        run: sleep 65
+
+      - name: Verify configured rate limiting under bounded local load
+        env:
+          API_URL: http://127.0.0.1:5000
+        run: |
+          set -o pipefail
+          k6 run tests/load/tech-katta-local-rate-limit.js | tee /tmp/tech-katta-local-rate-limit.log
 
       - name: Upload local smoke diagnostics
         if: always()
@@ -119,5 +133,6 @@ jobs:
             /tmp/tech-katta-local-api.log
             /tmp/tech-katta-local-frontend.log
             /tmp/tech-katta-local-k6.log
+            /tmp/tech-katta-local-rate-limit.log
           if-no-files-found: ignore
           retention-days: 7
