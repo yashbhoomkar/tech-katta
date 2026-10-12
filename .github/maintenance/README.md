@@ -17,7 +17,7 @@ The legacy duplicate backup is `commit_ledger_duplicate_backup_20261011`. It pre
 
 - **Verify Ledger Maintenance Access** (`.github/workflows/verify-ledger-maintenance-access.yml`): creates a run-specific temporary collection, verifies a true unique index rejects duplicate keys, then removes the collection. It does not change canonical ledger records.
 - **Inspect VPS Ledger Database View** (`.github/workflows/inspect-ledger-runtime-db.yml`): read-only comparison of backup rows, canonical records, duplicate groups, and unique-index metadata.
-- **Repair Commit Ledger Duplicates** (`.github/workflows/repair-commit-ledger-duplicates.yml`): mutates the canonical ledger. It runs automatically on pushes to `main` that change this workflow or its repair script, and can also be started with `workflow_dispatch`; a matching push needs no separate manual dispatch. It is guarded by exact backup validation, an exact duplicate-ID set, canonical-row checks, rollback logic, document-count checks, and SHA-union reconciliation.
+- **Repair Commit Ledger Duplicates** (`.github/workflows/repair-commit-ledger-duplicates.yml`): mutates the canonical ledger and is manual-dispatch only. The operator must explicitly set the `confirm_repair` input to `true`; pushes to `main` never run this destructive migration. It is guarded by exact backup validation, an exact duplicate-ID set, canonical-row checks, rollback logic, document-count checks, and SHA-union reconciliation.
 
 ## Safety rules
 
