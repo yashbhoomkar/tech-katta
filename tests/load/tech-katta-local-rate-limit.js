@@ -5,6 +5,13 @@ import { Counter } from 'k6/metrics';
 const apiBase = (__ENV.API_URL || 'http://127.0.0.1:5000').replace(/\/+$/, '');
 const rateLimitResponses = new Counter('rate_limit_responses');
 
+function header(response, name) {
+  const actualName = Object.keys(response.headers).find(
+    (candidate) => candidate.toLowerCase() === name.toLowerCase(),
+  );
+  return actualName ? response.headers[actualName] : undefined;
+}
+
 export const options = {
   scenarios: {
     bounded_rate_limit: {
@@ -37,7 +44,7 @@ export default function () {
     'API returns success or configured HTTP 429': (r) => r.status === 200 || r.status === 429,
     'successful API response is an array': (r) => r.status !== 200 || Array.isArray(r.json()),
     '429 has Retry-After': (r) => r.status !== 429 || Number(r.headers['Retry-After']) >= 1,
-    '429 reports the configured rate limit': (r) => r.status !== 429 || Number(r.headers['X-RateLimit-Limit']) === 120,
-    '429 reports no remaining requests': (r) => r.status !== 429 || Number(r.headers['X-RateLimit-Remaining']) === 0,
+    '429 reports the configured rate limit': (r) => r.status !== 429 || Number(header(r, 'X-RateLimit-Limit')) === 120,
+    '429 reports no remaining requests': (r) => r.status !== 429 || Number(header(r, 'X-RateLimit-Remaining')) === 0,
   });
 }
