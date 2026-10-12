@@ -1,0 +1,123 @@
+name: Bounded Local k6 Integration Smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "tests/load/**"
+      - ".github/workflows/k6-local-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-k6-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-integration:
+    name: Local MongoDB + API + frontend smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Seed isolated local MongoDB
+        working-directory: backend
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/techkatta
+          MONGODB_DB: techkatta
+        run: npm run seed
+
+      - name: Start API against isolated MongoDB
+        working-directory: backend
+        env:
+          NODE_ENV: production
+          HOST: 127.0.0.1
+          PORT: 5000
+          FRONTEND_ORIGIN: http://127.0.0.1:4173
+          MONGODB_URI: mongodb://127.0.0.1:27017/techkatta
+          MONGODB_DB: techkatta
+        run: |
+          nohup npm start > /tmp/tech-katta-local-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:5000/api/health; then
+              echo
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/tech-katta-local-api.log
+          exit 1
+
+      - name: Install and build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Start local frontend preview
+        working-directory: frontend
+        run: |
+          nohup npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > /tmp/tech-katta-local-frontend.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/tech-katta-local-frontend.log
+          exit 1
+
+      - name: Inspect local k6 profile
+        run: k6 inspect tests/load/tech-katta-local-smoke.js
+
+      - name: Run bounded local-only k6 smoke
+        env:
+          FRONTEND_URL: http://127.0.0.1:4173
+          API_URL: http://127.0.0.1:5000
+        run: |
+          set -o pipefail
+          k6 run tests/load/tech-katta-local-smoke.js | tee /tmp/tech-katta-local-k6.log
+
+      - name: Upload local smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-k6-smoke-${{ github.run_id }}
+          path: |
+            /tmp/tech-katta-local-api.log
+            /tmp/tech-katta-local-frontend.log
+            /tmp/tech-katta-local-k6.log
+          if-no-files-found: ignore
+          retention-days: 7
