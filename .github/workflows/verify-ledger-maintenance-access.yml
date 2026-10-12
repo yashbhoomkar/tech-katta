@@ -31,7 +31,9 @@ jobs:
           script_stop: true
           script: |
             set -eu
-            sudo -n -u techkatta bash -lc 'cd /opt/tech-katta/backend && node --input-type=module' <<'NODE'
+            PROBE_SCRIPT="/opt/tech-katta/backend/.ledger-index-probe-${{ github.run_id }}.mjs"
+            trap 'sudo -n -u techkatta rm -f "$PROBE_SCRIPT" || true' EXIT
+            sudo -n -u techkatta tee "$PROBE_SCRIPT" >/dev/null <<'NODE'
             import 'dotenv/config';
             import { MongoClient } from 'mongodb';
 
@@ -91,3 +93,4 @@ jobs:
               await client.close();
             }
             NODE
+            sudo -n -u techkatta bash -lc "cd /opt/tech-katta/backend && node '$PROBE_SCRIPT'"
