@@ -24,9 +24,6 @@ on:
 permissions:
   contents: read
 
-permissions:
-  contents: read
-
 concurrency:
   group: tech-katta-backend-production
   cancel-in-progress: false
