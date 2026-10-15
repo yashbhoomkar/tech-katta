@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - ".github/workflows/production-browser-smoke.yml"
+      - "frontend/**"
+      - "scripts/production-browser-smoke.mjs"
   workflow_dispatch:
 
 permissions:

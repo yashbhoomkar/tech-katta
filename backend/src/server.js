@@ -19,15 +19,18 @@ async function startServer() {
   });
 }
 
-async function shutdown(signal) {
-  if (isShuttingDown) return;
+async function shutdown(signal, exitCode = 0) {
+  if (isShuttingDown) {
+    if (exitCode !== 0) process.exit(exitCode);
+    return;
+  }
   isShuttingDown = true;
   console.log(`🛑 Received ${signal}. Shutting down gracefully...`);
 
   if (!server) {
     try {
       await closeDB();
-      process.exit(0);
+      process.exit(exitCode);
     } catch (error) {
       console.error('❌ Error during shutdown:', error.message);
       process.exit(1);
@@ -39,7 +42,7 @@ async function shutdown(signal) {
     try {
       await closeDB();
       console.log('✅ HTTP server and MongoDB connection closed.');
-      process.exit(0);
+      process.exit(exitCode);
     } catch (error) {
       console.error('❌ Error during shutdown:', error.message);
       process.exit(1);
@@ -60,8 +63,8 @@ process.on('unhandledRejection', (reason) => {
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught exception:', error);
-  void shutdown('uncaughtException');
+  console.error('❌ Uncaught exception; exiting after best-effort cleanup:', error);
+  void shutdown('uncaughtException', 1);
 });
 
 startServer().catch((error) => {

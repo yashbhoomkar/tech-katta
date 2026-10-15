@@ -16,9 +16,48 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
+concurrency:
+  group: tech-katta-backend-production
+  cancel-in-progress: false
+
 jobs:
+  test:
+    name: Test backend before deployment
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        run: npm ci
+      - name: Run backend unit tests
+        run: npm test
+      - name: Syntax-check backend
+        run: |
+          node --check src/server.js
+          node --check src/db.js
+          node --check src/seed.js
+          node --check src/vercelClient.js
+          node --check scripts/vercel-control.mjs
+          node --check scripts/vercel-mcp.mjs
+      - name: Validate VPS overflow monitor
+        working-directory: .
+        run: bash -n scripts/vps-overflow-router.sh
+
   deploy:
     name: Deploy to VPS
+    needs: test
     runs-on: ubuntu-latest
 
     steps:

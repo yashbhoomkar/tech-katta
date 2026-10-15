@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://tech-api.katta.cc';
+export const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'https://tech-api.katta.cc';
 
 export async function checkApiHealth() {
   try {
@@ -22,13 +22,22 @@ export async function fetchArticles() {
 }
 
 export async function fetchArticleBySlug(slug) {
+  let res;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/articles/${slug}`);
-    if (!res.ok) return null;
-    return await res.json();
+    res = await fetch(`${API_BASE_URL}/api/articles/${encodeURIComponent(slug)}`);
   } catch (err) {
     console.warn(`Backend fetch for ${slug} failed:`, err);
-    return null;
+    return { status: 'unavailable' };
+  }
+
+  if (res.status === 404) return { status: 'not-found' };
+  if (!res.ok) return { status: 'error', httpStatus: res.status };
+
+  try {
+    return { status: 'ok', article: await res.json() };
+  } catch (err) {
+    console.warn(`Backend response for ${slug} was invalid:`, err);
+    return { status: 'error', httpStatus: res.status };
   }
 }
 

@@ -337,8 +337,9 @@ export default function App() {
     let active = true;
     Promise.all([fetchArticles(), fetchCategories()]).then(([remoteArticles, remoteCategories]) => {
       if (!active) return;
-      if (remoteArticles?.length) setArticles(remoteArticles);
-      if (remoteCategories?.length) setCategories(remoteCategories);
+      // A successful empty response is authoritative; only null means the API failed.
+      if (Array.isArray(remoteArticles)) setArticles(remoteArticles);
+      if (Array.isArray(remoteCategories)) setCategories(remoteCategories);
     });
     return () => { active = false; };
   }, []);
