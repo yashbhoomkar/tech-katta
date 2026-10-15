@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { categories as fallbackCategories, getArticle, getArticleContent } from '../data.js';
 import { fetchArticleBySlug } from '../api.js';
+import { getVideoEmbedUrl } from '../videoEmbed.js';
+import { readMarkedRead, writeMarkedRead } from '../readingStatus.js';
 import {
   KafkaArchitectureDiagram,
   KafkaConsumerGroupDiagram,
@@ -74,23 +76,8 @@ function ImageBlock({ block }) {
 
 function VideoBlock({ block }) {
   const source = block.url || block.src;
-  if (!source) return null;
-
-  let embedUrl = source;
-  try {
-    const url = new URL(source);
-    if (url.hostname.includes('youtube.com')) {
-      const id = url.searchParams.get('v');
-      if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
-    } else if (url.hostname === 'youtu.be') {
-      embedUrl = `https://www.youtube.com/embed/${url.pathname.slice(1)}`;
-    } else if (url.hostname.includes('vimeo.com')) {
-      const id = url.pathname.split('/').filter(Boolean).pop();
-      if (id) embedUrl = `https://player.vimeo.com/video/${id}`;
-    }
-  } catch {
-    return null;
-  }
+  const embedUrl = getVideoEmbedUrl(source);
+  if (!embedUrl) return null;
 
   return (
     <figure className="doc-media doc-video">
@@ -99,6 +86,8 @@ function VideoBlock({ block }) {
           src={embedUrl}
           title={block.title || 'Article video'}
           loading="lazy"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          referrerPolicy="strict-origin-when-cross-origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
@@ -107,7 +96,6 @@ function VideoBlock({ block }) {
     </figure>
   );
 }
-
 function TextBlock({ block }) {
   const paragraphs = block.paragraphs || (block.text ? [block.text] : []);
   return (
@@ -261,24 +249,38 @@ function normalizeContent(rawContent) {
 
 export default function Article() {
   const { slug } = useParams();
-  const [remoteArticle, setRemoteArticle] = useState(null);
+  const [remoteResult, setRemoteResult] = useState({ slug: null, status: 'loading' });
   const [progress, setProgress] = useState(0);
-  const [markedRead, setMarkedRead] = useState(() => localStorage.getItem('tk-read-' + slug) === '1');
+  const [markedRead, setMarkedRead] = useState(() => readMarkedRead(slug));
   const [expandedSections, setExpandedSections] = useState({});
 
   const fallbackArticle = getArticle(slug);
   const fallbackContent = getArticleContent(slug);
-  const article = remoteArticle || fallbackArticle;
-  const rawContent = remoteArticle?.content || fallbackContent;
+  const currentResult = remoteResult.slug === slug ? remoteResult : { slug, status: 'loading' };
+  const article = currentResult.status === 'ok'
+    ? currentResult.article
+    : currentResult.status === 'unavailable'
+      ? fallbackArticle
+      : null;
+  const rawContent = currentResult.status === 'ok'
+    ? (currentResult.article?.content || fallbackContent)
+    : currentResult.status === 'unavailable'
+      ? fallbackContent
+      : null;
   const unitLabel = fallbackCategories.find((category) => category.id === article?.category)?.label || article?.category || 'Unit';
   const content = useMemo(() => normalizeContent(rawContent), [rawContent]);
 
   useEffect(() => {
     let active = true;
-    fetchArticleBySlug(slug).then((remote) => {
-      if (active && remote) setRemoteArticle(remote);
+    setRemoteResult({ slug, status: 'loading' });
+    fetchArticleBySlug(slug).then((result) => {
+      if (active) setRemoteResult({ slug, ...result });
     });
     return () => { active = false; };
+  }, [slug]);
+
+  useEffect(() => {
+    setMarkedRead(readMarkedRead(slug));
   }, [slug]);
 
   useEffect(() => {
@@ -354,7 +356,26 @@ export default function Article() {
   function markRead() {
     const next = !markedRead;
     setMarkedRead(next);
-    localStorage.setItem('tk-read-' + slug, next ? '1' : '0');
+    writeMarkedRead(slug, next);
+  }
+
+  if (currentResult.status === 'loading') {
+    return (
+      <main className="article-page">
+        <NavLink className="article-back" to="/">← Back to library</NavLink>
+        <h1>Loading note…</h1>
+      </main>
+    );
+  }
+
+  if (currentResult.status === 'error' || (currentResult.status === 'unavailable' && !fallbackArticle)) {
+    return (
+      <main className="article-page">
+        <NavLink className="article-back" to="/">← Back to library</NavLink>
+        <h1>This note couldn’t be loaded right now.</h1>
+        <p>Please try again shortly. The page could not verify the latest article from the API.</p>
+      </main>
+    );
   }
 
   if (!article || !content) {
