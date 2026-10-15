@@ -26,7 +26,7 @@ export async function fetchArticleBySlug(slug) {
   try {
     res = await fetch(`${API_BASE_URL}/api/articles/${encodeURIComponent(slug)}`);
   } catch (err) {
-    console.warn(`Backend fetch for ${slug} failed:`, err);
+    console.warn('Backend fetch failed', { slug, error: err.message });
     return { status: 'unavailable' };
   }
 
@@ -36,7 +36,7 @@ export async function fetchArticleBySlug(slug) {
   try {
     return { status: 'ok', article: await res.json() };
   } catch (err) {
-    console.warn(`Backend response for ${slug} was invalid:`, err);
+    console.warn('Backend response was invalid', { slug, error: err.message });
     return { status: 'error', httpStatus: res.status };
   }
 }
