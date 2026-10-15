@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fetchArticleBySlug, fetchArticles } from '../src/api.js';
+import { fetchArticleBySlug, fetchArticles, fetchCategories } from '../src/api.js';
 
 test('successful empty article response remains authoritative', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('[]', { status: 200 }));
   assert.deepEqual(await fetchArticles(), []);
+});
+
+test('list endpoints distinguish server errors from network outages', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('unavailable', { status: 503 }));
+  assert.deepEqual(await fetchArticles(), { status: 'error', httpStatus: 503 });
+  assert.deepEqual(await fetchCategories(), { status: 'error', httpStatus: 503 });
 });
 
 test('article fetch distinguishes a missing slug from a server error', async (t) => {

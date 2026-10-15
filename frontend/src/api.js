@@ -11,13 +11,21 @@ export async function checkApiHealth() {
 }
 
 export async function fetchArticles() {
+  let res;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/articles`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    res = await fetch(`${API_BASE_URL}/api/articles`);
   } catch (err) {
-    console.warn('Backend fetch failed, fallback to local data:', err);
+    console.warn('Backend articles fetch failed; using local fallback data', { error: err.message });
     return null;
+  }
+
+  if (!res.ok) return { status: 'error', httpStatus: res.status };
+  try {
+    const articles = await res.json();
+    return Array.isArray(articles) ? articles : { status: 'error', httpStatus: res.status };
+  } catch (err) {
+    console.warn('Backend articles response was invalid', { error: err.message });
+    return { status: 'error', httpStatus: res.status };
   }
 }
 
@@ -42,12 +50,20 @@ export async function fetchArticleBySlug(slug) {
 }
 
 export async function fetchCategories() {
+  let res;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/categories`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    res = await fetch(`${API_BASE_URL}/api/categories`);
   } catch (err) {
-    console.warn('Backend categories fetch failed, fallback to local data:', err);
+    console.warn('Backend categories fetch failed; using local fallback data', { error: err.message });
     return null;
+  }
+
+  if (!res.ok) return { status: 'error', httpStatus: res.status };
+  try {
+    const categories = await res.json();
+    return Array.isArray(categories) ? categories : { status: 'error', httpStatus: res.status };
+  } catch (err) {
+    console.warn('Backend categories response was invalid', { error: err.message });
+    return { status: 'error', httpStatus: res.status };
   }
 }

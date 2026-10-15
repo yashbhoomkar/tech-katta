@@ -312,6 +312,7 @@ export default function App() {
   const navigate = useNavigate();
   const [articles, setArticles] = useState(fallbackArticles);
   const [categories, setCategories] = useState(fallbackCategories);
+  const [apiError, setApiError] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const isArticle = location.pathname.startsWith('/learn/');
@@ -337,9 +338,18 @@ export default function App() {
     let active = true;
     Promise.all([fetchArticles(), fetchCategories()]).then(([remoteArticles, remoteCategories]) => {
       if (!active) return;
-      // A successful empty response is authoritative; only null means the API failed.
+      const articlesFailed = remoteArticles?.status === 'error';
+      const categoriesFailed = remoteCategories?.status === 'error';
+
+      // Successful empty responses are authoritative. Only network failures (null)
+      // use the bundled fallback; server errors must not silently show stale content.
       if (Array.isArray(remoteArticles)) setArticles(remoteArticles);
+      else if (articlesFailed) setArticles([]);
       if (Array.isArray(remoteCategories)) setCategories(remoteCategories);
+      else if (categoriesFailed) setCategories([]);
+      setApiError(articlesFailed || categoriesFailed);
+    }).catch(() => {
+      if (active) setApiError(true);
     });
     return () => { active = false; };
   }, []);
@@ -431,6 +441,11 @@ export default function App() {
           articleTitle={article?.title}
           onOpenSidebar={() => setMobileSidebarOpen(true)}
         />
+        {apiError && (
+          <div className="empty-state api-error-banner" role="alert">
+            The content service is temporarily unavailable. Some notes may be hidden until it recovers.
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<Home units={units} />} />
           <Route path="/unit/:unitId" element={<UnitPage units={units} articles={articles} />} />
