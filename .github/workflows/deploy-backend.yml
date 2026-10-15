@@ -32,6 +32,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Require the production branch
+        working-directory: .
         run: |
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "::error::Production deployment must run from main."
