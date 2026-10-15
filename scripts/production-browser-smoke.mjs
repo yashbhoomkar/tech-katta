@@ -3,6 +3,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const origin = process.env.FRONTEND_URL ?? 'https://tech.katta.cc';
 const apiOrigin = process.env.API_URL ?? 'https://tech-api.katta.cc';
 const mobileOrigin = process.env.MOBILE_FRONTEND_URL ?? origin;
+const expectedDeploymentSha = process.env.EXPECTED_DEPLOYMENT_SHA ?? '';
 const failures = [];
 const pageErrors = [];
 const consoleErrors = [];
@@ -15,10 +16,43 @@ try {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
 
+  if (expectedDeploymentSha) {
+    let observedSha = null;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const response = await page.goto(origin, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      }).catch(() => null);
+
+      if (response?.status() === 200) {
+        await page.waitForFunction(() => {
+          const marker = document.querySelector('meta[name="tech-katta-build-sha"]');
+          return Boolean(marker?.content && marker.content !== 'unknown');
+        }, undefined, { timeout: 5000 }).catch(() => {});
+        observedSha = await page.locator('meta[name="tech-katta-build-sha"]').getAttribute('content').catch(() => null);
+        if (observedSha === expectedDeploymentSha) break;
+      }
+
+      if (attempt < 5) await page.waitForTimeout(5000);
+    }
+
+    if (observedSha !== expectedDeploymentSha) {
+      failures.push(`production revision mismatch: expected ${expectedDeploymentSha}, observed ${observedSha ?? 'no build marker'}`);
+    } else {
+      console.log(`PASS production revision marker matches ${expectedDeploymentSha}`);
+    }
+  }
+
   const routes = [
     { path: '/', label: 'home', expectedTitle: /Tech Katta/i },
     { path: '/unit/distributed-systems', label: 'distributed systems unit' },
-    { path: '/learn/distributed-system-components-overview', label: 'canonical article' },
+    {
+      path: '/learn/distributed-system-components-overview',
+      label: 'canonical article',
+      expectedHeading: 'Distributed System Components: An Overview',
+      expectedBodySelector: '.article-body .doc-section',
+      expectedBodyMinLength: 40,
+    },
   ];
 
   for (const route of routes) {
@@ -41,6 +75,29 @@ try {
 
     if (route.expectedTitle && !route.expectedTitle.test(await page.title())) {
       failures.push(`${route.label}: unexpected document title ${JSON.stringify(await page.title())}`);
+    }
+
+    if (route.expectedHeading) {
+      const expectedHeading = page.getByRole('heading', { level: 1, name: route.expectedHeading, exact: true });
+      const headingVisible = await expectedHeading.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+      if (!headingVisible) failures.push(`${route.label}: expected heading "${route.expectedHeading}" was not rendered`);
+    }
+
+    if (route.expectedBodySelector) {
+      const section = page.locator(route.expectedBodySelector).first();
+      const sectionVisible = await section.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+      if (!sectionVisible) {
+        failures.push(`${route.label}: expected article body section was not rendered`);
+      } else {
+        const sectionHeading = section.locator('.doc-section-heading');
+        if (await sectionHeading.count()) await sectionHeading.click().catch(() => {});
+        const body = section.locator('.doc-section-content');
+        await body.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+        const bodyText = await body.innerText().catch(() => '');
+        if (bodyText.trim().length < (route.expectedBodyMinLength ?? 40)) {
+          failures.push(`${route.label}: article body is empty or too short (${bodyText.trim().length} chars)`);
+        }
+      }
     }
 
     const textLength = await page.locator('#root').innerText().then((text) => text.trim().length).catch(() => 0);
