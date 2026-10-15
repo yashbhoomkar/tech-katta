@@ -8,6 +8,11 @@ on:
       - 'backend/**'
       - 'scripts/**'
       - '.github/workflows/deploy-backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
     inputs:
       sync_content:
@@ -32,6 +37,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Require the production branch
+        if: github.event_name != 'pull_request'
         working-directory: .
         run: |
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
@@ -64,6 +70,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
+    if: github.event_name != 'pull_request'
     needs: test
     runs-on: ubuntu-latest
     env:
