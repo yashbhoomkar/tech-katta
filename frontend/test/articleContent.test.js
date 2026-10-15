@@ -48,6 +48,8 @@ test('rejects malformed nested content fields that would crash render-time itera
     { sections: [{ blocks: 'not-an-array' }] },
     { sections: [{ blocks: [{ type: 'text', paragraphs: 'not-an-array' }] }] },
     { sections: [{ blocks: [{ type: 'table', rows: 'not-an-array' }] }] },
+    { sections: [{ code: { type: 'table', code: 'safe-looking', rows: 'not-an-array' } }] },
+    { sections: [{ callout: { type: 'table', title: 'bad', rows: 'not-an-array' } }] },
     { sections: [{ blocks: [{ type: 'unsupported' }] }] },
   ];
 

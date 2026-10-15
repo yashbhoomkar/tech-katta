@@ -9,12 +9,14 @@ const isValidCodeData = (value) =>
   isRecord(value) &&
   typeof value.code === 'string' &&
   isOptionalString(value.language) &&
-  isOptionalString(value.label);
+  isOptionalString(value.label) &&
+  (value.type === undefined || value.type === 'code');
 
 const isValidCalloutData = (value) =>
   isRecord(value) &&
   isOptionalString(value.title) &&
-  isOptionalString(value.text);
+  isOptionalString(value.text) &&
+  (value.type === undefined || value.type === 'callout');
 
 const isValidSubsection = (value) =>
   isRecord(value) &&
