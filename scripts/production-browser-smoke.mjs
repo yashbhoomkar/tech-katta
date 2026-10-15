@@ -89,13 +89,31 @@ try {
       if (!sectionVisible) {
         failures.push(`${route.label}: expected article body section was not rendered`);
       } else {
-        const sectionHeading = section.locator('.doc-section-heading');
-        if (await sectionHeading.count()) await sectionHeading.click().catch(() => {});
         const body = section.locator('.doc-section-content');
-        await body.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-        const bodyText = await body.innerText().catch(() => '');
-        if (bodyText.trim().length < (route.expectedBodyMinLength ?? 40)) {
-          failures.push(`${route.label}: article body is empty or too short (${bodyText.trim().length} chars)`);
+        let bodyVisible = await body.isVisible().catch(() => false);
+
+        if (!bodyVisible) {
+          const sectionHeading = section.locator('.doc-section-heading');
+          const headingExists = (await sectionHeading.count()) > 0;
+          if (!headingExists) {
+            failures.push(`${route.label}: article section heading control is missing`);
+          } else {
+            const clickSucceeded = await sectionHeading.click().then(() => true).catch(() => false);
+            if (!clickSucceeded) {
+              failures.push(`${route.label}: article section could not be expanded`);
+            } else {
+              bodyVisible = await body.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+            }
+          }
+        }
+
+        if (!bodyVisible) {
+          failures.push(`${route.label}: article body did not become visible after expansion`);
+        } else {
+          const bodyText = await body.innerText().catch(() => '');
+          if (bodyText.trim().length < (route.expectedBodyMinLength ?? 40)) {
+            failures.push(`${route.label}: article body is empty or too short (${bodyText.trim().length} chars)`);
+          }
         }
       }
     }

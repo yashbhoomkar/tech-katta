@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { resolveArticleContent } from '../src/articleContent.js';
 
 test('uses canonical remote content after a successful API response', () => {
-  const remoteContent = { sections: [{ id: 'intro', title: 'Introduction', blocks: [] }] };
+  const remoteContent = { sections: [{ id: 'intro', title: 'Introduction', blocks: [{ type: 'text', paragraphs: ['Real content'] }] }] };
   const fallbackContent = { sections: [{ id: 'stale', title: 'Stale bundled section', blocks: [] }] };
   assert.deepEqual(resolveArticleContent({ status: 'ok', article: { content: remoteContent } }, fallbackContent), {
     content: remoteContent,
@@ -12,12 +12,13 @@ test('uses canonical remote content after a successful API response', () => {
 });
 
 test('preserves intentionally empty remote content rather than using bundled content', () => {
-  const emptyContent = { sections: [] };
   const fallbackContent = { sections: [{ id: 'stale', title: 'Stale bundled section', blocks: [] }] };
-  assert.deepEqual(resolveArticleContent({ status: 'ok', article: { content: emptyContent } }, fallbackContent), {
-    content: emptyContent,
-    error: false,
-  });
+  for (const emptyContent of [{}, { sections: [] }]) {
+    assert.deepEqual(resolveArticleContent({ status: 'ok', article: { content: emptyContent } }, fallbackContent), {
+      content: emptyContent,
+      error: false,
+    });
+  }
 });
 
 test('treats missing, null, primitive, and array content as invalid after API success', () => {
@@ -29,6 +30,29 @@ test('treats missing, null, primitive, and array content as invalid after API su
     { content: [] },
   ]) {
     assert.deepEqual(resolveArticleContent({ status: 'ok', article }, fallbackContent), {
+      content: null,
+      error: true,
+    });
+  }
+});
+
+test('rejects malformed nested content fields that would crash render-time iteration', () => {
+  const fallbackContent = { sections: [{ id: 'stale', title: 'Stale bundled section', blocks: [] }] };
+  const malformedContent = [
+    { sections: 'not-an-array' },
+    { introduction: 'not-an-array' },
+    { knowledgeCheck: 'not-an-array' },
+    { summary: { text: 'not-a-string' } },
+    { sections: [{ paragraphs: 'not-an-array' }] },
+    { sections: [{ subsections: 'not-an-array' }] },
+    { sections: [{ blocks: 'not-an-array' }] },
+    { sections: [{ blocks: [{ type: 'text', paragraphs: 'not-an-array' }] }] },
+    { sections: [{ blocks: [{ type: 'table', rows: 'not-an-array' }] }] },
+    { sections: [{ blocks: [{ type: 'unsupported' }] }] },
+  ];
+
+  for (const content of malformedContent) {
+    assert.deepEqual(resolveArticleContent({ status: 'ok', article: { content } }, fallbackContent), {
       content: null,
       error: true,
     });

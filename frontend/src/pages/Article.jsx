@@ -196,6 +196,11 @@ function Block({ block }) {
  *   }
  * ]
  */
+/**
+ * Normalizes the supported article-content shapes into sections and optional intro/summary fields.
+ * @param {unknown} rawContent
+ * @returns {object | null}
+ */
 function normalizeContent(rawContent) {
   if (!rawContent) return null;
 

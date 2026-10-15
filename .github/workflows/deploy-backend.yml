@@ -24,6 +24,9 @@ on:
 permissions:
   contents: read
 
+permissions:
+  contents: read
+
 concurrency:
   group: tech-katta-backend-production
   cancel-in-progress: false
@@ -45,9 +48,11 @@ jobs:
             exit 1
           fi
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -78,9 +83,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Verify tested revision
         run: |
@@ -88,7 +94,7 @@ jobs:
           git cat-file -e "$DEPLOY_SHA^{commit}"
 
       - name: Validate backend JavaScript
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
@@ -127,7 +133,7 @@ jobs:
           fi
 
       - name: Prepare VPS checkout, dependencies, and runtime config
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
@@ -137,7 +143,7 @@ jobs:
           script_stop: true
           script: |
             echo "🚀 Preparing Tech Katta Backend on VPS for $DEPLOY_SHA..."
-            sudo -u techkatta bash -c 'set -euo pipefail; cd /opt/tech-katta; git fetch origin main; git reset --hard "$1"; test "$(git rev-parse HEAD)" = "$1"' deploy "$DEPLOY_SHA"
+            sudo -u techkatta bash -c 'set -euo pipefail; cd /opt/tech-katta; git fetch origin "$1"; git reset --hard "$1"; test "$(git rev-parse HEAD)" = "$1"' deploy "$DEPLOY_SHA"
 
             echo "📦 Installing production dependencies..."
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
@@ -151,7 +157,7 @@ jobs:
 
       - name: Sync MongoDB content when required
         if: steps.content_sync.outputs.required == 'true'
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
@@ -164,7 +170,7 @@ jobs:
             sudo -u techkatta bash -c 'set -euo pipefail; cd /opt/tech-katta; test "$(git rev-parse HEAD)" = "$1"; cd backend; npm run seed' deploy "$DEPLOY_SHA"
 
       - name: Restart and verify Tech Katta API
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
