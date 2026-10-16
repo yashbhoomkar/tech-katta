@@ -161,7 +161,6 @@ function Home({ units, articles }) {
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
     [articles]
   );
-  const featuredNote = publishedNotes[0];
   const recentNotes = publishedNotes.slice(0, 3);
 
   return (
