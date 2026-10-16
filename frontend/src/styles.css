@@ -2074,8 +2074,8 @@ a { color: inherit; text-decoration: none; }
   .system-node { min-height: 78px; padding: 8px 5px; }
   .system-node-index { margin-bottom: 8px; }
   .system-node strong { font-size: 10px; }
-  .system-node small { font-size: 8px; }
-  .system-visual-top { font-size: 7px; }
+  .system-node small { font-size: 9px; }
+  .system-visual-top { font-size: 9px; }
   .library-toolbar h2 { font-size: 23px; }
   .unit-card { padding-right: 0; }
   .recent-notes-heading { align-items: flex-start; }
