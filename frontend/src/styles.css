@@ -1907,7 +1907,7 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   color: #9a9dac;
   font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.5;
   letter-spacing: .1em;
 }
@@ -1938,7 +1938,7 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 11px;
   color: #b2a2d7;
   font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .system-node strong {
@@ -1968,7 +1968,7 @@ a { color: inherit; text-decoration: none; }
 .system-visual-footer {
   padding-top: 14px;
   border-top: 1px solid var(--line-soft);
-  font-size: 7px;
+  font-size: 9px;
   letter-spacing: .07em;
 }
 
@@ -1978,7 +1978,7 @@ a { color: inherit; text-decoration: none; }
 .library-toolbar { padding-bottom: 18px; }
 .library-toolbar h2 { font-size: 25px; letter-spacing: -.035em; }
 .library-search { min-height: 40px; }
-.library-search:focus-within { border-color: rgba(198,168,255,.55); box-shadow: 0 0 0 3px rgba(198,168,255,.06); }
+.library-search:focus-within { border-color: rgba(198,168,255,.9); box-shadow: 0 0 0 3px rgba(198,168,255,.2); }
 .library-search input:focus-visible { outline: none; }
 
 .unit-grid { gap: 0 30px; margin-top: 4px; }
