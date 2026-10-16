@@ -158,7 +158,7 @@ function Home({ units, articles }) {
   const publishedNotes = useMemo(
     () => articles
       .filter((article) => article.status === 'published')
-      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.slug.localeCompare(b.slug)),
     [articles]
   );
   const recentNotes = publishedNotes.slice(0, 3);
