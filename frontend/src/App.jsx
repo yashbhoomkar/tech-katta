@@ -146,7 +146,7 @@ function Header({ unitId, unitLabel, isArticle, articleSlug, articleTitle, onOpe
   );
 }
 
-function Home({ units }) {
+function Home({ units, articles }) {
   const [search, setSearch] = useState('');
 
   const visibleUnits = useMemo(() => {
@@ -155,13 +155,34 @@ function Home({ units }) {
     return units.filter((unit) => [unit.label, unit.description].join(' ').toLowerCase().includes(normalized));
   }, [search, units]);
 
+  const publishedNotes = useMemo(
+    () => articles
+      .filter((article) => article.status === 'published')
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.slug.localeCompare(b.slug)),
+    [articles]
+  );
+  const recentNotes = publishedNotes.slice(0, 3);
+
   return (
     <main className="home-page">
-      <section className="home-hero">
-        <div className="eyebrow">Yash’s engineering notes</div>
-        <h1>Things I learn, build, and eventually understand.</h1>
-        <p>Mostly distributed systems and backend infrastructure, with notes from databases and AI systems when they intersect with something I’m building or trying to understand.</p>
-        <div className="home-note">Last updated October 5, 2026</div>
+      <section className="home-hero home-hero-layout">
+        <div className="home-hero-copy">
+          <div className="eyebrow">Yash’s engineering notes <span className="hero-edition">/ FIELD NOTES</span></div>
+          <h1>Things I learn, build, and eventually understand.</h1>
+          <p>Mostly distributed systems and backend infrastructure, with notes from databases and AI systems when they intersect with something I’m building or trying to understand.</p>
+          <div className="home-note"><span className="home-note-mark" /> Written while learning, building, and debugging real systems.</div>
+        </div>
+        <div className="home-system-visual" aria-hidden="true">
+          <div className="system-visual-top"><span>MENTAL MODEL / 001</span><span>REQUEST FLOW</span></div>
+          <div className="system-flow">
+            <div className="system-node system-node-client"><span className="system-node-index">01</span><strong>Client</strong><small>request</small></div>
+            <span className="system-flow-link"><i /></span>
+            <div className="system-node system-node-service"><span className="system-node-index">02</span><strong>Service</strong><small>compute</small></div>
+            <span className="system-flow-link"><i /></span>
+            <div className="system-node system-node-store"><span className="system-node-index">03</span><strong>Storage</strong><small>state</small></div>
+          </div>
+          <div className="system-visual-footer"><span><i className="system-status-dot" /> Every hop has a trade-off</span><span>LATENCY · FAILURE · SCALE</span></div>
+        </div>
       </section>
 
       <div className="library-toolbar">
@@ -205,6 +226,31 @@ function Home({ units }) {
       </section>
 
       {!visibleUnits.length && <div className="empty-state">Nothing matched “{search}”.</div>}
+
+      {recentNotes.length > 0 && (
+        <section className="recent-notes" aria-labelledby="recent-notes-title">
+          <div className="recent-notes-heading">
+            <div>
+              <div className="eyebrow">From the notebook</div>
+              <h2 id="recent-notes-title">Notes worth keeping</h2>
+            </div>
+            <span className="recent-notes-count">{String(publishedNotes.length).padStart(2, '0')} PUBLISHED</span>
+          </div>
+          <div className="recent-notes-list">
+            {recentNotes.map((note, index) => (
+              <NavLink key={note.slug} to={'/learn/' + note.slug} className="recent-note">
+                <span className="recent-note-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="recent-note-copy">
+                  <span className="recent-note-topic">{units.find((unit) => unit.id === note.category)?.label || 'Engineering'}</span>
+                  <strong>{note.title}</strong>
+                  <span className="recent-note-description">{note.description}</span>
+                </span>
+                <span className="recent-note-meta">{note.readTime || 'Note'} <span aria-hidden="true">↗</span></span>
+              </NavLink>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -447,7 +493,7 @@ export default function App() {
           </div>
         )}
         <Routes>
-          <Route path="/" element={<Home units={units} />} />
+          <Route path="/" element={<Home units={units} articles={articles} />} />
           <Route path="/unit/:unitId" element={<UnitPage units={units} articles={articles} />} />
           <Route
             path="/learn/distributed-system-components"
