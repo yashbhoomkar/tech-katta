@@ -68,7 +68,7 @@ jobs:
             set -eu
             sudo -n true
             sudo apt-get update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync certbot python3-certbot-nginx
             sudo install -d -o www-data -g www-data -m 0755 /var/www/demo-system-design
             printf '%s' 'c2VydmVyIHsKICAgIGxpc3RlbiA4MDsKICAgIGxpc3RlbiBbOjpdOjgwOwogICAgc2VydmVyX25hbWUgZGVtby1zeXN0ZW0tZGVzaWduLmthdHRhLmNjOwogICAgcm9vdCAvdmFyL3d3dy9kZW1vLXN5c3RlbS1kZXNpZ247CiAgICBpbmRleCBpbmRleC5odG1sOwogICAgbG9jYXRpb24gLyB7CiAgICAgICAgdHJ5X2ZpbGVzICR1cmkgJHVyaS8gL2luZGV4Lmh0bWw7CiAgICB9Cn0K' | base64 -d | sudo tee /etc/nginx/sites-available/demo-system-design.katta.cc >/dev/null
             sudo ln -sfn /etc/nginx/sites-available/demo-system-design.katta.cc /etc/nginx/sites-enabled/demo-system-design.katta.cc
@@ -105,3 +105,31 @@ jobs:
             test -s /var/www/demo-system-design/index.html
             curl -fsS -H 'Host: demo-system-design.katta.cc' http://127.0.0.1/ -o /dev/null
             echo "VPS_STATIC_SITE_HTTP_READY"
+
+      - name: Issue Let's Encrypt certificate and enable HTTPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -eu
+            domain=demo-system-design.katta.cc
+            attempt=0
+            until getent ahostsv4 "$domain" | grep -q '129.121.133.47'; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 36 ]; then
+                echo "DNS has not propagated to VPS IP; refusing to request certificate."
+                getent ahostsv4 "$domain" || true
+                exit 1
+              fi
+              sleep 5
+            done
+            sudo certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --redirect -d "$domain"
+            sudo nginx -t
+            sudo systemctl reload nginx
+            curl -fsS "https://$domain/" -o /dev/null
+            echo "VPS_STATIC_SITE_HTTPS_READY"
