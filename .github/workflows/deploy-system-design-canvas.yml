@@ -1,0 +1,170 @@
+name: Deploy System Design Canvas to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-system-design-canvas.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-system-design-vps
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout deployment configuration
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build upstream open-source canvas as static files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/ozers/system-design-canvas.git canvas
+          cd canvas
+          npm ci
+          npm audit --omit=dev || true
+          npm run build
+          test -s out/index.html
+
+      - name: Upload static build
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-design-canvas-static
+          path: canvas/out/
+          if-no-files-found: error
+          retention-days: 2
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Download static build
+        uses: actions/download-artifact@v4
+        with:
+          name: system-design-canvas-static
+          path: out/
+
+      - name: Prepare VPS and HTTP virtual host
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -eu
+            sudo -n true
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx certbot
+            sudo install -d -o www-data -g www-data -m 0755 /var/www/demo-system-design
+            sudo install -d -o root -g root -m 0755 /var/lib/letsencrypt
+            sudo tee /etc/nginx/sites-available/demo-system-design.katta.cc >/dev/null <<'NGINX'
+            server {
+                listen 80;
+                listen [::]:80;
+                server_name demo-system-design.katta.cc;
+                root /var/www/demo-system-design;
+                index index.html;
+                location / {
+                    try_files $uri $uri/ /index.html;
+                }
+                location ~* \.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?)$ {
+                    expires 7d;
+                    add_header Cache-Control "public";
+                    try_files $uri =404;
+                }
+            }
+            NGINX
+            sudo ln -sfn /etc/nginx/sites-available/demo-system-design.katta.cc /etc/nginx/sites-enabled/demo-system-design.katta.cc
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+      - name: Copy static files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "out/**"
+          target: "/var/www/demo-system-design/"
+          strip_components: 1
+          overwrite: true
+
+      - name: Issue origin certificate using DNS-01 and enable HTTPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 25m
+          script_stop: true
+          script: |
+            set -eu
+            sudo rm -f /var/lib/letsencrypt/demo-system-design-continue
+            sudo tee /usr/local/sbin/techkatta-demo-acme-auth >/dev/null <<'HOOK'
+            #!/bin/sh
+            set -eu
+            echo "ACME_DNS_CHALLENGE_NAME=_acme-challenge.${CERTBOT_DOMAIN}"
+            echo "ACME_DNS_CHALLENGE_VALUE=${CERTBOT_VALIDATION}"
+            echo "Create this TXT record in Cloudflare, then trigger the continuation workflow."
+            deadline=$(( $(date +%s) + 1200 ))
+            while [ ! -f /var/lib/letsencrypt/demo-system-design-continue ]; do
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                echo "Timed out waiting for DNS challenge continuation."
+                exit 1
+              fi
+              sleep 5
+            done
+            rm -f /var/lib/letsencrypt/demo-system-design-continue
+            sleep 20
+            HOOK
+            sudo chmod 0755 /usr/local/sbin/techkatta-demo-acme-auth
+            sudo certbot certonly --manual --preferred-challenges dns --manual-auth-hook /usr/local/sbin/techkatta-demo-acme-auth --manual-cleanup-hook /usr/bin/true --manual-public-ip-logging-ok --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring -d demo-system-design.katta.cc
+            sudo tee /etc/nginx/sites-available/demo-system-design.katta.cc >/dev/null <<'NGINX'
+            server {
+                listen 80;
+                listen [::]:80;
+                server_name demo-system-design.katta.cc;
+                location /.well-known/acme-challenge/ { root /var/www/html; }
+                location / { return 301 https://$host$request_uri; }
+            }
+            server {
+                listen 443 ssl;
+                listen [::]:443 ssl;
+                server_name demo-system-design.katta.cc;
+                root /var/www/demo-system-design;
+                index index.html;
+                ssl_certificate /etc/letsencrypt/live/demo-system-design.katta.cc/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/demo-system-design.katta.cc/privkey.pem;
+                ssl_protocols TLSv1.2 TLSv1.3;
+                location / {
+                    try_files $uri $uri/ /index.html;
+                }
+                location ~* \.(css|js|svg|png|jpg|jpeg|webp|ico|woff2?)$ {
+                    expires 7d;
+                    add_header Cache-Control "public";
+                    try_files $uri =404;
+                }
+            }
+            NGINX
+            sudo chown -R www-data:www-data /var/www/demo-system-design
+            sudo nginx -t
+            sudo systemctl reload nginx
+            curl -kfsS --resolve demo-system-design.katta.cc:443:127.0.0.1 https://demo-system-design.katta.cc/ -o /dev/null
+            echo "VPS_STATIC_SITE_AND_ORIGIN_TLS_READY"
