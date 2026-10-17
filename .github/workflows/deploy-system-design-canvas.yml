@@ -69,6 +69,15 @@ jobs:
             sudo -n true
             sudo apt-get update
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx rsync certbot python3-certbot-nginx
+            if command -v ufw >/dev/null 2>&1; then
+              if sudo ufw status | grep -q '^Status: active'; then
+                sudo ufw allow 80/tcp
+                sudo ufw allow 443/tcp
+              fi
+              sudo ufw status verbose
+            else
+              echo "UFW is not installed; check the VPS provider firewall for inbound TCP 80 and 443."
+            fi
             sudo install -d -o www-data -g www-data -m 0755 /var/www/demo-system-design
             printf '%s' 'c2VydmVyIHsKICAgIGxpc3RlbiA4MDsKICAgIGxpc3RlbiBbOjpdOjgwOwogICAgc2VydmVyX25hbWUgZGVtby1zeXN0ZW0tZGVzaWduLmthdHRhLmNjOwogICAgcm9vdCAvdmFyL3d3dy9kZW1vLXN5c3RlbS1kZXNpZ247CiAgICBpbmRleCBpbmRleC5odG1sOwogICAgbG9jYXRpb24gLyB7CiAgICAgICAgdHJ5X2ZpbGVzICR1cmkgJHVyaS8gL2luZGV4Lmh0bWw7CiAgICB9Cn0K' | base64 -d | sudo tee /etc/nginx/sites-available/demo-system-design.katta.cc >/dev/null
             sudo ln -sfn /etc/nginx/sites-available/demo-system-design.katta.cc /etc/nginx/sites-enabled/demo-system-design.katta.cc
