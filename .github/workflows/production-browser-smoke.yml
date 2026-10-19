@@ -1,17 +1,12 @@
 name: Production Browser Smoke (Read-Only)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/production-browser-smoke.yml"
-      - "frontend/**"
-      - "scripts/production-browser-smoke.mjs"
+  deployment_status:
   workflow_dispatch:
 
 permissions:
   contents: read
+  deployments: read
 
 concurrency:
   group: production-browser-smoke
@@ -20,27 +15,76 @@ concurrency:
 jobs:
   browser-smoke:
     name: Real Chromium browser smoke tests
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+      (github.event.deployment.environment == 'Production' || github.event.deployment.environment == 'production'))
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify deployed revision matches current main
+        id: revision
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          current_sha="$(git rev-parse origin/main)"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$REF" != "refs/heads/main" ]]; then
+              echo "::error::Manual production browser smoke must run from main."
+              exit 1
+            fi
+            deployed_sha="$current_sha"
+          else
+            deployed_sha="$EVENT_DEPLOYMENT_SHA"
+          fi
+
+          if [[ ! "$deployed_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Deployment event did not provide a valid 40-character commit SHA."
+            exit 1
+          fi
+
+          if [[ "$deployed_sha" != "$current_sha" ]]; then
+            echo "::notice::Skipping stale deployment $deployed_sha; current main is $current_sha."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "verified_sha=$deployed_sha" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Verified production revision: $deployed_sha"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        if: steps.revision.outputs.skip != 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
       - name: Install isolated Playwright dependency
+        if: steps.revision.outputs.skip != 'true'
         run: |
           npm install --prefix /tmp/tech-katta-playwright playwright
           /tmp/tech-katta-playwright/node_modules/.bin/playwright install --with-deps chromium
 
       - name: Build frontend for isolated mobile gesture checks
+        if: steps.revision.outputs.skip != 'true'
+        env:
+          VITE_BUILD_COMMIT_SHA: ${{ steps.revision.outputs.verified_sha }}
         run: |
           npm ci --prefix frontend
           npm run build --prefix frontend
 
       - name: Start local frontend preview for mobile gesture checks
+        if: steps.revision.outputs.skip != 'true'
         run: |
           npm run preview --prefix frontend -- --host 127.0.0.1 --port 4173 > /tmp/tech-katta-preview.log 2>&1 &
           for attempt in $(seq 1 30); do
@@ -53,17 +97,19 @@ jobs:
           cat /tmp/tech-katta-preview.log
           exit 1
 
-      - name: Test production SPA routes, browser-origin API access, and mobile-emulated swipes
+      - name: Test production SPA routes, deployed revision, browser-origin API access, and mobile-emulated swipes
+        if: steps.revision.outputs.skip != 'true'
         env:
           PLAYWRIGHT_MODULE: /tmp/tech-katta-playwright/node_modules/playwright/index.mjs
           FRONTEND_URL: https://tech.katta.cc
           API_URL: https://tech-api.katta.cc
           MOBILE_FRONTEND_URL: http://127.0.0.1:4173
+          EXPECTED_DEPLOYMENT_SHA: ${{ steps.revision.outputs.verified_sha }}
         run: node scripts/production-browser-smoke.mjs
 
       - name: Upload browser-smoke diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: always() && steps.revision.outputs.skip != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: production-browser-smoke-${{ github.run_id }}
           path: /tmp/tech-katta-preview.log

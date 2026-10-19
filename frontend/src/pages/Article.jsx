@@ -4,6 +4,7 @@ import { categories as fallbackCategories, getArticle, getArticleContent } from 
 import { fetchArticleBySlug } from '../api.js';
 import { getVideoEmbedUrl } from '../videoEmbed.js';
 import { readMarkedRead, writeMarkedRead } from '../readingStatus.js';
+import { resolveArticleContent } from '../articleContent.js';
 import {
   KafkaArchitectureDiagram,
   KafkaConsumerGroupDiagram,
@@ -195,6 +196,11 @@ function Block({ block }) {
  *   }
  * ]
  */
+/**
+ * Normalizes the supported article-content shapes into sections and optional intro/summary fields.
+ * @param {unknown} rawContent
+ * @returns {object | null}
+ */
 function normalizeContent(rawContent) {
   if (!rawContent) return null;
 
@@ -262,11 +268,8 @@ export default function Article() {
     : currentResult.status === 'unavailable'
       ? fallbackArticle
       : null;
-  const rawContent = currentResult.status === 'ok'
-    ? (currentResult.article?.content || fallbackContent)
-    : currentResult.status === 'unavailable'
-      ? fallbackContent
-      : null;
+  const resolvedContent = resolveArticleContent(currentResult, fallbackContent);
+  const rawContent = resolvedContent.content;
   const unitLabel = fallbackCategories.find((category) => category.id === article?.category)?.label || article?.category || 'Unit';
   const content = useMemo(() => normalizeContent(rawContent), [rawContent]);
 
@@ -368,7 +371,7 @@ export default function Article() {
     );
   }
 
-  if (currentResult.status === 'error' || (currentResult.status === 'unavailable' && !fallbackArticle)) {
+  if (currentResult.status === 'error' || (currentResult.status === 'unavailable' && !fallbackArticle) || resolvedContent.error) {
     return (
       <main className="article-page">
         <NavLink className="article-back" to="/">← Back to library</NavLink>
