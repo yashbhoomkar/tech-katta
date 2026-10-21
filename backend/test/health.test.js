@@ -42,7 +42,7 @@ test('health endpoints return a no-store JSON process status', async (t) => {
   for (const route of ['/health', '/health/', '/health/live', '/health/ready', '/api/health']) {
     const response = await fetch(running.baseUrl + route);
     assert.equal(response.status, 200, route);
-    assert.match(response.headers.get('content-type') || '', /application\\/json/, route);
+    assert.ok((response.headers.get('content-type') || '').includes('application/json'), route);
     assert.equal(response.headers.get('cache-control'), 'no-store', route);
     const body = await response.json();
     assert.equal(body.status, 'ok', route);
