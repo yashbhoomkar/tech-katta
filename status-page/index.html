@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="Live operational status for Tech Katta services.">
+  <title>Tech Katta Status</title>
+  <style>
+    :root{color-scheme:light;--ink:#202124;--muted:#5f6368;--line:#dadce0;--green:#188038;--green-bg:#e6f4ea;--yellow:#b06000;--yellow-bg:#fef7e0;--red:#c5221f;--red-bg:#fce8e6;--blue:#1a73e8}
+    *{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .wrap{max-width:850px;margin:0 auto;padding:48px 22px 36px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:38px}.mark{width:42px;height:42px;border-radius:12px;background:#202124;color:white;display:grid;place-items:center;font-size:21px;font-weight:750;letter-spacing:-1px}.brand-name{font-size:17px;font-weight:700}.brand-sub{font-size:13px;color:var(--muted)}
+    h1{font-size:32px;line-height:1.2;letter-spacing:-.8px;margin:0 0 10px}.intro{color:var(--muted);margin:0 0 26px}.overall{display:flex;align-items:center;gap:13px;border:1px solid var(--line);border-radius:12px;background:white;padding:20px 22px;margin-bottom:30px}.overall-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--green-bg);color:var(--green);font-size:22px;font-weight:700;flex:none}.overall[data-state="degraded"] .overall-icon{background:var(--yellow-bg);color:var(--yellow)}.overall[data-state="outage"] .overall-icon{background:var(--red-bg);color:var(--red)}.overall-title{font-size:17px;font-weight:700}.overall-note{font-size:13px;color:var(--muted)}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.section-head h2{font-size:17px;margin:0}.small{font-size:12px;color:var(--muted)}
+    .services{border:1px solid var(--line);border-radius:12px;background:white;overflow:hidden}.service{padding:20px 22px;border-bottom:1px solid #eceff1}.service:last-child{border-bottom:0}.service-top{display:flex;align-items:center;gap:12px}.dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px var(--green-bg);flex:none}.service[data-state="degraded"] .dot{background:#e6a23c;box-shadow:0 0 0 4px var(--yellow-bg)}.service[data-state="outage"] .dot{background:var(--red);box-shadow:0 0 0 4px var(--red-bg)}.service-main{flex:1;min-width:0}.service-name{font-weight:650}.service-url{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.pill{font-size:12px;font-weight:650;border-radius:100px;padding:5px 10px;background:var(--green-bg);color:var(--green);white-space:nowrap}.service[data-state="degraded"] .pill{background:var(--yellow-bg);color:var(--yellow)}.service[data-state="outage"] .pill{background:var(--red-bg);color:var(--red)}.bar{height:6px;border-radius:20px;background:var(--green);margin:17px 0 0 22px}.service[data-state="degraded"] .bar{background:#e6a23c}.service[data-state="outage"] .bar{background:var(--red)}.meta{display:flex;justify-content:space-between;gap:12px;margin:9px 0 0 22px;color:var(--muted);font-size:12px}.footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;color:var(--muted);font-size:12px}.refresh{border:1px solid var(--line);background:white;color:var(--ink);border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}.refresh:hover{background:#f0f2f5}.refresh:disabled{opacity:.6;cursor:wait}.error{color:var(--red)}a{color:inherit}@media(max-width:560px){.wrap{padding:30px 16px}h1{font-size:28px}.overall{padding:16px}.service{padding:17px 15px}.service-top{align-items:flex-start}.pill{font-size:11px}.meta,.bar{margin-left:22px}.footer{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="brand"><div class="mark" aria-hidden="true">tk</div><div><div class="brand-name">Tech Katta</div><div class="brand-sub">Public status</div></div></header>
+    <h1>Tech Katta Status</h1>
+    <p class="intro">Live operational status for Tech Katta services.</p>
+    <section class="overall" id="overall" data-state="checking" aria-live="polite">
+      <div class="overall-icon" id="overall-icon" aria-hidden="true">…</div>
+      <div><div class="overall-title" id="overall-title">Checking systems…</div><div class="overall-note" id="overall-note">Running live availability checks.</div></div>
+    </section>
+    <div class="section-head"><h2>Services</h2><span class="small" id="checked-label">Waiting for first check</span></div>
+    <section class="services" aria-label="Service status">
+      <article class="service" id="frontend" data-state="checking">
+        <div class="service-top"><span class="dot" aria-hidden="true"></span><div class="service-main"><div class="service-name">Frontend</div><div class="service-url">tech.katta.cc</div></div><span class="pill" id="frontend-status">Checking</span></div>
+        <div class="bar" aria-hidden="true"></div><div class="meta"><span id="frontend-detail">Checking website availability…</span><span id="frontend-latency">—</span></div>
+      </article>
+      <article class="service" id="backend" data-state="checking">
+        <div class="service-top"><span class="dot" aria-hidden="true"></span><div class="service-main"><div class="service-name">Backend</div><div class="service-url">tech-api.katta.cc</div></div><span class="pill" id="backend-status">Checking</span></div>
+        <div class="bar" aria-hidden="true"></div><div class="meta"><span id="backend-detail">Checking API health…</span><span id="backend-latency">—</span></div>
+      </article>
+    </section>
+    <footer class="footer"><span id="updated">Status checks run automatically every 60 seconds.</span><button class="refresh" id="refresh" type="button">Refresh status ↻</button></footer>
+  </main>
+  <script>
+    const labels={operational:"Operational",degraded:"Degraded",outage:"Major outage",checking:"Checking"};
+    const $=id=>document.getElementById(id);
+    function renderComponent(c){const id=c.id;const state=c.status||"outage";$(id).dataset.state=state;$ (id+"-status").textContent=labels[state]||"Unavailable";$(id+"-detail").textContent=c.message||(state==="operational"?"All checks passed":"Service check failed");$(id+"-latency").textContent=Number.isFinite(c.responseTimeMs)?c.responseTimeMs+" ms":"No response";}
+    async function refresh(){const btn=$("refresh");btn.disabled=true;try{const response=await fetch("/api/status",{cache:"no-store"});if(!response.ok)throw new Error("Status API returned HTTP "+response.status);const data=await response.json();data.components.forEach(renderComponent);const overall=$("overall");overall.dataset.state=data.overall;const state=data.overall;$("overall-icon").textContent=state==="operational"?"✓":state==="degraded"?"!":"×";$("overall-title").textContent=state==="operational"?"All systems operational":state==="degraded"?"Some systems are experiencing issues":"Service disruption detected";$("overall-note").textContent=state==="operational"?"All monitored services are responding normally.":"We are detecting an issue with one or more monitored services.";const date=new Date(data.checkedAt);$("checked-label").textContent="Checked "+date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});$("updated").textContent="Last checked "+date.toLocaleString()+" · Auto-refresh every 60 seconds";}catch(e){$("overall").dataset.state="outage";$("overall-icon").textContent="!";$("overall-title").textContent="Unable to retrieve status";$("overall-note").textContent="The status checker could not be reached. Please try again."; $("updated").textContent="Status check failed. "+e.message;}finally{btn.disabled=false;}}
+    $("refresh").addEventListener("click",refresh);refresh();setInterval(refresh,60000);
+  </script>
+</body>
+</html>
