@@ -2,32 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createServer } from 'node:http';
 
-async function startServer() {
-  const child = spawn(process.execPath, ['src/server.js'], {
-    cwd: new URL('..', import.meta.url),
-    env: { ...process.env, HOST: '127.0.0.1', PORT: '0' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  // Pick an available port ourselves so the spawned process and test agree.
-  child.kill('SIGTERM');
-  await once(child, 'exit');
-
-  const { createServer } = await import('node:http');
+async function getFreePort() {
   const probe = createServer();
   probe.listen(0, '127.0.0.1');
   await once(probe, 'listening');
   const port = probe.address().port;
   await new Promise((resolve, reject) => probe.close(error => error ? reject(error) : resolve()));
+  return port;
+}
 
+async function startServer() {
+  const port = await getFreePort();
   const server = spawn(process.execPath, ['src/server.js'], {
     cwd: new URL('..', import.meta.url),
     env: { ...process.env, HOST: '127.0.0.1', PORT: String(port) },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-
   const baseUrl = `http://127.0.0.1:${port}`;
+
   for (let attempt = 0; attempt < 50; attempt += 1) {
     if (server.exitCode !== null) throw new Error('API process exited before becoming ready.');
     try {
@@ -36,6 +30,7 @@ async function startServer() {
     } catch {}
     await new Promise(resolve => setTimeout(resolve, 50));
   }
+
   server.kill('SIGTERM');
   throw new Error('API server did not start in time.');
 }
@@ -47,7 +42,7 @@ test('health endpoints return a no-store JSON process status', async (t) => {
   for (const route of ['/health', '/health/', '/health/live', '/health/ready', '/api/health']) {
     const response = await fetch(running.baseUrl + route);
     assert.equal(response.status, 200, route);
-    assert.match(response.headers.get('content-type') || '', /application\/json/, route);
+    assert.match(response.headers.get('content-type') || '', /application\\/json/, route);
     assert.equal(response.headers.get('cache-control'), 'no-store', route);
     const body = await response.json();
     assert.equal(body.status, 'ok', route);
