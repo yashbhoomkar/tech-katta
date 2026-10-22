@@ -157,7 +157,13 @@ function openLesson(id) {
   const lesson = lessons.find(item => item.id === id);
   if (!lesson) return;
   document.querySelector("#modal-eyebrow").textContent = `${lesson.type.toUpperCase()} / ${lesson.level}`;
-  document.querySelector("#modal-title").textContent = lesson.title;\n  document.querySelector("#modal-title").dataset.lessonId = lesson.id;\n  document.querySelector("#teach-play").disabled = false;\n  document.querySelector("#teach-pause").disabled = true;\n  document.querySelector("#teach-stop").disabled = true;\n  document.querySelector("#teach-pause").textContent = "Pause";\n  setTeachStatus("A senior-engineer-style walkthrough, read aloud by your browser.");
+  document.querySelector("#modal-title").textContent = lesson.title;
+  document.querySelector("#modal-title").dataset.lessonId = lesson.id;
+  document.querySelector("#teach-play").disabled = false;
+  document.querySelector("#teach-pause").disabled = true;
+  document.querySelector("#teach-stop").disabled = true;
+  document.querySelector("#teach-pause").textContent = "Pause";
+  setTeachStatus("A senior-engineer-style walkthrough, read aloud by your browser.");
   document.querySelector("#modal-lede").textContent = lesson.description;
   document.querySelector("#modal-body").innerHTML = lesson.detail.map((paragraph, index) => `<section class="modal-note" data-speech-section="${index}"><span>0${index + 1}</span><p>${paragraph}</p></section>`).join("") + `<div class="note-callout"><b>Think about it</b><p>What changes if this component becomes the bottleneck or fails completely? Write down the assumption you would test first.</p></div>`;
   document.querySelector("#modal-meta").textContent = `${lesson.time} · ${tracks.find(t => t.id === lesson.category)?.name}`;
@@ -204,7 +210,10 @@ lessonGrid.addEventListener("click", event => {
   const openButton = event.target.closest("[data-open]");
   if (openButton) openLesson(openButton.dataset.open);
 });
-document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));\ndocument.querySelector("#teach-play").addEventListener("click", () => { if (speechPaused && "speechSynthesis" in window) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); return; } startTeaching(); });\ndocument.querySelector("#teach-pause").addEventListener("click", () => { if (!( "speechSynthesis" in window)) return; if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); } else { window.speechSynthesis.pause(); speechPaused = true; document.querySelector("#teach-pause").textContent = "Resume"; setTeachStatus("Walkthrough paused."); } });\ndocument.querySelector("#teach-stop").addEventListener("click", () => { stopTeaching(); document.querySelector("#teach-play").disabled = false; });
+document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));
+document.querySelector("#teach-play").addEventListener("click", () => { if (speechPaused && "speechSynthesis" in window) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); return; } startTeaching(); });
+document.querySelector("#teach-pause").addEventListener("click", () => { if (!( "speechSynthesis" in window)) return; if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); } else { window.speechSynthesis.pause(); speechPaused = true; document.querySelector("#teach-pause").textContent = "Resume"; setTeachStatus("Walkthrough paused."); } });
+document.querySelector("#teach-stop").addEventListener("click", () => { stopTeaching(); document.querySelector("#teach-play").disabled = false; });
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
 roadmapList.addEventListener("click", event => {
   const button = event.target.closest("[data-roadmap]");
