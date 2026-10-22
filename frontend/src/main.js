@@ -108,7 +108,7 @@ root.innerHTML = `
 
     <footer class="footer"><a class="brand" href="#"><span class="brand-mark">tk</span><span class="brand-name">tech<span>.katta</span></span></a><span>Notes on building systems.</span><span>Made for curious engineers <span class="footer-star">✳</span></span></footer>
   </div>
-  <div class="lesson-modal" id="lesson-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-backdrop" data-close-modal></div><article class="modal-panel"><button class="modal-close" data-close-modal aria-label="Close note">×</button><div class="eyebrow" id="modal-eyebrow">ENGINEERING NOTES</div><h2 id="modal-title"></h2><p class="modal-lede" id="modal-lede"></p><div class="modal-body" id="modal-body"></div><div class="modal-footer"><span id="modal-meta"></span><button class="button-primary" data-close-modal>Back to library <span>↗</span></button></div></article></div>
+  <div class="lesson-modal" id="lesson-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-backdrop" data-close-modal></div><article class="modal-panel"><button class="modal-close" data-close-modal aria-label="Close note">×</button><div class="eyebrow" id="modal-eyebrow">ENGINEERING NOTES</div><h2 id="modal-title"></h2><p class="modal-lede" id="modal-lede"></p><section class="teach-panel" aria-label="Teach mode"><div><span class="teach-kicker">TEACH MODE</span><p id="teach-status" aria-live="polite">A senior-engineer-style walkthrough, read aloud by your browser.</p></div><div class="teach-controls"><button id="teach-play" class="button-primary" type="button">▶ Teach me</button><button id="teach-pause" class="button-secondary" type="button" disabled>Pause</button><button id="teach-stop" class="button-secondary" type="button" disabled>Stop</button><label class="teach-speed">Speed <select id="teach-rate" aria-label="Narration speed"><option value="0.85">0.85×</option><option value="1" selected>1×</option><option value="1.15">1.15×</option><option value="1.3">1.3×</option></select></label></div></section><div class="modal-body" id="modal-body"></div><div class="modal-footer"><span id="modal-meta"></span><button class="button-primary" data-close-modal>Back to library <span>↗</span></button></div></article></div>
 `;
 
 const categoryGrid = document.querySelector("#category-grid");
@@ -157,9 +157,9 @@ function openLesson(id) {
   const lesson = lessons.find(item => item.id === id);
   if (!lesson) return;
   document.querySelector("#modal-eyebrow").textContent = `${lesson.type.toUpperCase()} / ${lesson.level}`;
-  document.querySelector("#modal-title").textContent = lesson.title;
+  document.querySelector("#modal-title").textContent = lesson.title;\n  document.querySelector("#modal-title").dataset.lessonId = lesson.id;\n  document.querySelector("#teach-play").disabled = false;\n  document.querySelector("#teach-pause").disabled = true;\n  document.querySelector("#teach-stop").disabled = true;\n  document.querySelector("#teach-pause").textContent = "Pause";\n  setTeachStatus("A senior-engineer-style walkthrough, read aloud by your browser.");
   document.querySelector("#modal-lede").textContent = lesson.description;
-  document.querySelector("#modal-body").innerHTML = lesson.detail.map((paragraph, index) => `<section class="modal-note"><span>0${index + 1}</span><p>${paragraph}</p></section>`).join("") + `<div class="note-callout"><b>Think about it</b><p>What changes if this component becomes the bottleneck or fails completely? Write down the assumption you would test first.</p></div>`;
+  document.querySelector("#modal-body").innerHTML = lesson.detail.map((paragraph, index) => `<section class="modal-note" data-speech-section="${index}"><span>0${index + 1}</span><p>${paragraph}</p></section>`).join("") + `<div class="note-callout"><b>Think about it</b><p>What changes if this component becomes the bottleneck or fails completely? Write down the assumption you would test first.</p></div>`;
   document.querySelector("#modal-meta").textContent = `${lesson.time} · ${tracks.find(t => t.id === lesson.category)?.name}`;
   document.querySelector("#lesson-modal").hidden = false;
   document.body.classList.add("modal-open");
@@ -204,7 +204,7 @@ lessonGrid.addEventListener("click", event => {
   const openButton = event.target.closest("[data-open]");
   if (openButton) openLesson(openButton.dataset.open);
 });
-document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));
+document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));\ndocument.querySelector("#teach-play").addEventListener("click", () => { if (speechPaused && "speechSynthesis" in window) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); return; } startTeaching(); });\ndocument.querySelector("#teach-pause").addEventListener("click", () => { if (!( "speechSynthesis" in window)) return; if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); speechPaused = false; document.querySelector("#teach-pause").textContent = "Pause"; setTeachStatus("Resuming walkthrough…"); } else { window.speechSynthesis.pause(); speechPaused = true; document.querySelector("#teach-pause").textContent = "Resume"; setTeachStatus("Walkthrough paused."); } });\ndocument.querySelector("#teach-stop").addEventListener("click", () => { stopTeaching(); document.querySelector("#teach-play").disabled = false; });
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
 roadmapList.addEventListener("click", event => {
   const button = event.target.closest("[data-roadmap]");
