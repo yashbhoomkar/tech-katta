@@ -44,7 +44,7 @@ let query = "";
 const saved = new Set(JSON.parse(localStorage.getItem("tk-saved-designs") || "[]"));
 
 root.innerHTML = `
-  <div class="app-shell">
+  <div class="course-layout"><aside class="course-sidebar" aria-label="System design course navigation"><a class="sidebar-brand" href="#"><span class="brand-mark">tk</span><span>tech<span>.katta</span></span></a><div class="sidebar-course-label">SYSTEM DESIGN COURSE</div><a class="sidebar-item active" href="#library"><span class="sidebar-number">01</span>Introduction</a><a class="sidebar-item" href="#roadmaps"><span class="sidebar-number">02</span>How to prepare</a><div class="sidebar-group-label">BUILD A FOUNDATION</div><a class="sidebar-item" href="#roadmaps"><span class="sidebar-number">03</span>Delivery framework</a><a class="sidebar-item" href="#library"><span class="sidebar-number">04</span>Core concepts</a><a class="sidebar-item" href="#library"><span class="sidebar-number">05</span>Key technologies</a><a class="sidebar-item" href="#library"><span class="sidebar-number">06</span>Common patterns</a><div class="sidebar-group-label">PRACTICE</div><a class="sidebar-item" href="#question-breakdowns"><span class="sidebar-number">07</span>Question breakdowns</a><a class="sidebar-item" href="#roadmaps"><span class="sidebar-number">08</span>Learning paths</a><div class="sidebar-progress"><span class="progress-kicker">YOUR LEARNING SPACE</span><b>Learn it. Apply it.</b><p>Build the fundamentals, then practice designing real systems.</p><a href="#question-breakdowns">Start practicing <span>↗</span></a></div></aside><div class="app-shell">
     <header class="topbar">
       <a class="brand" href="#" aria-label="Tech Katta home"><span class="brand-mark">tk</span><span class="brand-name">tech<span>.katta</span></span></a>
       <nav class="main-nav" aria-label="Main navigation">
@@ -94,7 +94,7 @@ root.innerHTML = `
         <div class="category-grid" id="category-grid"></div>
       </section>
 
-      <section class="content-section latest-section" id="latest">
+      <section class="content-section latest-section" id="latest"><span id="question-breakdowns" class="section-anchor" aria-hidden="true"></span>
         <div class="section-heading">
           <div><div class="eyebrow">CONCEPTS IN PRACTICE</div><h2 id="lesson-heading">Question breakdowns.</h2><p id="lesson-subheading">See how the fundamentals come together in real systems.</p></div>
           <button class="text-action" id="saved-filter">Saved items <span id="saved-count">0</span> ↗</button>
@@ -119,6 +119,7 @@ root.innerHTML = `
     </main>
 
     <footer class="footer"><a class="brand" href="#"><span class="brand-mark">tk</span><span class="brand-name">tech<span>.katta</span></span></a><span>System design, made practical.</span><span>Made for curious engineers <span class="footer-star">✳</span></span></footer>
+    </div>
   </div>
   <div class="lesson-modal" id="lesson-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-backdrop" data-close-modal></div><article class="modal-panel"><button class="modal-close" data-close-modal aria-label="Close note">×</button><div class="eyebrow" id="modal-eyebrow">ENGINEERING NOTES</div><h2 id="modal-title"></h2><p class="modal-lede" id="modal-lede"></p><section class="teach-panel" aria-label="Teach mode"><div><span class="teach-kicker">TEACH MODE</span><p id="teach-status" aria-live="polite">A senior-engineer-style walkthrough, read aloud by your browser.</p></div><div class="teach-controls"><button id="teach-play" class="button-primary" type="button">▶ Teach me</button><button id="teach-pause" class="button-secondary" type="button" disabled>Pause</button><button id="teach-stop" class="button-secondary" type="button" disabled>Stop</button><label class="teach-speed">Speed <select id="teach-rate" aria-label="Narration speed"><option value="0.85">0.85×</option><option value="1" selected>1×</option><option value="1.15">1.15×</option><option value="1.3">1.3×</option></select></label></div></section><div class="modal-body" id="modal-body"></div><div class="modal-footer"><span id="modal-meta"></span><button class="button-primary" data-close-modal>Back to library <span>↗</span></button></div></article></div>
 `;
