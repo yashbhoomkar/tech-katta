@@ -16,3 +16,8 @@
 
 /* Engineering Notebook MVP: browser-native Teach Mode */
 .teach-panel{display:grid;gap:14px;margin:25px 0 24px;padding:17px;border:1px solid #D9DEE7;border-radius:12px;background:linear-gradient(135deg,#F4F6F9,#FFFFFF)}.teach-kicker{font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.12em;color:var(--accent)}.teach-panel p{font-size:12px;line-height:1.7;color:#53606D;margin:7px 0 0}.teach-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.teach-controls button{padding:10px 12px;font-size:11px}.teach-controls button:disabled{opacity:.45;cursor:not-allowed}.teach-speed{display:flex;align-items:center;gap:7px;color:#5E6875;font-size:11px;margin-left:auto}.teach-speed select{color:#1C2733;background:#FFFFFF;border:1px solid #D9DEE7;border-radius:7px;padding:8px}.modal-note.is-speaking{border-color:#2855D9;background:#EEF3FF;box-shadow:inset 3px 0 var(--accent)}.modal-note{transition:background .2s,border-color .2s}.modal-note.is-speaking p{color:#1C2733}@media(max-width:520px){.teach-controls{gap:6px}.teach-controls button{flex:1}.teach-speed{margin-left:0;width:100%;justify-content:flex-start}}
+
+/* Course-first, Hello Interview-inspired UI direction */
+.hero{padding-top:68px;padding-bottom:52px;min-height:450px}
+.hero h1{max-width:590px}
+@media(max-width:640px){.hero{padding-top:48px}}
