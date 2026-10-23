@@ -1,5 +1,6 @@
 import "./style.css";
 import { architectureWorkspace, bindArchitectureWorkspace } from "./architecture-workspace.js";
+import { mockInterviewPage, bindMockInterview } from "./mock-interview.js";
 
 const root = document.querySelector("#root");
 const tracks = [
@@ -37,7 +38,7 @@ const questions = [
  {company:"LinkedIn",role:"Senior SWE",round:"System design",question:"Design a connection recommendation feed",tag:"Ranking"}
 ];
 const nav = [
- {id:"home",label:"Overview"}, {id:"learn",label:"Learn"}, {id:"workspace",label:"Design studio"}, {id:"practice",label:"Practice lab"}, {id:"evaluate",label:"Evaluation report"},
+ {id:"home",label:"Overview"}, {id:"learn",label:"Learn"}, {id:"workspace",label:"Design studio"}, {id:"interview",label:"Mock interview"}, {id:"practice",label:"Practice lab"}, {id:"evaluate",label:"Evaluation report"},
  {id:"questions",label:"Interview questions"}, {id:"pricing",label:"Plans"}
 ];
 let page = location.hash.slice(1) || "home";
@@ -107,9 +108,10 @@ function modal() {
  return `<div class="modal-backdrop" data-close><article class="lesson-modal" role="dialog" aria-modal="true"><button class="modal-close" data-close aria-label="Close lesson">×</button><div class="eyebrow">${l.type.toUpperCase()} / ${l.level}</div><h2>${l.title}</h2><p class="modal-lede">${l.desc}</p><div class="modal-meta">${l.time} · ${l.track}</div><div class="modal-content">${l.sections.map((s,i)=>`<section class="modal-note"><span>0${i+1}</span><p>${s}</p></section>`).join("")}</div><div class="note-callout"><b>Think about it</b><p>What changes if this component becomes the bottleneck or fails completely? Write down the assumption you would test first.</p></div><div class="modal-actions"><button class="button-secondary" data-save-modal="${l.id}">${saved.has(l.id)?"★ Saved":"☆ Save lesson"}</button><button class="button-primary" data-close>Back to library <span>↗</span></button></div></article></div>`;
 }
 function render() {
- const view = ({home,learn,workspace:architectureWorkspace,practice,evaluate:evaluationPage,questions:questionPage,pricing})[page] || home;
+ const view = ({home,learn,workspace:architectureWorkspace,interview:mockInterviewPage,practice,evaluate:evaluationPage,questions:questionPage,pricing})[page] || home;
  root.innerHTML = `<div class="app-shell">${header()}${view()}${footer()}${modal()}</div>`;
  if (page === "workspace") bindArchitectureWorkspace(root);
+ if (page === "interview") bindMockInterview(root);
  root.querySelectorAll("[data-go]").forEach(el=>el.addEventListener("click",e=>{e.preventDefault();go(el.dataset.go)}));
  root.querySelectorAll("[data-track]").forEach(el=>el.addEventListener("click",()=>{activeTrack=el.dataset.track==="System design"?"System design":el.dataset.track;showSavedOnly=false;lessonSearchText="";go("learn")}));
  root.querySelectorAll("[data-filter]").forEach(el=>el.addEventListener("click",()=>{activeTrack=el.dataset.filter;showSavedOnly=false;render()}));
