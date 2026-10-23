@@ -63,8 +63,8 @@ root.innerHTML = `
           <h1>System design<br /><span>in a hurry.</span></h1>
           <p class="hero-intro">Learn the concepts, technologies, and patterns behind scalable systems—then apply them to real design questions. Start with a guided path or explore topics on your own.</p>
           <div class="hero-actions">
-            <a class="button-primary" href="#library">Explore system designs <span>↘</span></a>
-            <button class="button-secondary" data-view="roadmaps">Follow a design path <span>→</span></button>
+            <a class="button-primary" href="#roadmaps">Follow the learning path <span>↘</span></a>
+            <a class="button-secondary" href="#library">Explore concepts <span>→</span></a>
           </div>
           <div class="hero-footnote"><span class="tiny-check">✓</span> Concepts first. Practical design decisions next.</div>
         </div>
