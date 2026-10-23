@@ -17,7 +17,6 @@ function load() {
   try { const value = JSON.parse(localStorage.getItem(KEY) || "null"); if (value && Array.isArray(value.nodes) && Array.isArray(value.edges)) return {...value,scenario:value.scenario||scenarios[0].id,notes:value.notes||""}; } catch {}
   return {nodes:initialNodes.map(n=>({...n})),edges:initialEdges.map(e=>({...e})),scenario:scenarios[0].id,notes:""};
 }
-let model = load();
 let connectMode = false;
 let connectFrom = null;
 let selected = null;
@@ -40,6 +39,7 @@ const rubric = [
  {label:"Reliability & security",weight:14,terms:["retry","timeout","failover","dead letter","duplicate","disaster recovery","backup","circuit breaker","degraded","recovery","failure","idempotent","auth","rate limit","encryption"]},
  {label:"Trade-offs & observability",weight:10,terms:["trade-off","tradeoff","alternative","cost","monitor","metric","p95","p99","logging","alert","why","versus"," vs ","dashboard"]}
 ];
+let model = load();
 function evaluate() {
  const text=String(model.notes||"").toLowerCase();
  const types=new Set(model.nodes.map(n=>n.type.toLowerCase()));
