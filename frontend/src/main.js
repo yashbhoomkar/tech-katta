@@ -127,11 +127,11 @@ const categoryGrid = document.querySelector("#category-grid");
 const lessonGrid = document.querySelector("#lesson-grid");
 const roadmapList = document.querySelector("#roadmap-list");
 
-categoryGrid.innerHTML = tracks.map((track, index) => `
-  <button class="category-card ${track.tone}" data-track="${track.id}">
-    <span class="category-top"><span class="category-icon">${track.icon}</span><span class="category-count">${track.count}</span></span>
-    <span class="category-eyebrow">${track.eyebrow}</span><span class="category-title">${track.name}</span>
-    <span class="category-description">${track.description}</span><span class="category-link">Explore topic <span>↗</span></span>
+categoryGrid.innerHTML = lessons.filter(lesson => lesson.type === "Core concept").map((lesson, index) => `
+  <button class="category-card ${tracks.find(t => t.id === lesson.category)?.tone || "blue"}" data-open-concept="${lesson.id}">
+    <span class="category-top"><span class="category-icon">${String(index + 1).padStart(2,"0")}</span><span class="category-count">${lesson.time}</span></span>
+    <span class="category-eyebrow">${lesson.level}</span><span class="category-title">${lesson.title}</span>
+    <span class="category-description">${lesson.description}</span><span class="category-link">Read concept <span>↗</span></span>
   </button>`).join("");
 
 roadmapList.innerHTML = roadmaps.map(item => `
@@ -140,23 +140,33 @@ roadmapList.innerHTML = roadmaps.map(item => `
   </button>`).join("");
 
 function renderLessons() {
+  const coreConcepts = lessons.filter(lesson => lesson.type === "Core concept");
+  const visibleConcepts = coreConcepts.filter(lesson => {
+    const haystack = `${lesson.title} ${lesson.description} ${tracks.find(t => t.id === lesson.category)?.name || ""}`.toLowerCase();
+    return haystack.includes(query.toLowerCase()) && (!window.showSavedOnly || saved.has(lesson.id));
+  });
+  categoryGrid.innerHTML = visibleConcepts.map((lesson, index) => `
+    <button class="category-card ${tracks.find(t => t.id === lesson.category)?.tone || "blue"}" data-open-concept="${lesson.id}">
+      <span class="category-top"><span class="category-icon">${String(index + 1).padStart(2,"0")}</span><span class="category-count">${lesson.time}</span></span>
+      <span class="category-eyebrow">${lesson.level}</span><span class="category-title">${lesson.title}</span>
+      <span class="category-description">${lesson.description}</span><span class="category-link">Read concept <span>↗</span></span>
+    </button>`).join("");
   const visible = lessons.filter(lesson => {
+    if (lesson.type === "Core concept") return false;
     const categoryMatches = activeCategory === "all" || lesson.category === activeCategory;
     const haystack = `${lesson.title} ${lesson.description} ${lesson.type} ${tracks.find(t => t.id === lesson.category)?.name || ""}`.toLowerCase();
-    const queryMatches = haystack.includes(query.toLowerCase());
-    const savedMatches = !window.showSavedOnly || saved.has(lesson.id);
-    return categoryMatches && queryMatches && savedMatches;
+    return categoryMatches && haystack.includes(query.toLowerCase()) && (!window.showSavedOnly || saved.has(lesson.id));
   });
   lessonGrid.innerHTML = visible.map(lesson => `
     <article class="lesson-card">
-      <div class="lesson-card-top"><span class="lesson-type">${lesson.type}</span><button class="save-button ${saved.has(lesson.id) ? "is-saved" : ""}" data-save="${lesson.id}" aria-label="${saved.has(lesson.id) ? "Remove saved note" : "Save note"}" title="${saved.has(lesson.id) ? "Remove saved note" : "Save note"}">${saved.has(lesson.id) ? "★" : "☆"}</button></div>
+      <div class="lesson-card-top"><span class="lesson-type">${lesson.type}</span><button class="save-button ${saved.has(lesson.id) ? "is-saved" : ""}" data-save="${lesson.id}" aria-label="${saved.has(lesson.id) ? "Remove saved item" : "Save item"}" title="${saved.has(lesson.id) ? "Remove saved item" : "Save item"}">${saved.has(lesson.id) ? "★" : "☆"}</button></div>
       <div class="lesson-level">${lesson.level}</div><h3>${lesson.title}</h3><p>${lesson.description}</p>
-      <div class="lesson-card-bottom"><span>◷ &nbsp;${lesson.time}</span><button class="open-lesson" data-open="${lesson.id}">Read article <span>↗</span></button></div>
+      <div class="lesson-card-bottom"><span>◷ &nbsp;${lesson.time}</span><button class="open-lesson" data-open="${lesson.id}">Read breakdown <span>↗</span></button></div>
     </article>`).join("");
   document.querySelector("#empty-state").hidden = visible.length > 0;
   document.querySelector("#saved-count").textContent = saved.size;
-  document.querySelector("#lesson-heading").textContent = window.showSavedOnly ? "Your saved designs." : activeCategory === "all" ? "Practice a real design." : `${tracks.find(t => t.id === activeCategory)?.name || "Topic"} notes.`;
-  document.querySelector("#lesson-subheading").textContent = window.showSavedOnly ? "The designs you saved for later." : query ? `Matching designs for “${query}”.` : "Work through a system, one decision at a time.";
+  document.querySelector("#lesson-heading").textContent = window.showSavedOnly ? "Your saved items." : activeCategory === "all" ? "Question breakdowns." : `${tracks.find(t => t.id === activeCategory)?.name || "Topic"} questions.`;
+  document.querySelector("#lesson-subheading").textContent = window.showSavedOnly ? "Concepts and design questions you've saved for later." : query ? `Matching results for “${query}”.` : "Apply the fundamentals to realistic architecture problems.";
 }
 window.showSavedOnly = false;
 function setCategory(category) {
@@ -195,8 +205,8 @@ document.querySelectorAll("[data-view]").forEach(button => button.addEventListen
 }));
 document.querySelectorAll("[data-category]").forEach(button => button.addEventListener("click", () => setCategory(button.dataset.category)));
 categoryGrid.addEventListener("click", event => {
-  const button = event.target.closest("[data-track]");
-  if (button) { setCategory(button.dataset.track); document.querySelector("#latest").scrollIntoView({ behavior: "smooth" }); }
+  const button = event.target.closest("[data-open-concept]");
+  if (button) openLesson(button.dataset.openConcept);
 });
 document.querySelector("#search").addEventListener("input", event => {
   query = event.target.value.trim();
@@ -208,7 +218,7 @@ document.querySelector("#saved-filter").addEventListener("click", () => {
   activeCategory = "all";
   document.querySelectorAll(".filter-chip").forEach(button => button.classList.toggle("selected", button.dataset.category === "all"));
   renderLessons();
-  document.querySelector("#latest").scrollIntoView({ behavior: "smooth" });
+  document.querySelector("#question-breakdowns").scrollIntoView({ behavior: "smooth" });
 });
 lessonGrid.addEventListener("click", event => {
   const saveButton = event.target.closest("[data-save]");
@@ -233,7 +243,7 @@ roadmapList.addEventListener("click", event => {
   const roadmap = roadmaps.find(item => item.id === button.dataset.roadmap);
   const mapping = { "fundamentals-roadmap": "fundamentals", "scale-roadmap": "scaling", "realtime-roadmap": "async-systems" };
   setCategory(mapping[roadmap.id] || "all");
-  document.querySelector("#latest").scrollIntoView({ behavior: "smooth" });
+  document.querySelector("#question-breakdowns").scrollIntoView({ behavior: "smooth" });
 });
 document.querySelector(".mobile-menu").addEventListener("click", event => {
   const nav = document.querySelector(".main-nav");
