@@ -44,13 +44,15 @@ let activeTrack = "All";
 let lessonSearchText = "";
 let questionSearchText = "";
 let questionRound = "All rounds";
-let saved = new Set(JSON.parse(localStorage.getItem("tk-saved-items") || "[]"));
+let saved = new Set();
+try { saved = new Set(JSON.parse(localStorage.getItem("tk-saved-items") || "[]")); } catch { saved = new Set(); }
 let showSavedOnly = false;
 let currentLesson = null;
 let practiceStep = 0;
+try { practiceStep = Math.max(0, Math.min(4, Number(localStorage.getItem("tk-practice-step") || 0))); } catch { practiceStep = 0; }
 let answers = {};
 try { answers = JSON.parse(localStorage.getItem("tk-practice-session") || "{}"); } catch { answers = {}; }
-function savePracticeSession() { try { localStorage.setItem("tk-practice-session", JSON.stringify(answers)); } catch {} }
+function savePracticeSession() { try { localStorage.setItem("tk-practice-session", JSON.stringify(answers)); localStorage.setItem("tk-practice-step", String(practiceStep)); } catch {} }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function go(next) { page = next; location.hash = next; window.scrollTo(0,0); render(); }
 function header() {
@@ -93,10 +95,11 @@ function render() {
  const qSearch=root.querySelector("#question-search"); if(qSearch) qSearch.addEventListener("input",e=>{questionSearchText=e.target.value;const pos=e.target.selectionStart;render();const next=root.querySelector("#question-search");next.focus();next.setSelectionRange(pos,pos)});
  const qRound=root.querySelector("#question-round"); if(qRound) { qRound.value=questionRound; qRound.addEventListener("change",()=>{questionRound=qRound.value;render()}); }
  root.querySelectorAll("[data-pick-problem]").forEach(el=>el.addEventListener("click",()=>{answers.problem=el.dataset.pickProblem;practiceStep=0;savePracticeSession();render()}));
- root.querySelectorAll("[data-step]").forEach(el=>el.addEventListener("click",()=>{practiceStep=Number(el.dataset.step);render()}));
+ root.querySelectorAll("[data-problem]").forEach(el=>el.addEventListener("click",()=>{answers.problem=el.dataset.problem;practiceStep=0;savePracticeSession();go("practice")}));
+ root.querySelectorAll("[data-step]").forEach(el=>el.addEventListener("click",()=>{if(answer)answers[practiceStep]=answer.value;practiceStep=Number(el.dataset.step);savePracticeSession();render()}));
  const answer=root.querySelector("#practice-answer"); if(answer) answer.addEventListener("input",e=>{answers[practiceStep]=e.target.value;savePracticeSession()});
- const next=root.querySelector("[data-next]"); if(next) next.addEventListener("click",()=>{if(answer)answers[practiceStep]=answer.value;savePracticeSession();if(practiceStep<4){practiceStep++;render()}else{alert("Session notes captured in this page session. A scoring rubric and export flow are planned next.");}});
- const prev=root.querySelector("[data-prev]"); if(prev) prev.addEventListener("click",()=>{if(answer)answers[practiceStep]=answer.value;savePracticeSession();if(practiceStep>0){practiceStep--;render()}});
+ const next=root.querySelector("[data-next]"); if(next) next.addEventListener("click",()=>{if(answer)answers[practiceStep]=answer.value;if(practiceStep<4){practiceStep++;savePracticeSession();render()}else{savePracticeSession();alert("Session notes captured in this page session. A scoring rubric and export flow are planned next.");}});
+ const prev=root.querySelector("[data-prev]"); if(prev) prev.addEventListener("click",()=>{if(answer)answers[practiceStep]=answer.value;if(practiceStep>0){practiceStep--;savePracticeSession();render()}});
  const mobile=root.querySelector(".mobile-menu"); if(mobile) mobile.addEventListener("click",()=>root.querySelector(".main-nav").classList.toggle("mobile-open"));
 }
 window.addEventListener("hashchange",()=>{page=location.hash.slice(1)||"home";currentLesson=null;render()});
