@@ -17,7 +17,7 @@ const esc = value => String(value).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;"
 function load() {
  try {
   const value=JSON.parse(localStorage.getItem(KEY)||"null");
-  if(value&&value.answers&&typeof value.answers==="object")return {...value,scenario:value.scenario||scenarios[0].id,stage:Math.max(0,Math.min(4,Number(value.stage)||0)),remainingMs:Number(value.remainingMs)||((scenarios.find(s=>s.id===value.scenario)||scenarios[0]).minutes*60000),running:false,runningSince:0,reviewMode:false};
+  if(value&&value.answers&&typeof value.answers==="object")return {...value,scenario:value.scenario||scenarios[0].id,stage:Math.max(0,Math.min(4,Number(value.stage)||0)),remainingMs:Number.isFinite(Number(value.remainingMs))?Math.max(0,Number(value.remainingMs)):((scenarios.find(s=>s.id===value.scenario)||scenarios[0]).minutes*60000),running:false,runningSince:0,reviewMode:false};
  } catch {}
  return {scenario:scenarios[0].id,stage:0,answers:{},remainingMs:scenarios[0].minutes*60000,running:false,runningSince:0,reviewMode:false,completed:false};
 }
@@ -26,7 +26,7 @@ let interval=null;
 function currentScenario(){return scenarios.find(s=>s.id===session.scenario)||scenarios[0];}
 function remaining(){return Math.max(0,session.remainingMs-(session.running?Date.now()-session.runningSince:0));}
 function formatTime(ms){const sec=Math.ceil(ms/1000);return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({...session,remainingMs:remaining(),running:false,runningSince:0}));}catch{}}
+function save(){const ms=remaining();session.remainingMs=ms;if(session.running)session.runningSince=Date.now();try{localStorage.setItem(KEY,JSON.stringify({...session,remainingMs:ms,running:false,runningSince:0}));}catch{}}
 function report(){
  const all=stages.map((stage,i)=>({stage,answer:String(session.answers[stage.id]||""),words:String(session.answers[stage.id]||"").trim().split(/\s+/).filter(Boolean).length}));
  const totalWords=all.reduce((n,x)=>n+x.words,0);
