@@ -48,35 +48,35 @@ root.innerHTML = `
     <header class="topbar">
       <a class="brand" href="#" aria-label="Tech Katta home"><span class="brand-mark">tk</span><span class="brand-name">tech<span>.katta</span></span></a>
       <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-link active" data-view="library">Library</button>
-        <button class="nav-link" data-view="roadmaps">Roadmaps</button>
-        <a class="nav-link nav-about" href="#about">About</a>
+        <a class="nav-link active" href="#library">Learn</a>
+        <a class="nav-link" href="#latest">Question breakdowns</a>
+        <a class="nav-link" href="#roadmaps">Learning path</a>
       </nav>
-      <a class="top-cta" href="#library">Explore system designs <span>↗</span></a>
+      <a class="top-cta" href="#roadmaps">Start learning <span>↗</span></a>
       <button class="mobile-menu" aria-label="Toggle navigation" aria-expanded="false">☰</button>
     </header>
 
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-dot"></span> SYSTEM DESIGN · FROM REQUIREMENTS TO TRADE-OFFS</div>
-          <h1>Design systems<br />that <span>scale.</span></h1>
-          <p class="hero-intro">Learn to turn product requirements into scalable architectures. Study real design problems, compare trade-offs, and practice the decisions behind reliable systems.</p>
+          <div class="eyebrow"><span class="eyebrow-dot"></span> SYSTEM DESIGN LEARNING PATH</div>
+          <h1>System design<br /><span>in a hurry.</span></h1>
+          <p class="hero-intro">Learn the concepts, technologies, and patterns behind scalable systems—then apply them to real design questions. Start with a guided path or explore topics on your own.</p>
           <div class="hero-actions">
-            <a class="button-primary" href="#library">Explore system designs <span>↘</span></a>
-            <button class="button-secondary" data-view="roadmaps">Follow a design path <span>→</span></button>
+            <a class="button-primary" href="#roadmaps">Follow the learning path <span>↘</span></a>
+            <a class="button-secondary" href="#library">Explore concepts <span>→</span></a>
           </div>
-          <div class="hero-footnote"><span class="tiny-check">✓</span> Built around mental models, real trade-offs, and things worth testing.</div>
+          <div class="hero-footnote"><span class="tiny-check">✓</span> Concepts first. Practical design decisions next.</div>
         </div>
         <div class="hero-art" aria-label="Illustration of connected system components">
           <div class="art-grid"></div>
-          <div class="art-label label-top">SYSTEM MAP / 001</div>
-          <div class="node node-client"><span class="node-icon">⌘</span><span><b>Client</b><small>request</small></span></div>
+          <div class="art-label label-top">SYSTEM DESIGN / FOUNDATIONS</div>
+          <div class="node node-client"><span class="node-icon">⌘</span><span><b>Requirements</b><small>define the problem</small></span></div>
           <div class="connector connector-a"></div><div class="connector connector-b"></div><div class="connector connector-c"></div>
-          <div class="node node-api"><span class="node-icon">↔</span><span><b>API layer</b><small>routing</small></span></div>
-          <div class="node node-cache"><span class="node-icon">▦</span><span><b>Cache</b><small>fast path</small></span></div>
-          <div class="node node-db"><span class="node-icon">▤</span><span><b>Database</b><small>source of truth</small></span></div>
-          <div class="art-label label-bottom"><span class="art-live"></span> ONE REQUEST · MANY TRADE-OFFS</div>
+          <div class="node node-api"><span class="node-icon">↔</span><span><b>Architecture</b><small>connect components</small></span></div>
+          <div class="node node-cache"><span class="node-icon">▦</span><span><b>Trade-offs</b><small>compare choices</small></span></div>
+          <div class="node node-db"><span class="node-icon">▤</span><span><b>Reliability</b><small>test failure modes</small></span></div>
+          <div class="art-label label-bottom"><span class="art-live"></span> LEARN · APPLY · REASON</div>
         </div>
       </section>
 
@@ -88,7 +88,7 @@ root.innerHTML = `
 
       <section class="content-section" id="library">
         <div class="section-heading">
-          <div><div class="eyebrow">SYSTEM DESIGN TOOLKIT</div><h2>Build your design toolkit.</h2><p>Start with the skill or building block you need for your next architecture.</p></div>
+          <div><div class="eyebrow">IN A HURRY / LEARNING AREAS</div><h2>Build the foundation.</h2><p>Choose a topic to learn the building blocks behind common system designs.</p></div>
           <div class="library-search"><span>⌕</span><input id="search" type="search" placeholder="Search concepts, designs, patterns…" aria-label="Search system design concepts and practice problems" /><kbd>↵</kbd></div>
         </div>
         <div class="category-grid" id="category-grid"></div>
@@ -96,19 +96,19 @@ root.innerHTML = `
 
       <section class="content-section latest-section" id="latest">
         <div class="section-heading">
-          <div><div class="eyebrow">PRACTICE CASES</div><h2 id="lesson-heading">Practice a real design.</h2><p id="lesson-subheading">Work through a system, one decision at a time.</p></div>
-          <button class="text-action" id="saved-filter">Saved designs <span id="saved-count">0</span> ↗</button>
+          <div><div class="eyebrow">CONCEPTS IN PRACTICE</div><h2 id="lesson-heading">Question breakdowns.</h2><p id="lesson-subheading">See how the fundamentals come together in real systems.</p></div>
+          <button class="text-action" id="saved-filter">Saved items <span id="saved-count">0</span> ↗</button>
         </div>
         <div class="filter-row" id="filter-row">
-          <button class="filter-chip selected" data-category="all">All designs</button>
+          <button class="filter-chip selected" data-category="all">All questions</button>
           ${tracks.map(t => `<button class="filter-chip" data-category="${t.id}">${t.name}</button>`).join("")}
         </div>
         <div class="lesson-grid" id="lesson-grid"></div>
-        <div class="empty-state" id="empty-state" hidden><span>⌕</span><h3>No designs found.</h3><p>Try another search or system design topic.</p></div>
+        <div class="empty-state" id="empty-state" hidden><span>⌕</span><h3>No results found.</h3><p>Try another search or topic.</p></div>
       </section>
 
       <section class="roadmap-section" id="roadmaps">
-        <div class="section-heading"><div><div class="eyebrow">LEARNING PATHS</div><h2>Learn in sequence.</h2><p>Structured practice from first principles to production-scale architecture.</p></div><span class="section-index">DESIGN PATHS / 03</span></div>
+        <div class="section-heading"><div><div class="eyebrow">RECOMMENDED COURSE</div><h2>Follow a learning path.</h2><p>Build your foundation in order, then apply it to increasingly complex designs.</p></div><span class="section-index">DESIGN PATHS / 03</span></div>
         <div class="roadmap-list" id="roadmap-list"></div>
       </section>
 
@@ -127,11 +127,11 @@ const categoryGrid = document.querySelector("#category-grid");
 const lessonGrid = document.querySelector("#lesson-grid");
 const roadmapList = document.querySelector("#roadmap-list");
 
-categoryGrid.innerHTML = tracks.map((track, index) => `
-  <button class="category-card ${track.tone}" data-track="${track.id}">
-    <span class="category-top"><span class="category-icon">${track.icon}</span><span class="category-count">${track.count}</span></span>
-    <span class="category-eyebrow">${track.eyebrow}</span><span class="category-title">${track.name}</span>
-    <span class="category-description">${track.description}</span><span class="category-link">Explore topic <span>↗</span></span>
+categoryGrid.innerHTML = lessons.filter(lesson => lesson.type === "Core concept").map((lesson, index) => `
+  <button class="category-card ${tracks.find(t => t.id === lesson.category)?.tone || "blue"}" data-open-concept="${lesson.id}">
+    <span class="category-top"><span class="category-icon">${String(index + 1).padStart(2,"0")}</span><span class="category-count">${lesson.time}</span></span>
+    <span class="category-eyebrow">${lesson.level}</span><span class="category-title">${lesson.title}</span>
+    <span class="category-description">${lesson.description}</span><span class="category-link">Read concept <span>↗</span></span>
   </button>`).join("");
 
 roadmapList.innerHTML = roadmaps.map(item => `
@@ -140,23 +140,33 @@ roadmapList.innerHTML = roadmaps.map(item => `
   </button>`).join("");
 
 function renderLessons() {
+  const coreConcepts = lessons.filter(lesson => lesson.type === "Core concept");
+  const visibleConcepts = coreConcepts.filter(lesson => {
+    const haystack = `${lesson.title} ${lesson.description} ${tracks.find(t => t.id === lesson.category)?.name || ""}`.toLowerCase();
+    return haystack.includes(query.toLowerCase()) && (!window.showSavedOnly || saved.has(lesson.id));
+  });
+  categoryGrid.innerHTML = visibleConcepts.map((lesson, index) => `
+    <button class="category-card ${tracks.find(t => t.id === lesson.category)?.tone || "blue"}" data-open-concept="${lesson.id}">
+      <span class="category-top"><span class="category-icon">${String(index + 1).padStart(2,"0")}</span><span class="category-count">${lesson.time}</span></span>
+      <span class="category-eyebrow">${lesson.level}</span><span class="category-title">${lesson.title}</span>
+      <span class="category-description">${lesson.description}</span><span class="category-link">Read concept <span>↗</span></span>
+    </button>`).join("");
   const visible = lessons.filter(lesson => {
+    if (lesson.type === "Core concept") return false;
     const categoryMatches = activeCategory === "all" || lesson.category === activeCategory;
     const haystack = `${lesson.title} ${lesson.description} ${lesson.type} ${tracks.find(t => t.id === lesson.category)?.name || ""}`.toLowerCase();
-    const queryMatches = haystack.includes(query.toLowerCase());
-    const savedMatches = !window.showSavedOnly || saved.has(lesson.id);
-    return categoryMatches && queryMatches && savedMatches;
+    return categoryMatches && haystack.includes(query.toLowerCase()) && (!window.showSavedOnly || saved.has(lesson.id));
   });
   lessonGrid.innerHTML = visible.map(lesson => `
     <article class="lesson-card">
-      <div class="lesson-card-top"><span class="lesson-type">${lesson.type}</span><button class="save-button ${saved.has(lesson.id) ? "is-saved" : ""}" data-save="${lesson.id}" aria-label="${saved.has(lesson.id) ? "Remove saved note" : "Save note"}" title="${saved.has(lesson.id) ? "Remove saved note" : "Save note"}">${saved.has(lesson.id) ? "★" : "☆"}</button></div>
+      <div class="lesson-card-top"><span class="lesson-type">${lesson.type}</span><button class="save-button ${saved.has(lesson.id) ? "is-saved" : ""}" data-save="${lesson.id}" aria-label="${saved.has(lesson.id) ? "Remove saved item" : "Save item"}" title="${saved.has(lesson.id) ? "Remove saved item" : "Save item"}">${saved.has(lesson.id) ? "★" : "☆"}</button></div>
       <div class="lesson-level">${lesson.level}</div><h3>${lesson.title}</h3><p>${lesson.description}</p>
-      <div class="lesson-card-bottom"><span>◷ &nbsp;${lesson.time}</span><button class="open-lesson" data-open="${lesson.id}">Read article <span>↗</span></button></div>
+      <div class="lesson-card-bottom"><span>◷ &nbsp;${lesson.time}</span><button class="open-lesson" data-open="${lesson.id}">Read breakdown <span>↗</span></button></div>
     </article>`).join("");
   document.querySelector("#empty-state").hidden = visible.length > 0;
   document.querySelector("#saved-count").textContent = saved.size;
-  document.querySelector("#lesson-heading").textContent = window.showSavedOnly ? "Your saved designs." : activeCategory === "all" ? "Practice a real design." : `${tracks.find(t => t.id === activeCategory)?.name || "Topic"} notes.`;
-  document.querySelector("#lesson-subheading").textContent = window.showSavedOnly ? "The designs you saved for later." : query ? `Matching designs for “${query}”.` : "Work through a system, one decision at a time.";
+  document.querySelector("#lesson-heading").textContent = window.showSavedOnly ? "Your saved items." : activeCategory === "all" ? "Question breakdowns." : `${tracks.find(t => t.id === activeCategory)?.name || "Topic"} questions.`;
+  document.querySelector("#lesson-subheading").textContent = window.showSavedOnly ? "Concepts and design questions you've saved for later." : query ? `Matching results for “${query}”.` : "Apply the fundamentals to realistic architecture problems.";
 }
 window.showSavedOnly = false;
 function setCategory(category) {
@@ -195,8 +205,8 @@ document.querySelectorAll("[data-view]").forEach(button => button.addEventListen
 }));
 document.querySelectorAll("[data-category]").forEach(button => button.addEventListener("click", () => setCategory(button.dataset.category)));
 categoryGrid.addEventListener("click", event => {
-  const button = event.target.closest("[data-track]");
-  if (button) { setCategory(button.dataset.track); document.querySelector("#latest").scrollIntoView({ behavior: "smooth" }); }
+  const button = event.target.closest("[data-open-concept]");
+  if (button) openLesson(button.dataset.openConcept);
 });
 document.querySelector("#search").addEventListener("input", event => {
   query = event.target.value.trim();
@@ -208,7 +218,7 @@ document.querySelector("#saved-filter").addEventListener("click", () => {
   activeCategory = "all";
   document.querySelectorAll(".filter-chip").forEach(button => button.classList.toggle("selected", button.dataset.category === "all"));
   renderLessons();
-  document.querySelector("#latest").scrollIntoView({ behavior: "smooth" });
+  document.querySelector("#question-breakdowns").scrollIntoView({ behavior: "smooth" });
 });
 lessonGrid.addEventListener("click", event => {
   const saveButton = event.target.closest("[data-save]");
@@ -233,7 +243,7 @@ roadmapList.addEventListener("click", event => {
   const roadmap = roadmaps.find(item => item.id === button.dataset.roadmap);
   const mapping = { "fundamentals-roadmap": "fundamentals", "scale-roadmap": "scaling", "realtime-roadmap": "async-systems" };
   setCategory(mapping[roadmap.id] || "all");
-  document.querySelector("#latest").scrollIntoView({ behavior: "smooth" });
+  document.querySelector("#question-breakdowns").scrollIntoView({ behavior: "smooth" });
 });
 document.querySelector(".mobile-menu").addEventListener("click", event => {
   const nav = document.querySelector(".main-nav");
