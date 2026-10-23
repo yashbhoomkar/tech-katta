@@ -48,35 +48,35 @@ root.innerHTML = `
     <header class="topbar">
       <a class="brand" href="#" aria-label="Tech Katta home"><span class="brand-mark">tk</span><span class="brand-name">tech<span>.katta</span></span></a>
       <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-link active" data-view="library">Library</button>
-        <button class="nav-link" data-view="roadmaps">Roadmaps</button>
-        <a class="nav-link nav-about" href="#about">About</a>
+        <a class="nav-link active" href="#library">Learn</a>
+        <a class="nav-link" href="#latest">Question breakdowns</a>
+        <a class="nav-link" href="#roadmaps">Learning path</a>
       </nav>
-      <a class="top-cta" href="#library">Explore system designs <span>↗</span></a>
+      <a class="top-cta" href="#roadmaps">Start learning <span>↗</span></a>
       <button class="mobile-menu" aria-label="Toggle navigation" aria-expanded="false">☰</button>
     </header>
 
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-dot"></span> SYSTEM DESIGN · FROM REQUIREMENTS TO TRADE-OFFS</div>
-          <h1>Design systems<br />that <span>scale.</span></h1>
-          <p class="hero-intro">Learn to turn product requirements into scalable architectures. Study real design problems, compare trade-offs, and practice the decisions behind reliable systems.</p>
+          <div class="eyebrow"><span class="eyebrow-dot"></span> SYSTEM DESIGN LEARNING PATH</div>
+          <h1>System design<br /><span>in a hurry.</span></h1>
+          <p class="hero-intro">Learn the concepts, technologies, and patterns behind scalable systems—then apply them to real design questions. Start with a guided path or explore topics on your own.</p>
           <div class="hero-actions">
             <a class="button-primary" href="#library">Explore system designs <span>↘</span></a>
             <button class="button-secondary" data-view="roadmaps">Follow a design path <span>→</span></button>
           </div>
-          <div class="hero-footnote"><span class="tiny-check">✓</span> Built around mental models, real trade-offs, and things worth testing.</div>
+          <div class="hero-footnote"><span class="tiny-check">✓</span> Concepts first. Practical design decisions next.</div>
         </div>
         <div class="hero-art" aria-label="Illustration of connected system components">
           <div class="art-grid"></div>
-          <div class="art-label label-top">SYSTEM MAP / 001</div>
-          <div class="node node-client"><span class="node-icon">⌘</span><span><b>Client</b><small>request</small></span></div>
+          <div class="art-label label-top">SYSTEM DESIGN / FOUNDATIONS</div>
+          <div class="node node-client"><span class="node-icon">⌘</span><span><b>Requirements</b><small>define the problem</small></span></div>
           <div class="connector connector-a"></div><div class="connector connector-b"></div><div class="connector connector-c"></div>
-          <div class="node node-api"><span class="node-icon">↔</span><span><b>API layer</b><small>routing</small></span></div>
-          <div class="node node-cache"><span class="node-icon">▦</span><span><b>Cache</b><small>fast path</small></span></div>
-          <div class="node node-db"><span class="node-icon">▤</span><span><b>Database</b><small>source of truth</small></span></div>
-          <div class="art-label label-bottom"><span class="art-live"></span> ONE REQUEST · MANY TRADE-OFFS</div>
+          <div class="node node-api"><span class="node-icon">↔</span><span><b>Architecture</b><small>connect components</small></span></div>
+          <div class="node node-cache"><span class="node-icon">▦</span><span><b>Trade-offs</b><small>compare choices</small></span></div>
+          <div class="node node-db"><span class="node-icon">▤</span><span><b>Reliability</b><small>test failure modes</small></span></div>
+          <div class="art-label label-bottom"><span class="art-live"></span> LEARN · APPLY · REASON</div>
         </div>
       </section>
 
@@ -88,7 +88,7 @@ root.innerHTML = `
 
       <section class="content-section" id="library">
         <div class="section-heading">
-          <div><div class="eyebrow">SYSTEM DESIGN TOOLKIT</div><h2>Build your design toolkit.</h2><p>Start with the skill or building block you need for your next architecture.</p></div>
+          <div><div class="eyebrow">IN A HURRY / LEARNING AREAS</div><h2>Build the foundation.</h2><p>Choose a topic to learn the building blocks behind common system designs.</p></div>
           <div class="library-search"><span>⌕</span><input id="search" type="search" placeholder="Search concepts, designs, patterns…" aria-label="Search system design concepts and practice problems" /><kbd>↵</kbd></div>
         </div>
         <div class="category-grid" id="category-grid"></div>
@@ -96,19 +96,19 @@ root.innerHTML = `
 
       <section class="content-section latest-section" id="latest">
         <div class="section-heading">
-          <div><div class="eyebrow">PRACTICE CASES</div><h2 id="lesson-heading">Practice a real design.</h2><p id="lesson-subheading">Work through a system, one decision at a time.</p></div>
-          <button class="text-action" id="saved-filter">Saved designs <span id="saved-count">0</span> ↗</button>
+          <div><div class="eyebrow">CONCEPTS IN PRACTICE</div><h2 id="lesson-heading">Question breakdowns.</h2><p id="lesson-subheading">See how the fundamentals come together in real systems.</p></div>
+          <button class="text-action" id="saved-filter">Saved items <span id="saved-count">0</span> ↗</button>
         </div>
         <div class="filter-row" id="filter-row">
-          <button class="filter-chip selected" data-category="all">All designs</button>
+          <button class="filter-chip selected" data-category="all">All questions</button>
           ${tracks.map(t => `<button class="filter-chip" data-category="${t.id}">${t.name}</button>`).join("")}
         </div>
         <div class="lesson-grid" id="lesson-grid"></div>
-        <div class="empty-state" id="empty-state" hidden><span>⌕</span><h3>No designs found.</h3><p>Try another search or system design topic.</p></div>
+        <div class="empty-state" id="empty-state" hidden><span>⌕</span><h3>No results found.</h3><p>Try another search or topic.</p></div>
       </section>
 
       <section class="roadmap-section" id="roadmaps">
-        <div class="section-heading"><div><div class="eyebrow">LEARNING PATHS</div><h2>Learn in sequence.</h2><p>Structured practice from first principles to production-scale architecture.</p></div><span class="section-index">DESIGN PATHS / 03</span></div>
+        <div class="section-heading"><div><div class="eyebrow">RECOMMENDED COURSE</div><h2>Follow a learning path.</h2><p>Build your foundation in order, then apply it to increasingly complex designs.</p></div><span class="section-index">DESIGN PATHS / 03</span></div>
         <div class="roadmap-list" id="roadmap-list"></div>
       </section>
 
