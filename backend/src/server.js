@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { landingPageContent } from './content/landing-page.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -17,7 +18,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 function sendJson(request, response, statusCode, body) {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
+    'Cache-Control': statusCode === 200 && request.url?.startsWith('/api/content') ? 'public, max-age=300, s-maxage=300' : 'no-store',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -63,10 +64,18 @@ const server = http.createServer((request, response) => {
       return;
     }
 
-    // This starter has no external dependencies yet. A successful response
-    // confirms the API process is accepting requests; it does not claim that
-    // MongoDB or other future dependencies have been checked.
+    // A successful health response confirms only that the HTTP process is accepting requests.
     sendJson(request, response, 200, healthPayload());
+    return;
+  }
+
+  if (['/api/content/landing-page', '/api/content/landing-page/'].includes(pathname)) {
+    if (!['GET', 'HEAD'].includes(request.method || '')) {
+      response.setHeader('Allow', 'GET, HEAD, OPTIONS');
+      sendJson(request, response, 405, { status: 'error', error: 'method_not_allowed' });
+      return;
+    }
+    sendJson(request, response, 200, landingPageContent);
     return;
   }
 
