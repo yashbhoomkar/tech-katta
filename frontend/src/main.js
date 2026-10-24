@@ -143,7 +143,7 @@ async function loadLandingContent() {
    const data = await response.json();
    if (!data?.hero?.diagram?.groups || !data?.lab?.workspace?.evaluation?.findings || !data?.notes?.items) throw new Error("Landing content payload is missing required sections");
    landingContent = data;
-   if (page === "home") document.title = data.meta?.title || "Tech Katta — Distributed Systems & System Design";
+   document.title = page === "home" ? (data.meta?.title || "Tech Katta — Distributed Systems & System Design") : "Tech Katta — System Design Learning";
    render();
  } catch (error) {
    console.warn("Using bundled landing-page content fallback:", error);
