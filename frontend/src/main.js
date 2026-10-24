@@ -1,4 +1,5 @@
 import "./style.css";
+import "./landing-page.css";
 import { architectureWorkspace, bindArchitectureWorkspace } from "./architecture-workspace.js";
 import { mockInterviewPage, bindMockInterview } from "./mock-interview.js";
 
