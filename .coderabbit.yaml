@@ -1,0 +1,29 @@
+language: en-US
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  review_status: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "frontend/**"
+      instructions: >
+        Review UI behavior, accessibility, responsive behavior, browser compatibility,
+        performance, content accuracy, and regressions. Preserve the Swiss Technical
+        Publishing visual system: white #FFFFFF, graphite #1C2733, cobalt #2855D9,
+        and rules #D9DEE7. Avoid unrelated visual redesigns.
+    - path: "backend/**"
+      instructions: >
+        Review API correctness, input validation, authentication and authorization,
+        error handling, secrets exposure, database safety, logging, and test coverage.
+    - path: ".github/workflows/**"
+      instructions: >
+        Review permissions using least privilege, untrusted input handling, pinned or
+        trusted actions, secret exposure, deployment safety, and trigger behavior.
+
+chat:
+  auto_reply: true
