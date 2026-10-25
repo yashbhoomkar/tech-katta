@@ -134,12 +134,12 @@ function topologyDiagram(d) {
     <g class="research-node research-node-muted"><rect x="842" y="246" width="94" height="82"/><text class="research-tag" x="852" y="265">CONSUMER</text><circle class="research-symbol" cx="864" cy="283" r="7"/><path class="research-symbol" d="M854 301c1-9 19-9 20 0 M861 283h6"/><text class="research-title" x="852" y="315">Worker</text></g>
     <path class="research-ink research-dash" d="M448 310H680V287H716" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="568" y="302">AFTER PERSIST</text>
     <path class="research-ink" d="M828 287H842" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="835" y="275" text-anchor="middle">TASK</text>
-    <path class="research-ink" d="M889 328V350H579V328" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="735" y="343" text-anchor="middle">UPDATE DATABASE</text>
-    <path class="research-rule" d="M24 365H936"/>
-    <text class="research-foot" x="24" y="388">READ</text><text class="research-detail" x="74" y="388">Cache hit returns; miss reads the primary database.</text>
-    <text class="research-foot" x="24" y="410">WRITE</text><text class="research-detail" x="74" y="410">Persist first; optional background work is queued afterward.</text>
-    <path class="research-rule" d="M24 430H936"/>
-    <text class="research-foot" x="24" y="449">SOLID = SYNCHRONOUS REQUEST / WRITE</text><text class="research-foot" x="936" y="449" text-anchor="end">DASHED = OPTIONAL BACKGROUND WORK</text>
+    <path class="research-ink" d="M889 328V360H579V328" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="735" y="354" text-anchor="middle">UPDATE DATABASE</text>
+    <path class="research-rule" d="M24 375H936"/>
+    <text class="research-foot" x="24" y="398">READ</text><text class="research-detail" x="74" y="398">Cache hit returns; miss reads the primary database.</text>
+    <text class="research-foot" x="24" y="420">WRITE</text><text class="research-detail" x="74" y="420">Persist first; optional background work is queued afterward.</text>
+    <path class="research-rule" d="M24 440H936"/>
+    <text class="research-foot" x="24" y="459">SOLID = SYNCHRONOUS REQUEST / WRITE</text><text class="research-foot" x="936" y="459" text-anchor="end">DASHED = OPTIONAL BACKGROUND WORK</text>
    </svg>
   </div>
   <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
