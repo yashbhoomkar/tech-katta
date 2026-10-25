@@ -21,31 +21,14 @@ export const landingPageContent = {
     }
   },
   lab: {
-    eyebrow: "01 / Interactive system design lab",
-    title: "Inspect architectures before writing production code.",
-    problem: { level: "Intermediate", title: "Design a URL shortener", description: "Design a service that creates compact aliases for long URLs and redirects visitors reliably under read-heavy traffic.", checklist: ["Functional and non-functional requirements", "API contracts and identifier strategy", "Storage schema and partitioning", "Caching, abuse prevention, and throttling"] },
-    workspace: {
-      filename: "topology-canvas.sys",
-      components: [
-        { type: "ENTRY", name: "API gateway", detail: "Authentication · limits" },
-        { type: "APP", name: "Shortener API", detail: "Stateless service" },
-        { type: "CACHE", name: "Distributed cache", detail: "Hot-key mitigation" },
-        { type: "DATA", name: "URL datastore", detail: "Key-to-URL mapping" }
-      ],
-      evaluation: {
-        label: "Illustrative evaluation",
-        notice: "Static sample — not a live evaluation of your architecture.",
-        findings: [
-          { status: "Consider", title: "Cache stampede risk", detail: "Popular links expiring together can send a burst of reads to storage. Consider request coalescing, TTL jitter, or early refresh." },
-          { status: "Review", title: "Write rate limits", detail: "Creation endpoints should define quotas and abuse controls so automated clients cannot exhaust resources." },
-          { status: "Trade-off", title: "Identifier and partition strategy", detail: "Choose an identifier strategy and partition key that match uniqueness, access patterns, and operational constraints." }
-        ]
-      }
-    }
+    eyebrow: "02 / Interactive system design lab",
+    status: "UPCOMING",
+    title: "Interactive system design lab",
+    description: "A guided workspace for designing systems, exploring architectural trade-offs, and getting structured feedback. We are building it. For now, Tech Katta is focused on high-quality system design notes and a useful distributed-systems knowledge base."
   },
   notes: {
-    eyebrow: "02 / Curated engineering notes",
-    title: "Deep explanations of distributed systems concepts.",
+    eyebrow: "01 / System design knowledge base",
+    title: "Build strong mental models for designing reliable systems.",
     items: [
       { number: "01", category: "Distributed state", code: "DIST-CONSISTENCY", title: "Consistency models", description: "Strong consistency, eventual consistency, and the trade-offs between them in partition-tolerant systems.", readTime: "18 min", diagram: "replication" },
       { number: "02", category: "Latency optimization", code: "CACHE-PATTERNS", title: "Caching at scale", description: "Cache-aside, invalidation, hot-key mitigation, and stampede prevention.", readTime: "14 min", diagram: "cache" },
@@ -53,7 +36,7 @@ export const landingPageContent = {
     ]
   },
   principle: {
-    eyebrow: "03 / Core principle",
+    eyebrow: "02 / Core principle",
     quote: "Good architecture is not about choosing more components. It is about understanding the trade-offs.",
     comparison: [
       { title: "Cohesive monolith", description: "Simple in-process calls and transaction boundaries; scaling and deployment may eventually become limiting constraints.", tag: "In-process" },
@@ -61,6 +44,6 @@ export const landingPageContent = {
     ],
     lesson: "Every new distributed boundary adds operational and failure-handling responsibilities. Introduce one when its benefits justify its cost."
   },
-  closing: { eyebrow: "Practice & mastery", title: "Build a deeper understanding of how systems work.", description: "Study architecture, evaluate trade-offs, and develop strong distributed-systems mental models.", action: { label: "Explore Tech Katta", href: "#notes" } },
-  footer: { description: "An engineering knowledge publication and system design lab for distributed software architecture.", links: [{ label: "Engineering notes", href: "#notes" }, { label: "System Design Lab", href: "#lab" }, { label: "Architecture evaluation", href: "#lab" }], copyright: "Tech Katta" }
+  closing: { eyebrow: "The knowledge base", title: "Learn the principles behind systems that scale.", description: "Start with the fundamentals. Follow the request path, understand the data model, and learn the trade-offs behind each architectural decision.", action: { label: "Explore system design notes", href: "#notes" } },
+  footer: { description: "System design notes and a distributed-systems knowledge base for software engineers.", links: [{ label: "System design notes", href: "#notes" }, { label: "Knowledge base", href: "#notes" }, { label: "Interactive lab — upcoming", href: "#lab" }], copyright: "Tech Katta" }
 };
