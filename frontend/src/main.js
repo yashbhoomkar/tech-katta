@@ -80,8 +80,8 @@ function footer() {
  return `<footer class="footer"><div class="footer-brand"><span class="brand-mark">tk</span><b>Tech Katta</b><p>Build the mental models behind reliable systems.</p></div><div><b>Learn</b><a href="#learn" data-go="learn">System design</a><a href="#learn" data-go="learn">Core concepts</a><a href="#practice" data-go="practice">Guided practice</a></div><div><b>Prepare</b><a href="#questions" data-go="questions">Interview questions</a><a href="#pricing" data-go="pricing">Plans</a><a href="#learn" data-go="learn">Learning paths</a></div><div class="footer-note">Independent learning product. Original lessons and exercises.</div></footer>`;
 }
 function topologyDiagram(d) {
- return \`<div class="diagram-card diagram-card-clean">
-  <div class="diagram-head"><span><i></i><b>\${esc(d.caption)}</b></span><small>FIG. 01</small></div>
+ return `<div class="diagram-card diagram-card-clean">
+  <div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>FIG. 01</small></div>
   <div class="topology-canvas topology-static">
    <svg class="topology-static-svg topology-research-svg" viewBox="0 0 960 470" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
     <title id="topology-figure-title">Read and write request topology</title>
@@ -142,8 +142,8 @@ function topologyDiagram(d) {
     <text class="research-foot" x="24" y="449">SOLID = SYNCHRONOUS REQUEST / WRITE</text><text class="research-foot" x="936" y="449" text-anchor="end">DASHED = OPTIONAL BACKGROUND WORK</text>
    </svg>
   </div>
-  <p class="diagram-annotation"><b>DESIGN NOTE</b> \${esc(d.annotation)}</p>
- </div>\`;
+  <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
+ </div>`;
 }
 function noteDiagram(type) {
  if (type==="cache") return `<svg viewBox="0 0 280 82" role="img" aria-label="Cache-aside request flow"><rect x="8" y="25" width="58" height="32" fill="#fff" stroke="#1C2733"/><text x="37" y="45" text-anchor="middle">App</text><rect x="111" y="13" width="64" height="28" fill="#EEF2FF" stroke="#2855D9"/><text x="143" y="31" text-anchor="middle">Cache</text><rect x="216" y="25" width="56" height="32" fill="#fff" stroke="#1C2733"/><text x="244" y="45" text-anchor="middle">DB</text><path d="M66 33 L111 25 M66 49 L216 49 M216 35 L175 25" fill="none" stroke="#586575"/><text x="87" y="18">GET</text><text x="128" y="70">MISS → READ</text></svg>`;
