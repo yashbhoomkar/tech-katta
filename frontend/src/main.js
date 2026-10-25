@@ -90,6 +90,23 @@ function topologyDiagram(d) {
      <marker id="tk-r-blue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
      <marker id="tk-r-ink" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
     </defs>
+    <style>
+     .research-kicker{font:10px "DM Mono",monospace;letter-spacing:.075em;fill:#586575}
+     .research-rule{stroke:#d9dee7;stroke-width:1}
+     .research-lane{font:600 10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
+     .research-node rect{fill:#fff;stroke:#c5ced9;stroke-width:1.25}
+     .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
+     .research-node-muted rect{fill:#f5f7fa;stroke:#c5ced9;stroke-width:1.25}
+     .research-tag{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
+     .research-title{font:600 15px Inter,Arial,sans-serif;fill:#1c2733}
+     .research-detail{font:9px "DM Mono",monospace;fill:#586575}
+     .research-blue,.research-ink{fill:none;stroke-width:1.7;stroke-linecap:square;stroke-linejoin:miter}
+     .research-blue{stroke:#2855d9}
+     .research-ink{stroke:#1c2733}
+     .research-dash{stroke-dasharray:5 4}
+     .research-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+     .research-foot{font:9px "DM Mono",monospace;letter-spacing:.02em;fill:#586575}
+    </style>
     <rect width="960" height="470" fill="#fff"/>
     <text class="research-kicker" x="24" y="27">REQUEST TOPOLOGY</text><text class="research-kicker" x="936" y="27" text-anchor="end">READ / WRITE / ASYNC</text>
     <path class="research-rule" d="M24 40H936"/>
