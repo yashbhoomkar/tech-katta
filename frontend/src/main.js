@@ -82,39 +82,50 @@ function footer() {
 function topologyDiagram(d) {
  return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>STATIC ARCHITECTURE FIGURE</small></div>
  <div class="topology-canvas topology-static">
- <svg class="topology-static-svg" viewBox="0 0 900 500" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
- <title id="topology-figure-title">Read and write request topology</title><desc id="topology-figure-desc">Client requests pass through an API gateway to the application. Reads check cache first and fall back to the primary database on a miss. Writes persist to the primary database. The application can enqueue optional background work for a worker.</desc>
+ <svg class="topology-static-svg" viewBox="0 0 960 500" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
+ <title id="topology-figure-title">Read and write request topology</title>
+ <desc id="topology-figure-desc">A client sends requests through an API gateway. Reads go to the query service and check the cache before falling back to the primary database on a miss. Writes go through the write service to durable storage, then optionally enqueue background work consumed by a worker.</desc>
  <defs>
- <marker id="tk-read-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
- <marker id="tk-write-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
- <pattern id="tk-grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#d9dee7" stroke-width=".7" opacity=".55"/></pattern>
+  <marker id="tk-read-arrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L6 3.5 L0 7 Z" fill="#2855d9"/></marker>
+  <marker id="tk-write-arrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L6 3.5 L0 7 Z" fill="#1c2733"/></marker>
  </defs>
- <rect width="900" height="500" fill="#fff"/><rect width="900" height="500" fill="url(#tk-grid)"/>
- <rect class="tk-zone" x="18" y="18" width="190" height="464" rx="8"/><rect class="tk-zone" x="228" y="18" width="300" height="464" rx="8"/><rect class="tk-zone" x="548" y="18" width="334" height="464" rx="8"/>
- <text class="tk-zone-label" x="34" y="43">01 / ENTRY</text><text class="tk-zone-label" x="244" y="43">02 / APPLICATION</text><text class="tk-zone-label" x="564" y="43">03 / DATA &amp; ASYNC</text>
+ <rect width="960" height="500" fill="#fff"/>
+ <path d="M24 58H936" stroke="#d9dee7"/>
+ <text class="tk-zone-label" x="30" y="37">01 / ENTRY</text>
+ <text class="tk-zone-label" x="260" y="37">02 / APPLICATION</text>
+ <text class="tk-zone-label" x="535" y="37">03 / DATA &amp; MESSAGING</text>
  <g class="tk-connectors tk-read">
-  <path d="M113 155 V192" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H220 V118 H254" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H244" marker-end="url(#tk-write-arrow)"/>
-  <path d="M385 154 V126 H590" marker-end="url(#tk-read-arrow)"/>
-  <path d="M714 126 H742" marker-end="url(#tk-read-arrow)"/>
-  <path d="M652 160 V214" marker-end="url(#tk-read-arrow)"/>
-  <path d="M590 246 H514 V175 H455" marker-end="url(#tk-read-arrow)" stroke-dasharray="5 5"/>
+  <path d="M105 162V206" marker-end="url(#tk-read-arrow)"/>
+  <path d="M180 238H222V128H260" marker-end="url(#tk-read-arrow)"/>
+  <path d="M450 128H490V112H530" marker-end="url(#tk-read-arrow)"/>
+  <path d="M602 147V200" marker-end="url(#tk-read-arrow)"/>
+  <path d="M530 236H490V163H450" marker-end="url(#tk-read-arrow)" stroke-dasharray="5 5"/>
  </g>
  <g class="tk-connectors tk-write">
-  <path d="M455 266 H590" marker-end="url(#tk-write-arrow)"/>
-  <path d="M455 294 H520 V376 H590" marker-end="url(#tk-write-arrow)" stroke-dasharray="6 5"/>
-  <path d="M714 376 H742" marker-end="url(#tk-write-arrow)"/>
+  <path d="M180 238H224V286H260" marker-end="url(#tk-write-arrow)"/>
+  <path d="M450 286H530" marker-end="url(#tk-write-arrow)"/>
+  <path d="M355 322V383H530" marker-end="url(#tk-write-arrow)" stroke-dasharray="5 5"/>
+  <path d="M680 419H735" marker-end="url(#tk-write-arrow)" stroke-dasharray="5 5"/>
  </g>
- <g class="tk-edge-labels"><text x="126" y="178">REQUEST</text><text x="198" y="210">ROUTE</text><text x="468" y="116">READ</text><text x="720" y="115">HIT</text><text x="663" y="190">MISS</text><text x="510" y="237">FETCH</text><text x="500" y="255">WRITE</text><text x="526" y="363">ENQUEUE</text><text x="716" y="365">CONSUME</text></g>
- <g class="tk-node"><rect x="36" y="91" width="154" height="64" rx="7"/><text class="tk-node-index" x="50" y="109">01.1</text><text class="tk-node-title" x="50" y="129">Client</text><text class="tk-node-detail" x="50" y="144">Web / mobile</text></g>
- <g class="tk-node"><rect x="36" y="192" width="158" height="60" rx="7"/><text class="tk-node-index" x="50" y="210">01.2</text><text class="tk-node-title" x="50" y="230">API gateway</text><text class="tk-node-detail" x="50" y="244">Auth · rate limits</text></g>
- <g class="tk-node tk-node-primary"><rect x="254" y="82" width="201" height="72" rx="7"/><text class="tk-node-index" x="270" y="101">02.1 / READ</text><text class="tk-node-title" x="270" y="122">Query service</text><text class="tk-node-detail" x="270" y="139">Orchestrates cache + DB reads</text></g>
- <g class="tk-node"><rect x="254" y="230" width="201" height="72" rx="7"/><text class="tk-node-index" x="270" y="249">02.2 / WRITE</text><text class="tk-node-title" x="270" y="270">Write service</text><text class="tk-node-detail" x="270" y="287">Validate · persist</text></g>
- <g class="tk-node tk-node-cache"><rect x="590" y="83" width="124" height="77" rx="7"/><text class="tk-node-index" x="604" y="102">03.1</text><text class="tk-node-title" x="604" y="123">Cache</text><text class="tk-node-detail" x="604" y="140">Fast path</text><text class="tk-node-detail" x="604" y="151">Hit / miss</text></g>
- <g class="tk-node"><rect x="742" y="83" width="124" height="77" rx="7"/><text class="tk-node-index" x="754" y="102">READ HIT</text><text class="tk-node-title" x="754" y="123">Return data</text><text class="tk-node-detail" x="754" y="141">Low latency</text></g>
- <g class="tk-node"><rect x="590" y="214" width="276" height="66" rx="7"/><text class="tk-node-index" x="606" y="233">03.2 / SOURCE OF TRUTH</text><text class="tk-node-title" x="606" y="254">Primary database</text><text class="tk-node-detail" x="606" y="269">Cache miss reads · writes persist</text></g>
- <g class="tk-node"><rect x="590" y="340" width="124" height="72" rx="7"/><text class="tk-node-index" x="604" y="359">03.3 / OPTIONAL</text><text class="tk-node-title" x="604" y="380">Message queue</text><text class="tk-node-detail" x="604" y="397">Background task</text></g>
- <g class="tk-node"><rect x="742" y="340" width="124" height="72" rx="7"/><text class="tk-node-index" x="754" y="359">04 / ASYNC</text><text class="tk-node-title" x="754" y="380">Worker</text><text class="tk-node-detail" x="754" y="397">Consumes task</text></g>
- <g class="tk-legend"><path d="M34 451H68" class="tk-legend-read"/><text x="76" y="455">READ FLOW</text><path d="M178 451H212" class="tk-legend-write"/><text x="220" y="455">WRITE FLOW</text><path d="M338 451H372" class="tk-legend-async"/><text x="380" y="455">OPTIONAL ASYNC WORK</text></g>
+ <g class="tk-edge-labels">
+  <text x="118" y="187">REQUEST</text>
+  <text x="195" y="224">READ</text>
+  <text x="472" y="101">CHECK</text>
+  <text x="613" y="176">MISS</text>
+  <text x="466" y="220">FETCH</text>
+  <text x="466" y="274">PERSIST</text>
+  <text x="386" y="369">OPTIONAL ASYNC</text>
+  <text x="690" y="408">CONSUME</text>
+ </g>
+ <g class="tk-node"><rect x="30" y="98" width="150" height="64"/><text class="tk-node-index" x="44" y="117">01.1</text><text class="tk-node-title" x="44" y="137">Client</text><text class="tk-node-detail" x="44" y="151">Web / mobile</text></g>
+ <g class="tk-node"><rect x="30" y="206" width="150" height="64"/><text class="tk-node-index" x="44" y="225">01.2</text><text class="tk-node-title" x="44" y="245">API gateway</text><text class="tk-node-detail" x="44" y="259">Auth · rate limits</text></g>
+ <g class="tk-node tk-node-primary"><rect x="260" y="92" width="190" height="72"/><text class="tk-node-index" x="276" y="112">02.1 / READ</text><text class="tk-node-title" x="276" y="133">Query service</text><text class="tk-node-detail" x="276" y="149">Read orchestration</text></g>
+ <g class="tk-node"><rect x="260" y="250" width="190" height="72"/><text class="tk-node-index" x="276" y="270">02.2 / WRITE</text><text class="tk-node-title" x="276" y="291">Write service</text><text class="tk-node-detail" x="276" y="307">Validate · persist</text></g>
+ <g class="tk-node tk-node-cache"><rect x="530" y="76" width="145" height="71"/><text class="tk-node-index" x="545" y="96">03.1 / FAST PATH</text><text class="tk-node-title" x="545" y="117">Cache</text><text class="tk-node-detail" x="545" y="133">Hit / miss</text></g>
+ <g class="tk-node"><rect x="530" y="200" width="250" height="72"/><text class="tk-node-index" x="546" y="220">03.2 / SOURCE OF TRUTH</text><text class="tk-node-title" x="546" y="241">Primary database</text><text class="tk-node-detail" x="546" y="257">Read on miss · durable writes</text></g>
+ <g class="tk-node"><rect x="530" y="383" width="150" height="72"/><text class="tk-node-index" x="544" y="403">03.3 / OPTIONAL</text><text class="tk-node-title" x="544" y="424">Message queue</text><text class="tk-node-detail" x="544" y="440">Background tasks</text></g>
+ <g class="tk-node"><rect x="735" y="383" width="190" height="72"/><text class="tk-node-index" x="750" y="403">04 / ASYNC</text><text class="tk-node-title" x="750" y="424">Worker</text><text class="tk-node-detail" x="750" y="440">Consumes queued work</text></g>
+ <g class="tk-legend"><path d="M30 478H58" class="tk-legend-read"/><text x="66" y="482">READ PATH</text><path d="M170 478H198" class="tk-legend-write"/><text x="206" y="482">WRITE PATH</text><path d="M325 478H353" class="tk-legend-async"/><text x="361" y="482">DASHED = FALLBACK / OPTIONAL ASYNC</text></g>
  </svg></div><p class="diagram-annotation"><b>READ / WRITE:</b> ${esc(d.annotation)}</p></div>`;
 }
 function noteDiagram(type) {
