@@ -83,63 +83,59 @@ function topologyDiagram(d) {
  return `<div class="diagram-card diagram-card-clean">
   <div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>FIG. 01</small></div>
   <div class="topology-canvas topology-static">
-   <svg class="topology-static-svg topology-research-svg" viewBox="0 0 960 470" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
+   <svg class="topology-static-svg topology-research-svg" viewBox="0 0 960 500" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
     <title id="topology-figure-title">Read and write request topology</title>
-    <desc id="topology-figure-desc">Client sends requests to the API gateway. The gateway routes reads to the query service and writes to the write service. The query service checks cache and reads the primary database on a cache miss. The write service persists to the primary database before optionally publishing work to a message queue consumed by a worker.</desc>
+    <desc id="topology-figure-desc">Client requests pass through the API gateway. Reads go through the query service and cache, falling back to the primary database on a cache miss. Writes pass through the write service and persist to the primary database. After persistence, optional tasks are published to a queue and consumed by a worker, which can update the database.</desc>
     <defs>
-     <marker id="tk-r-blue" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L6 3.5 L0 7 Z" fill="#2855d9"/></marker>
-     <marker id="tk-r-ink" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0 0 L6 3.5 L0 7 Z" fill="#1c2733"/></marker>
+     <marker id="tk-r-blue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
+     <marker id="tk-r-ink" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
     </defs>
     <style>
-     .research-kicker{font:10px "DM Mono",monospace;letter-spacing:.075em;fill:#586575}
      .research-rule{stroke:#d9dee7;stroke-width:1}
-     .research-lane{font:600 10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
-     .research-node rect{fill:#fff;stroke:#c5ced9;stroke-width:1.25}
-     .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
-     .research-node-muted rect{fill:#f5f7fa;stroke:#c5ced9;stroke-width:1.25}
-     .research-symbol{fill:none;stroke:#586575;stroke-width:1.4;stroke-linecap:square;stroke-linejoin:miter}
+     .research-lane{font:600 11px "DM Mono",monospace;letter-spacing:.08em;fill:#586575}
+     .research-node rect{fill:#fff;stroke:#c5ced9;stroke-width:1.4}
+     .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.6}
+     .research-node-muted rect{fill:#f5f7fa;stroke:#c5ced9;stroke-width:1.4}
+     .research-symbol{fill:none;stroke:#586575;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
      .research-node-accent .research-symbol{stroke:#2855d9}
-     .research-tag{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
-     .research-title{font:600 13px Inter,Arial,sans-serif;fill:#1c2733}
-     .research-detail{font:9px "DM Mono",monospace;fill:#586575}
-     .research-blue,.research-ink{fill:none;stroke-width:1.7;stroke-linecap:square;stroke-linejoin:miter}
+     .research-tag{font:10px "DM Mono",monospace;letter-spacing:.04em;fill:#2855d9}
+     .research-title{font:600 14px Inter,Arial,sans-serif;fill:#1c2733}
+     .research-detail{font:10px "DM Mono",monospace;fill:#586575}
+     .research-blue,.research-ink{fill:none;stroke-width:2;stroke-linecap:square;stroke-linejoin:round}
      .research-blue{stroke:#2855d9}
      .research-ink{stroke:#1c2733}
-     .research-dash{stroke-dasharray:5 4}
-     .research-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
-     .research-foot{font:9px "DM Mono",monospace;letter-spacing:.02em;fill:#586575}
+     .research-dash{stroke-dasharray:6 5}
+     .research-edge{font:10px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
+     .research-foot{font:10px "DM Mono",monospace;fill:#586575}
     </style>
-    <rect width="960" height="470" fill="#fff"/>
-    <text class="research-kicker" x="24" y="27">REQUEST TOPOLOGY</text><text class="research-kicker" x="936" y="27" text-anchor="end">READ / WRITE / ASYNC</text>
+    <rect width="960" height="500" fill="#fff"/>
+    <text class="research-foot" x="24" y="27">REQUEST FLOW</text><text class="research-foot" x="936" y="27" text-anchor="end">FIG. 01 · READ / WRITE / ASYNC</text>
     <path class="research-rule" d="M24 40H936"/>
-    <text class="research-lane" x="24" y="67">ENTRY</text>
-    <text class="research-lane" x="246" y="67">APPLICATION</text>
-    <text class="research-lane" x="492" y="67">DATA</text>
-    <text class="research-lane" x="716" y="67">ASYNC · OPTIONAL</text>
-    <path class="research-rule" d="M224 52V412 M470 52V412 M694 52V412" stroke-dasharray="2 6"/>
-    <g class="research-node"><rect x="24" y="158" width="88" height="78"/><text class="research-tag" x="34" y="177">CLIENT</text><path class="research-symbol" d="M48 190h20v15H48z M52 209h12 M58 205v4"/><text class="research-title" x="34" y="224">Web / app</text></g>
-    <g class="research-node research-node-accent"><rect x="128" y="158" width="82" height="78"/><text class="research-tag" x="138" y="177">ENTRY</text><path class="research-symbol" d="M148 188h42v17h-42z M155 193h28 M155 199h20"/><text class="research-title" x="138" y="224">Gateway</text></g>
-    <path class="research-ink" d="M112 197H128" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="112" y="185" text-anchor="middle">REQ.</text>
-    <g class="research-node research-node-accent"><rect x="246" y="106" width="202" height="82"/><text class="research-tag" x="260" y="125">READ PATH</text><text class="research-title" x="260" y="148">Query service</text><text class="research-detail" x="260" y="166">Read orchestration</text></g>
-    <g class="research-node"><rect x="246" y="246" width="202" height="82"/><text class="research-tag" x="260" y="265">WRITE PATH</text><text class="research-title" x="260" y="288">Write service</text><text class="research-detail" x="260" y="306">Validate · persist</text></g>
-    <path class="research-blue" d="M210 180H228V147H246" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="218" y="136">READ</text>
-    <path class="research-ink" d="M210 214H228V287H246" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="216" y="238">WRITE</text>
-    <g class="research-node research-node-accent"><rect x="492" y="106" width="174" height="82"/><text class="research-tag" x="506" y="125">FAST PATH</text><ellipse class="research-symbol" cx="519" cy="140" rx="9" ry="4"/><path class="research-symbol" d="M510 140v12c0 5 18 5 18 0v-12 M510 146c0 5 18 5 18 0"/><text class="research-title" x="536" y="149">Cache</text><text class="research-detail" x="506" y="174">Hit returns quickly</text></g>
-    <g class="research-node"><rect x="492" y="246" width="174" height="82"/><text class="research-tag" x="506" y="265">DURABLE STORE</text><ellipse class="research-symbol" cx="519" cy="281" rx="9" ry="4"/><path class="research-symbol" d="M510 281v15c0 5 18 5 18 0v-15 M510 288c0 5 18 5 18 0"/><text class="research-title" x="536" y="290">Primary DB</text><text class="research-detail" x="506" y="314">Source of truth</text></g>
-    <path class="research-blue" d="M448 147H492" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="470" y="135" text-anchor="middle">LOOKUP</text>
-    <path class="research-blue" d="M579 188V246" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="590" y="220">MISS</text>
-    <path class="research-blue research-dash" d="M492 286H478V207H448" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="451" y="232">FETCH</text>
-    <path class="research-ink" d="M448 287H492" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="470" y="275" text-anchor="middle">PERSIST</text>
-    <g class="research-node research-node-muted"><rect x="716" y="246" width="112" height="82"/><text class="research-tag" x="728" y="265">QUEUE</text><path class="research-symbol" d="M730 277h18v7h-18z M730 287h18v7h-18z M730 297h18v7h-18z"/><text class="research-title" x="754" y="289">Message</text><text class="research-title" x="754" y="304">queue</text><text class="research-detail" x="728" y="319">Optional work</text></g>
-    <g class="research-node research-node-muted"><rect x="842" y="246" width="94" height="82"/><text class="research-tag" x="852" y="265">CONSUMER</text><circle class="research-symbol" cx="864" cy="283" r="7"/><path class="research-symbol" d="M854 301c1-9 19-9 20 0 M861 283h6"/><text class="research-title" x="852" y="315">Worker</text></g>
-    <path class="research-ink research-dash" d="M448 310H680V287H716" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="568" y="302">AFTER PERSIST</text>
-    <path class="research-ink" d="M828 287H842" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="835" y="275" text-anchor="middle">TASK</text>
-    <path class="research-ink" d="M889 328V360H579V328" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="735" y="354" text-anchor="middle">UPDATE DATABASE</text>
-    <path class="research-rule" d="M24 375H936"/>
-    <text class="research-foot" x="24" y="398">READ</text><text class="research-detail" x="74" y="398">Cache hit returns; miss reads the primary database.</text>
-    <text class="research-foot" x="24" y="420">WRITE</text><text class="research-detail" x="74" y="420">Persist first; optional background work is queued afterward.</text>
-    <path class="research-rule" d="M24 440H936"/>
-    <text class="research-foot" x="24" y="459">SOLID = SYNCHRONOUS REQUEST / WRITE</text><text class="research-foot" x="936" y="459" text-anchor="end">DASHED = OPTIONAL BACKGROUND WORK</text>
+    <text class="research-lane" x="24" y="66">1 / REQUEST</text>
+    <text class="research-lane" x="300" y="66">2 / APPLICATION</text>
+    <text class="research-lane" x="600" y="66">3 / STORAGE</text>
+    <g class="research-node"><rect x="24" y="112" width="112" height="78" rx="3"/><text class="research-tag" x="38" y="132">CLIENT</text><path class="research-symbol" d="M42 143h19v14H42z M46 161h11 M51 157v4"/><text class="research-title" x="68" y="154">Web / app</text></g>
+    <g class="research-node research-node-accent"><rect x="166" y="112" width="112" height="78" rx="3"/><text class="research-tag" x="180" y="132">ENTRY</text><path class="research-symbol" d="M184 143h24v18h-24z M189 148h14 M189 153h14"/><text class="research-title" x="180" y="177">API gateway</text></g>
+    <path class="research-ink" d="M136 151H166" marker-end="url(#tk-r-ink)"/>
+    <g class="research-node research-node-accent"><rect x="318" y="92" width="190" height="78" rx="3"/><text class="research-tag" x="332" y="112">READ PATH</text><text class="research-title" x="332" y="136">Query service</text><text class="research-detail" x="332" y="154">Read orchestration</text></g>
+    <g class="research-node"><rect x="318" y="222" width="190" height="78" rx="3"/><text class="research-tag" x="332" y="242">WRITE PATH</text><text class="research-title" x="332" y="266">Write service</text><text class="research-detail" x="332" y="284">Validate · persist</text></g>
+    <path class="research-blue" d="M278 132H296V131H318" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="293" y="120" text-anchor="middle">READ</text>
+    <path class="research-ink" d="M278 170H296V261H318" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="300" y="207">WRITE</text>
+    <g class="research-node research-node-accent"><rect x="554" y="92" width="150" height="78" rx="3"/><text class="research-tag" x="568" y="112">FAST PATH</text><ellipse class="research-symbol" cx="582" cy="130" rx="9" ry="4"/><path class="research-symbol" d="M573 130v13c0 5 18 5 18 0v-13 M573 137c0 5 18 5 18 0"/><text class="research-title" x="600" y="137">Cache</text><text class="research-detail" x="568" y="157">Hit returns quickly</text></g>
+    <g class="research-node"><rect x="554" y="222" width="150" height="78" rx="3"/><text class="research-tag" x="568" y="242">DURABLE STORE</text><ellipse class="research-symbol" cx="582" cy="260" rx="9" ry="4"/><path class="research-symbol" d="M573 260v13c0 5 18 5 18 0v-13 M573 267c0 5 18 5 18 0"/><text class="research-title" x="600" y="267">Primary DB</text><text class="research-detail" x="568" y="287">Source of truth</text></g>
+    <path class="research-blue" d="M508 131H554" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="531" y="119" text-anchor="middle">LOOKUP</text>
+    <path class="research-blue" d="M629 170V222" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="640" y="200">MISS</text>
+    <path class="research-blue research-dash" d="M554 260H532V181H508" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="534" y="214">FETCH</text>
+    <path class="research-ink" d="M508 261H554" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="531" y="249" text-anchor="middle">PERSIST</text>
+    <path class="research-rule" d="M24 330H936"/>
+    <text class="research-lane" x="24" y="354">4 / OPTIONAL BACKGROUND WORK</text>
+    <g class="research-node research-node-muted"><rect x="318" y="376" width="190" height="68" rx="3"/><text class="research-tag" x="332" y="396">QUEUE</text><path class="research-symbol" d="M334 405h20v6h-20z M334 414h20v6h-20z M334 423h20v6h-20z"/><text class="research-title" x="364" y="415">Message queue</text><text class="research-detail" x="364" y="432">Optional tasks</text></g>
+    <g class="research-node research-node-muted"><rect x="600" y="376" width="150" height="68" rx="3"/><text class="research-tag" x="614" y="396">CONSUMER</text><circle class="research-symbol" cx="626" cy="412" r="7"/><path class="research-symbol" d="M616 430c1-9 19-9 20 0 M623 412h6"/><text class="research-title" x="642" y="419">Worker</text><text class="research-detail" x="614" y="436">Process task</text></g>
+    <path class="research-ink research-dash" d="M413 300V340H413V376" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="425" y="346">AFTER DB COMMIT</text>
+    <path class="research-ink" d="M508 410H600" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="554" y="398" text-anchor="middle">CONSUME</text>
+    <path class="research-ink" d="M675 376V354H779V261H704" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="778" y="343" text-anchor="end">UPDATE DB</text>
+    <path class="research-rule" d="M24 462H936"/>
+    <text class="research-foot" x="24" y="482">SOLID = REQUEST / PERSISTENCE</text><text class="research-foot" x="936" y="482" text-anchor="end">DASHED = ASYNC HANDOFF</text>
    </svg>
   </div>
   <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
