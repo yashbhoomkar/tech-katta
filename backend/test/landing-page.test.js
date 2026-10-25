@@ -47,8 +47,9 @@ test('landing page endpoint returns structured editorial content', async (t) => 
   const content = await response.json();
   assert.match(content.meta.title, /Tech Katta/);
   assert.ok(content.hero.diagram.groups.length >= 3);
-  assert.ok(content.lab.workspace.components.length >= 3);
-  assert.ok(content.lab.workspace.evaluation.notice.includes('not a live evaluation'));
+  assert.equal(content.lab.status, "UPCOMING");
+  assert.match(content.lab.description, /knowledge base/);
+  assert.equal(Object.hasOwn(content.lab, "workspace"), false);
   assert.equal(content.notes.items.length, 3);
   assert.equal(content.principle.comparison.length, 2);
   assert.ok(content.footer.links.length >= 1);
