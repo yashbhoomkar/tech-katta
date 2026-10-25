@@ -11,11 +11,11 @@ export const landingPageContent = {
     primaryAction: { label: "Explore system design notes", href: "#notes" },
     diagram: {
       caption: "Fig. 1.0 — Read/write request topology",
-      annotation: "Trace a request. Find the bottleneck. Understand the trade-off.",
+      annotation: "READ: cache hit returns quickly; cache miss reads the database. WRITE: persist first, then enqueue optional background work.",
       groups: [
-        { label: "ENTRY", nodes: [{ id: "client", label: "Client", detail: "Web / mobile" }, { id: "gateway", label: "API gateway", detail: "Auth · rate limits" }] },
-        { label: "APPLICATION", nodes: [{ id: "read", label: "Query service", detail: "Stateless reads" }, { id: "write", label: "Write service", detail: "Validated mutations" }, { id: "worker", label: "Async worker", detail: "Queue consumers" }] },
-        { label: "DATA", nodes: [{ id: "cache", label: "Distributed cache", detail: "Hot reads" }, { id: "database", label: "Primary datastore", detail: "Durable state" }, { id: "queue", label: "Message queue", detail: "Async work" }] }
+        { label: "ENTRY", nodes: [{ id: "client", label: "Client", detail: "Read or write request" }, { id: "gateway", label: "API gateway", detail: "Auth · rate limits" }] },
+        { label: "APPLICATION", nodes: [{ id: "read", label: "Query service", detail: "Read orchestration" }, { id: "write", label: "Write service", detail: "Validate · persist" }, { id: "worker", label: "Async worker", detail: "Background consumer" }] },
+        { label: "DATA & MESSAGING", nodes: [{ id: "cache", label: "Cache", detail: "Read hit / miss" }, { id: "database", label: "Primary database", detail: "Durable source of truth" }, { id: "queue", label: "Message queue", detail: "Optional async tasks" }] }
       ]
     }
   },
