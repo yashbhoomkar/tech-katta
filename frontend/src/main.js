@@ -80,67 +80,16 @@ function footer() {
  return `<footer class="footer"><div class="footer-brand"><span class="brand-mark">tk</span><b>Tech Katta</b><p>Build the mental models behind reliable systems.</p></div><div><b>Learn</b><a href="#learn" data-go="learn">System design</a><a href="#learn" data-go="learn">Core concepts</a><a href="#practice" data-go="practice">Guided practice</a></div><div><b>Prepare</b><a href="#questions" data-go="questions">Interview questions</a><a href="#pricing" data-go="pricing">Plans</a><a href="#learn" data-go="learn">Learning paths</a></div><div class="footer-note">Independent learning product. Original lessons and exercises.</div></footer>`;
 }
 function topologyDiagram(d) {
+ const miroEmbedUrl = "https://miro.com/app/live-embed/uXjVEVpY58o=/?moveToWidget=3458764688349621301&embedMode=view_only_without_ui";
  return `<div class="diagram-card diagram-card-clean">
-  <div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>FIG. 01</small></div>
-  <div class="topology-canvas topology-static">
-   <svg class="topology-static-svg topology-research-svg" viewBox="0 0 1200 610" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
-    <title id="topology-figure-title">Read and write request topology</title>
-    <desc id="topology-figure-desc">Client requests enter through the API gateway. Reads are handled by the query service using cache-aside: check cache, read the primary database on a miss, then refill cache. Writes persist to the primary database. After persistence, optional work is queued and consumed by a worker that can update the database.</desc>
-    <defs>
-     <marker id="tk-r-blue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
-     <marker id="tk-r-ink" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#586575"/></marker>
-     <marker id="tk-r-async" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#8793a3"/></marker>
-    </defs>
-    <style>
-     .research-rule{stroke:#d9dee7;stroke-width:1}
-     .research-lane{font:600 11px "DM Mono",monospace;letter-spacing:.08em;fill:#586575}
-     .research-node rect{fill:#fff;stroke:#aeb9c9;stroke-width:1.5}
-     .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.6}
-     .research-node-muted rect{fill:#f5f7fa;stroke:#aeb9c9;stroke-width:1.5}
-     .research-symbol{fill:none;stroke:#586575;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
-     .research-node-accent .research-symbol{stroke:#2855d9}
-     .research-tag{font:10px "DM Mono",monospace;letter-spacing:.04em;fill:#2855d9}
-     .research-title{font:600 14px Inter,Arial,sans-serif;fill:#1c2733}
-     .research-detail{font:10px "DM Mono",monospace;fill:#586575}
-     .research-line{fill:none;stroke-width:2;stroke-linecap:square;stroke-linejoin:round}
-     .research-blue{stroke:#2855d9}
-     .research-write{stroke:#586575}
-     .research-async{stroke:#8793a3;stroke-dasharray:6 5}
-     .research-edge{font:10px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
-     .research-foot{font:10px "DM Mono",monospace;fill:#586575}
-    </style>
-    <rect width="1200" height="610" fill="#fff"/>
-    <text class="research-foot" x="24" y="27">REQUEST TOPOLOGY</text><text class="research-foot" x="1176" y="27" text-anchor="end">FIG. 01 · READ / WRITE / ASYNC</text>
-    <path class="research-rule" d="M24 40H1176"/>
-    <text class="research-lane" x="24" y="66">CLIENT</text><text class="research-lane" x="205" y="66">GATEWAY</text><text class="research-lane" x="390" y="66">APPLICATION</text><text class="research-lane" x="720" y="66">DATA &amp; STORAGE</text>
-    <g class="research-node"><rect x="24" y="155" width="140" height="88"/><text class="research-tag" x="40" y="176">CLIENT</text><path class="research-symbol" d="M41 189h22v17H41z M46 210h12 M52 206v4"/><text class="research-title" x="72" y="201">Web / mobile</text></g>
-    <g class="research-node research-node-accent"><rect x="205" y="155" width="145" height="88"/><text class="research-tag" x="221" y="176">ENTRY</text><path class="research-symbol" d="M222 188h27v19h-27z M227 193h17 M227 199h17"/><text class="research-title" x="221" y="224">API gateway</text><text class="research-detail" x="221" y="236">Auth · rate limits</text></g>
-    <path class="research-line research-write" d="M164 199H201" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="182" y="187" text-anchor="middle">REQUEST</text>
-    <g class="research-node research-node-accent"><rect x="390" y="115" width="205" height="86"/><text class="research-tag" x="406" y="136">READ PATH</text><text class="research-title" x="406" y="160">Query service</text><text class="research-detail" x="406" y="179">Read orchestration</text></g>
-    <g class="research-node"><rect x="390" y="275" width="205" height="86"/><text class="research-tag" x="406" y="296">WRITE PATH</text><text class="research-title" x="406" y="320">Write service</text><text class="research-detail" x="406" y="339">Validate · persist</text></g>
-    <path class="research-line research-blue" d="M350 181H370V158H386" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="369" y="145" text-anchor="middle">READ</text>
-    <path class="research-line research-write" d="M350 220H370V318H386" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="371" y="258">WRITE</text>
-    <g class="research-node research-node-accent"><rect x="700" y="100" width="190" height="100" rx="12"/><text class="research-tag" x="718" y="122">FAST PATH</text><ellipse class="research-symbol" cx="733" cy="143" rx="10" ry="4"/><path class="research-symbol" d="M723 143v15c0 5 20 5 20 0v-15 M723 150c0 5 20 5 20 0"/><text class="research-title" x="753" y="150">Cache</text><text class="research-detail" x="718" y="180">Hit returns quickly</text></g>
-    <g class="research-node"><rect x="930" y="250" width="246" height="100" rx="4"/><ellipse class="research-symbol" cx="1053" cy="250" rx="123" ry="10"/><text class="research-tag" x="950" y="276">DURABLE STORE</text><text class="research-title" x="950" y="300">Primary database</text><text class="research-detail" x="950" y="322">Durable source of truth</text></g>
-    <path class="research-line research-blue" d="M595 143H696" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="645" y="131" text-anchor="middle">1 · LOOKUP</text>
-    <path class="research-line research-blue" d="M700 160H650V91H565V111" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="646" y="82" text-anchor="middle">HIT · RETURN</text>
-    <path class="research-line research-blue" d="M595 190H635V230H1053V245" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="820" y="222" text-anchor="middle">2 · MISS — READ DB</text>
-    <path class="research-line research-blue" d="M570 201V230H680V204" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="625" y="222" text-anchor="middle">3 · REFILL CACHE</text>
-    <path class="research-line research-write" d="M595 318H925" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="760" y="306" text-anchor="middle">PERSIST</text>
-    <path class="research-rule" d="M24 390H1176"/>
-    <text class="research-lane" x="24" y="416">ASYNC / BACKGROUND · OPTIONAL</text>
-    <g class="research-node research-node-muted"><rect x="390" y="445" width="205" height="80"/><text class="research-tag" x="406" y="466">QUEUE</text><path class="research-symbol" d="M408 476h20v6h-20z M408 485h20v6h-20z M408 494h20v6h-20z"/><text class="research-title" x="438" y="488">Message queue</text><text class="research-detail" x="438" y="508">Optional tasks</text></g>
-    <g class="research-node research-node-muted"><rect x="700" y="445" width="190" height="80"/><text class="research-tag" x="716" y="466">CONSUMER</text><circle class="research-symbol" cx="731" cy="484" r="7"/><path class="research-symbol" d="M721 503c1-9 19-9 20 0 M728 484h6"/><text class="research-title" x="752" y="490">Worker</text><text class="research-detail" x="716" y="511">Background consumer</text></g>
-    <path class="research-line research-async" d="M492 361V441" marker-end="url(#tk-r-async)"/><text class="research-edge" x="506" y="405">AFTER PERSIST</text>
-    <path class="research-line research-async" d="M595 485H696" marker-end="url(#tk-r-async)"/><text class="research-edge" x="645" y="473" text-anchor="middle">CONSUME</text>
-    <path class="research-line research-async" d="M795 445V390H1053V355" marker-end="url(#tk-r-async)"/><text class="research-edge" x="925" y="380" text-anchor="middle">UPDATE DATABASE</text>
-    <path class="research-rule" d="M24 555H1176"/>
-    <text class="research-foot" x="24" y="578">BLUE = READ PATH · SLATE = WRITE PATH</text><text class="research-foot" x="1176" y="578" text-anchor="end">DASHED = ASYNC / BACKGROUND WORK</text>
-   </svg>
+  <div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>LIVE MIRO BOARD</small></div>
+  <div class="topology-canvas topology-miro-embed" style="position:relative;width:100%;aspect-ratio:16/9;min-height:440px;background:#fff;border:1px solid #d9dee7;overflow:hidden">
+   <iframe src="${miroEmbedUrl}" title="Editable Read and Write Request Topology in Miro" loading="lazy" allow="fullscreen; clipboard-read; clipboard-write" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen></iframe>
   </div>
-  <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
+  <div class="diagram-foot"><span>Source: live Miro board</span><a href="https://miro.com/app/board/uXjVEVpY58o=/?moveToWidget=3458764688349621301" target="_blank" rel="noopener noreferrer">Open and edit in Miro ↗</a></div>
  </div>`;
 }
+
 function noteDiagram(type) {
  if (type==="cache") return `<svg viewBox="0 0 280 82" role="img" aria-label="Cache-aside request flow"><rect x="8" y="25" width="58" height="32" fill="#fff" stroke="#1C2733"/><text x="37" y="45" text-anchor="middle">App</text><rect x="111" y="13" width="64" height="28" fill="#EEF2FF" stroke="#2855D9"/><text x="143" y="31" text-anchor="middle">Cache</text><rect x="216" y="25" width="56" height="32" fill="#fff" stroke="#1C2733"/><text x="244" y="45" text-anchor="middle">DB</text><path d="M66 33 L111 25 M66 49 L216 49 M216 35 L175 25" fill="none" stroke="#586575"/><text x="87" y="18">GET</text><text x="128" y="70">MISS → READ</text></svg>`;
  if (type==="queue") return `<svg viewBox="0 0 280 82" role="img" aria-label="Message queue partition and consumer"><g fill="#fff" stroke="#1C2733"><rect x="10" y="25" width="24" height="28"/><rect x="34" y="25" width="24" height="28"/><rect x="58" y="25" width="24" height="28"/></g><rect x="82" y="25" width="24" height="28" fill="#EEF2FF" stroke="#2855D9"/><path d="M106 39H155" stroke="#586575"/><rect x="155" y="24" width="58" height="30" fill="#fff" stroke="#1C2733"/><text x="184" y="43" text-anchor="middle">Worker</text><path d="M184 54V69H230" stroke="#2855D9" stroke-dasharray="3 3"/><rect x="230" y="59" width="42" height="18" fill="#fff" stroke="#2855D9"/><text x="251" y="71" text-anchor="middle">DLQ</text></svg>`;
