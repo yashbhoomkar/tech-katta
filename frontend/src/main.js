@@ -127,7 +127,7 @@ function topologyDiagram(d) {
     <path class="research-blue" d="M600 137H686" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="643" y="125" text-anchor="middle">1 · LOOKUP</text>
     <path class="research-blue" d="M686 160H650V201H620V165H604" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="650" y="216" text-anchor="middle">HIT · RETURN</text>
     <path class="research-blue" d="M600 176H625V240H946V176" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="780" y="232" text-anchor="middle">2 · MISS → READ DB</text>
-    <path class="research-blue research-dash" d="M950 204H922V248H672V177H686" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="800" y="261" text-anchor="middle">3 · REFILL CACHE</text>
+    <path class="research-blue" d="M950 204H922V248H672V177H686" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="800" y="261" text-anchor="middle">3 · REFILL CACHE</text>
     <path class="research-write" d="M600 294H946" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="775" y="282" text-anchor="middle">PERSIST</text>
     <path class="research-rule" d="M24 355H1176"/>
     <text class="research-lane" x="24" y="380">OPTIONAL BACKGROUND WORK</text>
@@ -137,7 +137,7 @@ function topologyDiagram(d) {
     <path class="research-async" d="M600 437H686" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="645" y="425" text-anchor="middle">CONSUME</text>
     <path class="research-async" d="M770 402V374H1090V222" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="930" y="364" text-anchor="middle">UPDATE DATABASE</text>
     <path class="research-rule" d="M24 486H1176"/>
-    <text class="research-foot" x="24" y="505">BLUE = READ PATH · SLATE = WRITE PATH</text><text class="research-foot" x="1176" y="505" text-anchor="end">DASHED = ASYNC / CACHE REFILL</text>
+    <text class="research-foot" x="24" y="505">BLUE = READ PATH · SLATE = WRITE PATH</text><text class="research-foot" x="1176" y="505" text-anchor="end">DASHED = OPTIONAL ASYNC WORK</text>
    </svg>
   </div>
   <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
