@@ -125,7 +125,7 @@ function topologyDiagram(d) {
     <path class="research-blue" d="M600 144H690" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="645" y="132" text-anchor="middle">LOOKUP</text>
     <path class="research-blue" d="M600 112H900V82H1060V120" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="820" y="74" text-anchor="middle">MISS · READ DB</text>
     <path class="research-blue research-dash" d="M690 165H660V202H620V164H600" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="649" y="196" text-anchor="middle">HIT</text>
-    <path class="research-ink" d="M600 294H950" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="775" y="282" text-anchor="middle">PERSIST</text>
+    <path class="research-ink" d="M600 294H900V180H950" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="750" y="282" text-anchor="middle">PERSIST</text>
     <path class="research-rule" d="M24 355H1176"/>
     <text class="research-lane" x="24" y="380">OPTIONAL BACKGROUND WORK</text>
     <g class="research-node research-node-muted"><rect x="410" y="402" width="190" height="70"/><text class="research-tag" x="426" y="422">QUEUE</text><path class="research-symbol" d="M428 431h20v6h-20z M428 440h20v6h-20z M428 449h20v6h-20z"/><text class="research-title" x="458" y="442">Message queue</text><text class="research-detail" x="458" y="459">Optional tasks</text></g>
