@@ -123,7 +123,7 @@ function topologyDiagram(d) {
     <g class="research-node research-node-accent"><rect x="690" y="100" width="160" height="88" rx="16"/><text class="research-tag" x="706" y="121">FAST PATH</text><ellipse class="research-symbol" cx="723" cy="140" rx="10" ry="4"/><path class="research-symbol" d="M713 140v15c0 5 20 5 20 0v-15 M713 148c0 5 20 5 20 0"/><text class="research-title" x="744" y="147">Cache</text><text class="research-detail" x="706" y="174">Hit returns quickly</text></g>
     <g class="research-node"><rect x="950" y="130" width="220" height="88" rx="4"/><ellipse class="research-symbol" cx="1060" cy="130" rx="110" ry="10"/><text class="research-tag" x="970" y="153">DURABLE STORE</text><text class="research-title" x="970" y="176">Primary database</text><text class="research-detail" x="970" y="195">Durable source of truth</text></g>
     <path class="research-blue" d="M600 144H690" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="645" y="132" text-anchor="middle">LOOKUP</text>
-    <path class="research-blue" d="M950 218V232H620V176H600" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="780" y="225" text-anchor="middle">MISS → QUERY DB</text>
+    <path class="research-blue" d="M600 112H900V82H1060V120" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="820" y="74" text-anchor="middle">MISS · READ DB</text>
     <path class="research-blue research-dash" d="M690 165H660V202H620V164H600" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="649" y="196" text-anchor="middle">HIT</text>
     <path class="research-ink" d="M600 294H950" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="775" y="282" text-anchor="middle">PERSIST</text>
     <path class="research-rule" d="M24 355H1176"/>
