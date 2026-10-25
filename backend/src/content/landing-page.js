@@ -1,7 +1,7 @@
 export const landingPageContent = {
   meta: {
     title: "Tech Katta — Distributed Systems & System Design",
-    description: "Understand the systems behind the software. Explore distributed systems, study production architecture, and practice designing systems that scale."
+    description: "Practical system design notes on distributed systems, production architecture, and the trade-offs behind reliable software."
   },
   brand: { name: "Tech Katta", descriptor: "System design notes & knowledge base", reference: "DIST-SYS / 01", status: "System design knowledge base" },
   hero: {
