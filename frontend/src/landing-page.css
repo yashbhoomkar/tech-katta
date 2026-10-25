@@ -104,3 +104,23 @@
 .topology-wires .flow-async{stroke-dasharray:5 4}
 .topology-wires .flow-return{stroke-dasharray:3 3}
 @media(max-width:720px){.topology-wires text{font-size:10px}}
+
+/* Fig. 1.0 is a single static SVG canvas: geometry and connectors share one coordinate system. */
+.topology-canvas.topology-static{padding:10px;min-height:0;overflow:hidden;background:#fff}
+.topology-static-svg{display:block;width:100%;height:auto;max-height:none;position:relative;inset:auto;opacity:1;pointer-events:auto}
+.topology-static-svg .tk-zone{fill:#f5f7fa;fill-opacity:.82;stroke:#cbd3df;stroke-width:1.2;stroke-dasharray:5 4}
+.topology-static-svg .tk-zone-label{font:600 11px "DM Mono",monospace;letter-spacing:.06em;fill:#586575}
+.topology-static-svg .tk-node rect{fill:#fff;stroke:#cbd3df;stroke-width:1.4}
+.topology-static-svg .tk-node-primary rect,.topology-static-svg .tk-node-cache rect{stroke:#2855d9;stroke-width:1.7;fill:#fff}
+.topology-static-svg .tk-node-index{font:9px "DM Mono",monospace;fill:#2855d9;letter-spacing:.025em}
+.topology-static-svg .tk-node-title{font:600 13px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-static-svg .tk-node-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-static-svg .tk-connectors path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.topology-static-svg .tk-read path{stroke:#2855d9}
+.topology-static-svg .tk-write path{stroke:#1c2733}
+.topology-static-svg .tk-edge-labels text{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.topology-static-svg .tk-legend text{font:9px "DM Mono",monospace;fill:#586575;letter-spacing:.025em}
+.topology-static-svg .tk-legend-read{stroke:#2855d9;stroke-width:2.4}
+.topology-static-svg .tk-legend-write{stroke:#1c2733;stroke-width:2.4}
+.topology-static-svg .tk-legend-async{stroke:#1c2733;stroke-width:2;stroke-dasharray:5 4}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px}.topology-static-svg{min-width:580px}.topology-canvas.topology-static{overflow-x:auto}.topology-static-svg .tk-node-title{font-size:13px}}
