@@ -124,3 +124,27 @@
 .topology-static-svg .tk-legend-write{stroke:#1c2733;stroke-width:2.4}
 .topology-static-svg .tk-legend-async{stroke:#1c2733;stroke-width:2;stroke-dasharray:5 4}
 @media(max-width:720px){.topology-canvas.topology-static{padding:4px}.topology-static-svg{min-width:580px}.topology-canvas.topology-static{overflow-x:auto}.topology-static-svg .tk-node-title{font-size:13px}}
+
+
+/* Fig. 1.0 refinement: publication-scale labels and clearer hierarchy. */
+.editorial-hero{grid-template-columns:minmax(0, .88fr) minmax(0, 1.12fr);gap:clamp(28px,3.2vw,46px)}
+.diagram-card{padding:22px;background:#f5f7fa;border-color:#cbd3df}
+.diagram-head{font-size:11px;padding-bottom:15px;margin-bottom:16px}
+.diagram-head b{font-weight:600}
+.diagram-head>small{font-size:9px;letter-spacing:.035em}
+.topology-canvas.topology-static{min-height:0;padding:12px;background:#fff;background-image:none;overflow:hidden}
+.topology-static-svg{display:block;width:100%;height:auto;overflow:visible}
+.topology-static-svg .tk-zone-label{font-size:13px;letter-spacing:.055em;font-weight:600;fill:#586575}
+.topology-static-svg .tk-node rect{stroke:#aeb9c9;stroke-width:1.5}
+.topology-static-svg .tk-node-primary rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:2}
+.topology-static-svg .tk-node-cache rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:2}
+.topology-static-svg .tk-node-index{font-size:11px;font-weight:500}
+.topology-static-svg .tk-node-title{font-size:17px;font-weight:600;letter-spacing:-.015em}
+.topology-static-svg .tk-node-detail{font-size:12px}
+.topology-static-svg .tk-connectors path{stroke-width:2.5}
+.topology-static-svg .tk-edge-labels text{font-size:11px;font-weight:500;letter-spacing:.025em;stroke-width:5px}
+.topology-static-svg .tk-legend text{font-size:11px}
+.topology-static-svg .tk-legend-read,.topology-static-svg .tk-legend-write{stroke-width:3}
+.diagram-annotation{font-size:11px;line-height:1.8;margin-top:15px;padding-top:14px}
+@media(max-width:900px){.editorial-hero{grid-template-columns:1fr}.editorial-hero-visual{max-width:100%}}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg{min-width:680px}.diagram-card{padding:12px}}
