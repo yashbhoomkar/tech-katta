@@ -148,3 +148,33 @@
 .diagram-annotation{font-size:11px;line-height:1.8;margin-top:15px;padding-top:14px}
 @media(max-width:900px){.editorial-hero{grid-template-columns:1fr}.editorial-hero-visual{max-width:100%}}
 @media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg{min-width:680px}.diagram-card{padding:12px}}
+
+
+/* Editorial topology plate — new composition, not a scale-only adjustment. */
+.diagram-card{padding:22px;background:#f5f7fa;border-color:#cbd3df}
+.diagram-head{padding-bottom:15px;margin-bottom:14px;font-size:11px}
+.topology-canvas.topology-static{min-height:0;padding:8px;background:#fff;overflow:hidden}
+.topology-static-svg.topology-editorial-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-editorial-svg .plate-kicker{font:10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
+.topology-editorial-svg .plate-rule{stroke:#d9dee7;stroke-width:1}
+.topology-editorial-svg .plate-section{font:11px "DM Mono",monospace;fill:#2855d9}
+.topology-editorial-svg .plate-section-title{font:600 12px "DM Mono",monospace;letter-spacing:.055em;fill:#1c2733}
+.topology-editorial-svg .plate-note{font:10px "DM Mono",monospace;letter-spacing:.025em;fill:#586575}
+.topology-editorial-svg .plate-node rect{fill:#fff;stroke:#b9c4d2;stroke-width:1.25}
+.topology-editorial-svg .plate-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.6}
+.topology-editorial-svg .plate-node-muted rect{fill:#f5f7fa;stroke:#b9c4d2}
+.topology-editorial-svg .plate-index{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
+.topology-editorial-svg .plate-title{font:600 16px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-editorial-svg .plate-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-editorial-svg .plate-read,.topology-editorial-svg .plate-write{fill:none;stroke-width:1.8;stroke-linecap:square;stroke-linejoin:miter}
+.topology-editorial-svg .plate-read{stroke:#2855d9}
+.topology-editorial-svg .plate-write{stroke:#1c2733}
+.topology-editorial-svg .plate-dashed{stroke-dasharray:5 4}
+.topology-editorial-svg .plate-flow-label{font:9px "DM Mono",monospace;letter-spacing:.015em;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.diagram-key{display:flex;gap:18px;flex-wrap:wrap;padding:13px 0 2px;color:#586575;font:10px "DM Mono",monospace}
+.diagram-key span{display:inline-flex;align-items:center;gap:7px}
+.diagram-key i{display:inline-block;width:17px;height:2px;background:#2855d9}
+.diagram-key .key-write{background:#1c2733}
+.diagram-key .key-async{height:0;background:none;border-top:2px dashed #1c2733}
+.diagram-annotation{font-size:11px;line-height:1.75;margin-top:12px;padding-top:13px}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg.topology-editorial-svg{min-width:620px}}
