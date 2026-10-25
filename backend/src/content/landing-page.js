@@ -6,10 +6,9 @@ export const landingPageContent = {
   brand: { name: "Tech Katta", descriptor: "System design notes & knowledge base", reference: "DIST-SYS / 01", status: "System design knowledge base" },
   hero: {
     eyebrow: "Tech Katta / Engineering knowledge",
-    title: "Understand the systems behind the software.",
-    description: "Explore distributed systems, study production architecture, and practice designing systems that scale.",
-    primaryAction: { label: "Explore engineering notes", href: "#notes" },
-    secondaryAction: { label: "System design lab — upcoming", href: "#lab" },
+    title: "Learn how software works at scale.",
+    description: "Understand consistency, caching, queues, and the trade-offs behind production architectures through practical system design notes.",
+    primaryAction: { label: "Explore system design notes", href: "#notes" },
     diagram: {
       caption: "Fig. 1.0 — Read/write request topology",
       annotation: "Trace a request. Find the bottleneck. Understand the trade-off.",
