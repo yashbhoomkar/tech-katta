@@ -96,3 +96,11 @@
 .upcoming-visual-node{position:absolute;z-index:1;padding:9px 10px;border:1px solid #d9dee7;background:#fff;color:#1c2733;font:9px "DM Mono",monospace;box-shadow:0 2px 6px #1c27330a}
 .upcoming-visual-node.node-a{top:15%;left:10%;border-color:#2855d9}.upcoming-visual-node.node-b{top:42%;left:43%;background:#eef2ff;border-color:#aebff2}.upcoming-visual-node.node-c{right:8%;bottom:12%}
 @media(max-width:720px){.upcoming-panel{grid-template-columns:1fr;padding:17px;gap:20px}.upcoming-index{align-items:flex-start;flex-wrap:wrap}.upcoming-copy h3{margin-top:19px}.upcoming-visual{min-height:185px}.upcoming-badge{white-space:normal}}
+
+/* Fig. 1.0: labelled, box-based request paths. */
+.topology-wires text{font:8px "DM Mono",monospace;fill:#586575;letter-spacing:.025em}
+.topology-wires .flow-read{stroke:#2855d9;stroke-width:1.8}
+.topology-wires .flow-write{stroke:#1c2733;stroke-width:1.6}
+.topology-wires .flow-async{stroke-dasharray:5 4}
+.topology-wires .flow-return{stroke-dasharray:3 3}
+@media(max-width:720px){.topology-wires text{font-size:10px}}
