@@ -178,3 +178,27 @@
 .diagram-key .key-async{height:0;background:none;border-top:2px dashed #1c2733}
 .diagram-annotation{font-size:11px;line-height:1.75;margin-top:12px;padding-top:13px}
 @media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg.topology-editorial-svg{min-width:620px}}
+
+
+/* Clean architecture plate: remove nested publication chrome and prioritize flow. */
+.diagram-card-clean{padding:20px;background:#f5f7fa;border:1px solid #d9dee7}
+.diagram-card-clean .diagram-head{margin-bottom:12px;padding-bottom:12px;font-size:11px}
+.diagram-card-clean .topology-canvas.topology-static{padding:8px;background:#fff;min-height:0;overflow:hidden;border:1px solid #d9dee7}
+.topology-clean-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-clean-svg .clean-kicker{font:10px "DM Mono",monospace;letter-spacing:.08em;fill:#586575}
+.topology-clean-svg .clean-rule{stroke:#d9dee7;stroke-width:1}
+.topology-clean-svg .clean-lane{font:600 11px "DM Mono",monospace;letter-spacing:.08em;fill:#1c2733}
+.topology-clean-svg .clean-node rect{fill:#fff;stroke:#c4cdda;stroke-width:1.25}
+.topology-clean-svg .clean-node.clean-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
+.topology-clean-svg .clean-node.clean-muted rect{fill:#f5f7fa}
+.topology-clean-svg .clean-tag{font:9px "DM Mono",monospace;letter-spacing:.035em;fill:#2855d9}
+.topology-clean-svg .clean-title{font:600 16px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-clean-svg .clean-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-clean-svg .clean-blue,.topology-clean-svg .clean-ink{fill:none;stroke-width:1.8;stroke-linecap:square;stroke-linejoin:miter}
+.topology-clean-svg .clean-blue{stroke:#2855d9}
+.topology-clean-svg .clean-ink{stroke:#1c2733}
+.topology-clean-svg .clean-dash{stroke-dasharray:5 4}
+.topology-clean-svg .clean-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.diagram-card-clean .diagram-key{gap:16px;padding-top:12px;font-size:10px}
+.diagram-card-clean .diagram-annotation{margin-top:10px;padding-top:12px;font-size:10px}
+@media(max-width:720px){.diagram-card-clean .topology-canvas.topology-static{overflow-x:auto}.topology-clean-svg{min-width:610px}}
