@@ -6,7 +6,7 @@ import { mockInterviewPage, bindMockInterview } from "./mock-interview.js";
 const root = document.querySelector("#root");
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://tech-api.katta.cc";
 const landingFallback = {
-  meta: { title: "Tech Katta — Distributed Systems & System Design", description: "Understand the systems behind the software." },
+  meta: { title: "Tech Katta — Distributed Systems & System Design", description: "Practical system design notes on distributed systems, production architecture, and the trade-offs behind reliable software." },
   brand: { name: "Tech Katta", descriptor: "System design notes & knowledge base", reference: "DIST-SYS / 01", status: "System design knowledge base" },
   hero: { eyebrow: "Tech Katta / Engineering knowledge", title: "Learn how software works at scale.", description: "Understand consistency, caching, queues, and the trade-offs behind production architectures through practical system design notes.", primaryAction: { label: "Explore system design notes", href: "#notes" }, diagram: { caption: "Fig. 1.0 — Read/write request topology", annotation: "Trace a request. Find the bottleneck. Understand the trade-off.", groups: [
     { label: "ENTRY", nodes: [{id:"client",label:"Client",detail:"Web / mobile"},{id:"gateway",label:"API gateway",detail:"Auth · rate limits"}] },
