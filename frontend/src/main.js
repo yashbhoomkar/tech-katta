@@ -80,16 +80,42 @@ function footer() {
  return `<footer class="footer"><div class="footer-brand"><span class="brand-mark">tk</span><b>Tech Katta</b><p>Build the mental models behind reliable systems.</p></div><div><b>Learn</b><a href="#learn" data-go="learn">System design</a><a href="#learn" data-go="learn">Core concepts</a><a href="#practice" data-go="practice">Guided practice</a></div><div><b>Prepare</b><a href="#questions" data-go="questions">Interview questions</a><a href="#pricing" data-go="pricing">Plans</a><a href="#learn" data-go="learn">Learning paths</a></div><div class="footer-note">Independent learning product. Original lessons and exercises.</div></footer>`;
 }
 function topologyDiagram(d) {
- const groups = d.groups.map((g,gi)=>`<section class="topology-group"><span class="topology-group-label">${esc(g.label)}</span><div class="topology-nodes">${g.nodes.map((n,ni)=>`<div class="topology-node" data-node="${esc(n.id)}"><span class="topology-node-id">${String(gi+1).padStart(2,"0")}.${ni+1}</span><strong>${esc(n.label)}</strong><small>${esc(n.detail)}</small></div>`).join("")}</div></section>`).join("");
- return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>READ PATH / WRITE PATH</small></div><div class="topology-canvas"><svg viewBox="0 0 720 420" preserveAspectRatio="none" aria-hidden="true" class="topology-wires"><defs><marker id="topology-arrow-read" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#2855D9"/></marker><marker id="topology-arrow-write" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#1C2733"/></marker></defs>
- <path class="flow-read" d="M95 135 V150" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read" d="M160 170 H195 V90 H205" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read" d="M445 90 H490" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read flow-return" d="M590 125 V135" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-write" d="M445 170 H490" marker-end="url(#topology-arrow-write)"/>
- <path class="flow-write flow-async" d="M445 195 H470 V250 H490" marker-end="url(#topology-arrow-write)"/>
- <path class="flow-async" d="M490 270 H445" marker-end="url(#topology-arrow-write)"/>
- </svg><div class="topology-groups">${groups}</div></div><p class="diagram-annotation"><b>READ / WRITE:</b> ${esc(d.annotation)}</p></div>`;
+ return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>STATIC ARCHITECTURE FIGURE</small></div>
+ <div class="topology-canvas topology-static">
+ <svg class="topology-static-svg" viewBox="0 0 900 500" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
+ <title id="topology-figure-title">Read and write request topology</title><desc id="topology-figure-desc">Client requests pass through an API gateway to the application. Reads check cache first and fall back to the primary database on a miss. Writes persist to the primary database. The application can enqueue optional background work for a worker.</desc>
+ <defs>
+ <marker id="tk-read-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
+ <marker id="tk-write-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
+ <pattern id="tk-grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" fill="none" stroke="#d9dee7" stroke-width=".7" opacity=".55"/></pattern>
+ </defs>
+ <rect width="900" height="500" fill="#fff"/><rect width="900" height="500" fill="url(#tk-grid)"/>
+ <rect class="tk-zone" x="18" y="18" width="190" height="464" rx="8"/><rect class="tk-zone" x="228" y="18" width="300" height="464" rx="8"/><rect class="tk-zone" x="548" y="18" width="334" height="464" rx="8"/>
+ <text class="tk-zone-label" x="34" y="43">01 / ENTRY</text><text class="tk-zone-label" x="244" y="43">02 / APPLICATION</text><text class="tk-zone-label" x="564" y="43">03 / DATA &amp; ASYNC</text>
+ <g class="tk-connectors tk-read">
+  <path d="M113 155 V192" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H244" marker-end="url(#tk-read-arrow)"/>
+  <path d="M385 154 V126 H590" marker-end="url(#tk-read-arrow)"/>
+  <path d="M714 126 H742" marker-end="url(#tk-read-arrow)"/>
+  <path d="M652 160 V214" marker-end="url(#tk-read-arrow)"/>
+  <path d="M590 246 H514 V175 H455" marker-end="url(#tk-read-arrow)" stroke-dasharray="5 5"/>
+ </g>
+ <g class="tk-connectors tk-write">
+  <path d="M455 266 H590" marker-end="url(#tk-write-arrow)"/>
+  <path d="M455 294 H520 V376 H590" marker-end="url(#tk-write-arrow)" stroke-dasharray="6 5"/>
+  <path d="M714 376 H742" marker-end="url(#tk-write-arrow)"/>
+ </g>
+ <g class="tk-edge-labels"><text x="126" y="178">REQUEST</text><text x="198" y="210">ROUTE</text><text x="468" y="116">READ</text><text x="720" y="115">HIT</text><text x="663" y="190">MISS</text><text x="510" y="237">FETCH</text><text x="500" y="255">WRITE</text><text x="526" y="363">ENQUEUE</text><text x="716" y="365">CONSUME</text></g>
+ <g class="tk-node"><rect x="36" y="91" width="154" height="64" rx="7"/><text class="tk-node-index" x="50" y="109">01.1</text><text class="tk-node-title" x="50" y="129">Client</text><text class="tk-node-detail" x="50" y="144">Web / mobile</text></g>
+ <g class="tk-node"><rect x="36" y="192" width="158" height="60" rx="7"/><text class="tk-node-index" x="50" y="210">01.2</text><text class="tk-node-title" x="50" y="230">API gateway</text><text class="tk-node-detail" x="50" y="244">Auth · rate limits</text></g>
+ <g class="tk-node tk-node-primary"><rect x="254" y="82" width="201" height="72" rx="7"/><text class="tk-node-index" x="270" y="101">02.1 / READ</text><text class="tk-node-title" x="270" y="122">Query service</text><text class="tk-node-detail" x="270" y="139">Orchestrates cache + DB reads</text></g>
+ <g class="tk-node"><rect x="254" y="230" width="201" height="72" rx="7"/><text class="tk-node-index" x="270" y="249">02.2 / WRITE</text><text class="tk-node-title" x="270" y="270">Write service</text><text class="tk-node-detail" x="270" y="287">Validate · persist</text></g>
+ <g class="tk-node tk-node-cache"><rect x="590" y="83" width="124" height="77" rx="7"/><text class="tk-node-index" x="604" y="102">03.1</text><text class="tk-node-title" x="604" y="123">Cache</text><text class="tk-node-detail" x="604" y="140">Fast path</text><text class="tk-node-detail" x="604" y="151">Hit / miss</text></g>
+ <g class="tk-node"><rect x="742" y="83" width="124" height="77" rx="7"/><text class="tk-node-index" x="754" y="102">READ HIT</text><text class="tk-node-title" x="754" y="123">Return data</text><text class="tk-node-detail" x="754" y="141">Low latency</text></g>
+ <g class="tk-node"><rect x="590" y="214" width="276" height="66" rx="7"/><text class="tk-node-index" x="606" y="233">03.2 / SOURCE OF TRUTH</text><text class="tk-node-title" x="606" y="254">Primary database</text><text class="tk-node-detail" x="606" y="269">Cache miss reads · writes persist</text></g>
+ <g class="tk-node"><rect x="590" y="340" width="124" height="72" rx="7"/><text class="tk-node-index" x="604" y="359">03.3 / OPTIONAL</text><text class="tk-node-title" x="604" y="380">Message queue</text><text class="tk-node-detail" x="604" y="397">Background task</text></g>
+ <g class="tk-node"><rect x="742" y="340" width="124" height="72" rx="7"/><text class="tk-node-index" x="754" y="359">04 / ASYNC</text><text class="tk-node-title" x="754" y="380">Worker</text><text class="tk-node-detail" x="754" y="397">Consumes task</text></g>
+ <g class="tk-legend"><path d="M34 451H68" class="tk-legend-read"/><text x="76" y="455">READ FLOW</text><path d="M178 451H212" class="tk-legend-write"/><text x="220" y="455">WRITE FLOW</text><path d="M338 451H372" class="tk-legend-async"/><text x="380" y="455">OPTIONAL ASYNC WORK</text></g>
+ </svg></div><p class="diagram-annotation"><b>READ / WRITE:</b> ${esc(d.annotation)}</p></div>`;
 }
 function noteDiagram(type) {
  if (type==="cache") return `<svg viewBox="0 0 280 82" role="img" aria-label="Cache-aside request flow"><rect x="8" y="25" width="58" height="32" fill="#fff" stroke="#1C2733"/><text x="37" y="45" text-anchor="middle">App</text><rect x="111" y="13" width="64" height="28" fill="#EEF2FF" stroke="#2855D9"/><text x="143" y="31" text-anchor="middle">Cache</text><rect x="216" y="25" width="56" height="32" fill="#fff" stroke="#1C2733"/><text x="244" y="45" text-anchor="middle">DB</text><path d="M66 33 L111 25 M66 49 L216 49 M216 35 L175 25" fill="none" stroke="#586575"/><text x="87" y="18">GET</text><text x="128" y="70">MISS → READ</text></svg>`;
