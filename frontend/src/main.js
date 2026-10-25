@@ -80,45 +80,43 @@ function footer() {
  return `<footer class="footer"><div class="footer-brand"><span class="brand-mark">tk</span><b>Tech Katta</b><p>Build the mental models behind reliable systems.</p></div><div><b>Learn</b><a href="#learn" data-go="learn">System design</a><a href="#learn" data-go="learn">Core concepts</a><a href="#practice" data-go="practice">Guided practice</a></div><div><b>Prepare</b><a href="#questions" data-go="questions">Interview questions</a><a href="#pricing" data-go="pricing">Plans</a><a href="#learn" data-go="learn">Learning paths</a></div><div class="footer-note">Independent learning product. Original lessons and exercises.</div></footer>`;
 }
 function topologyDiagram(d) {
- return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>ARCHITECTURE / 01</small></div>
- <div class="topology-canvas topology-static">
- <svg class="topology-static-svg topology-editorial-svg" viewBox="0 0 760 590" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
-  <title id="topology-figure-title">Read and write request topology</title>
-  <desc id="topology-figure-desc">The API gateway routes read requests to the query service, which checks the cache and falls back to the primary database on a miss. Write requests go through the write service to the database. After persistence, optional background work is sent to a message queue and consumed by a worker.</desc>
-  <defs>
-   <marker id="tk-read-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
-   <marker id="tk-write-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
-  </defs>
-  <rect width="760" height="590" fill="#fff"/>
-  <text class="plate-kicker" x="24" y="28">REQUEST LIFECYCLE</text><text class="plate-kicker" x="736" y="28" text-anchor="end">FIG. 01</text>
-  <path class="plate-rule" d="M24 42H736"/>
-  <text class="plate-section" x="24" y="70">01</text><text class="plate-section-title" x="58" y="70">INGRESS</text>
-  <g class="plate-node"><rect x="24" y="88" width="168" height="74"/><text class="plate-index" x="40" y="109">EDGE / CLIENT</text><text class="plate-title" x="40" y="134">Client</text><text class="plate-detail" x="40" y="151">Web or mobile app</text></g>
-  <g class="plate-node"><rect x="24" y="204" width="168" height="74"/><text class="plate-index" x="40" y="225">GATEWAY</text><text class="plate-title" x="40" y="250">API gateway</text><text class="plate-detail" x="40" y="267">Auth · rate limits</text></g>
-  <path class="plate-read" d="M108 162V204" marker-end="url(#tk-read-arrow)"/>
-  <text class="plate-flow-label" x="121" y="187">REQUEST</text>
-  <path class="plate-read" d="M192 228H220V130H250" marker-end="url(#tk-read-arrow)"/>
-  <path class="plate-write" d="M192 244H220V365H250" marker-end="url(#tk-write-arrow)"/>
-  <text class="plate-flow-label" x="199" y="216">READ</text><text class="plate-flow-label" x="199" y="340">WRITE</text>
-  <path class="plate-rule" d="M24 304H736"/>
-  <text class="plate-section" x="24" y="332">02</text><text class="plate-section-title" x="58" y="332">READ PATH</text><text class="plate-note" x="736" y="332" text-anchor="end">CACHE FIRST · DATABASE ON MISS</text>
-  <g class="plate-node plate-node-accent"><rect x="250" y="92" width="205" height="76"/><text class="plate-index" x="267" y="114">READ / ORCHESTRATION</text><text class="plate-title" x="267" y="139">Query service</text><text class="plate-detail" x="267" y="157">Coordinates data lookup</text></g>
-  <g class="plate-node plate-node-accent"><rect x="510" y="92" width="226" height="76"/><text class="plate-index" x="527" y="114">FAST PATH</text><text class="plate-title" x="527" y="139">Cache</text><text class="plate-detail" x="527" y="157">Hit returns immediately</text></g>
-  <path class="plate-read" d="M455 130H510" marker-end="url(#tk-read-arrow)"/><text class="plate-flow-label" x="466" y="118">CHECK</text>
-  <g class="plate-node"><rect x="510" y="204" width="226" height="76"/><text class="plate-index" x="527" y="226">DURABLE SOURCE OF TRUTH</text><text class="plate-title" x="527" y="251">Primary database</text><text class="plate-detail" x="527" y="269">Miss fallback · persisted writes</text></g>
-  <path class="plate-read" d="M623 168V204" marker-end="url(#tk-read-arrow)"/><text class="plate-flow-label" x="637" y="189">MISS</text>
-  <path class="plate-read plate-dashed" d="M510 242H477V182H455" marker-end="url(#tk-read-arrow)"/><text class="plate-flow-label" x="460" y="198">FETCH</text>
-  <path class="plate-rule" d="M24 354H736"/>
-  <text class="plate-section" x="24" y="382">03</text><text class="plate-section-title" x="58" y="382">WRITE PATH</text><text class="plate-note" x="736" y="382" text-anchor="end">PERSIST BEFORE ASYNC WORK</text>
-  <g class="plate-node"><rect x="250" y="400" width="205" height="76"/><text class="plate-index" x="267" y="422">WRITE / VALIDATION</text><text class="plate-title" x="267" y="447">Write service</text><text class="plate-detail" x="267" y="465">Validate and persist</text></g>
-  <path class="plate-write" d="M455 438H510" marker-end="url(#tk-write-arrow)"/><text class="plate-flow-label" x="461" y="426">COMMIT</text>
-  <g class="plate-node"><rect x="510" y="400" width="226" height="76"/><text class="plate-index" x="527" y="422">OPTIONAL / ASYNC</text><text class="plate-title" x="527" y="447">Message queue</text><text class="plate-detail" x="527" y="465">Background task event</text></g>
-  <path class="plate-write plate-dashed" d="M352 476V515H510" marker-end="url(#tk-write-arrow)"/><text class="plate-flow-label" x="365" y="505">AFTER PERSIST</text>
-  <g class="plate-node plate-node-muted"><rect x="510" y="515" width="226" height="54"/><text class="plate-index" x="527" y="536">CONSUMER</text><text class="plate-title" x="527" y="557">Async worker</text></g>
-  <path class="plate-write plate-dashed" d="M623 476V515" marker-end="url(#tk-write-arrow)"/>
- </svg></div>
- <div class="diagram-key"><span><i class="key-read"></i>Read request</span><span><i class="key-write"></i>Write request</span><span><i class="key-async"></i>Optional asynchronous work</span></div>
- <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p></div>`;
+ return `<div class="diagram-card diagram-card-clean">
+  <div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>FIG. 01</small></div>
+  <div class="topology-canvas topology-static">
+   <svg class="topology-static-svg topology-clean-svg" viewBox="0 0 760 420" role="img" aria-labelledby="topology-figure-title topology-figure-desc">
+    <title id="topology-figure-title">Read and write request topology</title>
+    <desc id="topology-figure-desc">Client requests enter through the API gateway and split into a read path and a write path. Reads check the cache, falling back to the primary database on a miss. Writes persist to the primary database, then may enqueue optional work for a background worker.</desc>
+    <defs>
+     <marker id="tk-clean-blue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#2855d9"/></marker>
+     <marker id="tk-clean-ink" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L7 4 L0 8 Z" fill="#1c2733"/></marker>
+    </defs>
+    <rect width="760" height="420" fill="#fff"/>
+    <text class="clean-kicker" x="24" y="27">REQUEST FLOW</text>
+    <path class="clean-rule" d="M24 40H736"/>
+    <g class="clean-node"><rect x="24" y="72" width="148" height="68"/><text class="clean-tag" x="40" y="91">01 / CLIENT</text><text class="clean-title" x="40" y="114">Client</text><text class="clean-detail" x="40" y="130">Web or mobile</text></g>
+    <g class="clean-node"><rect x="24" y="194" width="148" height="68"/><text class="clean-tag" x="40" y="213">02 / ENTRY</text><text class="clean-title" x="40" y="236">API gateway</text><text class="clean-detail" x="40" y="252">Auth · rate limits</text></g>
+    <path class="clean-blue" d="M98 140V194" marker-end="url(#tk-clean-blue)"/><text class="clean-edge" x="110" y="169">REQUEST</text>
+    <path class="clean-blue" d="M172 212H208V111H246" marker-end="url(#tk-clean-blue)"/>
+    <path class="clean-ink" d="M172 244H208V311H246" marker-end="url(#tk-clean-ink)"/>
+    <text class="clean-edge" x="181" y="197">READ</text><text class="clean-edge" x="181" y="281">WRITE</text>
+    <text class="clean-lane" x="246" y="68">READ PATH</text>
+    <g class="clean-node clean-accent"><rect x="246" y="82" width="190" height="64"/><text class="clean-tag" x="262" y="101">ORCHESTRATION</text><text class="clean-title" x="262" y="123">Query service</text><text class="clean-detail" x="262" y="138">Cache lookup</text></g>
+    <g class="clean-node clean-accent"><rect x="512" y="82" width="224" height="64"/><text class="clean-tag" x="528" y="101">LOW-LATENCY STORE</text><text class="clean-title" x="528" y="123">Cache</text><text class="clean-detail" x="528" y="138">Hit → return result</text></g>
+    <path class="clean-blue" d="M436 114H512" marker-end="url(#tk-clean-blue)"/>
+    <g class="clean-node"><rect x="512" y="178" width="224" height="64"/><text class="clean-tag" x="528" y="197">SOURCE OF TRUTH</text><text class="clean-title" x="528" y="219">Primary database</text><text class="clean-detail" x="528" y="234">Read miss · durable writes</text></g>
+    <path class="clean-blue" d="M624 146V178" marker-end="url(#tk-clean-blue)"/><text class="clean-edge" x="638" y="166">MISS</text>
+    <path class="clean-blue clean-dash" d="M512 210H474V151H436" marker-end="url(#tk-clean-blue)"/><text class="clean-edge" x="446" y="169">FETCH</text>
+    <path class="clean-rule" d="M246 278H736"/>
+    <text class="clean-lane" x="246" y="301">WRITE PATH</text>
+    <g class="clean-node"><rect x="246" y="322" width="190" height="64"/><text class="clean-tag" x="262" y="341">VALIDATE + PERSIST</text><text class="clean-title" x="262" y="363">Write service</text><text class="clean-detail" x="262" y="378">Commit to database</text></g>
+    <path class="clean-ink" d="M436 354H478V242H512" marker-end="url(#tk-clean-ink)"/><text class="clean-edge" x="446" y="340">COMMIT</text>
+    <g class="clean-node clean-muted"><rect x="512" y="322" width="224" height="64"/><text class="clean-tag" x="528" y="341">OPTIONAL / ASYNC</text><text class="clean-title" x="528" y="363">Queue → worker</text><text class="clean-detail" x="528" y="378">Background processing</text></g>
+    <path class="clean-ink clean-dash" d="M436 372H480V354H512" marker-end="url(#tk-clean-ink)"/>
+   </svg>
+  </div>
+  <div class="diagram-key"><span><i class="key-read"></i>Read</span><span><i class="key-write"></i>Write</span><span><i class="key-async"></i>Optional async</span></div>
+  <p class="diagram-annotation"><b>DESIGN NOTE</b> ${esc(d.annotation)}</p>
+ </div>`;
 }
 function noteDiagram(type) {
  if (type==="cache") return `<svg viewBox="0 0 280 82" role="img" aria-label="Cache-aside request flow"><rect x="8" y="25" width="58" height="32" fill="#fff" stroke="#1C2733"/><text x="37" y="45" text-anchor="middle">App</text><rect x="111" y="13" width="64" height="28" fill="#EEF2FF" stroke="#2855D9"/><text x="143" y="31" text-anchor="middle">Cache</text><rect x="216" y="25" width="56" height="32" fill="#fff" stroke="#1C2733"/><text x="244" y="45" text-anchor="middle">DB</text><path d="M66 33 L111 25 M66 49 L216 49 M216 35 L175 25" fill="none" stroke="#586575"/><text x="87" y="18">GET</text><text x="128" y="70">MISS → READ</text></svg>`;
