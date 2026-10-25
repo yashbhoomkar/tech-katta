@@ -141,7 +141,7 @@ async function loadLandingContent() {
    const response = await fetch(`${API_BASE}/api/content/landing-page`, { headers: { Accept: "application/json" } });
    if (!response.ok) throw new Error(`Landing content API returned ${response.status}`);
    const data = await response.json();
-   if (!data?.hero?.diagram?.groups || !data?.lab?.workspace?.evaluation?.findings || !data?.notes?.items) throw new Error("Landing content payload is missing required sections");
+   if (!data?.hero?.diagram?.groups || data?.lab?.status !== "UPCOMING" || !data?.notes?.items) throw new Error("Landing content payload is missing required sections");
    landingContent = data;
    document.title = page === "home" ? (data.meta?.title || "Tech Katta — Distributed Systems & System Design") : "Tech Katta — System Design Learning";
    render();
