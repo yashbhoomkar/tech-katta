@@ -93,7 +93,7 @@ function topologyDiagram(d) {
  <rect class="tk-zone" x="18" y="18" width="190" height="464" rx="8"/><rect class="tk-zone" x="228" y="18" width="300" height="464" rx="8"/><rect class="tk-zone" x="548" y="18" width="334" height="464" rx="8"/>
  <text class="tk-zone-label" x="34" y="43">01 / ENTRY</text><text class="tk-zone-label" x="244" y="43">02 / APPLICATION</text><text class="tk-zone-label" x="564" y="43">03 / DATA &amp; ASYNC</text>
  <g class="tk-connectors tk-read">
-  <path d="M113 155 V192" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H244" marker-end="url(#tk-read-arrow)"/>
+  <path d="M113 155 V192" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H220 V118 H254" marker-end="url(#tk-read-arrow)"/><path d="M194 222 H244" marker-end="url(#tk-write-arrow)"/>
   <path d="M385 154 V126 H590" marker-end="url(#tk-read-arrow)"/>
   <path d="M714 126 H742" marker-end="url(#tk-read-arrow)"/>
   <path d="M652 160 V214" marker-end="url(#tk-read-arrow)"/>
