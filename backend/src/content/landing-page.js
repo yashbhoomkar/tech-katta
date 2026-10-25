@@ -21,7 +21,7 @@ export const landingPageContent = {
     }
   },
   lab: {
-    eyebrow: "02 / Interactive system design lab",
+    eyebrow: "Interactive system design lab",
     status: "UPCOMING",
     title: "Interactive system design lab",
     description: "A guided workspace for designing systems, exploring architectural trade-offs, and getting structured feedback. We are building it. For now, Tech Katta is focused on high-quality system design notes and a useful distributed-systems knowledge base."
@@ -36,7 +36,7 @@ export const landingPageContent = {
     ]
   },
   principle: {
-    eyebrow: "02 / Core principle",
+    eyebrow: "Core principles",
     quote: "Good architecture is not about choosing more components. It is about understanding the trade-offs.",
     comparison: [
       { title: "Cohesive monolith", description: "Simple in-process calls and transaction boundaries; scaling and deployment may eventually become limiting constraints.", tag: "In-process" },
