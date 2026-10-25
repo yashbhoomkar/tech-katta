@@ -123,9 +123,9 @@ function topologyDiagram(d) {
     <g class="research-node research-node-accent"><rect x="700" y="100" width="190" height="100" rx="12"/><text class="research-tag" x="718" y="122">FAST PATH</text><ellipse class="research-symbol" cx="733" cy="143" rx="10" ry="4"/><path class="research-symbol" d="M723 143v15c0 5 20 5 20 0v-15 M723 150c0 5 20 5 20 0"/><text class="research-title" x="753" y="150">Cache</text><text class="research-detail" x="718" y="180">Hit returns quickly</text></g>
     <g class="research-node"><rect x="930" y="250" width="246" height="100" rx="4"/><ellipse class="research-symbol" cx="1053" cy="250" rx="123" ry="10"/><text class="research-tag" x="950" y="276">DURABLE STORE</text><text class="research-title" x="950" y="300">Primary database</text><text class="research-detail" x="950" y="322">Durable source of truth</text></g>
     <path class="research-line research-blue" d="M595 143H696" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="645" y="131" text-anchor="middle">1 · LOOKUP</text>
-    <path class="research-line research-blue" d="M696 169H666V215H620V185H599" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="645" y="230" text-anchor="middle">HIT · RETURN</text>
+    <path class="research-line research-blue" d="M700 160H650V91H565V111" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="646" y="82" text-anchor="middle">HIT · RETURN</text>
     <path class="research-line research-blue" d="M595 190H635V230H1053V245" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="820" y="222" text-anchor="middle">2 · MISS — READ DB</text>
-    <path class="research-line research-blue" d="M930 300H905V242H680V188H696" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="790" y="254" text-anchor="middle">3 · REFILL CACHE</text>
+    <path class="research-line research-blue" d="M570 201V230H680V204" marker-end="url(#tk-r-blue)"/><text class="research-edge" x="625" y="222" text-anchor="middle">3 · REFILL CACHE</text>
     <path class="research-line research-write" d="M595 318H925" marker-end="url(#tk-r-ink)"/><text class="research-edge" x="760" y="306" text-anchor="middle">PERSIST</text>
     <path class="research-rule" d="M24 390H1176"/>
     <text class="research-lane" x="24" y="416">ASYNC / BACKGROUND · OPTIONAL</text>
