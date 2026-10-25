@@ -3,13 +3,13 @@ export const landingPageContent = {
     title: "Tech Katta — Distributed Systems & System Design",
     description: "Understand the systems behind the software. Explore distributed systems, study production architecture, and practice designing systems that scale."
   },
-  brand: { name: "Tech Katta", descriptor: "Systems architecture & design lab", reference: "DIST-SYS / 01", status: "Engineering knowledge" },
+  brand: { name: "Tech Katta", descriptor: "System design notes & knowledge base", reference: "DIST-SYS / 01", status: "System design knowledge base" },
   hero: {
     eyebrow: "Tech Katta / Engineering knowledge",
     title: "Understand the systems behind the software.",
     description: "Explore distributed systems, study production architecture, and practice designing systems that scale.",
     primaryAction: { label: "Explore engineering notes", href: "#notes" },
-    secondaryAction: { label: "Enter the system design lab", href: "#lab" },
+    secondaryAction: { label: "System design lab — upcoming", href: "#lab" },
     diagram: {
       caption: "Fig. 1.0 — Read/write request topology",
       annotation: "Trace a request. Find the bottleneck. Understand the trade-off.",
