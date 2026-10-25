@@ -202,3 +202,27 @@
 .diagram-card-clean .diagram-key{gap:16px;padding-top:12px;font-size:10px}
 .diagram-card-clean .diagram-annotation{margin-top:10px;padding-top:12px;font-size:10px}
 @media(max-width:720px){.diagram-card-clean .topology-canvas.topology-static{overflow-x:auto}.topology-clean-svg{min-width:610px}}
+
+
+/* Research-led layout: client → gateway → stacked services → shared data / async. */
+.diagram-card-clean{padding:18px;background:#f5f7fa;border:1px solid #d9dee7}
+.diagram-card-clean .diagram-head{margin-bottom:10px;padding-bottom:11px}
+.diagram-card-clean .topology-canvas.topology-static{padding:6px;background:#fff;border:1px solid #d9dee7;overflow:hidden}
+.topology-research-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-research-svg .research-kicker{font:10px "DM Mono",monospace;letter-spacing:.075em;fill:#586575}
+.topology-research-svg .research-rule{stroke:#d9dee7;stroke-width:1}
+.topology-research-svg .research-lane{font:600 10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
+.topology-research-svg .research-node rect{fill:#fff;stroke:#c5ced9;stroke-width:1.25}
+.topology-research-svg .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
+.topology-research-svg .research-node-muted rect{fill:#f5f7fa}
+.topology-research-svg .research-tag{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
+.topology-research-svg .research-title{font:600 15px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-research-svg .research-detail{font:9px "DM Mono",monospace;fill:#586575}
+.topology-research-svg .research-blue,.topology-research-svg .research-ink{fill:none;stroke-width:1.7;stroke-linecap:square;stroke-linejoin:miter}
+.topology-research-svg .research-blue{stroke:#2855d9}
+.topology-research-svg .research-ink{stroke:#1c2733}
+.topology-research-svg .research-dash{stroke-dasharray:5 4}
+.topology-research-svg .research-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.topology-research-svg .research-foot{font:9px "DM Mono",monospace;letter-spacing:.02em;fill:#586575}
+.diagram-card-clean .diagram-annotation{margin-top:10px;padding-top:10px;font-size:10px}
+@media(max-width:760px){.diagram-card-clean .topology-canvas.topology-static{overflow-x:auto}.topology-research-svg{min-width:700px}}
