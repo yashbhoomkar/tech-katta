@@ -81,15 +81,14 @@ function footer() {
 }
 function topologyDiagram(d) {
  const groups = d.groups.map((g,gi)=>`<section class="topology-group"><span class="topology-group-label">${esc(g.label)}</span><div class="topology-nodes">${g.nodes.map((n,ni)=>`<div class="topology-node" data-node="${esc(n.id)}"><span class="topology-node-id">${String(gi+1).padStart(2,"0")}.${ni+1}</span><strong>${esc(n.label)}</strong><small>${esc(n.detail)}</small></div>`).join("")}</div></section>`).join("");
- return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>READ PATH / WRITE PATH</small></div><div class="topology-canvas"><svg viewBox="0 0 720 420" aria-hidden="true" class="topology-wires"><defs><marker id="topology-arrow-read" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#2855D9"/></marker><marker id="topology-arrow-write" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#1C2733"/></marker></defs>
- <path class="flow-read" d="M155 110 H240 V175 H290" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read" d="M430 175 H500 V105 H550" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read" d="M620 135 V218" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-read flow-return" d="M550 235 H470 V193 H430" marker-end="url(#topology-arrow-read)"/>
- <path class="flow-write" d="M430 235 H500 V245 H550" marker-end="url(#topology-arrow-write)"/>
- <path class="flow-write flow-async" d="M430 260 H490 V310 H550" marker-end="url(#topology-arrow-write)"/>
- <path class="flow-async" d="M550 330 H420 V300 H390" marker-end="url(#topology-arrow-write)"/>
- <text x="168" y="99">REQUEST</text><text x="458" y="94">READ</text><text x="626" y="180">MISS</text><text x="468" y="225">FETCH</text><text x="455" y="251">WRITE</text><text x="463" y="301">ENQUEUE</text><text x="433" y="344">CONSUME</text>
+ return `<div class="diagram-card"><div class="diagram-head"><span><i></i><b>${esc(d.caption)}</b></span><small>READ PATH / WRITE PATH</small></div><div class="topology-canvas"><svg viewBox="0 0 720 420" preserveAspectRatio="none" aria-hidden="true" class="topology-wires"><defs><marker id="topology-arrow-read" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#2855D9"/></marker><marker id="topology-arrow-write" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#1C2733"/></marker></defs>
+ <path class="flow-read" d="M95 135 V150" marker-end="url(#topology-arrow-read)"/>
+ <path class="flow-read" d="M160 170 H195 V90 H205" marker-end="url(#topology-arrow-read)"/>
+ <path class="flow-read" d="M445 90 H490" marker-end="url(#topology-arrow-read)"/>
+ <path class="flow-read flow-return" d="M590 125 V135" marker-end="url(#topology-arrow-read)"/>
+ <path class="flow-write" d="M445 170 H490" marker-end="url(#topology-arrow-write)"/>
+ <path class="flow-write flow-async" d="M445 195 H470 V250 H490" marker-end="url(#topology-arrow-write)"/>
+ <path class="flow-async" d="M490 270 H445" marker-end="url(#topology-arrow-write)"/>
  </svg><div class="topology-groups">${groups}</div></div><p class="diagram-annotation"><b>READ / WRITE:</b> ${esc(d.annotation)}</p></div>`;
 }
 function noteDiagram(type) {
