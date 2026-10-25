@@ -1,0 +1,228 @@
+/* Editorial home: Swiss technical publication, intentionally distinct from the existing app screens. */
+.editorial-shell{width:min(1240px,calc(100% - 48px))}
+.masthead{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #d9dee7;color:#586575;font:10px "DM Mono",monospace}
+.masthead-brand{display:flex;align-items:center;gap:12px;text-transform:uppercase;letter-spacing:.055em;white-space:nowrap}.masthead-brand strong{color:#1c2733;font-weight:600}.masthead-brand>span{color:#d9dee7}.masthead-brand small{font-size:9px}
+.masthead-meta{display:flex;align-items:center;gap:18px;font-size:9px}.masthead-meta span:last-child{color:#2855d9}
+.editorial-page{color:#1c2733}.editorial-hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(26px,4vw,58px);align-items:center;padding:76px 0 68px;border-bottom:1px solid #d9dee7}
+.editorial-hero-copy{min-width:0}.editorial-eyebrow{display:inline-flex;padding:4px 7px;border:1px solid #d9dee7;background:#fff;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.editorial-hero h1{max-width:540px;margin:22px 0 18px;font-size:clamp(42px,4.1vw,62px);font-weight:400;letter-spacing:-.055em;line-height:1.04}
+.editorial-lede{max-width:460px;margin:0;color:#586575;font-size:15px;line-height:1.8}
+.editorial-actions{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:28px}
+.editorial-primary,.editorial-secondary{display:inline-flex;align-items:center;justify-content:space-between;gap:14px;min-height:43px;padding:12px 14px;border:1px solid #2855d9;font-size:11px;font-weight:600;transition:background .15s,color .15s,border-color .15s}
+.editorial-primary{background:#2855d9;color:white}.editorial-primary:hover{background:#1c43b4;border-color:#1c43b4}.editorial-secondary{background:white;color:#1c2733;border-color:#d9dee7}.editorial-secondary:hover{border-color:#2855d9;color:#2855d9}
+.editorial-proof{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:33px;padding-top:19px;border-top:1px solid #d9dee7}
+.editorial-proof>div{display:flex;flex-direction:column;gap:7px;min-width:0}.editorial-proof small{font:9px "DM Mono",monospace;color:#586575;letter-spacing:.04em}.editorial-proof strong{font:13px "DM Mono",monospace;font-weight:500;color:#1c2733}
+.editorial-hero-visual{min-width:0}.diagram-card{padding:19px;border:1px solid #d9dee7;background:#f5f7fa}
+.diagram-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:13px;margin-bottom:14px;border-bottom:1px solid #d9dee7;font:9px "DM Mono",monospace;color:#586575}
+.diagram-head>span{display:flex;align-items:center;gap:8px;min-width:0}.diagram-head>span i{height:6px;width:6px;flex:0 0 6px;background:#2855d9}.diagram-head b{font-weight:500;color:#1c2733}.diagram-head>small{font-size:8px;text-align:right}
+.topology-canvas{position:relative;min-height:350px;padding:23px 18px;border:1px solid #d9dee7;background-color:#fff;background-image:linear-gradient(#d9dee744 1px,transparent 1px),linear-gradient(90deg,#d9dee744 1px,transparent 1px);background-size:22px 22px}
+.topology-wires{position:absolute;inset:0;width:100%;height:100%;opacity:.7;pointer-events:none}
+.topology-wires path{fill:none;stroke-width:1.6}
+.topology-groups{position:relative;display:grid;grid-template-columns:.8fr 1.3fr 1fr;gap:10px;min-height:302px}
+.topology-group{position:relative;display:flex;flex-direction:column;gap:9px;padding:9px 7px;border:1px dashed #cbd3df;background:#f5f7fae8;min-width:0}
+.topology-group-label{font:8px "DM Mono",monospace;letter-spacing:.045em;color:#586575;line-height:1.5}
+.topology-nodes{display:flex;flex-direction:column;gap:9px}
+.topology-node{position:relative;display:flex;flex-direction:column;gap:5px;padding:11px 8px;border:1px solid #cbd3df;background:#fff;min-width:0;box-shadow:0 2px 5px #1c27330a}
+.topology-node:nth-child(1){border-color:#2855d9}
+.topology-node-id{font:8px "DM Mono",monospace;color:#2855d9}
+.topology-node strong{font-size:10px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}.topology-node small{font:8px "DM Mono",monospace;color:#586575;line-height:1.45}
+.diagram-annotation{padding-top:12px;margin:12px 0 0;border-top:1px solid #d9dee7;color:#586575;font:9px/1.7 "DM Mono",monospace}.diagram-annotation b{color:#1c2733;font-weight:600}
+.editorial-lab,.editorial-notes{padding:66px 0;border-bottom:1px solid #d9dee7;scroll-margin-top:20px}
+.editorial-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;padding-bottom:16px;margin-bottom:28px;border-bottom:1px solid #d9dee7}
+.editorial-section-heading h2{margin:9px 0 0;font-size:clamp(26px,3vw,36px);font-weight:400;letter-spacing:-.045em;line-height:1.2}
+.editorial-meta{font-size:9px;color:#586575;white-space:nowrap}
+.editorial-lab-grid{display:grid;grid-template-columns:minmax(275px,5fr) minmax(0,7fr);gap:24px;align-items:start}
+.editorial-problem,.editorial-evaluation{border:1px solid #d9dee7;background:#fff;min-width:0}
+.editorial-problem{padding:24px}.editorial-small-head{display:flex;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #d9dee7;color:#586575;font:9px "DM Mono",monospace;text-transform:uppercase}.editorial-small-head span:last-child{padding:3px 5px;background:#f5f7fa}
+.editorial-problem h3{margin:19px 0 9px;font-size:21px;letter-spacing:-.04em;font-weight:500}.editorial-problem>p{margin:0 0 22px;color:#586575;font-size:12px;line-height:1.75}
+.editorial-checklist{padding-top:15px;border-top:1px solid #d9dee7}.editorial-checklist>.mono{display:block;margin-bottom:9px;font-size:9px;color:#586575}
+.editorial-checklist>div{display:grid;grid-template-columns:24px minmax(0,1fr) 14px;align-items:center;gap:7px;padding:11px 8px;margin-top:5px;border:1px solid #e2e7ee;background:#f5f7fa;font-size:10px;line-height:1.4}
+.editorial-checklist>div>span{font:9px "DM Mono",monospace;color:#586575}.editorial-checklist>div>b{font-size:10px;color:#2855d9;font-weight:500}
+.editorial-text-action{margin-top:20px;padding:0;border:0;background:none;color:#2855d9;text-align:left;font-size:10px;font-weight:600}
+.editorial-evaluation{overflow:hidden}.editorial-window-bar{display:flex;align-items:center;gap:12px;padding:11px 13px;background:#f5f7fa;border-bottom:1px solid #d9dee7;font:9px "DM Mono",monospace;color:#586575}.editorial-window-bar>span{letter-spacing:2px;color:#9ba6b5}.editorial-window-bar>b{font-weight:500;color:#1c2733;overflow-wrap:anywhere}.editorial-window-bar>small{margin-left:auto;font-size:8px}
+.editorial-components{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:14px;border-bottom:1px solid #d9dee7;background-image:linear-gradient(#d9dee733 1px,transparent 1px),linear-gradient(90deg,#d9dee733 1px,transparent 1px);background-size:20px 20px}
+.editorial-components-heading{grid-column:1/-1;display:flex;justify-content:space-between;gap:10px;margin-bottom:3px;color:#586575;font:8px "DM Mono",monospace}
+.editorial-components-heading small{font-size:8px}
+.editorial-component{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 8px;border:1px solid #d9dee7;background:white}
+.editorial-component:first-of-type{border-color:#2855d9}
+.editorial-component>small{font:8px "DM Mono",monospace;color:#2855d9}.editorial-component>strong{font-size:10px;font-weight:600;overflow-wrap:anywhere;line-height:1.35}.editorial-component>span{font-size:8px;color:#586575;line-height:1.4}
+.editorial-findings-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 14px;padding:14px 0 8px;border-bottom:1px solid #d9dee7}.editorial-findings-head strong{font:600 9px "DM Mono",monospace}.editorial-findings-head span{font:8px "DM Mono",monospace;padding:3px 5px;border:1px solid #d9dee7;color:#586575}
+.editorial-sample-note{margin:9px 14px 0;color:#586575;font-size:9px;line-height:1.6}
+.editorial-findings{padding:8px 14px 13px}.editorial-findings article{padding:12px;border:1px solid #d9dee7;margin-top:8px}.editorial-findings article:nth-child(2){border-color:#b9c8f7;background:#f5f7ff}
+.editorial-findings article>div{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.editorial-findings article strong{font:600 9px "DM Mono",monospace;line-height:1.5}.editorial-findings article small{font:8px "DM Mono",monospace;color:#2855d9;text-align:right}.editorial-findings article p{margin:6px 0 0;color:#586575;font-size:10px;line-height:1.65}
+.editorial-evaluation-foot{display:flex;justify-content:space-between;padding:11px 14px;border-top:1px solid #d9dee7;color:#586575;background:#f5f7fa;font:8px "DM Mono",monospace}
+.editorial-note-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.editorial-note-card{display:flex;flex-direction:column;min-width:0;padding:18px;border:1px solid #d9dee7;background:#fff}
+.editorial-note-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#2855d9;font:8px "DM Mono",monospace}.editorial-note-meta small{color:#586575;font-size:8px;overflow-wrap:anywhere;text-align:right}
+.editorial-note-diagram{display:flex;align-items:center;justify-content:center;height:110px;margin:17px 0 15px;padding:11px;border:1px solid #d9dee7;background:#f5f7fa}
+.editorial-note-diagram svg{width:100%;height:100%;overflow:visible}.editorial-note-diagram svg text{font:8px "IBM Plex Mono",monospace;fill:#586575}
+.editorial-note-category{font:8px "DM Mono",monospace;color:#586575;text-transform:uppercase;letter-spacing:.05em}
+.editorial-note-card h3{font-size:17px;font-weight:500;letter-spacing:-.03em;margin:8px 0}.editorial-note-card>p{font-size:11px;color:#586575;line-height:1.7;margin:0 0 18px}
+.editorial-note-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;margin-top:auto;border-top:1px solid #d9dee7;font:8px "DM Mono",monospace;color:#586575}
+.editorial-note-foot button{border:0;background:none;padding:0;color:#2855d9;font:600 9px "DM Mono",monospace;white-space:nowrap}
+.editorial-principle{max-width:980px;padding:68px 0;margin:auto;border-bottom:1px solid #d9dee7}
+.editorial-principle blockquote{margin:17px 0 28px;font-size:clamp(25px,3.3vw,39px);line-height:1.18;letter-spacing:-.045em;font-weight:400}
+.editorial-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;border:1px solid #d9dee7;background:#f5f7fa}
+.editorial-comparison article{padding:17px;border:1px solid #d9dee7;background:#fff}
+.editorial-comparison article>div{display:flex;justify-content:space-between;align-items:center;gap:10px}.editorial-comparison article strong{font:600 10px "DM Mono",monospace}.editorial-comparison article small{font:8px "DM Mono",monospace;color:#586575}
+.editorial-comparison article p{font-size:11px;line-height:1.7;color:#586575;margin:12px 0 0}
+.editorial-comparison .comparison-emphasis{border-color:#aebff2}
+.editorial-comparison .comparison-emphasis strong{color:#2855d9}
+.editorial-lesson{grid-column:1/-1;margin:0;padding:13px 0 0;border-top:1px solid #d9dee7;color:#586575;font:9px/1.7 "DM Mono",monospace}
+.editorial-closing{max-width:720px;margin:auto;padding:74px 0 78px;text-align:center}
+.editorial-closing .eyebrow{justify-content:center}.editorial-closing h2{margin:16px 0 13px;font-size:clamp(30px,4vw,45px);letter-spacing:-.05em;line-height:1.15;font-weight:400}
+.editorial-closing p{max-width:540px;margin:0 auto 24px;font-size:12px;line-height:1.8;color:#586575}.editorial-closing .editorial-primary{display:inline-flex;min-width:190px}
+.editorial-footer{display:grid;grid-template-columns:1.1fr 1fr auto;align-items:center;gap:30px;padding:25px 0 30px;border-top:1px solid #d9dee7;color:#586575;font:9px "DM Mono",monospace}
+.editorial-footer>div strong{color:#1c2733;letter-spacing:.08em;font-size:11px}.editorial-footer p{max-width:310px;margin:7px 0 0;font-size:9px;line-height:1.7}
+.editorial-footer nav{display:flex;flex-wrap:wrap;gap:10px 17px}.editorial-footer nav a:hover{color:#2855d9}.editorial-footer>small{font-size:8px;text-align:right;line-height:1.6}
+@media(max-width:1000px){.editorial-shell{width:calc(100% - 40px)}.editorial-hero{grid-template-columns:1fr;gap:36px;padding-top:55px}.editorial-hero-copy{max-width:740px}.editorial-hero h1{max-width:740px}.editorial-hero-visual{max-width:850px;width:100%}.editorial-lab-grid{grid-template-columns:1fr}.editorial-problem{max-width:none}.editorial-evaluation{max-width:none}.topology-canvas{min-height:340px}}
+@media(max-width:720px){.editorial-shell{width:calc(100% - 32px)}.masthead{align-items:flex-start;padding:13px 0;flex-direction:column;gap:8px}.masthead-meta{gap:12px;flex-wrap:wrap}.masthead-brand{white-space:normal;flex-wrap:wrap;gap:8px}.masthead-brand small{font-size:8px}.editorial-hero{padding:42px 0 40px;gap:27px}.editorial-hero h1{font-size:clamp(38px,10vw,54px)}.editorial-lede{font-size:14px}.editorial-actions{flex-direction:column;align-items:stretch}.editorial-actions a{width:100%}.editorial-proof{gap:12px}.editorial-proof strong{font-size:11px}.diagram-card{padding:10px}.diagram-head{align-items:flex-start;flex-direction:column;gap:7px}.topology-canvas{padding:10px;min-height:310px;overflow:hidden}.topology-groups{grid-template-columns:.8fr 1.3fr 1fr;gap:5px;min-height:285px}.topology-group{padding:6px 4px;gap:6px}.topology-group-label{font-size:7px}.topology-nodes{gap:6px}.topology-node{padding:8px 5px;gap:4px}.topology-node strong{font-size:8px}.topology-node small{font-size:7px}.topology-node-id{font-size:7px}.topology-wires{opacity:.45}.editorial-lab,.editorial-notes{padding:45px 0}.editorial-section-heading{align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:20px}.editorial-section-heading h2{font-size:27px}.editorial-meta{white-space:normal}.editorial-problem{padding:17px}.editorial-components{grid-template-columns:repeat(2,minmax(0,1fr))}.editorial-findings-head{align-items:flex-start;flex-direction:column}.editorial-note-grid{grid-template-columns:1fr}.editorial-note-card{padding:17px}.editorial-note-diagram{height:125px}.editorial-principle{padding:45px 0}.editorial-principle blockquote{font-size:29px}.editorial-comparison{grid-template-columns:1fr;padding:10px}.editorial-lesson{grid-column:auto}.editorial-closing{padding:49px 0 52px}.editorial-closing h2{font-size:33px}.editorial-footer{grid-template-columns:1fr;gap:17px}.editorial-footer nav{gap:12px}.editorial-footer>small{text-align:left}}
+@media(min-width:721px) and (max-width:1000px){.editorial-note-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.editorial-note-card{padding:13px}.editorial-note-meta{flex-direction:column;align-items:flex-start}.editorial-note-card h3{font-size:15px}.editorial-note-card>p{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.editorial-page *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Product roadmap state: communicate that the interactive lab is upcoming, not usable yet. */
+.upcoming-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #d9dee7;background:#f5f7fa;color:#586575;font:600 9px "DM Mono",monospace;letter-spacing:.09em;white-space:nowrap}
+.upcoming-badge>span{width:6px;height:6px;background:#2855d9;border-radius:50%}
+.upcoming-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:24px;align-items:center;min-height:255px;padding:26px;border:1px solid #d9dee7;background:#f5f7fa}
+.upcoming-index{display:flex;align-items:center;justify-content:space-between;gap:14px;color:#586575;font:9px "DM Mono",monospace}
+.upcoming-stamp{padding:5px 7px;border:1px solid #d9dee7;background:#fff;font-size:8px;letter-spacing:.06em}
+.upcoming-copy h3{max-width:500px;margin:25px 0 12px;font-size:clamp(23px,2.8vw,34px);line-height:1.16;letter-spacing:-.045em;font-weight:400}
+.upcoming-copy>p{max-width:590px;margin:0;color:#586575;font-size:12px;line-height:1.8}
+.upcoming-focus{display:flex;flex-direction:column;gap:8px;margin-top:22px;padding-top:15px;border-top:1px solid #d9dee7}
+.upcoming-focus .mono{font-size:8px;color:#586575;letter-spacing:.06em}.upcoming-focus strong{font-size:11px;font-weight:600}
+.upcoming-visual{position:relative;min-height:205px;border:1px solid #d9dee7;background:#fff;overflow:hidden}
+.upcoming-visual-grid{position:absolute;inset:0;background-image:linear-gradient(#d9dee744 1px,transparent 1px),linear-gradient(90deg,#d9dee744 1px,transparent 1px);background-size:20px 20px}
+.upcoming-visual svg{position:absolute;inset:0;width:100%;height:100%}
+.upcoming-visual-node{position:absolute;z-index:1;padding:9px 10px;border:1px solid #d9dee7;background:#fff;color:#1c2733;font:9px "DM Mono",monospace;box-shadow:0 2px 6px #1c27330a}
+.upcoming-visual-node.node-a{top:15%;left:10%;border-color:#2855d9}.upcoming-visual-node.node-b{top:42%;left:43%;background:#eef2ff;border-color:#aebff2}.upcoming-visual-node.node-c{right:8%;bottom:12%}
+@media(max-width:720px){.upcoming-panel{grid-template-columns:1fr;padding:17px;gap:20px}.upcoming-index{align-items:flex-start;flex-wrap:wrap}.upcoming-copy h3{margin-top:19px}.upcoming-visual{min-height:185px}.upcoming-badge{white-space:normal}}
+
+/* Fig. 1.0: labelled, box-based request paths. */
+.topology-wires text{font:8px "DM Mono",monospace;fill:#586575;letter-spacing:.025em}
+.topology-wires .flow-read{stroke:#2855d9;stroke-width:1.8}
+.topology-wires .flow-write{stroke:#1c2733;stroke-width:1.6}
+.topology-wires .flow-async{stroke-dasharray:5 4}
+.topology-wires .flow-return{stroke-dasharray:3 3}
+@media(max-width:720px){.topology-wires text{font-size:10px}}
+
+/* Fig. 1.0 is a single static SVG canvas: geometry and connectors share one coordinate system. */
+.topology-canvas.topology-static{padding:10px;min-height:0;overflow:hidden;background:#fff}
+.topology-static-svg{display:block;width:100%;height:auto;max-height:none;position:relative;inset:auto;opacity:1;pointer-events:auto}
+.topology-static-svg .tk-zone{fill:#f5f7fa;fill-opacity:.82;stroke:#cbd3df;stroke-width:1.2;stroke-dasharray:5 4}
+.topology-static-svg .tk-zone-label{font:600 11px "DM Mono",monospace;letter-spacing:.06em;fill:#586575}
+.topology-static-svg .tk-node rect{fill:#fff;stroke:#cbd3df;stroke-width:1.4}
+.topology-static-svg .tk-node-primary rect,.topology-static-svg .tk-node-cache rect{stroke:#2855d9;stroke-width:1.7;fill:#fff}
+.topology-static-svg .tk-node-index{font:9px "DM Mono",monospace;fill:#2855d9;letter-spacing:.025em}
+.topology-static-svg .tk-node-title{font:600 13px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-static-svg .tk-node-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-static-svg .tk-connectors path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.topology-static-svg .tk-read path{stroke:#2855d9}
+.topology-static-svg .tk-write path{stroke:#1c2733}
+.topology-static-svg .tk-edge-labels text{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.topology-static-svg .tk-legend text{font:9px "DM Mono",monospace;fill:#586575;letter-spacing:.025em}
+.topology-static-svg .tk-legend-read{stroke:#2855d9;stroke-width:2.4}
+.topology-static-svg .tk-legend-write{stroke:#1c2733;stroke-width:2.4}
+.topology-static-svg .tk-legend-async{stroke:#1c2733;stroke-width:2;stroke-dasharray:5 4}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px}.topology-static-svg{min-width:580px}.topology-canvas.topology-static{overflow-x:auto}.topology-static-svg .tk-node-title{font-size:13px}}
+
+
+/* Fig. 1.0 refinement: publication-scale labels and clearer hierarchy. */
+.editorial-hero{grid-template-columns:minmax(0, .88fr) minmax(0, 1.12fr);gap:clamp(28px,3.2vw,46px)}
+.diagram-card{padding:22px;background:#f5f7fa;border-color:#cbd3df}
+.diagram-head{font-size:11px;padding-bottom:15px;margin-bottom:16px}
+.diagram-head b{font-weight:600}
+.diagram-head>small{font-size:9px;letter-spacing:.035em}
+.topology-canvas.topology-static{min-height:0;padding:12px;background:#fff;background-image:none;overflow:hidden}
+.topology-static-svg{display:block;width:100%;height:auto;overflow:visible}
+.topology-static-svg .tk-zone-label{font-size:13px;letter-spacing:.055em;font-weight:600;fill:#586575}
+.topology-static-svg .tk-node rect{stroke:#aeb9c9;stroke-width:1.5}
+.topology-static-svg .tk-node-primary rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:2}
+.topology-static-svg .tk-node-cache rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:2}
+.topology-static-svg .tk-node-index{font-size:11px;font-weight:500}
+.topology-static-svg .tk-node-title{font-size:17px;font-weight:600;letter-spacing:-.015em}
+.topology-static-svg .tk-node-detail{font-size:12px}
+.topology-static-svg .tk-connectors path{stroke-width:2.5}
+.topology-static-svg .tk-edge-labels text{font-size:11px;font-weight:500;letter-spacing:.025em;stroke-width:5px}
+.topology-static-svg .tk-legend text{font-size:11px}
+.topology-static-svg .tk-legend-read,.topology-static-svg .tk-legend-write{stroke-width:3}
+.diagram-annotation{font-size:11px;line-height:1.8;margin-top:15px;padding-top:14px}
+@media(max-width:900px){.editorial-hero{grid-template-columns:1fr}.editorial-hero-visual{max-width:100%}}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg{min-width:680px}.diagram-card{padding:12px}}
+
+
+/* Editorial topology plate — new composition, not a scale-only adjustment. */
+.diagram-card{padding:22px;background:#f5f7fa;border-color:#cbd3df}
+.diagram-head{padding-bottom:15px;margin-bottom:14px;font-size:11px}
+.topology-canvas.topology-static{min-height:0;padding:8px;background:#fff;overflow:hidden}
+.topology-static-svg.topology-editorial-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-editorial-svg .plate-kicker{font:10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
+.topology-editorial-svg .plate-rule{stroke:#d9dee7;stroke-width:1}
+.topology-editorial-svg .plate-section{font:11px "DM Mono",monospace;fill:#2855d9}
+.topology-editorial-svg .plate-section-title{font:600 12px "DM Mono",monospace;letter-spacing:.055em;fill:#1c2733}
+.topology-editorial-svg .plate-note{font:10px "DM Mono",monospace;letter-spacing:.025em;fill:#586575}
+.topology-editorial-svg .plate-node rect{fill:#fff;stroke:#b9c4d2;stroke-width:1.25}
+.topology-editorial-svg .plate-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.6}
+.topology-editorial-svg .plate-node-muted rect{fill:#f5f7fa;stroke:#b9c4d2}
+.topology-editorial-svg .plate-index{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
+.topology-editorial-svg .plate-title{font:600 16px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-editorial-svg .plate-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-editorial-svg .plate-read,.topology-editorial-svg .plate-write{fill:none;stroke-width:1.8;stroke-linecap:square;stroke-linejoin:miter}
+.topology-editorial-svg .plate-read{stroke:#2855d9}
+.topology-editorial-svg .plate-write{stroke:#1c2733}
+.topology-editorial-svg .plate-dashed{stroke-dasharray:5 4}
+.topology-editorial-svg .plate-flow-label{font:9px "DM Mono",monospace;letter-spacing:.015em;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.diagram-key{display:flex;gap:18px;flex-wrap:wrap;padding:13px 0 2px;color:#586575;font:10px "DM Mono",monospace}
+.diagram-key span{display:inline-flex;align-items:center;gap:7px}
+.diagram-key i{display:inline-block;width:17px;height:2px;background:#2855d9}
+.diagram-key .key-write{background:#1c2733}
+.diagram-key .key-async{height:0;background:none;border-top:2px dashed #1c2733}
+.diagram-annotation{font-size:11px;line-height:1.75;margin-top:12px;padding-top:13px}
+@media(max-width:720px){.topology-canvas.topology-static{padding:4px;overflow-x:auto}.topology-static-svg.topology-editorial-svg{min-width:620px}}
+
+
+/* Clean architecture plate: remove nested publication chrome and prioritize flow. */
+.diagram-card-clean{padding:20px;background:#f5f7fa;border:1px solid #d9dee7}
+.diagram-card-clean .diagram-head{margin-bottom:12px;padding-bottom:12px;font-size:11px}
+.diagram-card-clean .topology-canvas.topology-static{padding:8px;background:#fff;min-height:0;overflow:hidden;border:1px solid #d9dee7}
+.topology-clean-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-clean-svg .clean-kicker{font:10px "DM Mono",monospace;letter-spacing:.08em;fill:#586575}
+.topology-clean-svg .clean-rule{stroke:#d9dee7;stroke-width:1}
+.topology-clean-svg .clean-lane{font:600 11px "DM Mono",monospace;letter-spacing:.08em;fill:#1c2733}
+.topology-clean-svg .clean-node rect{fill:#fff;stroke:#c4cdda;stroke-width:1.25}
+.topology-clean-svg .clean-node.clean-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
+.topology-clean-svg .clean-node.clean-muted rect{fill:#f5f7fa}
+.topology-clean-svg .clean-tag{font:9px "DM Mono",monospace;letter-spacing:.035em;fill:#2855d9}
+.topology-clean-svg .clean-title{font:600 16px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-clean-svg .clean-detail{font:10px "DM Mono",monospace;fill:#586575}
+.topology-clean-svg .clean-blue,.topology-clean-svg .clean-ink{fill:none;stroke-width:1.8;stroke-linecap:square;stroke-linejoin:miter}
+.topology-clean-svg .clean-blue{stroke:#2855d9}
+.topology-clean-svg .clean-ink{stroke:#1c2733}
+.topology-clean-svg .clean-dash{stroke-dasharray:5 4}
+.topology-clean-svg .clean-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.diagram-card-clean .diagram-key{gap:16px;padding-top:12px;font-size:10px}
+.diagram-card-clean .diagram-annotation{margin-top:10px;padding-top:12px;font-size:10px}
+@media(max-width:720px){.diagram-card-clean .topology-canvas.topology-static{overflow-x:auto}.topology-clean-svg{min-width:610px}}
+
+
+/* Research-led layout: client → gateway → stacked services → shared data / async. */
+.diagram-card-clean{padding:18px;background:#f5f7fa;border:1px solid #d9dee7}
+.diagram-card-clean .diagram-head{margin-bottom:10px;padding-bottom:11px}
+.diagram-card-clean .topology-canvas.topology-static{padding:6px;background:#fff;border:1px solid #d9dee7;overflow:hidden}
+.topology-research-svg{display:block;width:100%;height:auto;min-width:0}
+.topology-research-svg .research-kicker{font:10px "DM Mono",monospace;letter-spacing:.075em;fill:#586575}
+.topology-research-svg .research-rule{stroke:#d9dee7;stroke-width:1}
+.topology-research-svg .research-lane{font:600 10px "DM Mono",monospace;letter-spacing:.09em;fill:#586575}
+.topology-research-svg .research-node rect{fill:#fff;stroke:#c5ced9;stroke-width:1.25}
+.topology-research-svg .research-node-accent rect{fill:#f5f8ff;stroke:#2855d9;stroke-width:1.5}
+.topology-research-svg .research-node-muted rect{fill:#f5f7fa}
+.topology-research-svg .research-tag{font:9px "DM Mono",monospace;letter-spacing:.025em;fill:#2855d9}
+.topology-research-svg .research-title{font:600 15px Inter,Arial,sans-serif;fill:#1c2733}
+.topology-research-svg .research-detail{font:9px "DM Mono",monospace;fill:#586575}
+.topology-research-svg .research-blue,.topology-research-svg .research-ink{fill:none;stroke-width:1.7;stroke-linecap:square;stroke-linejoin:miter}
+.topology-research-svg .research-blue{stroke:#2855d9}
+.topology-research-svg .research-ink{stroke:#1c2733}
+.topology-research-svg .research-dash{stroke-dasharray:5 4}
+.topology-research-svg .research-edge{font:9px "DM Mono",monospace;fill:#586575;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.topology-research-svg .research-foot{font:9px "DM Mono",monospace;letter-spacing:.02em;fill:#586575}
+.diagram-card-clean .diagram-annotation{margin-top:10px;padding-top:10px;font-size:10px}
+@media(max-width:760px){.diagram-card-clean .topology-canvas.topology-static{overflow-x:auto}.topology-research-svg{min-width:700px}}
