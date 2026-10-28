@@ -141,3 +141,6 @@ function render() {
 window.addEventListener("hashchange",()=>{const next=location.hash.slice(1)||"home";page=homeSectionIds.has(next)?"home":next;currentLesson=null;render();if(homeSectionIds.has(next)){document.getElementById(next)?.scrollIntoView({behavior:"auto",block:"start"});}});
 window.addEventListener("keydown",e=>{if(e.key==="Escape"&&currentLesson){currentLesson=null;render()}});
 render();
+if (homeSectionIds.has(initialHash)) {
+  window.requestAnimationFrame(() => document.getElementById(initialHash)?.scrollIntoView({ behavior: "auto", block: "start" }));
+}
