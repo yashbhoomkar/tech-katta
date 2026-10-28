@@ -114,7 +114,14 @@ function render() {
   bindHomePage(root);
   return;
  }
- const view = ({home,learn,workspace:architectureWorkspace,interview:mockInterviewPage,practice,evaluate:evaluationPage,questions:questionPage,pricing})[page] || home;
+ const routes = ({learn,workspace:architectureWorkspace,interview:mockInterviewPage,practice,evaluate:evaluationPage,questions:questionPage,pricing});
+ const view = routes[page];
+ if (!view) {
+  page = "home";
+  root.innerHTML = renderHomePage();
+  bindHomePage(root);
+  return;
+ }
  root.innerHTML = `<div class="app-shell">${header()}${view()}${footer()}${modal()}</div>`;
  if (page === "workspace") bindArchitectureWorkspace(root);
  if (page === "interview") bindMockInterview(root);
