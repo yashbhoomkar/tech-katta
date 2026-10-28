@@ -1178,3 +1178,17 @@
   .tk-figure-image { width:100% !important; max-width:100% !important; }
   .tk-footer { margin-top:24px !important; }
 }
+
+.tk-nav-app { color:var(--tk-primary); }
+.tk-nav-app::after { content:""; display:block; height:2px; width:0; background:var(--tk-primary); transition:width .16s ease; }
+.tk-nav-app:hover::after,.tk-nav-app:focus-visible::after { width:100%; }
+.tk-mini-problems span { overflow-wrap:normal; word-break:normal; hyphens:none; }
+.tk-mini-problems { min-width:0; }
+@media(min-width:768px) {
+  .tk-nav { gap:clamp(10px,1.5vw,22px); }
+  .tk-nav-link { white-space:nowrap; }
+}
+@media(max-width:980px) and (min-width:768px) {
+  .tk-nav { gap:8px; }
+  .tk-nav-link { font-size:11px; }
+}
