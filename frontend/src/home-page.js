@@ -70,6 +70,8 @@ function renderHeader() {
       scrollLink("components", "Components", "tk-nav-link") +
       scrollLink("problems", "Problems", "tk-nav-link") +
       scrollLink("quick-notes", "System Design Notes", "tk-nav-link tk-nav-notes") +
+      '<a class="tk-nav-link tk-nav-app" href="#learn" data-home-route="learn">Learning library</a>' +
+      '<a class="tk-nav-link tk-nav-app" href="#practice" data-home-route="practice">Practice</a>' +
     '</nav></header>';
 }
 
