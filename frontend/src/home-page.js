@@ -99,7 +99,7 @@ function renderCurriculum() {
       '<div class="tk-card-meta"><span class="tk-card-number">' + escapeHtml(card.number) + '</span><span class="tk-card-category">' + escapeHtml(card.category) + '</span></div>' +
       renderCardDiagram(card.id) +
       '<h3>' + escapeHtml(card.title) + '</h3><p>' + escapeHtml(card.description) + '</p>' +
-      scrollLink(card.target, escapeHtml(card.link) + ' <span aria-hidden="true">↗</span>', "tk-card-link") +
+      (card.target === "learn" || card.target === "practice" ? '<a class="tk-card-link" href="#' + escapeHtml(card.target) + '" data-home-route="' + escapeHtml(card.target) + '">' + escapeHtml(card.link) + ' <span aria-hidden="true">→</span></a>' : scrollLink(card.target, escapeHtml(card.link) + ' <span aria-hidden="true">↓</span>', "tk-card-link")) +
     '</article>'
   ).join("");
   return '<section class="tk-section tk-curriculum" id="' + section.id + '" aria-labelledby="tk-curriculum-title">' +
