@@ -76,9 +76,18 @@ function renderHeader() {
 function renderFigure() {
   const figure = content.figure;
   return '<figure class="tk-figure" aria-labelledby="tk-figure-title">' +
-    '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span></div>' +
-    '<div class="tk-figure-viewport" tabindex="0" role="region" aria-label="Scrollable Kafka architecture diagram"><img class="tk-figure-image" src="' + escapeHtml(figure.src) + '" alt="' + escapeHtml(figure.alt) + '" width="2076" height="569" fetchpriority="high"></div>' +
+    '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><div class="tk-figure-tools"><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span><button class="tk-figure-inspect" type="button" aria-pressed="false" aria-controls="tk-figure-viewport">Inspect <span aria-hidden="true">↗</span></button></div></div>' +
+    '<div class="tk-figure-viewport" id="tk-figure-viewport" tabindex="0" role="region" aria-label="Scrollable Kafka architecture diagram"><img class="tk-figure-image" src="' + escapeHtml(figure.src) + '" alt="' + escapeHtml(figure.alt) + '" width="2076" height="569" fetchpriority="high"></div>' +
     '<figcaption class="tk-figure-description">' + escapeHtml(figure.description) + '</figcaption></figure>';
+}
+
+function renderCardDiagram(id) {
+  const diagrams = {
+    concepts: '<div class="tk-mini-diagram tk-mini-concepts" aria-label="Concepts: availability, consistency, and latency trade-offs"><span>AVAILABILITY</span><i></i><span>CONSISTENCY</span><i></i><span>LATENCY</span></div>',
+    components: '<div class="tk-mini-diagram tk-mini-components" aria-label="Components: request flow through a cache, service, and database"><span class="tk-mini-node">CACHE</span><b aria-hidden="true">→</b><span class="tk-mini-node tk-mini-node-active">SERVICE</span><b aria-hidden="true">→</b><span class="tk-mini-node">DB</span></div>',
+    problems: '<div class="tk-mini-diagram tk-mini-problems" aria-label="Problems: requirements lead to an architecture and then trade-offs"><span>REQUIREMENTS</span><b aria-hidden="true">↓</b><span>ARCHITECTURE</span><b aria-hidden="true">↓</b><span>TRADE-OFFS</span></div>'
+  };
+  return diagrams[id] || "";
 }
 
 function renderCurriculum() {
@@ -86,6 +95,7 @@ function renderCurriculum() {
   const cards = section.cards.map((card) =>
     '<article class="tk-curriculum-card" id="' + escapeHtml(card.id) + '">' +
       '<div class="tk-card-meta"><span class="tk-card-number">' + escapeHtml(card.number) + '</span><span class="tk-card-category">' + escapeHtml(card.category) + '</span></div>' +
+      renderCardDiagram(card.id) +
       '<h3>' + escapeHtml(card.title) + '</h3><p>' + escapeHtml(card.description) + '</p>' +
       scrollLink(card.target, escapeHtml(card.link) + ' <span aria-hidden="true">↗</span>', "tk-card-link") +
     '</article>'
@@ -117,7 +127,7 @@ function renderGuidelines() {
   ).join("");
   return '<section class="tk-section tk-guidelines-section" id="' + section.id + '" aria-labelledby="tk-guidelines-title">' +
     '<div class="tk-section-heading"><div class="tk-section-title-group"><p class="tk-section-kicker"><span>' + section.number + '</span> / ' + escapeHtml(section.label) + '</p><h2 id="tk-guidelines-title">' + escapeHtml(section.title) + '</h2><p class="tk-section-description">' + escapeHtml(section.description) + '</p></div><span class="tk-section-index">' + escapeHtml(section.index) + '</span></div>' +
-    '<div class="tk-guidelines-list">' + items + '</div></section>';
+    '<div class="tk-tradeoff" aria-labelledby="tk-tradeoff-title"><div class="tk-tradeoff-heading"><p class="tk-section-kicker">REFERENCE / TRADE-OFFS</p><h3 id="tk-tradeoff-title">Monolith vs. distributed services</h3></div><div class="tk-tradeoff-scroll"><table class="tk-tradeoff-table"><thead><tr><th scope="col">DIMENSION</th><th scope="col">MONOLITH</th><th scope="col">DISTRIBUTED</th></tr></thead><tbody><tr><th scope="row">Operational load</th><td>Lower to start</td><td>Higher coordination</td></tr><tr><th scope="row">Deployment</th><td>One release unit</td><td>Independent services</td></tr><tr><th scope="row">Scaling</th><td>Scale the application</td><td>Scale selected services</td></tr><tr><th scope="row">Failure modes</th><td>Shared process boundary</td><td>Network and partial failures</td></tr></tbody></table></div></div><div class="tk-guidelines-list">' + items + '</div></section>';
 }
 
 function renderFooter() {
@@ -149,6 +159,16 @@ export function bindHomePage(root) {
   const menuToggle = home.querySelector(".tk-menu-toggle");
   const nav = home.querySelector(".tk-nav");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const inspectButton = home.querySelector(".tk-figure-inspect");
+  const figureViewport = home.querySelector("#tk-figure-viewport");
+  inspectButton?.addEventListener("click", () => {
+    const inspecting = figureViewport.classList.toggle("is-inspecting");
+    inspectButton.setAttribute("aria-pressed", String(inspecting));
+    inspectButton.innerHTML = inspecting ? 'Fit <span aria-hidden="true">↙</span>' : 'Inspect <span aria-hidden="true">↗</span>';
+    if (inspecting && window.matchMedia("(max-width: 767px)").matches) {
+      figureViewport.scrollTo({ left: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    }
+  });
   const closeMenu = () => {
     nav.classList.remove("is-open");
     menuToggle.setAttribute("aria-expanded", "false");

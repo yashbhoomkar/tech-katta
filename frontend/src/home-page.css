@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap");
 .tk-home {
   --tk-bg:#f9f9ff;
   --tk-surface:#fff;
@@ -7,7 +7,7 @@
   --tk-primary:#005cb8;
   --tk-line:#c1c6d5;
   --tk-line-soft:#e0e2eb;
-  --tk-mono:"DM Mono","SFMono-Regular",Consolas,monospace;
+  --tk-mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
   color:var(--tk-text);
   background:var(--tk-bg);
   font-family:Inter,Arial,sans-serif;
@@ -898,4 +898,213 @@
     animation-duration:.01ms!important;
     animation-iteration-count:1!important
   }
+}
+
+
+
+/* Swiss Systems Documentation polish: shared desktop + mobile refinements. */
+.tk-home {
+  --tk-bg:#FFFFFF;
+  --tk-surface:#FFFFFF;
+  --tk-text:#1C2733;
+  --tk-muted:#586575;
+  --tk-primary:#2855D9;
+  --tk-line:#D9DEE7;
+  --tk-line-soft:#D9DEE7;
+  --tk-subtle:#F5F7FA;
+  background:var(--tk-bg);
+  color:var(--tk-text);
+}
+
+.tk-header {
+  position:sticky;
+  top:0;
+  width:100%;
+  min-height:72px;
+  padding-inline:max(32px,calc((100% - 1320px)/2));
+  margin:0;
+  background:rgba(255,255,255,.97);
+  border-bottom:1px solid var(--tk-line);
+  backdrop-filter:blur(8px);
+  z-index:20;
+}
+
+.tk-brand-name { color:var(--tk-text); }
+.tk-brand-divider,.tk-brand-descriptor { color:var(--tk-muted); }
+.tk-nav-link { min-height:44px; display:inline-flex; align-items:center; font-size:13px; }
+.tk-menu-toggle { border-radius:4px; border-color:var(--tk-line); }
+.tk-menu-toggle:hover { background:var(--tk-subtle); border-color:var(--tk-text); }
+
+.tk-hero {
+  grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);
+  gap:clamp(28px,3.2vw,48px);
+  padding-block:clamp(48px,5.6vw,76px) clamp(54px,6vw,82px);
+  border-color:var(--tk-line);
+}
+.tk-eyebrow { color:var(--tk-primary); border-color:var(--tk-line); }
+.tk-hero h1 {
+  max-width:620px;
+  font-size:clamp(2.8rem,4.25vw,4.25rem);
+  font-weight:600;
+  line-height:1.04;
+  letter-spacing:-.052em;
+}
+.tk-hero-description { color:var(--tk-muted); max-width:510px; }
+.tk-button {
+  min-height:48px;
+  border-radius:4px;
+  padding-inline:18px;
+  font-size:13px;
+}
+.tk-button-primary:hover { background:#1F43B0; border-color:#1F43B0; }
+.tk-button-secondary { border-color:var(--tk-line); }
+.tk-button-secondary:hover { background:var(--tk-subtle); border-color:var(--tk-text); color:var(--tk-text); }
+
+.tk-figure { border-color:var(--tk-line); }
+.tk-figure-header { align-items:center; padding:16px; border-color:var(--tk-line); }
+.tk-figure-heading h2 { font-family:Inter,Arial,sans-serif; font-size:12px; letter-spacing:-.01em; text-transform:none; }
+.tk-figure-caption,.tk-figure-tag { font-family:var(--tk-mono); }
+.tk-figure-tag { max-width:none; border-radius:4px; border-color:var(--tk-line); color:var(--tk-muted); font-size:9px; }
+.tk-figure-tools { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.tk-figure-inspect {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  min-height:32px; padding:6px 9px; border:1px solid var(--tk-line);
+  border-radius:4px; background:#fff; color:var(--tk-text);
+  font:500 10px/1.2 var(--tk-mono); cursor:pointer;
+}
+.tk-figure-inspect:hover,.tk-figure-inspect[aria-pressed="true"] { color:var(--tk-primary); border-color:var(--tk-primary); background:#F5F7FF; }
+.tk-figure-viewport { scroll-behavior:smooth; }
+.tk-figure-image { transition:width .18s ease; }
+.tk-figure-viewport.is-inspecting .tk-figure-image { width:1300px; max-width:none; }
+.tk-figure-description { color:var(--tk-muted); border-color:var(--tk-line); font-size:12px; }
+
+.tk-section { border-color:var(--tk-line); scroll-margin-top:88px; }
+.tk-section-kicker { font-family:var(--tk-mono); }
+.tk-section-heading h2 { font-weight:600; letter-spacing:-.04em; }
+.tk-section-index { font-family:var(--tk-mono); color:var(--tk-muted); }
+.tk-curriculum-grid { border-color:var(--tk-line); }
+.tk-curriculum-card {
+  position:relative; background:#fff; border-color:var(--tk-line);
+  transition:background-color .16s ease,border-color .16s ease;
+}
+.tk-curriculum-card:hover,.tk-curriculum-card:focus-within {
+  background:#FCFDFF; border-color:#9AADEB;
+}
+.tk-curriculum-card h3 { margin-top:20px; }
+.tk-card-category,.tk-card-number { font-family:var(--tk-mono); }
+.tk-card-link { min-height:36px; }
+.tk-card-link:focus-visible { outline-offset:2px; }
+
+.tk-mini-diagram {
+  width:100%; min-height:62px; margin-top:18px; padding:10px 0;
+  display:flex; align-items:center; justify-content:space-between; gap:7px;
+  border-top:1px solid var(--tk-line); border-bottom:1px solid var(--tk-line);
+  color:var(--tk-muted); font:500 9px/1.35 var(--tk-mono); letter-spacing:.025em;
+}
+.tk-mini-diagram i { display:block; width:1px; height:25px; flex:0 0 1px; background:var(--tk-line); }
+.tk-mini-components { justify-content:flex-start; gap:6px; }
+.tk-mini-node {
+  min-width:0; flex:1; padding:8px 4px; border:1px solid var(--tk-line);
+  text-align:center; overflow-wrap:anywhere; background:#fff;
+}
+.tk-mini-node-active { border-color:var(--tk-primary); color:var(--tk-primary); background:#F5F7FF; }
+.tk-mini-components b,.tk-mini-problems b { color:var(--tk-primary); font-size:12px; font-weight:500; }
+.tk-mini-problems { justify-content:flex-start; gap:7px; }
+.tk-mini-problems span { border:1px solid var(--tk-line); padding:6px 7px; background:#fff; }
+.tk-mini-problems b { flex:0 0 auto; }
+.tk-notes-list,.tk-guidelines-list { border-color:var(--tk-line); }
+.tk-note { border-color:var(--tk-line); }
+.tk-note summary { min-height:68px; }
+.tk-note summary:hover .tk-note-title { color:var(--tk-primary); }
+.tk-note-category,.tk-guideline-number { font-family:var(--tk-mono); }
+.tk-note-toggle { border-radius:4px; }
+.tk-guideline { border-color:var(--tk-line); }
+.tk-guideline-mark { font-family:var(--tk-mono); }
+.tk-footer-note { border-color:var(--tk-line); }
+.tk-footer-brand,.tk-footer-note { font-family:var(--tk-mono); }
+
+.tk-tradeoff {
+  margin:0 0 28px;
+  border:1px solid var(--tk-line);
+  background:#fff;
+}
+.tk-tradeoff-heading {
+  padding:17px 18px 14px;
+  border-bottom:1px solid var(--tk-line);
+}
+.tk-tradeoff-heading .tk-section-kicker { margin:0 0 7px; }
+.tk-tradeoff-heading h3 { margin:0; font-size:17px; line-height:1.4; font-weight:600; letter-spacing:-.02em; }
+.tk-tradeoff-scroll { width:100%; overflow-x:auto; }
+.tk-tradeoff-table { width:100%; min-width:540px; border-collapse:collapse; text-align:left; }
+.tk-tradeoff-table thead { background:var(--tk-subtle); }
+.tk-tradeoff-table th,.tk-tradeoff-table td {
+  padding:13px 16px; border-bottom:1px solid var(--tk-line);
+  font-size:12px; line-height:1.5; vertical-align:top;
+}
+.tk-tradeoff-table thead th {
+  color:var(--tk-muted); font:600 10px/1.4 var(--tk-mono);
+  letter-spacing:.04em; text-transform:uppercase;
+}
+.tk-tradeoff-table tbody th { color:var(--tk-text); font-weight:600; }
+.tk-tradeoff-table tbody td { color:var(--tk-muted); }
+.tk-tradeoff-table tbody tr:last-child th,.tk-tradeoff-table tbody tr:last-child td { border-bottom:0; }
+.tk-tradeoff-table tbody tr:hover { background:#F9FAFD; }
+
+@media(max-width:1100px) and (min-width:768px) {
+  .tk-header { padding-inline:24px; }
+  .tk-header,.tk-home main,.tk-footer { width:calc(100% - 48px); }
+  .tk-hero { gap:24px; }
+  .tk-hero h1 { font-size:clamp(2.6rem,4.3vw,3.5rem); }
+  .tk-figure-header { align-items:flex-start; flex-direction:column; }
+  .tk-figure-tools { width:100%; justify-content:space-between; }
+  .tk-curriculum-card { padding:20px; }
+  .tk-mini-diagram { font-size:8px; gap:4px; }
+}
+
+@media(max-width:980px) {
+  .tk-header { padding-inline:24px; }
+  .tk-header,.tk-home main,.tk-footer { width:calc(100% - 48px); }
+  .tk-nav { top:100%; }
+}
+
+@media(max-width:767px) {
+  .tk-header {
+    width:100%; min-height:64px; padding-inline:16px;
+    gap:10px;
+  }
+  .tk-home main,.tk-footer { width:calc(100% - 32px); }
+  .tk-hero { grid-template-columns:minmax(0,1fr); gap:26px; padding-block:32px 40px; }
+  .tk-hero h1 { font-size:clamp(2.45rem,9.6vw,3.5rem); }
+  .tk-figure-header { flex-direction:row; align-items:flex-start; padding:12px; }
+  .tk-figure-tools { flex-direction:column; align-items:flex-end; gap:6px; }
+  .tk-figure-tag { max-width:130px; white-space:normal; text-align:right; }
+  .tk-figure-inspect { min-height:36px; }
+  .tk-figure-image { width:620px; max-width:none; }
+  .tk-figure-viewport.is-inspecting .tk-figure-image { width:900px; }
+  .tk-section { scroll-margin-top:76px; }
+  .tk-curriculum-card { padding:18px 16px; }
+  .tk-mini-diagram { margin-top:15px; min-height:56px; }
+  .tk-note summary { min-height:0; }
+  .tk-tradeoff { margin-bottom:24px; }
+  .tk-tradeoff-heading { padding:14px; }
+  .tk-tradeoff-table th,.tk-tradeoff-table td { padding:12px; }
+}
+
+@media(max-width:420px) {
+  .tk-header { padding-inline:16px; }
+  .tk-brand { gap:6px; }
+  .tk-brand-name { font-size:10px; }
+  .tk-brand-descriptor { max-width:88px; }
+  .tk-hero-actions { grid-template-columns:1fr 1fr; gap:8px; }
+  .tk-button { min-height:48px; padding-inline:10px; gap:7px; font-size:12px; }
+  .tk-figure-caption { max-width:190px; }
+  .tk-figure-tools { max-width:122px; }
+  .tk-figure-tag { font-size:8px; }
+  .tk-mini-diagram { font-size:8px; }
+  .tk-mini-node { padding-inline:2px; }
+  .tk-mini-problems span { padding-inline:4px; font-size:8px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .tk-figure-viewport,.tk-figure-image { scroll-behavior:auto; transition:none; }
 }
