@@ -114,7 +114,7 @@
 
   <!-- Consumer group -->
   <g filter="url(#shadow)">
-    <rect x="1152" y="230" width="232" height="280" rx="14" class="box"/>
+    <rect x="1152" y="230" width="232" height="302" rx="14" class="box"/>
     <rect x="1152" y="230" width="232" height="8" rx="4" fill="#168b8b"/>
   </g>
   <text x="1176" y="274" class="eyebrow">03 / READ PATH</text>
@@ -126,7 +126,10 @@
   <rect x="1176" y="407" width="184" height="38" rx="8" class="tealbox"/>
   <circle cx="1194" cy="426" r="5" fill="#168b8b"/>
   <text x="1208" y="431" class="body" font-weight="600">Consumer B · P1</text>
-  <text x="1176" y="477" class="small">ORDER WITHIN PARTITION</text>
+  <rect x="1176" y="454" width="184" height="38" rx="8" class="tealbox"/>
+  <circle cx="1194" cy="473" r="5" fill="#168b8b"/>
+  <text x="1208" y="478" class="body" font-weight="600">Consumer C · P2</text>
+  <text x="1176" y="515" class="small">ORDER WITHIN PARTITION</text>
 
   <!-- Key properties -->
   <rect x="56" y="612" width="1328" height="94" rx="12" fill="#eef3fa" stroke="#d7e0ed"/>
