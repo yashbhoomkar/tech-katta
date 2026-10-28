@@ -1,153 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
-  <title id="title">Kafka event streaming architecture</title>
-  <desc id="desc">Applications publish events through producers to a Kafka cluster. Three brokers store topic partitions, and a consumer group reads the stream.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Kafka component diagram</title>
+  <desc id="desc">A simple component diagram showing producer services publishing events to a Kafka topic divided into three partitions, which a consumer group reads.</desc>
   <defs>
-    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <path d="M24 0H0V24" fill="none" stroke="#e9edf4" stroke-width="1"/>
-    </pattern>
-    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-      <path d="M0 0 10 5 0 10Z" fill="#2869bd"/>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#2855D9"/>
     </marker>
-    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-      <path d="M0 0 10 5 0 10Z" fill="#168b8b"/>
-    </marker>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#1d2b45" flood-opacity=".07"/>
-    </filter>
     <style>
-      .eyebrow{font:600 13px 'DM Mono',monospace;letter-spacing:2px;fill:#2869bd}
-      .heading{font:600 22px Inter,Arial,sans-serif;fill:#1c2738}
-      .body{font:14px Inter,Arial,sans-serif;fill:#526078}
-      .small{font:12px 'DM Mono',monospace;letter-spacing:.3px;fill:#627089}
-      .box{fill:#fff;stroke:#cbd5e3;stroke-width:1.5}
-      .bluebox{fill:#edf4ff;stroke:#a8c5ee;stroke-width:1.5}
-      .tealbox{fill:#e9f8f5;stroke:#9dd8cb;stroke-width:1.5}
-      .partition{stroke:#fff;stroke-width:2}
+      .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; fill: #586575; }
+      .heading { font-family: Inter, Arial, sans-serif; font-size: 20px; font-weight: 600; fill: #1C2733; }
+      .body { font-family: Inter, Arial, sans-serif; font-size: 14px; fill: #586575; }
+      .mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; fill: #1C2733; }
+      .component { fill: #FFFFFF; stroke: #1C2733; stroke-width: 1.25; }
+      .subcomponent { fill: #F5F7FA; stroke: #D9DEE7; stroke-width: 1; }
+      .accent { fill: #F5F7FA; stroke: #2855D9; stroke-width: 1.5; }
+      .flow { fill: none; stroke: #2855D9; stroke-width: 1.6; marker-end: url(#arrow); }
+      .rule { stroke: #D9DEE7; stroke-width: 1; }
     </style>
   </defs>
-  <rect width="1440" height="760" rx="18" fill="#f8faff"/>
-  <rect width="1440" height="760" rx="18" fill="url(#grid)"/>
-  <text x="56" y="52" class="eyebrow">EVENT STREAMING / REFERENCE ARCHITECTURE</text>
-  <text x="56" y="88" class="heading" font-size="28">From producers to consumers</text>
-  <text x="56" y="116" class="body">Kafka stores ordered event logs across broker-hosted topic partitions.</text>
 
-  <!-- Producers -->
-  <g filter="url(#shadow)">
-    <rect x="56" y="230" width="228" height="280" rx="14" class="box"/>
-    <rect x="56" y="230" width="228" height="8" rx="4" fill="#2869bd"/>
-  </g>
-  <text x="80" y="274" class="eyebrow">01 / WRITE PATH</text>
-  <text x="80" y="307" class="heading">Producers</text>
-  <text x="80" y="333" class="body">Services publish events</text>
-  <rect x="80" y="360" width="180" height="46" rx="8" class="bluebox"/>
-  <circle cx="98" cy="383" r="5" fill="#2869bd"/>
-  <text x="113" y="388" class="body" font-weight="600">Orders service</text>
-  <rect x="80" y="418" width="180" height="46" rx="8" class="bluebox"/>
-  <circle cx="98" cy="441" r="5" fill="#2869bd"/>
-  <text x="113" y="446" class="body" font-weight="600">Activity service</text>
-  <text x="80" y="488" class="small">KEY → PARTITION</text>
+  <rect width="1200" height="560" fill="#FFFFFF"/>
+  <text x="40" y="42" class="eyebrow">FIG 1.0 / EVENT STREAMING</text>
+  <text x="40" y="76" class="heading" style="font-size:26px">Kafka — component overview</text>
+  <text x="40" y="101" class="body">Producers write events to partitioned topics; consumer groups read them.</text>
+  <line x1="40" y1="122" x2="1160" y2="122" class="rule"/>
 
-  <!-- Producer flow -->
-  <path d="M284 383H364" stroke="#2869bd" stroke-width="2.5" fill="none" marker-end="url(#arrow-blue)"/>
-  <text x="304" y="365" class="small">produce</text>
+  <!-- Producer component -->
+  <rect x="40" y="184" width="220" height="226" rx="2" class="component"/>
+  <rect x="40" y="184" width="220" height="36" fill="#F5F7FA"/>
+  <line x1="40" y1="220" x2="260" y2="220" class="rule"/>
+  <text x="56" y="207" class="eyebrow">01 / PRODUCE</text>
+  <text x="56" y="252" class="heading">Producer services</text>
+  <text x="56" y="276" class="body">Publish events</text>
+  <rect x="56" y="300" width="188" height="38" rx="2" class="subcomponent"/>
+  <text x="70" y="324" class="mono">Orders API</text>
+  <rect x="56" y="348" width="188" height="38" rx="2" class="subcomponent"/>
+  <text x="70" y="372" class="mono">Activity service</text>
 
-  <!-- Kafka cluster container -->
-  <rect x="376" y="176" width="690" height="390" rx="18" fill="#fff" stroke="#b9c8dc" stroke-width="1.5" stroke-dasharray="7 6"/>
-  <rect x="400" y="194" width="242" height="34" rx="17" fill="#eaf1fb"/>
-  <text x="421" y="216" class="eyebrow">02 / KAFKA CLUSTER</text>
-  <text x="1038" y="216" class="small" text-anchor="end">3 BROKERS · REPLICATED LOGS</text>
+  <!-- Produce connection -->
+  <path d="M260 296 H354" class="flow"/>
+  <text x="307" y="281" text-anchor="middle" class="eyebrow">PRODUCE</text>
 
-  <!-- Broker 1 -->
-  <g filter="url(#shadow)">
-    <rect x="400" y="254" width="202" height="268" rx="12" class="box"/>
-  </g>
-  <rect x="400" y="254" width="202" height="48" rx="12" fill="#edf4ff"/>
-  <path d="M400 290V302H602V290" fill="#edf4ff"/>
-  <circle cx="422" cy="278" r="6" fill="#2869bd"/>
-  <text x="438" y="283" class="body" font-weight="600">Broker 1</text>
-  <text x="420" y="328" class="small">TOPIC: ORDERS</text>
-  <rect x="420" y="342" width="162" height="38" rx="6" fill="#2869bd"/>
-  <text x="501" y="366" fill="#fff" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P0 · leader</text>
-  <rect x="420" y="389" width="162" height="38" rx="6" fill="#dce9fb"/>
-  <text x="501" y="413" fill="#234c86" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P3 · replica</text>
-  <text x="420" y="463" class="small">APPEND-ONLY LOG</text>
-  <path d="M420 478H582" stroke="#d7dfeb" stroke-width="1.5"/>
-  <text x="420" y="499" class="small">OFFSET  →  0 … N</text>
+  <!-- Kafka cluster component -->
+  <rect x="370" y="156" width="460" height="282" rx="2" class="component"/>
+  <rect x="370" y="156" width="460" height="42" fill="#F5F7FA"/>
+  <line x1="370" y1="198" x2="830" y2="198" class="rule"/>
+  <text x="388" y="182" class="eyebrow">02 / KAFKA CLUSTER</text>
+  <text x="388" y="230" class="heading">Topic: orders.events</text>
+  <text x="388" y="253" class="body">Ordered records distributed across partitions</text>
 
-  <!-- Broker 2 -->
-  <g filter="url(#shadow)">
-    <rect x="620" y="254" width="202" height="268" rx="12" class="box"/>
-  </g>
-  <rect x="620" y="254" width="202" height="48" rx="12" fill="#e9f8f5"/>
-  <path d="M620 290V302H822V290" fill="#e9f8f5"/>
-  <circle cx="642" cy="278" r="6" fill="#168b8b"/>
-  <text x="658" y="283" class="body" font-weight="600">Broker 2</text>
-  <text x="640" y="328" class="small">TOPIC: ORDERS</text>
-  <rect x="640" y="342" width="162" height="38" rx="6" fill="#168b8b"/>
-  <text x="721" y="366" fill="#fff" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P1 · leader</text>
-  <rect x="640" y="389" width="162" height="38" rx="6" fill="#d5f0e9"/>
-  <text x="721" y="413" fill="#17645f" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P0 · replica</text>
-  <text x="640" y="463" class="small">APPEND-ONLY LOG</text>
-  <path d="M640 478H802" stroke="#d7dfeb" stroke-width="1.5"/>
-  <text x="640" y="499" class="small">OFFSET  →  0 … N</text>
+  <rect x="388" y="276" width="132" height="76" rx="2" class="accent"/>
+  <text x="454" y="306" class="eyebrow" text-anchor="middle" style="fill:#2855D9">PARTITION</text>
+  <text x="454" y="333" class="heading" text-anchor="middle">P0</text>
 
-  <!-- Broker 3 -->
-  <g filter="url(#shadow)">
-    <rect x="840" y="254" width="202" height="268" rx="12" class="box"/>
-  </g>
-  <rect x="840" y="254" width="202" height="48" rx="12" fill="#f4edff"/>
-  <path d="M840 290V302H1042V290" fill="#f4edff"/>
-  <circle cx="862" cy="278" r="6" fill="#8257c8"/>
-  <text x="878" y="283" class="body" font-weight="600">Broker 3</text>
-  <text x="860" y="328" class="small">TOPIC: ORDERS</text>
-  <rect x="860" y="342" width="162" height="38" rx="6" fill="#8257c8"/>
-  <text x="941" y="366" fill="#fff" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P2 · leader</text>
-  <rect x="860" y="389" width="162" height="38" rx="6" fill="#e9e0fa"/>
-  <text x="941" y="413" fill="#5d4294" font-family="DM Mono,monospace" font-size="13" text-anchor="middle">P1 · replica</text>
-  <text x="860" y="463" class="small">APPEND-ONLY LOG</text>
-  <path d="M860 478H1022" stroke="#d7dfeb" stroke-width="1.5"/>
-  <text x="860" y="499" class="small">OFFSET  →  0 … N</text>
+  <rect x="534" y="276" width="132" height="76" rx="2" class="accent"/>
+  <text x="600" y="306" class="eyebrow" text-anchor="middle" style="fill:#2855D9">PARTITION</text>
+  <text x="600" y="333" class="heading" text-anchor="middle">P1</text>
 
-  <!-- Consumer flow -->
-  <path d="M1066 383H1140" stroke="#168b8b" stroke-width="2.5" fill="none" marker-end="url(#arrow-teal)"/>
-  <text x="1080" y="365" class="small">consume</text>
+  <rect x="680" y="276" width="132" height="76" rx="2" class="accent"/>
+  <text x="746" y="306" class="eyebrow" text-anchor="middle" style="fill:#2855D9">PARTITION</text>
+  <text x="746" y="333" class="heading" text-anchor="middle">P2</text>
 
-  <!-- Consumer group -->
-  <g filter="url(#shadow)">
-    <rect x="1152" y="230" width="232" height="302" rx="14" class="box"/>
-    <rect x="1152" y="230" width="232" height="8" rx="4" fill="#168b8b"/>
-  </g>
-  <text x="1176" y="274" class="eyebrow">03 / READ PATH</text>
-  <text x="1176" y="307" class="heading">Consumer group</text>
-  <text x="1176" y="333" class="body">Each partition assigned</text>
-  <rect x="1176" y="360" width="184" height="38" rx="8" class="tealbox"/>
-  <circle cx="1194" cy="379" r="5" fill="#168b8b"/>
-  <text x="1208" y="384" class="body" font-weight="600">Consumer A · P0</text>
-  <rect x="1176" y="407" width="184" height="38" rx="8" class="tealbox"/>
-  <circle cx="1194" cy="426" r="5" fill="#168b8b"/>
-  <text x="1208" y="431" class="body" font-weight="600">Consumer B · P1</text>
-  <rect x="1176" y="454" width="184" height="38" rx="8" class="tealbox"/>
-  <circle cx="1194" cy="473" r="5" fill="#168b8b"/>
-  <text x="1208" y="478" class="body" font-weight="600">Consumer C · P2</text>
-  <text x="1176" y="515" class="small">ORDER WITHIN PARTITION</text>
+  <line x1="388" y1="372" x2="812" y2="372" class="rule"/>
+  <text x="388" y="398" class="mono">Topic partitions enable parallel reads</text>
+  <text x="388" y="418" class="body">Replication and broker placement omitted for clarity.</text>
 
-  <!-- Key properties -->
-  <rect x="56" y="612" width="1328" height="94" rx="12" fill="#eef3fa" stroke="#d7e0ed"/>
-  <g>
-    <text x="80" y="644" class="eyebrow">KEY IDEA</text>
-    <text x="80" y="674" class="body" font-weight="600">Topics are split into partitions.</text>
-    <text x="80" y="695" class="small">Partitions distribute storage and parallel work.</text>
-  </g>
-  <path d="M470 630V688" stroke="#d1dbe9" stroke-width="1.5"/>
-  <g>
-    <text x="502" y="644" class="eyebrow">DURABILITY</text>
-    <text x="502" y="674" class="body" font-weight="600">Brokers persist ordered records.</text>
-    <text x="502" y="695" class="small">Replication supports recovery from broker failure.</text>
-  </g>
-  <path d="M920 630V688" stroke="#d1dbe9" stroke-width="1.5"/>
-  <g>
-    <text x="952" y="644" class="eyebrow">SCALING</text>
-    <text x="952" y="674" class="body" font-weight="600">Consumer groups process in parallel.</text>
-    <text x="952" y="695" class="small">A partition is assigned to one group member at a time.</text>
-  </g>
+  <!-- Consume connection -->
+  <path d="M830 296 H924" class="flow"/>
+  <text x="877" y="281" text-anchor="middle" class="eyebrow">CONSUME</text>
+
+  <!-- Consumer group component -->
+  <rect x="940" y="184" width="220" height="226" rx="2" class="component"/>
+  <rect x="940" y="184" width="220" height="36" fill="#F5F7FA"/>
+  <line x1="940" y1="220" x2="1160" y2="220" class="rule"/>
+  <text x="956" y="207" class="eyebrow">03 / CONSUME</text>
+  <text x="956" y="252" class="heading">Consumer group</text>
+  <text x="956" y="276" class="body">Read events</text>
+  <rect x="956" y="300" width="188" height="38" rx="2" class="subcomponent"/>
+  <text x="970" y="324" class="mono">Consumer A · P0</text>
+  <rect x="956" y="348" width="188" height="38" rx="2" class="subcomponent"/>
+  <text x="970" y="372" class="mono">Consumer B · P1/P2</text>
+
+  <!-- Footer facts -->
+  <line x1="40" y1="466" x2="1160" y2="466" class="rule"/>
+  <text x="40" y="493" class="eyebrow">CORE CONCEPTS</text>
+  <text x="40" y="520" class="body">Topics group events.</text>
+  <text x="330" y="520" class="body">Partitions provide ordered logs.</text>
+  <text x="700" y="520" class="body">Consumer groups enable parallel processing.</text>
 </svg>
