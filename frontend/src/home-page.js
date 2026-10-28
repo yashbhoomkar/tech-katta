@@ -5,33 +5,33 @@ import "./home-page.css";
 const content = {
   brand: { name: "TECH KATTA", descriptor: "SYSTEMS KNOWLEDGE" },
   hero: {
-    eyebrow: "TECH KATTA / ENGINEERING KNOWLEDGE",
+    eyebrow: "ENGINEERING NOTES / DISTRIBUTED SYSTEMS",
     title: "Understand the systems behind the software.",
-    description: "Explore distributed systems, understand the components behind modern infrastructure, and learn to solve real-world system-design problems."
+    description: "Diagrams, failure modes, and practical trade-offs for the systems behind modern software."
   },
   figure: {
-    title: "Kafka Architecture",
-    caption: "FIG. 01 — KAFKA PRODUCER, BROKER & CONSUMER ARCHITECTURE",
-    tag: "STREAMING PRIMITIVES",
+    title: "Kafka: producers to consumers",
+    caption: "EVENT FLOW / KAFKA",
+    tag: "EXPLORE DIAGRAM",
     description: "Producers publish to topics; partitions distribute across brokers; consumers ingest streams.",
     src: "/diagrams/kafka-architecture.svg",
     alt: "Kafka component diagram: producer services publish events to the orders.events topic, divided into partitions P0, P1, and P2; a consumer group reads P0 with Consumer A and P1/P2 with Consumer B."
   },
   curriculum: {
-    id: "curriculum", number: "01", label: "CURATED CURRICULUM",
-    title: "Fundamental dimensions of systems engineering.",
-    index: "INDEX: ARCHITECTURAL FOUNDATIONS",
+    id: "curriculum", number: "01", label: "LEARNING PATHS",
+    title: "Start with the building blocks.",
+    index: "CONCEPTS · COMPONENTS · PROBLEMS",
     cards: [
-      { id: "concepts", number: "01", category: "CONCEPTS", title: "Understand the fundamentals", description: "Build intuition for scalability, consistency, replication, availability, and failure.", link: "Explore quick notes", target: "quick-notes" },
-      { id: "components", number: "02", category: "COMPONENTS", title: "Know the building blocks", description: "Understand the role of caches, databases, queues, brokers, and load balancers.", link: "Read the guidelines", target: "guidelines" },
-      { id: "problems", number: "03", category: "PROBLEMS", title: "Reason through real systems", description: "Turn requirements and constraints into architecture, capacity estimates, and trade-offs.", link: "Read the guidelines", target: "guidelines" }
+      { id: "concepts", number: "01", category: "CONCEPTS", title: "Understand the fundamentals", description: "Build intuition for scalability, consistency, replication, availability, and failure.", link: "Browse learning library", target: "learn" },
+      { id: "components", number: "02", category: "COMPONENTS", title: "Know the building blocks", description: "Understand the role of caches, databases, queues, brokers, and load balancers.", link: "Browse components", target: "learn" },
+      { id: "problems", number: "03", category: "PROBLEMS", title: "Reason through real systems", description: "Turn requirements and constraints into architecture, capacity estimates, and trade-offs.", link: "Practice a design", target: "practice" }
     ]
   },
   quickNotes: {
-    id: "quick-notes", number: "02", label: "QUICK NOTES SECTION",
+    id: "quick-notes", number: "02", label: "QUICK NOTES",
     title: "Useful ideas, without the long read.",
     description: "Short, focused explanations for concepts you want to understand or revisit quickly.",
-    index: "FIELD NOTES / ENGINEERING",
+    index: "SHORT TECHNICAL EXPLANATIONS",
     items: [
       { category: "EVENT STREAMING", title: "Kafka: topics, partitions, and consumer groups", summary: "How events are organized, distributed, and consumed.", body: "A topic groups related events. Partitions split a topic into ordered logs distributed across brokers. Within a consumer group, each partition is assigned to one consumer at a time, allowing work to scale while preserving order within a partition." },
       { category: "CACHING", title: "Cache invalidation is a consistency decision", summary: "A cache is useful only when its staleness is acceptable.", body: "Choose a freshness requirement before choosing an invalidation strategy. TTLs are simple but permit stale reads; explicit invalidation can improve freshness but introduces coordination and failure cases. Decide what happens when invalidation is delayed or lost." },
@@ -44,9 +44,9 @@ const content = {
     description: "Practical reminders for designing systems that remain understandable, reliable, and operable.",
     index: "PRACTICE / PRINCIPLES",
     items: [
-      { number: "G.01", title: "Start with requirements", description: "Clarify user journeys, workload, latency, availability, consistency, and what is out of scope before selecting components." },
-      { number: "G.02", title: "Measure before adding complexity", description: "Identify the bottleneck and its evidence. Introduce a cache, queue, replica, or partition when a requirement justifies the added cost." },
-      { number: "G.03", title: "Design for partial failure", description: "Assume dependencies can time out, messages can be delivered more than once, and recovery can take longer than expected." }
+      { number: "G.01", title: "Start with requirements", description: "Write down peak requests per second, payload size, latency target, availability objective, consistency needs, and what is explicitly out of scope." },
+      { number: "G.02", title: "Measure before adding complexity", description: "Measure the constrained resource first. Estimate request rate and storage growth, then add a cache, queue, replica, or partition only when the numbers justify its operational cost." },
+      { number: "G.03", title: "Design for partial failure", description: "Define timeout budgets, bounded retries with jitter, idempotency for duplicate delivery, and a degraded mode when a dependency stays unavailable." }
     ]
   }
 };
@@ -76,7 +76,7 @@ function renderHeader() {
 function renderFigure() {
   const figure = content.figure;
   return '<figure class="tk-figure" aria-labelledby="tk-figure-title">' +
-    '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><div class="tk-figure-tools"><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span><button class="tk-figure-inspect" type="button" aria-pressed="false" aria-controls="tk-figure-viewport">Inspect <span aria-hidden="true">↗</span></button></div></div>' +
+    '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><div class="tk-figure-tools"><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span><button class="tk-figure-inspect" type="button" aria-pressed="false" aria-controls="tk-figure-viewport">Expand <span aria-hidden="true">＋</span></button></div></div>' +
     '<div class="tk-figure-viewport" id="tk-figure-viewport" tabindex="0" role="region" aria-label="Scrollable Kafka architecture diagram"><img class="tk-figure-image" src="' + escapeHtml(figure.src) + '" alt="' + escapeHtml(figure.alt) + '" width="2076" height="569" fetchpriority="high"></div>' +
     '<figcaption class="tk-figure-description">' + escapeHtml(figure.description) + '</figcaption></figure>';
 }
@@ -117,24 +117,25 @@ function renderQuickNotes() {
   ).join("");
   return '<section class="tk-section tk-notes-section" id="' + section.id + '" aria-labelledby="tk-notes-title">' +
     '<div class="tk-section-heading"><div class="tk-section-title-group"><p class="tk-section-kicker"><span>' + section.number + '</span> / ' + escapeHtml(section.label) + '</p><h2 id="tk-notes-title">' + escapeHtml(section.title) + '</h2><p class="tk-section-description">' + escapeHtml(section.description) + '</p></div><span class="tk-section-index">' + escapeHtml(section.index) + '</span></div>' +
+    '<div class="tk-notes-search"><label for="tk-note-search">Search these notes</label><input id="tk-note-search" type="search" placeholder="Try Kafka, caching, retries…" autocomplete="off"><span class="tk-notes-search-count" aria-live="polite">' + section.items.length + ' notes</span></div>' +
     '<div class="tk-notes-list">' + items + '</div></section>';
 }
 
 function renderGuidelines() {
   const section = content.guidelines;
   const items = section.items.map((item) =>
-    '<article class="tk-guideline"><span class="tk-guideline-number">' + escapeHtml(item.number) + '</span><div class="tk-guideline-copy"><h3>' + escapeHtml(item.title) + '</h3><p>' + escapeHtml(item.description) + '</p></div><span class="tk-guideline-mark" aria-hidden="true">↗</span></article>'
+    '<article class="tk-guideline"><span class="tk-guideline-number">' + escapeHtml(item.number) + '</span><div class="tk-guideline-copy"><h3>' + escapeHtml(item.title) + '</h3><p>' + escapeHtml(item.description) + '</p></div></article>'
   ).join("");
   return '<section class="tk-section tk-guidelines-section" id="' + section.id + '" aria-labelledby="tk-guidelines-title">' +
     '<div class="tk-section-heading"><div class="tk-section-title-group"><p class="tk-section-kicker"><span>' + section.number + '</span> / ' + escapeHtml(section.label) + '</p><h2 id="tk-guidelines-title">' + escapeHtml(section.title) + '</h2><p class="tk-section-description">' + escapeHtml(section.description) + '</p></div><span class="tk-section-index">' + escapeHtml(section.index) + '</span></div>' +
-    '<div class="tk-tradeoff" aria-labelledby="tk-tradeoff-title"><div class="tk-tradeoff-heading"><p class="tk-section-kicker">REFERENCE / TRADE-OFFS</p><h3 id="tk-tradeoff-title">Monolith vs. distributed services</h3></div><div class="tk-tradeoff-scroll"><table class="tk-tradeoff-table"><thead><tr><th scope="col">DIMENSION</th><th scope="col">MONOLITH</th><th scope="col">DISTRIBUTED</th></tr></thead><tbody><tr><th scope="row">Operational load</th><td>Lower to start</td><td>Higher coordination</td></tr><tr><th scope="row">Deployment</th><td>One release unit</td><td>Independent services</td></tr><tr><th scope="row">Scaling</th><td>Scale the application</td><td>Scale selected services</td></tr><tr><th scope="row">Failure modes</th><td>Shared process boundary</td><td>Network and partial failures</td></tr></tbody></table></div></div><div class="tk-guidelines-list">' + items + '</div></section>';
+    '<div class="tk-tradeoff" aria-labelledby="tk-tradeoff-title"><div class="tk-tradeoff-heading"><p class="tk-section-kicker">ENGINEERING TRADE-OFFS</p><h3 id="tk-tradeoff-title">Monolith vs. distributed services</h3></div><div class="tk-tradeoff-scroll"><table class="tk-tradeoff-table"><thead><tr><th scope="col">DIMENSION</th><th scope="col">MONOLITH</th><th scope="col">DISTRIBUTED</th></tr></thead><tbody><tr><th scope="row">Operational load</th><td>Lower to start</td><td>Higher coordination</td></tr><tr><th scope="row">Deployment</th><td>One release unit</td><td>Independent services</td></tr><tr><th scope="row">Scaling</th><td>Scale the application</td><td>Scale selected services</td></tr><tr><th scope="row">Failure modes</th><td>Process-wide failures can affect the application</td><td>Timeouts, partial outages, cascading failures</td></tr><tr><th scope="row">Communication cost</th><td>In-process calls avoid network serialization</td><td>Network hops add serialization, latency, and retry costs</td></tr></tbody></table></div></div><div class="tk-guidelines-list">' + items + '</div></section>';
 }
 
 function renderFooter() {
   return '<footer class="tk-footer">' +
     '<a class="tk-footer-brand" href="#home" data-home-top>TECH KATTA <span>/ SYSTEMS KNOWLEDGE</span></a>' +
     '<p>Understand the systems behind the software.</p>' +
-    '<div class="tk-footer-links">' + scrollLink("concepts", "Concepts") + scrollLink("components", "Components") + scrollLink("problems", "Problems") + scrollLink("quick-notes", "Quick Notes") + '</div>' +
+    '<div class="tk-footer-links">' + scrollLink("concepts", "Concepts") + scrollLink("components", "Components") + scrollLink("problems", "Problems") + scrollLink("quick-notes", "Quick Notes") + '<a href="#learn" data-home-route="learn">Learning library →</a><a href="#practice" data-home-route="practice">Practice →</a>' + '</div>' +
     '<span class="tk-footer-note">A frontend-first engineering knowledge project.</span></footer>';
 }
 
@@ -145,8 +146,8 @@ export function renderHomePage() {
       '<h1 id="tk-hero-title">' + escapeHtml(content.hero.title) + '</h1>' +
       '<p class="tk-hero-description">' + escapeHtml(content.hero.description) + '</p>' +
       '<div class="tk-hero-actions">' +
-        scrollLink("curriculum", 'Dashboard <span aria-hidden="true">↗</span>', "tk-button tk-button-primary") +
-        scrollLink("quick-notes", 'Quick Notes <span aria-hidden="true">→</span>', "tk-button tk-button-secondary") +
+        scrollLink("curriculum", 'Explore curriculum <span aria-hidden="true">↓</span>', "tk-button tk-button-primary") +
+        '<a class="tk-button tk-button-secondary" href="#learn" data-home-route="learn">Browse learning library <span aria-hidden="true">→</span></a>' +
       '</div></div><div class="tk-hero-visual">' + renderFigure() + '</div></section>' +
       renderCurriculum() + renderQuickNotes() + renderGuidelines() +
     '</main>' + renderFooter() + '</div>';
@@ -164,7 +165,7 @@ export function bindHomePage(root) {
   inspectButton?.addEventListener("click", () => {
     const inspecting = figureViewport.classList.toggle("is-inspecting");
     inspectButton.setAttribute("aria-pressed", String(inspecting));
-    inspectButton.innerHTML = inspecting ? 'Fit <span aria-hidden="true">↙</span>' : 'Inspect <span aria-hidden="true">↗</span>';
+    inspectButton.innerHTML = inspecting ? 'Fit <span aria-hidden="true">−</span>' : 'Expand <span aria-hidden="true">＋</span>';
     if (inspecting && window.matchMedia("(max-width: 767px)").matches) {
       figureViewport.scrollTo({ left: 0, behavior: reducedMotion ? "auto" : "smooth" });
     }
@@ -187,6 +188,28 @@ export function bindHomePage(root) {
       const target = home.querySelector("#" + link.dataset.homeScroll);
       closeMenu();
       if (target) target.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+    });
+  });
+
+  const noteSearch = home.querySelector("#tk-note-search");
+  const noteSearchCount = home.querySelector(".tk-notes-search-count");
+  noteSearch?.addEventListener("input", () => {
+    const query = noteSearch.value.trim().toLowerCase();
+    const notes = [...home.querySelectorAll(".tk-note")];
+    let visible = 0;
+    notes.forEach((note) => {
+      const matches = note.textContent.toLowerCase().includes(query);
+      note.hidden = !matches;
+      if (matches) visible += 1;
+    });
+    if (noteSearchCount) noteSearchCount.textContent = visible + (visible === 1 ? " note" : " notes");
+  });
+
+  home.querySelectorAll("[data-home-route]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      closeMenu();
+      window.location.hash = link.dataset.homeRoute;
     });
   });
 
