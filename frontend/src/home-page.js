@@ -178,7 +178,7 @@ export function bindHomePage(root) {
     });
   });
 
-  document.addEventListener("keydown", (event) => {
+  home.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeMenu();
   });
 }
