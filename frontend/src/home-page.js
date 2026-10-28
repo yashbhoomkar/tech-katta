@@ -15,7 +15,7 @@ const content = {
     tag: "STREAMING PRIMITIVES",
     description: "Producers publish to topics; partitions distribute across brokers; consumers ingest streams.",
     src: "/diagrams/kafka-architecture.svg",
-    alt: "Kafka architecture: producers publish events to topics, partitions are distributed across brokers in a Kafka cluster, and consumers read event streams."
+    alt: "Kafka component diagram: producer services publish events to the orders.events topic, divided into partitions P0, P1, and P2; a consumer group reads P0 with Consumer A and P1/P2 with Consumer B."
   },
   curriculum: {
     id: "curriculum", number: "01", label: "CURATED CURRICULUM",
