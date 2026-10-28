@@ -436,10 +436,14 @@
 }
 
 .tk-note {
+  display:grid;
+  grid-template-columns:minmax(110px,.55fr) minmax(0,1.1fr) minmax(0,.9fr) 20px;
+  column-gap:22px;
   border-bottom:1px solid var(--tk-line-soft)
 }
 
 .tk-note summary {
+  grid-column:1 / -1;
   list-style:none;
   display:grid;
   grid-template-columns:minmax(110px,.55fr) minmax(0,1.1fr) minmax(0,.9fr) 20px;
@@ -499,8 +503,10 @@
 }
 
 .tk-note-body {
-  max-width:780px;
-  padding:0 40px 22px calc(55% + 22px)
+  grid-column:2 / 4;
+  min-width:0;
+  max-width:none;
+  padding:0 0 22px
 }
 
 .tk-note-body p {
@@ -777,6 +783,9 @@
   .tk-curriculum-card p {
     margin-bottom:17px;
     font-size:13px
+  }
+  .tk-note {
+    display:block
   }
   .tk-note summary {
     grid-template-columns:minmax(0,1fr) 20px;
