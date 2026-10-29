@@ -1192,3 +1192,80 @@
   .tk-nav { gap:8px; }
   .tk-nav-link { font-size:11px; }
 }
+
+
+/* Product-led homepage refinement: navigation, clear actions, resilient diagrams */
+.tk-header { gap:clamp(16px,2.4vw,32px); }
+.tk-nav { gap:clamp(12px,1.7vw,24px); }
+.tk-nav-app { color:var(--tk-muted); }
+.tk-nav-app:last-child { color:var(--tk-primary); font-weight:600; }
+.tk-nav-app::after { display:none; }
+.tk-hero { grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr); }
+.tk-hero h1 { max-width:620px; }
+.tk-hero-description { color:#4f5968; }
+.tk-button-primary { box-shadow:0 3px 0 rgb(0 34 80 / 12%); }
+.tk-figure-learning-link {
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  padding:12px 16px;
+  border-top:1px solid var(--tk-line-soft);
+  color:var(--tk-primary)!important;
+  font-size:12px;
+  font-weight:600;
+}
+.tk-figure-learning-link:hover { background:#f4f7ff; }
+.tk-mini-problems {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  justify-items:stretch;
+  gap:5px;
+}
+.tk-mini-problems span {
+  display:block;
+  min-width:0;
+  padding:7px 4px;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-size:clamp(7px,.67vw,9px);
+  line-height:1.35;
+  letter-spacing:0;
+}
+.tk-mini-problems b { font-size:12px; text-align:center; }
+.tk-curriculum-card { min-width:0; }
+.tk-card-link { display:inline-flex; align-items:center; gap:7px; }
+.tk-card-link span { flex:0 0 auto; }
+.tk-footer-note {
+  font-family:Inter,Arial,sans-serif;
+  letter-spacing:0;
+  text-transform:none;
+  line-height:1.6;
+}
+.tk-notes-search { margin-bottom:0; }
+@media(max-width:1100px) and (min-width:768px) {
+  .tk-header { gap:18px; }
+  .tk-nav { gap:12px; }
+  .tk-nav-link { font-size:11px; }
+  .tk-brand-descriptor { font-size:9px; }
+  .tk-mini-problems { gap:3px; }
+  .tk-mini-problems span { padding-inline:2px; font-size:8px; }
+}
+@media(max-width:767px) {
+  .tk-header { gap:12px; }
+  .tk-nav { gap:0; }
+  .tk-hero { grid-template-columns:minmax(0,1fr); }
+  .tk-hero-actions { display:grid; grid-template-columns:minmax(0,1fr); align-items:stretch; }
+  .tk-hero-actions .tk-button { width:100%; justify-content:space-between; }
+  .tk-figure-learning-link { justify-content:flex-start; }
+  .tk-mini-problems { gap:5px; }
+  .tk-mini-problems span { font-size:8px; padding:6px 3px; }
+}
+@media(max-width:420px) {
+  .tk-brand-descriptor { max-width:100px; white-space:normal; line-height:1.35; }
+  .tk-mini-problems { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); }
+  .tk-mini-problems span { font-size:7px; letter-spacing:-.02em; }
+  .tk-mini-problems b { font-size:10px; }
+}
