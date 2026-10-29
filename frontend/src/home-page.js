@@ -6,31 +6,31 @@ const content = {
   brand: { name: "TECH KATTA", descriptor: "SYSTEMS KNOWLEDGE" },
   hero: {
     eyebrow: "LEARN SYSTEM DESIGN · PRACTISE · IMPROVE",
-    title: "Understand the systems behind the software.",
-    description: "Learn distributed-systems fundamentals, practise architecture decisions, and evaluate your designs with structured feedback."
+    title: "Design for failure. Understand the trade-offs.",
+    description: "Field notes on distributed systems: what breaks, how systems recover, and which trade-offs your architecture makes."
   },
   figure: {
     title: "How Kafka moves an event",
     caption: "EXAMPLE ARCHITECTURE / EVENT STREAMING",
-    tag: "DIAGRAM PREVIEW",
+    tag: "FEATURED BREAKDOWN · EVENT STREAMING",
     description: "Producers publish to topics; partitions distribute across brokers; consumers ingest streams.",
     src: "/diagrams/kafka-architecture.svg",
     alt: "Kafka component diagram: producer services publish events to the orders.events topic, divided into partitions P0, P1, and P2; a consumer group reads P0 with Consumer A and P1/P2 with Consumer B."
   },
   curriculum: {
-    id: "curriculum", number: "01", label: "CHOOSE YOUR NEXT STEP",
-    title: "Go from understanding to practice.",
-    index: "LEARN → DESIGN → EVALUATE",
+    id: "curriculum", number: "01", label: "TOPICS",
+    title: "Follow a question from concept to consequence.",
+    index: "LIBRARY / STUDIO / EVALUATION",
     cards: [
       { id: "concepts", number: "01", category: "CONCEPTS", title: "Understand the fundamentals", description: "Build intuition for scalability, consistency, replication, availability, and failure.", link: "Browse learning library", target: "learn" },
       { id: "components", number: "02", category: "COMPONENTS", title: "Know the building blocks", description: "Understand the role of caches, databases, queues, brokers, and load balancers.", link: "Explore the library", target: "learn" },
-      { id: "problems", number: "03", category: "PROBLEMS", title: "Reason through real systems", description: "Turn requirements and constraints into architecture, capacity estimates, and trade-offs.", link: "Practice a design", target: "practice" }
+      { id: "problems", number: "03", category: "SYSTEM DESIGN", title: "Reason through real systems", description: "Turn requirements and constraints into architecture, capacity estimates, and trade-offs.", link: "Open practice lab", target: "practice" }
     ]
   },
   quickNotes: {
     id: "quick-notes", number: "02", label: "QUICK NOTES",
-    title: "Useful ideas, without the long read.",
-    description: "Short, focused explanations for concepts you want to understand or revisit quickly.",
+    title: "Engineering notes, grounded in trade-offs.",
+    description: "Concise explanations of the decisions, failure modes, and constraints behind distributed systems.",
     index: "SHORT TECHNICAL EXPLANATIONS",
     items: [
       { category: "EVENT STREAMING", title: "Kafka: topics, partitions, and consumer groups", summary: "How events are organized, distributed, and consumed.", body: "A topic groups related events. Partitions split a topic into ordered logs distributed across brokers. Within a consumer group, each partition is assigned to one consumer at a time, allowing work to scale while preserving order within a partition." },
@@ -66,7 +66,7 @@ function renderHeader() {
     '</a>' +
     '<button class="tk-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="tk-primary-nav"><span></span><span></span></button>' +
     '<nav class="tk-nav" id="tk-primary-nav" aria-label="Primary navigation">' +
-      '<a class="tk-nav-link tk-nav-app" href="#learn" data-home-route="learn">Learning library</a>' +
+      '<a class="tk-nav-link tk-nav-app" href="#learn" data-home-route="learn">Library</a>' +
       '<a class="tk-nav-link tk-nav-app" href="#workspace" data-home-route="workspace">Design studio</a>' +
       '<a class="tk-nav-link tk-nav-app" href="#practice" data-home-route="practice">Practice lab</a>' +
       '<a class="tk-nav-link tk-nav-app" href="#evaluate" data-home-route="evaluate">Evaluate</a>' +
@@ -136,7 +136,7 @@ function renderFooter() {
     '<a class="tk-footer-brand" href="#home" data-home-top>TECH KATTA <span>/ SYSTEMS KNOWLEDGE</span></a>' +
     '<p>Understand the systems behind the software.</p>' +
     '<div class="tk-footer-links">' + scrollLink("concepts", "Concepts") + scrollLink("components", "Components") + scrollLink("problems", "Problems") + scrollLink("quick-notes", "Quick Notes") + '<a href="#learn" data-home-route="learn">Learning library →</a><a href="#practice" data-home-route="practice">Practice →</a>' + '</div>' +
-    '<span class="tk-footer-note">Learn the concepts. Practise the design. Understand the trade-offs.</span></footer>';
+    '<span class="tk-footer-note">Where engineers explore architecture, trade-offs, and failure modes.</span></footer>';
 }
 
 export function renderHomePage() {
@@ -146,10 +146,10 @@ export function renderHomePage() {
       '<h1 id="tk-hero-title">' + escapeHtml(content.hero.title) + '</h1>' +
       '<p class="tk-hero-description">' + escapeHtml(content.hero.description) + '</p>' +
       '<div class="tk-hero-actions">' +
-        '<a class="tk-button tk-button-primary" href="#practice" data-home-route="practice">Start practising <span aria-hidden="true">→</span></a>' +
-        '<a class="tk-button tk-button-secondary" href="#learn" data-home-route="learn">Explore learning library <span aria-hidden="true">↗</span></a>' +
+        '<a class="tk-button tk-button-primary" href="#learn" data-home-route="learn">Explore topics <span aria-hidden="true">→</span></a>' +
+        '<button class="tk-button tk-button-secondary tk-search-trigger" type="button" data-home-search>Search topics <kbd>⌘K</kbd></button>' +
       '</div></div><div class="tk-hero-visual">' + renderFigure() + '</div></section>' +
-      renderCurriculum() + renderQuickNotes() + renderGuidelines() +
+      renderQuickNotes() + renderCurriculum() + renderGuidelines() +
     '</main>' + renderFooter() + '</div>';
 }
 
