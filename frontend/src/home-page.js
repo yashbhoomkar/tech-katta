@@ -5,25 +5,25 @@ import "./home-page.css";
 const content = {
   brand: { name: "TECH KATTA", descriptor: "SYSTEMS KNOWLEDGE" },
   hero: {
-    eyebrow: "ENGINEERING NOTES / DISTRIBUTED SYSTEMS",
+    eyebrow: "LEARN SYSTEM DESIGN · PRACTISE · IMPROVE",
     title: "Understand the systems behind the software.",
-    description: "Diagrams, failure modes, and practical trade-offs for the systems behind modern software."
+    description: "Learn distributed-systems fundamentals, practise architecture decisions, and evaluate your designs with structured feedback."
   },
   figure: {
-    title: "Kafka: producers to consumers",
-    caption: "EVENT FLOW / KAFKA",
-    tag: "EXPLORE DIAGRAM",
+    title: "How Kafka moves an event",
+    caption: "EXAMPLE ARCHITECTURE / EVENT STREAMING",
+    tag: "DIAGRAM PREVIEW",
     description: "Producers publish to topics; partitions distribute across brokers; consumers ingest streams.",
     src: "/diagrams/kafka-architecture.svg",
     alt: "Kafka component diagram: producer services publish events to the orders.events topic, divided into partitions P0, P1, and P2; a consumer group reads P0 with Consumer A and P1/P2 with Consumer B."
   },
   curriculum: {
-    id: "curriculum", number: "01", label: "LEARNING PATHS",
-    title: "Start with the building blocks.",
-    index: "CONCEPTS · COMPONENTS · PROBLEMS",
+    id: "curriculum", number: "01", label: "CHOOSE YOUR NEXT STEP",
+    title: "Go from understanding to practice.",
+    index: "LEARN → DESIGN → EVALUATE",
     cards: [
       { id: "concepts", number: "01", category: "CONCEPTS", title: "Understand the fundamentals", description: "Build intuition for scalability, consistency, replication, availability, and failure.", link: "Browse learning library", target: "learn" },
-      { id: "components", number: "02", category: "COMPONENTS", title: "Know the building blocks", description: "Understand the role of caches, databases, queues, brokers, and load balancers.", link: "Browse components", target: "learn" },
+      { id: "components", number: "02", category: "COMPONENTS", title: "Know the building blocks", description: "Understand the role of caches, databases, queues, brokers, and load balancers.", link: "Explore the library", target: "learn" },
       { id: "problems", number: "03", category: "PROBLEMS", title: "Reason through real systems", description: "Turn requirements and constraints into architecture, capacity estimates, and trade-offs.", link: "Practice a design", target: "practice" }
     ]
   },
@@ -66,12 +66,10 @@ function renderHeader() {
     '</a>' +
     '<button class="tk-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="tk-primary-nav"><span></span><span></span></button>' +
     '<nav class="tk-nav" id="tk-primary-nav" aria-label="Primary navigation">' +
-      scrollLink("concepts", "Concepts", "tk-nav-link") +
-      scrollLink("components", "Components", "tk-nav-link") +
-      scrollLink("problems", "Problems", "tk-nav-link") +
-      scrollLink("quick-notes", "System Design Notes", "tk-nav-link tk-nav-notes") +
       '<a class="tk-nav-link tk-nav-app" href="#learn" data-home-route="learn">Learning library</a>' +
-      '<a class="tk-nav-link tk-nav-app" href="#practice" data-home-route="practice">Practice</a>' +
+      '<a class="tk-nav-link tk-nav-app" href="#workspace" data-home-route="workspace">Design studio</a>' +
+      '<a class="tk-nav-link tk-nav-app" href="#practice" data-home-route="practice">Practice lab</a>' +
+      '<a class="tk-nav-link tk-nav-app" href="#evaluate" data-home-route="evaluate">Evaluate</a>' +
     '</nav></header>';
 }
 
@@ -80,7 +78,7 @@ function renderFigure() {
   return '<figure class="tk-figure" aria-labelledby="tk-figure-title">' +
     '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><div class="tk-figure-tools"><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span><button class="tk-figure-inspect" type="button" aria-pressed="false" aria-controls="tk-figure-viewport">Expand <span aria-hidden="true">＋</span></button></div></div>' +
     '<div class="tk-figure-viewport" id="tk-figure-viewport" tabindex="0" role="region" aria-label="Scrollable Kafka architecture diagram"><img class="tk-figure-image" src="' + escapeHtml(figure.src) + '" alt="' + escapeHtml(figure.alt) + '" width="2076" height="569" fetchpriority="high"></div>' +
-    '<figcaption class="tk-figure-description">' + escapeHtml(figure.description) + '</figcaption></figure>';
+    '<figcaption class="tk-figure-description">' + escapeHtml(figure.description) + '</figcaption><a class="tk-figure-learning-link" href="#learn" data-home-route="learn">Explore event streaming lessons <span aria-hidden="true">→</span></a></figure>';
 }
 
 function renderCardDiagram(id) {
@@ -138,7 +136,7 @@ function renderFooter() {
     '<a class="tk-footer-brand" href="#home" data-home-top>TECH KATTA <span>/ SYSTEMS KNOWLEDGE</span></a>' +
     '<p>Understand the systems behind the software.</p>' +
     '<div class="tk-footer-links">' + scrollLink("concepts", "Concepts") + scrollLink("components", "Components") + scrollLink("problems", "Problems") + scrollLink("quick-notes", "Quick Notes") + '<a href="#learn" data-home-route="learn">Learning library →</a><a href="#practice" data-home-route="practice">Practice →</a>' + '</div>' +
-    '<span class="tk-footer-note">A frontend-first engineering knowledge project.</span></footer>';
+    '<span class="tk-footer-note">Learn the concepts. Practise the design. Understand the trade-offs.</span></footer>';
 }
 
 export function renderHomePage() {
@@ -148,8 +146,8 @@ export function renderHomePage() {
       '<h1 id="tk-hero-title">' + escapeHtml(content.hero.title) + '</h1>' +
       '<p class="tk-hero-description">' + escapeHtml(content.hero.description) + '</p>' +
       '<div class="tk-hero-actions">' +
-        scrollLink("curriculum", 'Explore curriculum <span aria-hidden="true">↓</span>', "tk-button tk-button-primary") +
-        '<a class="tk-button tk-button-secondary" href="#learn" data-home-route="learn">Browse learning library <span aria-hidden="true">→</span></a>' +
+        '<a class="tk-button tk-button-primary" href="#practice" data-home-route="practice">Start practising <span aria-hidden="true">→</span></a>' +
+        '<a class="tk-button tk-button-secondary" href="#learn" data-home-route="learn">Explore learning library <span aria-hidden="true">↗</span></a>' +
       '</div></div><div class="tk-hero-visual">' + renderFigure() + '</div></section>' +
       renderCurriculum() + renderQuickNotes() + renderGuidelines() +
     '</main>' + renderFooter() + '</div>';
