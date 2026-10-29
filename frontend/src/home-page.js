@@ -79,6 +79,7 @@ function renderFigure() {
   return '<figure class="tk-figure" aria-labelledby="tk-figure-title">' +
     '<div class="tk-figure-header"><div class="tk-figure-heading"><h2 id="tk-figure-title">' + escapeHtml(figure.title) + '</h2><p class="tk-figure-caption">' + escapeHtml(figure.caption) + '</p></div><div class="tk-figure-tools"><span class="tk-figure-tag">' + escapeHtml(figure.tag) + '</span><button class="tk-figure-inspect" type="button" aria-pressed="false" aria-controls="tk-figure-viewport">Expand <span aria-hidden="true">＋</span></button></div></div>' +
     '<div class="tk-figure-viewport" id="tk-figure-viewport" tabindex="0" role="region" aria-label="Scrollable Kafka architecture diagram"><img class="tk-figure-image" src="' + escapeHtml(figure.src) + '" alt="' + escapeHtml(figure.alt) + '" width="2076" height="569" fetchpriority="high"></div>' +
+    ''<div class="tk-failure-explorer" aria-label="Kafka failure scenario"><div class="tk-failure-controls" role="group" aria-label="Choose Kafka scenario"><button type="button" class="is-active" data-kafka-state="normal" aria-pressed="true">Normal flow</button><button type="button" data-kafka-state="failure" aria-pressed="false">Consumer stops</button></div><p class="tk-failure-status" aria-live="polite" data-kafka-explanation>Events are assigned to consumers in the group; each consumer advances its own offsets.</p></div>' +
     '<figcaption class="tk-figure-description">' + escapeHtml(figure.description) + '</figcaption><a class="tk-figure-learning-link" href="#learn" data-home-route="learn">Explore event streaming lessons <span aria-hidden="true">→</span></a></figure>';
 }
 
@@ -170,6 +171,23 @@ export function bindHomePage(root) {
   };
   setTheme(savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
   themeToggle?.addEventListener("click", () => setTheme(!home.classList.contains("is-dark")));
+  const kafkaExplanation = home.querySelector("[data-kafka-explanation]");
+  home.querySelectorAll("[data-kafka-state]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const failed = button.dataset.kafkaState === "failure";
+      home.querySelectorAll("[data-kafka-state]").forEach((option) => {
+        const active = option === button;
+        option.classList.toggle("is-active", active);
+        option.setAttribute("aria-pressed", String(active));
+      });
+      if (kafkaExplanation) {
+        kafkaExplanation.textContent = failed
+          ? "If a consumer stops sending heartbeats, the group can rebalance and reassign its partitions. Consumption may pause during reassignment, and lag can grow until a consumer resumes processing."
+          : "Events are assigned to consumers in the group; each consumer advances its own offsets.";
+      }
+      home.querySelector(".tk-failure-explorer")?.classList.toggle("is-failure", failed);
+    });
+  });
   home.querySelector("[data-home-search]")?.addEventListener("click", () => {
     window.location.hash = "learn";
     window.requestAnimationFrame(() => root.querySelector("#lesson-search")?.focus());
