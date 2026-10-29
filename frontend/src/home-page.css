@@ -1269,3 +1269,83 @@
   .tk-mini-problems span { font-size:7px; letter-spacing:-.02em; }
   .tk-mini-problems b { font-size:10px; }
 }
+
+
+/* Knowledge-first navigation and resilient responsive diagrams */
+.tk-home .tk-hero h1 { word-spacing:.015em; font-kerning:normal; }
+.tk-mini-problems { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); }
+.tk-mini-problems span { white-space:normal; overflow-wrap:anywhere; font-size:clamp(7px,.62vw,9px); }
+.tk-mini-problems span:last-child { font-size:clamp(7px,.56vw,8px); }
+.tk-search-trigger { gap:14px; cursor:pointer; }
+.tk-search-trigger kbd {
+  border:1px solid currentColor; border-radius:3px; padding:3px 5px;
+  font:500 10px/1.2 var(--tk-mono); white-space:nowrap;
+}
+.tk-theme-toggle {
+  border:1px solid var(--tk-line); border-radius:3px; padding:8px 10px;
+  background:transparent; color:var(--tk-text); cursor:pointer;
+  font:500 11px/1.3 Inter,Arial,sans-serif; white-space:nowrap;
+}
+.tk-theme-toggle:hover { border-color:var(--tk-primary); color:var(--tk-primary); }
+.tk-failure-explorer {
+  border-top:1px solid var(--tk-line-soft); padding:14px 16px 13px;
+  background:#f8faff;
+}
+.tk-failure-controls { display:flex; flex-wrap:wrap; gap:8px; }
+.tk-failure-controls button {
+  border:1px solid var(--tk-line); border-radius:3px; padding:8px 11px;
+  background:#fff; color:var(--tk-text); cursor:pointer;
+  font:600 11px/1.3 Inter,Arial,sans-serif;
+}
+.tk-failure-controls button.is-active {
+  border-color:var(--tk-primary); color:var(--tk-primary); background:#edf3ff;
+}
+.tk-failure-status { margin:10px 0 0; color:#465267; font-size:12px; line-height:1.6; }
+.tk-failure-explorer.is-failure { border-top-color:#d58a37; background:#fff8ed; }
+.tk-failure-explorer.is-failure .tk-failure-controls button.is-active {
+  border-color:#b96b19; color:#8a4b0b; background:#fff0d9;
+}
+.tk-failure-explorer.is-failure .tk-failure-status { color:#704516; }
+.tk-home.is-dark {
+  --tk-bg:#10141b; --tk-surface:#171d27; --tk-text:#edf2fa;
+  --tk-muted:#b5c0d0; --tk-primary:#8ab4ff; --tk-line:#394454;
+  --tk-line-soft:#2b3442; color:var(--tk-text); background:var(--tk-bg);
+}
+.tk-home.is-dark .tk-header,.tk-home.is-dark .tk-curriculum-card,
+.tk-home.is-dark .tk-figure,.tk-home.is-dark .tk-note,
+.tk-home.is-dark .tk-guideline,.tk-home.is-dark .tk-tradeoff {
+  background:var(--tk-surface); color:var(--tk-text);
+}
+.tk-home.is-dark .tk-hero-description,.tk-home.is-dark .tk-note-summary,
+.tk-home.is-dark .tk-note-body p,.tk-home.is-dark .tk-guideline-copy p,
+.tk-home.is-dark .tk-tradeoff-table tbody td { color:#bdc7d6; }
+.tk-home.is-dark .tk-mini-node,.tk-home.is-dark .tk-mini-problems span,
+.tk-home.is-dark .tk-search-trigger,.tk-home.is-dark .tk-notes-search input,
+.tk-home.is-dark .tk-theme-toggle { background:#171d27; color:var(--tk-text); }
+.tk-home.is-dark .tk-mini-node-active { background:#202d42; color:#a9c9ff; }
+.tk-home.is-dark .tk-failure-explorer { background:#1a2433; }
+.tk-home.is-dark .tk-failure-controls button { background:#171d27; color:var(--tk-text); }
+.tk-home.is-dark .tk-failure-controls button.is-active { background:#22334c; color:#a9c9ff; }
+.tk-home.is-dark .tk-failure-explorer.is-failure { background:#30251a; }
+.tk-home.is-dark .tk-failure-explorer.is-failure .tk-failure-status { color:#f2cc9b; }
+.tk-home.is-dark .tk-tradeoff-table thead { background:#202938; }
+.tk-home.is-dark .tk-tradeoff-table tbody tr:hover { background:#202938; }
+.tk-home.is-dark .tk-figure-learning-link:hover { background:#202938; }
+.tk-home.is-dark .tk-button-secondary { color:var(--tk-text); }
+.tk-home.is-dark .tk-button-primary { background:#244b82; border-color:#4777b8; }
+.tk-home.is-dark .tk-eyebrow { background:#171d27; }
+@media(prefers-reduced-motion:reduce) {
+  .tk-home * { scroll-behavior:auto !important; transition:none !important; }
+}
+@media(max-width:980px) and (min-width:768px) {
+  .tk-header { gap:12px; }
+  .tk-nav { gap:9px; }
+  .tk-nav-link { font-size:10px; }
+  .tk-theme-toggle { padding:7px; font-size:10px; }
+}
+@media(max-width:767px) {
+  .tk-failure-explorer { padding:12px; }
+  .tk-theme-toggle { width:100%; text-align:left; }
+  .tk-nav-app { display:block; }
+  .tk-home .tk-hero h1 { word-spacing:normal; }
+}
