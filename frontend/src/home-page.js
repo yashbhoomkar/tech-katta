@@ -70,6 +70,7 @@ function renderHeader() {
       '<a class="tk-nav-link tk-nav-app" href="#workspace" data-home-route="workspace">Design studio</a>' +
       '<a class="tk-nav-link tk-nav-app" href="#practice" data-home-route="practice">Practice lab</a>' +
       '<a class="tk-nav-link tk-nav-app" href="#evaluate" data-home-route="evaluate">Evaluate</a>' +
+      '<button class="tk-theme-toggle" type="button" data-theme-toggle aria-pressed="false">Dark mode</button>' +
     '</nav></header>';
 }
 
@@ -157,6 +158,22 @@ export function bindHomePage(root) {
   const home = root.querySelector(".tk-home");
   if (!home || home.dataset.bound === "true") return;
   home.dataset.bound = "true";
+  const savedTheme = (() => { try { return localStorage.getItem("tk-home-theme"); } catch { return null; } })();
+  const themeToggle = home.querySelector("[data-theme-toggle]");
+  const setTheme = (dark) => {
+    home.classList.toggle("is-dark", dark);
+    if (themeToggle) {
+      themeToggle.setAttribute("aria-pressed", String(dark));
+      themeToggle.textContent = dark ? "Light mode" : "Dark mode";
+    }
+    try { localStorage.setItem("tk-home-theme", dark ? "dark" : "light"); } catch {}
+  };
+  setTheme(savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+  themeToggle?.addEventListener("click", () => setTheme(!home.classList.contains("is-dark")));
+  home.querySelector("[data-home-search]")?.addEventListener("click", () => {
+    window.location.hash = "learn";
+    window.requestAnimationFrame(() => root.querySelector("#lesson-search")?.focus());
+  });
   const menuToggle = home.querySelector(".tk-menu-toggle");
   const nav = home.querySelector(".tk-nav");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
