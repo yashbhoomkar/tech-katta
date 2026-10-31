@@ -50,7 +50,8 @@ const play=from=>{if(!canSpeak)return;halt();const id=run.current;
 const say=i=>{if(id!==run.current)return;if(i>=q.length){setState("idle");setCur(null);idx.current=0;return}idx.current=i;setCur(q[i].key);const u=new SpeechSynthesisUtterance(q[i].text);const v=voiceRef.current;if(v){u.voice=v;u.lang=v.lang}u.rate=rateRef.current;u.onend=()=>say(i+1);u.onerror=e=>{if(e.error!=="interrupted"&&e.error!=="canceled")say(i+1)};speechSynthesis.speak(u)};
 setState("playing");say(from)};
 useEffect(()=>()=>halt(),[a]);
-const restart=()=>{if(state==="playing")setTimeout(()=>play(idx.current))};
+// Restart after a speed/voice change, unless playback was stopped or the article left meanwhile.
+const restart=()=>{if(state!=="playing")return;const id=run.current;setTimeout(()=>{if(id===run.current)play(idx.current)})};
 return{q,state,cur,rate,voices,voice:voiceRef.current?.name||"",play:()=>play(state==="paused"?idx.current:0),pause:()=>{halt();setState("paused")},stop:()=>{halt();idx.current=0;setState("idle");setCur(null)},
 setRate:r=>{rateRef.current=r;setRate(r);restart()},setVoice:n=>{localStorage.setItem("tk-voice",n);setVoiceName(n);voiceRef.current=voices.find(v=>v.name===n)||null;restart()}}}
 const vLabel=v=>v.name.replace(/^(Microsoft|Google)\s+/,"").replace(/\s+Online\s+\(Natural\)/," (natural)").replace(/\s*-\s*English.*$/,"")+(/^en[-_]IN/i.test(v.lang)?" · IN":/^en[-_]GB/i.test(v.lang)?" · UK":/^en[-_]US/i.test(v.lang)?" · US":"");
@@ -72,8 +73,10 @@ function Fig({title,cap,still,rd}){const[full,setFull]=useState(false);return <f
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{cap}</figcaption>{full&&<FullFig title={title} onClose={()=>setFull(false)}><ApiFig still={still} uid="fs"/></FullFig>}</figure>}
 
 // Share (phone share sheet where available, otherwise copy the link).
-function Share({a}){const[done,setDone]=useState(false);const url=location.href;const go=async()=>{try{if(navigator.share){await navigator.share({title:a.title,text:a.dek,url});return}await navigator.clipboard.writeText(url);setDone(true);setTimeout(()=>setDone(false),2000)}catch{}};
-return <button type="button" className="r-btn share" onClick={go}>{done?"Link copied":"↗ Share"}</button>}
+function Share({a}){const[msg,setMsg]=useState("");const url=location.href;const flash=m=>{setMsg(m);setTimeout(()=>setMsg(""),2500)};
+const go=async()=>{if(navigator.share){try{await navigator.share({title:a.title,text:a.dek,url});return}catch(e){if(e?.name==="AbortError")return}}
+try{await navigator.clipboard.writeText(url);flash("Link copied")}catch{flash("Couldn't copy the link")}};
+return <button type="button" className="r-btn share" onClick={go} aria-live="polite">{msg||"↗ Share"}</button>}
 
 function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
@@ -85,7 +88,7 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 :b.t==="example"?<aside key={i} className={"a-example"+rd(i)} aria-label="Example system"><div className="a-ex-head"><b>EXAMPLE SYSTEM</b><span>{example.name}</span><small>{example.kind}</small></div><p>{example.text}</p><dl>{example.parts.map(([k,v])=><React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl></aside>
 :b.t==="type"?<section key={i} className={"a-type"+rd(i)}><h3>{b.name}<small>{b.kind}</small></h3><p>{inline(b.how)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>What it costs</dt><dd>{inline(b.cost)}</dd><dt className="ex">In {example.name}</dt><dd className="ex">{inline(b.ex)}</dd></dl></section>
 :b.t==="fig"?<Fig key={i} title={`FIG. 01 — FOUR WAYS TWO PROGRAMS TALK, IN ${example.name.toUpperCase()}`} cap={b.cap} still={still} rd={rd(i)}/>
-:b.t==="table"?<div key={i} className={"a-table"+rd(i)} role="region" aria-label="API types compared" tabIndex="0"><table><thead><tr>{b.head.map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{b.rows.map(r=><tr key={r[0]}><th scope="row">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>:null)}
+:b.t==="table"?<div key={i} className={"a-table"+rd(i)} role="region" aria-label="API types compared" tabIndex="0"><table role="table"><thead role="rowgroup"><tr role="row">{b.head.map(h=><th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead><tbody role="rowgroup">{b.rows.map(r=><tr key={r[0]} role="row"><th scope="row" role="rowheader">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} role="cell" data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>:null)}
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
 function Section({id}){const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
