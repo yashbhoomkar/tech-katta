@@ -1,6 +1,4 @@
-// Served by the API; edit content here, not in the frontend.
-// The example system articles explain their concepts through (Zotato).
-export const example = {
+{
   "name": "Zotato",
   "kind": "FOOD DELIVERY APP",
   "text": "This article explains each idea through one made-up system: Zotato, a food delivery app. Customers order, restaurants cook, riders deliver, and an outside payment provider takes the money.",
@@ -18,4 +16,4 @@ export const example = {
       "Payment provider · Restaurants' own billing systems"
     ]
   ]
-};
+}

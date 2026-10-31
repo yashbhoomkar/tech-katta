@@ -3,9 +3,16 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
-import { site } from '../src/content/site.js';
-import { example } from '../src/content/example.js';
-import { allArticles } from '../src/content/index.js';
+import { mkdtemp, cp, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadContent } from '../src/content/store.js';
+import { validateContent } from '../src/content/validate.js';
+
+const repoContent = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'content');
+const { site, examples, articles: allArticles } = await loadContent(repoContent);
+const example = examples[site.example];
 
 async function getFreePort() {
   const probe = createServer();
@@ -16,11 +23,11 @@ async function getFreePort() {
   return port;
 }
 
-async function startServer() {
+async function startServer(env = {}) {
   const port = await getFreePort();
   const server = spawn(process.execPath, ['src/server.js'], {
     cwd: new URL('..', import.meta.url),
-    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port) },
+    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -104,32 +111,59 @@ test('content routes support HEAD and OPTIONS, and reject writes', async () => {
   assert.equal(post.headers.get('allow'), 'GET, HEAD, OPTIONS');
 });
 
-// Content checks: catch a typo in a content file before it reaches the site.
-const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more']);
-const FIGS = new Set(['patterns', 'choose', 'order', 'retry']);
-function checkBlocks(blocks, where) {
-  for (const [i, b] of blocks.entries()) {
-    const at = `${where}[${i}]`;
-    assert.ok(BLOCKS.has(b.t), `${at}: unknown block type ${b.t}`);
-    if (['h2', 'p'].includes(b.t)) assert.equal(typeof b.x, 'string', at);
-    if (['list', 'tldr'].includes(b.t)) assert.ok(b.items.length && b.items.every(x => typeof x === 'string'), at);
-    if (b.t === 'fig') { assert.ok(FIGS.has(b.id), `${at}: unknown figure ${b.id}`); assert.equal(typeof b.cap, 'string', at); }
-    if (b.t === 'type') for (const key of ['name', 'kind', 'what', 'use', 'avoid', 'ex']) assert.equal(typeof b[key], 'string', `${at}.${key}`);
-    if (b.t === 'code') for (const key of ['label', 'x', 'say']) assert.equal(typeof b[key], 'string', `${at}.${key}`);
-    if (b.t === 'table') assert.ok(b.rows.every(r => r.length === b.head.length), `${at}: row width`);
-    if (b.t === 'more') { assert.equal(typeof b.label, 'string', at); checkBlocks(b.body, `${at}.body`); }
-  }
-}
+// The repo's content must pass the same validation the deploy runs.
+test('repo content is valid', () => {
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles }), []);
+});
 
-test('every article is well formed and belongs to a dashboard section', () => {
-  const sections = new Set(site.dashboard.sections.map(s => s[0]));
-  const slugs = new Set();
-  for (const a of allArticles) {
-    assert.ok(!slugs.has(a.slug), `duplicate slug ${a.slug}`);
-    slugs.add(a.slug);
-    assert.match(a.slug, /^[a-z0-9][a-z0-9-]{0,63}$/);
-    assert.ok(sections.has(a.section), `${a.slug}: unknown section ${a.section}`);
-    for (const key of ['no', 'tag', 'date', 'title', 'dek']) assert.equal(typeof a[key], 'string', `${a.slug}.${key}`);
-    checkBlocks(a.body, a.slug);
-  }
+test('validation reports typos: unknown figure, bad table, unknown section', () => {
+  const article = structuredClone(allArticles[0]);
+  article.section = 'nowhere';
+  article.body.push({ t: 'fig', id: 'nope', cap: 'x' }, { t: 'table', head: ['a', 'b'], rows: [['only one']] });
+  const problems = validateContent({ site, examples, articles: [article] });
+  assert.ok(problems.some((p) => p.includes('unknown section nowhere')));
+  assert.ok(problems.some((p) => p.includes('unknown figure nope')));
+  assert.ok(problems.some((p) => p.includes('every row needs 2 cells')));
+});
+
+async function copyContent() {
+  const dir = await mkdtemp(path.join(tmpdir(), 'tk-content-'));
+  await cp(repoContent, dir, { recursive: true });
+  return dir;
+}
+const editJson = async (file, change) => { const value = JSON.parse(await readFile(file, 'utf8')); change(value); await writeFile(file, JSON.stringify(value)); };
+
+test('CONTENT_DIR serves content from another directory, and SIGHUP reloads it (keeping the last good copy on errors)', async (t) => {
+  const dir = await copyContent();
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await editJson(path.join(dir, 'site.json'), (s) => { s.hero.title = 'From the VPS'; });
+  const other = await startServer({ CONTENT_DIR: dir });
+  t.after(() => other.server.kill('SIGTERM'));
+  const title = async () => (await (await fetch(other.baseUrl + '/v1/site')).json()).hero.title;
+  assert.equal(await title(), 'From the VPS');
+
+  await editJson(path.join(dir, 'site.json'), (s) => { s.hero.title = 'Reloaded'; });
+  other.server.kill('SIGHUP');
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(await title(), 'Reloaded');
+
+  await writeFile(path.join(dir, 'site.json'), '{ not json');
+  other.server.kill('SIGHUP');
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(await title(), 'Reloaded');
+  const health = await (await fetch(other.baseUrl + '/health')).json();
+  assert.equal(health.content.articles, allArticles.length);
+});
+
+test('the API refuses to start on invalid content', async (t) => {
+  const dir = await copyContent();
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await editJson(path.join(dir, 'articles', 'concepts', 'api-types.json'), (a) => { a.body.push({ t: 'fig', id: 'missing', cap: 'x' }); });
+  const port = await getFreePort();
+  const child = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(port), CONTENT_DIR: dir }, stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  child.stderr.on('data', (d) => { stderr += d; });
+  const [code] = await once(child, 'exit');
+  assert.notEqual(code, 0);
+  assert.match(stderr, /unknown figure missing/);
 });

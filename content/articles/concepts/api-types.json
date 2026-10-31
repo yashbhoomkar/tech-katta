@@ -1,6 +1,4 @@
-// Served by the API; edit content here, not in the frontend.
-// Block types: see backend/src/content/README.md.
-export const article = {
+{
   "section": "concepts",
   "slug": "api-types",
   "no": "CONCEPT // 01",
@@ -318,4 +316,4 @@ export const article = {
       ]
     }
   ]
-};
+}

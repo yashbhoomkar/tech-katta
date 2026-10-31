@@ -1,6 +1,4 @@
-// Served by the API; edit content here, not in the frontend.
-// Landing page, dashboard chrome and footer copy (GET /v1/site).
-export const site = {
+{
   "brand": {
     "name": "TECH KATTA",
     "descriptor": "SYSTEMS KNOWLEDGE",
@@ -251,5 +249,6 @@ export const site = {
       "Interview Questions",
       "Quick Notes"
     ]
-  }
-};
+  },
+  "example": "zotato"
+}
