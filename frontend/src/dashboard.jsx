@@ -7,7 +7,7 @@ const d=c.dashboard,ids=d.sections.map(s=>s[0]);
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
 const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug)}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
-const words=a=>[a.dek,example.text,...a.body.flatMap(b=>[b.x,b.how,b.use,b.cost,b.ex,b.cap,...(b.items||[])])].join(" ").split(/\s+/).length;
+const words=a=>[a.dek,example.text,...a.body.flatMap(b=>[b.t==="code"?b.say:b.x,b.how,b.use,b.cost,b.ex,b.cap,...(b.items||[])])].join(" ").split(/\s+/).length;
 
 // prefers-reduced-motion, including changes while the page is open.
 function useStill(){const q="(prefers-reduced-motion: reduce)";const[s,set]=useState(()=>matchMedia(q).matches);useEffect(()=>{const m=matchMedia(q),f=()=>set(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);return s}
@@ -99,6 +99,7 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 :b.t==="list"?<ul key={i} className={rd(i)}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>
 :b.t==="example"?<aside key={i} className={"a-example"+rd(i)} aria-label="Example system"><div className="a-ex-head"><b>EXAMPLE SYSTEM</b><span>{example.name}</span><small>{example.kind}</small></div><p>{example.text}</p><dl>{example.parts.map(([k,v])=><React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl></aside>
 :b.t==="type"?<section key={i} className={"a-type"+rd(i)}><h3>{b.name}<small>{b.kind}</small></h3><p>{inline(b.how)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>What it costs</dt><dd>{inline(b.cost)}</dd><dt className="ex">In {example.name}</dt><dd className="ex">{inline(b.ex)}</dd></dl></section>
+:b.t==="code"?<figure key={i} className={"a-code"+rd(i)}><figcaption>{b.label}</figcaption><pre tabIndex="0" aria-label={b.say}><code>{b.x}</code></pre></figure>
 :b.t==="fig"?<Fig key={i} title={`FIG. 01 — FOUR WAYS TWO PROGRAMS TALK, IN ${example.name.toUpperCase()}`} cap={b.cap} still={still} rd={rd(i)}/>
 :b.t==="table"?<div key={i} className={"a-table"+rd(i)} role="region" aria-label="API types compared" tabIndex="0"><table role="table"><thead role="rowgroup"><tr role="row">{b.head.map(h=><th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead><tbody role="rowgroup">{b.rows.map(r=><tr key={r[0]} role="row"><th scope="row" role="rowheader">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} role="cell" data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>:null)}
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}

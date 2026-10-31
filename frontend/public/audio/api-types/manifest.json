@@ -103,6 +103,10 @@
 "file": "3563d4bf3f70.mp3"
 },
 {
+"text": "Permissions are checked per field rather than per endpoint, which is more flexible and easier to get wrong.",
+"file": "9d9eac4c1caf.mp3"
+},
+{
 "text": "In Dabba: The customer app's home screen needs nearby restaurants, delivery times, today's offers and your last three orders. One Graph Q L query fetches all of it.",
 "file": "1113940663a7.mp3"
 },
@@ -331,16 +335,92 @@
 "file": "af105959c059.mp3"
 },
 {
+"text": "Designing Dabba's REST API",
+"file": "acc5304a10dd.mp3"
+},
+{
+"text": "REST is what Dabba's apps and partners call, so it is worth getting the basics right. Here is the part of the API that finds restaurants and places and tracks orders.",
+"file": "f3b722546740.mp3"
+},
+{
+"text": "Start from the things in the system, not the actions. Dabba has restaurants, menus, orders and users, so those become the resources: plural nouns, each with a URL.",
+"file": "4bc32eb74bae.mp3"
+},
+{
+"text": "An endpoint called slash placeOrder or slash getMyOrders is a sign you are naming an action; ask which resource it touches instead (POST slash orders, GET slash users slash id slash orders).",
+"file": "06ef28d63043.mp3"
+},
+{
+"text": "The endpoints: list restaurants filtered by area, get one restaurant's menu, place an order, track an order, change its delivery note, cancel it before the restaurant accepts, and page through a user's order history.",
+"file": "d7cc75b74657.mp3"
+},
+{
+"text": "Put a value in the path when the request makes no sense without it: a menu always belongs to one restaurant, so slash restaurants slash id slash menu.",
+"file": "b69d420df1e0.mp3"
+},
+{
+"text": "Put it in the query string when it is optional: a filter, a sort order or a page ( area, open equals true, after). Put the data you are creating or changing in the request body.",
+"file": "dda019362153.mp3"
+},
+{
+"text": "Placing an order is a POST to slash orders with an idempotency key header. The body names the restaurant, the items, the delivery address and the payment method.",
+"file": "749ecd487873.mp3"
+},
+{
+"text": "Dabba replies 201 Created with the new order's ID, its status and the estimated delivery time.",
+"file": "b3a06e107f8f.mp3"
+},
+{
+"text": "Each method makes a promise about retries, which matters on a patchy mobile network. GET only reads. PUT replaces the whole resource, so sending it twice gives the same result.",
+"file": "6e808bedb4c9.mp3"
+},
+{
+"text": "DELETE is safe to repeat too: the order stays cancelled, even if the second call gets 404 instead of 204.",
+"file": "7bb741a7d5ba.mp3"
+},
+{
+"text": "PATCH changes part of a resource, and is only safe to repeat when it sets a value (\"set the note to ring the bell\") rather than adding to one.",
+"file": "7886c01065bf.mp3"
+},
+{
+"text": "POST creates something new every time, which is why Dabba's POST slash orders carries an idempotency key.",
+"file": "2e2ca04a0569.mp3"
+},
+{
+"text": "Keep to the common status codes: 200 OK, 201 Created, 400 bad request, 401 not logged in, 403 logged in but not allowed, 404 not found, 409 conflict (cancelling an order the restaurant has already accepted), 429 too many requests, 500 server error.",
+"file": "a509d55ae8ef.mp3"
+},
+{
+"text": "The split that matters: 4-hundreds means the caller has to change something; 5-hundreds means the server failed and a retry may work.",
+"file": "dc4c0f0cc66b.mp3"
+},
+{
 "text": "What every API needs, whatever the type",
 "file": "f30ca09bf4a4.mp3"
 },
 {
-"text": "Authentication and authorization. Authentication asks who is calling; authorization asks whether they may do this to this record. API keys usually identify an application; tokens such as J W Ts usually identify a user.",
-"file": "74a7716b5c96.mp3"
+"text": "Statelessness. Each request carries everything the server needs (the token, the page cursor), so any server behind the load balancer can answer it.",
+"file": "3a5a357da9b7.mp3"
 },
 {
-"text": "In Dabba, a customer may read order 123 only if it is theirs; being logged in is not enough.",
-"file": "3e33ed2fa68f.mp3"
+"text": "Dabba can add API servers at dinner time without moving anyone's session. Consistency, and no surprises.",
+"file": "b8efdb6e1d2f.mp3"
+},
+{
+"text": "Use the same names and response shapes on every endpoint: if order history filters with status equals delivered, the restaurant API should not use state.",
+"file": "a1f27e6b0408.mp3"
+},
+{
+"text": "Use HTTP the way everyone else does; a GET never changes anything. Authentication and authorization, on by default. Authentication asks who is calling; authorization asks whether they may do this to this record.",
+"file": "89d52a98a16f.mp3"
+},
+{
+"text": "API keys usually identify an application; tokens such as J W Ts usually identify a user. In Dabba, a customer may read order 123 only if it is theirs; being logged in is not enough.",
+"file": "6cf67f55474c.mp3"
+},
+{
+"text": "Every endpoint needs a token unless it is deliberately public, like the restaurant list.",
+"file": "22bf02b61346.mp3"
 },
 {
 "text": "Rate limits per user, per key or per IP, returning 429 Too Many Requests, usually enforced at an API gateway before traffic reaches your services.",
@@ -387,8 +467,12 @@
 "file": "714f8c87254d.mp3"
 },
 {
-"text": "Spend about five minutes on the API and move on; REST is the right default unless the question gives you a reason for something else. Name the pattern before the technology: who calls whom, and whether the caller waits.",
-"file": "98d0d456eb76.mp3"
+"text": "Spend about five minutes on the API and move on; REST is the right default unless the question gives you a reason for something else.",
+"file": "9ecfa4f7be37.mp3"
+},
+{
+"text": "List the endpoints your users call; internal g R P C calls usually get a one-line mention in the high-level design. Name the pattern before the technology: who calls whom, and whether the caller waits.",
+"file": "1ad88a2f5659.mp3"
 },
 {
 "text": "Then give the reason for your choice and its cost. Mention pagination and versioning for REST, query limits for Graph Q L, the cost of holding connections open for WebSockets, and idempotency for webhooks and queues.",
