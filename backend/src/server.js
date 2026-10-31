@@ -2,6 +2,8 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { getSite, listArticles, getArticle } from './content/index.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -39,8 +41,82 @@ function healthPayload() {
   };
 }
 
+// Public, read-only site content. Any origin may read it (no cookies or credentials are involved),
+// which also lets Vercel preview deployments load it. Responses carry an ETag and may be cached
+// briefly; content only changes when the API is redeployed.
+const contentHeaders = {
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'public, max-age=60, stale-while-revalidate=600',
+  'Access-Control-Allow-Origin': '*',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+};
+const etagCache = new Map();
+
+function sendContent(request, response, body) {
+  let entry = etagCache.get(body);
+  if (!entry) {
+    const json = JSON.stringify(body);
+    entry = { json, etag: `"${createHash('sha1').update(json).digest('base64url')}"` };
+    etagCache.set(body, entry);
+  }
+  if (request.headers['if-none-match'] === entry.etag) {
+    response.writeHead(304, { ...contentHeaders, ETag: entry.etag });
+    response.end();
+    return;
+  }
+  response.writeHead(200, { ...contentHeaders, ETag: entry.etag });
+  response.end(request.method === 'HEAD' ? undefined : entry.json);
+}
+
+function sendContentError(request, response, statusCode, error) {
+  response.writeHead(statusCode, { ...contentHeaders, 'Cache-Control': 'no-store' });
+  response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ status: 'error', error }));
+}
+
+// Built once: content is static for the life of the process, so the same objects (and ETags) are reused.
+const siteBody = getSite();
+const listBodies = new Map();
+const articleBodies = new Map();
+const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+function handleContent(request, response, pathname, searchParams) {
+  if (!['GET', 'HEAD'].includes(request.method || '')) {
+    response.setHeader('Allow', 'GET, HEAD, OPTIONS');
+    sendContentError(request, response, 405, 'method_not_allowed');
+    return;
+  }
+  if (pathname === '/v1/site') return sendContent(request, response, siteBody);
+  if (pathname === '/v1/articles') {
+    const section = searchParams.get('section') || '';
+    if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
+    if (!listBodies.has(section)) listBodies.set(section, { articles: listArticles(section) });
+    return sendContent(request, response, listBodies.get(section));
+  }
+  const slug = pathname.slice('/v1/articles/'.length);
+  if (!SLUG.test(slug)) return sendContentError(request, response, 404, 'not_found');
+  if (!articleBodies.has(slug)) {
+    const article = getArticle(slug);
+    if (!article) return sendContentError(request, response, 404, 'not_found');
+    articleBodies.set(slug, article);
+  }
+  return sendContent(request, response, articleBodies.get(slug));
+}
+
 const server = http.createServer((request, response) => {
-  const pathname = new URL(request.url || '/', 'http://localhost').pathname;
+  const url = new URL(request.url || '/', 'http://localhost');
+  const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
+
+  if (pathname === '/v1/site' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Max-Age': '600' });
+      response.end();
+      return;
+    }
+    handleContent(request, response, pathname, url.searchParams);
+    return;
+  }
 
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
