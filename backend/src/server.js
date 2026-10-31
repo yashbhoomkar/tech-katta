@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { getSite, listArticles, getArticle } from './content/index.js';
+import { loadContent, buildBodies } from './content/store.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -37,6 +37,7 @@ function healthPayload() {
     service: packageJson.name,
     version: packageJson.version,
     uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+    content: { release: content.release, articles: content.articles.length },
     timestamp: new Date().toISOString(),
   };
 }
@@ -52,7 +53,7 @@ const contentHeaders = {
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
-const etagCache = new Map();
+const etagCache = new WeakMap();
 
 function sendContent(request, response, body) {
   let entry = etagCache.get(body);
@@ -75,10 +76,23 @@ function sendContentError(request, response, statusCode, error) {
   response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ status: 'error', error }));
 }
 
-// Built once: content is static for the life of the process, so the same objects (and ETags) are reused.
-const siteBody = getSite();
-const listBodies = new Map();
-const articleBodies = new Map();
+// Content is JSON on disk (repo content/ locally; /var/lib/tech-katta/content/current on the VPS).
+// It is validated and loaded at startup; the process refuses to start on invalid content.
+// `kill -HUP` reloads it in place, and keeps serving the last good release if the new one is invalid.
+const contentDir = process.env.CONTENT_DIR || path.join(path.dirname(root), 'content');
+let content = await loadContent(contentDir);
+let bodies = buildBodies(content);
+console.log(`Content ${content.release}: ${content.articles.length} article(s) from ${contentDir}`);
+process.on('SIGHUP', async () => {
+  try {
+    const next = await loadContent(contentDir);
+    content = next;
+    bodies = buildBodies(next);
+    console.log(`Content reloaded: ${next.release}`);
+  } catch (error) {
+    console.error(`Content reload failed; still serving ${content.release}.\n${error.message}`);
+  }
+});
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 function handleContent(request, response, pathname, searchParams) {
@@ -87,21 +101,17 @@ function handleContent(request, response, pathname, searchParams) {
     sendContentError(request, response, 405, 'method_not_allowed');
     return;
   }
-  if (pathname === '/v1/site') return sendContent(request, response, siteBody);
+  if (pathname === '/v1/site') return sendContent(request, response, bodies.site);
   if (pathname === '/v1/articles') {
     const section = searchParams.get('section') || '';
     if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
-    if (!listBodies.has(section)) listBodies.set(section, { articles: listArticles(section) });
-    return sendContent(request, response, listBodies.get(section));
+    return sendContent(request, response, bodies.list(section));
   }
   const slug = pathname.slice('/v1/articles/'.length);
   if (!SLUG.test(slug)) return sendContentError(request, response, 404, 'not_found');
-  if (!articleBodies.has(slug)) {
-    const article = getArticle(slug);
-    if (!article) return sendContentError(request, response, 404, 'not_found');
-    articleBodies.set(slug, article);
-  }
-  return sendContent(request, response, articleBodies.get(slug));
+  const article = bodies.article(slug);
+  if (!article) return sendContentError(request, response, 404, 'not_found');
+  return sendContent(request, response, article);
 }
 
 const server = http.createServer((request, response) => {

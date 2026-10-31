@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'content/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
@@ -37,6 +38,8 @@ jobs:
         run: npm test
       - name: Check syntax
         run: node --check src/server.js
+      - name: Validate content
+        run: node scripts/check-content.mjs ../content
 
   deploy:
     name: Deploy and verify VPS
@@ -55,8 +58,24 @@ jobs:
             set -eu
             sudo -u techkatta bash -c 'cd /opt/tech-katta && git fetch origin main && git reset --hard origin/main'
             sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev'
+            # Content is stored on the VPS disk as dated releases; the API serves "current".
+            # A release is validated before "current" moves to it, so bad content never goes live.
+            sudo -n mkdir -p /var/lib/tech-katta/content/releases
+            sudo -n chown -R techkatta:techkatta /var/lib/tech-katta
+            sudo -u techkatta bash -c 'set -eu
+              base=/var/lib/tech-katta/content
+              rel="$base/releases/$(date -u +%Y%m%dT%H%M%SZ)-$(git -C /opt/tech-katta rev-parse --short HEAD)"
+              mkdir -p "$rel"
+              cp -a /opt/tech-katta/content/. "$rel/"
+              node /opt/tech-katta/backend/scripts/check-content.mjs "$rel"
+              ln -sfn "$rel" "$base/current.next"
+              mv -Tf "$base/current.next" "$base/current"
+              # keep the 10 newest releases; names start with a UTC timestamp, so sort by name
+              # (cp -a keeps the old mtime of the source folder, so time order is wrong)
+              ls -1d /var/lib/tech-katta/content/releases/*/ | sort -r | tail -n +11 | xargs -r rm -rf --
+              echo "content current -> $(readlink "$base/current")"'
             sudo -n mkdir -p /etc/systemd/system/tech-katta-api.service.d
-            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
+            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' 'Environment=CONTENT_DIR=/var/lib/tech-katta/content/current' | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
             sudo -n systemctl daemon-reload
             sudo -n systemctl restart tech-katta-api
             for attempt in $(seq 1 15); do
@@ -75,8 +94,13 @@ jobs:
         run: |
           set -eu
           for attempt in $(seq 1 10); do
-            if curl --fail --silent --show-error https://tech-api.katta.cc/health; then
-              echo
+            if curl --fail --silent --show-error https://tech-api.katta.cc/health >/tmp/health.json; then
+              cat /tmp/health.json; echo
+              # The API must be serving a release from the VPS content store, not the repo folder.
+              grep -q '"release":"20' /tmp/health.json || { echo 'API is not serving a content release from /var/lib/tech-katta/content.'; exit 1; }
+              curl --fail --silent --show-error -o /dev/null https://tech-api.katta.cc/v1/site
+              curl --fail --silent --show-error -o /dev/null https://tech-api.katta.cc/v1/articles
+              echo 'Content endpoints OK.'
               exit 0
             fi
             sleep 3

@@ -2,7 +2,7 @@
 
 One MP3 per chunk, named by a hash of voice + text, plus a manifest the player reads:
   frontend/public/audio/<slug>/manifest.json  {"voice": ..., "chunks": [{"text": ..., "file": ...}]}
-After recording, set `audio: true` on the article in backend/src/content/articles/<slug>.js so the player looks
+After recording, set `"audio": true` in content/articles/<section>/<slug>.json so the player looks
 for the manifest. The player uses a recording only when its text matches the chunk exactly, so an edited sentence
 falls back to the device voice until this script is run again. Unchanged chunks are not re-recorded.
 
