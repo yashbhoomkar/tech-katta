@@ -1,9 +1,9 @@
 // Articles shown in the dashboard. Each one belongs to a dashboard section and opens at
 // /dashboard/#<section>/<slug>. Body blocks: p, h2, example, type, fig, table, list. `code` in backticks.
-// Every article explains its concept through the same example system, Dabba (below). A "type"
+// Articles explain their concept through one example system where it fits: Dabba (below). A "type"
 // block's `ex` field is the "In Dabba" line.
 export const example={name:"Dabba",kind:"FOOD DELIVERY APP",
-text:"Every concept on this site is explained with the same made-up system: Dabba, a food delivery app. Customers order from restaurants, restaurants accept and cook, riders pick the food up and deliver it, and an outside payment provider takes the money.",
+text:"This article explains each idea through one made-up system: Dabba, a food delivery app. Customers order from restaurants, restaurants accept and cook, riders pick the food up and deliver it, and an outside payment provider takes the money.",
 parts:[["Apps","Customer app (Android, iOS, web) · Restaurant app · Rider app"],["Services","Orders · Payments · Dispatch (matches riders to orders) · Notifications · Invoices"],["Outside Dabba","Payment provider · Restaurants' own billing systems"]]};
 export const articles=[
 {section:"concepts",slug:"api-types",no:"CONCEPT // 01",tag:"COMMUNICATION",date:"31 Oct 2026",
