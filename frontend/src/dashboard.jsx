@@ -43,10 +43,12 @@ const Show=({t0,t1,dur,children})=><g opacity="0"><animate attributeName="opacit
 const Mark=({m})=><defs><marker id={m} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#1c2733"/></marker></defs>;
 
 // FIG: choosing an API type. Ask from the top, stop at the first yes; the packet walks three Zotato cases.
-const QS=[["Can the work happen later?","Queue"],["Another company reporting an event?","Webhook"],["Server pushes; the client only listens?","SSE"],["Both sides send often?","WebSockets"],["Your own services, and speed matters?","gRPC"],["Screens need different data?","GraphQL"],["Otherwise","REST"]];
+// Order matters: the ladder stops at the first yes, so "another company reporting an event" comes
+// before "can the work happen later" (a payment callback is a webhook even though its follow-up is queued).
+const QS=[["Another company reporting an event?","Webhook"],["Can the work happen later?","Queue"],["Server pushes; the client only listens?","SSE"],["Both sides send often?","WebSockets"],["Your own services, and speed matters?","gRPC"],["Screens need different data?","GraphQL"],["Otherwise","REST"]];
 const qy=i=>50+i*64;
 function ChooseFig({still,uid=""}){const M=`ac${uid}`,D="12s";const down=(from,to,t0,t1)=>Array.from({length:to-from},(_,k)=>{const s=t0+(t1-t0)*k/(to-from),e=t0+(t1-t0)*(k+1)/(to-from);return <Dot key={k} x1={165} x2={165} y={qy(from+k)+20} y2={qy(from+k+1)-20} t0={s} t1={e} dur={D}/>});
-return <svg viewBox="0 0 640 470" role="img" aria-labelledby={`fct${uid}`}><title id={`fct${uid}`}>Choosing an API type: ask in order whether the work can happen later (queue), whether another company is reporting an event (webhook), whether the server pushes while the client only listens (SSE), whether both sides send often (WebSockets), whether it is your own services and speed matters (gRPC), whether screens need different data (GraphQL); otherwise REST.</title><Mark m={M}/>
+return <svg viewBox="0 0 640 470" role="img" aria-labelledby={`fct${uid}`}><title id={`fct${uid}`}>Choosing an API type: ask in order whether another company is reporting an event (webhook), whether the work can happen later (queue), whether the server pushes while the client only listens (SSE), whether both sides send often (WebSockets), whether it is your own services and speed matters (gRPC), whether screens need different data (GraphQL); otherwise REST.</title><Mark m={M}/>
 {QS.map(([q,a],i)=>{const y=qy(i),last=i===QS.length-1;return <g key={q}><rect x="0" y={y-18} width="330" height="36" fill="#fff" stroke="#9aa5b4" strokeDasharray={last?"4 3":undefined}/><text x="12" y={y+4} className="fq">{q}</text>
 <Arr m={M} x1={332} x2={496} y={y} t={last?"":"yes"}/><Box x={498} y={y} w={136} t={a} blue={last}/>
 {!last&&<g><line x1="165" y1={y+18} x2="165" y2={y+44} stroke="#1c2733" markerEnd={`url(#${M})`}/><text x="173" y={y+36} className="fl">no</text></g>}</g>})}
@@ -54,7 +56,7 @@ return <svg viewBox="0 0 640 470" role="img" aria-labelledby={`fct${uid}`}><titl
 <Show t0={.001} t1={.31} dur={D}><text x="640" y="16" textAnchor="end" className="fk">ZOTATO · THE ORDER SMS</text></Show>
 <Show t0={.33} t1={.65} dur={D}><text x="640" y="16" textAnchor="end" className="fk">ZOTATO · THE TRACKING SCREEN</text></Show>
 <Show t0={.67} t1={.999} dur={D}><text x="640" y="16" textAnchor="end" className="fk">ZOTATO · THE RESTAURANT API</text></Show>
-<Dot x1={334} x2={492} y={qy(0)} t0={.03} t1={.15} dur={D}/><Glow x={498} y={qy(0)-17} w={136} h={34} t0={.15} t1={.31} dur={D}/>
+{down(0,1,.03,.08)}<Dot x1={334} x2={492} y={qy(1)} t0={.09} t1={.18} dur={D}/><Glow x={498} y={qy(1)-17} w={136} h={34} t0={.18} t1={.31} dur={D}/>
 {down(0,2,.35,.43)}<Dot x1={334} x2={492} y={qy(2)} t0={.44} t1={.52} dur={D}/><Glow x={498} y={qy(2)-17} w={136} h={34} t0={.52} t1={.65} dur={D}/>
 {down(0,6,.68,.86)}<Dot x1={334} x2={492} y={qy(6)} t0={.87} t1={.93} dur={D}/><Glow x={498} y={qy(6)-17} w={136} h={34} t0={.93} t1={.999} dur={D}/></g>}</svg>}
 
