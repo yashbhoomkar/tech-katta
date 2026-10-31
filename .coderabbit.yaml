@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Auto-review is skipped by CodeRabbit for repos with fewer than 10 stars; trigger with "@coderabbitai review".
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "frontend/src/**"
+      instructions: >-
+        Single-page React/Vite site with terse, minified-looking JSX and one-line CSS rules; do not
+        flag that style. Check accessibility, horizontal overflow from 320 px up, prefers-reduced-motion,
+        and that any number or estimate shown in copy is arithmetically correct.
+    - path: "backend/**"
+      instructions: "Node 22 service deployed to a VPS by GitHub Actions. Flag secrets, unsafe shell usage and missing input validation."
+    - path: ".github/workflows/**"
+      instructions: "Flag unpinned third-party actions, overly broad permissions and secrets exposed to pull_request_target."
+chat:
+  auto_reply: true
