@@ -7,6 +7,10 @@
     {
       "source": "/health/",
       "destination": "/health.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard/index.html"
     }
   ]
 }
