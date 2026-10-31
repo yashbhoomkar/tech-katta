@@ -9,6 +9,7 @@
 //   code {label,x,say}      preformatted; `say` is read aloud instead of the code
 //   table {head,rows}
 //   more {label,body:[blocks]}  a collapsed "Go deeper" section; not read aloud
+// Article field `audio:true` = narration recorded with tools/tts (record only when the content is final).
 // Articles explain their concept through one example system where it fits: Dabba (below).
 export const example={name:"Dabba",kind:"FOOD DELIVERY APP",
 text:"This article explains each idea through one made-up system: Dabba, a food delivery app. Customers order, restaurants cook, riders deliver, and an outside payment provider takes the money.",

@@ -44,7 +44,8 @@ const REC="recorded";
 // neural voices, Apple "Premium"/"Enhanced"/Siri voices, Chrome's "Google" voices; prefer en-IN.
 const vScore=v=>(/natural|neural|online/i.test(v.name)?100:/premium|enhanced|siri/i.test(v.name)?80:/^google/i.test(v.name)?60:0)+(/^en[-_]IN/i.test(v.lang)?20:/^en[-_](GB|US)/i.test(v.lang)?10:0)-(/compact|espeak/i.test(v.name)?40:0);
 function useVoices(){const[vs,set]=useState([]);useEffect(()=>{if(!canSpeak)return;const f=()=>set((speechSynthesis.getVoices()||[]).filter(v=>/^en/i.test(v.lang)).sort((a,b)=>vScore(b)-vScore(a)));f();speechSynthesis.addEventListener?.("voiceschanged",f);return()=>speechSynthesis.removeEventListener?.("voiceschanged",f)},[]);return vs}
-function useRecording(a){const[m,set]=useState(null);useEffect(()=>{let on=true;set(null);fetch(`/audio/${a.slug}/manifest.json`).then(r=>r.ok?r.json():null).then(j=>{if(on&&j?.chunks)set(j)}).catch(()=>{});return()=>{on=false}},[a]);return m}
+// Only articles marked `audio:true` (recorded with tools/tts) have a manifest; others are not fetched.
+function useRecording(a){const[m,set]=useState(null);useEffect(()=>{let on=true;set(null);if(!a.audio)return;fetch(`/audio/${a.slug}/manifest.json`).then(r=>r.ok?r.json():null).then(j=>{if(on&&j?.chunks)set(j)}).catch(()=>{});return()=>{on=false}},[a]);return m}
 function useReader(a){const q=React.useMemo(()=>chunks(a),[a]);const voices=useVoices();const rec=useRecording(a);
 const[voice,setVoiceName]=useState(()=>localStorage.getItem("tk-voice")||"");const[state,setState]=useState("idle");const[cur,setCur]=useState(null);const[rate,setRate]=useState(1);
 const run=useRef(0),idx=useRef(0),rateRef=useRef(1),voiceRef=useRef(null),el=useRef(null),next=useRef(null),usingRec=useRef(false);
