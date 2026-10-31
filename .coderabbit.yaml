@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# CodeRabbit reviews every pull request automatically (public repo → free open-source tier).
+# Auto-review is skipped by CodeRabbit for repos with fewer than 10 stars; trigger with "@coderabbitai review".
 language: en-US
 reviews:
   profile: chill
