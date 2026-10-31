@@ -1,0 +1,402 @@
+{
+"voice": "af_heart",
+"model": "kokoro-v1.0",
+"chunks": [
+{
+"text": "APIs: the main types, and which one to use where. REST, Graph Q L, g R P C, WebSockets, server-sent events, webhooks and message queues all move data between two programs.",
+"file": "5f58652d0de5.mp3"
+},
+{
+"text": "They differ in who starts the conversation, whether the caller waits for an answer, and what has to be agreed up front.",
+"file": "f688c92adb55.mp3"
+},
+{
+"text": "An API is a contract between two programs: what one side can ask for, in what format, and what it gets back. Most of the choice between API types comes down to two questions.",
+"file": "90a15c9e528b.mp3"
+},
+{
+"text": "Who starts the exchange: the client, the server, or neither directly? And does the caller wait for the answer, or carry on and hear about the result later?",
+"file": "ed23679ee47b.mp3"
+},
+{
+"text": "The example system: Dabba, a food delivery app. This article explains each idea through one made-up system: Dabba, a food delivery app.",
+"file": "15b7dff0cb61.mp3"
+},
+{
+"text": "Customers order from restaurants, restaurants accept and cook, riders pick the food up and deliver it, and an outside payment provider takes the money. Apps: Customer app (Android, iOS, web), Restaurant app, Rider app.",
+"file": "6a5654ff29d7.mp3"
+},
+{
+"text": "Services: Orders, Payments, Dispatch (matches riders to orders), Notifications, Invoices. Outside Dabba: Payment provider, Restaurants' own billing systems.",
+"file": "fcaaea003839.mp3"
+},
+{
+"text": "Figure 1. Four patterns cover almost every API, shown here inside Dabba. Request/response: the customer app asks for an order and waits.",
+"file": "3b5f5035984f.mp3"
+},
+{
+"text": "Open connection: the rider app opens it once, then messages flow both ways (WebSockets); with S S E they flow from server to client only. Webhook: the payment provider calls Dabba when a payment goes through.",
+"file": "928d51d2aa92.mp3"
+},
+{
+"text": "Queue: the Order service hands off work and does not wait.",
+"file": "5a725fac90be.mp3"
+},
+{
+"text": "The types",
+"file": "ada01b47384c.mp3"
+},
+{
+"text": "Two design styles sit under the request/response types. Resource-oriented APIs (REST) model things: an order, a user, a booking, each with a URL.",
+"file": "3d8fae6bdb3a.mp3"
+},
+{
+"text": "Action-oriented APIs, called RPC (remote procedure call), model verbs: createBooking, cancelOrder. g R P C is the best-known RPC framework today; Jason R P C and Apache Thrift are others.",
+"file": "e9a7d13ce667.mp3"
+},
+{
+"text": "REST. Each resource has a URL (slash orders slash 42), and HTTP methods say what to do with it: GET to read, POST to create, PUT or PATCH to change, DELETE to remove.",
+"file": "f1298a4649e8.mp3"
+},
+{
+"text": "Status codes carry the outcome (200, 404, 409), and the body is usually Jason. Use it for: Public APIs, CRUD services, anything another team or company will integrate with.",
+"file": "7e2791e06226.mp3"
+},
+{
+"text": "Every language has an HTTP client, GET responses can be cached by browsers and CDNs, and you can debug it with curl.",
+"file": "8bc0251d254e.mp3"
+},
+{
+"text": "What it costs: A screen often needs several calls (order, then customer, then items), or gets far more fields than it uses.",
+"file": "855464c2ffd3.mp3"
+},
+{
+"text": "Changing the shape of a response breaks clients, so you need versioning (slash v2 slash orders) and a plan for retiring old versions. In Dabba: Restaurants' own billing systems use Dabba's partner REST API.",
+"file": "deb6fbb93848.mp3"
+},
+{
+"text": "GET slash orders status equals new lists orders waiting to be accepted, and PATCH slash restaurants slash 42 slash items slash 7 marks a dish as sold out.",
+"file": "5c9eb275ca7e.mp3"
+},
+{
+"text": "Graph Q L. One endpoint and a typed schema.",
+"file": "eaedaa2b36cb.mp3"
+},
+{
+"text": "The client sends a query naming exactly the fields it wants, including nested ones (an order with its customer's name and each item's price), and gets back that shape and nothing else.",
+"file": "1915eed9c52c.mp3"
+},
+{
+"text": "Use it for: Product frontends whose screens each need a different slice of data from several backends, especially when web and mobile apps want different fields from the same objects.",
+"file": "6f44a0a60240.mp3"
+},
+{
+"text": "What it costs: Queries usually go as a POST to one URL, which browsers and CDNs do not cache.",
+"file": "912646d06d98.mp3"
+},
+{
+"text": "You can send queries as GET, often as persisted queries identified by a hash, to get CDN caching back, but many teams cache on the client instead.",
+"file": "20384cfddafc.mp3"
+},
+{
+"text": "A deep or wide query can be very expensive, so servers need depth and cost limits. Resolving each nested field separately causes the N plus 1 query problem unless you batch lookups.",
+"file": "3563d4bf3f70.mp3"
+},
+{
+"text": "In Dabba: The customer app's home screen needs nearby restaurants, delivery times, today's offers and your last three orders. One Graph Q L query fetches all of it.",
+"file": "1113940663a7.mp3"
+},
+{
+"text": "The restaurant page asks the same schema for different fields: the menu, ratings and photos.",
+"file": "ff9986652d2f.mp3"
+},
+{
+"text": "g R P C. You define services and messages in a dot proto file, generate client and server code from it, and call remote methods like local functions.",
+"file": "329bed7bfb80.mp3"
+},
+{
+"text": "Messages are Protocol Buffers, a compact binary format, sent over HTTP 2. Besides one request and one response, a call can stream in either direction or both.",
+"file": "9ec5d5473ce2.mp3"
+},
+{
+"text": "Use it for: Calls between your own services, where both sides share the dot proto file and latency and throughput matter. The generated code keeps services written in different languages in step.",
+"file": "87908afeab62.mp3"
+},
+{
+"text": "What it costs: Browsers cannot call g R P C directly; you need g R P C Web and a proxy, or a REST gateway in front. Payloads are not human-readable, so debugging needs tools like grpcurl.",
+"file": "eb1c24950cc1.mp3"
+},
+{
+"text": "It is a poor fit for partners who expect plain HTTP and Jason. In Dabba: When you tap Place order, the Order service calls the Payment service (AuthorizePayment) and the Dispatch service (FindRider) over g R P C.",
+"file": "aac083f0e957.mp3"
+},
+{
+"text": "Both calls are internal and you are waiting on them, so every millisecond shows.",
+"file": "28c16d6aadc5.mp3"
+},
+{
+"text": "WebSockets. The client opens an ordinary HTTP request and asks to upgrade it. After that, one TCP connection stays open and both sides can send messages whenever they like. The message format is up to you.",
+"file": "3ed2ddfb8f8b.mp3"
+},
+{
+"text": "Use it for: Chat, multiplayer games, collaborative editing, trading screens: anything where both sides send small messages often and delay matters.",
+"file": "220d2fd79612.mp3"
+},
+{
+"text": "What it costs: Every connected user holds a connection open on a server, so servers carry state. Load balancers must support long-lived connections, deploys drop connections, and clients need reconnect logic.",
+"file": "996b23a599ca.mp3"
+},
+{
+"text": "You also design your own protocol for message types, acknowledgements and errors. In Dabba: The rider app keeps a WebSocket open to Dispatch.",
+"file": "c3b2585b77c3.mp3"
+},
+{
+"text": "The app sends the rider's location every few seconds, and Dispatch pushes new delivery jobs that the rider accepts or declines on the same connection.",
+"file": "690efc576e15.mp3"
+},
+{
+"text": "Server-sent events (S S E). The browser makes one HTTP request and the server keeps the response open, writing events as text lines whenever it has something new.",
+"file": "058aeeebc9f2.mp3"
+},
+{
+"text": "The browser's EventSource reconnects on its own if the connection drops. Use it for: Notifications, live scores, progress bars, streaming a chatbot's answer word by word: cases where only the server needs to push.",
+"file": "8b84c5967ea9.mp3"
+},
+{
+"text": "What it costs: One direction only; the client sends anything else as normal requests. Text only. Over HTTP 1.",
+"file": "0035c91ef8e9.mp3"
+},
+{
+"text": "1 a browser allows about six connections per domain, so several open tabs can run out; HTTP 2 removes most of that limit.",
+"file": "aa0b51015b45.mp3"
+},
+{
+"text": "In Dabba: The order-tracking screen opens an S S E stream and receives \"Restaurant accepted\", \"Rider picked up\", \"Arriving in 4 minutes\". The customer only listens; tapping Cancel is an ordinary REST call.",
+"file": "e7b4564006d3.mp3"
+},
+{
+"text": "Webhooks. You give a provider a URL. When something happens on their side (a payment succeeds, a build finishes), they send an HTTP POST to that URL with the details.",
+"file": "5ca7170a2a84.mp3"
+},
+{
+"text": "Use it for: Hearing about events in someone else's system without asking them every few seconds whether anything has changed.",
+"file": "4dede5d5cb62.mp3"
+},
+{
+"text": "What it costs: Your endpoint is open to the internet, so check the provider's signature on every request.",
+"file": "64b083a732ad.mp3"
+},
+{
+"text": "Store the event (or put it on a queue) first, then reply 200 quickly and do the slow work afterwards; a reply sent before the event is saved can lose it.",
+"file": "9ce09140d3b7.mp3"
+},
+{
+"text": "Retry rules differ by provider: many retry failed deliveries, so the same event can arrive twice and you should record event IDs and ignore repeats; some never retry, so you need a way to catch up on missed events.",
+"file": "d975e5c5b747.mp3"
+},
+{
+"text": "Events can also arrive out of order. In Dabba: After you pay, the payment provider calls Dabba's webhook with payment.captured. Dabba checks the signature, saves the event, replies 200, and then marks the order paid.",
+"file": "4dc3f31460d6.mp3"
+},
+{
+"text": "If the same event ID arrives again, it is ignored, so no order is paid for twice.",
+"file": "30f62a13f127.mp3"
+},
+{
+"text": "Message queues and event streams. The producer writes a message to a queue or log (RabbitMQ, Amazon SQS, Kafka) and moves on. Consumers read it when they are ready. The two sides never talk to each other directly.",
+"file": "e7e0aa1a84b0.mp3"
+},
+{
+"text": "Use it for: Work that does not have to finish before you reply (emails, thumbnails, invoices), absorbing traffic spikes, and sending one event to many consumers that each do their own thing.",
+"file": "d69e8a90d15b.mp3"
+},
+{
+"text": "What it costs: The caller does not get a result, only a promise that the work will happen. Messages can be delivered more than once, so consumers must be idempotent.",
+"file": "610b9bc6ed6b.mp3"
+},
+{
+"text": "Following one request across several queues is harder to debug than following one HTTP call. In Dabba: Once an order is paid, the Order service writes order.placed to Kafka and returns.",
+"file": "9ac435308177.mp3"
+},
+{
+"text": "The Notification service sends the SMS, the restaurant app gets the ticket and the Invoice service makes the bill, each at its own pace.",
+"file": "d18ca091b991.mp3"
+},
+{
+"text": "If the Invoice service is down for ten minutes, orders still go through and the bills catch up afterwards.",
+"file": "eab12312e244.mp3"
+},
+{
+"text": "You will still meet SOAP: XML messages in a fixed envelope, described by a W S D L file. It survives in banking, insurance and government integrations.",
+"file": "f74d870153cc.mp3"
+},
+{
+"text": "You will integrate with it, but you will rarely choose it for something new.",
+"file": "8ea3750060e6.mp3"
+},
+{
+"text": "Who can call it",
+"file": "b951c6e624d2.mp3"
+},
+{
+"text": "The same API style can face very different audiences, and the audience changes the work more than the technology does.",
+"file": "43dfcc238b5b.mp3"
+},
+{
+"text": "Internal (private): only your own services and apps. You can change it quickly because you control every caller. In Dabba: Order calling Payment over g R P C.",
+"file": "5895a72db412.mp3"
+},
+{
+"text": "Partner: a few named companies, with contracts and keys you issue. Changes need notice and a migration period. In Dabba: the REST API restaurants' billing systems use. Public (open): anyone can sign up.",
+"file": "75ce3d5e829e.mp3"
+},
+{
+"text": "Documentation, rate limits and backward compatibility become most of the job. In Dabba: an API that lets companies order team lunches from their own tools.",
+"file": "5f1e607e6809.mp3"
+},
+{
+"text": "Composite: one call that fans out to several APIs and returns a combined answer, such as a gateway endpoint that builds a whole screen.",
+"file": "7550e9f670d7.mp3"
+},
+{
+"text": "In Dabba: the Graph Q L gateway behind the home screen, which calls the restaurant, offer and order services.",
+"file": "9ed2c7cda83f.mp3"
+},
+{
+"text": "Side by side",
+"file": "f1e682d7b71c.mp3"
+},
+{
+"text": "Comparison table. REST: who starts, Client; format, Jason over HTTP; from a browser, Yes; typical use, Public and CRUD APIs.",
+"file": "45eac6ddcbf0.mp3"
+},
+{
+"text": "Graph Q L: who starts, Client; format, Jason over HTTP, one URL; from a browser, Yes; typical use, Frontends with varied data needs.",
+"file": "0d6d3afd593d.mp3"
+},
+{
+"text": "g R P C: who starts, Client, then either side when streaming; format, Protobuf over HTTP 2; from a browser, Via g R P C Web proxy; typical use, Service-to-service calls.",
+"file": "ed66ca3e8fa9.mp3"
+},
+{
+"text": "WebSockets: who starts, Client opens; then either side; format, Messages you define; from a browser, Yes; typical use, Chat, games, collaboration.",
+"file": "4443e6d6fb9f.mp3"
+},
+{
+"text": "S S E: who starts, Client opens; then server only; format, Text events over HTTP; from a browser, Yes; typical use, Live feeds, notifications.",
+"file": "aedcccf3d991.mp3"
+},
+{
+"text": "Webhooks: who starts, The provider; format, Jason over HTTP POST; from a browser, No (server to server); typical use, Events from third parties.",
+"file": "8f261470efc4.mp3"
+},
+{
+"text": "Queues: who starts, Producer; nobody waits; format, Bytes you define; from a browser, No; typical use, Background work, spikes, fan-out.",
+"file": "ce8d10cee086.mp3"
+},
+{
+"text": "Which one to use where",
+"file": "c20333a7ed67.mp3"
+},
+{
+"text": "Other teams or companies will call it: REST, documented with an OpenAPI spec. (Dabba's restaurant API.)",
+"file": "ff45cb2ef6d3.mp3"
+},
+{
+"text": "One frontend pulls data from many services and each screen needs something different: Graph Q L, or one REST endpoint per screen (a backend-for-frontend). (Dabba's home screen.)",
+"file": "67cdd285b067.mp3"
+},
+{
+"text": "Your own services call each other and latency matters: g R P C. (Order to Payment, Order to Dispatch.) The server pushes updates and the client only listens: S S E. Both sides send often: WebSockets.",
+"file": "86ee770172c1.mp3"
+},
+{
+"text": "(Order tracking; the rider app.) You would otherwise poll a third party to ask whether something is done: webhooks. (Payment confirmations.)",
+"file": "fde5b9441f19.mp3"
+},
+{
+"text": "The caller does not need the result right now, or load comes in bursts: a queue. (SMS, restaurant tickets, invoices after an order.)",
+"file": "a41df2a1cdf5.mp3"
+},
+{
+"text": "Real systems mix them, and one Dabba order uses almost every type. The app loads the home screen with one Graph Q L query.",
+"file": "7bc2a6782ddb.mp3"
+},
+{
+"text": "Tapping Place order sends POST slash orders, and the Order service calls Payment and Dispatch over g R P C while you wait. The payment provider confirms the charge with a webhook. The Order service writes order.",
+"file": "cc722386056d.mp3"
+},
+{
+"text": "placed to Kafka, and notifications, the restaurant ticket and the invoice follow from it. Your tracking screen updates over S S E, while the rider app talks to Dispatch over a WebSocket.",
+"file": "af105959c059.mp3"
+},
+{
+"text": "What every API needs, whatever the type",
+"file": "f30ca09bf4a4.mp3"
+},
+{
+"text": "Authentication and authorization. Authentication asks who is calling; authorization asks whether they may do this to this record. API keys usually identify an application; tokens such as J W Ts usually identify a user.",
+"file": "74a7716b5c96.mp3"
+},
+{
+"text": "In Dabba, a customer may read order 123 only if it is theirs; being logged in is not enough.",
+"file": "3e33ed2fa68f.mp3"
+},
+{
+"text": "Rate limits per user, per key or per IP, returning 429 Too Many Requests, usually enforced at an API gateway before traffic reaches your services.",
+"file": "db75ca38d553.mp3"
+},
+{
+"text": "Dabba's login endpoint, which sends an OTP by SMS, allows only a few requests per phone number per hour, because every SMS costs money. Pagination for any list that can grow.",
+"file": "479d63e42c31.mp3"
+},
+{
+"text": "Offset pages ( page equals 3) are simple but skip or repeat items when data changes underneath; cursors ( after equals abc) stay stable but cannot jump to page 40.",
+"file": "5538a8f669f8.mp3"
+},
+{
+"text": "Dabba's order history uses cursors, so new orders arriving at the top do not shift the pages you are scrolling. Safe retries. GET, PUT and DELETE should be idempotent: repeating them leaves the same result.",
+"file": "0febbba14162.mp3"
+},
+{
+"text": "For POST operations like payments, accept an idempotency key so a retried request is not charged twice.",
+"file": "37abd71a8d7a.mp3"
+},
+{
+"text": "Dabba's app sends one with POST slash orders, so a double tap or a retry on a patchy mobile network still creates one order.",
+"file": "6c9d470fa0f7.mp3"
+},
+{
+"text": "Errors with a stable machine-readable code next to a message a person can act on, in the same shape on every endpoint.",
+"file": "7f6cafdce153.mp3"
+},
+{
+"text": "A versioning plan: a version in the URL (slash v2 slash) is easy to see and route; a version in a header keeps URLs clean but is easy to miss.",
+"file": "b55a873a6f6f.mp3"
+},
+{
+"text": "Old versions of Dabba's app stay installed on phones for months, so slash v1 has to keep working long after slash v2 ships.",
+"file": "3e993f1bf1ab.mp3"
+},
+{
+"text": "In an interview",
+"file": "31235b0a12da.mp3"
+},
+{
+"text": "Pick one system and keep using it, as this article does with Dabba; concrete examples are easier to follow than abstract ones.",
+"file": "714f8c87254d.mp3"
+},
+{
+"text": "Spend about five minutes on the API and move on; REST is the right default unless the question gives you a reason for something else. Name the pattern before the technology: who calls whom, and whether the caller waits.",
+"file": "98d0d456eb76.mp3"
+},
+{
+"text": "Then give the reason for your choice and its cost. Mention pagination and versioning for REST, query limits for Graph Q L, the cost of holding connections open for WebSockets, and idempotency for webhooks and queues.",
+"file": "ba161ad58b9c.mp3"
+},
+{
+"text": "Those details show you have run these systems, not just read about them.",
+"file": "2a1740ec5c92.mp3"
+}
+]
+}
