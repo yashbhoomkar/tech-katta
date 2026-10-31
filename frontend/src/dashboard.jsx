@@ -5,7 +5,7 @@ const ICON={concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H
 const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[name]}/></svg>;
 const d=c.dashboard,ids=d.sections.map(s=>s[0]);
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{const[sec,slug]=decodeURIComponent(location.hash.slice(1)).split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug)}};
+const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug)}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 const words=a=>[a.dek,...a.body.flatMap(b=>[b.x,b.how,b.use,b.cost,b.cap,...(b.items||[])])].join(" ").split(/\s+/).length;
 
@@ -16,8 +16,8 @@ const ROWS=[["REQUEST / RESPONSE","REST · GraphQL · gRPC"],["OPEN CONNECTION",
 function ApiFig(){return <svg viewBox="0 0 640 372" role="img" aria-labelledby="fig1t"><title id="fig1t">Four API interaction patterns: request and response, open connection, webhook callback, and asynchronous queue.</title><defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#1c2733"/></marker></defs>
 {ROWS.map(([a,b],i)=><g key={a}>{i>0&&<line x1="0" x2="640" y1={i*93} y2={i*93} stroke="#d9dee7"/>}<text x="0" y={i*93+42} className="fk">{a}</text><text x="0" y={i*93+58} className="fs">{b}</text></g>)}
 <Box x={200} y={46} t="Client"/><Box x={512} y={46} w={120} t="Server"/><Arr x1={314} x2={510} y={38} t="request"/><Arr x1={510} x2={314} y={56} t="response" ty={72} dash/>
-<Box x={200} y={139} t="Client"/><Box x={512} y={139} w={120} t="Server"/><rect x="314" y="131" width="198" height="16" fill="#f5f7fa" stroke="#d9dee7"/><text x="413" y="124" textAnchor="middle" className="fl">one connection stays open</text><Arr x1={320} x2={505} y={135}/><Arr x1={505} x2={320} y={143}/><text x="413" y="164" textAnchor="middle" className="fl">messages either way, any time</text>
-<Box x={200} y={232} t="Provider"/><Box x={512} y={232} w={120} t="Your server" blue/><Arr x1={314} x2={510} y={224} t="POST when an event happens"/><Arr x1={510} x2={314} y={242} t="200 OK, quickly" ty={258} dash/>
+<Box x={200} y={139} t="Client"/><Box x={512} y={139} w={120} t="Server"/><rect x="314" y="131" width="198" height="16" fill="#f5f7fa" stroke="#d9dee7"/><text x="413" y="124" textAnchor="middle" className="fl">one connection stays open</text><Arr x1={320} x2={505} y={135}/><Arr x1={505} x2={320} y={143}/><text x="413" y="164" textAnchor="middle" className="fl">WebSockets: both ways · SSE: server → client</text>
+<Box x={200} y={232} t="Provider"/><Box x={512} y={232} w={120} t="Your server" blue/><Arr x1={314} x2={510} y={224} t="POST when an event happens"/><Arr x1={510} x2={314} y={242} t="200 OK once the event is stored" ty={258} dash/>
 <Box x={200} y={325} t="Producer"/><Box x={366} y={325} w={92} t="Queue" blue/><Box x={512} y={325} w={120} t="Consumer"/><Arr x1={314} x2={364} y={325}/><Arr x1={460} x2={510} y={325}/><text x="413" y="358" textAnchor="middle" className="fl">nobody waits for a reply</text></svg>}
 
 function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];return <article className="d-panel d-article" aria-labelledby="d-title">
@@ -26,7 +26,7 @@ function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];return
 {a.body.map((b,i)=>b.t==="h2"?<h2 key={i}>{b.x}</h2>:b.t==="p"?<p key={i}>{inline(b.x)}</p>
 :b.t==="list"?<ul key={i}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>
 :b.t==="type"?<section key={i} className="a-type"><h3>{b.name}<small>{b.kind}</small></h3><p>{inline(b.how)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>What it costs</dt><dd>{inline(b.cost)}</dd></dl></section>
-:b.t==="fig"?<figure key={i} className="a-fig"><div className="a-fig-head">FIG. 01 — FOUR WAYS TWO PROGRAMS TALK</div><div className="a-fig-scroll"><ApiFig/></div><figcaption>{b.cap}</figcaption></figure>
+:b.t==="fig"?<figure key={i} className="a-fig"><div className="a-fig-head">FIG. 01 — FOUR WAYS TWO PROGRAMS TALK</div><div className="a-fig-scroll" role="region" aria-label="Figure 1, scrollable" tabIndex="0"><ApiFig/></div><figcaption>{b.cap}</figcaption></figure>
 :b.t==="table"?<div key={i} className="a-table" role="region" aria-label="API types compared" tabIndex="0"><table><thead><tr>{b.head.map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{b.rows.map(r=><tr key={r[0]}><th scope="row">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j}>{x}</td>)}</tr>)}</tbody></table></div>:null)}
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
