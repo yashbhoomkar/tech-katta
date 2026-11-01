@@ -11,7 +11,7 @@ import { loadContent } from '../src/content/store.js';
 import { validateContent } from '../src/content/validate.js';
 
 const repoContent = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'content');
-const { site, examples, articles: allArticles } = await loadContent(repoContent);
+const { site, examples, articles: allArticles, lab } = await loadContent(repoContent);
 const example = examples[site.example];
 
 async function getFreePort() {
@@ -113,7 +113,42 @@ test('content routes support HEAD and OPTIONS, and reject writes', async () => {
 
 // The repo's content must pass the same validation the deploy runs.
 test('repo content is valid', () => {
-  assert.deepEqual(validateContent({ site, examples, articles: allArticles }), []);
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab }), []);
+});
+
+test('GET /v1/lab returns the Lab catalogue', async () => {
+  const response = await get('/v1/lab');
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('access-control-allow-origin'), '*');
+  const body = await response.json();
+  assert.equal(body.budget, 200000);
+  assert.deepEqual(body.components.map((c) => c.type), ['client', 'apigw', 'server', 'database']);
+  assert.ok(body.example.nodes.length >= 4);
+});
+
+test('lab validation reports a bad catalogue', () => {
+  const bad = structuredClone(lab);
+  bad.components[2].defaultSize = 'x9.huge';
+  bad.example.edges.push({ from: 'clients', to: 'nowhere' });
+  const problems = validateContent({ site, examples, articles: allArticles, lab: bad });
+  assert.ok(problems.some((p) => p.includes('defaultSize x9.huge')));
+  assert.ok(problems.some((p) => p.includes('missing node')));
+});
+
+test('lab validation checks the shape and units of every setting', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  assert.ok(check((l) => { l.components[2].sizes = null; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { l.components[0].rps = null; }).some((p) => p.includes('components[0]: rps')));
+  assert.ok(check((l) => { delete l.components[2].sizes[0].rps; l.components[2].sizes[0].qps = 500; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { delete l.components[3].sizes[0].qps; l.components[3].sizes[0].rps = 500; }).some((p) => p.includes('components[3]: sizes')));
+  assert.ok(check((l) => { l.components[2].sizes[1].hourly = Infinity; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { l.components[1].limitRps = -1; }).some((p) => p.includes('components[1]: limitRps')));
+});
+
+test('content preflight allows If-None-Match', async () => {
+  const response = await get('/v1/lab', { method: 'OPTIONS' });
+  assert.equal(response.status, 204);
+  assert.match(response.headers.get('access-control-allow-headers') || '', /If-None-Match/);
 });
 
 test('validation reports typos: unknown figure, bad table, unknown section', () => {

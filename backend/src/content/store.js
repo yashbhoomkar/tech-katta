@@ -21,23 +21,25 @@ export async function loadContent(dir) {
     if (!/^[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/.test(entry)) throw new Error(`articles/index.json: bad entry ${entry}`);
     articles.push(await readJson(path.join(dir, 'articles', `${entry}.json`)));
   }
-  const problems = validateContent({ site, examples, articles });
+  const lab = await readJson(path.join(dir, 'lab.json'));
+  const problems = validateContent({ site, examples, articles, lab });
   if (problems.length) throw new Error(`Invalid content in ${dir}:\n- ${problems.join('\n- ')}`);
   let release = path.basename(dir);
   try { release = path.basename(realpathSync(dir)); } catch {}
-  return { site, examples, articles, release };
+  return { site, examples, articles, lab, release };
 }
 
 const SUMMARY_FIELDS = ['section', 'slug', 'no', 'tag', 'date', 'title', 'dek', 'audio'];
 const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
-export function buildBodies({ site, examples, articles }) {
+export function buildBodies({ site, examples, articles, lab }) {
   const example = examples[site.example];
   const lists = new Map();
   const full = new Map(articles.map((a) => [a.slug, { ...a, example }]));
   return {
     site: { ...site, example },
+    lab,
     list(section) {
       if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map((a) => pick(a, SUMMARY_FIELDS)) });
       return lists.get(section);

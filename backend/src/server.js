@@ -102,6 +102,7 @@ function handleContent(request, response, pathname, searchParams) {
     return;
   }
   if (pathname === '/v1/site') return sendContent(request, response, bodies.site);
+  if (pathname === '/v1/lab') return sendContent(request, response, bodies.lab);
   if (pathname === '/v1/articles') {
     const section = searchParams.get('section') || '';
     if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
@@ -118,9 +119,9 @@ const server = http.createServer((request, response) => {
   const url = new URL(request.url || '/', 'http://localhost');
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
-  if (pathname === '/v1/site' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
+  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
     if (request.method === 'OPTIONS') {
-      response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Max-Age': '600' });
+      response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'If-None-Match', 'Access-Control-Max-Age': '600' });
       response.end();
       return;
     }

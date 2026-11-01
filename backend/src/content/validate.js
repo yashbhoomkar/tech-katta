@@ -22,8 +22,45 @@ function checkBlocks(blocks, where, problems) {
   });
 }
 
-export function validateContent({ site, examples, articles }) {
+// The Lab's component catalogue (content/lab.json): the frontend simulates designs with these numbers,
+// so every number must be a finite value of the right sign and every setting the right shape.
+const positive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
+const nonNegative = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const range = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every(positive) && r.min <= r.default && r.default <= r.max;
+// For each type: the required fields and a check of each one's shape. Server sizes are rated in
+// requests per second (rps), database sizes in queries per second (qps).
+const sizesOf = (unit) => (sizes) => Array.isArray(sizes) && sizes.length > 0 && sizes.every((s) => s && isText(s.id) && isText(s.label) && positive(s.hourly) && positive(s[unit]));
+const LAB_TYPES = {
+  client: { rps: range },
+  apigw: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
+  server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText },
+  database: { latencyMs: positive, sizes: sizesOf('qps'), defaultSize: isText, multiAz: (m) => m && typeof m === 'object' && isText(m.label) && typeof m.default === 'boolean' && typeof m.priceFactor === 'number' && Number.isFinite(m.priceFactor) && m.priceFactor >= 1 },
+};
+export function validateLab(lab, problems = []) {
+  const at = 'lab.json';
+  if (!lab) { problems.push(`${at}: missing`); return problems; }
+  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
+  const types = new Set();
+  for (const [i, c] of (lab.components || []).entries()) {
+    const where = `${at} components[${i}]`;
+    if (!LAB_TYPES[c.type]) { problems.push(`${where}: unknown type ${c.type}`); continue; }
+    if (types.has(c.type)) problems.push(`${where}: duplicate type ${c.type}`);
+    types.add(c.type);
+    for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
+    for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
+    if (Array.isArray(c.sizes) && !c.sizes.some((s) => s && s.id === c.defaultSize)) problems.push(`${where}: defaultSize ${c.defaultSize} is not one of its sizes`);
+  }
+  for (const type of Object.keys(LAB_TYPES)) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
+  const ids = new Set((lab.example?.nodes || []).map((n) => n.id));
+  for (const n of lab.example?.nodes || []) if (!types.has(n.type)) problems.push(`${at} example: node ${n.id} has unknown type ${n.type}`);
+  for (const e of lab.example?.edges || []) if (!ids.has(e.from) || !ids.has(e.to)) problems.push(`${at} example: edge ${e.from}→${e.to} points at a missing node`);
+  return problems;
+}
+
+export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
+  if (lab !== undefined) validateLab(lab, problems);
   for (const key of ['brand', 'nav', 'hero', 'topics', 'notes', 'numbers', 'dashboard', 'footer']) if (!site || !site[key]) problems.push(`site.json: missing ${key}`);
   if (!site || !examples[site.example]) problems.push(`site.json: example "${site && site.example}" has no examples/<id>.json`);
   const sections = new Set((site?.dashboard?.sections || []).map((s) => s[0]));

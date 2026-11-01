@@ -1,0 +1,71 @@
+{
+  "title": "System Design Lab",
+  "intro": "Drag components onto the canvas, connect them, then send virtual traffic through your design. Every design has $200,000 of virtual AWS credit a month.",
+  "budget": 200000,
+  "region": "Mumbai (ap-south-1)",
+  "priceNote": "Approximate AWS on-demand list prices for Mumbai, for learning only. Data transfer and storage are not counted yet.",
+  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows steady load: each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity.",
+  "smallScreen": "The Lab is built for a laptop or tablet. On a phone you can look around, but designing is easier on a bigger screen.",
+  "components": [
+    {
+      "type": "client",
+      "name": "Clients",
+      "group": "Traffic",
+      "desc": "Your users' apps and browsers. Set how many requests per second they send.",
+      "rps": { "label": "Requests per second", "default": 1000, "min": 1, "max": 200000 }
+    },
+    {
+      "type": "apigw",
+      "name": "API Gateway",
+      "group": "Edge",
+      "desc": "Managed front door: routing, authentication and throttling. Billed per request; the account limit is about 10,000 requests a second.",
+      "latencyMs": 10,
+      "limitRps": 10000,
+      "pricePerMillion": 3.5
+    },
+    {
+      "type": "server",
+      "name": "Server",
+      "group": "Compute",
+      "desc": "EC2 instances running your API. More or bigger instances handle more requests a second.",
+      "latencyMs": 20,
+      "sizes": [
+        { "id": "t3.medium", "label": "t3.medium · 2 vCPU, 4 GB", "rps": 300, "hourly": 0.0448 },
+        { "id": "m5.large", "label": "m5.large · 2 vCPU, 8 GB", "rps": 600, "hourly": 0.101 },
+        { "id": "m5.xlarge", "label": "m5.xlarge · 4 vCPU, 16 GB", "rps": 1200, "hourly": 0.202 },
+        { "id": "c5.2xlarge", "label": "c5.2xlarge · 8 vCPU, 16 GB", "rps": 2500, "hourly": 0.34 }
+      ],
+      "count": { "label": "Instances", "default": 2, "min": 1, "max": 50 },
+      "defaultSize": "m5.large"
+    },
+    {
+      "type": "database",
+      "name": "Database",
+      "group": "Storage",
+      "desc": "RDS for PostgreSQL. By default every request that reaches a server makes one query. Multi-AZ keeps a standby copy and doubles the price.",
+      "latencyMs": 5,
+      "sizes": [
+        { "id": "db.t3.medium", "label": "db.t3.medium · 2 vCPU, 4 GB", "qps": 800, "hourly": 0.087 },
+        { "id": "db.m5.large", "label": "db.m5.large · 2 vCPU, 8 GB", "qps": 2500, "hourly": 0.205 },
+        { "id": "db.m5.xlarge", "label": "db.m5.xlarge · 4 vCPU, 16 GB", "qps": 5000, "hourly": 0.41 },
+        { "id": "db.r5.2xlarge", "label": "db.r5.2xlarge · 8 vCPU, 64 GB", "qps": 12000, "hourly": 1.15 }
+      ],
+      "defaultSize": "db.m5.large",
+      "multiAz": { "label": "Multi-AZ standby", "default": false, "priceFactor": 2 }
+    }
+  ],
+  "example": {
+    "name": "Zotato order API",
+    "nodes": [
+      { "id": "clients", "type": "client", "x": 0, "y": 160, "config": { "rps": 1000 } },
+      { "id": "gateway", "type": "apigw", "x": 260, "y": 160, "config": {} },
+      { "id": "orders", "type": "server", "x": 520, "y": 160, "config": { "size": "m5.large", "count": 2 } },
+      { "id": "db", "type": "database", "x": 780, "y": 160, "config": { "size": "db.m5.large", "multiAz": true } }
+    ],
+    "edges": [
+      { "from": "clients", "to": "gateway" },
+      { "from": "gateway", "to": "orders" },
+      { "from": "orders", "to": "db" }
+    ]
+  }
+}
