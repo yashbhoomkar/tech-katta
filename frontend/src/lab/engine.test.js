@@ -103,3 +103,72 @@ test('the API Gateway never crashes (it throttles)', () => {
   const run = advance(at(scaled(50, true), 50000), lab, newRun(), 60);
   assert.ok(!run.events.some((e) => e.id === 'gateway'));
 });
+
+// ---- Phase 2: load balancer, cache, queue ----
+const N = (id, type, config = {}) => ({ id, type, x: 0, y: 0, config });
+const E = (from, to) => ({ from, to });
+
+test('a cache in front of the database sends it only misses and writes', () => {
+  // 1,000 req/s × 2 queries = 2,000 queries/s; 10% writes, 80% of reads hit → 28% reach the database
+  const d = { nodes: [N('c', 'client', { rps: 1000 }), N('s', 'server', { size: 'm5.large', count: 2, queriesPerRequest: 2 }), N('k', 'cache', { size: 'cache.t3.medium', hitPct: 80, writePct: 10 }), N('db', 'database', { size: 'db.t3.medium' })],
+    edges: [E('c', 's'), E('s', 'k'), E('k', 'db')] };
+  const r = simulate(d, lab);
+  assert.equal(r.nodes.k.offered, 2000);
+  assert.ok(Math.abs(r.nodes.db.offered - 560) < 1e-6, String(r.nodes.db.offered));
+  assert.equal(Math.round(r.total.successPct), 100);
+  // without the cache the same db.t3.medium (800 qps) gets 2,000 queries/s and fails
+  const bare = simulate({ nodes: d.nodes.filter((n) => n.id !== 'k'), edges: [E('c', 's'), E('s', 'db')] }, lab);
+  assert.ok(bare.nodes.db.utilisation > 2 && bare.total.successPct < 80, String(bare.total.successPct));
+  // and the cached design is faster: most queries skip the database's latency
+  const slowDb = simulate({ ...d, nodes: d.nodes.map((n) => (n.id === 'k' ? { ...n, config: { ...n.config, hitPct: 0 } } : n)) }, lab);
+  assert.ok(r.nodes.k.pathMs < slowDb.nodes.k.pathMs);
+  assert.ok(r.total.monthlyCost > 0 && r.nodes.k.cost > 0);
+});
+
+test('a crashed cache fails its queries even when the database is fine', () => {
+  const d = { nodes: [N('c', 'client', { rps: 500 }), N('s', 'server'), N('k', 'cache'), N('db', 'database')], edges: [E('c', 's'), E('s', 'k'), E('k', 'db')] };
+  const r = simulate(d, lab, { down: new Set(['k']) });
+  assert.equal(r.nodes.db.offered, 0);
+  assert.ok(r.total.successPct < 1, String(r.total.successPct));
+});
+
+test('a load balancer spreads requests evenly and is billed per hour plus load', () => {
+  const d = { nodes: [N('c', 'client', { rps: 1500 }), N('lb', 'lb'), N('a', 'server', { size: 'm5.large', count: 2 }), N('b', 'server', { size: 'm5.large', count: 2 }), N('db', 'database', { size: 'db.m5.xlarge' })],
+    edges: [E('c', 'lb'), E('lb', 'a'), E('lb', 'b'), E('a', 'db'), E('b', 'db')] };
+  const r = simulate(d, lab);
+  assert.equal(r.nodes.a.offered, 750); assert.equal(r.nodes.b.offered, 750);
+  assert.equal(Math.round(r.total.successPct), 100);
+  const lbc = catalogue(lab).lb;
+  assert.ok(Math.abs(monthlyCost(lbc, {}, 1500) - (lbc.hourly + 1500 / lbc.rpsPerLcu * lbc.lcuHourly) * 730) < 1e-9);
+  assert.ok(monthlyCost(lbc, {}, 0) > 0, 'an idle load balancer still costs its hourly price');
+});
+
+test('a queue answers users at once and protects slow workers; the backlog grows and drains', () => {
+  // API servers put one message per request on the queue; one t3.medium worker handles 300/s
+  const d = { nodes: [N('c', 'client', { rps: 500 }), N('api', 'server', { size: 'm5.large', count: 2 }), N('q', 'queue'), N('w', 'server', { size: 't3.medium', count: 1 }), N('db', 'database')],
+    edges: [E('c', 'api'), E('api', 'q'), E('q', 'w'), E('w', 'db')] };
+  const r = simulate(d, lab);
+  assert.equal(Math.round(r.total.successPct), 100, 'users do not wait for the workers');
+  assert.equal(r.nodes.q.delivered, 300);
+  assert.equal(r.nodes.w.offered, 300); assert.equal(r.nodes.w.dropped, 0);
+  assert.ok(r.total.latencyMs < 60, `latency excludes the workers: ${r.total.latencyMs}`);
+  // ten minutes: 200 messages/s × 600 s = 120,000 waiting, and the worker never overloads
+  let run = advance(d, lab, newRun(), 10);
+  assert.ok(Math.abs(run.backlog.q - 120000) < 1, String(run.backlog.q));
+  assert.equal(run.events[0].kind, 'backlog');
+  assert.deepEqual(run.down, {});
+  // traffic drops to 100/s: the worker drains 200/s more than arrives → empty after 10 minutes
+  const quiet = at(d, 100);
+  const busy = simulate(quiet, lab, { backlog: new Set(['q']) });
+  assert.equal(busy.nodes.w.offered, 300, 'while there is a backlog the workers run flat out');
+  run = advance(quiet, lab, run, 15);
+  assert.equal(run.backlog.q, undefined);
+  const drained = run.events.find((e) => e.kind === 'drained');
+  assert.ok(drained && Math.abs(drained.t - 20) < 1e-6, JSON.stringify(run.events));
+});
+
+test('a queue with nothing reading it only builds a backlog', () => {
+  const d = { nodes: [N('c', 'client', { rps: 50 }), N('s', 'server'), N('q', 'queue')], edges: [E('c', 's'), E('s', 'q')] };
+  const run = advance(d, lab, newRun(), 1);
+  assert.ok(Math.abs(run.backlog.q - 3000) < 1e-6, String(run.backlog.q));
+});

@@ -4,7 +4,7 @@
   "budget": 200000,
   "region": "Mumbai (ap-south-1)",
   "priceNote": "Approximate AWS on-demand list prices for Mumbai, for learning only. Data transfer and storage are not counted yet.",
-  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows steady load: each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity.",
+  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows steady load: each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity. Queues are asynchronous: users get their answer once the message is stored, and a backlog shows how far behind the workers are.",
   "smallScreen": "The Lab is built for a laptop or tablet. On a phone you can look around, but designing is easier on a bigger screen.",
   "components": [
     {
@@ -27,6 +27,17 @@
       "latencyMs": 10,
       "limitRps": 10000,
       "pricePerMillion": 3.5
+    },
+    {
+      "type": "lb",
+      "name": "Load Balancer",
+      "group": "Edge",
+      "desc": "Application Load Balancer. Spreads requests evenly over the servers it points at and scales by itself. Cheaper than an API Gateway at high traffic, but it does no authentication or throttling. Billed per hour plus per LCU, a unit of load (here about 300 requests a second).",
+      "latencyMs": 2,
+      "limitRps": 100000,
+      "hourly": 0.0239,
+      "lcuHourly": 0.008,
+      "rpsPerLcu": 300
     },
     {
       "type": "server",
@@ -77,6 +88,60 @@
         "above": 1.5,
         "minutes": 10,
         "downMinutes": 5
+      }
+    },
+    {
+      "type": "queue",
+      "name": "Queue",
+      "group": "Messaging",
+      "desc": "SQS standard queue. The sender is done as soon as the message is stored; the workers it points at take messages as fast as they can. If messages arrive faster than the workers handle them, a backlog builds up and drains later. Users never wait for the workers. Billed per request.",
+      "latencyMs": 8,
+      "limitRps": 100000,
+      "pricePerMillion": 0.4
+    },
+    {
+      "type": "cache",
+      "name": "Cache",
+      "group": "Storage",
+      "desc": "ElastiCache for Redis, placed between your servers and the database (Server → Cache → Database). Reads it already holds come back in about a millisecond; misses and all writes go on to the database. Every query touches the cache, so size it for the full query rate.",
+      "latencyMs": 1,
+      "sizes": [
+        {
+          "id": "cache.t3.medium",
+          "label": "cache.t3.medium · 2 vCPU, 3 GB",
+          "ops": 20000,
+          "hourly": 0.068
+        },
+        {
+          "id": "cache.m5.large",
+          "label": "cache.m5.large · 2 vCPU, 6.4 GB",
+          "ops": 50000,
+          "hourly": 0.156
+        },
+        {
+          "id": "cache.r5.large",
+          "label": "cache.r5.large · 2 vCPU, 13 GB",
+          "ops": 60000,
+          "hourly": 0.216
+        }
+      ],
+      "defaultSize": "cache.t3.medium",
+      "hitPct": {
+        "label": "Reads found in the cache (%)",
+        "default": 80,
+        "min": 0,
+        "max": 99
+      },
+      "writePct": {
+        "label": "Writes (% of queries)",
+        "default": 10,
+        "min": 0,
+        "max": 100
+      },
+      "crash": {
+        "above": 1.5,
+        "minutes": 5,
+        "downMinutes": 10
       }
     },
     {
@@ -182,5 +247,5 @@
     ]
   },
   "retries": 1,
-  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed."
+  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later; while it is down its queries fail. Load Balancers and Queues scale by themselves and never crash."
 }

@@ -42,3 +42,8 @@ test("prototype-looking ids and types are treated as plain data",()=>{
   assert.deepEqual(s.designs["__proto__"].edges,[]);
   assert.equal(JSON.parse(JSON.stringify(s)).designs["__proto__"].name,"P","survives a save");
 });
+
+test("cache settings are kept inside their ranges",()=>{
+  const out=cleanDesign({nodes:[{id:"k",type:"cache",config:{hitPct:250,writePct:-3,size:"cache.m5.large"}}],edges:[]},lab,"x");
+  assert.deepEqual(out.nodes[0].config,{hitPct:99,writePct:0,size:"cache.m5.large"});
+});

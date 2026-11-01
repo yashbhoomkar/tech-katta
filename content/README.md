@@ -6,6 +6,7 @@ Everything tech.katta.cc shows comes from these JSON files. The API (`backend/`)
 content/
 ├── site.json                    landing page, dashboard chrome, footer   → GET /v1/site
 │                                ("example": id of the example system below)
+├── lab.json                     System Design Lab catalogue and example design → GET /v1/lab
 ├── examples/
 │   └── zotato.json              the example system articles explain things through
 └── articles/
@@ -35,6 +36,27 @@ An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optiona
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows}` · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+
+## Lab catalogue (`lab.json`)
+
+`{title, intro, region, budget, retries, priceNote, modelNote, crashNote, smallScreen, components, example}`.
+Each component has `type, name, group, desc` plus the numbers its type needs (checked by
+`backend/src/content/validate.js`, simulated by `frontend/src/lab/engine.js`):
+
+| type | fields | how it behaves |
+|---|---|---|
+| `client` | `rps {label,min,max,default}` | sends requests; retries a failed one `retries` times |
+| `apigw` | `latencyMs, limitRps, pricePerMillion` | throttles past its limit, never crashes |
+| `lb` | `latencyMs, limitRps, hourly, lcuHourly, rpsPerLcu` | spreads load evenly; billed per hour + per LCU |
+| `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash` | each request makes `queriesPerRequest` queries to a cache or database |
+| `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
+| `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash` | Server → Cache → Database: only misses and writes reach the database |
+| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash` | receives only |
+
+`client`, `apigw`, `server` and `database` are required; the others are optional. `crash` is
+`{above, minutes, downMinutes, failoverMinutes?}`. Settings ranges are `{label, min, max, default}`
+(percentages 0–100). The `example` design is checked too: unique node ids, numeric `x`/`y`,
+settings inside their ranges, and edges that never point into Clients or out of a Database.
 
 ## Changing content
 
