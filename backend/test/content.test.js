@@ -11,7 +11,7 @@ import { loadContent } from '../src/content/store.js';
 import { validateContent } from '../src/content/validate.js';
 
 const repoContent = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'content');
-const { site, examples, articles: allArticles } = await loadContent(repoContent);
+const { site, examples, articles: allArticles, lab } = await loadContent(repoContent);
 const example = examples[site.example];
 
 async function getFreePort() {
@@ -113,7 +113,26 @@ test('content routes support HEAD and OPTIONS, and reject writes', async () => {
 
 // The repo's content must pass the same validation the deploy runs.
 test('repo content is valid', () => {
-  assert.deepEqual(validateContent({ site, examples, articles: allArticles }), []);
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab }), []);
+});
+
+test('GET /v1/lab returns the Lab catalogue', async () => {
+  const response = await get('/v1/lab');
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('access-control-allow-origin'), '*');
+  const body = await response.json();
+  assert.equal(body.budget, 200000);
+  assert.deepEqual(body.components.map((c) => c.type), ['client', 'apigw', 'server', 'database']);
+  assert.ok(body.example.nodes.length >= 4);
+});
+
+test('lab validation reports a bad catalogue', () => {
+  const bad = structuredClone(lab);
+  bad.components[2].defaultSize = 'x9.huge';
+  bad.example.edges.push({ from: 'clients', to: 'nowhere' });
+  const problems = validateContent({ site, examples, articles: allArticles, lab: bad });
+  assert.ok(problems.some((p) => p.includes('defaultSize x9.huge')));
+  assert.ok(problems.some((p) => p.includes('missing node')));
 });
 
 test('validation reports typos: unknown figure, bad table, unknown section', () => {
