@@ -1,7 +1,7 @@
-import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import"./dashboard.css";
+import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import"./dashboard.css";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
-const ICON={concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
+const ICON={lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
 const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[name]}/></svg>;
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
@@ -182,20 +182,26 @@ return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.n
 function List({id}){const list=articles.filter(a=>a.section===id);return list.length?<div className="d-list"><span>{list.length} {list.length>1?"PAGES":"PAGE"}</span><ol>{list.map(a=><li key={a.slug}><a href={`#${id}/${a.slug}`}><small>{a.no}</small><b>{a.title}</b><p>{a.dek}</p><em>Read →</em></a></li>)}</ol></div>
 :<div className="d-empty"><span>0 PAGES</span><p>{d.empty}</p></div>}
 
-function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route.sec;const[collapsed,setCollapsed]=useState(()=>localStorage.getItem("tk-sidebar")==="collapsed");const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
+// The System Design Lab (React Flow + simulation) loads only when its tab is opened.
+const Lab=lazy(()=>import("./lab/Lab.jsx"));
+
+function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route.sec;const[collapsed,setCollapsed]=useState(()=>localStorage.getItem("tk-sidebar")==="collapsed");
+// The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
+// other pages is untouched), and the toggle works per mode.
+const inLab=active==="lab"&&!route.art;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
 useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false);scrollTo(0,0)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
 useEffect(()=>{localStorage.setItem("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:`${s[1]} · Dashboard | Tech Katta`},[route]);
-const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={collapsed?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
+const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
 {subs.length>0&&<div className="side-sub">{subs.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</div>}</React.Fragment>});
-return <div className={"dash"+(collapsed?" collapsed":"")+(open?" open":"")}>
-<aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b>TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={collapsed?"Expand sidebar":"Collapse sidebar"} aria-expanded={!collapsed} aria-controls="sidebar" onClick={()=>setCollapsed(v=>!v)}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
+return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
+<aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b>TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={fold?"Expand sidebar":"Collapse sidebar"} aria-expanded={!fold} aria-controls="sidebar" onClick={toggle}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
 <div className="side-label">{d.label}</div><nav className="side-nav">{links("side-link")}</nav>
 <a className="side-foot" href="/"><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><a className="d-home" href="/">tech.katta.cc</a></header>
-<main className="d-body">{route.art?<ArticlePage s={route.art}/>:<Section id={active}/>}</main></div></div>}
+<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab/></Suspense>:<Section id={active}/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
 const root=createRoot(document.getElementById("root"));
