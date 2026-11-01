@@ -1,6 +1,6 @@
 {
   "title": "System Design Lab",
-  "intro": "Drag components onto the canvas, connect them, then send virtual traffic through your design. Every design has $200,000 of virtual AWS credit a month.",
+  "intro": "Drag components onto the canvas, connect them, then send virtual traffic through your design. Every design starts with $200,000 of virtual AWS credit, spent at the design's hourly cost while its traffic runs.",
   "budget": 200000,
   "region": "Mumbai (ap-south-1)",
   "priceNote": "Approximate AWS on-demand list prices for Mumbai, for learning only. Data transfer and storage are not counted yet.",

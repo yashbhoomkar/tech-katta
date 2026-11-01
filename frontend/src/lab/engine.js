@@ -45,8 +45,8 @@ export function monthlyCost(comp, config = {}, servedRps = 0) {
 
 // One-line description of a component's setup, e.g. "2 × m5.large".
 export function summary(comp, config = {}) {
-  if (comp.type === 'client') return `${(config.rps ?? 0).toLocaleString('en-IN')} req/s`;
-  if (comp.type === 'apigw') return `limit ${comp.limitRps.toLocaleString('en-IN')} req/s`;
+  if (comp.type === 'client') return `${(config.rps ?? 0).toLocaleString('en-US')} req/s`;
+  if (comp.type === 'apigw') return `limit ${comp.limitRps.toLocaleString('en-US')} req/s`;
   if (comp.type === 'server') return `${config.count || 1} × ${sizeOf(comp, config).id}`;
   if (comp.type === 'database') return `${sizeOf(comp, config).id}${config.multiAz ? ' · Multi-AZ' : ''}`;
   return '';
@@ -109,6 +109,8 @@ export function simulate(design, lab) {
     budget: lab.budget,
     bottleneck: nodes.filter((n) => n.type !== 'client' && res[n.id].reached).sort((a, b) => res[b.id].utilisation - res[a.id].utilisation)[0]?.id || null,
   };
+  total.burnPerHour = total.monthlyCost / HOURS_PER_MONTH;
+  total.clients = clients.length;
   total.overBudget = total.monthlyCost > lab.budget;
   const unreached = nodes.filter((n) => n.type !== 'client' && !res[n.id].reached);
   if (!problems.length && unreached.length) problems.push(`${unreached.length} component${unreached.length > 1 ? 's get' : ' gets'} no traffic: connect ${unreached.length > 1 ? 'them' : 'it'} or remove ${unreached.length > 1 ? 'them' : 'it'}.`);
