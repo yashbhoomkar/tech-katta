@@ -13,6 +13,7 @@ import { validateContent } from '../src/content/validate.js';
 const repoContent = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'content');
 const { site, examples, articles: allArticles, lab } = await loadContent(repoContent);
 const example = examples[site.example];
+const I = Object.fromEntries(lab.components.map((c, i) => [c.type, i]));
 
 async function getFreePort() {
   const probe = createServer();
@@ -122,13 +123,13 @@ test('GET /v1/lab returns the Lab catalogue', async () => {
   assert.equal(response.headers.get('access-control-allow-origin'), '*');
   const body = await response.json();
   assert.equal(body.budget, 200000);
-  assert.deepEqual(body.components.map((c) => c.type), ['client', 'apigw', 'server', 'database']);
+  assert.deepEqual(body.components.map((c) => c.type), ['client', 'apigw', 'lb', 'server', 'queue', 'cache', 'database']);
   assert.ok(body.example.nodes.length >= 4);
 });
 
 test('lab validation reports a bad catalogue', () => {
   const bad = structuredClone(lab);
-  bad.components[2].defaultSize = 'x9.huge';
+  bad.components[I.server].defaultSize = 'x9.huge';
   bad.example.edges.push({ from: 'clients', to: 'nowhere' });
   const problems = validateContent({ site, examples, articles: allArticles, lab: bad });
   assert.ok(problems.some((p) => p.includes('defaultSize x9.huge')));
@@ -137,16 +138,27 @@ test('lab validation reports a bad catalogue', () => {
 
 test('lab validation checks the shape and units of every setting', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
-  assert.ok(check((l) => { l.components[2].sizes = null; }).some((p) => p.includes('components[2]: sizes')));
-  assert.ok(check((l) => { l.components[0].rps = null; }).some((p) => p.includes('components[0]: rps')));
-  assert.ok(check((l) => { delete l.components[2].sizes[0].rps; l.components[2].sizes[0].qps = 500; }).some((p) => p.includes('components[2]: sizes')));
-  assert.ok(check((l) => { delete l.components[3].sizes[0].qps; l.components[3].sizes[0].rps = 500; }).some((p) => p.includes('components[3]: sizes')));
-  assert.ok(check((l) => { l.components[2].sizes[1].hourly = Infinity; }).some((p) => p.includes('components[2]: sizes')));
-  assert.ok(check((l) => { l.components[1].limitRps = -1; }).some((p) => p.includes('components[1]: limitRps')));
-  assert.ok(check((l) => { delete l.components[2].crash; }).some((p) => p.includes('components[2]: crash')));
-  assert.ok(check((l) => { delete l.components[3].crash.failoverMinutes; }).some((p) => p.includes('components[3]: crash')));
-  assert.ok(check((l) => { l.components[2].queriesPerRequest.default = 0; }).some((p) => p.includes('components[2]: queriesPerRequest')));
+  assert.ok(check((l) => { l.components[I.server].sizes = null; }).some((p) => p.includes(`components[${I.server}]: sizes`)));
+  assert.ok(check((l) => { l.components[I.client].rps = null; }).some((p) => p.includes(`components[${I.client}]: rps`)));
+  assert.ok(check((l) => { delete l.components[I.server].sizes[0].rps; l.components[I.server].sizes[0].qps = 500; }).some((p) => p.includes(`components[${I.server}]: sizes`)));
+  assert.ok(check((l) => { delete l.components[I.database].sizes[0].qps; l.components[I.database].sizes[0].rps = 500; }).some((p) => p.includes(`components[${I.database}]: sizes`)));
+  assert.ok(check((l) => { l.components[I.server].sizes[1].hourly = Infinity; }).some((p) => p.includes(`components[${I.server}]: sizes`)));
+  assert.ok(check((l) => { l.components[I.apigw].limitRps = -1; }).some((p) => p.includes(`components[${I.apigw}]: limitRps`)));
+  assert.ok(check((l) => { delete l.components[I.server].crash; }).some((p) => p.includes(`components[${I.server}]: crash`)));
+  assert.ok(check((l) => { delete l.components[I.database].crash.failoverMinutes; }).some((p) => p.includes(`components[${I.database}]: crash`)));
+  assert.ok(check((l) => { l.components[I.server].queriesPerRequest.default = 0; }).some((p) => p.includes(`components[${I.server}]: queriesPerRequest`)));
   assert.ok(check((l) => { l.retries = 9; }).some((p) => p.includes('retries')));
+});
+
+test('lab validation checks the phase 2 components, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  assert.ok(check((l) => { l.components[I.cache].hitPct.max = 150; }).some((p) => p.includes(`components[${I.cache}]: hitPct`)));
+  assert.ok(check((l) => { delete l.components[I.cache].sizes[0].ops; }).some((p) => p.includes(`components[${I.cache}]: sizes`)));
+  assert.ok(check((l) => { l.components[I.lb].rpsPerLcu = 0; }).some((p) => p.includes(`components[${I.lb}]: rpsPerLcu`)));
+  assert.ok(check((l) => { delete l.components[I.queue].pricePerMillion; }).some((p) => p.includes(`components[${I.queue}]: pricePerMillion`)));
+  assert.deepEqual(check((l) => { l.components = l.components.filter((c) => ['client', 'apigw', 'server', 'database'].includes(c.type)); }), []);
+  assert.ok(check((l) => { l.components = l.components.filter((c) => c.type !== 'server'); }).some((p) => p.includes('missing component server')));
+  assert.ok(check((l) => { l.example.nodes.push({ id: 'c2', type: 'cache', x: 0, y: 200, config: { hitPct: 120 } }); }).some((p) => p.includes('hitPct must be from 0 to 99')));
 });
 
 test('content preflight allows If-None-Match', async () => {

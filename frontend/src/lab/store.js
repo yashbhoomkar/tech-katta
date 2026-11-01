@@ -20,6 +20,7 @@ export function cleanDesign(d,lab,id){
     const c=cat[n.type],src=obj(n.config)?n.config:{},config={};
     if(c.type==="client"&&clamp(src.rps,c.rps)!==undefined)config.rps=clamp(src.rps,c.rps);
     if(c.type==="server"){if(clamp(src.count,c.count)!==undefined)config.count=Math.round(clamp(src.count,c.count));if(clamp(src.queriesPerRequest,c.queriesPerRequest)!==undefined)config.queriesPerRequest=clamp(src.queriesPerRequest,c.queriesPerRequest)}
+    if(c.type==="cache")for(const k of["hitPct","writePct"])if(clamp(src[k],c[k])!==undefined)config[k]=clamp(src[k],c[k]);
     if(Array.isArray(c.sizes)&&c.sizes.some(s=>s.id===src.size))config.size=src.size;
     if(c.type==="database"&&typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
     seen.add(n.id);nodes.push({id:n.id,type:n.type,x:fin(n.x)?n.x:0,y:fin(n.y)?n.y:0,config});

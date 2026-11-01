@@ -13,7 +13,7 @@ import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 const SPEEDS=[["1 s = 1 minute",1/60],["1 s = 10 minutes",1/6],["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
 const simTime=h=>{const m=Math.floor(h*60+1e-6),d=Math.floor(m/1440),hh=Math.floor(m%1440/60),mm=m%60;return `Day ${d+1}, ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`};
 const cents=n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
+const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
 const duration=h=>h<1?`${Math.round(h*60)} minutes`:h<48?`${Math.round(h)} hours`:h<24*90?`${Math.round(h/24)} days`:`${(h/730).toFixed(1)} months`;
 // New components go to the nearest free spot around the point asked for, so they never stack.
 const W=176,H=110;
@@ -32,9 +32,9 @@ const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
 const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"smoothstep",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
 
-const ICON={client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
+const ICON={client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
-const level=u=>u>=1?"over":u>=0.7?"warn":"ok";
+const level=u=>u>1+1e-9?"over":u>=0.7?"warn":"ok";
 
 function CompNode({id,data,selected}){const{cat,result,running,run}=useContext(Ctx);const comp=cat[data.kind];const r=result.nodes[id];
 const back=run.down[id];const st=back!==undefined?"down":running&&r&&data.kind!=="client"?level(r.utilisation):"";
@@ -43,6 +43,7 @@ return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 <div className="ln-head"><Glyph kind={data.kind}/><small>{comp.group.toUpperCase()}</small></div>
 <b>{comp.name}</b><span className="ln-sum">{summary(comp,data.config)}</span>
 {back!==undefined?<span className="ln-m ln-down">CRASHED · back in {Math.max(1,Math.ceil(back-run.t))} min</span>:running&&r&&(data.kind==="client"?<span className="ln-m">sending {num(r.offered)} req/s{r.offered>(data.config.rps||0)*1.001?" incl. retries":""}</span>
+:data.kind==="queue"?<span className={"ln-m"+(run.backlog?.[id]>0?" ln-q":"")}>{num(r.served)}/s in · {num(r.delivered)}/s to workers{run.backlog?.[id]>0?` · backlog ${num(run.backlog[id])}`:""}</span>
 :<><div className="ln-bar"><i style={{width:Math.min(100,r.utilisation*100)+"%"}}/></div><span className="ln-m">{Math.round(r.utilisation*100)}% · {Math.round(r.latencyMs)} ms{r.dropped>0?` · drops ${num(r.dropped)}/s`:""}</span></>)}
 {data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const nodeTypes={comp:CompNode};
@@ -73,12 +74,15 @@ if(!node)return <aside className="lab-ins" aria-label="Details"><div className="
 const comp=cat[node.data.kind],cfg=node.data.config,r=result.nodes[node.id];const set=patch=>update(node.id,{...cfg,...patch});
 return <aside className="lab-ins" aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><h3><Glyph kind={comp.type}/>{comp.name}</h3><p className="lab-desc">{comp.desc}</p>
 {comp.type==="client"&&<Field label={comp.rps.label}><input type="number" min={comp.rps.min} max={comp.rps.max} step="100" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:Math.max(comp.rps.min,Math.min(comp.rps.max,+e.target.value||0))})}/><input type="range" min={comp.rps.min} max={Math.min(comp.rps.max,20000)} step="50" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:+e.target.value})} aria-label={comp.rps.label}/></Field>}
-{comp.sizes&&<Field label="Size"><select value={cfg.size||comp.defaultSize} onChange={e=>set({size:e.target.value})}>{comp.sizes.map(s=><option key={s.id} value={s.id}>{s.label} · {num(s.rps||s.qps)} {s.rps?"req":"queries"}/s · ${s.hourly}/h</option>)}</select></Field>}
+{comp.sizes&&<Field label="Size"><select value={cfg.size||comp.defaultSize} onChange={e=>set({size:e.target.value})}>{comp.sizes.map(s=><option key={s.id} value={s.id}>{s.label} · {num(s.rps||s.qps||s.ops)} {s.rps?"req":s.qps?"queries":"ops"}/s · ${s.hourly}/h</option>)}</select></Field>}
 {comp.queriesPerRequest&&<Field label={comp.queriesPerRequest.label}><input type="number" min={comp.queriesPerRequest.min} max={comp.queriesPerRequest.max} value={cfg.queriesPerRequest??comp.queriesPerRequest.default} onChange={e=>set({queriesPerRequest:Math.max(comp.queriesPerRequest.min,Math.min(comp.queriesPerRequest.max,Math.round(+e.target.value)||1))})}/></Field>}
+{["hitPct","writePct"].map(k=>comp[k]&&<Field key={k} label={comp[k].label}><input type="number" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:Math.max(comp[k].min,Math.min(comp[k].max,Math.round(+e.target.value)||0))})}/><input type="range" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:+e.target.value})} aria-label={comp[k].label}/></Field>)}
 {comp.count&&<Field label={comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>set({count:Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>}
 {comp.multiAz&&<label className="lab-check"><input type="checkbox" checked={!!cfg.multiAz} onChange={e=>set({multiAz:e.target.checked})}/>{comp.multiAz.label}</label>}
 {comp.type==="apigw"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd><dt>Limit</dt><dd>{num(comp.limitRps)} req/s</dd></dl>}
-<dl className="lab-kv">{comp.type!=="client"&&<><dt>Capacity</dt><dd>{r&&r.capacity!==Infinity?num(r.capacity)+(comp.type==="database"?" queries/s":" req/s"):"—"}</dd></>}<dt>Monthly cost</dt><dd>{usd(r?.cost||0)}</dd>
+{comp.type==="lb"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.hourly}/hour + ${comp.lcuHourly} per LCU-hour</dd><dt>1 LCU</dt><dd>≈ {num(comp.rpsPerLcu)} req/s</dd></dl>}
+{comp.type==="queue"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd>{running&&r&&<><dt>Sent to workers</dt><dd>{num(r.delivered)}/s</dd><dt>Backlog</dt><dd className={run.backlog?.[node.id]>0?"warn":""}>{num(run.backlog?.[node.id]||0)} messages{run.backlog?.[node.id]>0&&r.delivered>r.served?` · clears in ${duration(run.backlog[node.id]/(r.delivered-r.served)/3600)}`:""}</dd></>}</dl>}
+<dl className="lab-kv">{comp.type!=="client"&&<><dt>Capacity</dt><dd>{r&&r.capacity!==Infinity?num(r.capacity)+(comp.type==="database"?" queries/s":comp.type==="cache"?" ops/s":comp.type==="queue"?" messages/s":" req/s"):"—"}</dd></>}<dt>Monthly cost</dt><dd>{usd(r?.cost||0)}</dd>
 {running&&r&&comp.type!=="client"&&<><dt>Load</dt><dd className={level(r.utilisation)}>{num(r.offered)}/s · {Math.round(r.utilisation*100)}%</dd><dt>Latency here</dt><dd>{Math.round(r.latencyMs)} ms</dd><dt>Dropped</dt><dd>{num(r.dropped)}/s</dd></>}</dl>
 <button type="button" className="lab-btn ghost" onClick={()=>remove(node.id)}>Remove from design</button></aside>}
 

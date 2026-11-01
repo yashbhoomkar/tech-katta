@@ -88,6 +88,7 @@ export function validateSite(site, examples, problems = []) {
 // so every number must be a finite value of the right sign and every setting the right shape.
 const positive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 const nonNegative = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const percent = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every(nonNegative) && r.max <= 100 && r.min <= r.default && r.default <= r.max;
 const range = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every(positive) && r.min <= r.default && r.default <= r.max;
 // For each type: the required fields and a check of each one's shape. Server sizes are rated in
 // requests per second (rps), database sizes in queries per second (qps).
@@ -100,7 +101,13 @@ const LAB_TYPES = {
   apigw: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
   server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText, queriesPerRequest: range, crash: crashPolicy(false) },
   database: { latencyMs: positive, sizes: sizesOf('qps'), defaultSize: isText, crash: crashPolicy(true), multiAz: (m) => m && typeof m === 'object' && isText(m.label) && typeof m.default === 'boolean' && typeof m.priceFactor === 'number' && Number.isFinite(m.priceFactor) && m.priceFactor >= 1 },
+  // Phase 2. Cache sizes are rated in operations per second (ops). Percentages run 0 to 100.
+  lb: { latencyMs: positive, limitRps: positive, hourly: positive, lcuHourly: nonNegative, rpsPerLcu: positive },
+  cache: { latencyMs: positive, sizes: sizesOf('ops'), defaultSize: isText, hitPct: percent, writePct: percent, crash: crashPolicy(false) },
+  queue: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
 };
+// Every catalogue needs the original four; the others are optional so content can add them later.
+const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
   const at = 'lab.json';
   if (!lab) { problems.push(`${at}: missing`); return problems; }
@@ -117,7 +124,7 @@ export function validateLab(lab, problems = []) {
     for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
     if (Array.isArray(c.sizes) && !c.sizes.some((s) => s && s.id === c.defaultSize)) problems.push(`${where}: defaultSize ${c.defaultSize} is not one of its sizes`);
   }
-  for (const type of Object.keys(LAB_TYPES)) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
+  for (const type of REQUIRED_TYPES) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
   validateDesign(lab.example, lab, `${at} example`, problems);
   return problems;
 }
@@ -141,6 +148,7 @@ export function validateDesign(design, lab, at, problems = []) {
     const inRange = (key, r) => { if (cfg[key] !== undefined && !(isNumber(cfg[key]) && r && cfg[key] >= r.min && cfg[key] <= r.max)) problems.push(`${where}: ${key} must be from ${r?.min} to ${r?.max}`); };
     if (c.type === 'client') inRange('rps', c.rps);
     if (c.type === 'server') { inRange('count', c.count); inRange('queriesPerRequest', c.queriesPerRequest); }
+    if (c.type === 'cache') { inRange('hitPct', c.hitPct); inRange('writePct', c.writePct); }
     if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
   }
