@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { simulate, monthlyCost, catalogue, advance, newRun } from './engine.js';
+import { simulate, monthlyCost, catalogue, advance, newRun, trafficAt, runOptions } from './engine.js';
 
 const lab = JSON.parse(readFileSync(new URL('../../../content/lab.json', import.meta.url)));
 const example = { nodes: lab.example.nodes, edges: lab.example.edges };
@@ -156,7 +156,7 @@ test('a queue answers users at once and protects slow workers; the backlog grows
   let run = advance(d, lab, newRun(), 10);
   assert.ok(Math.abs(run.backlog.q - 120000) < 1, String(run.backlog.q));
   assert.equal(run.events[0].kind, 'backlog');
-  assert.deepEqual(run.down, {});
+  assert.deepEqual(Object.keys(run.down), []);
   // traffic drops to 100/s: the worker drains 200/s more than arrives → empty after 10 minutes
   const quiet = at(d, 100);
   const busy = simulate(quiet, lab, { backlog: new Set(['q']) });
@@ -171,4 +171,67 @@ test('a queue with nothing reading it only builds a backlog', () => {
   const d = { nodes: [N('c', 'client', { rps: 50 }), N('s', 'server'), N('q', 'queue')], edges: [E('c', 's'), E('s', 'q')] };
   const run = advance(d, lab, newRun(), 1);
   assert.ok(Math.abs(run.backlog.q - 3000) < 1e-6, String(run.backlog.q));
+});
+
+// Phase 2: time-based traffic and autoscaling.
+const client = lab.components.find((c) => c.type === 'client');
+const withClients = (config) => ({ ...example, nodes: example.nodes.map((n) => (n.type === 'client' ? { ...n, config } : n)) });
+
+test('traffic patterns: the rps setting is the peak, the pattern follows the simulated day', () => {
+  assert.equal(trafficAt(client, { pattern: 'steady' }, 600), 1);
+  assert.equal(trafficAt(client, {}, 600), 1, 'no pattern = steady');
+  assert.equal(trafficAt(client, { pattern: 'meals' }, 20.5 * 60), 1);
+  assert.equal(trafficAt(client, { pattern: 'meals' }, 4 * 60), 0.05);
+  assert.ok(Math.abs(trafficAt(client, { pattern: 'meals' }, 12 * 60) - 0.6) < 1e-9, 'linear between points');
+  assert.equal(trafficAt(client, { pattern: 'meals' }, (24 + 20.5) * 60), 1, 'repeats every day');
+  assert.equal(trafficAt(client, { pattern: 'sale' }, 19.99 * 60), 0.2);
+  assert.equal(trafficAt(client, { pattern: 'sale' }, 20 * 60), 1, 'jumps at 8 pm');
+  assert.equal(trafficAt(client, { pattern: 'sale' }, 20.25 * 60), 0.2, 'and back after 15 minutes');
+  const d = withClients({ rps: 1000, pattern: 'meals' });
+  assert.equal(simulate(d, lab, { minute: 4 * 60 }).total.sentRps, 50);
+  assert.equal(simulate(d, lab, { minute: 20.5 * 60 }).nodes.db.offered, 2000);
+});
+
+test('a flash sale crashes fixed servers but the run catches the spike in small steps', () => {
+  const d = withClients({ rps: 2400, pattern: 'sale' }); // 480 req/s all day, 2,400 at 8 pm
+  let run = { ...newRun(), start: 19 }; // starts at 7 pm
+  run = advance(d, lab, run, 60);
+  assert.equal(run.events.length, 0, 'quiet before the sale');
+  run = advance(d, lab, run, 60); // 8–9 pm: 2,400 req/s on 1,200 for 15 min → crash after 10
+  const crash = run.events.find((e) => e.kind === 'crashed');
+  assert.ok(crash && crash.t >= 70 && crash.t <= 72, JSON.stringify(run.events));
+  assert.ok(run.served / run.sent < 1);
+});
+
+test('autoscaling adds instances after the warm-up and removes them once load stays low', () => {
+  const as = lab.components.find((c) => c.type === 'server').autoscaling;
+  const d = structuredClone(withClients({ rps: 2000, pattern: 'meals' }));
+  d.nodes.find((n) => n.id === 'orders').config = { size: 'm5.large', count: 2, maxCount: 10, autoscale: true };
+  d.nodes.find((n) => n.id === 'db').config = { size: 'db.r5.2xlarge' };
+  let run = { ...newRun(), start: 18 };
+  assert.equal(simulate(d, lab, runOptions(run, 18 * 60)).nodes.orders.capacity, 1200, 'starts at the minimum');
+  run = advance(d, lab, run, 150); // 6 pm → 8:30 pm, the dinner peak (2,000 req/s)
+  const want = Math.ceil(2000 / (600 * as.targetPct / 100)); // 6 instances
+  assert.equal(run.scale.orders.n, want, JSON.stringify(run.scale));
+  const out = run.events.filter((e) => e.kind === 'scaledOut');
+  assert.ok(out.length > 0 && out[0].t >= as.warmupMinutes, 'first instances arrive after the warm-up');
+  const r = simulate(d, lab, runOptions(run, (run.start * 60) + run.t));
+  assert.equal(r.nodes.orders.capacity, want * 600);
+  assert.ok(Math.round(r.total.successPct) === 100 && r.nodes.orders.utilisation <= 0.61);
+  assert.ok(r.total.monthlyCost > simulate(d, lab, { minute: 18 * 60 }).total.monthlyCost, 'more instances cost more');
+  run = advance(d, lab, run, 8 * 60); // into the night: 4 am is 100 req/s
+  assert.equal(run.scale.orders.n, 2, 'back to the minimum');
+  assert.ok(run.events.some((e) => e.kind === 'scaledIn'));
+  const fixed = structuredClone(d); fixed.nodes.find((n) => n.id === 'orders').config.autoscale = false;
+  assert.deepEqual(Object.keys(advance(fixed, lab, { ...newRun(), start: 18 }, 150).scale), [], 'no scaling when it is off');
+});
+
+test('autoscaling never goes past the maximum and keeps its state per design node', () => {
+  const d = structuredClone(withClients({ rps: 20000 }));
+  d.nodes.find((n) => n.id === 'orders').config = { size: 'm5.large', count: 2, maxCount: 5, autoscale: true };
+  const run = advance(d, lab, newRun(), 30);
+  assert.equal(run.scale.orders.n, 5);
+  const odd = structuredClone(d); odd.nodes.find((n) => n.id === 'orders').id = '__proto__'; odd.edges = odd.edges.map((e) => ({ from: e.from === 'orders' ? '__proto__' : e.from, to: e.to === 'orders' ? '__proto__' : e.to }));
+  const r2 = advance(odd, lab, newRun(), 30);
+  assert.ok(Object.hasOwn(r2.scale, '__proto__') && r2.scale['__proto__'].n === 5);
 });

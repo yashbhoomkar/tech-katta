@@ -59,3 +59,12 @@
 @media(prefers-reduced-motion:reduce){.lab .react-flow__edge.animated path{animation:none}.ln-bar i{transition:none}}
 @media(max-width:900px){.lab-small{display:block}.lab-wrap{height:auto}.lab{grid-template-columns:1fr;grid-template-rows:auto auto 62vh auto auto}.lab-top{flex-wrap:wrap}.lab-budget{margin-left:0;min-width:0;flex:1 1 100%;order:3}
 .lab-pal{grid-row:4;border-right:0;border-top:1px solid var(--line)}.lab-canvas{grid-row:3}.lab-ins{grid-row:5;border-left:0;border-top:1px solid var(--line)}}
+.lab-day{margin:4px 0 12px}
+.lab-day svg{display:block;width:100%;height:auto;overflow:visible}
+.lab-day-a{fill:rgba(40,85,217,.08)}
+.lab-day-l{fill:none;stroke:var(--blue);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.lab-day-now{stroke:#1c2733;stroke-width:1;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
+.lab-day text{font:500 8px var(--mono);fill:var(--muted)}
+.lab-day figcaption{font:500 11px var(--mono);color:var(--muted);margin-top:4px}
+.lab-note-tight{margin:0 0 12px}
+.lab-log li.scaledOut,.lab-log li.scaledIn{color:var(--blue)}

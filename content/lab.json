@@ -4,20 +4,43 @@
   "budget": 200000,
   "region": "Mumbai (ap-south-1)",
   "priceNote": "Approximate AWS on-demand list prices for Mumbai, for learning only. Data transfer and storage are not counted yet.",
-  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows steady load: each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity. Queues are asynchronous: users get their answer once the message is stored, and a backlog shows how far behind the workers are.",
+  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity. Traffic follows the Clients' pattern over the simulated day, so pick a faster speed to watch a whole day. Queues are asynchronous: users get their answer once the message is stored, and a backlog shows how far behind the workers are.",
   "smallScreen": "The Lab is built for a laptop or tablet. On a phone you can look around, but designing is easier on a bigger screen.",
   "components": [
     {
       "type": "client",
       "name": "Clients",
       "group": "Traffic",
-      "desc": "Your users' apps and browsers. Set how many requests per second they send.",
+      "desc": "Your users' apps and browsers. Set how many requests per second they send at the busiest moment, and how that changes through the day.",
       "rps": {
-        "label": "Requests per second",
+        "label": "Requests per second (at the busiest moment)",
         "default": 1000,
         "min": 1,
         "max": 200000
-      }
+      },
+      "patterns": [
+        {
+          "id": "steady",
+          "label": "Steady",
+          "desc": "The same rate all day.",
+          "short": "steady",
+          "points": [[0, 1], [24, 1]]
+        },
+        {
+          "id": "meals",
+          "label": "Lunch and dinner rush",
+          "desc": "The full rate at 8:30 pm, three quarters of it at 1 pm, almost nothing at 4 am.",
+          "short": "lunch and dinner rush",
+          "points": [[0, 0.2], [4, 0.05], [8, 0.15], [11, 0.45], [13, 0.75], [15, 0.35], [18, 0.45], [20.5, 1], [22.5, 0.5], [24, 0.2]]
+        },
+        {
+          "id": "sale",
+          "label": "Flash sale at 8 pm",
+          "desc": "The full rate for 15 minutes from 8 pm, a fifth of it the rest of the day.",
+          "short": "8 pm flash sale",
+          "points": [[0, 0.2], [20, 0.2], [20, 1], [20.25, 1], [20.25, 0.2], [24, 0.2]]
+        }
+      ]
     },
     {
       "type": "apigw",
@@ -43,7 +66,7 @@
       "type": "server",
       "name": "Server",
       "group": "Compute",
-      "desc": "EC2 instances running your API. More or bigger instances handle more requests a second. Each request makes a few database queries.",
+      "desc": "EC2 instances running your API. More or bigger instances handle more requests a second. Each request makes a few database queries. With autoscaling on, the group adds instances when load rises and removes them when it falls.",
       "latencyMs": 20,
       "sizes": [
         {
@@ -88,6 +111,16 @@
         "above": 1.5,
         "minutes": 10,
         "downMinutes": 5
+      },
+      "autoscaling": {
+        "label": "Autoscaling",
+        "minLabel": "Fewest instances",
+        "targetPct": 60,
+        "warmupMinutes": 4,
+        "scaleInMinutes": 15,
+        "defaultMax": 10,
+        "maxLabel": "Most instances",
+        "note": "Keeps each instance near 60% load. A new instance takes 4 minutes to boot, so a sudden spike still hits the instances already running. Instances are removed after load has stayed low for 15 minutes. You pay for the instances that are running."
       }
     },
     {

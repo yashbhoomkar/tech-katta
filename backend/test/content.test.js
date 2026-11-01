@@ -161,6 +161,30 @@ test('lab validation checks the phase 2 components, which are optional', () => {
   assert.ok(check((l) => { l.example.nodes.push({ id: 'c2', type: 'cache', x: 0, y: 200, config: { hitPct: 120 } }); }).some((p) => p.includes('hitPct must be from 0 to 99')));
 });
 
+test('lab validation checks traffic patterns and autoscaling, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  const C = `components[${I.client}]`, S = `components[${I.server}]`;
+  assert.deepEqual(check((l) => { delete l.components[I.client].patterns; delete l.components[I.server].autoscaling; }), []);
+  assert.ok(check((l) => { l.components[I.client].patterns[1].points[0][0] = 1; }).some((p) => p.includes(`${C}: patterns`)), 'must start at hour 0');
+  assert.ok(check((l) => { l.components[I.client].patterns[1].points.at(-1)[0] = 23; }).some((p) => p.includes(`${C}: patterns`)), 'must end at hour 24');
+  assert.ok(check((l) => { l.components[I.client].patterns[1].points.reverse(); }).some((p) => p.includes(`${C}: patterns`)), 'hours never go back');
+  assert.ok(check((l) => { l.components[I.client].patterns[1].points[2][1] = 3; }).some((p) => p.includes(`${C}: patterns`)), 'multipliers at most 1');
+  assert.ok(check((l) => { l.components[I.client].patterns[1].points = [[0, 0.5], [24, 0.5]]; }).some((p) => p.includes(`${C}: patterns`)), 'peak at 1');
+  assert.ok(check((l) => { l.components[I.client].patterns[2].id = 'steady'; }).some((p) => p.includes(`${C}: patterns`)), 'unique ids');
+  assert.ok(check((l) => { delete l.components[I.client].patterns[0].short; }).some((p) => p.includes(`${C}: patterns`)));
+  assert.ok(check((l) => { delete l.components[I.client].patterns[0].desc; }).some((p) => p.includes(`${C}: patterns`)));
+  assert.ok(check((l) => { delete l.components[I.server].autoscaling.minLabel; }).some((p) => p.includes(`${S}: autoscaling`)));
+  assert.ok(check((l) => { l.components[I.server].autoscaling.targetPct = 0; }).some((p) => p.includes(`${S}: autoscaling`)));
+  assert.ok(check((l) => { delete l.components[I.server].autoscaling.warmupMinutes; }).some((p) => p.includes(`${S}: autoscaling`)));
+  assert.ok(check((l) => { l.components[I.server].autoscaling.defaultMax = 99; }).some((p) => p.includes('defaultMax is above count.max')));
+  const node = (config) => (l) => { l.example.nodes.find((n) => n.type === config.type).config = config.config; };
+  assert.ok(check(node({ type: 'client', config: { rps: 10, pattern: 'nope' } })).some((p) => p.includes('unknown traffic pattern nope')));
+  assert.ok(check(node({ type: 'server', config: { count: 2, autoscale: 'yes' } })).some((p) => p.includes('autoscale must be true or false')));
+  assert.ok(check(node({ type: 'server', config: { count: 4, maxCount: 3, autoscale: true } })).some((p) => p.includes('maxCount is below count')));
+  assert.ok(check(node({ type: 'server', config: { count: 2, maxCount: 80 } })).some((p) => p.includes('maxCount must be from 1 to 50')));
+  assert.deepEqual(check(node({ type: 'server', config: { size: 'm5.large', count: 2, maxCount: 8, autoscale: true } })), []);
+});
+
 test('content preflight allows If-None-Match', async () => {
   const response = await get('/v1/lab', { method: 'OPTIONS' });
   assert.equal(response.status, 204);
