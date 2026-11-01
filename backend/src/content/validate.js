@@ -5,6 +5,7 @@ const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'co
 export const FIGS = new Set(['patterns', 'choose', 'order', 'retry']);
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
+const list = (v) => (Array.isArray(v) ? v : []);
 const isText = (value) => typeof value === 'string' && value.trim() !== '';
 
 function checkBlocks(blocks, where, problems) {
@@ -15,11 +16,72 @@ function checkBlocks(blocks, where, problems) {
     if (['h2', 'p'].includes(b.t) && !isText(b.x)) problems.push(`${at}: needs text x`);
     if (['list', 'tldr'].includes(b.t) && !(Array.isArray(b.items) && b.items.length && b.items.every(isText))) problems.push(`${at}: needs items`);
     if (b.t === 'fig') { if (!FIGS.has(b.id)) problems.push(`${at}: unknown figure ${b.id}`); if (!isText(b.cap)) problems.push(`${at}: needs cap`); }
-    if (b.t === 'type') for (const key of ['name', 'kind', 'what', 'use', 'avoid', 'ex']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
+    if (b.t === 'type') {
+      for (const key of ['name', 'kind', 'what', 'use', 'avoid', 'ex']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
+      if (b.more !== undefined && !(Array.isArray(b.more) && b.more.length && b.more.every(isText))) problems.push(`${at}: more must be a list of paragraphs`);
+    }
     if (b.t === 'code') for (const key of ['label', 'x', 'say']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
-    if (b.t === 'table' && !(Array.isArray(b.head) && Array.isArray(b.rows) && b.rows.every((r) => Array.isArray(r) && r.length === b.head.length))) problems.push(`${at}: every row needs ${b.head && b.head.length} cells`);
+    if (b.t === 'table') {
+      if (!(Array.isArray(b.head) && b.head.length && b.head.every(isText))) problems.push(`${at}: head must be a list of column names`);
+      if (!(Array.isArray(b.rows) && b.rows.length && b.rows.every((r) => Array.isArray(r) && r.length === list(b.head).length))) problems.push(`${at}: every row needs ${list(b.head).length} cells`);
+      else if (!b.rows.every((r) => r.every(isText))) problems.push(`${at}: every cell needs text`);
+    }
     if (b.t === 'more') { if (!isText(b.label)) problems.push(`${at}: needs label`); checkBlocks(b.body, `${at}.body`, problems); }
   });
+}
+
+// A small shape checker for the JSON the frontend renders. A spec is 'text', 'number', 'bool',
+// [spec] (a non-empty list), {tuple: [spec, ...]} (a fixed-length list), {oneOf: Set} or an object
+// of specs (a key ending in '?' is optional). Everything the frontend reads is described here, so
+// a missing or mistyped field fails at deploy instead of crashing the page.
+const isNumber = (v) => typeof v === 'number' && Number.isFinite(v);
+function shape(value, spec, at, problems) {
+  if (spec === 'text') { if (!isText(value)) problems.push(`${at}: needs text`); return; }
+  if (spec === 'number') { if (!isNumber(value)) problems.push(`${at}: needs a number`); return; }
+  if (spec === 'bool') { if (typeof value !== 'boolean') problems.push(`${at}: needs true or false`); return; }
+  if (spec === 'textOrNull') { if (value !== null && !isText(value)) problems.push(`${at}: needs text or null`); return; }
+  if (Array.isArray(spec)) {
+    if (!Array.isArray(value) || value.length === 0) { problems.push(`${at}: needs a non-empty list`); return; }
+    value.forEach((v, i) => shape(v, spec[0], `${at}[${i}]`, problems)); return;
+  }
+  if (spec.tuple) {
+    if (!Array.isArray(value) || value.length !== spec.tuple.length) { problems.push(`${at}: needs a list of ${spec.tuple.length} values`); return; }
+    spec.tuple.forEach((s, i) => shape(value[i], s, `${at}[${i}]`, problems)); return;
+  }
+  if (spec.oneOf) { if (!spec.oneOf.has(value)) problems.push(`${at}: must be one of ${[...spec.oneOf].join(', ')}`); return; }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) { problems.push(`${at}: needs an object`); return; }
+  for (const [rawKey, s] of Object.entries(spec)) {
+    const optional = rawKey.endsWith('?'); const key = optional ? rawKey.slice(0, -1) : rawKey;
+    if (optional && value[key] === undefined) continue;
+    shape(value[key], s, `${at}.${key}`, problems);
+  }
+}
+// Small animated diagrams on the landing page cards (Mini in frontend/src/main.jsx).
+export const VISUALS = new Set(['cap', 'path', 'steps']);
+const SITE = {
+  brand: { name: 'text', descriptor: 'text', footer: 'text', footerNote: 'text' },
+  nav: [{ tuple: ['text', 'text'] }],
+  hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', secondary: 'text', figure: 'text', status: 'text', caption: 'text' },
+  topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
+  notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
+  numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },
+  dashboard: { label: 'text', back: 'text', empty: 'text', sections: [{ tuple: ['text', 'text', 'textOrNull'] }] },
+  footer: { label: 'text', updated: 'text', links: ['text'] },
+  example: 'text',
+};
+const EXAMPLE = { name: 'text', kind: 'text', text: 'text', parts: [{ tuple: ['text', 'text'] }] };
+export function validateSite(site, examples, problems = []) {
+  if (!site) { problems.push('site.json: missing'); return problems; }
+  shape(site, SITE, 'site.json', problems);
+  const sections = list(site.dashboard?.sections).map((s) => s && s[0]);
+  if (new Set(sections).size !== sections.length) problems.push('site.json: dashboard.sections has a duplicate id');
+  const cards = new Set(list(site.topics?.cards).map((c) => c && c.id));
+  for (const s of list(site.dashboard?.sections)) if (Array.isArray(s) && s[2] && !cards.has(s[2])) problems.push(`site.json: dashboard section ${s[0]} points at unknown card ${s[2]}`);
+  const navNames = new Set(list(site.nav).map((n) => n && n[0]));
+  for (const l of list(site.footer?.links)) if (!navNames.has(l)) problems.push(`site.json: footer link ${l} is not in nav`);
+  if (!examples || !examples[site.example]) problems.push(`site.json: example "${site.example}" has no examples/<id>.json`);
+  for (const [id, ex] of Object.entries(examples || {})) shape(ex, EXAMPLE, `examples/${id}.json`, problems);
+  return problems;
 }
 
 // The Lab's component catalogue (content/lab.json): the frontend simulates designs with these numbers,
@@ -42,13 +104,13 @@ const LAB_TYPES = {
 export function validateLab(lab, problems = []) {
   const at = 'lab.json';
   if (!lab) { problems.push(`${at}: missing`); return problems; }
-  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote', 'smallScreen']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
   if (!(Number.isInteger(lab.retries) && lab.retries >= 0 && lab.retries <= 3)) problems.push(`${at}: retries must be a whole number from 0 to 3`);
   if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
   const types = new Set();
-  for (const [i, c] of (lab.components || []).entries()) {
+  for (const [i, c] of list(lab.components).entries()) {
     const where = `${at} components[${i}]`;
-    if (!LAB_TYPES[c.type]) { problems.push(`${where}: unknown type ${c.type}`); continue; }
+    if (!c || !LAB_TYPES[c.type]) { problems.push(`${where}: unknown type ${c && c.type}`); continue; }
     if (types.has(c.type)) problems.push(`${where}: duplicate type ${c.type}`);
     types.add(c.type);
     for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
@@ -56,22 +118,56 @@ export function validateLab(lab, problems = []) {
     if (Array.isArray(c.sizes) && !c.sizes.some((s) => s && s.id === c.defaultSize)) problems.push(`${where}: defaultSize ${c.defaultSize} is not one of its sizes`);
   }
   for (const type of Object.keys(LAB_TYPES)) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
-  const ids = new Set((lab.example?.nodes || []).map((n) => n.id));
-  for (const n of lab.example?.nodes || []) if (!types.has(n.type)) problems.push(`${at} example: node ${n.id} has unknown type ${n.type}`);
-  for (const e of lab.example?.edges || []) if (!ids.has(e.from) || !ids.has(e.to)) problems.push(`${at} example: edge ${e.from}→${e.to} points at a missing node`);
+  validateDesign(lab.example, lab, `${at} example`, problems);
+  return problems;
+}
+
+// A design (the Lab example, or a saved one): unique node ids, known types, numeric positions,
+// settings inside the catalogue's ranges, and edges that follow the canvas's connection rules.
+export function validateDesign(design, lab, at, problems = []) {
+  if (!design || !isText(design.name) || !Array.isArray(design.nodes) || !Array.isArray(design.edges)) { problems.push(`${at}: needs name, nodes and edges`); return problems; }
+  const byType = Object.fromEntries(list(lab.components).filter(Boolean).map((c) => [c.type, c]));
+  const nodes = new Map();
+  for (const n of design.nodes) {
+    const where = `${at}: node ${n && n.id}`;
+    if (!n || !isText(n.id)) { problems.push(`${at}: a node has no id`); continue; }
+    if (nodes.has(n.id)) problems.push(`${where} is duplicated`);
+    nodes.set(n.id, n);
+    const c = byType[n.type];
+    if (!c) { problems.push(`${where} has unknown type ${n.type}`); continue; }
+    if (!isNumber(n.x) || !isNumber(n.y)) problems.push(`${where} needs numeric x and y`);
+    const cfg = n.config ?? {};
+    if (typeof cfg !== 'object' || Array.isArray(cfg)) { problems.push(`${where}: config must be an object`); continue; }
+    const inRange = (key, r) => { if (cfg[key] !== undefined && !(isNumber(cfg[key]) && r && cfg[key] >= r.min && cfg[key] <= r.max)) problems.push(`${where}: ${key} must be from ${r?.min} to ${r?.max}`); };
+    if (c.type === 'client') inRange('rps', c.rps);
+    if (c.type === 'server') { inRange('count', c.count); inRange('queriesPerRequest', c.queriesPerRequest); }
+    if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
+    if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
+  }
+  const seen = new Set();
+  for (const e of design.edges) {
+    const key = `${e && e.from}→${e && e.to}`;
+    const from = nodes.get(e && e.from), to = nodes.get(e && e.to);
+    if (!from || !to) { problems.push(`${at}: edge ${key} points at a missing node`); continue; }
+    if (seen.has(key)) problems.push(`${at}: edge ${key} is duplicated`);
+    seen.add(key);
+    if (e.from === e.to) problems.push(`${at}: edge ${key} links a node to itself`);
+    if (to.type === 'client') problems.push(`${at}: edge ${key} sends traffic into Clients`);
+    if (from.type === 'database') problems.push(`${at}: edge ${key} sends traffic out of a Database`);
+  }
   return problems;
 }
 
 export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
-  for (const key of ['brand', 'nav', 'hero', 'topics', 'notes', 'numbers', 'dashboard', 'footer']) if (!site || !site[key]) problems.push(`site.json: missing ${key}`);
-  if (!site || !examples[site.example]) problems.push(`site.json: example "${site && site.example}" has no examples/<id>.json`);
-  const sections = new Set((site?.dashboard?.sections || []).map((s) => s[0]));
+  validateSite(site, examples, problems);
+  const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
   const slugs = new Set();
-  for (const a of articles) {
+  for (const a of list(articles)) {
+    if (!a || typeof a !== 'object') { problems.push('articles: an article file is not a JSON object'); continue; }
     const at = `articles/${a.section}/${a.slug}.json`;
-    if (!SLUG.test(a.slug || '')) problems.push(`${at}: bad slug`);
+    if (typeof a.slug !== 'string' || !SLUG.test(a.slug)) problems.push(`${at}: bad slug`);
     if (slugs.has(a.slug)) problems.push(`${at}: duplicate slug`);
     slugs.add(a.slug);
     if (!sections.has(a.section)) problems.push(`${at}: unknown section ${a.section}`);

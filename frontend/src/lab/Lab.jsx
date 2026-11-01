@@ -6,8 +6,8 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun}from"./engine.js";
+import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 
-const STORE="tk-lab-v1";
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
 // on a simulated clock. SPEEDS = simulated hours per real second.
 const SPEEDS=[["1 s = 1 minute",1/60],["1 s = 10 minutes",1/6],["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
@@ -24,9 +24,10 @@ const num=n=>Math.round(n).toLocaleString("en-US");
 const newId=p=>`${p}-${Math.random().toString(36).slice(2,8)}`;
 const Ctx=createContext(null);
 
-// Designs live in localStorage: {current, designs:{id:{id,name,updated,nodes,edges}}}.
-const load=()=>{try{return JSON.parse(localStorage.getItem(STORE))||{designs:{}}}catch{return{designs:{}}}};
-const save=s=>{try{localStorage.setItem(STORE,JSON.stringify(s))}catch{}};
+// Designs live in localStorage (store.js); what is read back is checked and repaired first.
+const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}return readStore(raw,lab)};
+const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}};
+const savedSpeed=()=>{let v=NaN;try{v=+localStorage.getItem("tk-lab-speed")}catch{}return SPEEDS.some(s=>s[1]===v)?v:1/60};
 const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{}}})),edges:d.edges.map(e=>edge(e.from,e.to))});
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
 const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"smoothstep",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
@@ -89,10 +90,10 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
 function Canvas({lab}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
-const[store,setStore]=useState(()=>{const s=load();if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
+const[store,setStore]=useState(()=>{const s=load(lab);if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
-const[name,setName]=useState(cur.name);const[running,setRunning]=useState(false);const[credit,setCredit]=useState(()=>cur.credit||{spent:0,hours:0});const[run,setRun]=useState(newRun);const[speed,setSpeedState]=useState(()=>+localStorage.getItem("tk-lab-speed")||1/60);const setSpeed=v=>{setSpeedState(v);try{localStorage.setItem("tk-lab-speed",String(v))}catch{}};const[ended,setEnded]=useState(false);const[menu,setMenu]=useState(false);const wrap=useRef(null);const loaded=useRef(store.current);
+const[name,setName]=useState(cur.name);const[running,setRunning]=useState(false);const[credit,setCredit]=useState(()=>cur.credit||{spent:0,hours:0});const[run,setRun]=useState(newRun);const[speed,setSpeedState]=useState(savedSpeed);const setSpeed=v=>{setSpeedState(v);try{localStorage.setItem("tk-lab-speed",String(v))}catch{}};const[ended,setEnded]=useState(false);const[menu,setMenu]=useState(false);const wrap=useRef(null);const loaded=useRef(store.current);
 useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);setCredit(store.designs[store.current].credit||{spent:0,hours:0});setEnded(false);setRun(newRun());setRunning(false);setTimeout(()=>rf.fitView({padding:.25,maxZoom:1}),30)},[store.current]);// eslint-disable-line
 // Autosave the open design (debounced). The id is captured now, so a save that fires after
 // switching designs still goes to the design these nodes belong to.
