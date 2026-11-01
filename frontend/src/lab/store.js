@@ -21,7 +21,8 @@ export function cleanDesign(d,lab,id){
     if(c.type==="client"){if(clamp(src.rps,c.rps)!==undefined)config.rps=clamp(src.rps,c.rps);if(Array.isArray(c.patterns)&&c.patterns.some(p=>p.id===src.pattern))config.pattern=src.pattern}
     if(c.type==="server"){if(clamp(src.count,c.count)!==undefined)config.count=Math.round(clamp(src.count,c.count));
       if(typeof src.autoscale==="boolean")config.autoscale=src.autoscale;if(clamp(src.maxCount,c.count)!==undefined)config.maxCount=Math.max(config.count??c.count.default,Math.round(clamp(src.maxCount,c.count)));if(clamp(src.queriesPerRequest,c.queriesPerRequest)!==undefined)config.queriesPerRequest=clamp(src.queriesPerRequest,c.queriesPerRequest)}
-    if(c.type==="cache")for(const k of["hitPct","writePct"])if(clamp(src[k],c[k])!==undefined)config[k]=clamp(src[k],c[k]);
+    if(c.type==="cache"){for(const k of["hitPct","writePct"])if(clamp(src[k],c[k])!==undefined)config[k]=clamp(src[k],c[k]);
+      for(const k of["writePolicy","onDown"])if(c[k]&&Array.isArray(c[k].options)&&c[k].options.some(o=>o.id===src[k]))config[k]=src[k]}
     if(Array.isArray(c.sizes)&&c.sizes.some(s=>s.id===src.size))config.size=src.size;
     if(c.type==="database"&&typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
     seen.add(n.id);nodes.push({id:n.id,type:n.type,x:fin(n.x)?n.x:0,y:fin(n.y)?n.y:0,config});

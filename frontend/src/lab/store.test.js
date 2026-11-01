@@ -56,3 +56,9 @@ test("traffic pattern and autoscaling settings are repaired",()=>{
   assert.deepEqual(out.nodes[2].config,{count:4,autoscale:true,maxCount:4},"max never below min");
   assert.deepEqual(out.nodes[3].config,{maxCount:50});
 });
+
+test("cache write policy and down behaviour are kept only when the catalogue knows them",()=>{
+  const out=cleanDesign({nodes:[{id:"k",type:"cache",config:{writePolicy:"back",onDown:"fail"}},{id:"j",type:"cache",config:{writePolicy:"around",onDown:{}}}],edges:[]},lab,"x");
+  assert.deepEqual(out.nodes[0].config,{writePolicy:"back",onDown:"fail"});
+  assert.deepEqual(out.nodes[1].config,{});
+});

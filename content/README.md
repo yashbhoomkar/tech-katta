@@ -50,7 +50,7 @@ Each component has `type, name, group, desc` plus the numbers its type needs (ch
 | `lb` | `latencyMs, limitRps, hourly, lcuHourly, rpsPerLcu` | spreads load evenly; billed per hour + per LCU |
 | `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash`, optional `autoscaling` | each request makes `queriesPerRequest` queries to a cache or database |
 | `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
-| `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash` | Server → Cache → Database: only misses and writes reach the database |
+| `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash`, optional `warmupMinutes, flushSeconds, writePolicy, onDown` | Server → Cache → Database: only misses and writes reach the database |
 | `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash` | receives only |
 
 `client`, `apigw`, `server` and `database` are required; the others are optional.
@@ -61,6 +61,16 @@ at the same hour make a jump), multipliers 0–1 with at least one 1: the Client
 multiplier`, linear between points, repeating every simulated day. The first pattern is the default.
 `label` is the menu entry, `desc` the line under it, `short` what the canvas shows on the Clients box.
 A design's Clients pick one with `config.pattern`.
+
+**Cache behaviour** (all optional; without them a cache is write-through, never cold, and fails its
+queries while down): `warmupMinutes` — after a crash the cache comes back empty and its hit rate
+climbs from 0 to its hit % over this time, with the misses on the database. `writePolicy` and `onDown`
+are choices `{label, default, options: [{id, label, desc}]}` with exactly the ids `through`/`back` and
+`database`/`fail`; a design's cache picks one with `config.writePolicy` / `config.onDown`.
+Write-back acknowledges writes in the cache and flushes them to the database as its spare capacity
+allows (a backlog of unflushed writes builds otherwise); when the cache crashes, that backlog plus the
+last `flushSeconds` of writes are lost. `onDown: database` sends a down cache's queries straight to
+the database.
 
 **Autoscaling** (`server.autoscaling`, optional): `{label, minLabel, maxLabel, note, targetPct,
 warmupMinutes, scaleInMinutes, defaultMax}`. A server with `config.autoscale: true` runs between

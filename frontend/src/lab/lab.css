@@ -68,3 +68,7 @@
 .lab-day figcaption{font:500 11px var(--mono);color:var(--muted);margin-top:4px}
 .lab-note-tight{margin:0 0 12px}
 .lab-log li.scaledOut,.lab-log li.scaledIn{color:var(--blue)}
+.lab-edge-x{position:absolute;pointer-events:all;width:30px;height:30px;padding:0;border:1px solid var(--blue);border-radius:50%;background:#fff;color:var(--blue);font:600 13px/1 var(--mono);cursor:pointer;display:grid;place-items:center}
+.lab-edge-x:hover,.lab-edge-x:focus-visible{background:var(--blue);color:#fff;outline:none}
+.lab-log li.writesLost{color:#b42318}
+.lab-log li.cold,.lab-log li.dirty{color:#9a6700}
