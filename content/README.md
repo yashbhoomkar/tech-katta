@@ -45,15 +45,28 @@ Each component has `type, name, group, desc` plus the numbers its type needs (ch
 
 | type | fields | how it behaves |
 |---|---|---|
-| `client` | `rps {label,min,max,default}` | sends requests; retries a failed one `retries` times |
+| `client` | `rps {label,min,max,default}`, optional `patterns` | sends requests (at the `rps` rate at its busiest moment); retries a failed one `retries` times |
 | `apigw` | `latencyMs, limitRps, pricePerMillion` | throttles past its limit, never crashes |
 | `lb` | `latencyMs, limitRps, hourly, lcuHourly, rpsPerLcu` | spreads load evenly; billed per hour + per LCU |
-| `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash` | each request makes `queriesPerRequest` queries to a cache or database |
+| `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash`, optional `autoscaling` | each request makes `queriesPerRequest` queries to a cache or database |
 | `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
 | `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash` | Server → Cache → Database: only misses and writes reach the database |
 | `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash` | receives only |
 
-`client`, `apigw`, `server` and `database` are required; the others are optional. `crash` is
+`client`, `apigw`, `server` and `database` are required; the others are optional.
+
+**Traffic through the day** (`client.patterns`, optional): `[{id, label, short, desc, points}]`.
+`points` are `[hour, multiplier]` pairs from hour 0 to hour 24, hours never going back (two points
+at the same hour make a jump), multipliers 0–1 with at least one 1: the Clients send `rps ×
+multiplier`, linear between points, repeating every simulated day. The first pattern is the default.
+`label` is the menu entry, `desc` the line under it, `short` what the canvas shows on the Clients box.
+A design's Clients pick one with `config.pattern`.
+
+**Autoscaling** (`server.autoscaling`, optional): `{label, minLabel, maxLabel, note, targetPct,
+warmupMinutes, scaleInMinutes, defaultMax}`. A server with `config.autoscale: true` runs between
+`count` and `maxCount` instances (both within `count`'s range), adds instances to stay near
+`targetPct` % load (they arrive `warmupMinutes` later) and removes them after load has stayed low for
+`scaleInMinutes`. `note` explains this to the user, so keep its numbers in step with the fields. `crash` is
 `{above, minutes, downMinutes, failoverMinutes?}`. Settings ranges are `{label, min, max, default}`
 (percentages 0–100). The `example` design is checked too: unique node ids, numeric `x`/`y`,
 settings inside their ranges, and edges that never point into Clients or out of a Database.

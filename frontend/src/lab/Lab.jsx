@@ -5,7 +5,7 @@ import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useS
 import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow}from"@xyflow/react";
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
-import{simulate,defaultConfig,summary,catalogue,advance,newRun}from"./engine.js";
+import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,trafficAt,patternOf,autoscaled,scaleRange}from"./engine.js";
 import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
@@ -13,7 +13,7 @@ import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 const SPEEDS=[["1 s = 1 minute",1/60],["1 s = 10 minutes",1/6],["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
 const simTime=h=>{const m=Math.floor(h*60+1e-6),d=Math.floor(m/1440),hh=Math.floor(m%1440/60),mm=m%60;return `Day ${d+1}, ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`};
 const cents=n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
+const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="scaledOut"?`${c.name||"Server"} scaled out to ${e.n} instances.`:e.kind==="scaledIn"?`${c.name||"Server"} scaled in to ${e.n} instances: load has been low for ${c.autoscaling?.scaleInMinutes} min.`:e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
 const duration=h=>h<1?`${Math.round(h*60)} minutes`:h<48?`${Math.round(h)} hours`:h<24*90?`${Math.round(h/24)} days`:`${(h/730).toFixed(1)} months`;
 // New components go to the nearest free spot around the point asked for, so they never stack.
 const W=176,H=110;
@@ -41,7 +41,7 @@ const back=run.down[id];const st=back!==undefined?"down":running&&r&&data.kind!=
 return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 {data.kind!=="client"&&<Handle type="target" position={Position.Left}/>}
 <div className="ln-head"><Glyph kind={data.kind}/><small>{comp.group.toUpperCase()}</small></div>
-<b>{comp.name}</b><span className="ln-sum">{summary(comp,data.config)}</span>
+<b>{comp.name}</b><span className="ln-sum">{summary(comp,run.scale?.[id]?{...data.config,live:run.scale[id].n}:data.config)}{run.scale?.[id]?.pending.length?` · +${run.scale[id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</span>
 {back!==undefined?<span className="ln-m ln-down">CRASHED · back in {Math.max(1,Math.ceil(back-run.t))} min</span>:running&&r&&(data.kind==="client"?<span className="ln-m">sending {num(r.offered)} req/s{r.offered>(data.config.rps||0)*1.001?" incl. retries":""}</span>
 :data.kind==="queue"?<span className={"ln-m"+(run.backlog?.[id]>0?" ln-q":"")}>{num(r.served)}/s in · {num(r.delivered)}/s to workers{run.backlog?.[id]>0?` · backlog ${num(run.backlog[id])}`:""}</span>
 :<><div className="ln-bar"><i style={{width:Math.min(100,r.utilisation*100)+"%"}}/></div><span className="ln-m">{Math.round(r.utilisation*100)}% · {Math.round(r.latencyMs)} ms{r.dropped>0?` · drops ${num(r.dropped)}/s`:""}</span></>)}
@@ -64,8 +64,13 @@ return <aside className="lab-pal" aria-label="Components"><div className="lab-h"
 {ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Glyph kind={ghost.c.type}/>{ghost.c.name}</div>}
 <p className="lab-tip">Drag a component onto the canvas, or tap it to add it. Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Select and press Delete to remove.</p></aside>}
 
+// The Clients' traffic over one simulated day (multiplier 0–1 of the rps setting), with "now".
+function DayChart({comp,config,hours}){const w=240,h=56,pts=[];for(let m=0;m<=1440;m+=10)pts.push(`${(m/1440*w).toFixed(1)},${(h-trafficAt(comp,config,m)*(h-6)).toFixed(1)}`);const x=((hours%24)+24)%24/24*w;
+return <figure className="lab-day"><svg viewBox={`0 0 ${w} ${h+14}`} role="img" aria-label="Requests per second over the simulated day"><path d={`M0,${h}L${pts.join("L")}L${w},${h}Z`} className="lab-day-a"/><path d={`M${pts.join("L")}`} className="lab-day-l"/>
+<line x1={x} x2={x} y1="0" y2={h} className="lab-day-now"/>{[0,6,12,18,24].map(t=><text key={t} x={t/24*w} y={h+11} textAnchor={t===0?"start":t===24?"end":"middle"}>{String(t).padStart(2,"0")}:00</text>)}</svg>
+<figcaption>Now {simTime(hours).split(", ")[1]} · {num((config.rps??comp.rps.default)*trafficAt(comp,config,hours*60))} req/s</figcaption></figure>}
 function Field({label,children}){return <label className="lab-f"><span>{label}</span>{children}</label>}
-function Inspector({lab,cat,node,result,running,update,remove,run,names}){
+function Inspector({lab,cat,node,result,running,update,remove,run,names,hours}){
 if(!node)return <aside className="lab-ins" aria-label="Details"><div className="lab-h">DESIGN</div>
 <dl className="lab-kv"><dt>Monthly cost</dt><dd>{usd(result.total.monthlyCost)}</dd><dt>Budget</dt><dd>{usd(lab.budget)}</dd><dt>Region</dt><dd>{lab.region}</dd></dl>
 {run.sent>0&&<dl className="lab-kv"><dt>Availability this run</dt><dd className={run.served/run.sent<0.999?"over":""}>{(100*run.served/run.sent).toFixed(2)}%</dd><dt>Run time</dt><dd>{duration(run.t/60)}</dd></dl>}
@@ -74,10 +79,14 @@ if(!node)return <aside className="lab-ins" aria-label="Details"><div className="
 const comp=cat[node.data.kind],cfg=node.data.config,r=result.nodes[node.id];const set=patch=>update(node.id,{...cfg,...patch});
 return <aside className="lab-ins" aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><h3><Glyph kind={comp.type}/>{comp.name}</h3><p className="lab-desc">{comp.desc}</p>
 {comp.type==="client"&&<Field label={comp.rps.label}><input type="number" min={comp.rps.min} max={comp.rps.max} step="100" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:Math.max(comp.rps.min,Math.min(comp.rps.max,+e.target.value||0))})}/><input type="range" min={comp.rps.min} max={Math.min(comp.rps.max,20000)} step="50" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:+e.target.value})} aria-label={comp.rps.label}/></Field>}
+{comp.type==="client"&&comp.patterns&&<><Field label="Traffic through the day"><select value={patternOf(comp,cfg)?.id||comp.patterns[0].id} onChange={e=>set({pattern:e.target.value})}>{comp.patterns.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></Field><p className="lab-note lab-note-tight">{patternOf(comp,cfg)?.desc||comp.patterns[0].desc}</p><DayChart comp={comp} config={cfg} hours={hours}/></>}
 {comp.sizes&&<Field label="Size"><select value={cfg.size||comp.defaultSize} onChange={e=>set({size:e.target.value})}>{comp.sizes.map(s=><option key={s.id} value={s.id}>{s.label} · {num(s.rps||s.qps||s.ops)} {s.rps?"req":s.qps?"queries":"ops"}/s · ${s.hourly}/h</option>)}</select></Field>}
 {comp.queriesPerRequest&&<Field label={comp.queriesPerRequest.label}><input type="number" min={comp.queriesPerRequest.min} max={comp.queriesPerRequest.max} value={cfg.queriesPerRequest??comp.queriesPerRequest.default} onChange={e=>set({queriesPerRequest:Math.max(comp.queriesPerRequest.min,Math.min(comp.queriesPerRequest.max,Math.round(+e.target.value)||1))})}/></Field>}
 {["hitPct","writePct"].map(k=>comp[k]&&<Field key={k} label={comp[k].label}><input type="number" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:Math.max(comp[k].min,Math.min(comp[k].max,Math.round(+e.target.value)||0))})}/><input type="range" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:+e.target.value})} aria-label={comp[k].label}/></Field>)}
-{comp.count&&<Field label={comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>set({count:Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>}
+{comp.autoscaling&&<label className="lab-check"><input type="checkbox" checked={!!cfg.autoscale} onChange={e=>set({autoscale:e.target.checked,...(e.target.checked&&cfg.maxCount===undefined?{maxCount:Math.max(cfg.count??comp.count.default,comp.autoscaling.defaultMax)}:{})})}/>{comp.autoscaling.label}</label>}
+{comp.count&&<Field label={autoscaled(comp,cfg)?comp.autoscaling.minLabel:comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>{const v=Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1));set({count:v,...(cfg.maxCount!==undefined&&cfg.maxCount<v?{maxCount:v}:{})})}}/></Field>}
+{autoscaled(comp,cfg)&&<><Field label={comp.autoscaling.maxLabel}><input type="number" min={cfg.count??comp.count.default} max={comp.count.max} value={scaleRange(comp,cfg)[1]} onChange={e=>set({maxCount:Math.max(cfg.count??comp.count.default,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>
+<p className="lab-note lab-note-tight">{comp.autoscaling.note}</p>{running&&run.scale?.[node.id]&&<dl className="lab-kv"><dt>Running now</dt><dd>{run.scale[node.id].n} instances{run.scale[node.id].pending.length?` · ${run.scale[node.id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</dd></dl>}</>}
 {comp.multiAz&&<label className="lab-check"><input type="checkbox" checked={!!cfg.multiAz} onChange={e=>set({multiAz:e.target.checked})}/>{comp.multiAz.label}</label>}
 {comp.type==="apigw"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd><dt>Limit</dt><dd>{num(comp.limitRps)} req/s</dd></dl>}
 {comp.type==="lb"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.hourly}/hour + ${comp.lcuHourly} per LCU-hour</dd><dt>1 LCU</dt><dd>≈ {num(comp.rpsPerLcu)} req/s</dd></dl>}
@@ -103,7 +112,9 @@ useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.cur
 // switching designs still goes to the design these nodes belong to.
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s.designs[id])return s;const d={...s.designs[id],name:name.trim()||"Untitled design",updated:Date.now(),...fromFlow(nodes,edges),credit};const next={...s,designs:{...s.designs,[id]:d}};save(next);return next}),400);return()=>clearTimeout(t)},[nodes,edges,name,credit]);// eslint-disable-line
 const design=useMemo(()=>fromFlow(nodes,edges),[nodes,edges]);const downKey=Object.keys(run.down).sort().join();
-const result=useMemo(()=>simulate(design,lab,{down:new Set(downKey?downKey.split(","):[])}),[design,lab,downKey]);const designRef=useRef(design);designRef.current=design;
+// What the design is doing now: crashed parts, queue backlogs, autoscaled instances, and the Clients'
+// traffic at the simulated time of day.
+const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;
 const names=useMemo(()=>Object.fromEntries(nodes.map(n=>[n.id,{kind:n.data.kind}])),[nodes]);
 const selected=nodes.find(n=>n.selected);
 // While running, the simulated clock advances and the design's hourly cost is taken from its credit.
@@ -144,7 +155,7 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"smoothstep"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector lab={lab} cat={cat} node={selected} result={result} running={running} update={update} remove={remove} run={run} names={names}/>
+<Inspector lab={lab} cat={cat} node={selected} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours}/>
 </div></Ctx.Provider>}
 
 export default function Lab(){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);

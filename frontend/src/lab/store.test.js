@@ -47,3 +47,12 @@ test("cache settings are kept inside their ranges",()=>{
   const out=cleanDesign({nodes:[{id:"k",type:"cache",config:{hitPct:250,writePct:-3,size:"cache.m5.large"}}],edges:[]},lab,"x");
   assert.deepEqual(out.nodes[0].config,{hitPct:99,writePct:0,size:"cache.m5.large"});
 });
+
+test("traffic pattern and autoscaling settings are repaired",()=>{
+  const out=cleanDesign({nodes:[{id:"c",type:"client",config:{rps:10,pattern:"meals"}},{id:"d",type:"client",config:{pattern:"nope"}},
+    {id:"s",type:"server",config:{count:4,maxCount:2,autoscale:true}},{id:"t",type:"server",config:{autoscale:"yes",maxCount:500}}],edges:[]},lab,"x");
+  assert.deepEqual(out.nodes[0].config,{rps:10,pattern:"meals"});
+  assert.deepEqual(out.nodes[1].config,{});
+  assert.deepEqual(out.nodes[2].config,{count:4,autoscale:true,maxCount:4},"max never below min");
+  assert.deepEqual(out.nodes[3].config,{maxCount:50});
+});

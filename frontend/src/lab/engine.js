@@ -24,6 +24,16 @@
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
 //     more than they can handle, so a queue protects them from spikes; users never wait on them.
 //
+// Time-based traffic: a Clients component can follow a daily pattern from the catalogue
+// (`patterns`: [hour, multiplier] points from 0 to 24, linear in between, two points at the same hour
+// make a jump). Its rps setting is the rate at the peak (multiplier 1). The pattern repeats every
+// simulated day, on the same clock the Lab shows.
+//
+// Autoscaling (catalogue `server.autoscaling`, design `autoscale: true`): a server group keeps its
+// instances near `targetPct` % load, between `count` (minimum) and `maxCount`. New instances take
+// `warmupMinutes` to boot; instances are removed only after load has stayed low for
+// `scaleInMinutes`. You pay for the instances that are running.
+//
 // advance() moves a running simulation forward in simulated minutes and applies the crash policy
 // from the catalogue (`crash` on a component): above `above` × capacity for `minutes` the component
 // crashes; it is back after `downMinutes` (a Multi-AZ database fails over after `failoverMinutes`).
@@ -33,10 +43,26 @@ export const SECONDS_PER_MONTH = HOURS_PER_MONTH * 3600;
 const SATURATED = 20; // latency multiplier once a component is past capacity
 
 export const catalogue = (lab) => Object.fromEntries(lab.components.map((c) => [c.type, c]));
-const sizeOf = (comp, config) => comp.sizes?.find((s) => s.id === config?.size) || comp.sizes?.find((s) => s.id === comp.defaultSize);
+export const sizeOf = (comp, config) => comp.sizes?.find((s) => s.id === config?.size) || comp.sizes?.find((s) => s.id === comp.defaultSize);
+
+// Traffic multiplier for a Clients config at a simulated minute (1 = its rps setting).
+export function trafficAt(comp, config, minute = 0) {
+  const p = patternOf(comp, config);
+  if (!p) return 1;
+  const h = (((minute / 60) % 24) + 24) % 24, pts = p.points;
+  for (let i = pts.length - 1; i >= 0; i--) if (pts[i][0] <= h) {
+    const a = pts[i], b = pts[i + 1];
+    return !b || b[0] === a[0] ? a[1] : a[1] + (b[1] - a[1]) * (h - a[0]) / (b[0] - a[0]);
+  }
+  return pts[0][1];
+}
+export const patternOf = (comp, config) => comp?.patterns?.find((p) => p.id === config?.pattern) || null;
+const steady = (comp, config) => { const p = patternOf(comp, config); return !p || p.points.every((x) => x[1] === p.points[0][1]); };
+export const autoscaled = (comp, config) => !!(comp?.autoscaling && config?.autoscale);
+export const scaleRange = (comp, config) => { const lo = config?.count || 1; return [lo, Math.max(lo, Math.min(comp.count.max, config?.maxCount ?? comp.autoscaling?.defaultMax ?? lo))]; };
 
 export function defaultConfig(comp) {
-  if (comp.type === 'client') return { rps: comp.rps.default };
+  if (comp.type === 'client') return { rps: comp.rps.default, ...(comp.patterns ? { pattern: comp.patterns[0].id } : {}) };
   if (comp.type === 'cache') return { size: comp.defaultSize, hitPct: comp.hitPct.default, writePct: comp.writePct.default };
   if (comp.type === 'server') return { size: comp.defaultSize, count: comp.count.default, ...(comp.queriesPerRequest ? { queriesPerRequest: comp.queriesPerRequest.default } : {}) };
   if (comp.type === 'database') return { size: comp.defaultSize, multiAz: comp.multiAz.default };
@@ -64,12 +90,12 @@ export function monthlyCost(comp, config = {}, servedRps = 0) {
 
 // One-line description of a component's setup, e.g. "2 × m5.large".
 export function summary(comp, config = {}) {
-  if (comp.type === 'client') return `${(config.rps ?? 0).toLocaleString('en-US')} req/s`;
+  if (comp.type === 'client') { const p = patternOf(comp, config); return `${(config.rps ?? 0).toLocaleString('en-US')} req/s${p && !steady(comp, config) ? ` · ${p.short}` : ''}`; }
   if (comp.type === 'apigw') return `limit ${comp.limitRps.toLocaleString('en-US')} req/s`;
   if (comp.type === 'lb') return 'spreads load evenly';
   if (comp.type === 'queue') return 'async · workers pull';
   if (comp.type === 'cache') return `${sizeOf(comp, config).id} · ${pct(comp, config, 'hitPct')}% hits · ${pct(comp, config, 'writePct')}% writes`;
-  if (comp.type === 'server') return `${config.count || 1} × ${sizeOf(comp, config).id}${comp.queriesPerRequest ? ` · ${qpr(comp, config)} q/req` : ''}`;
+  if (comp.type === 'server') { const auto = autoscaled(comp, config), [lo, hi] = scaleRange(comp, config); return `${auto ? config.live ?? lo : config.count || 1} × ${sizeOf(comp, config).id}${auto ? ` · up to ${hi}` : ''}${comp.queriesPerRequest ? ` · ${qpr(comp, config)} q/req` : ''}`; }
   if (comp.type === 'database') return `${sizeOf(comp, config).id}${config.multiAz ? ' · Multi-AZ' : ''}`;
   return '';
 }
@@ -121,9 +147,17 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog) {
   return res;
 }
 
-export function simulate(design, lab, { down = new Set(), backlog = new Set() } = {}) {
+// Options: down / backlog (sets of ids), minute (simulated clock, for traffic patterns), counts
+// ({server id: instances running} for autoscaled groups).
+export function simulate(design, lab, { down = new Set(), backlog = new Set(), minute = 0, counts = {} } = {}) {
   const cat = catalogue(lab);
-  const nodes = design.nodes.filter((n) => cat[n.type]);
+  // What each component is doing at this minute: Clients at their pattern's rate, autoscaled
+  // server groups with the instances running now.
+  const nodes = design.nodes.filter((n) => cat[n.type]).map((n) => {
+    if (n.type === 'client') { const m = trafficAt(cat.client, n.config, minute); return m === 1 ? n : { ...n, config: { ...n.config, rps: (n.config?.rps || 0) * m } }; }
+    if (n.type === 'server' && autoscaled(cat.server, n.config)) { const [lo, hi] = scaleRange(cat.server, n.config); const c = Object.hasOwn(counts, n.id) ? counts[n.id] : lo; return { ...n, config: { ...n.config, count: Math.min(hi, Math.max(lo, c)) } }; }
+    return n;
+  });
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const edges = design.edges.filter((e) => byId.has(e.from) && byId.has(e.to) && e.from !== e.to);
   const out = new Map(nodes.map((n) => [n.id, []]));
@@ -181,19 +215,47 @@ export function simulate(design, lab, { down = new Set(), backlog = new Set() } 
 // A running simulation: { t (simulated minutes), down: {id: minute it comes back}, over: {id:
 // minutes spent above its crash threshold}, sent, served (user requests), events: [{t, id, kind}] }.
 // backlog: {queue id: messages waiting}.
-export const newRun = () => ({ t: 0, start: 0, down: {}, over: {}, backlog: {}, sent: 0, served: 0, events: [] });
+// scale: {server id: {n: instances running, pending: [{at, n}] booting, low: minutes below target}}.
+const dict = (from) => Object.assign(Object.create(null), from);
+export const newRun = () => ({ t: 0, start: 0, down: dict(), over: dict(), backlog: dict(), scale: dict(), sent: 0, served: 0, events: [] });
+// The simulate() options for a run at a simulated minute.
+export const runOptions = (run, minute) => ({ down: new Set(Object.keys(run.down)), backlog: new Set(Object.keys(run.backlog || {}).filter((id) => run.backlog[id] > 0)), minute, counts: Object.fromEntries(Object.entries(run.scale || {}).map(([id, s]) => [id, s.n])) });
 
 // Advance by `minutes`, jumping from event to event (load is steady between crashes/recoveries).
 export function advance(design, lab, run, minutes) {
   const cat = catalogue(lab);
-  const st = { ...run, down: { ...run.down }, over: { ...run.over }, backlog: { ...(run.backlog || {}) }, events: [...run.events] };
+  // Per-node maps have no prototype: node ids are user data, and an id such as "__proto__" or
+  // "constructor" must stay an ordinary key.
+  const st = { ...run, down: dict(run.down), over: dict(run.over), backlog: dict(run.backlog), events: [...run.events], scale: dict() };
+  for (const [id, s] of Object.entries(run.scale || {})) st.scale[id] = { ...s, pending: s.pending.map((p) => ({ ...p })) };
   const nodes = design.nodes.filter((n) => cat[n.type]);
+  const as = cat.server?.autoscaling;
+  const scaled = nodes.filter((n) => n.type === 'server' && autoscaled(cat.server, n.config));
+  for (const id of Object.keys(st.scale)) if (!scaled.some((n) => n.id === id)) delete st.scale[id];
+  for (const n of scaled) { const [lo, hi] = scaleRange(cat.server, n.config); if (!Object.hasOwn(st.scale, n.id)) st.scale[n.id] = { n: lo, pending: [], low: 0 }; const s = st.scale[n.id]; s.n = Math.min(hi, Math.max(lo, s.n)); }
+  // Load that changes with the clock (a traffic pattern, autoscaling) is followed in small steps;
+  // steady load jumps straight from one event to the next.
+  const varying = scaled.length > 0 || nodes.some((n) => n.type === 'client' && !steady(cat.client, n.config));
+  const step = Math.max(1, minutes / 1500);
   for (const id of Object.keys(st.down)) if (!nodes.some((n) => n.id === id)) delete st.down[id];
   for (const id of Object.keys(st.backlog)) if (!nodes.some((n) => n.id === id && n.type === 'queue')) delete st.backlog[id];
   let left = minutes;
-  for (let guard = 0; left > 1e-9 && guard < 500; guard++) {
-    const r = simulate(design, lab, { down: new Set(Object.keys(st.down)), backlog: new Set(Object.keys(st.backlog).filter((id) => st.backlog[id] > 0)) });
-    let dt = left;
+  for (let guard = 0; left > 1e-9 && guard < 4000; guard++) {
+    const r = simulate(design, lab, runOptions(st, (st.start || 0) * 60 + st.t));
+    let dt = varying ? Math.min(left, step) : left;
+    // Autoscaling: launch instances as soon as load needs them (they arrive after the warm-up);
+    // remove them once load has stayed low for scaleInMinutes.
+    const want = {}, low = [];
+    for (const n of scaled) {
+      const s = st.scale[n.id], [lo, hi] = scaleRange(cat.server, n.config);
+      const desired = Math.min(hi, Math.max(lo, Math.ceil(r.nodes[n.id].offered / (sizeOf(cat.server, n.config).rps * as.targetPct / 100) - 1e-9)));
+      const coming = s.pending.reduce((a, p) => a + p.n, 0);
+      want[n.id] = desired;
+      if (desired > s.n + coming) { s.pending.push({ at: st.t + as.warmupMinutes, n: desired - s.n - coming }); s.low = 0; }
+      else if (desired < s.n && !coming) { low.push(n.id); dt = Math.min(dt, Math.max(0, as.scaleInMinutes - s.low)); }
+      else s.low = 0;
+      for (const p of s.pending) dt = Math.min(dt, Math.max(0, p.at - st.t));
+    }
     const hot = [];
     // queue backlogs change at (arrivals − deliveries) messages a second; stop when one empties
     const growth = {};
@@ -216,6 +278,13 @@ export function advance(design, lab, run, minutes) {
       if (after > 1e-6) st.backlog[id] = after; else delete st.backlog[id];
     }
     for (const id of hot) st.over[id] = (st.over[id] || 0) + dt;
+    for (const n of scaled) {
+      const s = st.scale[n.id], [, hi] = scaleRange(cat.server, n.config), before = s.n;
+      for (const p of s.pending) if (p.at <= st.t + 1e-9) s.n += p.n;
+      s.pending = s.pending.filter((p) => p.at > st.t + 1e-9); s.n = Math.min(hi, s.n);
+      if (low.includes(n.id)) { s.low += dt; if (s.low >= as.scaleInMinutes - 1e-9) { s.n = want[n.id]; s.low = 0; } }
+      if (s.n !== before) st.events.push({ t: st.t, id: n.id, kind: s.n > before ? 'scaledOut' : 'scaledIn', n: s.n });
+    }
     for (const n of nodes) {
       const crash = cat[n.type].crash; if (!crash) continue;
       if (st.down[n.id] !== undefined && st.down[n.id] <= st.t + 1e-9) { delete st.down[n.id]; st.over[n.id] = 0; st.events.push({ t: st.t, id: n.id, kind: 'recovered' }); }

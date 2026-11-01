@@ -106,6 +106,15 @@ const LAB_TYPES = {
   cache: { latencyMs: positive, sizes: sizesOf('ops'), defaultSize: isText, hitPct: percent, writePct: percent, crash: crashPolicy(false) },
   queue: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
 };
+// Optional fields (phase 2, time-based traffic). Traffic patterns on Clients: [hour, multiplier]
+// points from hour 0 to hour 24, hours never going back, multipliers 0 to 1 (1 = the rps setting)
+// with at least one point at 1. Autoscaling on Server: target load %, boot and scale-in minutes.
+const point = (p) => Array.isArray(p) && p.length === 2 && nonNegative(p[0]) && p[0] <= 24 && nonNegative(p[1]) && p[1] <= 1;
+const pattern = (p) => p && typeof p === 'object' && isText(p.id) && isText(p.label) && isText(p.short) && isText(p.desc) && Array.isArray(p.points) && p.points.length >= 2 && p.points.every(point)
+  && p.points[0][0] === 0 && p.points.at(-1)[0] === 24 && p.points.every((x, i) => i === 0 || x[0] >= p.points[i - 1][0]) && p.points.some((x) => x[1] === 1);
+const patterns = (list) => Array.isArray(list) && list.length > 0 && list.every(pattern) && new Set(list.map((p) => p.id)).size === list.length;
+const autoscaling = (a) => a && typeof a === 'object' && isText(a.label) && isText(a.minLabel) && isText(a.maxLabel) && isText(a.note) && positive(a.targetPct) && a.targetPct <= 100 && positive(a.warmupMinutes) && positive(a.scaleInMinutes) && Number.isInteger(a.defaultMax) && a.defaultMax >= 1;
+const OPTIONAL_FIELDS = { client: { patterns }, server: { autoscaling } };
 // Every catalogue needs the original four; the others are optional so content can add them later.
 const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
@@ -122,6 +131,8 @@ export function validateLab(lab, problems = []) {
     types.add(c.type);
     for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
     for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
+    for (const [key, ok] of Object.entries(OPTIONAL_FIELDS[c.type] || {})) if (c[key] !== undefined && !ok(c[key])) problems.push(`${where}: ${key} is malformed`);
+    if (c.type === 'server' && autoscaling(c.autoscaling) && range(c.count) && c.autoscaling.defaultMax > c.count.max) problems.push(`${where}: autoscaling.defaultMax is above count.max`);
     if (Array.isArray(c.sizes) && !c.sizes.some((s) => s && s.id === c.defaultSize)) problems.push(`${where}: defaultSize ${c.defaultSize} is not one of its sizes`);
   }
   for (const type of REQUIRED_TYPES) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
@@ -146,8 +157,12 @@ export function validateDesign(design, lab, at, problems = []) {
     const cfg = n.config ?? {};
     if (typeof cfg !== 'object' || Array.isArray(cfg)) { problems.push(`${where}: config must be an object`); continue; }
     const inRange = (key, r) => { if (cfg[key] !== undefined && !(isNumber(cfg[key]) && r && cfg[key] >= r.min && cfg[key] <= r.max)) problems.push(`${where}: ${key} must be from ${r?.min} to ${r?.max}`); };
-    if (c.type === 'client') inRange('rps', c.rps);
-    if (c.type === 'server') { inRange('count', c.count); inRange('queriesPerRequest', c.queriesPerRequest); }
+    if (c.type === 'client') { inRange('rps', c.rps); if (cfg.pattern !== undefined && !(Array.isArray(c.patterns) && c.patterns.some((p) => p && p.id === cfg.pattern))) problems.push(`${where}: unknown traffic pattern ${cfg.pattern}`); }
+    if (c.type === 'server') {
+      inRange('count', c.count); inRange('queriesPerRequest', c.queriesPerRequest); inRange('maxCount', c.count);
+      if (cfg.autoscale !== undefined && typeof cfg.autoscale !== 'boolean') problems.push(`${where}: autoscale must be true or false`);
+      if (isNumber(cfg.maxCount) && cfg.maxCount < (cfg.count ?? c.count?.default)) problems.push(`${where}: maxCount is below count`);
+    }
     if (c.type === 'cache') { inRange('hitPct', c.hitPct); inRange('writePct', c.writePct); }
     if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
