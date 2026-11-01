@@ -8,8 +8,17 @@ import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue}from"./engine.js";
 
 const STORE="tk-lab-v1";
+// Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
+// on a simulated clock. SPEEDS = simulated hours per real second.
+const SPEEDS=[["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
+const simTime=h=>{const d=Math.floor(h/24),hh=Math.floor(h%24);return `Day ${d+1}, ${String(hh).padStart(2,"0")}:00`};
+const duration=h=>h<48?`${Math.round(h)} hours`:h<24*90?`${Math.round(h/24)} days`:`${(h/730).toFixed(1)} months`;
+// New components go to the nearest free spot around the point asked for, so they never stack.
+const W=176,H=110;
+function freeSpot(nodes,x,y){const hit=(px,py)=>nodes.some(n=>Math.abs(n.position.x-px)<W+20&&Math.abs(n.position.y-py)<H+20);
+for(let ring=0;ring<12;ring++)for(let i=-ring;i<=ring;i++)for(const [dx,dy] of [[i,-ring],[i,ring],[-ring,i],[ring,i]]){const px=Math.round((x+dx*(W+40))/20)*20,py=Math.round((y+dy*(H+30))/20)*20;if(!hit(px,py))return{x:px,y:py}}return{x,y}}
 const usd=n=>"$"+Math.round(n).toLocaleString("en-US");
-const num=n=>Math.round(n).toLocaleString("en-IN");
+const num=n=>Math.round(n).toLocaleString("en-US");
 const newId=p=>`${p}-${Math.random().toString(36).slice(2,8)}`;
 const Ctx=createContext(null);
 
@@ -58,45 +67,54 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {running&&r&&comp.type!=="client"&&<><dt>Load</dt><dd className={level(r.utilisation)}>{num(r.offered)}/s · {Math.round(r.utilisation*100)}%</dd><dt>Latency here</dt><dd>{Math.round(r.latencyMs)} ms</dd><dt>Dropped</dt><dd>{num(r.dropped)}/s</dd></>}</dl>
 <button type="button" className="lab-btn ghost" onClick={()=>remove(node.id)}>Remove from design</button></aside>}
 
-function Designs({store,current,open,create,example,rename,remove,close}){const list=Object.values(store.designs).sort((a,b)=>b.updated-a.updated);
+function Designs({store,current,open,create,example,duplicate,remove,close,budget}){const list=Object.values(store.designs).sort((a,b)=>b.updated-a.updated);
 return <div className="lab-menu" role="dialog" aria-label="Your designs"><div className="lab-h">YOUR DESIGNS · SAVED IN THIS BROWSER</div>
 <div className="lab-menu-act"><button type="button" className="lab-btn" onClick={create}>+ New design</button><button type="button" className="lab-btn ghost" onClick={example}>+ Example: Zotato order API</button></div>
-<ul>{list.map(d=><li key={d.id} className={d.id===current?"cur":""}><button type="button" onClick={()=>open(d.id)}><b>{d.name}</b><small>{d.nodes.length} components · {new Date(d.updated).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})}</small></button>
-<button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
+<ul>{list.map(d=><li key={d.id} className={d.id===current?"cur":""}><button type="button" onClick={()=>open(d.id)}><b>{d.name}</b><small>{d.nodes.length} components · {usd(budget-(d.credit?.spent||0))} credit left · {new Date(d.updated).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})}</small></button>
+<button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
 function Canvas({lab}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
 const[store,setStore]=useState(()=>{const s=load();if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
-const[name,setName]=useState(cur.name);const[running,setRunning]=useState(false);const[menu,setMenu]=useState(false);const wrap=useRef(null);const loaded=useRef(store.current);
-useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);setRunning(false);setTimeout(()=>rf.fitView({padding:.25,maxZoom:1}),30)},[store.current]);// eslint-disable-line
+const[name,setName]=useState(cur.name);const[running,setRunning]=useState(false);const[credit,setCredit]=useState(()=>cur.credit||{spent:0,hours:0});const[speed,setSpeedState]=useState(()=>+localStorage.getItem("tk-lab-speed")||24);const setSpeed=v=>{setSpeedState(v);try{localStorage.setItem("tk-lab-speed",String(v))}catch{}};const[ended,setEnded]=useState(false);const[menu,setMenu]=useState(false);const wrap=useRef(null);const loaded=useRef(store.current);
+useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);setCredit(store.designs[store.current].credit||{spent:0,hours:0});setEnded(false);setRunning(false);setTimeout(()=>rf.fitView({padding:.25,maxZoom:1}),30)},[store.current]);// eslint-disable-line
 // Autosave the open design (debounced). The id is captured now, so a save that fires after
 // switching designs still goes to the design these nodes belong to.
-useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s.designs[id])return s;const d={...s.designs[id],name:name.trim()||"Untitled design",updated:Date.now(),...fromFlow(nodes,edges)};const next={...s,designs:{...s.designs,[id]:d}};save(next);return next}),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
+useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s.designs[id])return s;const d={...s.designs[id],name:name.trim()||"Untitled design",updated:Date.now(),...fromFlow(nodes,edges),credit};const next={...s,designs:{...s.designs,[id]:d}};save(next);return next}),400);return()=>clearTimeout(t)},[nodes,edges,name,credit]);// eslint-disable-line
 const design=useMemo(()=>fromFlow(nodes,edges),[nodes,edges]);const result=useMemo(()=>simulate(design,lab),[design,lab]);
 const selected=nodes.find(n=>n.selected);
+// While running, the simulated clock advances and the design's hourly cost is taken from its credit.
+const burn=useRef(0);burn.current=result.total.burnPerHour;
+useEffect(()=>{if(!running)return;const iv=setInterval(()=>setCredit(c=>{const hours=speed*TICK/1000,cost=burn.current*hours;
+// Stop the clock exactly when the credit runs out (part of the last tick).
+if(c.spent+cost>=lab.budget)return{spent:lab.budget,hours:c.hours+(cost>0?hours*(lab.budget-c.spent)/cost:hours)};return{spent:c.spent+cost,hours:c.hours+hours}}),TICK);return()=>clearInterval(iv)},[running,speed,lab.budget]);
+useEffect(()=>{if(running&&credit.spent>=lab.budget){setRunning(false);setEnded(true)}},[credit,running,lab.budget]);
 const add=useCallback((kind,pos)=>{const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
-setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:{x:at.x-80,y:at.y-40},selected:true,data:{kind,config:defaultConfig(comp)}}])},[cat,rf,setNodes]);
+setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:defaultConfig(comp)}}])},[cat,rf,setNodes]);
 const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data,config}}:n));
 const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
 const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);return !!s&&!!t&&c.source!==c.target&&t.data.kind!=="client"&&s.data.kind!=="database"&&!edges.some(e=>e.source===c.source&&e.target===c.target)};
 const onConnect=useCallback(c=>setEdges(es=>addEdge(edge(c.source,c.target),es)),[setEdges]);
 const onDrop=e=>{e.preventDefault();const kind=e.dataTransfer.getData("application/x-tk-lab");if(cat[kind])add(kind,rf.screenToFlowPosition({x:e.clientX,y:e.clientY}))};
 const pick=id=>{setStore(s=>({...s,current:id}));setMenu(false)};
-const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[]};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
+const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0}};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
+const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
 const del=id=>setStore(s=>{const designs={...s.designs};delete designs[id];if(!Object.keys(designs).length){const nid=newId("design");designs[nid]={id:nid,name:"Untitled design",updated:Date.now(),nodes:[],edges:[]}}const n={...s,designs,current:designs[s.current]?s.current:Object.keys(designs)[0]};save(n);return n});
-const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),pct=Math.min(100,t.monthlyCost/lab.budget*100);
+const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
+const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>({...e,animated:running,className:running?"live":""})),[edges,running]);
 return <Ctx.Provider value={{cat,result,running}}><div className="lab">
 <header className="lab-top"><input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 <button type="button" className="lab-btn ghost" onClick={()=>setMenu(m=>!m)} aria-expanded={menu}>Designs ▾</button>
-<div className={"lab-budget"+(t.overBudget?" over":"")} title={lab.priceNote}><span>{usd(t.monthlyCost)} <small>/ {usd(lab.budget)} a month</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div></div>
-<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||t.overBudget)} onClick={()=>setRunning(r=>!r)}>{running?"■ Stop":"▶ Run traffic"}</button>
-{menu&&<Designs store={store} current={store.current} open={pick} create={()=>create()} example={()=>create(lab.example)} remove={del} close={()=>setMenu(false)}/>}</header>
-<div className="lab-status" aria-live="polite">{blocking.length?<span className="lab-warn">{blocking[0]}</span>:t.overBudget?<span className="lab-warn">Over budget by {usd(t.monthlyCost-lab.budget)} a month. Use fewer or smaller components.</span>
-:running?<><span><b>{num(t.sentRps)}</b> req/s sent</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span><span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
-:<span className="lab-muted">{result.problems[0]||"Press Run traffic to send the Clients' requests through your design. Change anything while it runs and the numbers update."}</span>}</div>
+<div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{usd(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
+<label className="lab-speed"><span className="sr">Simulation speed</span><select value={speed} onChange={e=>setSpeed(+e.target.value)}>{SPEEDS.map(([l,h])=><option key={h} value={h}>{l}</option>)}</select></label>
+<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
+{menu&&<Designs store={store} current={store.current} budget={lab.budget} open={pick} create={()=>create()} example={()=>create(lab.example)} duplicate={duplicate} remove={del} close={()=>setMenu(false)}/>}</header>
+<div className="lab-status" aria-live="polite">{blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."} Designs → ⧉ duplicates it with a fresh {usd(lab.budget)}.</span>
+:running?<><span><b>{simTime(credit.hours)}</b></span><span><b>{num(t.sentRps)}</b> req/s sent{t.clients>1?` by ${t.clients} Clients`:""}</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span><span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
+:<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>
 <Palette lab={lab} onAdd={k=>add(k)}/>
 <div className="lab-canvas" ref={wrap} onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect="move"}} onDrop={onDrop}>
 <ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
