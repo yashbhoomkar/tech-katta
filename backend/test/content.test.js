@@ -185,6 +185,21 @@ test('lab validation checks traffic patterns and autoscaling, which are optional
   assert.deepEqual(check(node({ type: 'server', config: { size: 'm5.large', count: 2, maxCount: 8, autoscale: true } })), []);
 });
 
+test('lab validation checks the cache behaviour fields, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  const K = `components[${I.cache}]`;
+  assert.deepEqual(check((l) => { for (const k of ['warmupMinutes', 'flushSeconds', 'writePolicy', 'onDown']) delete l.components[I.cache][k]; }), []);
+  assert.ok(check((l) => { l.components[I.cache].warmupMinutes = 0; }).some((p) => p.includes(`${K}: warmupMinutes`)));
+  assert.ok(check((l) => { l.components[I.cache].flushSeconds = -1; }).some((p) => p.includes(`${K}: flushSeconds`)));
+  assert.ok(check((l) => { l.components[I.cache].writePolicy.options[1].id = 'around'; }).some((p) => p.includes(`${K}: writePolicy`)), 'only ids the simulator knows');
+  assert.ok(check((l) => { l.components[I.cache].writePolicy.options.pop(); }).some((p) => p.includes(`${K}: writePolicy`)));
+  assert.ok(check((l) => { l.components[I.cache].onDown.default = 'retry'; }).some((p) => p.includes(`${K}: onDown`)));
+  assert.ok(check((l) => { delete l.components[I.cache].onDown.options[0].desc; }).some((p) => p.includes(`${K}: onDown`)));
+  assert.ok(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { writePolicy: 'sideways' } }); }).some((p) => p.includes('unknown writePolicy sideways')));
+  assert.ok(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { onDown: 'panic' } }); }).some((p) => p.includes('unknown onDown panic')));
+  assert.deepEqual(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { writePolicy: 'back', onDown: 'fail' } }); }).filter((p) => !p.includes('no traffic')), []);
+});
+
 test('content preflight allows If-None-Match', async () => {
   const response = await get('/v1/lab', { method: 'OPTIONS' });
   assert.equal(response.status, 204);

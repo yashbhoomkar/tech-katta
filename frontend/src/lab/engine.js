@@ -19,6 +19,15 @@
 //   Cache: sits in front of a database (Server → Cache → Database). Reads it holds (hitPct) are
 //     answered by the cache; misses and every write (writePct) go on to the database. All queries
 //     touch the cache (writes update it), so it needs capacity for the full query rate.
+//   Cache behaviour (optional catalogue fields `warmupMinutes`, `onDown`, `writePolicy`, `flushSeconds`):
+//     - A cache that restarts after a crash comes back empty: its hit rate climbs from 0 to its hit %
+//       over `warmupMinutes`, and the misses land on the database meanwhile.
+//     - When it is down, queries either go straight to the database (`onDown: database`, what
+//       cache-aside code does when the cache errors) or fail (`fail`).
+//     - Write-through (default): writes go to the database at once and callers wait for it.
+//       Write-back: the cache acknowledges writes and flushes them to the database later, as fast as
+//       the database's spare capacity allows; a backlog of unflushed writes builds when it can't keep
+//       up. If the cache crashes, the backlog and the last `flushSeconds` of writes are lost.
 //   Queue: asynchronous. The caller's request is done once the message is stored; whatever the
 //     queue points at (workers) takes messages at its own capacity. When arrivals beat the workers
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
@@ -103,11 +112,20 @@ export function summary(comp, config = {}) {
 const pct = (comp, config, key) => config?.[key] ?? comp[key].default;
 // Share of a cache's queries that go on to the database: every write, and the reads it misses.
 export const missShare = (comp, config) => { const w = pct(comp, config, 'writePct') / 100, h = pct(comp, config, 'hitPct') / 100; return w + (1 - w) * (1 - h); };
+const choice = (comp, config, key) => (comp[key] ? (comp[key].options.some((o) => o.id === config?.[key]) ? config[key] : comp[key].default) : null);
+// How a cache splits its queries: w = writes, readMiss = reads it has to fetch from the database
+// (hit % scaled by `warm`, 0–1, while it warms up), back = write-back, fallThrough = on its way down
+// queries go to the database. Without the optional catalogue fields: write-through, and failing.
+export function cacheFlow(comp, config, warm = 1) {
+  const w = pct(comp, config, 'writePct') / 100, h = (pct(comp, config, 'hitPct') / 100) * warm;
+  return { w, readMiss: (1 - w) * (1 - h), hit: h, back: choice(comp, config, 'writePolicy') === 'back', fallThrough: choice(comp, config, 'onDown') === 'database' };
+}
 const qpr = (comp, config) => comp.queriesPerRequest ? (config?.queriesPerRequest ?? comp.queriesPerRequest.default) : 1;
 
 // One steady pass with clients sending `factor` × their rps (1 + retries); `down` = crashed ids.
-function pass(nodes, byId, out, order, cat, factor, down, backlog) {
-  const res = Object.fromEntries(nodes.map((n) => [n.id, { offered: 0, served: 0, dropped: 0, capacity: down.has(n.id) ? 0 : capacity(cat[n.type], n.config), utilisation: 0, latencyMs: 0, pathMs: 0, success: 1, cost: 0, reached: false, down: down.has(n.id), delivered: 0 }]));
+function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
+  const res = Object.fromEntries(nodes.map((n) => [n.id, { offered: 0, served: 0, dropped: 0, capacity: down.has(n.id) ? 0 : capacity(cat[n.type], n.config), utilisation: 0, latencyMs: 0, pathMs: 0, success: 1, cost: 0, reached: false, down: down.has(n.id), delivered: 0, writes: 0, hit: 0 }]));
+  const flow = (node) => cacheFlow(cat.cache, node.config, Object.hasOwn(warm, node.id) ? warm[node.id] : 1);
   const groups = (id) => { const g = new Map(); for (const to of out.get(id)) { const t = byId.get(to).type; if (!g.has(t)) g.set(t, []); g.get(t).push(to); } return [...g.values()]; };
   for (const n of nodes) if (n.type === 'client') { res[n.id].offered = (n.config?.rps || 0) * factor; res[n.id].reached = true; }
   for (const id of order) {
@@ -119,6 +137,20 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog) {
     // What this component passes on: a queue hands workers only what they can take (all of it
     // while there is a backlog to work through); everything else passes on what it served.
     let sent = r.served;
+    // A cache's traffic to the database: read misses plus writes (write-through) or plus what it can
+    // flush (write-back); everything when it is down and falls through.
+    let toDb = null;
+    if (node.type === 'cache') {
+      const c = flow(node), dbs = groups(id).find((g) => byId.get(g[0]).type === 'database') || [];
+      r.hit = c.hit;
+      if (r.down && c.fallThrough) { r.dropped = 0; toDb = r.offered; }
+      else if (c.back && !r.down) {
+        const cap = dbs.reduce((a, to) => a + (down.has(to) ? 0 : capacity(cat.database, byId.get(to).config)), 0), reads = r.served * c.readMiss, spare = Math.max(0, cap - reads);
+        r.writes = r.served * c.w;
+        r.delivered = backlog.has(id) ? spare : Math.min(r.writes, spare);
+        toDb = reads + r.delivered;
+      } else toDb = r.served * (c.w + c.readMiss);
+    }
     if (node.type === 'queue') {
       const take = groups(id).map((g) => g.reduce((a, to) => a + (down.has(to) ? 0 : capacity(cat[byId.get(to).type], byId.get(to).config)), 0));
       const cap = take.length ? Math.min(...take) : 0;
@@ -127,7 +159,8 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog) {
     }
     for (const group of groups(id)) for (const to of group) {
       const t = byId.get(to).type;
-      const per = node.type === 'server' && (t === 'database' || t === 'cache') ? qpr(comp, node.config) : node.type === 'cache' && t === 'database' ? missShare(comp, node.config) : 1;
+      if (toDb !== null && t === 'database') { res[to].offered += toDb / group.length; if (toDb > 0) res[to].reached = true; continue; }
+      const per = node.type === 'server' && (t === 'database' || t === 'cache') ? qpr(comp, node.config) : 1;
       res[to].offered += sent * per / group.length; if (sent > 0) res[to].reached = true;
     }
   }
@@ -135,10 +168,14 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog) {
     const r = res[id];
     let path = r.latencyMs, ok = r.offered > 0 ? r.served / r.offered : (r.down ? 0 : 1);
     const node = byId.get(id);
+    // A cache that is down but falls through fails nothing itself: the database answers.
+    const c = node.type === 'cache' ? flow(node) : null;
+    if (c && r.down && c.fallThrough) ok = 1;
     // A queue answers the caller once the message is stored: what happens after is not on the path.
     if (node.type !== 'queue') for (const group of groups(id)) {
-      // a cache only waits for the database on the queries it passes on
-      const share = node.type === 'cache' && byId.get(group[0]).type === 'database' ? missShare(cat.cache, node.config) : 1;
+      // A cache only waits for the database on the queries it passes on: read misses, plus writes
+      // unless it is write-back (those are acknowledged by the cache); all of them while it is down.
+      const share = c && byId.get(group[0]).type === 'database' ? (r.down && c.fallThrough ? 1 : c.readMiss + (c.back ? 0 : c.w)) : 1;
       path += share * group.reduce((s, to) => s + res[to].pathMs, 0) / group.length;
       ok *= 1 - share + share * group.reduce((s, to) => s + res[to].success, 0) / group.length;
     }
@@ -149,7 +186,7 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog) {
 
 // Options: down / backlog (sets of ids), minute (simulated clock, for traffic patterns), counts
 // ({server id: instances running} for autoscaled groups).
-export function simulate(design, lab, { down = new Set(), backlog = new Set(), minute = 0, counts = {} } = {}) {
+export function simulate(design, lab, { down = new Set(), backlog = new Set(), minute = 0, counts = {}, warm = {} } = {}) {
   const cat = catalogue(lab);
   // What each component is doing at this minute: Clients at their pattern's rate, autoscaled
   // server groups with the instances running now.
@@ -182,14 +219,14 @@ export function simulate(design, lab, { down = new Set(), backlog = new Set(), m
   let res = null, s = 1, factor = 1;
   if (order.length === nodes.length) {
     for (let i = 0; i < 4; i++) {
-      res = pass(nodes, byId, out, order, cat, factor, down, backlog);
+      res = pass(nodes, byId, out, order, cat, factor, down, backlog, warm);
       const sent = clients.reduce((a, c) => a + res[c.id].offered, 0);
       s = sent ? clients.reduce((a, c) => a + res[c.id].offered * res[c.id].success, 0) / sent : 1;
       let f = 1, miss = 1; for (let k = 0; k < retries; k++) { miss *= 1 - s; f += miss; }
       if (Math.abs(f - factor) < 1e-6) break;
       factor = f;
     }
-  } else res = pass(nodes, byId, out, [], cat, 1, down, backlog);
+  } else res = pass(nodes, byId, out, [], cat, 1, down, backlog, warm);
   for (const n of nodes) res[n.id].cost = monthlyCost(cat[n.type], n.config, res[n.id].served);
 
   const users = clients.reduce((a, c) => a + (c.config?.rps || 0), 0);
@@ -217,16 +254,19 @@ export function simulate(design, lab, { down = new Set(), backlog = new Set(), m
 // backlog: {queue id: messages waiting}.
 // scale: {server id: {n: instances running, pending: [{at, n}] booting, low: minutes below target}}.
 const dict = (from) => Object.assign(Object.create(null), from);
-export const newRun = () => ({ t: 0, start: 0, down: dict(), over: dict(), backlog: dict(), scale: dict(), sent: 0, served: 0, events: [] });
+// cold: {cache id: minute it came back empty}; lost: writes lost with write-back caches that crashed.
+export const newRun = () => ({ t: 0, start: 0, down: dict(), over: dict(), backlog: dict(), scale: dict(), cold: dict(), lost: 0, sent: 0, served: 0, events: [] });
+// How warm each restarted cache is at the run's time (0 = empty, 1 = back to its hit %).
+const warmth = (run, lab) => { const m = catalogue(lab).cache?.warmupMinutes; return Object.fromEntries(Object.entries(run.cold || {}).map(([id, at]) => [id, m ? Math.min(1, Math.max(0, (run.t - at) / m)) : 1])); };
 // The simulate() options for a run at a simulated minute.
-export const runOptions = (run, minute) => ({ down: new Set(Object.keys(run.down)), backlog: new Set(Object.keys(run.backlog || {}).filter((id) => run.backlog[id] > 0)), minute, counts: Object.fromEntries(Object.entries(run.scale || {}).map(([id, s]) => [id, s.n])) });
+export const runOptions = (run, minute, lab) => ({ warm: lab ? warmth(run, lab) : {}, down: new Set(Object.keys(run.down)), backlog: new Set(Object.keys(run.backlog || {}).filter((id) => run.backlog[id] > 0)), minute, counts: Object.fromEntries(Object.entries(run.scale || {}).map(([id, s]) => [id, s.n])) });
 
 // Advance by `minutes`, jumping from event to event (load is steady between crashes/recoveries).
 export function advance(design, lab, run, minutes) {
   const cat = catalogue(lab);
   // Per-node maps have no prototype: node ids are user data, and an id such as "__proto__" or
   // "constructor" must stay an ordinary key.
-  const st = { ...run, down: dict(run.down), over: dict(run.over), backlog: dict(run.backlog), events: [...run.events], scale: dict() };
+  const st = { ...run, down: dict(run.down), over: dict(run.over), backlog: dict(run.backlog), events: [...run.events], scale: dict(), cold: dict(run.cold), lost: run.lost || 0 };
   for (const [id, s] of Object.entries(run.scale || {})) st.scale[id] = { ...s, pending: s.pending.map((p) => ({ ...p })) };
   const nodes = design.nodes.filter((n) => cat[n.type]);
   const as = cat.server?.autoscaling;
@@ -238,11 +278,13 @@ export function advance(design, lab, run, minutes) {
   const varying = scaled.length > 0 || nodes.some((n) => n.type === 'client' && !steady(cat.client, n.config));
   const step = Math.max(1, minutes / 1500);
   for (const id of Object.keys(st.down)) if (!nodes.some((n) => n.id === id)) delete st.down[id];
-  for (const id of Object.keys(st.backlog)) if (!nodes.some((n) => n.id === id && n.type === 'queue')) delete st.backlog[id];
+  for (const id of Object.keys(st.backlog)) if (!nodes.some((n) => n.id === id && (n.type === 'queue' || n.type === 'cache'))) delete st.backlog[id];
+  for (const id of Object.keys(st.cold)) if (!nodes.some((n) => n.id === id && n.type === 'cache')) delete st.cold[id];
+  const warmup = cat.cache?.warmupMinutes;
   let left = minutes;
   for (let guard = 0; left > 1e-9 && guard < 4000; guard++) {
-    const r = simulate(design, lab, runOptions(st, (st.start || 0) * 60 + st.t));
-    let dt = varying ? Math.min(left, step) : left;
+    const r = simulate(design, lab, runOptions(st, (st.start || 0) * 60 + st.t, lab));
+    let dt = varying || Object.keys(st.cold).length ? Math.min(left, step) : left;
     // Autoscaling: launch instances as soon as load needs them (they arrive after the warm-up);
     // remove them once load has stayed low for scaleInMinutes.
     const want = {}, low = [];
@@ -259,8 +301,8 @@ export function advance(design, lab, run, minutes) {
     const hot = [];
     // queue backlogs change at (arrivals − deliveries) messages a second; stop when one empties
     const growth = {};
-    for (const n of nodes) if (n.type === 'queue') {
-      const g = r.nodes[n.id].served - r.nodes[n.id].delivered; growth[n.id] = g;
+    for (const n of nodes) if (n.type === 'queue' || (n.type === 'cache' && cacheFlow(cat.cache, n.config).back)) {
+      const g = n.type === 'queue' ? r.nodes[n.id].served - r.nodes[n.id].delivered : r.nodes[n.id].writes - r.nodes[n.id].delivered; growth[n.id] = g;
       if ((st.backlog[n.id] || 0) > 0 && g < 0) dt = Math.min(dt, st.backlog[n.id] / -g / 60);
     }
     for (const n of nodes) {
@@ -273,8 +315,9 @@ export function advance(design, lab, run, minutes) {
     st.t += dt; left -= dt;
     for (const [id, g] of Object.entries(growth)) {
       const before = st.backlog[id] || 0, after = Math.max(0, before + g * dt * 60);
-      if (before <= 1e-6 && after > 1e-6) st.events.push({ t: st.t - dt, id, kind: 'backlog' });
-      if (before > 1e-6 && after <= 1e-6) st.events.push({ t: st.t, id, kind: 'drained' });
+      const cache = nodes.find((n) => n.id === id)?.type === 'cache';
+      if (before <= 1e-6 && after > 1e-6) st.events.push({ t: st.t - dt, id, kind: cache ? 'dirty' : 'backlog' });
+      if (before > 1e-6 && after <= 1e-6) st.events.push({ t: st.t, id, kind: cache ? 'flushed' : 'drained' });
       if (after > 1e-6) st.backlog[id] = after; else delete st.backlog[id];
     }
     for (const id of hot) st.over[id] = (st.over[id] || 0) + dt;
@@ -287,14 +330,28 @@ export function advance(design, lab, run, minutes) {
     }
     for (const n of nodes) {
       const crash = cat[n.type].crash; if (!crash) continue;
-      if (st.down[n.id] !== undefined && st.down[n.id] <= st.t + 1e-9) { delete st.down[n.id]; st.over[n.id] = 0; st.events.push({ t: st.t, id: n.id, kind: 'recovered' }); }
+      if (st.down[n.id] !== undefined && st.down[n.id] <= st.t + 1e-9) {
+        delete st.down[n.id]; st.over[n.id] = 0;
+        // a cache comes back empty and has to warm up again
+        if (n.type === 'cache' && warmup) { st.cold[n.id] = st.t; st.events.push({ t: st.t, id: n.id, kind: 'cold' }); }
+        else st.events.push({ t: st.t, id: n.id, kind: 'recovered' });
+      }
       else if (st.down[n.id] === undefined && (st.over[n.id] || 0) >= crash.minutes - 1e-9) {
         const failover = n.type === 'database' && n.config?.multiAz && crash.failoverMinutes;
+        if (n.type === 'cache') delete st.cold[n.id];
+        // a write-back cache loses the writes it had not flushed yet
+        if (n.type === 'cache' && cacheFlow(cat.cache, n.config).back) {
+          const lost = (st.backlog[n.id] || 0) + r.nodes[n.id].writes * (cat.cache.flushSeconds || 0);
+          delete st.backlog[n.id];
+          if (lost > 0) { st.lost += lost; st.events.push({ t: st.t, id: n.id, kind: 'writesLost', n: Math.round(lost) }); }
+        }
         st.down[n.id] = st.t + (failover ? crash.failoverMinutes : crash.downMinutes); st.over[n.id] = 0;
         st.events.push({ t: st.t, id: n.id, kind: failover ? 'failover' : 'crashed' });
       }
     }
   }
+  // caches that have finished warming up
+  for (const [id, at] of Object.entries(st.cold)) if (!warmup || st.t - at >= warmup - 1e-9) { delete st.cold[id]; st.events.push({ t: Math.min(st.t, at + (warmup || 0)), id, kind: 'warm' }); }
   if (st.events.length > 200) st.events = st.events.slice(-200);
   return st;
 }

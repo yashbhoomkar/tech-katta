@@ -114,7 +114,12 @@ const pattern = (p) => p && typeof p === 'object' && isText(p.id) && isText(p.la
   && p.points[0][0] === 0 && p.points.at(-1)[0] === 24 && p.points.every((x, i) => i === 0 || x[0] >= p.points[i - 1][0]) && p.points.some((x) => x[1] === 1);
 const patterns = (list) => Array.isArray(list) && list.length > 0 && list.every(pattern) && new Set(list.map((p) => p.id)).size === list.length;
 const autoscaling = (a) => a && typeof a === 'object' && isText(a.label) && isText(a.minLabel) && isText(a.maxLabel) && isText(a.note) && positive(a.targetPct) && a.targetPct <= 100 && positive(a.warmupMinutes) && positive(a.scaleInMinutes) && Number.isInteger(a.defaultMax) && a.defaultMax >= 1;
-const OPTIONAL_FIELDS = { client: { patterns }, server: { autoscaling } };
+// Cache behaviour: a choice is {label, default, options: [{id, label, desc}]} with exactly the ids the
+// simulator knows.
+const choice = (ids) => (c) => c && typeof c === 'object' && isText(c.label) && Array.isArray(c.options) && c.options.length === ids.length
+  && c.options.every((o) => o && ids.includes(o.id) && isText(o.label) && isText(o.desc)) && new Set(c.options.map((o) => o.id)).size === ids.length && ids.includes(c.default);
+const CHOICES = { writePolicy: ['through', 'back'], onDown: ['database', 'fail'] };
+const OPTIONAL_FIELDS = { client: { patterns }, server: { autoscaling }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown) } };
 // Every catalogue needs the original four; the others are optional so content can add them later.
 const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
@@ -163,7 +168,10 @@ export function validateDesign(design, lab, at, problems = []) {
       if (cfg.autoscale !== undefined && typeof cfg.autoscale !== 'boolean') problems.push(`${where}: autoscale must be true or false`);
       if (isNumber(cfg.maxCount) && cfg.maxCount < (cfg.count ?? c.count?.default)) problems.push(`${where}: maxCount is below count`);
     }
-    if (c.type === 'cache') { inRange('hitPct', c.hitPct); inRange('writePct', c.writePct); }
+    if (c.type === 'cache') {
+      inRange('hitPct', c.hitPct); inRange('writePct', c.writePct);
+      for (const key of Object.keys(CHOICES)) if (cfg[key] !== undefined && !(c[key] && Array.isArray(c[key].options) && c[key].options.some((o) => o && o.id === cfg[key]))) problems.push(`${where}: unknown ${key} ${cfg[key]}`);
+    }
     if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
   }

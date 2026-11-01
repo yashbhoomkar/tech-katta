@@ -136,7 +136,7 @@
       "type": "cache",
       "name": "Cache",
       "group": "Storage",
-      "desc": "ElastiCache for Redis, placed between your servers and the database (Server → Cache → Database). Reads it already holds come back in about a millisecond; misses and all writes go on to the database. Every query touches the cache, so size it for the full query rate.",
+      "desc": "ElastiCache for Redis, placed between your servers and the database (Server → Cache → Database). Reads it already holds come back in about a millisecond; misses go on to the database, and so do writes, at once or later depending on the write policy. Every query touches the cache, so size it for the full query rate. After a restart it is empty and has to warm up again.",
       "latencyMs": 1,
       "sizes": [
         {
@@ -175,6 +175,40 @@
         "above": 1.5,
         "minutes": 5,
         "downMinutes": 10
+      },
+      "warmupMinutes": 10,
+      "flushSeconds": 5,
+      "writePolicy": {
+        "label": "Writes",
+        "default": "through",
+        "options": [
+          {
+            "id": "through",
+            "label": "Write-through",
+            "desc": "Each write goes to the cache and the database before the caller gets an answer. Slower writes, nothing lost if the cache crashes."
+          },
+          {
+            "id": "back",
+            "label": "Write-back",
+            "desc": "The cache answers at once and writes to the database later, as fast as the database has room. Fast writes, but if the cache crashes, writes it had not passed on yet are lost."
+          }
+        ]
+      },
+      "onDown": {
+        "label": "When the cache is down",
+        "default": "database",
+        "options": [
+          {
+            "id": "database",
+            "label": "Send queries to the database",
+            "desc": "What most code does when the cache errors: read and write the database directly. Nothing fails, but the database takes every query."
+          },
+          {
+            "id": "fail",
+            "label": "Fail the queries",
+            "desc": "The requests that needed the cache fail until it is back. The database is protected."
+          }
+        ]
       }
     },
     {
@@ -280,5 +314,5 @@
     ]
   },
   "retries": 1,
-  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later; while it is down its queries fail. Load Balancers and Queues scale by themselves and never crash."
+  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later, empty: its hits climb back over 10 minutes while the misses land on the database. While a cache is down its queries go to the database or fail, as set on the cache. Load Balancers and Queues scale by themselves and never crash."
 }

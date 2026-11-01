@@ -2,10 +2,10 @@
 // design's budget and a steady-load simulation (engine.js). The component catalogue, prices and
 // capacities come from the API (GET /v1/lab, content/lab.json). Designs are kept in this browser.
 import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
-import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow}from"@xyflow/react";
+import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow,BaseEdge,EdgeLabelRenderer,getSmoothStepPath}from"@xyflow/react";
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
-import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,trafficAt,patternOf,autoscaled,scaleRange}from"./engine.js";
+import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow}from"./engine.js";
 import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
@@ -13,7 +13,7 @@ import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
 const SPEEDS=[["1 s = 1 minute",1/60],["1 s = 10 minutes",1/6],["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
 const simTime=h=>{const m=Math.floor(h*60+1e-6),d=Math.floor(m/1440),hh=Math.floor(m%1440/60),mm=m%60;return `Day ${d+1}, ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`};
 const cents=n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="scaledOut"?`${c.name||"Server"} scaled out to ${e.n} instances.`:e.kind==="scaledIn"?`${c.name||"Server"} scaled in to ${e.n} instances: load has been low for ${c.autoscaling?.scaleInMinutes} min.`:e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
+const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="cold"?`${c.name||"Cache"} is back, but empty: its misses go to the database while it warms up (${c.warmupMinutes} min).`:e.kind==="warm"?`${c.name||"Cache"} is warm again.`:e.kind==="dirty"?`${c.name||"Cache"} is writing to the database slower than writes arrive: unflushed writes are piling up.`:e.kind==="flushed"?`${c.name||"Cache"} has flushed every write to the database.`:e.kind==="writesLost"?`${c.name||"Cache"} crashed with ${num(e.n)} writes not yet in the database. They are lost.`:e.kind==="scaledOut"?`${c.name||"Server"} scaled out to ${e.n} instances.`:e.kind==="scaledIn"?`${c.name||"Server"} scaled in to ${e.n} instances: load has been low for ${c.autoscaling?.scaleInMinutes} min.`:e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
 const duration=h=>h<1?`${Math.round(h*60)} minutes`:h<48?`${Math.round(h)} hours`:h<24*90?`${Math.round(h/24)} days`:`${(h/730).toFixed(1)} months`;
 // New components go to the nearest free spot around the point asked for, so they never stack.
 const W=176,H=110;
@@ -30,7 +30,7 @@ const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:S
 const savedSpeed=()=>{let v=NaN;try{v=+localStorage.getItem("tk-lab-speed")}catch{}return SPEEDS.some(s=>s[1]===v)?v:1/60};
 const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{}}})),edges:d.edges.map(e=>edge(e.from,e.to))});
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
-const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"smoothstep",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
+const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
 
 const ICON={client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
@@ -42,11 +42,16 @@ return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 {data.kind!=="client"&&<Handle type="target" position={Position.Left}/>}
 <div className="ln-head"><Glyph kind={data.kind}/><small>{comp.group.toUpperCase()}</small></div>
 <b>{comp.name}</b><span className="ln-sum">{summary(comp,run.scale?.[id]?{...data.config,live:run.scale[id].n}:data.config)}{run.scale?.[id]?.pending.length?` · +${run.scale[id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</span>
-{back!==undefined?<span className="ln-m ln-down">CRASHED · back in {Math.max(1,Math.ceil(back-run.t))} min</span>:running&&r&&(data.kind==="client"?<span className="ln-m">sending {num(r.offered)} req/s{r.offered>(data.config.rps||0)*1.001?" incl. retries":""}</span>
+{back!==undefined?<span className="ln-m ln-down">CRASHED · back in {Math.max(1,Math.ceil(back-run.t))} min{data.kind==="cache"&&cacheFlow(comp,data.config).fallThrough?" · queries go to the database":""}</span>:running&&r&&(data.kind==="client"?<span className="ln-m">sending {num(r.offered)} req/s{r.offered>(data.config.rps||0)*1.001?" incl. retries":""}</span>
 :data.kind==="queue"?<span className={"ln-m"+(run.backlog?.[id]>0?" ln-q":"")}>{num(r.served)}/s in · {num(r.delivered)}/s to workers{run.backlog?.[id]>0?` · backlog ${num(run.backlog[id])}`:""}</span>
-:<><div className="ln-bar"><i style={{width:Math.min(100,r.utilisation*100)+"%"}}/></div><span className="ln-m">{Math.round(r.utilisation*100)}% · {Math.round(r.latencyMs)} ms{r.dropped>0?` · drops ${num(r.dropped)}/s`:""}</span></>)}
+:<><div className="ln-bar"><i style={{width:Math.min(100,r.utilisation*100)+"%"}}/></div><span className="ln-m">{Math.round(r.utilisation*100)}% · {Math.round(r.latencyMs)} ms{r.dropped>0?` · drops ${num(r.dropped)}/s`:""}</span>
+{data.kind==="cache"&&run.cold?.[id]!==undefined&&<span className="ln-m ln-q">warming up · {Math.round(r.hit*100)}% hits</span>}{data.kind==="cache"&&run.backlog?.[id]>0&&<span className="ln-m ln-q">unflushed writes {num(run.backlog[id])}</span>}</>)}
 {data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const nodeTypes={comp:CompNode};
+// Arrows: click (or tap) one to select it; a selected arrow shows ✕ to remove it (Delete works too).
+function Arrow({id,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected}){const rf=useReactFlow();const[path,lx,ly]=getSmoothStepPath({sourceX,sourceY,sourcePosition,targetX,targetY,targetPosition});
+return <><BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24}/>{selected&&<EdgeLabelRenderer><button type="button" className="lab-edge-x nodrag nopan" style={{transform:`translate(-50%,-50%) translate(${lx}px,${ly}px)`}} onClick={()=>rf.deleteElements({edges:[{id}]})} aria-label="Remove this arrow" title="Remove this arrow">✕</button></EdgeLabelRenderer>}</>}
+const edgeTypes={arrow:Arrow};
 
 // Palette items are dragged with pointer events (mouse, trackpad, touch, pen) rather than HTML5
 // drag-and-drop, which Firefox does not start from buttons and touch screens do not support.
@@ -62,7 +67,7 @@ return <aside className="lab-pal" aria-label="Components"><div className="lab-h"
 <button key={c.type} type="button" className="lab-item" onPointerDown={e=>press(e,c)} onClick={e=>{if(e.detail===0)onAdd(c.type)}} title={`${c.desc} Drag onto the canvas, or tap to add.`}>
 <Glyph kind={c.type}/><span>{c.name}</span></button>)}</div>)}
 {ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Glyph kind={ghost.c.type}/>{ghost.c.name}</div>}
-<p className="lab-tip">Drag a component onto the canvas, or tap it to add it. Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Select and press Delete to remove.</p></aside>}
+<p className="lab-tip">Drag a component onto the canvas, or tap it to add it. Connect two components by dragging from the dot on the right of one to the dot on the left of the other. To remove a component or an arrow, click it and press Delete, or use the ✕ on a selected arrow.</p></aside>}
 
 // The Clients' traffic over one simulated day (multiplier 0–1 of the rps setting), with "now".
 function DayChart({comp,config,hours}){const w=240,h=56,pts=[];for(let m=0;m<=1440;m+=10)pts.push(`${(m/1440*w).toFixed(1)},${(h-trafficAt(comp,config,m)*(h-6)).toFixed(1)}`);const x=((hours%24)+24)%24/24*w;
@@ -70,10 +75,13 @@ return <figure className="lab-day"><svg viewBox={`0 0 ${w} ${h+14}`} role="img" 
 <line x1={x} x2={x} y1="0" y2={h} className="lab-day-now"/>{[0,6,12,18,24].map(t=><text key={t} x={t/24*w} y={h+11} textAnchor={t===0?"start":t===24?"end":"middle"}>{String(t).padStart(2,"0")}:00</text>)}</svg>
 <figcaption>Now {simTime(hours).split(", ")[1]} · {num((config.rps??comp.rps.default)*trafficAt(comp,config,hours*60))} req/s</figcaption></figure>}
 function Field({label,children}){return <label className="lab-f"><span>{label}</span>{children}</label>}
-function Inspector({lab,cat,node,result,running,update,remove,run,names,hours}){
+function Inspector({lab,cat,node,edge,result,running,update,remove,removeEdge,run,names,hours,labelOf}){
+if(!node&&edge)return <aside className="lab-ins" aria-label="Arrow"><div className="lab-h">ARROW</div><h3>{labelOf(edge.source)} → {labelOf(edge.target)}</h3>
+<p className="lab-desc">Traffic flows this way. Remove the arrow to stop it; drag from the dot on the right of one component to the dot on the left of another to add a new one.</p>
+<button type="button" className="lab-btn ghost" onClick={()=>removeEdge(edge.id)}>Remove arrow</button><p className="lab-note">Shortcut: select an arrow and press Delete, or use the ✕ on it.</p></aside>;
 if(!node)return <aside className="lab-ins" aria-label="Details"><div className="lab-h">DESIGN</div>
 <dl className="lab-kv"><dt>Monthly cost</dt><dd>{usd(result.total.monthlyCost)}</dd><dt>Budget</dt><dd>{usd(lab.budget)}</dd><dt>Region</dt><dd>{lab.region}</dd></dl>
-{run.sent>0&&<dl className="lab-kv"><dt>Availability this run</dt><dd className={run.served/run.sent<0.999?"over":""}>{(100*run.served/run.sent).toFixed(2)}%</dd><dt>Run time</dt><dd>{duration(run.t/60)}</dd></dl>}
+{run.sent>0&&<dl className="lab-kv"><dt>Availability this run</dt><dd className={run.served/run.sent<0.999?"over":""}>{(100*run.served/run.sent).toFixed(2)}%</dd><dt>Run time</dt><dd>{duration(run.t/60)}</dd>{run.lost>0&&<><dt>Writes lost</dt><dd className="over">{num(run.lost)}</dd></>}</dl>}
 {run.events.length>0&&<><div className="lab-h lab-log-h">RUN LOG</div><ol className="lab-log">{[...run.events].reverse().slice(0,12).map((e,i)=><li key={i} className={e.kind}><small>{simTime(run.start+e.t/60)}</small>{eventText(e,names,cat,lab)}</li>)}</ol></>}
 <p className="lab-note">{lab.crashNote}</p><p className="lab-note">{lab.priceNote}</p><p className="lab-note">{lab.modelNote}</p></aside>;
 const comp=cat[node.data.kind],cfg=node.data.config,r=result.nodes[node.id];const set=patch=>update(node.id,{...cfg,...patch});
@@ -84,6 +92,9 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {comp.queriesPerRequest&&<Field label={comp.queriesPerRequest.label}><input type="number" min={comp.queriesPerRequest.min} max={comp.queriesPerRequest.max} value={cfg.queriesPerRequest??comp.queriesPerRequest.default} onChange={e=>set({queriesPerRequest:Math.max(comp.queriesPerRequest.min,Math.min(comp.queriesPerRequest.max,Math.round(+e.target.value)||1))})}/></Field>}
 {["hitPct","writePct"].map(k=>comp[k]&&<Field key={k} label={comp[k].label}><input type="number" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:Math.max(comp[k].min,Math.min(comp[k].max,Math.round(+e.target.value)||0))})}/><input type="range" min={comp[k].min} max={comp[k].max} value={cfg[k]??comp[k].default} onChange={e=>set({[k]:+e.target.value})} aria-label={comp[k].label}/></Field>)}
 {comp.autoscaling&&<label className="lab-check"><input type="checkbox" checked={!!cfg.autoscale} onChange={e=>set({autoscale:e.target.checked,...(e.target.checked&&cfg.maxCount===undefined?{maxCount:Math.max(cfg.count??comp.count.default,comp.autoscaling.defaultMax)}:{})})}/>{comp.autoscaling.label}</label>}
+{comp.type==="cache"&&["writePolicy","onDown"].map(k=>comp[k]&&<React.Fragment key={k}><Field label={comp[k].label}><select value={cfg[k]&&comp[k].options.some(o=>o.id===cfg[k])?cfg[k]:comp[k].default} onChange={e=>set({[k]:e.target.value})}>{comp[k].options.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select></Field>
+<p className="lab-note lab-note-tight">{(comp[k].options.find(o=>o.id===cfg[k])||comp[k].options.find(o=>o.id===comp[k].default)).desc}</p></React.Fragment>)}
+{comp.type==="cache"&&running&&r&&<dl className="lab-kv"><dt>Hits now</dt><dd className={run.cold?.[node.id]!==undefined?"warn":""}>{Math.round(r.hit*100)}% of reads{run.cold?.[node.id]!==undefined?" · warming up":""}</dd>{cacheFlow(comp,cfg).back&&<><dt>Unflushed writes</dt><dd className={run.backlog?.[node.id]>0?"warn":""}>{num(run.backlog?.[node.id]||0)}</dd></>}</dl>}
 {comp.count&&<Field label={autoscaled(comp,cfg)?comp.autoscaling.minLabel:comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>{const v=Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1));set({count:v,...(cfg.maxCount!==undefined&&cfg.maxCount<v?{maxCount:v}:{})})}}/></Field>}
 {autoscaled(comp,cfg)&&<><Field label={comp.autoscaling.maxLabel}><input type="number" min={cfg.count??comp.count.default} max={comp.count.max} value={scaleRange(comp,cfg)[1]} onChange={e=>set({maxCount:Math.max(cfg.count??comp.count.default,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>
 <p className="lab-note lab-note-tight">{comp.autoscaling.note}</p>{running&&run.scale?.[node.id]&&<dl className="lab-kv"><dt>Running now</dt><dd>{run.scale[node.id].n} instances{run.scale[node.id].pending.length?` · ${run.scale[node.id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</dd></dl>}</>}
@@ -114,9 +125,10 @@ useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s
 const design=useMemo(()=>fromFlow(nodes,edges),[nodes,edges]);const downKey=Object.keys(run.down).sort().join();
 // What the design is doing now: crashed parts, queue backlogs, autoscaled instances, and the Clients'
 // traffic at the simulated time of day.
-const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;
+const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;
 const names=useMemo(()=>Object.fromEntries(nodes.map(n=>[n.id,{kind:n.data.kind}])),[nodes]);
-const selected=nodes.find(n=>n.selected);
+const selected=nodes.find(n=>n.selected);const selEdge=selected?null:edges.find(e=>e.selected);
+const labelOf=id=>{const n=nodes.find(x=>x.id===id);return n?cat[n.data.kind]?.name||n.data.kind:"?"};const removeEdge=id=>setEdges(es=>es.filter(e=>e.id!==id));
 // While running, the simulated clock advances and the design's hourly cost is taken from its credit.
 const burn=useRef(0);burn.current=result.total.burnPerHour;
 useEffect(()=>{if(!running)return;const iv=setInterval(()=>{setRun(r=>advance(designRef.current,lab,r,speed*TICK/1000*60));setCredit(c=>{const hours=speed*TICK/1000,cost=burn.current*hours;
@@ -151,11 +163,11 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 :<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>
 <Palette lab={lab} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
-<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
-fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"smoothstep"}}>
+<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
+fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector lab={lab} cat={cat} node={selected} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours}/>
+<Inspector lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours}/>
 </div></Ctx.Provider>}
 
 export default function Lab(){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);

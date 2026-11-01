@@ -125,8 +125,8 @@ test('a cache in front of the database sends it only misses and writes', () => {
   assert.ok(r.total.monthlyCost > 0 && r.nodes.k.cost > 0);
 });
 
-test('a crashed cache fails its queries even when the database is fine', () => {
-  const d = { nodes: [N('c', 'client', { rps: 500 }), N('s', 'server'), N('k', 'cache'), N('db', 'database')], edges: [E('c', 's'), E('s', 'k'), E('k', 'db')] };
+test('a crashed cache set to fail fails its queries even when the database is fine', () => {
+  const d = { nodes: [N('c', 'client', { rps: 500 }), N('s', 'server'), N('k', 'cache', { onDown: 'fail' }), N('db', 'database')], edges: [E('c', 's'), E('s', 'k'), E('k', 'db')] };
   const r = simulate(d, lab, { down: new Set(['k']) });
   assert.equal(r.nodes.db.offered, 0);
   assert.ok(r.total.successPct < 1, String(r.total.successPct));
@@ -234,4 +234,66 @@ test('autoscaling never goes past the maximum and keeps its state per design nod
   const odd = structuredClone(d); odd.nodes.find((n) => n.id === 'orders').id = '__proto__'; odd.edges = odd.edges.map((e) => ({ from: e.from === 'orders' ? '__proto__' : e.from, to: e.to === 'orders' ? '__proto__' : e.to }));
   const r2 = advance(odd, lab, newRun(), 30);
   assert.ok(Object.hasOwn(r2.scale, '__proto__') && r2.scale['__proto__'].n === 5);
+});
+
+// Cache behaviour: warm-up after a restart, what happens while it is down, write policies.
+const cached = ({ rps = 1000, cache = {}, db = { size: 'db.t3.medium' }, server = { size: 'm5.xlarge', count: 1, queriesPerRequest: 2 } } = {}) => ({
+  nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: { rps } }, { id: 's', type: 'server', x: 0, y: 0, config: server },
+    { id: 'k', type: 'cache', x: 0, y: 0, config: { hitPct: 80, writePct: 10, ...cache } }, { id: 'db', type: 'database', x: 0, y: 0, config: db }],
+  edges: [{ from: 'c', to: 's' }, { from: 's', to: 'k' }, { from: 'k', to: 'db' }],
+});
+
+test('a cold cache sends the database every query, then warms up', () => {
+  const d = cached({ db: { size: 'db.r5.2xlarge' } }); // 2,000 queries/s; warm: 10% writes + 90% × 20% misses = 28% → 560/s
+  assert.equal(Math.round(simulate(d, lab).nodes.db.offered), 560);
+  assert.equal(Math.round(simulate(d, lab, { warm: { k: 0 } }).nodes.db.offered), 2000, 'empty: every query');
+  assert.equal(Math.round(simulate(d, lab, { warm: { k: 0.5 } }).nodes.db.offered), 1280, 'half warm: 40% hits');
+});
+
+test('a cache restart can take the database down with it', () => {
+  const d = cached(); // db.t3.medium: 800 queries/s, single AZ
+  const warmup = lab.components.find((c) => c.type === 'cache').warmupMinutes;
+  const cold = advance(d, lab, { ...newRun(), cold: Object.assign(Object.create(null), { k: 0 }) }, 20);
+  const crash = cold.events.find((e) => e.id === 'db' && e.kind === 'crashed');
+  assert.ok(crash && Math.abs(crash.t - 5) < 1.01, JSON.stringify(cold.events)); // 250% → 160% at 5 min, still over 120%
+  assert.ok(cold.events.some((e) => e.id === 'k' && e.kind === 'warm' && Math.abs(e.t - warmup) < 1e-6));
+  assert.equal(advance(d, lab, newRun(), 20).events.length, 0, 'a warm cache keeps it at 70%');
+});
+
+test('while the cache is down, queries go to the database or fail, as set', () => {
+  const d = cached({ db: { size: 'db.m5.large' } });
+  const through = simulate(d, lab, { down: new Set(['k']) });
+  assert.equal(Math.round(through.nodes.db.offered), 2000);
+  assert.equal(Math.round(through.total.successPct), 100, 'the database answers everything');
+  const failing = simulate(cached({ db: { size: 'db.m5.large' }, cache: { onDown: 'fail' } }), lab, { down: new Set(['k']) });
+  assert.equal(failing.nodes.db.offered, 0);
+  assert.equal(Math.round(failing.total.successPct), 0);
+});
+
+test('write-back answers writes at once and flushes them as the database has room', () => {
+  const half = { writePct: 50 }; // 2,000 queries: 1,000 writes, 200 read misses; db.t3.medium takes 800
+  const wt = simulate(cached({ cache: half }), lab);
+  assert.ok(Math.abs(wt.nodes.db.offered / wt.nodes.k.served - 0.6) < 1e-9, 'write-through: misses + every write (60%)');
+  assert.ok(wt.nodes.db.utilisation > 1 && wt.total.successPct < 100, 'which overloads the database');
+  const wb = simulate(cached({ cache: { ...half, writePolicy: 'back' } }), lab);
+  assert.equal(Math.round(wb.nodes.db.offered), 800, 'write-back: misses + what fits');
+  assert.equal(Math.round(wb.nodes.k.delivered), 600);
+  assert.equal(Math.round(wb.total.successPct), 100);
+  assert.ok(wb.total.latencyMs < wt.total.latencyMs, 'writes do not wait for the database');
+  const run = advance(cached({ cache: { ...half, writePolicy: 'back' } }), lab, newRun(), 10);
+  assert.equal(Math.round(run.backlog.k), 400 * 600, 'unflushed writes pile up at 400/s');
+  assert.equal(run.events[0].kind, 'dirty');
+});
+
+test('a write-back cache that crashes loses the writes it had not flushed', () => {
+  const flush = lab.components.find((c) => c.type === 'cache').flushSeconds;
+  // 16,000 req/s × 2 queries = 32,000 on 20,000 ops (160%): the cache crashes after 5 minutes
+  const d = cached({ rps: 16000, server: { size: 'c5.2xlarge', count: 8, queriesPerRequest: 2 }, db: { size: 'db.r5.2xlarge' }, cache: { writePct: 50, writePolicy: 'back' } });
+  const run = advance(d, lab, newRun(), 6);
+  const lost = run.events.find((e) => e.kind === 'writesLost');
+  assert.ok(lost, JSON.stringify(run.events));
+  assert.equal(lost.n, 10000 * flush, 'served 20,000 queries/s, half of them writes, flushed every few seconds');
+  assert.equal(run.lost, 10000 * flush);
+  const safe = advance({ ...d, nodes: d.nodes.map((n) => (n.id === 'k' ? { ...n, config: { ...n.config, writePolicy: 'through' } } : n)) }, lab, newRun(), 6);
+  assert.equal(safe.lost, 0, 'write-through loses nothing');
 });
