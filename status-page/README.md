@@ -3,11 +3,11 @@
 Standalone public status page inspired by hosted service status pages.
 
 ## Components
-- Frontend: `https://tech.katta.cc/`
-- Backend: `https://tech-api.katta.cc/health`
+- Frontend: `https://tech.katta.cc/` and `/dashboard/` load, and every app script they reference is served as JavaScript.
+- Backend: `https://tech-api.katta.cc/health` reports `status: "ok"`, and `/v1/site`, `/v1/articles` and `/v1/lab` return JSON.
 
 ## Monitoring
-The page calls `/api/status`, a Vercel serverless function that checks both public endpoints server-side. It checks the frontend HTTP response and validates that the backend health endpoint returns JSON with `status: "ok"`. The browser refreshes the status every 60 seconds.
+The page calls `/api/status`, a Vercel serverless function that checks both public endpoints server-side. A service is operational only when all of its checks pass; the first failing check is shown. The browser refreshes the status every 60 seconds.
 
 ## Deploy
 This directory is intended as the root directory of the Vercel project `tech-katta-status`, connected to `yashbhoomkar/tech-katta`. Assign the custom domain `status.katta.cc`.

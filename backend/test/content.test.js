@@ -165,6 +165,45 @@ test('validation reports typos: unknown figure, bad table, unknown section', () 
   assert.ok(problems.some((p) => p.includes('every row needs 2 cells')));
 });
 
+test('validation checks every site.json field the pages render', () => {
+  const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
+  assert.deepEqual(check(() => {}), []);
+  assert.ok(check((s) => { s.topics.cards = 'oops'; }).some((p) => p.includes('topics.cards: needs a non-empty list')));
+  assert.ok(check((s) => { delete s.topics.cards[0].title; }).some((p) => p.includes('topics.cards[0].title')));
+  assert.ok(check((s) => { s.topics.cards[1].visual = 'spiral'; }).some((p) => p.includes('topics.cards[1].visual')));
+  assert.ok(check((s) => { s.notes.items[0] = ['01', 'only two']; }).some((p) => p.includes('notes.items[0]: needs a list of 4')));
+  assert.ok(check((s) => { s.numbers.items[0][2] = '100'; }).some((p) => p.includes('numbers.items[0][2]: needs a number')));
+  assert.ok(check((s) => { s.dashboard.sections.push(['concepts', 'Again', null]); }).some((p) => p.includes('duplicate id')));
+  assert.ok(check((s) => { s.dashboard.sections[0][2] = 'nope'; }).some((p) => p.includes('unknown card nope')));
+  assert.ok(check((s) => { s.footer.links.push('Pricing'); }).some((p) => p.includes('footer link Pricing')));
+  assert.ok(check((s) => { delete s.hero; }).some((p) => p.includes('site.json.hero')));
+  const badExample = validateContent({ site, examples: { [site.example]: { ...example, parts: [['Apps']] } }, articles: allArticles, lab });
+  assert.ok(badExample.some((p) => p.includes(`examples/${site.example}.json.parts[0]`)));
+});
+
+test('validation checks the optional "more" paragraphs of a type card', () => {
+  const article = structuredClone(allArticles[0]);
+  const card = article.body.find((b) => b.t === 'type');
+  card.more = 'not a list';
+  assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
+  card.more = ['fine', ''];
+  assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
+});
+
+test('validation checks the Lab example design: ids, positions, settings and connection rules', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad.example); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  assert.deepEqual(check(() => {}), []);
+  assert.ok(check((e) => { e.nodes.push({ ...e.nodes[0] }); }).some((p) => p.includes('is duplicated')));
+  assert.ok(check((e) => { e.nodes[0].x = 'left'; }).some((p) => p.includes('numeric x and y')));
+  assert.ok(check((e) => { e.nodes[0].config.rps = 10 ** 9; }).some((p) => p.includes('rps must be from')));
+  assert.ok(check((e) => { e.nodes[2].config.size = 'x9.huge'; }).some((p) => p.includes('unknown size x9.huge')));
+  assert.ok(check((e) => { e.nodes[3].config.multiAz = 'yes'; }).some((p) => p.includes('multiAz must be')));
+  assert.ok(check((e) => { e.edges.push({ ...e.edges[0] }); }).some((p) => p.includes('is duplicated')));
+  assert.ok(check((e) => { e.edges.push({ from: 'db', to: 'orders' }); }).some((p) => p.includes('out of a Database')));
+  assert.ok(check((e) => { e.edges.push({ from: 'gateway', to: 'clients' }); }).some((p) => p.includes('into Clients')));
+  assert.ok(check((e) => { e.edges.push({ from: 'orders', to: 'orders' }); }).some((p) => p.includes('to itself')));
+});
+
 async function copyContent() {
   const dir = await mkdtemp(path.join(tmpdir(), 'tk-content-'));
   await cp(repoContent, dir, { recursive: true });
