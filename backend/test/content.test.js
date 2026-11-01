@@ -143,6 +143,10 @@ test('lab validation checks the shape and units of every setting', () => {
   assert.ok(check((l) => { delete l.components[3].sizes[0].qps; l.components[3].sizes[0].rps = 500; }).some((p) => p.includes('components[3]: sizes')));
   assert.ok(check((l) => { l.components[2].sizes[1].hourly = Infinity; }).some((p) => p.includes('components[2]: sizes')));
   assert.ok(check((l) => { l.components[1].limitRps = -1; }).some((p) => p.includes('components[1]: limitRps')));
+  assert.ok(check((l) => { delete l.components[2].crash; }).some((p) => p.includes('components[2]: crash')));
+  assert.ok(check((l) => { delete l.components[3].crash.failoverMinutes; }).some((p) => p.includes('components[3]: crash')));
+  assert.ok(check((l) => { l.components[2].queriesPerRequest.default = 0; }).some((p) => p.includes('components[2]: queriesPerRequest')));
+  assert.ok(check((l) => { l.retries = 9; }).some((p) => p.includes('retries')));
 });
 
 test('content preflight allows If-None-Match', async () => {

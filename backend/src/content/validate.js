@@ -30,16 +30,20 @@ const range = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.
 // For each type: the required fields and a check of each one's shape. Server sizes are rated in
 // requests per second (rps), database sizes in queries per second (qps).
 const sizesOf = (unit) => (sizes) => Array.isArray(sizes) && sizes.length > 0 && sizes.every((s) => s && isText(s.id) && isText(s.label) && positive(s.hourly) && positive(s[unit]));
+// Crash policy: above `above` × capacity for `minutes` simulated minutes → down for `downMinutes`
+// (a Multi-AZ database fails over after `failoverMinutes`).
+const crashPolicy = (failover) => (c) => c && typeof c === 'object' && c.above >= 1 && Number.isFinite(c.above) && positive(c.minutes) && positive(c.downMinutes) && (!failover || positive(c.failoverMinutes));
 const LAB_TYPES = {
   client: { rps: range },
   apigw: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
-  server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText },
-  database: { latencyMs: positive, sizes: sizesOf('qps'), defaultSize: isText, multiAz: (m) => m && typeof m === 'object' && isText(m.label) && typeof m.default === 'boolean' && typeof m.priceFactor === 'number' && Number.isFinite(m.priceFactor) && m.priceFactor >= 1 },
+  server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText, queriesPerRequest: range, crash: crashPolicy(false) },
+  database: { latencyMs: positive, sizes: sizesOf('qps'), defaultSize: isText, crash: crashPolicy(true), multiAz: (m) => m && typeof m === 'object' && isText(m.label) && typeof m.default === 'boolean' && typeof m.priceFactor === 'number' && Number.isFinite(m.priceFactor) && m.priceFactor >= 1 },
 };
 export function validateLab(lab, problems = []) {
   const at = 'lab.json';
   if (!lab) { problems.push(`${at}: missing`); return problems; }
-  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  if (!(Number.isInteger(lab.retries) && lab.retries >= 0 && lab.retries <= 3)) problems.push(`${at}: retries must be a whole number from 0 to 3`);
   if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
   const types = new Set();
   for (const [i, c] of (lab.components || []).entries()) {
