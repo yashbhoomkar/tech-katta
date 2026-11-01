@@ -4,7 +4,7 @@ const lab=JSON.parse(readFileSync(new URL("../../../content/lab.json",import.met
 
 test("missing, broken or foreign data gives an empty store instead of a crash",()=>{
   for(const raw of [null,"","{","null","42","[]",'"x"','{"designs":null}','{"designs":[1,2]}','{"designs":{"a":null,"b":7}}'])
-    assert.deepEqual(readStore(raw,lab),{version:1,current:undefined,designs:{}},raw);
+    {const s=readStore(raw,lab);assert.equal(s.version,1,raw);assert.equal(s.current,undefined,raw);assert.deepEqual(Object.keys(s.designs),[],raw)}
 });
 
 test("a good saved design survives unchanged",()=>{
@@ -31,4 +31,14 @@ test("bad parts are repaired or dropped: unknown types, duplicate ids, bad setti
 test("current falls back to a design that exists",()=>{
   const s=readStore(JSON.stringify({current:"gone",designs:{a:{nodes:[],edges:[]}}}),lab);
   assert.equal(s.current,"a");
+});
+
+test("prototype-looking ids and types are treated as plain data",()=>{
+  const raw='{"current":"constructor","designs":{"__proto__":{"name":"P","nodes":[{"id":"a","type":"constructor"},{"id":"toString","type":"client"}],"edges":[{"from":"toString","to":"constructor"},{"from":{"x":1},"to":"a"}]}}}';
+  const s=readStore(raw,lab);
+  assert.deepEqual(Object.keys(s.designs),["__proto__"]);
+  assert.equal(s.current,"__proto__");
+  assert.deepEqual(s.designs["__proto__"].nodes.map(n=>n.id),["toString"]);
+  assert.deepEqual(s.designs["__proto__"].edges,[]);
+  assert.equal(JSON.parse(JSON.stringify(s)).designs["__proto__"].name,"P","survives a save");
 });

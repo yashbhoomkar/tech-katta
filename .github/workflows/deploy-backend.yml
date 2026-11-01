@@ -58,7 +58,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           port: 22
-          script_stop: true
+          script_stop: false # the script sets -eu itself and rolls back on any failure
           script: |
             set -eu
             SHA='${{ github.sha }}'
@@ -78,8 +78,28 @@ jobs:
             PREV_REL=$(app readlink "$BASE/current" || true)
             echo "previous: code $PREV_SHA, content ${PREV_REL:-none}"
 
+            # From the moment the checkout changes, any failure (npm ci, validation, symlink,
+            # restart, health) ends here: put back the previous code and content, restart, fail.
+            STARTED=0; DEPLOYED=0
+            rollback() {
+              rc=$?
+              if [ "$DEPLOYED" = 1 ] || [ "$STARTED" = 0 ]; then exit "$rc"; fi
+              set +e
+              echo "Deploy of $SHA failed. Rolling back to $PREV_SHA."
+              sudo -n systemctl status tech-katta-api --no-pager
+              sudo -n journalctl -u tech-katta-api -n 80 --no-pager
+              app git -C "$APP" reset --hard "$PREV_SHA"
+              app bash -c "cd $APP/backend && npm ci --omit=dev"
+              if [ -n "$PREV_REL" ]; then point "$PREV_REL"; fi
+              sudo -n systemctl restart tech-katta-api
+              if healthy "$(basename "${PREV_REL:-none}")"; then echo "Rolled back to $PREV_SHA and ${PREV_REL}."; else echo 'Rollback did not come back healthy either. Check the VPS.'; fi
+              exit 1
+            }
+            trap rollback EXIT
+
             app git -C "$APP" fetch --quiet origin main
             app git -C "$APP" merge-base --is-ancestor "$SHA" origin/main || { echo "$SHA is not on main; refusing to deploy."; exit 1; }
+            STARTED=1
             app git -C "$APP" reset --hard "$SHA"
             app bash -c "cd $APP/backend && npm ci --omit=dev"
 
@@ -96,24 +116,13 @@ jobs:
             printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' "Environment=CONTENT_DIR=$BASE/current" | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
             sudo -n systemctl daemon-reload
             sudo -n systemctl restart tech-katta-api
+            healthy "$NAME" || { echo "API did not come back serving $NAME."; exit 1; }
+            DEPLOYED=1
 
-            if healthy "$NAME"; then
-              # keep the 10 newest releases; names start with a UTC timestamp, so sort by name
-              # (cp -a keeps the old mtime of the source folder, so time order is wrong)
-              app bash -c "ls -1d $BASE/releases/*/ | sort -r | tail -n +11 | xargs -r rm -rf --"
-              echo "deployed $SHA, content current -> $REL"
-              exit 0
-            fi
-
-            echo "API did not come back serving $NAME. Rolling back."
-            sudo -n systemctl status tech-katta-api --no-pager || true
-            sudo -n journalctl -u tech-katta-api -n 80 --no-pager || true
-            app git -C "$APP" reset --hard "$PREV_SHA"
-            app bash -c "cd $APP/backend && npm ci --omit=dev"
-            if [ -n "$PREV_REL" ]; then point "$PREV_REL"; fi
-            sudo -n systemctl restart tech-katta-api
-            if healthy "$(basename "${PREV_REL:-none}")"; then echo "Rolled back to $PREV_SHA and ${PREV_REL}."; else echo 'Rollback did not come back healthy either. Check the VPS.'; fi
-            exit 1
+            # keep the 10 newest releases; names start with a UTC timestamp, so sort by name
+            # (cp -a keeps the old mtime of the source folder, so time order is wrong)
+            app bash -c "ls -1d $BASE/releases/*/ | sort -r | tail -n +11 | xargs -r rm -rf --" || echo 'Pruning old releases failed (deploy is fine).'
+            echo "deployed $SHA, content current -> $REL"
 
       - name: Verify public API endpoint
         run: |

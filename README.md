@@ -47,8 +47,12 @@ CI: `.github/workflows/frontend.yml` (frontend tests and build on every PR), `de
   `/var/lib/tech-katta/content/releases/`, validates it, points `current` at it and restarts the
   API. The deploy succeeds only when `/health` reports the new release; otherwise the previous code
   and content release are restored automatically. The 10 newest releases are kept.
-- Manual rollback on the VPS:
-  `ln -sfn /var/lib/tech-katta/content/releases/<older> /var/lib/tech-katta/content/current && sudo systemctl kill -s HUP tech-katta-api`.
+- Manual rollback on the VPS (the deploy does both of these by itself when a release fails):
+  - **Content only** (code is fine): point `current` at an older release and reload:
+    `ln -sfn /var/lib/tech-katta/content/releases/<older> /var/lib/tech-katta/content/current && sudo systemctl kill -s HUP tech-katta-api`.
+  - **Backend code**: check out the previous commit, reinstall, restart, then confirm `/health`:
+    `sudo -u techkatta git -C /opt/tech-katta reset --hard <previous-sha> && sudo -u techkatta bash -c 'cd /opt/tech-katta/backend && npm ci --omit=dev' && sudo systemctl restart tech-katta-api && curl -s http://127.0.0.1:5000/health`.
+    Release names end with the commit they came from (`<UTC time>-<short sha>`), which helps pick both.
 
 Secrets used by the deploy: `VPS_SSH_KEY` (required), `VPS_HOST`, `VPS_USER`, `VPS_FINGERPRINT`
 (host key check).

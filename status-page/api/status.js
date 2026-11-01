@@ -17,7 +17,9 @@ function page(url) {
     const r = await get(url);
     if (!r.ok) fail(new URL(url).pathname + " returned HTTP " + r.status);
     const html = await r.text();
-    const scripts = [...html.matchAll(/<script[^>]+src="([^"]+\.js)"/g)].map((m) => new URL(m[1], url).href);
+    // entry scripts and the chunks Vite preloads for them (<link rel="modulepreload">)
+    const refs = [...html.matchAll(/<script[^>]+src="([^"]+\.js)"/g), ...html.matchAll(/<link[^>]+rel="modulepreload"[^>]+href="([^"]+\.js)"/g), ...html.matchAll(/<link[^>]+href="([^"]+\.js)"[^>]+rel="modulepreload"/g)];
+    const scripts = [...new Set(refs.map((m) => new URL(m[1], url).href))];
     if (!scripts.length) fail(new URL(url).pathname + " has no app script");
     for (const src of scripts) {
       const js = await get(src);
