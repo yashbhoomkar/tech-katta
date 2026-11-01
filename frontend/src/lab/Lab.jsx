@@ -44,12 +44,21 @@ return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 {data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const nodeTypes={comp:CompNode};
 
-function Palette({lab,onAdd}){const groups=[...new Set(lab.components.map(c=>c.group))];
+// Palette items are dragged with pointer events (mouse, trackpad, touch, pen) rather than HTML5
+// drag-and-drop, which Firefox does not start from buttons and touch screens do not support.
+// A press that moves less than 6 px is a tap/click and adds the component at a free spot; a drag
+// shows a ghost under the pointer and drops the component where it is released over the canvas.
+function Palette({lab,onAdd,onDropAt,setDragging}){const groups=[...new Set(lab.components.map(c=>c.group))];const[ghost,setGhost]=useState(null);
+const press=(e,c)=>{if(e.pointerType==="mouse"&&e.button!==0)return;e.preventDefault();const sx=e.clientX,sy=e.clientY;let moved=false;
+const move=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;if(!moved){moved=true;setDragging(true)}setGhost({c,x:ev.clientX,y:ev.clientY})};
+const end=ok=>ev=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",cancel);setGhost(null);setDragging(false);if(!ok)return;if(moved)onDropAt(c.type,ev.clientX,ev.clientY);else onAdd(c.type)};
+const up=end(true),cancel=end(false);addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",cancel)};
 return <aside className="lab-pal" aria-label="Components"><div className="lab-h">COMPONENTS</div>
 {groups.map(g=><div key={g}><div className="lab-g">{g}</div>{lab.components.filter(c=>c.group===g).map(c=>
-<button key={c.type} type="button" className="lab-item" draggable onDragStart={e=>{e.dataTransfer.setData("application/x-tk-lab",c.type);e.dataTransfer.effectAllowed="move"}} onClick={()=>onAdd(c.type)} title={`${c.desc} Drag onto the canvas, or click to add.`}>
+<button key={c.type} type="button" className="lab-item" onPointerDown={e=>press(e,c)} onClick={e=>{if(e.detail===0)onAdd(c.type)}} title={`${c.desc} Drag onto the canvas, or tap to add.`}>
 <Glyph kind={c.type}/><span>{c.name}</span></button>)}</div>)}
-<p className="lab-tip">Drag a component onto the canvas (or click it). Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Select and press Delete to remove.</p></aside>}
+{ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Glyph kind={ghost.c.type}/>{ghost.c.name}</div>}
+<p className="lab-tip">Drag a component onto the canvas, or tap it to add it. Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Select and press Delete to remove.</p></aside>}
 
 function Field({label,children}){return <label className="lab-f"><span>{label}</span>{children}</label>}
 function Inspector({lab,cat,node,result,running,update,remove}){
@@ -97,7 +106,9 @@ const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data
 const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
 const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);return !!s&&!!t&&c.source!==c.target&&t.data.kind!=="client"&&s.data.kind!=="database"&&!edges.some(e=>e.source===c.source&&e.target===c.target)};
 const onConnect=useCallback(c=>setEdges(es=>addEdge(edge(c.source,c.target),es)),[setEdges]);
-const onDrop=e=>{e.preventDefault();const kind=e.dataTransfer.getData("application/x-tk-lab");if(cat[kind])add(kind,rf.screenToFlowPosition({x:e.clientX,y:e.clientY}))};
+const[dragging,setDragging]=useState(false);
+// Drop from the palette: only when released over the canvas.
+const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;add(kind,rf.screenToFlowPosition({x,y}))};
 const pick=id=>{setStore(s=>({...s,current:id}));setMenu(false)};
 const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0}};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
 const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
@@ -115,8 +126,8 @@ return <Ctx.Provider value={{cat,result,running}}><div className="lab">
 <div className="lab-status" aria-live="polite">{blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."} Designs → ⧉ duplicates it with a fresh {usd(lab.budget)}.</span>
 :running?<><span><b>{simTime(credit.hours)}</b></span><span><b>{num(t.sentRps)}</b> req/s sent{t.clients>1?` by ${t.clients} Clients`:""}</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span><span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
 :<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>
-<Palette lab={lab} onAdd={k=>add(k)}/>
-<div className="lab-canvas" ref={wrap} onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect="move"}} onDrop={onDrop}>
+<Palette lab={lab} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
+<div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
 <ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"smoothstep"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
