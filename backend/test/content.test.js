@@ -135,6 +135,22 @@ test('lab validation reports a bad catalogue', () => {
   assert.ok(problems.some((p) => p.includes('missing node')));
 });
 
+test('lab validation checks the shape and units of every setting', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  assert.ok(check((l) => { l.components[2].sizes = null; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { l.components[0].rps = null; }).some((p) => p.includes('components[0]: rps')));
+  assert.ok(check((l) => { delete l.components[2].sizes[0].rps; l.components[2].sizes[0].qps = 500; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { delete l.components[3].sizes[0].qps; l.components[3].sizes[0].rps = 500; }).some((p) => p.includes('components[3]: sizes')));
+  assert.ok(check((l) => { l.components[2].sizes[1].hourly = Infinity; }).some((p) => p.includes('components[2]: sizes')));
+  assert.ok(check((l) => { l.components[1].limitRps = -1; }).some((p) => p.includes('components[1]: limitRps')));
+});
+
+test('content preflight allows If-None-Match', async () => {
+  const response = await get('/v1/lab', { method: 'OPTIONS' });
+  assert.equal(response.status, 204);
+  assert.match(response.headers.get('access-control-allow-headers') || '', /If-None-Match/);
+});
+
 test('validation reports typos: unknown figure, bad table, unknown section', () => {
   const article = structuredClone(allArticles[0]);
   article.section = 'nowhere';

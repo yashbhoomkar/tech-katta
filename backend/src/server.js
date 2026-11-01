@@ -121,7 +121,7 @@ const server = http.createServer((request, response) => {
 
   if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
     if (request.method === 'OPTIONS') {
-      response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Max-Age': '600' });
+      response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'If-None-Match', 'Access-Control-Max-Age': '600' });
       response.end();
       return;
     }
