@@ -23,7 +23,7 @@
       "type": "apigw",
       "name": "API Gateway",
       "group": "Edge",
-      "desc": "Managed front door: routing, authentication and throttling. Billed per request; the account limit is about 10,000 requests a second.",
+      "desc": "Managed front door: routing, authentication and throttling. Billed per request. Past its limit of about 10,000 requests a second it rejects the extra requests (429) but never crashes.",
       "latencyMs": 10,
       "limitRps": 10000,
       "pricePerMillion": 3.5
@@ -32,7 +32,7 @@
       "type": "server",
       "name": "Server",
       "group": "Compute",
-      "desc": "EC2 instances running your API. More or bigger instances handle more requests a second.",
+      "desc": "EC2 instances running your API. More or bigger instances handle more requests a second. Each request makes a few database queries.",
       "latencyMs": 20,
       "sizes": [
         {
@@ -66,13 +66,24 @@
         "min": 1,
         "max": 50
       },
-      "defaultSize": "m5.large"
+      "defaultSize": "m5.large",
+      "queriesPerRequest": {
+        "label": "Database queries per request",
+        "default": 2,
+        "min": 1,
+        "max": 10
+      },
+      "crash": {
+        "above": 1.5,
+        "minutes": 10,
+        "downMinutes": 5
+      }
     },
     {
       "type": "database",
       "name": "Database",
       "group": "Storage",
-      "desc": "RDS for PostgreSQL. By default every request that reaches a server makes one query. Multi-AZ keeps a standby copy and doubles the price.",
+      "desc": "RDS for PostgreSQL. Every request that reaches a server makes that server's number of queries. Multi-AZ keeps a standby copy, fails over when the primary crashes, and doubles the price.",
       "latencyMs": 5,
       "sizes": [
         {
@@ -105,6 +116,12 @@
         "label": "Multi-AZ standby",
         "default": false,
         "priceFactor": 2
+      },
+      "crash": {
+        "above": 1.2,
+        "minutes": 5,
+        "downMinutes": 30,
+        "failoverMinutes": 2
       }
     }
   ],
@@ -134,7 +151,8 @@
         "y": 0,
         "config": {
           "size": "m5.large",
-          "count": 2
+          "count": 2,
+          "queriesPerRequest": 2
         }
       },
       {
@@ -162,5 +180,7 @@
         "to": "db"
       }
     ]
-  }
+  },
+  "retries": 1,
+  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed."
 }

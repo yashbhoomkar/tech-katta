@@ -49,7 +49,7 @@
 .ln-bar{height:4px;margin-top:8px;background:var(--line)}.ln-bar i{display:block;height:100%;background:#1c2733;transition:width .3s}
 .ln-m{display:block;margin-top:5px;font:500 11px var(--mono);color:#1c2733}
 .ln.warn{border-color:#d4a72c}.ln.warn .ln-bar i{background:#d4a72c}.ln.warn .ln-m{color:#9a6700}
-.ln.over{border-color:#b42318}.ln.over .ln-bar i{background:#b42318}.ln.over .ln-m{color:#b42318}
+.ln.down{border:1px dashed #b42318;background:#fdf3f2}.ln.down b,.ln.down .ln-sum{color:#8a8f98}.ln-down{color:#b42318;font-weight:600}.lab .react-flow__edge.dead .react-flow__edge-path{stroke:#c7cfdb;stroke-dasharray:4 4}.lab-log-h{margin-top:18px}.lab-log{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.lab-log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.45}.lab-log li small{display:block;font:500 10px var(--mono);color:var(--muted)}.lab-log li.crashed,.lab-log li.failover{color:#b42318}.lab-log li.recovered{color:#1c2733}.ln.over{border-color:#b42318}.ln.over .ln-bar i{background:#b42318}.ln.over .ln-m{color:#b42318}
 .lab .react-flow__handle{width:10px;height:10px;border:1.5px solid #fff;background:var(--blue)}
 .lab .react-flow__edge-path{stroke:#1c2733;stroke-width:1.4}.lab .react-flow__edge.selected .react-flow__edge-path{stroke:var(--blue);stroke-width:2}
 .lab .react-flow__edge.live .react-flow__edge-path{stroke:var(--blue)}
