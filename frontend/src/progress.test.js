@@ -7,7 +7,8 @@ globalThis.localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), se
 globalThis.dispatchEvent = () => true;
 
 test('bad saved progress is repaired, never trusted', () => {
-  for (const raw of [null, 'nope', '[]', '{"steps":[1]}']) assert.deepEqual(JSON.parse(JSON.stringify(cleanProgress(raw))), { version: 1, level: null, steps: {}, stars: {} });
+  for (const raw of [null, 'nope', '[]', '{"steps":[1]}']) assert.deepEqual(JSON.parse(JSON.stringify(cleanProgress(raw))), { version: 1, level: null, steps: {}, stars: {}, goals: {} });
+  assert.deepEqual({ ...cleanProgress('{"goals":{"a":[true,false],"b":[1],"c":[true,true,true,true]}}').goals }, { a: [true, false] });
   const p = cleanProgress('{"level":"advanced","steps":{"a":true,"b":"yes","__proto__":true},"stars":{"x":2,"y":9,"z":1.5}}');
   assert.equal(p.level, 'advanced');
   assert.deepEqual(Object.keys(p.steps).sort(), ['__proto__', 'a']);
@@ -23,4 +24,11 @@ test('stars keep the best result; steps and level are saved', () => {
   const p = readProgress();
   assert.equal(p.steps['article:api-types'], true);
   assert.equal(p.level, 'beginner');
+});
+
+test('the goals of the best run are kept with its stars (QA M2)', () => {
+  recordStars('one-server', 2, [true, false, true]);
+  assert.deepEqual(readProgress().goals['one-server'], [true, false, true]);
+  recordStars('one-server', 1, [true, false, false]);
+  assert.deepEqual(readProgress().goals['one-server'], [true, false, true], 'a worse run changes nothing');
 });

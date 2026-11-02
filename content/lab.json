@@ -429,7 +429,8 @@
           "kind": "noCrash",
           "label": "Nothing crashes"
         }
-      ]
+      ],
+      "requires": ["server", "database"]
     },
     {
       "id": "first-rush",
@@ -513,7 +514,8 @@
           "kind": "noCrash",
           "label": "Nothing crashes"
         }
-      ]
+      ],
+      "requires": ["server", "database"]
     },
     {
       "id": "ind-vs-pak",
@@ -577,18 +579,24 @@
         {
           "kind": "availability",
           "min": 99,
-          "label": "At least 99% of video requests succeed"
-        },
-        {
-          "kind": "noCrash",
-          "label": "No server crashes"
+          "label": "At least 99% of video requests succeed over the evening"
         },
         {
           "kind": "availability",
           "min": 99.95,
-          "label": "No buffering at the toss: 99.95% succeed"
+          "from": 5,
+          "to": 35,
+          "label": "No buffering around the toss (7:05 to 7:35 pm): 99.95%"
+        },
+        {
+          "kind": "availability",
+          "min": 99.95,
+          "from": 190,
+          "to": 215,
+          "label": "No buffering in the last over (10:10 to 10:35 pm): 99.95%"
         }
-      ]
+      ],
+      "requires": ["cdn", "server"]
     },
     {
       "id": "flash-sale",
@@ -673,7 +681,8 @@
           "max": 3000,
           "label": "Costs at most $3,000 a month"
         }
-      ]
+      ],
+      "requires": ["server", "database"]
     },
     {
       "id": "read-heavy",
@@ -761,7 +770,8 @@
           "kind": "noCrash",
           "label": "Nothing crashes"
         }
-      ]
+      ],
+      "requires": ["server", "database"]
     },
     {
       "id": "cache-restart",
@@ -872,7 +882,8 @@
           "max": 3000,
           "label": "Costs at most $3,000 a month"
         }
-      ]
+      ],
+      "requires": ["server", "cache", "database"]
     },
     {
       "id": "lost-orders",
@@ -982,7 +993,8 @@
           "max": 2000,
           "label": "Costs at most $2,000 a month"
         }
-      ]
+      ],
+      "requires": ["server", "cache", "database"]
     }
   ],
   "levels": [
@@ -1015,5 +1027,6 @@
     "export": "Export JSON",
     "menu": "Import…",
     "summary": "{nodes} components, {edges} arrows"
-  }
+  },
+  "requiresNote": "Every request has to go through: {types}. In this design some never reach the {missing}, so it scores no stars."
 }

@@ -219,6 +219,10 @@ test('lab validation checks levels and challenges, which are optional', () => {
   assert.ok(check((l) => { C(l, 'one-server').stars[0].min = 101; }).some((p) => p.includes('availability min')));
   assert.ok(check((l) => { C(l, 'one-server').hours = 0; }).some((p) => p.includes('hours must be')));
   assert.ok(check((l) => { delete C(l, 'one-server').hint; }).some((p) => p.includes('needs hint')));
+  assert.ok(check((l) => { C(l, 'one-server').requires = ['rocket']; }).some((p) => p.includes('requires must list')));
+  assert.ok(check((l) => { C(l, 'ind-vs-pak').stars[1].from = 7; }).some((p) => p.includes("star's window")));
+  assert.ok(check((l) => { C(l, 'ind-vs-pak').stars[2].to = 9999; }).some((p) => p.includes("star's window")));
+  assert.ok(check((l) => { C(l, 'one-server').stars[1].from = 0; C(l, 'one-server').stars[1].to = 30; }).some((p) => p.includes("star's window")), 'windows only on availability goals');
 });
 
 test('site validation checks the learning paths point at real articles, sections and challenges', () => {

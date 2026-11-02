@@ -133,6 +133,7 @@ export function validateLab(lab, problems = []) {
   const at = 'lab.json';
   if (!lab) { problems.push(`${at}: missing`); return problems; }
   for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote', 'smallScreen']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  if (lab.requiresNote !== undefined && !isText(lab.requiresNote)) problems.push(`${at}: requiresNote must be text`);
   if (!(Number.isInteger(lab.retries) && lab.retries >= 0 && lab.retries <= 3)) problems.push(`${at}: retries must be a whole number from 0 to 3`);
   if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
   const types = new Set();
@@ -188,11 +189,15 @@ function checkChallenges(lab, problems) {
     if (f.cdnLive !== undefined && (typeof f.cdnLive !== 'boolean' || !byType.cdn)) problems.push(`${where}: fixed.cdnLive must be true or false, with a CDN in the catalogue`);
     for (const c of ch.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < ch.hours * 60 && byType[c.type]?.crash)) problems.push(`${where}: a chaos event needs a minute (multiple of 5, inside the run) and a type that can crash`);
     validateDesign(ch.start && { name: ch.title, ...ch.start }, lab, `${where} start`, problems);
+    if (ch.requires !== undefined && !(Array.isArray(ch.requires) && ch.requires.length && ch.requires.every((t) => byType[t]))) problems.push(`${where}: requires must list component types in the catalogue`);
     const stars = list(ch.stars);
     if (!stars.length || stars.length > 3 || stars[0]?.kind !== 'availability') problems.push(`${where}: stars needs 1 to 3 entries, the first an availability goal`);
     for (const st of stars) {
       if (!st || !STAR_KINDS.has(st.kind) || !isText(st.label)) { problems.push(`${where}: each star needs a known kind and a label`); continue; }
       if (st.kind === 'availability' && !(isNumber(st.min) && st.min > 0 && st.min <= 100)) problems.push(`${where}: availability min must be above 0 and at most 100`);
+      if (st.from !== undefined || st.to !== undefined) {
+        if (st.kind !== 'availability' || !isNumber(st.from) || !isNumber(st.to) || st.from % 5 || st.to % 5 || st.from < 0 || st.to <= st.from || st.to > ch.hours * 60) problems.push(`${where}: a star's window needs from < to, multiples of 5 minutes inside the run, on an availability goal`);
+      }
       if ((st.kind === 'cost' || st.kind === 'spend') && !(isNumber(st.max) && st.max > 0)) problems.push(`${where}: ${st.kind} max must be above 0`);
       if (st.kind === 'noCrash' && st.type !== undefined && !byType[st.type]) problems.push(`${where}: noCrash type ${st.type} is not a component`);
     }

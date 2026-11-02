@@ -311,3 +311,12 @@ test('a CDN answers its share at the edge; live content passes the origin\'s fai
   assert.ok(cached.total.successPct > 99.9, `static content mostly survives: ${cached.total.successPct}`);
   assert.ok(live.total.successPct < 60, `live content doesn't: ${live.total.successPct}`);
 });
+
+test('parts that only pass requests on fail what they have nowhere to send', () => {
+  const one = (type, config = {}) => simulate({ nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: { rps: 100 } }, { id: 'x', type, x: 0, y: 0, config }], edges: [{ from: 'c', to: 'x' }] }, lab).total.successPct;
+  assert.equal(one('lb'), 0);
+  assert.equal(one('apigw'), 0);
+  assert.ok(Math.abs(one('cdn', { hitPct: 90 }) - 99) < 1e-6, 'only the misses fail (one retry)');
+  assert.equal(one('cdn', { hitPct: 90, live: true }), 0, 'a live stream needs its origin');
+  assert.ok(one('server') > 99.9, 'a server can still answer on its own outside challenges');
+});

@@ -190,6 +190,13 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
       path += share * group.reduce((s, to) => s + res[to].pathMs, 0) / group.length;
       ok *= 1 - okShare + okShare * group.reduce((s, to) => s + res[to].success, 0) / group.length;
     }
+    // Components that only pass requests on fail what they have nowhere to send: a load balancer or
+    // gateway with nothing behind it, a CDN's misses (all of a live stream), a cache's misses and
+    // writes when no database is behind it.
+    const gs = groups(id);
+    if (!gs.length && (node.type === 'lb' || node.type === 'apigw')) ok = 0;
+    if (!gs.length && node.type === 'cdn') ok *= node.config?.live ? 0 : pct(cat.cdn, node.config, 'hitPct') / 100;
+    if (c && !gs.some((g) => byId.get(g[0]).type === 'database')) ok *= r.down ? 0 : 1 - c.readMiss - (c.back ? 0 : c.w);
     r.pathMs = path; r.success = ok;
   }
   return res;
