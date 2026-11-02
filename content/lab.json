@@ -40,7 +40,8 @@
           "short": "8 pm flash sale",
           "points": [[0, 0.2], [20, 0.2], [20, 1], [20.25, 1], [20.25, 0.2], [24, 0.2]]
         }
-      ]
+      ],
+      "like": "The crowd at the door: everyone who wants something from you, all at once."
     },
     {
       "type": "apigw",
@@ -49,7 +50,8 @@
       "desc": "Managed front door: routing, authentication and throttling. Billed per request. Past its limit of about 10,000 requests a second it rejects the extra requests (429) but never crashes.",
       "latencyMs": 10,
       "limitRps": 10000,
-      "pricePerMillion": 3.5
+      "pricePerMillion": 3.5,
+      "like": "The security desk of an office building. It checks who you are, points you to the right floor, and stops letting people in when the lobby is full."
     },
     {
       "type": "lb",
@@ -60,7 +62,8 @@
       "limitRps": 100000,
       "hourly": 0.0239,
       "lcuHourly": 0.008,
-      "rpsPerLcu": 300
+      "rpsPerLcu": 300,
+      "like": "Booths at a toll plaza. Cars spread across every open booth, so no single lane jams."
     },
     {
       "type": "server",
@@ -120,8 +123,10 @@
         "scaleInMinutes": 15,
         "defaultMax": 10,
         "maxLabel": "Most instances",
-        "note": "Keeps each instance near 60% load. A new instance takes 4 minutes to boot, so a sudden spike still hits the instances already running. Instances are removed after load has stayed low for 15 minutes. You pay for the instances that are running."
-      }
+        "note": "Keeps each instance near 60% load. A new instance takes 4 minutes to boot, so a sudden spike still hits the instances already running. Instances are removed after load has stayed low for 15 minutes. You pay for the instances that are running.",
+        "like": "Opening more ticket counters at the station when the rush starts. It helps, but a new clerk takes a few minutes to sit down."
+      },
+      "like": "Cooks in a kitchen. Each one handles a few orders at a time; more cooks, or faster ones, handle a bigger rush."
     },
     {
       "type": "queue",
@@ -130,7 +135,8 @@
       "desc": "SQS standard queue. The sender is done as soon as the message is stored; the workers it points at take messages as fast as they can. If messages arrive faster than the workers handle them, a backlog builds up and drains later. Users never wait for the workers. Billed per request.",
       "latencyMs": 8,
       "limitRps": 100000,
-      "pricePerMillion": 0.4
+      "pricePerMillion": 0.4,
+      "like": "The token system at a bank. Customers take a token and wait; tellers call the next token when they are free."
     },
     {
       "type": "cache",
@@ -209,7 +215,8 @@
             "desc": "The requests that needed the cache fail until it is back. The database is protected."
           }
         ]
-      }
+      },
+      "like": "The water bottle on your desk. It is one sip away, so you only walk to the kitchen when it is empty. Write-back is a shopkeeper noting sales in a notebook and copying them into the ledger later: quick, until the notebook is lost."
     },
     {
       "type": "database",
@@ -254,7 +261,8 @@
         "minutes": 5,
         "downMinutes": 30,
         "failoverMinutes": 2
-      }
+      },
+      "like": "The shop's ledger: the one record everyone trusts, so every change has to be written into it carefully."
     }
   ],
   "example": {
@@ -314,5 +322,571 @@
     ]
   },
   "retries": 1,
-  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later, empty: its hits climb back over 10 minutes while the misses land on the database. While a cache is down its queries go to the database or fail, as set on the cache. Load Balancers and Queues scale by themselves and never crash."
+  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later, empty: its hits climb back over 10 minutes while the misses land on the database. While a cache is down its queries go to the database or fail, as set on the cache. Load Balancers and Queues scale by themselves and never crash.",
+  "challenges": [
+    {
+      "id": "one-server",
+      "level": "beginner",
+      "title": "Too much for one server",
+      "brief": "Zotato's order API runs on one server, and 2,000 requests a second are arriving. Keep orders flowing for six hours.",
+      "hint": "One server handles about 600 requests a second. Add instances, and check that the database can take the queries they send.",
+      "hours": 6,
+      "startHour": 12,
+      "traffic": {
+        "rps": 2000,
+        "pattern": "steady"
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 2000
+            }
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "size": "m5.large",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of orders succeed"
+        },
+        {
+          "kind": "cost",
+          "max": 1500,
+          "label": "Costs at most $1,500 a month"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        }
+      ]
+    },
+    {
+      "id": "first-rush",
+      "level": "beginner",
+      "title": "Lunch and dinner rush",
+      "brief": "A full day of Zotato traffic: quiet at night, busy at lunch, busiest at 8:30 pm with 3,000 requests a second.",
+      "hint": "Size for the dinner peak, or let autoscaling follow the day. Look at what the API Gateway costs at this traffic.",
+      "hours": 24,
+      "startHour": 0,
+      "traffic": {
+        "rps": 3000,
+        "pattern": "meals"
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "meals"
+            }
+          },
+          {
+            "id": "gateway",
+            "type": "apigw",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "t3.medium",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.t3.medium"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "gateway"
+          },
+          {
+            "from": "gateway",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.5,
+          "label": "At least 99.5% of requests succeed"
+        },
+        {
+          "kind": "cost",
+          "max": 3000,
+          "label": "Costs at most $3,000 a month"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        }
+      ]
+    },
+    {
+      "id": "flash-sale",
+      "level": "intermediate",
+      "title": "The 8 pm flash sale",
+      "brief": "At 8 pm Zotato runs a 15-minute flash sale: 8,000 requests a second, five times the usual. Survive it.",
+      "hint": "New instances take 4 minutes to boot and the sale lasts 15. Each request makes 2 database queries.",
+      "hours": 3,
+      "startHour": 19,
+      "traffic": {
+        "rps": 8000,
+        "pattern": "sale"
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8000,
+              "pattern": "sale"
+            }
+          },
+          {
+            "id": "gateway",
+            "type": "apigw",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "orders",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "m5.large",
+              "count": 2,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "gateway"
+          },
+          {
+            "from": "gateway",
+            "to": "orders"
+          },
+          {
+            "from": "orders",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of requests succeed"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 3000,
+          "label": "Costs at most $3,000 a month"
+        }
+      ]
+    },
+    {
+      "id": "read-heavy",
+      "level": "intermediate",
+      "title": "The menu everyone reads",
+      "brief": "5,000 people a second open restaurant menus. Each request makes 4 database queries, almost all reads.",
+      "hint": "No database here takes 20,000 queries a second. A cache answers 85% of reads; only misses and writes reach the database.",
+      "hours": 4,
+      "startHour": 12,
+      "traffic": {
+        "rps": 5000,
+        "pattern": "steady"
+      },
+      "fixed": {
+        "queriesPerRequest": 4,
+        "hitPct": 85,
+        "writePct": 5
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 5000
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "m5.xlarge",
+              "count": 5,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.m5.xlarge"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of requests succeed"
+        },
+        {
+          "kind": "cost",
+          "max": 2500,
+          "label": "Costs at most $2,500 a month"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        }
+      ]
+    },
+    {
+      "id": "cache-restart",
+      "level": "advanced",
+      "title": "The cache restarts at dinner",
+      "brief": "At 8:15 pm, in the middle of the dinner rush, Zotato's cache crashes. When it comes back it is empty. Keep the database standing.",
+      "hint": "While the cache is down, its queries go to the database, and for 10 minutes after it returns most still do. Size for that, or don't depend on one cache.",
+      "hours": 4,
+      "startHour": 19,
+      "traffic": {
+        "rps": 4000,
+        "pattern": "meals"
+      },
+      "fixed": {
+        "queriesPerRequest": 3,
+        "hitPct": 90,
+        "writePct": 10
+      },
+      "chaos": [
+        {
+          "minute": 75,
+          "type": "cache"
+        }
+      ],
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 4000,
+              "pattern": "meals"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 220,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 440,
+            "y": 0,
+            "config": {
+              "size": "m5.large",
+              "count": 8,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 660,
+            "y": 0,
+            "config": {
+              "size": "cache.t3.medium",
+              "hitPct": 90,
+              "writePct": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 880,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.5,
+          "label": "At least 99.5% of requests succeed"
+        },
+        {
+          "kind": "noCrash",
+          "type": "database",
+          "label": "The database never crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 3000,
+          "label": "Costs at most $3,000 a month"
+        }
+      ]
+    },
+    {
+      "id": "lost-orders",
+      "level": "advanced",
+      "title": "Don't lose an order",
+      "brief": "Zotato's cache takes writes too (40% of queries are writes) and flushes them to the database later. Half an hour in, the cache crashes.",
+      "hint": "Write-back is fast until the cache crashes with writes it has not passed on. What does write-through ask of the database?",
+      "hours": 2,
+      "startHour": 13,
+      "traffic": {
+        "rps": 3000,
+        "pattern": "steady"
+      },
+      "fixed": {
+        "queriesPerRequest": 2,
+        "hitPct": 80,
+        "writePct": 40
+      },
+      "chaos": [
+        {
+          "minute": 30,
+          "type": "cache"
+        }
+      ],
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 220,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 440,
+            "y": 0,
+            "config": {
+              "size": "m5.large",
+              "count": 6,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 660,
+            "y": 0,
+            "config": {
+              "size": "cache.t3.medium",
+              "hitPct": 80,
+              "writePct": 40,
+              "writePolicy": "back"
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 880,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of requests succeed"
+        },
+        {
+          "kind": "noLostWrites",
+          "label": "No write is lost"
+        },
+        {
+          "kind": "cost",
+          "max": 2000,
+          "label": "Costs at most $2,000 a month"
+        }
+      ]
+    }
+  ],
+  "levels": [
+    {
+      "id": "beginner",
+      "label": "Beginner"
+    },
+    {
+      "id": "intermediate",
+      "label": "Intermediate"
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced"
+    }
+  ]
 }

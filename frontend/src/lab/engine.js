@@ -261,6 +261,28 @@ const warmth = (run, lab) => { const m = catalogue(lab).cache?.warmupMinutes; re
 // The simulate() options for a run at a simulated minute.
 export const runOptions = (run, minute, lab) => ({ warm: lab ? warmth(run, lab) : {}, down: new Set(Object.keys(run.down)), backlog: new Set(Object.keys(run.backlog || {}).filter((id) => run.backlog[id] > 0)), minute, counts: Object.fromEntries(Object.entries(run.scale || {}).map(([id, s]) => [id, s.n])) });
 
+// Crash a component now, whatever its load (a challenge's chaos event). Same consequences as the
+// crash policy: down for downMinutes (a Multi-AZ database fails over), a cache comes back cold, a
+// write-back cache loses what it had not flushed. Components that never crash are left alone.
+export function crashNow(design, lab, run, id) {
+  const cat = catalogue(lab), n = design.nodes.find((x) => x.id === id), crash = n && cat[n.type]?.crash;
+  if (!crash || Object.hasOwn(run.down, id)) return run;
+  const st = { ...run, down: dict(run.down), over: dict(run.over), backlog: dict(run.backlog), cold: dict(run.cold), events: [...run.events] };
+  if (n.type === 'cache') {
+    delete st.cold[id];
+    if (cacheFlow(cat.cache, n.config).back) {
+      const r = simulate(design, lab, runOptions(run, (run.start || 0) * 60 + run.t, lab));
+      const lost = (st.backlog[id] || 0) + (r.nodes[id]?.writes || 0) * (cat.cache.flushSeconds || 0);
+      delete st.backlog[id];
+      if (lost > 0) { st.lost = (st.lost || 0) + lost; st.events.push({ t: st.t, id, kind: 'writesLost', n: Math.round(lost) }); }
+    }
+  }
+  const failover = n.type === 'database' && n.config?.multiAz && crash.failoverMinutes;
+  st.down[id] = st.t + (failover ? crash.failoverMinutes : crash.downMinutes); st.over[id] = 0;
+  st.events.push({ t: st.t, id, kind: failover ? 'failover' : 'crashed', forced: true });
+  return st;
+}
+
 // Advance by `minutes`, jumping from event to event (load is steady between crashes/recoveries).
 export function advance(design, lab, run, minutes) {
   const cat = catalogue(lab);

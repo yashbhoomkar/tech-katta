@@ -33,7 +33,7 @@
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
     "primaryHref": "/dashboard/#lab",
-    "secondaryHref": "/dashboard/"
+    "secondaryHref": "/dashboard/#concepts"
   },
   "topics": {
     "eyebrow": "03 / LIBRARY",
@@ -221,6 +221,11 @@
     "empty": "Nothing published here yet. New pages will be listed here as they are written.",
     "sections": [
       [
+        "learn",
+        "Learn",
+        null
+      ],
+      [
         "concepts",
         "Concepts",
         "concepts"
@@ -353,5 +358,115 @@
     "source": "Figures from the site's own published yearly reports for 2018 and 2019.",
     "link": "Try a traffic spike yourself",
     "linkHref": "#challenge"
+  },
+  "learn": {
+    "eyebrow": "LEARN",
+    "title": "Pick your level",
+    "desc": "Each level is a short path: read a little, try it in the Lab, then solve challenges for stars. Your progress stays in this browser.",
+    "levels": [
+      {
+        "id": "beginner",
+        "label": "Beginner",
+        "desc": "New to system design. Start with how programs talk to each other and what happens when too many people show up at once.",
+        "steps": [
+          {
+            "id": "article:api-types",
+            "kind": "article",
+            "ref": "concepts/api-types",
+            "title": "Read: APIs, the main types and where to use each",
+            "why": "Every design starts with how its parts talk."
+          },
+          {
+            "id": "ind-vs-pak",
+            "kind": "landing",
+            "ref": "/#challenge",
+            "title": "Play: can your design survive IND vs PAK?",
+            "why": "Two minutes on why traffic spikes break systems."
+          },
+          {
+            "id": "lab:run",
+            "kind": "lab",
+            "ref": "lab",
+            "title": "Try: run the example design in the Lab",
+            "why": "See load, latency and cost move as traffic flows."
+          },
+          {
+            "id": "one-server",
+            "kind": "challenge",
+            "ref": "one-server",
+            "title": "Challenge: too much for one server",
+            "why": "Scale out, and check what the database can take."
+          },
+          {
+            "id": "first-rush",
+            "kind": "challenge",
+            "ref": "first-rush",
+            "title": "Challenge: lunch and dinner rush",
+            "why": "Size for the peak without paying for it all day."
+          }
+        ]
+      },
+      {
+        "id": "intermediate",
+        "label": "Intermediate",
+        "desc": "You know the parts. Now make them hold up under spikes and heavy reads, and keep the bill sensible.",
+        "steps": [
+          {
+            "id": "note:numbers",
+            "kind": "note",
+            "ref": "quick-notes",
+            "title": "Read: the numbers behind a design",
+            "why": "Latencies and quick arithmetic for sizing."
+          },
+          {
+            "id": "flash-sale",
+            "kind": "challenge",
+            "ref": "flash-sale",
+            "title": "Challenge: the 8 pm flash sale",
+            "why": "When autoscaling is too slow."
+          },
+          {
+            "id": "read-heavy",
+            "kind": "challenge",
+            "ref": "read-heavy",
+            "title": "Challenge: the menu everyone reads",
+            "why": "Where a cache earns its place."
+          }
+        ]
+      },
+      {
+        "id": "advanced",
+        "label": "Advanced",
+        "desc": "Failure is normal. Design for the crash you know is coming, and for data you can't afford to lose.",
+        "steps": [
+          {
+            "id": "cache-restart",
+            "kind": "challenge",
+            "ref": "cache-restart",
+            "title": "Challenge: the cache restarts at dinner",
+            "why": "A cold cache can take the database down with it."
+          },
+          {
+            "id": "lost-orders",
+            "kind": "challenge",
+            "ref": "lost-orders",
+            "title": "Challenge: don't lose an order",
+            "why": "Write-back is fast until it isn't."
+          },
+          {
+            "id": "lab:import",
+            "kind": "lab",
+            "ref": "lab",
+            "title": "Build: import your own architecture and run it",
+            "why": "Type in a system you know and watch where it breaks."
+          }
+        ]
+      }
+    ],
+    "done": "Done",
+    "open": "Open",
+    "stars": "stars",
+    "progress": "{done} of {total} steps done",
+    "levelNote": "At Advanced, an article's longer sections start open."
   }
 }

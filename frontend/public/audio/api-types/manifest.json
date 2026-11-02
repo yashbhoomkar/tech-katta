@@ -51,12 +51,24 @@
 "file": "d320885c52bd.mp3"
 },
 {
+"text": "In real life. An API works like a restaurant menu. The menu tells you what you can ask for and how to ask.",
+"file": "dcab8438e03a.mp3"
+},
+{
+"text": "The kitchen behind it can change its recipes, staff and stoves, and customers never notice, as long as the menu stays the same.",
+"file": "3a8f7d23ccb0.mp3"
+},
+{
 "text": "REST. Resources at URLs, HTTP methods to act on them, Jason back. Use it for: Public and partner APIs, CRUD, anything other teams integrate with.",
 "file": "c9741eab1ef8.mp3"
 },
 {
 "text": "Avoid it for: Screens that need data from many places at once; they end up making many calls. In Zotato: Restaurants' billing systems call GET slash orders status equals new to see orders waiting to be accepted.",
 "file": "9dcd92aded0a.mp3"
+},
+{
+"text": "In real life: Ordering at a restaurant counter from a fixed menu. You name the dish and what you want done with it, and each order is handled on its own; the counter doesn't need to remember you.",
+"file": "af8841240f22.mp3"
 },
 {
 "text": "Graph Q L. One endpoint and a typed schema; the client asks for exactly the fields it wants. Use it for: Frontends whose screens each need a different slice of data from several services.",
@@ -67,6 +79,10 @@
 "file": "c60b6786c03d.mp3"
 },
 {
+"text": "In real life: Making your own thali: one plate with exactly the items you asked for, instead of queueing at five counters for five dishes.",
+"file": "0ca6884d34f0.mp3"
+},
+{
 "text": "g R P C. Call a function on another service. The contract lives in a dot proto file; messages are binary, over HTTP 2. Use it for: Fast calls between your own services, including services written in different languages.",
 "file": "fe675e70c469.mp3"
 },
@@ -75,8 +91,12 @@
 "file": "76cd23b8214b.mp3"
 },
 {
-"text": "In Zotato: At checkout, the Order service calls Payment (AuthorizePayment) and Dispatch (FindRider) while you wait.",
-"file": "e41d7b5d04f3.mp3"
+"text": "In Zotato: At checkout, the Order service calls Payment (AuthorizePayment) and Dispatch (FindRider) while you wait. In real life: Two offices of the same company exchanging pre-printed forms.",
+"file": "39232d04cb0d.mp3"
+},
+{
+"text": "Fast, and both sides know every field, but an outsider can't easily read them.",
+"file": "5857d1a6ee7a.mp3"
 },
 {
 "text": "WebSockets. One connection stays open and both sides send messages whenever they like. Use it for: Chat, live location, games: frequent small messages in both directions.",
@@ -87,20 +107,32 @@
 "file": "39d9ee2e7d9b.mp3"
 },
 {
+"text": "In real life: A phone call. Once it connects, either side can speak at any moment until someone hangs up.",
+"file": "1191e0bd89eb.mp3"
+},
+{
 "text": "Server-sent events (S S E). The server keeps an HTTP response open and writes events down it as they happen. Use it for: Live feeds, notifications and progress, where the client only listens.",
 "file": "f68d2aeb34fa.mp3"
 },
 {
-"text": "Avoid it for: Two-way traffic, or binary data. In Zotato: Order tracking: \"Restaurant accepted\", \"Rider picked up\", \"Arriving in 4 minutes\". Cancel is a normal REST call.",
-"file": "f55f510f32a5.mp3"
+"text": "Avoid it for: Two-way traffic, or binary data. In Zotato: Order tracking: \"Restaurant accepted\", \"Rider picked up\", \"Arriving in 4 minutes\". Cancel is a normal REST call. In real life: Cricket commentary on the radio.",
+"file": "06dbe61b4618.mp3"
+},
+{
+"text": "It keeps coming to you as things happen, but you can't talk back on the same channel.",
+"file": "8accc5e32b15.mp3"
 },
 {
 "text": "Webhooks. Another company calls a URL you gave them whenever something happens on their side. Use it for: Hearing about events in systems you do not own, without asking every few seconds.",
 "file": "c741496baac6.mp3"
 },
 {
-"text": "Avoid it for: Anything that needs an answer right now. In Zotato: The payment provider posts payment.captured to Zotato, which then marks the order paid.",
-"file": "f6f0121d8575.mp3"
+"text": "Avoid it for: Anything that needs an answer right now. In Zotato: The payment provider posts payment.captured to Zotato, which then marks the order paid. In real life: Leaving your number with the tailor.",
+"file": "38f4c6ce119f.mp3"
+},
+{
+"text": "Instead of you calling every day to ask, they call you when the shirt is ready.",
+"file": "547e2c940a2b.mp3"
 },
 {
 "text": "Queues and event streams. The producer drops a message on a queue or log and moves on; consumers process it when ready. Use it for: Work that can wait, absorbing traffic spikes, and one event feeding many consumers.",
@@ -109,6 +141,10 @@
 {
 "text": "Avoid it for: Cases where the caller needs the result now. In Zotato: order.placed on Kafka feeds the SMS, the restaurant's ticket and the invoice. If invoicing is down for ten minutes, orders still go through.",
 "file": "c379dfb00ce5.mp3"
+},
+{
+"text": "In real life: The token system at a bank. You take a token and walk away from the counter; tellers call tokens in order at their own pace, and a rush only makes the wait longer.",
+"file": "eb06a30e1a71.mp3"
 },
 {
 "text": "You will also meet SOAP (XML messages described by a W S D L file) in banks, insurers and government systems. Integrate with it; rarely choose it.",

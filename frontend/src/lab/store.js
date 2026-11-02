@@ -34,7 +34,9 @@ export function cleanDesign(d,lab,id){
     const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to});
   }
   const cr=obj(d.credit)?d.credit:{};
-  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,
+  // a design started from a Lab challenge remembers which one (only if the catalogue still has it)
+  const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
+  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,
     credit:{spent:fin(cr.spent)&&cr.spent>0?Math.min(cr.spent,lab.budget):0,hours:fin(cr.hours)&&cr.hours>0?cr.hours:0}};
 }
 

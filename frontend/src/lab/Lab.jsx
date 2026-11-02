@@ -6,14 +6,14 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";
+import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";import{runChallenge,applyChallenge}from"./challenges.js";import{readProgress,recordStars,markStep}from"../progress.js";
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
 // on a simulated clock. SPEEDS = simulated hours per real second.
 const SPEEDS=[["1 s = 1 minute",1/60],["1 s = 10 minutes",1/6],["1 s = 1 hour",1],["1 s = 1 day",24],["1 s = 1 week",168]];const TICK=250;
 const simTime=h=>{const m=Math.floor(h*60+1e-6),d=Math.floor(m/1440),hh=Math.floor(m%1440/60),mm=m%60;return `Day ${d+1}, ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`};
 const cents=n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="cold"?`${c.name||"Cache"} is back, but empty: its misses go to the database while it warms up (${c.warmupMinutes} min).`:e.kind==="warm"?`${c.name||"Cache"} is warm again.`:e.kind==="dirty"?`${c.name||"Cache"} is writing to the database slower than writes arrive: unflushed writes are piling up.`:e.kind==="flushed"?`${c.name||"Cache"} has flushed every write to the database.`:e.kind==="writesLost"?`${c.name||"Cache"} crashed with ${num(e.n)} writes not yet in the database. They are lost.`:e.kind==="scaledOut"?`${c.name||"Server"} scaled out to ${e.n} instances.`:e.kind==="scaledIn"?`${c.name||"Server"} scaled in to ${e.n} instances: load has been low for ${c.autoscaling?.scaleInMinutes} min.`:e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
+const eventText=(e,names,cat,lab)=>{const n=names[e.id]||{},c=cat[n.kind]||{},cr=c.crash||{};return e.kind==="cold"?`${c.name||"Cache"} is back, but empty: its misses go to the database while it warms up (${c.warmupMinutes} min).`:e.kind==="warm"?`${c.name||"Cache"} is warm again.`:e.kind==="dirty"?`${c.name||"Cache"} is writing to the database slower than writes arrive: unflushed writes are piling up.`:e.kind==="flushed"?`${c.name||"Cache"} has flushed every write to the database.`:e.kind==="writesLost"?`${c.name||"Cache"} crashed with ${num(e.n)} writes not yet in the database. They are lost.`:e.kind==="scaledOut"?`${c.name||"Server"} scaled out to ${e.n} instances.`:e.kind==="scaledIn"?`${c.name||"Server"} scaled in to ${e.n} instances: load has been low for ${c.autoscaling?.scaleInMinutes} min.`:e.kind==="backlog"?`${c.name||"Queue"} is filling up: messages arrive faster than the workers take them.`:e.kind==="drained"?`${c.name||"Queue"} backlog cleared: the workers have caught up.`:e.kind==="recovered"?`${c.name||"Component"} is back.`:e.forced&&e.kind==="failover"?`The challenge took the database primary down. Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:e.forced?`The challenge crashed the ${(c.name||"component").toLowerCase()}. Back in ${cr.downMinutes} min.`:e.kind==="failover"?`Database primary crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Multi-AZ standby takes over in ${cr.failoverMinutes} min.`:`${c.name||"Component"} crashed (${Math.round(cr.above*100)}%+ load for ${cr.minutes} min). Back in ${cr.downMinutes} min.`};
 const duration=h=>h<1?`${Math.round(h*60)} minutes`:h<48?`${Math.round(h)} hours`:h<24*90?`${Math.round(h/24)} days`:`${(h/730).toFixed(1)} months`;
 // New components go to the nearest free spot around the point asked for, so they never stack.
 const W=176,H=110;
@@ -75,17 +75,21 @@ return <figure className="lab-day"><svg viewBox={`0 0 ${w} ${h+14}`} role="img" 
 <line x1={x} x2={x} y1="0" y2={h} className="lab-day-now"/>{[0,6,12,18,24].map(t=><text key={t} x={t/24*w} y={h+11} textAnchor={t===0?"start":t===24?"end":"middle"}>{String(t).padStart(2,"0")}:00</text>)}</svg>
 <figcaption>Now {simTime(hours).split(", ")[1]} · {num((config.rps??comp.rps.default)*trafficAt(comp,config,hours*60))} req/s</figcaption></figure>}
 function Field({label,children}){return <label className="lab-f"><span>{label}</span>{children}</label>}
-function Inspector({lab,cat,node,edge,result,running,update,remove,removeEdge,run,names,hours,labelOf}){
+function Inspector({lab,cat,node,edge,result,running,update,remove,removeEdge,run,names,hours,labelOf,ch,best,score}){
+const chBox=ch&&<div className="lab-ch"><div className="lab-h">CHALLENGE · {lab.levels.find(l=>l.id===ch.level)?.label.toUpperCase()}</div><h3>{ch.title}</h3><p className="lab-desc">{ch.brief}</p>
+<ul className="lab-goals">{ch.stars.map((g,i)=><li key={i} className={i<(best||0)?"ok":""}><b>★</b><span>{g.label}</span></li>)}</ul><details className="lab-hint"><summary>Hint</summary><p>{ch.hint}</p></details>
+<button type="button" className="lab-btn lab-score-btn" onClick={score}>Score my design</button><p className="lab-note lab-note-tight">The challenge sets the traffic{ch.fixed?" and some settings":""}. Best so far: <Stars n={best||0} max={ch.stars.length}/></p></div>;
 if(!node&&edge)return <aside className="lab-ins" aria-label="Arrow"><div className="lab-h">ARROW</div><h3>{labelOf(edge.source)} → {labelOf(edge.target)}</h3>
 <p className="lab-desc">Traffic flows this way. Remove the arrow to stop it; drag from the dot on the right of one component to the dot on the left of another to add a new one.</p>
 <button type="button" className="lab-btn ghost" onClick={()=>removeEdge(edge.id)}>Remove arrow</button><p className="lab-note">Shortcut: select an arrow and press Delete, or use the ✕ on it.</p></aside>;
-if(!node)return <aside className="lab-ins" aria-label="Details"><div className="lab-h">DESIGN</div>
+if(!node)return <aside className="lab-ins" aria-label="Details">{chBox}<div className="lab-h">DESIGN</div>
 <dl className="lab-kv"><dt>Monthly cost</dt><dd>{usd(result.total.monthlyCost)}</dd><dt>Budget</dt><dd>{usd(lab.budget)}</dd><dt>Region</dt><dd>{lab.region}</dd></dl>
 {run.sent>0&&<dl className="lab-kv"><dt>Availability this run</dt><dd className={run.served/run.sent<0.999?"over":""}>{(100*run.served/run.sent).toFixed(2)}%</dd><dt>Run time</dt><dd>{duration(run.t/60)}</dd>{run.lost>0&&<><dt>Writes lost</dt><dd className="over">{num(run.lost)}</dd></>}</dl>}
 {run.events.length>0&&<><div className="lab-h lab-log-h">RUN LOG</div><ol className="lab-log">{[...run.events].reverse().slice(0,12).map((e,i)=><li key={i} className={e.kind}><small>{simTime(run.start+e.t/60)}</small>{eventText(e,names,cat,lab)}</li>)}</ol></>}
 <p className="lab-note">{lab.crashNote}</p><p className="lab-note">{lab.priceNote}</p><p className="lab-note">{lab.modelNote}</p></aside>;
 const comp=cat[node.data.kind],cfg=node.data.config,r=result.nodes[node.id];const set=patch=>update(node.id,{...cfg,...patch});
-return <aside className="lab-ins" aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><h3><Glyph kind={comp.type}/>{comp.name}</h3><p className="lab-desc">{comp.desc}</p>
+return <aside className="lab-ins" aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><h3><Glyph kind={comp.type}/>{comp.name}</h3><p className="lab-desc">{comp.desc}</p>{comp.like&&<p className="lab-like"><b>IN REAL LIFE</b>{comp.like}</p>}
+{comp.type==="client"&&ch&&<p className="lab-like"><b>SET BY THE CHALLENGE</b>{num(ch.traffic.rps)} req/s at the busiest moment · {comp.patterns?.find(p=>p.id===ch.traffic.pattern)?.label||ch.traffic.pattern}. Your settings here are ignored while it runs.</p>}
 {comp.type==="client"&&<Field label={comp.rps.label}><input type="number" min={comp.rps.min} max={comp.rps.max} step="100" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:Math.max(comp.rps.min,Math.min(comp.rps.max,+e.target.value||0))})}/><input type="range" min={comp.rps.min} max={Math.min(comp.rps.max,20000)} step="50" value={cfg.rps??comp.rps.default} onChange={e=>set({rps:+e.target.value})} aria-label={comp.rps.label}/></Field>}
 {comp.type==="client"&&comp.patterns&&<><Field label="Traffic through the day"><select value={patternOf(comp,cfg)?.id||comp.patterns[0].id} onChange={e=>set({pattern:e.target.value})}>{comp.patterns.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></Field><p className="lab-note lab-note-tight">{patternOf(comp,cfg)?.desc||comp.patterns[0].desc}</p><DayChart comp={comp} config={cfg} hours={hours}/></>}
 {comp.sizes&&<Field label="Size"><select value={cfg.size||comp.defaultSize} onChange={e=>set({size:e.target.value})}>{comp.sizes.map(s=><option key={s.id} value={s.id}>{s.label} · {num(s.rps||s.qps||s.ops)} {s.rps?"req":s.qps?"queries":"ops"}/s · ${s.hourly}/h</option>)}</select></Field>}
@@ -97,7 +101,7 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {comp.type==="cache"&&running&&r&&<dl className="lab-kv"><dt>Hits now</dt><dd className={run.cold?.[node.id]!==undefined?"warn":""}>{Math.round(r.hit*100)}% of reads{run.cold?.[node.id]!==undefined?" · warming up":""}</dd>{cacheFlow(comp,cfg).back&&<><dt>Unflushed writes</dt><dd className={run.backlog?.[node.id]>0?"warn":""}>{num(run.backlog?.[node.id]||0)}</dd></>}</dl>}
 {comp.count&&<Field label={autoscaled(comp,cfg)?comp.autoscaling.minLabel:comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>{const v=Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1));set({count:v,...(cfg.maxCount!==undefined&&cfg.maxCount<v?{maxCount:v}:{})})}}/></Field>}
 {autoscaled(comp,cfg)&&<><Field label={comp.autoscaling.maxLabel}><input type="number" min={cfg.count??comp.count.default} max={comp.count.max} value={scaleRange(comp,cfg)[1]} onChange={e=>set({maxCount:Math.max(cfg.count??comp.count.default,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>
-<p className="lab-note lab-note-tight">{comp.autoscaling.note}</p>{running&&run.scale?.[node.id]&&<dl className="lab-kv"><dt>Running now</dt><dd>{run.scale[node.id].n} instances{run.scale[node.id].pending.length?` · ${run.scale[node.id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</dd></dl>}</>}
+<p className="lab-note lab-note-tight">{comp.autoscaling.note}{comp.autoscaling.like?` ${comp.autoscaling.like}`:""}</p>{running&&run.scale?.[node.id]&&<dl className="lab-kv"><dt>Running now</dt><dd>{run.scale[node.id].n} instances{run.scale[node.id].pending.length?` · ${run.scale[node.id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</dd></dl>}</>}
 {comp.multiAz&&<label className="lab-check"><input type="checkbox" checked={!!cfg.multiAz} onChange={e=>set({multiAz:e.target.checked})}/>{comp.multiAz.label}</label>}
 {comp.type==="apigw"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd><dt>Limit</dt><dd>{num(comp.limitRps)} req/s</dd></dl>}
 {comp.type==="lb"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.hourly}/hour + ${comp.lcuHourly} per LCU-hour</dd><dt>1 LCU</dt><dd>≈ {num(comp.rpsPerLcu)} req/s</dd></dl>}
@@ -106,6 +110,19 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {running&&r&&comp.type!=="client"&&<><dt>Load</dt><dd className={level(r.utilisation)}>{num(r.offered)}/s · {Math.round(r.utilisation*100)}%</dd><dt>Latency here</dt><dd>{Math.round(r.latencyMs)} ms</dd><dt>Dropped</dt><dd>{num(r.dropped)}/s</dd></>}</dl>
 <button type="button" className="lab-btn ghost" onClick={()=>remove(node.id)}>Remove from design</button></aside>}
 
+// Learner progress (stars per challenge), kept in sync across the page.
+function useProgress(){const[p,setP]=useState(readProgress);useEffect(()=>{const on=()=>setP(readProgress());addEventListener("tk-progress",on);addEventListener("storage",on);return()=>{removeEventListener("tk-progress",on);removeEventListener("storage",on)}},[]);return p}
+const Stars=({n,max=3})=><span className="lab-stars" aria-label={`${n} of ${max} stars`}>{"★".repeat(n)}<i>{"★".repeat(Math.max(0,max-n))}</i></span>;
+function Challenges({lab,progress,start,close}){return <div className="lab-menu" role="dialog" aria-label="Challenges"><div className="lab-h">CHALLENGES · EARN UP TO 3 STARS EACH</div>
+{lab.levels.map(l=><div key={l.id} className="lab-ch-level"><div className="lab-g">{l.label}</div><ul>{lab.challenges.filter(c=>c.level===l.id).map(c=><li key={c.id}><button type="button" onClick={()=>start(c.id)}><b>{c.title}</b><small>{c.brief}</small></button><Stars n={progress.stars[c.id]||0} max={c.stars.length}/></li>)}</ul></div>)}
+<button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
+const goalValue=(c)=>c.kind==="availability"?`${c.value.toFixed(2)}%`:c.kind==="cost"?`${usd(c.value)}/month`:c.kind==="noCrash"?(c.value?`${c.value} crash${c.value>1?"es":""}`:"none"):c.kind==="noLostWrites"?(c.value?`${num(c.value)} writes lost`:"none"):"";
+function Score({ch,res,next,close}){const ref=useRef(null);useEffect(()=>{ref.current?.focus();const k=e=>{if(e.key==="Escape")close()};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[]);// eslint-disable-line
+return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="lab-score" role="dialog" aria-modal="true" aria-label={`Score: ${ch.title}`}>
+<div className="lab-h">CHALLENGE SCORE</div><h3>{ch.title}</h3>{res.error?<p className="lab-warn">{res.error}</p>:<><div className="lab-score-stars"><Stars n={res.stars} max={res.max}/></div>
+<ul className="lab-goals">{res.checks.map((c,i)=><li key={i} className={c.ok?"ok":"no"}><b>{c.ok?"✓":"✕"}</b><span>{c.label}</span><small>{goalValue(c)}</small></li>)}</ul>
+<p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.chaos?.length?", with the crash the challenge causes":""}.</p></>}
+<div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}</div></div></div>}
 function Designs({store,current,open,create,example,duplicate,remove,close,budget}){const list=Object.values(store.designs).sort((a,b)=>b.updated-a.updated);
 return <div className="lab-menu" role="dialog" aria-label="Your designs"><div className="lab-h">YOUR DESIGNS · SAVED IN THIS BROWSER</div>
 <div className="lab-menu-act"><button type="button" className="lab-btn" onClick={create}>+ New design</button><button type="button" className="lab-btn ghost" onClick={example}>+ Example: Zotato order API</button></div>
@@ -113,7 +130,7 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
-function Canvas({lab}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
+function Canvas({lab,start}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
 const[store,setStore]=useState(()=>{const s=load(lab);if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
@@ -122,7 +139,9 @@ useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.cur
 // Autosave the open design (debounced). The id is captured now, so a save that fires after
 // switching designs still goes to the design these nodes belong to.
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s.designs[id])return s;const d={...s.designs[id],name:name.trim()||"Untitled design",updated:Date.now(),...fromFlow(nodes,edges),credit};const next={...s,designs:{...s.designs,[id]:d}};save(next);return next}),400);return()=>clearTimeout(t)},[nodes,edges,name,credit]);// eslint-disable-line
-const design=useMemo(()=>fromFlow(nodes,edges),[nodes,edges]);const downKey=Object.keys(run.down).sort().join();
+const progress=useProgress();const ch=(lab.challenges||[]).find(c=>c.id===store.designs[store.current]?.challenge)||null;const[chMenu,setChMenu]=useState(false);const[score,setScore]=useState(null);
+// In a challenge the challenge's traffic (and fixed settings) are what runs.
+const design=useMemo(()=>{const d=fromFlow(nodes,edges);return ch?applyChallenge(d,ch):d},[nodes,edges,ch]);const downKey=Object.keys(run.down).sort().join();
 // What the design is doing now: crashed parts, queue backlogs, autoscaled instances, and the Clients'
 // traffic at the simulated time of day.
 const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;
@@ -145,7 +164,12 @@ const[dragging,setDragging]=useState(false);
 // Drop from the palette: only when released over the canvas.
 const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;add(kind,rf.screenToFlowPosition({x,y}))};
 const pick=id=>{setStore(s=>({...s,current:id}));setMenu(false)};
-const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0}};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
+const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0},...(src?.challenge?{challenge:src.challenge}:{})};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
+// Start a challenge: reopen this browser's latest design for it, or start one from its starting design.
+const startChallenge=id=>{const c=(lab.challenges||[]).find(x=>x.id===id);if(!c)return;setChMenu(false);setScore(null);const mine=Object.values(store.designs).filter(d=>d.challenge===id).sort((a,b)=>b.updated-a.updated)[0];if(mine)pick(mine.id);else create({name:c.title,nodes:c.start.nodes,edges:c.start.edges,challenge:id})};
+useEffect(()=>{if(start)startChallenge(start)},[start]);// eslint-disable-line
+const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error)recordStars(ch.id,r.stars);setScore(r)};
+const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
 const del=id=>setStore(s=>{const designs={...s.designs};delete designs[id];if(!Object.keys(designs).length){const nid=newId("design");designs[nid]={id:nid,name:"Untitled design",updated:Date.now(),nodes:[],edges:[]}}const n={...s,designs,current:designs[s.current]?s.current:Object.keys(designs)[0]};save(n);return n});
 const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
@@ -153,10 +177,13 @@ const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>{const dead=run.down[e.source]!==undefined||run.down[e.target]!==undefined;return{...e,animated:running&&!dead,className:dead?"dead":running?"live":""}}),[edges,running,downKey]);// eslint-disable-line
 return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 <header className="lab-top"><input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
-<button type="button" className="lab-btn ghost" onClick={()=>setMenu(m=>!m)} aria-expanded={menu}>Designs ▾</button>
+<button type="button" className="lab-btn ghost" onClick={()=>{setMenu(m=>!m);setChMenu(false)}} aria-expanded={menu}>Designs ▾</button>
+{lab.challenges&&<button type="button" className="lab-btn ghost" onClick={()=>{setChMenu(m=>!m);setMenu(false)}} aria-expanded={chMenu}>Challenges <span className="lab-star-count">★ {Object.entries(progress.stars).filter(([k])=>lab.challenges.some(c=>c.id===k)).reduce((a,[,v])=>a+v,0)}/{lab.challenges.reduce((a,c)=>a+c.stars.length,0)}</span></button>}
+{ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
 <div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{cents(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
 <label className="lab-speed"><span className="sr">Simulation speed</span><select value={speed} onChange={e=>setSpeed(+e.target.value)}>{SPEEDS.map(([l,h])=><option key={l} value={h}>{l}</option>)}</select></label>
-<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running&&run.t===0)setRun({...newRun(),start:credit.hours});setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
+<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){markStep("lab:run");if(run.t===0)setRun({...newRun(),start:credit.hours})}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
+{chMenu&&<Challenges lab={lab} progress={progress} start={startChallenge} close={()=>setChMenu(false)}/>}
 {menu&&<Designs store={store} current={store.current} budget={lab.budget} open={pick} create={()=>create()} example={()=>create(lab.example)} duplicate={duplicate} remove={del} close={()=>setMenu(false)}/>}</header>
 <div className="lab-status" aria-live="polite">{blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."} Designs → ⧉ duplicates it with a fresh {usd(lab.budget)}.</span>
 :running?<><span><b>{simTime(credit.hours)}</b></span><span><b>{num(t.sentRps)}</b> req/s sent{t.clients>1?` by ${t.clients} Clients`:""}</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span><span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>{t.retryRps>0.5&&<span>+<b>{num(t.retryRps)}</b> retries/s</span>}{run.sent>0&&<span className={run.served/run.sent<0.999?"bad":""}>availability <b>{(100*run.served/run.sent).toFixed(2)}%</b></span>}{t.down.length>0&&<span className="lab-warn"><b>{t.down.length}</b> crashed</span>}{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
@@ -167,9 +194,10 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours}/>
+<Inspector lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} score={scoreIt}/>
+{score&&ch&&<Score ch={ch} res={score} close={()=>setScore(null)} next={nextCh&&(()=>startChallenge(nextCh.id))}/>}
 </div></Ctx.Provider>}
 
-export default function Lab(){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the Lab" retry={go}/>;if(!st.lab)return <Loading label="Loading the Lab"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge}/></ReactFlowProvider></div>}
