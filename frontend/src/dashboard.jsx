@@ -206,7 +206,12 @@ function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route
 // The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
 // other pages is untouched), and the toggle works per mode.
 const inLab=active==="lab"&&!route.art;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
-useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false);scrollTo(0,0)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
+// Back/Forward return to where you were on that page; following a link starts at the top (QA M8).
+useEffect(()=>{const pos=new Map();let clicked=false,key=location.hash;const onScroll=()=>pos.set(key,scrollY);const onClick=e=>{const a=e.target.closest?.("a[href^='#']");if(a)clicked=true};
+addEventListener("scroll",onScroll,{passive:true});document.addEventListener("click",onClick,true);
+const restore=()=>{const want=clicked?0:pos.get(location.hash)||0;clicked=false;key=location.hash;if(!want){scrollTo(0,0);return}let n=0;const go=()=>{scrollTo(0,want);if(Math.abs(scrollY-want)>2&&++n<40)setTimeout(go,50)};go()};
+addEventListener("hashchange",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore)}},[]);
+useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
 useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
 // Guided tour: once on the first visit to Learn and to the Lab (not for automated browsers), and from the Tour button.
 const[tour,setTour]=useState(null);const closeTour=()=>{markStep("tour:"+tour);setTour(null)};
@@ -219,7 +224,7 @@ const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id=
 return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b>TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={fold?"Expand sidebar":"Collapse sidebar"} aria-expanded={!fold} aria-controls="sidebar" onClick={toggle}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
 <div className="side-label">{d.label}</div><nav className="side-nav">{links("side-link")}</nav>
-<a className="side-foot" href="/"><Icon name="back"/><span>{d.back}</span></a></aside>
+<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav>{c.tour&&<button type="button" className="d-tour" onClick={()=>setTour(active==="lab"?"lab":"dashboard")}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
 <main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:<Section id={active}/>}</main></div></div>}
