@@ -469,6 +469,35 @@
     "loading": "Loading the Lab",
     "open": "Open in the full Lab",
     "openHref": "/dashboard/#lab/ind-vs-pak",
-    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb."
+    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
+    "lite": {
+      "diagram": "Your design, from the viewers down to your servers",
+      "viewers": "3.5 crore viewers",
+      "viewersSub": "87.5 lakh requests a second in the last over",
+      "cdnBox": "CDN",
+      "cdnSub": "answers 99% near the viewers; live video",
+      "lbBox": "Load Balancer",
+      "lbSub": "all 87.5 lakh requests a second reach it",
+      "lbSubCdn": "87,500 requests a second reach it",
+      "serversBox": "Servers",
+      "prewarmShort": "all running before the toss",
+      "autoShort": "autoscaling from 5",
+      "cdn": "Put a CDN in front",
+      "cdnHelp": "Servers in cities near the viewers answer most requests, so yours see only the rest.",
+      "servers": "Servers (c5.2xlarge)",
+      "serversHelp": "Each one sends about 2,500 video chunks a second.",
+      "fewer": "Fewer servers",
+      "more": "More servers",
+      "scaling": "Scaling",
+      "prewarm": "Start them all before the toss",
+      "auto": "Autoscale from 5",
+      "score": "Play the match and score",
+      "needCdn": "Without a CDN every request lands on your servers. No farm takes 87.5 lakh requests a second: put a CDN in front.",
+      "allStars": "All three stars. That is how the big apps survive match night.",
+      "someStars": "Close. Look at which goal failed and change one thing.",
+      "noStars": "The stream went down. Start with the CDN.",
+      "best": "Your best",
+      "full": "Build it yourself in the full Lab (on a laptop)"
+    }
   }
 }

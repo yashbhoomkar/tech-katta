@@ -26,11 +26,13 @@ function Mini({type}){const still=useStill();if(type==="cap")return <div classNa
 const dash=(card,id)=>"/dashboard/#"+(id||c.dashboard.sections.find(s=>s[2]===card)?.[0]||"");
 // "Can your design survive IND vs PAK?": the real Lab, with that match loaded as a challenge
 // (content/lab.json "ind-vs-pak"). It is loaded only when the section comes near the screen.
-const Lab=React.lazy(()=>import("./lab/Lab.jsx"));
-function LandingLab({l}){const ref=useRef(null);const[show,setShow]=useState(false);
+const Lab=React.lazy(()=>import("./lab/Lab.jsx"));const LabLite=React.lazy(()=>import("./lablite.jsx"));
+// Phones and narrow tablets get the three-control version: a canvas can't be used with a thumb (QA H5, H6).
+const narrowQ=()=>typeof window!=="undefined"&&window.matchMedia?.("(max-width:899px)");
+function LandingLab({l}){const ref=useRef(null);const[show,setShow]=useState(false);const[narrow,setNarrow]=useState(()=>!!narrowQ()?.matches);useEffect(()=>{const q=narrowQ();if(!q)return;const on=e=>setNarrow(e.matches);q.addEventListener?.("change",on);return()=>q.removeEventListener?.("change",on)},[]);
 useEffect(()=>{const el=ref.current;if(!el)return;if(!("IntersectionObserver" in window)){setShow(true);return}const io=new IntersectionObserver(e=>{if(e.some(x=>x.isIntersecting)){setShow(true);io.disconnect()}},{rootMargin:"600px"});io.observe(el);return()=>io.disconnect()},[]);
 return <section className="wrap lp rule" id="ind-vs-pak" ref={ref}><p className="lp-eyebrow">{l.eyebrow}</p><h2 className="ch-title">{l.title}</h2><p className="ch-desc">{l.desc}</p>
-<div className="lp-lab">{show?<React.Suspense fallback={<Loading label={l.loading}/>}><Lab challenge={l.challenge} embedded={{open:l.open,href:l.openHref}}/></React.Suspense>:<Loading label={l.loading}/>}</div><p className="ch-note">{l.note}</p></section>}
+<div className="lp-lab">{show?<React.Suspense fallback={<Loading label={l.loading}/>}>{narrow&&l.lite?<LabLite l={l}/>:<Lab challenge={l.challenge} embedded={{open:l.open,href:l.openHref}}/>}</React.Suspense>:<Loading label={l.loading}/>}</div><p className="ch-note">{l.note}</p></section>}
 function App(){const[open,setOpen]=useState(false);return <><header className="header"><a className="brand" href="#top"><i/>{c.brand.name}<em>/</em><span>{c.brand.descriptor}</span></a><button className="menu" onClick={()=>setOpen(!open)}>MENU</button><nav className={open?"nav open":"nav"}>{c.nav.map(([t,h])=><a href={h} key={t} onClick={()=>setOpen(false)}>{t}</a>)}</nav></header><main id="top">
 <section className="hero wrap"><div><label>{c.hero.eyebrow}</label><h1>{c.hero.title}</h1><p>{c.hero.description}</p><div className="actions"><a className="btn primary" href={c.hero.primaryHref||"/dashboard/"}>{c.hero.primary} →</a><a className="btn" href={c.hero.secondaryHref||"/dashboard/"}>{c.hero.secondary}</a></div></div><figure className="figure"><div className="fig-head"><b><i/>{c.hero.figure}</b><span>{c.hero.status}</span></div><Diagram/><figcaption>{c.hero.caption}</figcaption></figure></section>
 {c.landingLab&&<LandingLab l={c.landingLab}/>}
