@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test src/lab/engine.test.js src/lab/store.test.js src/challenge.test.js"
+    "test": "node --test src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/challenge.test.js src/progress.test.js"
   },
   "dependencies": {
     "@xyflow/react": "^12.12.0",

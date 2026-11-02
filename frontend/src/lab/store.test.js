@@ -62,3 +62,9 @@ test("cache write policy and down behaviour are kept only when the catalogue kno
   assert.deepEqual(out.nodes[0].config,{writePolicy:"back",onDown:"fail"});
   assert.deepEqual(out.nodes[1].config,{});
 });
+
+test("a design keeps its challenge only while the catalogue has that challenge",()=>{
+  assert.equal(cleanDesign({nodes:[],edges:[],challenge:"flash-sale"},lab,"x").challenge,"flash-sale");
+  assert.equal(cleanDesign({nodes:[],edges:[],challenge:"gone"},lab,"x").challenge,undefined);
+  assert.equal(cleanDesign({nodes:[],edges:[],challenge:{}},lab,"x").challenge,undefined);
+});

@@ -156,7 +156,7 @@ test('lab validation checks the phase 2 components, which are optional', () => {
   assert.ok(check((l) => { delete l.components[I.cache].sizes[0].ops; }).some((p) => p.includes(`components[${I.cache}]: sizes`)));
   assert.ok(check((l) => { l.components[I.lb].rpsPerLcu = 0; }).some((p) => p.includes(`components[${I.lb}]: rpsPerLcu`)));
   assert.ok(check((l) => { delete l.components[I.queue].pricePerMillion; }).some((p) => p.includes(`components[${I.queue}]: pricePerMillion`)));
-  assert.deepEqual(check((l) => { l.components = l.components.filter((c) => ['client', 'apigw', 'server', 'database'].includes(c.type)); }), []);
+  assert.deepEqual(check((l) => { l.components = l.components.filter((c) => ['client', 'apigw', 'server', 'database'].includes(c.type)); delete l.challenges; delete l.levels; }).filter((p) => p.startsWith('lab.json')), []);
   assert.ok(check((l) => { l.components = l.components.filter((c) => c.type !== 'server'); }).some((p) => p.includes('missing component server')));
   assert.ok(check((l) => { l.example.nodes.push({ id: 'c2', type: 'cache', x: 0, y: 200, config: { hitPct: 120 } }); }).some((p) => p.includes('hitPct must be from 0 to 99')));
 });
@@ -164,7 +164,7 @@ test('lab validation checks the phase 2 components, which are optional', () => {
 test('lab validation checks traffic patterns and autoscaling, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const C = `components[${I.client}]`, S = `components[${I.server}]`;
-  assert.deepEqual(check((l) => { delete l.components[I.client].patterns; delete l.components[I.server].autoscaling; }), []);
+  assert.deepEqual(check((l) => { delete l.components[I.client].patterns; delete l.components[I.server].autoscaling; delete l.challenges; delete l.levels; }).filter((p) => p.startsWith('lab.json')), []);
   assert.ok(check((l) => { l.components[I.client].patterns[1].points[0][0] = 1; }).some((p) => p.includes(`${C}: patterns`)), 'must start at hour 0');
   assert.ok(check((l) => { l.components[I.client].patterns[1].points.at(-1)[0] = 23; }).some((p) => p.includes(`${C}: patterns`)), 'must end at hour 24');
   assert.ok(check((l) => { l.components[I.client].patterns[1].points.reverse(); }).some((p) => p.includes(`${C}: patterns`)), 'hours never go back');
@@ -188,7 +188,7 @@ test('lab validation checks traffic patterns and autoscaling, which are optional
 test('lab validation checks the cache behaviour fields, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const K = `components[${I.cache}]`;
-  assert.deepEqual(check((l) => { for (const k of ['warmupMinutes', 'flushSeconds', 'writePolicy', 'onDown']) delete l.components[I.cache][k]; }), []);
+  assert.deepEqual(check((l) => { for (const k of ['warmupMinutes', 'flushSeconds', 'writePolicy', 'onDown']) delete l.components[I.cache][k]; delete l.challenges; delete l.levels; }).filter((p) => p.startsWith('lab.json')), []);
   assert.ok(check((l) => { l.components[I.cache].warmupMinutes = 0; }).some((p) => p.includes(`${K}: warmupMinutes`)));
   assert.ok(check((l) => { l.components[I.cache].flushSeconds = -1; }).some((p) => p.includes(`${K}: flushSeconds`)));
   assert.ok(check((l) => { l.components[I.cache].writePolicy.options[1].id = 'around'; }).some((p) => p.includes(`${K}: writePolicy`)), 'only ids the simulator knows');
@@ -217,6 +217,39 @@ test('site validation checks the landing challenge and fact, which are optional'
   assert.ok(check((s) => { s.challenge.servers.default = 5000; }).some((p) => p.includes('challenge.servers needs')));
   assert.ok(check((s) => { delete s.challenge.note; }).some((p) => p.includes('challenge.note')));
   assert.ok(check((s) => { s.fact.points = []; }).some((p) => p.includes('fact.points')));
+});
+
+test('lab validation checks levels and challenges, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  const C = (l, id) => l.challenges.find((c) => c.id === id);
+  assert.deepEqual(check((l) => { delete l.levels; delete l.challenges; }).filter((p) => p.startsWith('lab.json')), []);
+  assert.ok(check((l) => { l.levels.push({ id: 'beginner', label: 'Again' }); }).some((p) => p.includes('levels must be')));
+  assert.ok(check((l) => { C(l, 'flash-sale').level = 'expert'; }).some((p) => p.includes('unknown level expert')));
+  assert.ok(check((l) => { C(l, 'flash-sale').id = 'one-server'; }).some((p) => p.includes('duplicate id one-server')));
+  assert.ok(check((l) => { C(l, 'flash-sale').traffic.rps = 900000; }).some((p) => p.includes('traffic.rps')));
+  assert.ok(check((l) => { C(l, 'flash-sale').traffic.pattern = 'tsunami'; }).some((p) => p.includes('traffic.pattern tsunami')));
+  assert.ok(check((l) => { C(l, 'read-heavy').fixed.hitPct = 120; }).some((p) => p.includes('fixed.hitPct')));
+  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].minute = 77; }).some((p) => p.includes('chaos event')));
+  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].type = 'lb'; }).some((p) => p.includes('chaos event')), 'load balancers never crash');
+  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].minute = 9999; }).some((p) => p.includes('chaos event')));
+  assert.ok(check((l) => { C(l, 'one-server').start.edges.push({ from: 'db', to: 'api' }); }).some((p) => p.includes('out of a Database')));
+  assert.ok(check((l) => { C(l, 'one-server').stars.reverse(); }).some((p) => p.includes('the first an availability goal')));
+  assert.ok(check((l) => { C(l, 'one-server').stars[1].kind = 'vibes'; }).some((p) => p.includes('known kind')));
+  assert.ok(check((l) => { C(l, 'one-server').stars[0].min = 101; }).some((p) => p.includes('availability min')));
+  assert.ok(check((l) => { C(l, 'one-server').hours = 0; }).some((p) => p.includes('hours must be')));
+  assert.ok(check((l) => { delete C(l, 'one-server').hint; }).some((p) => p.includes('needs hint')));
+});
+
+test('site validation checks the learning paths point at real articles, sections and challenges', () => {
+  const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
+  const step = (s, id) => s.learn.levels.flatMap((l) => l.steps).find((x) => x.id === id);
+  assert.deepEqual(check((s) => { delete s.learn; }), []);
+  assert.ok(check((s) => { step(s, 'article:api-types').ref = 'concepts/nope'; }).some((p) => p.includes('unknown article concepts/nope')));
+  assert.ok(check((s) => { step(s, 'note:numbers').ref = 'diary'; }).some((p) => p.includes('unknown section diary')));
+  assert.ok(check((s) => { step(s, 'flash-sale').ref = 'flash-sale-2'; }).some((p) => p.includes('must be a Lab challenge id')));
+  assert.ok(check((s) => { s.learn.levels[0].steps.push(structuredClone(s.learn.levels[0].steps[0])); }).some((p) => p.includes('used twice')));
+  assert.ok(check((s) => { s.learn.levels[0].id = 'novice'; }).some((p) => p.includes('learn level novice')));
+  assert.ok(check((s) => { step(s, 'lab:run').kind = 'video'; }).some((p) => p.includes('kind: must be one of')));
 });
 
 test('content preflight allows If-None-Match', async () => {
@@ -258,6 +291,17 @@ test('validation checks the optional "more" paragraphs of a type card', () => {
   assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
   card.more = ['fine', ''];
   assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
+});
+
+test('validation checks real-life analogies: the analogy block, type cards and Lab components', () => {
+  const article = structuredClone(allArticles[0]);
+  const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a] }); };
+  assert.ok(at((a) => { a.body.find((b) => b.t === 'analogy').x = ''; }).some((p) => p.includes('needs text x')));
+  assert.ok(at((a) => { a.body.find((b) => b.t === 'type').like = 7; }).some((p) => p.includes('like must be text')));
+  assert.deepEqual(at((a) => { a.body = a.body.filter((b) => b.t !== 'analogy'); for (const b of a.body) delete b.like; }), [], 'both optional');
+  const labCheck = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  assert.ok(labCheck((l) => { l.components[0].like = ['x']; }).some((p) => p.includes('components[0]: like must be text')));
+  assert.ok(labCheck((l) => { l.components.find((c) => c.type === 'server').autoscaling.like = 3; }).some((p) => p.includes('autoscaling')));
 });
 
 test('validation checks the Lab example design: ids, positions, settings and connection rules', () => {

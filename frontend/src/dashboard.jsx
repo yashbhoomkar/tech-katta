@@ -1,13 +1,13 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import"./dashboard.css";
-import Numbers from"./numbers.jsx";
+import Numbers from"./numbers.jsx";import{readProgress,markStep,setLevel}from"./progress.js";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
-const ICON={lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
+const ICON={learn:"M2 7.5 10 3.5l8 4-8 4zM5 9v4.2c0 1 2.2 2.3 5 2.3s5-1.3 5-2.3V9M18 7.5v4.5",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
 const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[name]}/></svg>;
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug)}};
+const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 // Read time of the main text; "more" sections and type details are extra.
 const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
@@ -155,11 +155,12 @@ case"p":return <p className={cls("")}>{inline(b.x)}</p>;
 case"list":return <ul className={cls("")}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>;
 case"tldr":return <aside className={cls("a-tldr")} aria-label="In 30 seconds"><b>IN 30 SECONDS</b><ul>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul></aside>;
 case"example":return <aside className={cls("a-example")} aria-label="Example system"><div className="a-ex-head"><b>EXAMPLE SYSTEM</b><span>{example.name}</span><small>{example.kind}</small></div><p>{example.text}</p><dl>{example.parts.map(([k,v])=><React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl></aside>;
-case"type":return <section className={cls("a-type")}><h3>{b.name}<small>{b.kind}</small></h3><p className="a-what">{inline(b.what)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>Avoid it for</dt><dd>{inline(b.avoid)}</dd><dt className="ex">In {example.name}</dt><dd className="ex">{inline(b.ex)}</dd></dl>{b.more&&<details className="a-more"><summary>How it works and what it costs</summary>{b.more.map(x=><p key={x}>{inline(x)}</p>)}</details>}</section>;
+case"type":return <section className={cls("a-type")}><h3>{b.name}<small>{b.kind}</small></h3><p className="a-what">{inline(b.what)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>Avoid it for</dt><dd>{inline(b.avoid)}</dd><dt className="ex">In {example.name}</dt><dd className="ex">{inline(b.ex)}</dd>{b.like&&<><dt className="like">In real life</dt><dd className="like">{inline(b.like)}</dd></>}</dl>{b.more&&<details className="a-more" open={readProgress().level==="advanced"||undefined}><summary>How it works and what it costs</summary>{b.more.map(x=><p key={x}>{inline(x)}</p>)}</details>}</section>;
+case"analogy":return <aside className={cls("a-analogy")} aria-label="In real life"><b>IN REAL LIFE</b><p>{inline(b.x)}</p></aside>;
 case"code":return <figure className={cls("a-code")}><figcaption>{b.label}</figcaption><pre tabIndex="0" aria-label={b.say}><code>{b.x}</code></pre></figure>;
 case"fig":return <Fig id={b.id} n={fn?.[k]??1} cap={b.cap} still={still} rd={rd?rd(k):""}/>;
 case"table":return <div className={cls("a-table")} role="region" aria-label="API types compared" tabIndex="0"><table role="table"><thead role="rowgroup"><tr role="row">{b.head.map(h=><th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead><tbody role="rowgroup">{b.rows.map(r=><tr key={r[0]} role="row"><th scope="row" role="rowheader">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} role="cell" data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>;
-case"more":return <details className="a-more a-deeper"><summary><small>GO DEEPER</small>{b.label}</summary>{b.body.map((x,j)=><Block key={j} b={x} i={`${k}.${j}`} still={still}/>)}</details>;
+case"more":return <details className="a-more a-deeper" open={readProgress().level==="advanced"||undefined}><summary><small>GO DEEPER</small>{b.label}</summary>{b.body.map((x,j)=><Block key={j} b={x} i={`${k}.${j}`} still={still}/>)}</details>;
 default:return null}}
 
 function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
@@ -173,10 +174,22 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
 // Article bodies are fetched when opened; the summaries list came with the dashboard.
-function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);
+function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>{if(st.a)markStep(`article:${s.slug}`)},[st.a,s.slug]);
 return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
 
-function Section({id}){const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
+// Learn: three levels, each a short path of steps (site.json `learn`); done steps and challenge stars
+// come from progress.js (this browser).
+function useProgress(){const[p,setP]=useState(readProgress);useEffect(()=>{const on=()=>setP(readProgress());addEventListener("tk-progress",on);addEventListener("storage",on);return()=>{removeEventListener("tk-progress",on);removeEventListener("storage",on)}},[]);return p}
+function Learn(){const L=c.learn,p=useProgress();const lvl=L.levels.find(l=>l.id===p.level)||L.levels[0];
+const done=st=>st.kind==="challenge"?(p.stars[st.ref]||0)>0:!!p.steps[st.id];
+const href=st=>st.kind==="article"?`#${st.ref}`:st.kind==="challenge"?`#lab/${st.ref}`:st.kind==="lab"||st.kind==="note"?`#${st.ref}`:st.ref;
+return <section className="d-panel" aria-labelledby="d-title"><label>{L.eyebrow}</label><h1 id="d-title">{L.title}</h1><p className="d-desc">{L.desc}</p>
+<div className="learn-levels" role="radiogroup" aria-label={L.title}>{L.levels.map(l=>{const n=l.steps.filter(done).length;return <button key={l.id} type="button" role="radio" aria-checked={lvl.id===l.id} className={"learn-level"+(lvl.id===l.id?" on":"")} onClick={()=>setLevel(l.id)}>
+<b>{l.label}</b><small>{l.desc}</small><span>{L.progress.replace("{done}",n).replace("{total}",l.steps.length)}</span><i aria-hidden="true"><u style={{width:100*n/l.steps.length+"%"}}/></i></button>})}</div>
+<ol className="learn-steps">{lvl.steps.map((st,i)=>{const ok=done(st),stars=st.kind==="challenge"?p.stars[st.ref]||0:0;return <li key={st.id} className={ok?"done":""}><span className="learn-no" aria-hidden="true">{ok?"✓":i+1}</span>
+<a href={href(st)}><b>{st.title}</b><small>{st.why}</small></a><em>{stars?<span className="learn-stars" aria-label={`${stars} ${L.stars}`}>{"★".repeat(stars)}</span>:ok?L.done:L.open+" →"}</em></li>})}</ol>
+<p className="learn-note">{L.levelNote}</p></section>}
+function Section({id}){useEffect(()=>{if(id==="quick-notes")markStep("note:numbers")},[id]);if(id==="learn"&&c.learn)return <Learn/>;const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
 return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.notes.eyebrow}</label><h1 id="d-title">{label}</h1><p className="d-desc">{t?t.desc:c.notes.desc}</p>
 {id==="quick-notes"?<><ol className="d-notes">{c.notes.items.map(([n,title,tag,status])=><li key={n}><span className="d-no">{n}</span><b>{title}</b><span className="d-tag">{tag}</span><em className={status==="DRAFT"?"draft":""}>{status}</em></li>)}</ol><Numbers n={c.numbers}/></>
 :<List id={id}/>}</section>}
@@ -202,7 +215,7 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <a className="side-foot" href="/"><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><a className="d-home" href="/">tech.katta.cc</a></header>
-<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab/></Suspense>:<Section id={active}/>}</main></div></div>}
+<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:<Section id={active}/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
 const root=createRoot(document.getElementById("root"));

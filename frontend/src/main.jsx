@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{playMatch,serversForPeak,originGbps}from"./challenge.js";import{Loading,LoadError}from"./status.jsx";import"./styles.css";
+import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{playMatch,serversForPeak,originGbps}from"./challenge.js";import{markStep}from"./progress.js";import{Loading,LoadError}from"./status.jsx";import"./styles.css";
 // FIG. 01 — one 8s loop: the producer hashes each key to a partition, the broker appends it to that partition's log, and each consumer in the group reads its own partition in offset order. On narrow screens it scales down and a zoom button opens it full-screen.
 const LOOP="8s",BLUE="#2855d9",SLOT={E:["#fff","#fff","#8a94a3"],W:["#fff",BLUE,BLUE],C:[BLUE,BLUE,"#fff"]};
 const cell=(o,r,w,c)=>w?[[0,"E",o],[w,"W",r],[c,"C",r],[.92,"E",o]]:[[0,"E",o],[.92,"E",o]];
@@ -40,7 +40,7 @@ const top=Math.max(4,Math.ceil(res.peakCrore+.5));const x=m=>P.l+(W-P.l-P.r)*m/e
 const upTo=shown<0?[]:res.rows.slice(0,shown+1);const now=upTo.at(-1);
 const area=upTo.length?`M${x(0)},${y(0)}`+upTo.map(r=>`L${x(r.m).toFixed(1)},${y(r.crore).toFixed(1)}`).join("")+`L${x(now.m).toFixed(1)},${y(0)}Z`:"";
 const capLine=upTo.map((r,i)=>`${i?"L":"M"}${x(r.m).toFixed(1)},${y(per(r.running*ch.serverGbps)).toFixed(1)}`).join("");
-const done=shown>=end,momentAt=m=>ch.moments.reduce((a,b)=>Math.abs(b[0]-m)<Math.abs(a[0]-m)?b:a)[1];
+useEffect(()=>{if(shown>=end)markStep("ind-vs-pak")},[shown,end]);const done=shown>=end,momentAt=m=>ch.moments.reduce((a,b)=>Math.abs(b[0]-m)<Math.abs(a[0]-m)?b:a)[1];
 const opt=(o,v,set,name)=><label key={o.id} className={"ch-opt"+(v===o.id?" on":"")}><input type="radio" name={name} checked={v===o.id} onChange={()=>set(o.id)}/><b>{o.label}</b><small>{o.desc}</small></label>;
 return <section className="wrap section rule" id="challenge"><label>{ch.eyebrow}</label><h2 className="ch-title">{ch.title}</h2><p className="ch-desc">{ch.desc}</p>
 <div className="ch"><div className="ch-controls">

@@ -1,6 +1,6 @@
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
-const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more']);
+const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy']);
 // Figure ids the frontend can draw (FIGS in frontend/src/dashboard.jsx).
 export const FIGS = new Set(['patterns', 'choose', 'order', 'retry']);
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -13,11 +13,12 @@ function checkBlocks(blocks, where, problems) {
   blocks.forEach((b, i) => {
     const at = `${where}[${i}]`;
     if (!b || !BLOCKS.has(b.t)) { problems.push(`${at}: unknown block type ${b && b.t}`); return; }
-    if (['h2', 'p'].includes(b.t) && !isText(b.x)) problems.push(`${at}: needs text x`);
+    if (['h2', 'p', 'analogy'].includes(b.t) && !isText(b.x)) problems.push(`${at}: needs text x`);
     if (['list', 'tldr'].includes(b.t) && !(Array.isArray(b.items) && b.items.length && b.items.every(isText))) problems.push(`${at}: needs items`);
     if (b.t === 'fig') { if (!FIGS.has(b.id)) problems.push(`${at}: unknown figure ${b.id}`); if (!isText(b.cap)) problems.push(`${at}: needs cap`); }
     if (b.t === 'type') {
       for (const key of ['name', 'kind', 'what', 'use', 'avoid', 'ex']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
+      if (b.like !== undefined && !isText(b.like)) problems.push(`${at}: like must be text`);
       if (b.more !== undefined && !(Array.isArray(b.more) && b.more.length && b.more.every(isText))) problems.push(`${at}: more must be a list of paragraphs`);
     }
     if (b.t === 'code') for (const key of ['label', 'x', 'say']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
@@ -69,6 +70,7 @@ const SITE = {
     servers: { label: 'text', min: 'number', max: 'number', step: 'number', default: 'number' },
     scaling: { label: 'text', default: 'text', options: [{ id: { oneOf: new Set(['auto', 'prewarm']) }, label: 'text', desc: 'text' }] },
     play: 'text', replay: 'text', axis: 'text', survived: 'text', failed: 'text', noCdn: 'text', statViewers: 'text', statServers: 'text', statCost: 'text', cta: 'text', ctaHref: 'text', note: 'text' },
+  'learn?': { eyebrow: 'text', title: 'text', desc: 'text', levels: [{ id: 'text', label: 'text', desc: 'text', steps: [{ id: 'text', kind: { oneOf: new Set(['article', 'landing', 'lab', 'note', 'challenge']) }, ref: 'text', title: 'text', why: 'text' }] }], done: 'text', open: 'text', stars: 'text', progress: 'text', levelNote: 'text' },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
@@ -139,7 +141,7 @@ const point = (p) => Array.isArray(p) && p.length === 2 && nonNegative(p[0]) && 
 const pattern = (p) => p && typeof p === 'object' && isText(p.id) && isText(p.label) && isText(p.short) && isText(p.desc) && Array.isArray(p.points) && p.points.length >= 2 && p.points.every(point)
   && p.points[0][0] === 0 && p.points.at(-1)[0] === 24 && p.points.every((x, i) => i === 0 || x[0] >= p.points[i - 1][0]) && p.points.some((x) => x[1] === 1);
 const patterns = (list) => Array.isArray(list) && list.length > 0 && list.every(pattern) && new Set(list.map((p) => p.id)).size === list.length;
-const autoscaling = (a) => a && typeof a === 'object' && isText(a.label) && isText(a.minLabel) && isText(a.maxLabel) && isText(a.note) && positive(a.targetPct) && a.targetPct <= 100 && positive(a.warmupMinutes) && positive(a.scaleInMinutes) && Number.isInteger(a.defaultMax) && a.defaultMax >= 1;
+const autoscaling = (a) => a && typeof a === 'object' && (a.like === undefined || isText(a.like)) && isText(a.label) && isText(a.minLabel) && isText(a.maxLabel) && isText(a.note) && positive(a.targetPct) && a.targetPct <= 100 && positive(a.warmupMinutes) && positive(a.scaleInMinutes) && Number.isInteger(a.defaultMax) && a.defaultMax >= 1;
 // Cache behaviour: a choice is {label, default, options: [{id, label, desc}]} with exactly the ids the
 // simulator knows.
 const choice = (ids) => (c) => c && typeof c === 'object' && isText(c.label) && Array.isArray(c.options) && c.options.length === ids.length
@@ -161,6 +163,7 @@ export function validateLab(lab, problems = []) {
     if (types.has(c.type)) problems.push(`${where}: duplicate type ${c.type}`);
     types.add(c.type);
     for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
+    if (c.like !== undefined && !isText(c.like)) problems.push(`${where}: like must be text`);
     for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
     for (const [key, ok] of Object.entries(OPTIONAL_FIELDS[c.type] || {})) if (c[key] !== undefined && !ok(c[key])) problems.push(`${where}: ${key} is malformed`);
     if (c.type === 'server' && autoscaling(c.autoscaling) && range(c.count) && c.autoscaling.defaultMax > c.count.max) problems.push(`${where}: autoscaling.defaultMax is above count.max`);
@@ -168,7 +171,46 @@ export function validateLab(lab, problems = []) {
   }
   for (const type of REQUIRED_TYPES) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
   validateDesign(lab.example, lab, `${at} example`, problems);
+  if (lab.levels !== undefined || lab.challenges !== undefined) checkChallenges(lab, problems);
   return problems;
+}
+
+// Challenges (optional): levels [{id, label}], and challenges with a scenario the simulator can play.
+const STAR_KINDS = new Set(['availability', 'cost', 'noCrash', 'noLostWrites']);
+function checkChallenges(lab, problems) {
+  const at = 'lab.json';
+  const levels = list(lab.levels);
+  if (!levels.length || !levels.every((l) => l && isText(l.id) && isText(l.label)) || new Set(levels.map((l) => l.id)).size !== levels.length) { problems.push(`${at}: levels must be a list of {id, label} with unique ids`); return; }
+  const ids = new Set(levels.map((l) => l.id)), seen = new Set();
+  const byType = Object.fromEntries(list(lab.components).filter(Boolean).map((c) => [c.type, c]));
+  if (!Array.isArray(lab.challenges) || !lab.challenges.length) { problems.push(`${at}: challenges must be a non-empty list`); return; }
+  lab.challenges.forEach((ch, i) => {
+    const where = `${at} challenges[${i}]`;
+    if (!ch || typeof ch !== 'object') { problems.push(`${where}: needs an object`); return; }
+    for (const k of ['id', 'title', 'brief', 'hint']) if (!isText(ch[k])) problems.push(`${where}: needs ${k}`);
+    if (seen.has(ch.id)) problems.push(`${where}: duplicate id ${ch.id}`); seen.add(ch.id);
+    if (!ids.has(ch.level)) problems.push(`${where}: unknown level ${ch.level}`);
+    if (!(isNumber(ch.hours) && ch.hours > 0 && ch.hours <= 168)) problems.push(`${where}: hours must be above 0 and at most 168`);
+    if (!(isNumber(ch.startHour) && ch.startHour >= 0 && ch.startHour < 24)) problems.push(`${where}: startHour must be from 0 to under 24`);
+    const rps = byType.client?.rps, t = ch.traffic;
+    if (!t || !isNumber(t.rps) || !rps || t.rps < rps.min || t.rps > rps.max) problems.push(`${where}: traffic.rps must be inside the Clients range`);
+    if (!t || !list(byType.client?.patterns).some((p) => p && p.id === t.pattern)) problems.push(`${where}: traffic.pattern ${t && t.pattern} is not a Clients pattern`);
+    const f = ch.fixed ?? {};
+    for (const [k, c] of [['queriesPerRequest', byType.server], ['hitPct', byType.cache], ['writePct', byType.cache]]) {
+      const r = c?.[k];
+      if (f[k] !== undefined && !(isNumber(f[k]) && r && f[k] >= r.min && f[k] <= r.max)) problems.push(`${where}: fixed.${k} must be inside its range`);
+    }
+    for (const c of ch.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < ch.hours * 60 && byType[c.type]?.crash)) problems.push(`${where}: a chaos event needs a minute (multiple of 5, inside the run) and a type that can crash`);
+    validateDesign(ch.start && { name: ch.title, ...ch.start }, lab, `${where} start`, problems);
+    const stars = list(ch.stars);
+    if (!stars.length || stars.length > 3 || stars[0]?.kind !== 'availability') problems.push(`${where}: stars needs 1 to 3 entries, the first an availability goal`);
+    for (const st of stars) {
+      if (!st || !STAR_KINDS.has(st.kind) || !isText(st.label)) { problems.push(`${where}: each star needs a known kind and a label`); continue; }
+      if (st.kind === 'availability' && !(isNumber(st.min) && st.min > 0 && st.min <= 100)) problems.push(`${where}: availability min must be above 0 and at most 100`);
+      if (st.kind === 'cost' && !(isNumber(st.max) && st.max > 0)) problems.push(`${where}: cost max must be above 0`);
+      if (st.kind === 'noCrash' && st.type !== undefined && !byType[st.type]) problems.push(`${where}: noCrash type ${st.type} is not a component`);
+    }
+  });
 }
 
 // A design (the Lab example, or a saved one): unique node ids, known types, numeric positions,
@@ -218,6 +260,22 @@ export function validateDesign(design, lab, at, problems = []) {
 export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
+  // Learning paths point at real things: articles, dashboard sections, Lab challenges and levels.
+  if (site && site.learn && Array.isArray(site.learn.levels)) {
+    const arts = new Set(list(articles).map((a) => a && `${a.section}/${a.slug}`)), secs = new Set(list(site.dashboard?.sections).map((s) => s && s[0]));
+    const chs = new Set(list(lab?.challenges).map((c) => c && c.id)), lvls = list(lab?.levels).map((l) => l && l.id), stepIds = new Set();
+    for (const l of site.learn.levels) {
+      if (!l || !Array.isArray(l.steps)) continue;
+      if (lab?.levels && !lvls.includes(l.id)) problems.push(`site.json: learn level ${l.id} is not a Lab level`);
+      for (const st of l.steps) {
+        if (!st) continue;
+        if (stepIds.has(st.id)) problems.push(`site.json: learn step id ${st.id} is used twice`); stepIds.add(st.id);
+        if (st.kind === 'article' && !arts.has(st.ref)) problems.push(`site.json: learn step ${st.id} points at unknown article ${st.ref}`);
+        if ((st.kind === 'note' || st.kind === 'lab') && !secs.has(st.ref)) problems.push(`site.json: learn step ${st.id} points at unknown section ${st.ref}`);
+        if (st.kind === 'challenge' && (st.id !== st.ref || (lab && !chs.has(st.ref)))) problems.push(`site.json: learn step ${st.id} must be a Lab challenge id`);
+      }
+    }
+  }
   validateSite(site, examples, problems);
   const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
   const slugs = new Set();

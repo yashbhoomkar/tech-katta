@@ -34,6 +34,10 @@
       "x": "An API is a contract: what one program can ask another for, in what format, and what comes back. REST and gRPC are two styles of request/response: REST names things (`/orders/42`), RPC names actions (`AuthorizePayment`)."
     },
     {
+      "t": "analogy",
+      "x": "An API works like a restaurant menu. The menu tells you what you can ask for and how to ask. The kitchen behind it can change its recipes, staff and stoves, and customers never notice, as long as the menu stays the same."
+    },
+    {
       "t": "type",
       "name": "REST",
       "kind": "REQUEST / RESPONSE",
@@ -44,7 +48,8 @@
       "more": [
         "Each resource has a URL (`/orders/42`), and the method says what to do: `GET` reads, `POST` creates, `PUT` or `PATCH` changes, `DELETE` removes. Status codes carry the outcome. Every language has an HTTP client, `GET` responses can be cached by browsers and CDNs, and you can debug it with `curl`.",
         "The cost: a screen often needs several calls, or gets more fields than it uses. Changing the shape of a response breaks clients, so you need versioning (`/v2/orders`) and a plan for retiring old versions."
-      ]
+      ],
+      "like": "Ordering at a restaurant counter from a fixed menu. You name the dish and what you want done with it, and each order is handled on its own; the counter doesn't need to remember you."
     },
     {
       "t": "type",
@@ -57,7 +62,8 @@
       "more": [
         "Queries usually go as a `POST` to one URL, which browsers and CDNs do not cache. Sending them as `GET`, often as persisted queries, brings CDN caching back; many teams cache on the client instead.",
         "A deep or wide query can be very expensive, so servers need depth and cost limits. Resolving each nested field separately causes the N+1 query problem unless you batch lookups. Permissions are checked per field rather than per endpoint, which is flexible and easy to get wrong."
-      ]
+      ],
+      "like": "Making your own thali: one plate with exactly the items you asked for, instead of queueing at five counters for five dishes."
     },
     {
       "t": "type",
@@ -70,7 +76,8 @@
       "more": [
         "You generate client and server code from the `.proto` file, so both sides stay in step and type errors show up at build time. Protocol Buffers are compact and quick to parse. A call can also stream in either direction or both.",
         "The cost: payloads are not human-readable, so debugging needs tools like `grpcurl`. JSON-RPC and Apache Thrift are other RPC options."
-      ]
+      ],
+      "like": "Two offices of the same company exchanging pre-printed forms. Fast, and both sides know every field, but an outsider can't easily read them."
     },
     {
       "t": "type",
@@ -83,7 +90,8 @@
       "more": [
         "The client opens an ordinary HTTP request and asks to upgrade it; after that the TCP connection stays open. The message format is up to you, so you also design message types, acknowledgements and errors.",
         "The cost: every connected user holds a connection on a server, so servers carry state. Load balancers must allow long-lived connections, deploys drop them, and clients need reconnect logic."
-      ]
+      ],
+      "like": "A phone call. Once it connects, either side can speak at any moment until someone hangs up."
     },
     {
       "t": "type",
@@ -96,7 +104,8 @@
       "more": [
         "The browser's `EventSource` reconnects on its own if the connection drops. Events are text only.",
         "Over HTTP/1.1 a browser allows about six connections per domain, so several open tabs can run out; HTTP/2 removes most of that limit."
-      ]
+      ],
+      "like": "Cricket commentary on the radio. It keeps coming to you as things happen, but you can't talk back on the same channel."
     },
     {
       "t": "type",
@@ -109,7 +118,8 @@
       "more": [
         "Your endpoint is open to the internet, so check the provider's signature on every request. Store the event (or put it on a queue) first, then reply `200` and do the slow work afterwards; a reply sent before the event is saved can lose it.",
         "Retry rules differ by provider. Many retry, so the same event can arrive twice: record event IDs and ignore repeats. Some never retry, so you need a way to catch up on missed events. Events can also arrive out of order."
-      ]
+      ],
+      "like": "Leaving your number with the tailor. Instead of you calling every day to ask, they call you when the shirt is ready."
     },
     {
       "t": "type",
@@ -122,7 +132,8 @@
       "more": [
         "RabbitMQ and Amazon SQS are queues: each message goes to one consumer. Kafka is a log: many consumer groups can each read every event, and events stay after they are read.",
         "The cost: the caller gets a promise, not a result. Messages can arrive more than once, so consumers must be idempotent. Following one request across several queues is harder to debug than one HTTP call."
-      ]
+      ],
+      "like": "The token system at a bank. You take a token and walk away from the counter; tellers call tokens in order at their own pace, and a rush only makes the wait longer."
     },
     {
       "t": "p",
