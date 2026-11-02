@@ -297,3 +297,17 @@ test('a write-back cache that crashes loses the writes it had not flushed', () =
   const safe = advance({ ...d, nodes: d.nodes.map((n) => (n.id === 'k' ? { ...n, config: { ...n.config, writePolicy: 'through' } } : n)) }, lab, newRun(), 6);
   assert.equal(safe.lost, 0, 'write-through loses nothing');
 });
+
+test('a CDN answers its share at the edge; live content passes the origin\'s failures to everyone', () => {
+  const d = { nodes: [{ id: 'v', type: 'client', x: 0, y: 0, config: { rps: 1000000 } }, { id: 'c', type: 'cdn', x: 0, y: 0, config: { hitPct: 99 } }, { id: 's', type: 'server', x: 0, y: 0, config: { size: 'm5.large', count: 20 } }],
+    edges: [{ from: 'v', to: 'c' }, { from: 'c', to: 's' }] };
+  const r = simulate(d, lab);
+  assert.equal(Math.round(r.nodes.s.offered), 10000, '1% of 10 lakh reaches the servers');
+  assert.equal(Math.round(r.total.successPct), 100);
+  const cdn = lab.components.find((c) => c.type === 'cdn');
+  assert.ok(Math.abs(r.nodes.c.cost - 1000000 * 2628000 / 1e4 * cdn.pricePer10k) < 1e-3, 'billed per 10,000 requests');
+  const small = structuredClone(d); small.nodes[2].config.count = 5; // 3,000 of 10,000: 70% of misses fail
+  const cached = simulate(small, lab), live = simulate({ ...small, nodes: small.nodes.map((n) => (n.id === 'c' ? { ...n, config: { hitPct: 99, live: true } } : n)) }, lab);
+  assert.ok(cached.total.successPct > 99.9, `static content mostly survives: ${cached.total.successPct}`);
+  assert.ok(live.total.successPct < 60, `live content doesn't: ${live.total.successPct}`);
+});

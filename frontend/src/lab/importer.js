@@ -34,6 +34,7 @@ function options(comp,rest){
     take(/\swrite[- ]?through(?=\s)/,()=>{config.writePolicy="through"});
     take(/\s(?:fail(?: when down)?|fail-closed)(?=\s)/,()=>{config.onDown="fail"});
   }
+  if(comp.type==="cdn"){take(/\s(\d+)\s?%\s?(?:hits?|from the edge|edge|cached)(?=\s)|\shits?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.hitPct=+(a||b)});take(/\slive(?: video| stream)?(?=\s)/,()=>{config.live=true})}
   if(comp.type==="database")take(/\smulti[- ]?az(?=\s)/,()=>{config.multiAz=true});
   // sizes by id, with or without the "db." / "cache." prefix
   if(comp.sizes)for(const tok of s.trim().split(" ").filter(Boolean)){const z=comp.sizes.find(x=>x.id===tok||x.id==="db."+tok||x.id==="cache."+tok);if(z){config.size=z.id;s=s.replace(" "+tok+" "," ")}}

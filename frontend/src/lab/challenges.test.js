@@ -13,6 +13,7 @@ const solutions = {
   'flash-sale': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 14 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'read-heavy': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.xlarge', count: 5 }), N('k', 'cache', { size: 'cache.m5.large' }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'cache-restart': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 8 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.r5.2xlarge' })),
+  'ind-vs-pak': chain(N('v', 'client'), N('cdn', 'cdn'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 40 })),
   'lost-orders': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 6 }), N('k', 'cache', { size: 'cache.t3.medium', writePolicy: 'through' }), N('d', 'database', { size: 'db.r5.2xlarge' })),
 };
 
@@ -32,6 +33,15 @@ test('the challenge owns the traffic: Clients and fixed settings are overridden'
   assert.deepEqual(d.nodes.map((n) => n.config), [{ rps: 2500, pattern: 'steady' }, { rps: 2500, pattern: 'steady' }, { queriesPerRequest: 4 }, { hitPct: 85, writePct: 5 }]);
   const cheat = structuredClone(solutions['read-heavy']); cheat.nodes[2].config.queriesPerRequest = 1; cheat.nodes[3].config.hitPct = 99;
   assert.equal(runChallenge(cheat, lab, ch).stars, 3, 'lowering the load in the design changes nothing');
+});
+
+test('IND vs PAK: no CDN fails, too few servers or autoscaling from a few earn 2 stars, starting enough before the toss earns 3', () => {
+  const ch = lab.challenges.find((c) => c.id === 'ind-vs-pak');
+  const run = (server) => runChallenge(chain(N('v', 'client'), N('cdn', 'cdn'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', ...server })), lab, ch).stars;
+  assert.equal(run({ count: 30 }), 2, 'not enough for the last over');
+  assert.equal(run({ count: 5, maxCount: 50, autoscale: true }), 2, 'autoscaling is too slow for the toss');
+  assert.equal(run({ count: 20, maxCount: 50, autoscale: true }), 3, 'enough already running at the toss');
+  assert.equal(run({ count: 40 }), 3);
 });
 
 test('stars need the availability goal first, and chaos crashes do not count against you', () => {

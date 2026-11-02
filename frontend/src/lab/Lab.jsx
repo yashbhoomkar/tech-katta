@@ -32,7 +32,7 @@ const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
 const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
 
-const ICON={client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
+const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
 const level=u=>u>1+1e-9?"over":u>=0.7?"warn":"ok";
 
@@ -102,8 +102,10 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {comp.count&&<Field label={autoscaled(comp,cfg)?comp.autoscaling.minLabel:comp.count.label}><input type="number" min={comp.count.min} max={comp.count.max} value={cfg.count??comp.count.default} onChange={e=>{const v=Math.max(comp.count.min,Math.min(comp.count.max,Math.round(+e.target.value)||1));set({count:v,...(cfg.maxCount!==undefined&&cfg.maxCount<v?{maxCount:v}:{})})}}/></Field>}
 {autoscaled(comp,cfg)&&<><Field label={comp.autoscaling.maxLabel}><input type="number" min={cfg.count??comp.count.default} max={comp.count.max} value={scaleRange(comp,cfg)[1]} onChange={e=>set({maxCount:Math.max(cfg.count??comp.count.default,Math.min(comp.count.max,Math.round(+e.target.value)||1))})}/></Field>
 <p className="lab-note lab-note-tight">{comp.autoscaling.note}{comp.autoscaling.like?` ${comp.autoscaling.like}`:""}</p>{running&&run.scale?.[node.id]&&<dl className="lab-kv"><dt>Running now</dt><dd>{run.scale[node.id].n} instances{run.scale[node.id].pending.length?` · ${run.scale[node.id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</dd></dl>}</>}
+{comp.live&&<label className="lab-check"><input type="checkbox" checked={!!cfg.live} onChange={e=>set({live:e.target.checked})}/>{comp.live.label}</label>}
 {comp.multiAz&&<label className="lab-check"><input type="checkbox" checked={!!cfg.multiAz} onChange={e=>set({multiAz:e.target.checked})}/>{comp.multiAz.label}</label>}
 {comp.type==="apigw"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd><dt>Limit</dt><dd>{num(comp.limitRps)} req/s</dd></dl>}
+{comp.type==="cdn"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePer10k} per 10,000 requests</dd><dt>Limit</dt><dd>{num(comp.limitRps)} req/s</dd>{running&&r&&<><dt>To your servers</dt><dd>{num(r.served*(1-(cfg.hitPct??comp.hitPct.default)/100))}/s</dd></>}</dl>}
 {comp.type==="lb"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.hourly}/hour + ${comp.lcuHourly} per LCU-hour</dd><dt>1 LCU</dt><dd>≈ {num(comp.rpsPerLcu)} req/s</dd></dl>}
 {comp.type==="queue"&&<dl className="lab-kv"><dt>Price</dt><dd>${comp.pricePerMillion} per million requests</dd>{running&&r&&<><dt>Sent to workers</dt><dd>{num(r.delivered)}/s</dd><dt>Backlog</dt><dd className={run.backlog?.[node.id]>0?"warn":""}>{num(run.backlog?.[node.id]||0)} messages{run.backlog?.[node.id]>0&&r.delivered>r.served?` · clears in ${duration(run.backlog[node.id]/(r.delivered-r.served)/3600)}`:""}</dd></>}</dl>}
 <dl className="lab-kv">{comp.type!=="client"&&<><dt>Capacity</dt><dd>{r&&r.capacity!==Infinity?num(r.capacity)+(comp.type==="database"?" queries/s":comp.type==="cache"?" ops/s":comp.type==="queue"?" messages/s":" req/s"):"—"}</dd></>}<dt>Monthly cost</dt><dd>{usd(r?.cost||0)}</dd>
@@ -117,12 +119,12 @@ function Challenges({lab,progress,start,close}){return <div className="lab-menu"
 {lab.levels.map(l=><div key={l.id} className="lab-ch-level"><div className="lab-g">{l.label}</div><ul>{lab.challenges.filter(c=>c.level===l.id).map(c=><li key={c.id}><button type="button" onClick={()=>start(c.id)}><b>{c.title}</b><small>{c.brief}</small></button><Stars n={progress.stars[c.id]||0} max={c.stars.length}/></li>)}</ul></div>)}
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 const goalValue=(c)=>c.kind==="availability"?`${c.value.toFixed(2)}%`:c.kind==="cost"?`${usd(c.value)}/month`:c.kind==="noCrash"?(c.value?`${c.value} crash${c.value>1?"es":""}`:"none"):c.kind==="noLostWrites"?(c.value?`${num(c.value)} writes lost`:"none"):"";
-function Score({ch,res,next,close}){const ref=useRef(null);useEffect(()=>{ref.current?.focus();const k=e=>{if(e.key==="Escape")close()};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[]);// eslint-disable-line
+function Score({ch,res,next,close,more}){const ref=useRef(null);useEffect(()=>{ref.current?.focus();const k=e=>{if(e.key==="Escape")close()};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[]);// eslint-disable-line
 return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="lab-score" role="dialog" aria-modal="true" aria-label={`Score: ${ch.title}`}>
 <div className="lab-h">CHALLENGE SCORE</div><h3>{ch.title}</h3>{res.error?<p className="lab-warn">{res.error}</p>:<><div className="lab-score-stars"><Stars n={res.stars} max={res.max}/></div>
 <ul className="lab-goals">{res.checks.map((c,i)=><li key={i} className={c.ok?"ok":"no"}><b>{c.ok?"✓":"✕"}</b><span>{c.label}</span><small>{goalValue(c)}</small></li>)}</ul>
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.chaos?.length?", with the crash the challenge causes":""}.</p></>}
-<div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}</div></div></div>}
+<div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 // Import your own architecture: type it as text (one chain per line) or open an exported JSON file.
 function Import({lab,create,close}){const t=lab.import;const[text,setText]=useState("");const[file,setFile]=useState(null);const ref=useRef(null);useEffect(()=>{ref.current?.focus()},[]);
 const res=useMemo(()=>file?parseJSON(file,lab):text.trim()?parseText(text,lab):null,[text,file,lab]);const nodes=res?.design?.nodes.length||0,edges=res?.design?.edges.length||0;
@@ -141,7 +143,7 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
-function Canvas({lab,start}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
+function Canvas({lab,start,embedded}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
 const[store,setStore]=useState(()=>{const s=load(lab);if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
@@ -188,8 +190,9 @@ const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>{const dead=run.down[e.source]!==undefined||run.down[e.target]!==undefined;return{...e,animated:running&&!dead,className:dead?"dead":running?"live":""}}),[edges,running,downKey]);// eslint-disable-line
 return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 <header className="lab-top"><input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
-<button type="button" className="lab-btn ghost lab-designs-btn" onClick={()=>{setMenu(m=>!m);setChMenu(false)}} aria-expanded={menu}>Designs ▾</button>
+{embedded?<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.open} →</a>:<><button type="button" className="lab-btn ghost lab-designs-btn" onClick={()=>{setMenu(m=>!m);setChMenu(false)}} aria-expanded={menu}>Designs ▾</button>
 {lab.challenges&&<button type="button" className="lab-btn ghost lab-ch-btn" onClick={()=>{setChMenu(m=>!m);setMenu(false)}} aria-expanded={chMenu}>Challenges <span className="lab-star-count">★ {Object.entries(progress.stars).filter(([k])=>lab.challenges.some(c=>c.id===k)).reduce((a,[,v])=>a+v,0)}/{lab.challenges.reduce((a,c)=>a+c.stars.length,0)}</span></button>}
+</>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
 <div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{cents(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
 <label className="lab-speed"><span className="sr">Simulation speed</span><select value={speed} onChange={e=>setSpeed(+e.target.value)}>{SPEEDS.map(([l,h])=><option key={l} value={h}>{l}</option>)}</select></label>
@@ -207,9 +210,9 @@ fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapT
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
 <Inspector lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} score={scoreIt}/>
-{score&&ch&&<Score ch={ch} res={score} close={()=>setScore(null)} next={nextCh&&(()=>startChallenge(nextCh.id))}/>}
+{score&&ch&&<Score ch={ch} res={score} close={()=>setScore(null)} next={!embedded&&nextCh&&(()=>startChallenge(nextCh.id))} more={embedded}/>}
 </div></Ctx.Provider>}
 
-export default function Lab({challenge}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge,embedded}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the Lab" retry={go}/>;if(!st.lab)return <Loading label="Loading the Lab"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge} embedded={embedded}/></ReactFlowProvider></div>}

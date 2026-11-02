@@ -9,6 +9,7 @@
 // Stars, in order: the first one (availability) must be met for any star to count.
 //   availability {min}   % of user requests that eventually succeeded
 //   cost {max}           average monthly cost over the run, in dollars
+//   spend {max}          dollars spent during the run (for short, expensive evenings)
 //   noCrash {type?}      no component (of that type) crashed from overload; chaos crashes don't count
 //   noLostWrites         no writes lost by a write-back cache
 import { simulate, advance, newRun, runOptions, crashNow, catalogue } from './engine.js';
@@ -19,6 +20,7 @@ export function applyChallenge(design, ch) {
   return { ...design, nodes: design.nodes.map((n) => {
     if (n.type === 'client') return { ...n, config: { ...n.config, rps: ch.traffic.rps / clients, pattern: ch.traffic.pattern } };
     if (n.type === 'server' && f.queriesPerRequest) return { ...n, config: { ...n.config, queriesPerRequest: f.queriesPerRequest } };
+    if (n.type === 'cdn' && (f.cdnHitPct !== undefined || f.cdnLive !== undefined)) return { ...n, config: { ...n.config, ...(f.cdnHitPct !== undefined ? { hitPct: f.cdnHitPct } : {}), ...(f.cdnLive !== undefined ? { live: f.cdnLive } : {}) } };
     if (n.type === 'cache' && (f.hitPct !== undefined || f.writePct !== undefined)) return { ...n, config: { ...n.config, ...(f.hitPct !== undefined ? { hitPct: f.hitPct } : {}), ...(f.writePct !== undefined ? { writePct: f.writePct } : {}) } };
     return n;
   }) };
@@ -50,10 +52,11 @@ export function runChallenge(design, lab, ch) {
   const checks = ch.stars.map((s) => {
     if (s.kind === 'availability') return { ...s, ok: availability >= s.min - 1e-9, value: availability };
     if (s.kind === 'cost') return { ...s, ok: avgMonthly <= s.max + 1e-9, value: avgMonthly };
+    if (s.kind === 'spend') return { ...s, ok: cost <= s.max + 1e-9, value: cost };
     if (s.kind === 'noCrash') { const n = overload.filter((e) => !s.type || type[e.id] === s.type).length; return { ...s, ok: n === 0, value: n }; }
     if (s.kind === 'noLostWrites') return { ...s, ok: !(run.lost > 0), value: run.lost || 0 };
     return { ...s, ok: false, value: null };
   });
   const stars = checks[0]?.ok ? checks.filter((c) => c.ok).length : 0;
-  return { stars, max: checks.length, checks, availability, avgMonthly, crashes: overload.length, lost: run.lost || 0, events: run.events, run };
+  return { stars, max: checks.length, checks, availability, avgMonthly, spent: cost, crashes: overload.length, lost: run.lost || 0, events: run.events, run };
 }

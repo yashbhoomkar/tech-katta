@@ -123,7 +123,7 @@ test('GET /v1/lab returns the Lab catalogue', async () => {
   assert.equal(response.headers.get('access-control-allow-origin'), '*');
   const body = await response.json();
   assert.equal(body.budget, 200000);
-  assert.deepEqual(body.components.map((c) => c.type), ['client', 'apigw', 'lb', 'server', 'queue', 'cache', 'database']);
+  assert.deepEqual(body.components.map((c) => c.type), ['client', 'cdn', 'apigw', 'lb', 'server', 'queue', 'cache', 'database']);
   assert.ok(body.example.nodes.length >= 4);
 });
 
@@ -200,25 +200,6 @@ test('lab validation checks the cache behaviour fields, which are optional', () 
   assert.deepEqual(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { writePolicy: 'back', onDown: 'fail' } }); }).filter((p) => !p.includes('no traffic')), []);
 });
 
-test('site validation checks the landing challenge and fact, which are optional', () => {
-  const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
-  assert.deepEqual(check((s) => { delete s.challenge; delete s.fact; delete s.hero.primaryHref; }), []);
-  assert.ok(check((s) => { s.challenge.viewers[0][0] = 5; }).some((p) => p.includes('viewers must start at minute 0')));
-  assert.ok(check((s) => { s.challenge.viewers.reverse(); }).some((p) => p.includes('viewers must start at minute 0')));
-  assert.ok(check((s) => { s.challenge.viewers[3][1] = -1; }).some((p) => p.includes('never go below 0')));
-  assert.ok(check((s) => { s.challenge.viewers[2] = [10, 'many']; }).some((p) => p.includes('challenge.viewers[2][1]: needs a number')));
-  assert.ok(check((s) => { s.challenge.moments.push([999, 'Later']); }).some((p) => p.includes('minute 999 is outside the match')));
-  assert.ok(check((s) => { s.challenge.serverGbps = 0; }).some((p) => p.includes('serverGbps must be above 0')));
-  assert.ok(check((s) => { s.challenge.autoscale.target = 1.5; }).some((p) => p.includes('autoscale.target')));
-  assert.ok(check((s) => { s.challenge.autoscale.bootMinutes = 0.5; }).some((p) => p.includes('autoscale.bootMinutes')));
-  assert.ok(check((s) => { s.challenge.cdn.options[2].offload = 1; }).some((p) => p.includes('offload of cdn98')));
-  assert.ok(check((s) => { s.challenge.cdn.default = 'edge'; }).some((p) => p.includes('cdn.default')));
-  assert.ok(check((s) => { s.challenge.scaling.options[0].id = 'magic'; }).some((p) => p.includes('scaling.options[0].id')));
-  assert.ok(check((s) => { s.challenge.servers.default = 5000; }).some((p) => p.includes('challenge.servers needs')));
-  assert.ok(check((s) => { delete s.challenge.note; }).some((p) => p.includes('challenge.note')));
-  assert.ok(check((s) => { s.fact.points = []; }).some((p) => p.includes('fact.points')));
-});
-
 test('lab validation checks levels and challenges, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const C = (l, id) => l.challenges.find((c) => c.id === id);
@@ -226,7 +207,7 @@ test('lab validation checks levels and challenges, which are optional', () => {
   assert.ok(check((l) => { l.levels.push({ id: 'beginner', label: 'Again' }); }).some((p) => p.includes('levels must be')));
   assert.ok(check((l) => { C(l, 'flash-sale').level = 'expert'; }).some((p) => p.includes('unknown level expert')));
   assert.ok(check((l) => { C(l, 'flash-sale').id = 'one-server'; }).some((p) => p.includes('duplicate id one-server')));
-  assert.ok(check((l) => { C(l, 'flash-sale').traffic.rps = 900000; }).some((p) => p.includes('traffic.rps')));
+  assert.ok(check((l) => { C(l, 'flash-sale').traffic.rps = 90000000; }).some((p) => p.includes('traffic.rps')));
   assert.ok(check((l) => { C(l, 'flash-sale').traffic.pattern = 'tsunami'; }).some((p) => p.includes('traffic.pattern tsunami')));
   assert.ok(check((l) => { C(l, 'read-heavy').fixed.hitPct = 120; }).some((p) => p.includes('fixed.hitPct')));
   assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].minute = 77; }).some((p) => p.includes('chaos event')));
@@ -258,6 +239,22 @@ test('lab validation checks import aliases and copy, which are optional', () => 
   assert.ok(check((l) => { l.components[0].aliases = []; }).some((p) => p.includes('aliases must be')));
   assert.ok(check((l) => { l.components[I.cache].aliases.push('DB'); }).some((p) => p.includes('names both cache and database')));
   assert.ok(check((l) => { delete l.import.placeholder; }).some((p) => p.includes('import.placeholder')));
+});
+
+test('validation checks the CDN, the landing Lab and the IND vs PAK challenge settings', () => {
+  const labCheck = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
+  const siteCheck = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
+  const cdn = (l) => l.components.find((c) => c.type === 'cdn'), ivp = (l) => l.challenges.find((c) => c.id === 'ind-vs-pak');
+  assert.ok(labCheck((l) => { cdn(l).hitPct.max = 120; }).some((p) => p.includes('hitPct is missing or malformed')));
+  assert.ok(labCheck((l) => { delete cdn(l).pricePer10k; }).some((p) => p.includes('pricePer10k')));
+  assert.ok(labCheck((l) => { cdn(l).live.default = 'no'; }).some((p) => p.includes('live is missing or malformed')));
+  assert.ok(labCheck((l) => { ivp(l).fixed.cdnHitPct = 100; }).some((p) => p.includes('fixed.cdnHitPct')));
+  assert.ok(labCheck((l) => { ivp(l).fixed.cdnLive = 'yes'; }).some((p) => p.includes('fixed.cdnLive')));
+  assert.ok(labCheck((l) => { ivp(l).start.nodes.push({ id: 'c2', type: 'cdn', x: 0, y: 0, config: { live: 1 } }); }).some((p) => p.includes('live must be true or false')));
+  assert.ok(labCheck((l) => { ivp(l).stars[2] = { kind: 'spend', max: 0, label: 'x' }; }).some((p) => p.includes('spend max must be above 0')));
+  assert.ok(siteCheck((s) => { s.landingLab.challenge = 'world-cup'; }).some((p) => p.includes('landingLab.challenge world-cup')));
+  assert.ok(siteCheck((s) => { delete s.landingLab.note; }).some((p) => p.includes('landingLab.note')));
+  assert.deepEqual(siteCheck((s) => { delete s.landingLab; delete s.fact; }), []);
 });
 
 test('content preflight allows If-None-Match', async () => {
