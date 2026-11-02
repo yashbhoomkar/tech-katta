@@ -28,6 +28,11 @@
 //       Write-back: the cache acknowledges writes and flushes them to the database later, as fast as
 //       the database's spare capacity allows; a backlog of unflushed writes builds when it can't keep
 //       up. If the cache crashes, the backlog and the last `flushSeconds` of writes are lost.
+//   CDN: in front of everything (Clients → CDN → your edge). It answers `hitPct` % of requests from
+//     servers near the users; only the rest reach what it points at. Managed: it never crashes.
+//     Billed per 10,000 requests (data transfer is not counted, like everywhere in the Lab).
+//     `live` content (a live video stream: every chunk is new) can't be served until your servers have
+//     sent it, so their failures reach every viewer even though they carry only the misses.
 //   Queue: asynchronous. The caller's request is done once the message is stored; whatever the
 //     queue points at (workers) takes messages at its own capacity. When arrivals beat the workers
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
@@ -73,6 +78,7 @@ export const scaleRange = (comp, config) => { const lo = config?.count || 1; ret
 export function defaultConfig(comp) {
   if (comp.type === 'client') return { rps: comp.rps.default, ...(comp.patterns ? { pattern: comp.patterns[0].id } : {}) };
   if (comp.type === 'cache') return { size: comp.defaultSize, hitPct: comp.hitPct.default, writePct: comp.writePct.default };
+  if (comp.type === 'cdn') return { hitPct: comp.hitPct.default };
   if (comp.type === 'server') return { size: comp.defaultSize, count: comp.count.default, ...(comp.queriesPerRequest ? { queriesPerRequest: comp.queriesPerRequest.default } : {}) };
   if (comp.type === 'database') return { size: comp.defaultSize, multiAz: comp.multiAz.default };
   return {};
@@ -80,7 +86,7 @@ export function defaultConfig(comp) {
 
 export function capacity(comp, config = {}) {
   if (comp.type === 'client') return Infinity;
-  if (comp.type === 'apigw' || comp.type === 'lb' || comp.type === 'queue') return comp.limitRps;
+  if (comp.type === 'apigw' || comp.type === 'lb' || comp.type === 'queue' || comp.type === 'cdn') return comp.limitRps;
   if (comp.type === 'cache') return sizeOf(comp, config).ops;
   if (comp.type === 'server') return sizeOf(comp, config).rps * (config.count || 1);
   if (comp.type === 'database') return sizeOf(comp, config).qps;
@@ -89,6 +95,7 @@ export function capacity(comp, config = {}) {
 
 // Monthly cost in USD; the API Gateway is billed for the requests it serves.
 export function monthlyCost(comp, config = {}, servedRps = 0) {
+  if (comp.type === 'cdn') return (servedRps * SECONDS_PER_MONTH / 1e4) * comp.pricePer10k;
   if (comp.type === 'apigw' || comp.type === 'queue') return (servedRps * SECONDS_PER_MONTH / 1e6) * comp.pricePerMillion;
   if (comp.type === 'lb') return (comp.hourly + Math.max(1, servedRps / comp.rpsPerLcu) * comp.lcuHourly) * HOURS_PER_MONTH;
   if (comp.type === 'cache') return sizeOf(comp, config).hourly * HOURS_PER_MONTH;
@@ -102,6 +109,7 @@ export function summary(comp, config = {}) {
   if (comp.type === 'client') { const p = patternOf(comp, config); return `${(config.rps ?? 0).toLocaleString('en-US')} req/s${p && !steady(comp, config) ? ` · ${p.short}` : ''}`; }
   if (comp.type === 'apigw') return `limit ${comp.limitRps.toLocaleString('en-US')} req/s`;
   if (comp.type === 'lb') return 'spreads load evenly';
+  if (comp.type === 'cdn') return `${pct(comp, config, 'hitPct')}% from the edge`;
   if (comp.type === 'queue') return 'async · workers pull';
   if (comp.type === 'cache') return `${sizeOf(comp, config).id} · ${pct(comp, config, 'hitPct')}% hits · ${pct(comp, config, 'writePct')}% writes`;
   if (comp.type === 'server') { const auto = autoscaled(comp, config), [lo, hi] = scaleRange(comp, config); return `${auto ? config.live ?? lo : config.count || 1} × ${sizeOf(comp, config).id}${auto ? ` · up to ${hi}` : ''}${comp.queriesPerRequest ? ` · ${qpr(comp, config)} q/req` : ''}`; }
@@ -139,6 +147,8 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
     let sent = r.served;
     // A cache's traffic to the database: read misses plus writes (write-through) or plus what it can
     // flush (write-back); everything when it is down and falls through.
+    // A CDN passes on only the requests it can't answer from the edge.
+    if (node.type === 'cdn') sent = r.served * (1 - pct(comp, node.config, 'hitPct') / 100);
     let toDb = null;
     if (node.type === 'cache') {
       const c = flow(node), dbs = groups(id).find((g) => byId.get(g[0]).type === 'database') || [];
@@ -175,9 +185,10 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
     if (node.type !== 'queue') for (const group of groups(id)) {
       // A cache only waits for the database on the queries it passes on: read misses, plus writes
       // unless it is write-back (those are acknowledged by the cache); all of them while it is down.
-      const share = c && byId.get(group[0]).type === 'database' ? (r.down && c.fallThrough ? 1 : c.readMiss + (c.back ? 0 : c.w)) : 1;
+      const share = node.type === 'cdn' ? 1 - pct(cat.cdn, node.config, 'hitPct') / 100 : c && byId.get(group[0]).type === 'database' ? (r.down && c.fallThrough ? 1 : c.readMiss + (c.back ? 0 : c.w)) : 1;
+      const okShare = node.type === 'cdn' && node.config?.live ? 1 : share;
       path += share * group.reduce((s, to) => s + res[to].pathMs, 0) / group.length;
-      ok *= 1 - share + share * group.reduce((s, to) => s + res[to].success, 0) / group.length;
+      ok *= 1 - okShare + okShare * group.reduce((s, to) => s + res[to].success, 0) / group.length;
     }
     r.pathMs = path; r.success = ok;
   }

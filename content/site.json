@@ -27,16 +27,16 @@
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
     "description": "Short, structured notes on how systems work, and a Lab where you build one and watch it break.",
-    "primary": "Open the Lab",
-    "secondary": "Read the library",
+    "primary": "Dashboard",
+    "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
-    "primaryHref": "/dashboard/#lab",
-    "secondaryHref": "/dashboard/#concepts"
+    "primaryHref": "/dashboard/",
+    "secondaryHref": "#ind-vs-pak"
   },
   "topics": {
-    "eyebrow": "03 / LIBRARY",
+    "eyebrow": "02 / LIBRARY",
     "title": "Concepts · Components · Interview Questions",
     "index": "INDEX: ARCHITECTURAL FOUNDATIONS",
     "cards": [
@@ -246,6 +246,11 @@
         null
       ],
       [
+        "did-you-know",
+        "Did you know",
+        null
+      ],
+      [
         "lab",
         "Lab",
         null
@@ -263,82 +268,8 @@
     ]
   },
   "example": "zotato",
-  "challenge": {
-    "eyebrow": "01 / TRY IT",
-    "title": "Can your design survive IND vs PAK?",
-    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. You run the video servers tonight. Set them up and play the match.",
-    "viewers": [[0, 0.3], [8, 0.4], [10, 0.5], [14, 1.4], [30, 1.5], [60, 1.7], [90, 2.0], [100, 2.2], [105, 1.1], [118, 1.1], [122, 1.8], [150, 2.0], [180, 2.4], [192, 2.6], [198, 3.5], [203, 3.4], [206, 1.2], [215, 0.4]],
-    "moments": [[10, "Toss"], [100, "Break"], [122, "Chase"], [198, "Last over"]],
-    "mbps": 2,
-    "serverGbps": 10,
-    "serverHourly": 0.5,
-    "autoscale": {
-      "target": 0.7,
-      "bootMinutes": 5,
-      "scaleInMinutes": 10
-    },
-    "cdn": {
-      "label": "CDN",
-      "options": [
-        {
-          "id": "none",
-          "label": "No CDN",
-          "desc": "Every viewer streams from your servers.",
-          "offload": 0
-        },
-        {
-          "id": "cdn90",
-          "label": "CDN, 90% from the edge",
-          "desc": "Servers near the viewers keep the video; 1 request in 10 reaches yours.",
-          "offload": 0.9
-        },
-        {
-          "id": "cdn98",
-          "label": "CDN, 98% from the edge",
-          "desc": "A well-tuned CDN: 1 request in 50 reaches your servers.",
-          "offload": 0.98
-        }
-      ],
-      "default": "cdn98"
-    },
-    "servers": {
-      "label": "Most servers you can run",
-      "min": 10,
-      "max": 2000,
-      "step": 10,
-      "default": 100
-    },
-    "scaling": {
-      "label": "Scaling",
-      "options": [
-        {
-          "id": "auto",
-          "label": "Autoscale",
-          "desc": "Start small and add servers as viewers arrive. New ones take 5 minutes to boot."
-        },
-        {
-          "id": "prewarm",
-          "label": "Start them all before the toss",
-          "desc": "Pay for every server from the start, so nothing has to boot mid-match."
-        }
-      ],
-      "default": "auto"
-    },
-    "play": "Play the match",
-    "replay": "Play again",
-    "axis": "Live viewers (crore) · your servers' limit",
-    "survived": "You survived. Every viewer got the last over.",
-    "failed": "Buffering for {crore} crore viewers around the {moment}. {minutes} minutes with buffering in all.",
-    "noCdn": "Without a CDN the last over needs {servers} servers sending {tbps} Tbps from one origin. Nobody does that: add a CDN.",
-    "statViewers": "Peak viewers",
-    "statServers": "Most servers running",
-    "statCost": "Your servers tonight",
-    "cta": "Build it properly in the Lab",
-    "ctaHref": "/dashboard/#lab",
-    "note": "Viewer curve: a typical close evening match, peaking at the 3.5 crore record (ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster). The app here is made up. 2 Mbps a viewer, 10 Gbps and about $0.50 an hour a server, and CDN shares are rules of thumb, not measurements."
-  },
   "fact": {
-    "eyebrow": "02 / DID YOU KNOW",
+    "eyebrow": "DID YOU KNOW",
     "title": "One of the busiest websites on Earth is an adult video site.",
     "desc": "It reported about 115 million visits a day in 2019, and in 2018 it sent 4,403 petabytes of video: roughly 147 GB every second, busiest late at night. Here is how a site like that stays up.",
     "points": [
@@ -357,7 +288,7 @@
     ],
     "source": "Figures from the site's own published yearly reports for 2018 and 2019.",
     "link": "Try a traffic spike yourself",
-    "linkHref": "#challenge"
+    "linkHref": "#lab/ind-vs-pak"
   },
   "learn": {
     "eyebrow": "LEARN",
@@ -375,13 +306,6 @@
             "ref": "concepts/api-types",
             "title": "Read: APIs, the main types and where to use each",
             "why": "Every design starts with how its parts talk."
-          },
-          {
-            "id": "ind-vs-pak",
-            "kind": "landing",
-            "ref": "/#challenge",
-            "title": "Play: can your design survive IND vs PAK?",
-            "why": "Two minutes on why traffic spikes break systems."
           },
           {
             "id": "lab:run",
@@ -417,6 +341,13 @@
             "ref": "quick-notes",
             "title": "Read: the numbers behind a design",
             "why": "Latencies and quick arithmetic for sizing."
+          },
+          {
+            "id": "ind-vs-pak",
+            "kind": "challenge",
+            "ref": "ind-vs-pak",
+            "title": "Challenge: survive IND vs PAK",
+            "why": "A CDN, a live stream and 3.5 crore people at once."
           },
           {
             "id": "flash-sale",
@@ -484,7 +415,7 @@
       {
         "target": ".tabs",
         "title": "Everything is in these tabs",
-        "text": "Concepts, Components and Interview Questions are the library, and Quick Notes are short reads. Learn is where you are now."
+        "text": "Concepts, Components and Interview Questions are the library; Quick Notes and Did you know are short reads. Learn is where you are now."
       },
       {
         "target": ".tabs .tab[href=\"#lab\"]",
@@ -529,5 +460,15 @@
         "text": "Start new designs, duplicate one with fresh credit, import your own architecture as text, or export a design as JSON."
       }
     ]
+  },
+  "landingLab": {
+    "eyebrow": "01 / TRY IT",
+    "title": "Can your design survive IND vs PAK?",
+    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Here is the real Lab with that match loaded. Add what's missing, press Score, and see if the stream holds from the toss to the last over.",
+    "challenge": "ind-vs-pak",
+    "loading": "Loading the Lab",
+    "open": "Open in the full Lab",
+    "openHref": "/dashboard/#lab/ind-vs-pak",
+    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb."
   }
 }

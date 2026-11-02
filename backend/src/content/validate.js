@@ -63,13 +63,8 @@ const SITE = {
   brand: { name: 'text', descriptor: 'text', footer: 'text', footerNote: 'text' },
   nav: [{ tuple: ['text', 'text'] }],
   hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', 'primaryHref?': 'text', secondary: 'text', 'secondaryHref?': 'text', figure: 'text', status: 'text', caption: 'text' },
-  // Landing page: the IND vs PAK challenge (frontend/src/challenge.js) and the "did you know" fact.
-  'challenge?': { eyebrow: 'text', title: 'text', desc: 'text', viewers: [{ tuple: ['number', 'number'] }], moments: [{ tuple: ['number', 'text'] }], mbps: 'number', serverGbps: 'number', serverHourly: 'number',
-    autoscale: { target: 'number', bootMinutes: 'number', scaleInMinutes: 'number' },
-    cdn: { label: 'text', default: 'text', options: [{ id: 'text', label: 'text', desc: 'text', offload: 'number' }] },
-    servers: { label: 'text', min: 'number', max: 'number', step: 'number', default: 'number' },
-    scaling: { label: 'text', default: 'text', options: [{ id: { oneOf: new Set(['auto', 'prewarm']) }, label: 'text', desc: 'text' }] },
-    play: 'text', replay: 'text', axis: 'text', survived: 'text', failed: 'text', noCdn: 'text', statViewers: 'text', statServers: 'text', statCost: 'text', cta: 'text', ctaHref: 'text', note: 'text' },
+  // The IND vs PAK Lab on the landing page (a Lab challenge) and the "did you know" dashboard tab.
+  'landingLab?': { eyebrow: 'text', title: 'text', desc: 'text', challenge: 'text', loading: 'text', open: 'text', openHref: 'text', note: 'text' },
   'learn?': { eyebrow: 'text', title: 'text', desc: 'text', levels: [{ id: 'text', label: 'text', desc: 'text', steps: [{ id: 'text', kind: { oneOf: new Set(['article', 'landing', 'lab', 'note', 'challenge']) }, ref: 'text', title: 'text', why: 'text' }] }], done: 'text', open: 'text', stars: 'text', progress: 'text', levelNote: 'text' },
   'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', dashboard: [{ target: 'text', title: 'text', text: 'text' }], lab: [{ target: 'text', title: 'text', text: 'text' }] },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
@@ -81,23 +76,6 @@ const SITE = {
   example: 'text',
 };
 const EXAMPLE = { name: 'text', kind: 'text', text: 'text', parts: [{ tuple: ['text', 'text'] }] };
-// The numbers the challenge simulates with: a viewer curve from minute 0 with minutes going up,
-// sensible rates, CDN shares from 0 to under 1, a servers range, and defaults that exist.
-function checkChallenge(ch, problems) {
-  const at = 'site.json: challenge';
-  const pts = list(ch.viewers).filter((p) => Array.isArray(p) && p.every(isNumber));
-  if (pts.length && (pts[0][0] !== 0 || pts.some((p, i) => p[1] < 0 || (i > 0 && p[0] < pts[i - 1][0])))) problems.push(`${at}.viewers must start at minute 0, keep minutes in order and never go below 0`);
-  const end = pts.length ? pts.at(-1)[0] : 0;
-  for (const m of list(ch.moments)) if (Array.isArray(m) && isNumber(m[0]) && (m[0] < 0 || m[0] > end)) problems.push(`${at}.moments: minute ${m[0]} is outside the match`);
-  for (const k of ['mbps', 'serverGbps', 'serverHourly']) if (isNumber(ch[k]) && !(ch[k] > 0)) problems.push(`${at}.${k} must be above 0`);
-  const a = ch.autoscale || {};
-  if (isNumber(a.target) && !(a.target > 0 && a.target <= 1)) problems.push(`${at}.autoscale.target must be above 0 and at most 1`);
-  for (const k of ['bootMinutes', 'scaleInMinutes']) if (isNumber(a[k]) && !(a[k] >= 1 && Number.isInteger(a[k]))) problems.push(`${at}.autoscale.${k} must be a whole number of minutes, at least 1`);
-  for (const o of list(ch.cdn?.options)) if (o && isNumber(o.offload) && !(o.offload >= 0 && o.offload < 1)) problems.push(`${at}.cdn: offload of ${o.id} must be from 0 to under 1`);
-  for (const k of ['cdn', 'scaling']) if (ch[k] && !list(ch[k].options).some((o) => o && o.id === ch[k].default)) problems.push(`${at}.${k}.default is not one of its options`);
-  const r = ch.servers || {};
-  if ([r.min, r.max, r.step, r.default].every(isNumber) && !(r.min >= 1 && r.min <= r.default && r.default <= r.max && r.step >= 1)) problems.push(`${at}.servers needs 1 ≤ min ≤ default ≤ max and a step of at least 1`);
-}
 export function validateSite(site, examples, problems = []) {
   if (!site) { problems.push('site.json: missing'); return problems; }
   shape(site, SITE, 'site.json', problems);
@@ -107,7 +85,6 @@ export function validateSite(site, examples, problems = []) {
   for (const s of list(site.dashboard?.sections)) if (Array.isArray(s) && s[2] && !cards.has(s[2])) problems.push(`site.json: dashboard section ${s[0]} points at unknown card ${s[2]}`);
   const navNames = new Set(list(site.nav).map((n) => n && n[0]));
   for (const l of list(site.footer?.links)) if (!navNames.has(l)) problems.push(`site.json: footer link ${l} is not in nav`);
-  if (site.challenge) checkChallenge(site.challenge, problems);
   if (!examples || !examples[site.example]) problems.push(`site.json: example "${site.example}" has no examples/<id>.json`);
   for (const [id, ex] of Object.entries(examples || {})) shape(ex, EXAMPLE, `examples/${id}.json`, problems);
   return problems;
@@ -134,6 +111,7 @@ const LAB_TYPES = {
   lb: { latencyMs: positive, limitRps: positive, hourly: positive, lcuHourly: nonNegative, rpsPerLcu: positive },
   cache: { latencyMs: positive, sizes: sizesOf('ops'), defaultSize: isText, hitPct: percent, writePct: percent, crash: crashPolicy(false) },
   queue: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
+  cdn: { latencyMs: positive, limitRps: positive, pricePer10k: nonNegative, hitPct: percent, live: (l) => l && typeof l === 'object' && isText(l.label) && typeof l.default === 'boolean' },
 };
 // Optional fields (phase 2, time-based traffic). Traffic patterns on Clients: [hour, multiplier]
 // points from hour 0 to hour 24, hours never going back, multipliers 0 to 1 (1 = the rps setting)
@@ -183,7 +161,7 @@ export function validateLab(lab, problems = []) {
 }
 
 // Challenges (optional): levels [{id, label}], and challenges with a scenario the simulator can play.
-const STAR_KINDS = new Set(['availability', 'cost', 'noCrash', 'noLostWrites']);
+const STAR_KINDS = new Set(['availability', 'cost', 'spend', 'noCrash', 'noLostWrites']);
 function checkChallenges(lab, problems) {
   const at = 'lab.json';
   const levels = list(lab.levels);
@@ -203,10 +181,11 @@ function checkChallenges(lab, problems) {
     if (!t || !isNumber(t.rps) || !rps || t.rps < rps.min || t.rps > rps.max) problems.push(`${where}: traffic.rps must be inside the Clients range`);
     if (!t || !list(byType.client?.patterns).some((p) => p && p.id === t.pattern)) problems.push(`${where}: traffic.pattern ${t && t.pattern} is not a Clients pattern`);
     const f = ch.fixed ?? {};
-    for (const [k, c] of [['queriesPerRequest', byType.server], ['hitPct', byType.cache], ['writePct', byType.cache]]) {
-      const r = c?.[k];
+    for (const [k, c, key] of [['queriesPerRequest', byType.server], ['hitPct', byType.cache], ['writePct', byType.cache], ['cdnHitPct', byType.cdn, 'hitPct']]) {
+      const r = c?.[key || k];
       if (f[k] !== undefined && !(isNumber(f[k]) && r && f[k] >= r.min && f[k] <= r.max)) problems.push(`${where}: fixed.${k} must be inside its range`);
     }
+    if (f.cdnLive !== undefined && (typeof f.cdnLive !== 'boolean' || !byType.cdn)) problems.push(`${where}: fixed.cdnLive must be true or false, with a CDN in the catalogue`);
     for (const c of ch.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < ch.hours * 60 && byType[c.type]?.crash)) problems.push(`${where}: a chaos event needs a minute (multiple of 5, inside the run) and a type that can crash`);
     validateDesign(ch.start && { name: ch.title, ...ch.start }, lab, `${where} start`, problems);
     const stars = list(ch.stars);
@@ -214,7 +193,7 @@ function checkChallenges(lab, problems) {
     for (const st of stars) {
       if (!st || !STAR_KINDS.has(st.kind) || !isText(st.label)) { problems.push(`${where}: each star needs a known kind and a label`); continue; }
       if (st.kind === 'availability' && !(isNumber(st.min) && st.min > 0 && st.min <= 100)) problems.push(`${where}: availability min must be above 0 and at most 100`);
-      if (st.kind === 'cost' && !(isNumber(st.max) && st.max > 0)) problems.push(`${where}: cost max must be above 0`);
+      if ((st.kind === 'cost' || st.kind === 'spend') && !(isNumber(st.max) && st.max > 0)) problems.push(`${where}: ${st.kind} max must be above 0`);
       if (st.kind === 'noCrash' && st.type !== undefined && !byType[st.type]) problems.push(`${where}: noCrash type ${st.type} is not a component`);
     }
   });
@@ -243,6 +222,7 @@ export function validateDesign(design, lab, at, problems = []) {
       if (cfg.autoscale !== undefined && typeof cfg.autoscale !== 'boolean') problems.push(`${where}: autoscale must be true or false`);
       if (isNumber(cfg.maxCount) && cfg.maxCount < (cfg.count ?? c.count?.default)) problems.push(`${where}: maxCount is below count`);
     }
+    if (c.type === 'cdn') { inRange('hitPct', c.hitPct); if (cfg.live !== undefined && typeof cfg.live !== 'boolean') problems.push(`${where}: live must be true or false`); }
     if (c.type === 'cache') {
       inRange('hitPct', c.hitPct); inRange('writePct', c.writePct);
       for (const key of Object.keys(CHOICES)) if (cfg[key] !== undefined && !(c[key] && Array.isArray(c[key].options) && c[key].options.some((o) => o && o.id === cfg[key]))) problems.push(`${where}: unknown ${key} ${cfg[key]}`);
@@ -267,6 +247,7 @@ export function validateDesign(design, lab, at, problems = []) {
 export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
+  if (site && site.landingLab && lab && Array.isArray(lab.challenges) && !lab.challenges.some((c) => c && c.id === site.landingLab.challenge)) problems.push(`site.json: landingLab.challenge ${site.landingLab.challenge} is not a Lab challenge`);
   // Learning paths point at real things: articles, dashboard sections, Lab challenges and levels.
   if (site && site.learn && Array.isArray(site.learn.levels)) {
     const arts = new Set(list(articles).map((a) => a && `${a.section}/${a.slug}`)), secs = new Set(list(site.dashboard?.sections).map((s) => s && s[0]));

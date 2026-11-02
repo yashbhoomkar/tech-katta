@@ -37,7 +37,7 @@ test('mistakes are reported by line, and values are kept inside the catalogue ra
   assert.deepEqual(r.errors.map((e) => e.line), [3, 4, 5]);
   assert.match(r.errors[0].message, /Spaceship/);
   const t = Object.fromEntries(r.design.nodes.map((n) => [n.type, n.config]));
-  assert.equal(t.client.rps, 200000);
+  assert.equal(t.client.rps, 10000000);
   assert.equal(t.server.count, 50);
   assert.equal(parseText('', lab).errors.length, 1);
 });

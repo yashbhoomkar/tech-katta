@@ -16,7 +16,7 @@
         "label": "Requests per second (at the busiest moment)",
         "default": 1000,
         "min": 1,
-        "max": 200000
+        "max": 10000000
       },
       "patterns": [
         {
@@ -39,10 +39,38 @@
           "desc": "The full rate for 15 minutes from 8 pm, a fifth of it the rest of the day.",
           "short": "8 pm flash sale",
           "points": [[0, 0.2], [20, 0.2], [20, 1], [20.25, 1], [20.25, 0.2], [24, 0.2]]
+        },
+        {
+          "id": "match",
+          "label": "IND vs PAK match night",
+          "short": "IND vs PAK",
+          "desc": "Quiet all day, a jump at the 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm.",
+          "points": [[0, 0.01], [18.5, 0.03], [19, 0.086], [19.133, 0.114], [19.167, 0.143], [19.233, 0.4], [19.5, 0.429], [20, 0.486], [20.5, 0.571], [20.667, 0.629], [20.75, 0.314], [20.967, 0.314], [21.033, 0.514], [21.5, 0.571], [22, 0.686], [22.2, 0.743], [22.3, 1], [22.383, 0.971], [22.433, 0.343], [22.583, 0.114], [23.5, 0.03], [24, 0.01]]
         }
       ],
       "like": "The crowd at the door: everyone who wants something from you, all at once.",
       "aliases": ["clients", "client", "users", "user", "browsers", "browser", "mobile app", "apps"]
+    },
+    {
+      "type": "cdn",
+      "name": "CDN",
+      "group": "Edge",
+      "desc": "CloudFront. Servers in cities near your users keep copies of what they ask for (video chunks, images, menus) and answer from there; only what they don't have reaches your servers. Scales by itself and never crashes. Billed per request; data transfer is not counted in the Lab.",
+      "like": "A kirana shop in every lane. Most things people need are already on its shelf; only rare items come all the way from the warehouse.",
+      "aliases": ["cdn", "cloudfront", "edge", "akamai"],
+      "latencyMs": 5,
+      "limitRps": 20000000,
+      "pricePer10k": 0.009,
+      "hitPct": {
+        "label": "Requests answered from the edge (%)",
+        "default": 95,
+        "min": 0,
+        "max": 99
+      },
+      "live": {
+        "label": "Live content: every chunk is new (live video)",
+        "default": false
+      }
     },
     {
       "type": "apigw",
@@ -484,6 +512,81 @@
         {
           "kind": "noCrash",
           "label": "Nothing crashes"
+        }
+      ]
+    },
+    {
+      "id": "ind-vs-pak",
+      "level": "intermediate",
+      "title": "Survive IND vs PAK",
+      "brief": "3.5 crore people watch India play Pakistan live, all at once. Every viewer's player asks for a 4-second chunk of video every 4 seconds: 87.5 lakh requests a second in the last over. Keep the stream up from 7 pm to 11 pm.",
+      "hint": "No server farm takes 87.5 lakh requests a second. A CDN answers 99 of every 100 near the viewers, so size your servers for the rest, at the last over. But this is live video: when your servers fail, every viewer buffers, and everyone arrives at the toss at once, faster than autoscaling can boot servers.",
+      "hours": 4,
+      "startHour": 19,
+      "traffic": {
+        "rps": 8750000,
+        "pattern": "match"
+      },
+      "fixed": {
+        "cdnHitPct": 99,
+        "cdnLive": true
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 260,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin",
+            "type": "server",
+            "x": 520,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 10,
+              "queriesPerRequest": 1
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99,
+          "label": "At least 99% of video requests succeed"
+        },
+        {
+          "kind": "noCrash",
+          "label": "No server crashes"
+        },
+        {
+          "kind": "availability",
+          "min": 99.95,
+          "label": "No buffering at the toss: 99.95% succeed"
         }
       ]
     },
