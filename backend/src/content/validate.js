@@ -71,6 +71,7 @@ const SITE = {
     scaling: { label: 'text', default: 'text', options: [{ id: { oneOf: new Set(['auto', 'prewarm']) }, label: 'text', desc: 'text' }] },
     play: 'text', replay: 'text', axis: 'text', survived: 'text', failed: 'text', noCdn: 'text', statViewers: 'text', statServers: 'text', statCost: 'text', cta: 'text', ctaHref: 'text', note: 'text' },
   'learn?': { eyebrow: 'text', title: 'text', desc: 'text', levels: [{ id: 'text', label: 'text', desc: 'text', steps: [{ id: 'text', kind: { oneOf: new Set(['article', 'landing', 'lab', 'note', 'challenge']) }, ref: 'text', title: 'text', why: 'text' }] }], done: 'text', open: 'text', stars: 'text', progress: 'text', levelNote: 'text' },
+  'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', dashboard: [{ target: 'text', title: 'text', text: 'text' }], lab: [{ target: 'text', title: 'text', text: 'text' }] },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
@@ -164,6 +165,7 @@ export function validateLab(lab, problems = []) {
     types.add(c.type);
     for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
     if (c.like !== undefined && !isText(c.like)) problems.push(`${where}: like must be text`);
+    if (c.aliases !== undefined && !(Array.isArray(c.aliases) && c.aliases.length && c.aliases.every(isText))) problems.push(`${where}: aliases must be a list of names`);
     for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
     for (const [key, ok] of Object.entries(OPTIONAL_FIELDS[c.type] || {})) if (c[key] !== undefined && !ok(c[key])) problems.push(`${where}: ${key} is malformed`);
     if (c.type === 'server' && autoscaling(c.autoscaling) && range(c.count) && c.autoscaling.defaultMax > c.count.max) problems.push(`${where}: autoscaling.defaultMax is above count.max`);
@@ -172,6 +174,11 @@ export function validateLab(lab, problems = []) {
   for (const type of REQUIRED_TYPES) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
   validateDesign(lab.example, lab, `${at} example`, problems);
   if (lab.levels !== undefined || lab.challenges !== undefined) checkChallenges(lab, problems);
+  // Import (optional): the copy of the "Import your own architecture" dialog.
+  if (lab.import !== undefined) shape(lab.import, { title: 'text', intro: 'text', placeholder: 'text', options: ['text'], file: 'text', create: 'text', cancel: 'text', export: 'text', menu: 'text', summary: 'text' }, `${at}: import`, problems);
+  // An alias may name only one kind of component, or imports would be ambiguous.
+  const owner = new Map();
+  for (const c of list(lab.components)) for (const a of list(c && c.aliases)) { const k = String(a).toLowerCase().trim(); if (owner.has(k) && owner.get(k) !== c.type) problems.push(`${at}: alias "${a}" names both ${owner.get(k)} and ${c.type}`); owner.set(k, c && c.type); }
   return problems;
 }
 

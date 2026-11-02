@@ -252,6 +252,14 @@ test('site validation checks the learning paths point at real articles, sections
   assert.ok(check((s) => { step(s, 'lab:run').kind = 'video'; }).some((p) => p.includes('kind: must be one of')));
 });
 
+test('lab validation checks import aliases and copy, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }).filter((p) => p.startsWith('lab.json')); };
+  assert.deepEqual(check((l) => { delete l.import; for (const c of l.components) delete c.aliases; }), []);
+  assert.ok(check((l) => { l.components[0].aliases = []; }).some((p) => p.includes('aliases must be')));
+  assert.ok(check((l) => { l.components[I.cache].aliases.push('DB'); }).some((p) => p.includes('names both cache and database')));
+  assert.ok(check((l) => { delete l.import.placeholder; }).some((p) => p.includes('import.placeholder')));
+});
+
 test('content preflight allows If-None-Match', async () => {
   const response = await get('/v1/lab', { method: 'OPTIONS' });
   assert.equal(response.status, 204);
