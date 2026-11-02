@@ -468,5 +468,66 @@
     "stars": "stars",
     "progress": "{done} of {total} steps done",
     "levelNote": "At Advanced, an article's longer sections start open."
+  },
+  "tour": {
+    "button": "Tour",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "done": "Done",
+    "dashboard": [
+      {
+        "target": ".learn-levels",
+        "title": "Start with your level",
+        "text": "Pick Beginner, Intermediate or Advanced. Each is a short path of reading, trying and solving, and it ticks itself off as you go."
+      },
+      {
+        "target": ".tabs",
+        "title": "Everything is in these tabs",
+        "text": "Concepts, Components and Interview Questions are the library, and Quick Notes are short reads. Learn is where you are now."
+      },
+      {
+        "target": ".tabs .tab[href=\"#lab\"]",
+        "title": "The Lab",
+        "text": "Build a system from cloud components, send traffic through it and watch what breaks. Challenges give you up to three stars each."
+      },
+      {
+        "target": ".d-tour",
+        "title": "Come back to this tour",
+        "text": "Press Tour any time. Your progress and designs stay in this browser."
+      }
+    ],
+    "lab": [
+      {
+        "target": ".lab-pal",
+        "title": "Components",
+        "text": "Drag a component onto the canvas, or tap it. Each has a realistic price and limit; select it to see what it is like in real life."
+      },
+      {
+        "target": ".lab-canvas",
+        "title": "Your design",
+        "text": "Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Click an arrow to remove it."
+      },
+      {
+        "target": ".lab-btn.run",
+        "title": "Run traffic",
+        "text": "Send the Clients' requests through your design on a simulated clock. Load, latency and crashes show on every component."
+      },
+      {
+        "target": ".lab-budget",
+        "title": "$200,000 of credit",
+        "text": "Every design starts with virtual AWS credit, spent at its hourly cost while traffic runs."
+      },
+      {
+        "target": ".lab-ch-btn",
+        "title": "Challenges",
+        "text": "Scenarios with goals and up to three stars each, from one overloaded server to a cache that crashes at dinner."
+      },
+      {
+        "target": ".lab-designs-btn",
+        "title": "Your designs",
+        "text": "Start new designs, duplicate one with fresh credit, import your own architecture as text, or export a design as JSON."
+      }
+    ]
   }
 }

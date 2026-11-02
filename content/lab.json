@@ -41,7 +41,8 @@
           "points": [[0, 0.2], [20, 0.2], [20, 1], [20.25, 1], [20.25, 0.2], [24, 0.2]]
         }
       ],
-      "like": "The crowd at the door: everyone who wants something from you, all at once."
+      "like": "The crowd at the door: everyone who wants something from you, all at once.",
+      "aliases": ["clients", "client", "users", "user", "browsers", "browser", "mobile app", "apps"]
     },
     {
       "type": "apigw",
@@ -51,7 +52,8 @@
       "latencyMs": 10,
       "limitRps": 10000,
       "pricePerMillion": 3.5,
-      "like": "The security desk of an office building. It checks who you are, points you to the right floor, and stops letting people in when the lobby is full."
+      "like": "The security desk of an office building. It checks who you are, points you to the right floor, and stops letting people in when the lobby is full.",
+      "aliases": ["api gateway", "gateway", "apigw"]
     },
     {
       "type": "lb",
@@ -63,7 +65,8 @@
       "hourly": 0.0239,
       "lcuHourly": 0.008,
       "rpsPerLcu": 300,
-      "like": "Booths at a toll plaza. Cars spread across every open booth, so no single lane jams."
+      "like": "Booths at a toll plaza. Cars spread across every open booth, so no single lane jams.",
+      "aliases": ["load balancer", "lb", "alb", "elb", "nginx"]
     },
     {
       "type": "server",
@@ -126,7 +129,8 @@
         "note": "Keeps each instance near 60% load. A new instance takes 4 minutes to boot, so a sudden spike still hits the instances already running. Instances are removed after load has stayed low for 15 minutes. You pay for the instances that are running.",
         "like": "Opening more ticket counters at the station when the rush starts. It helps, but a new clerk takes a few minutes to sit down."
       },
-      "like": "Cooks in a kitchen. Each one handles a few orders at a time; more cooks, or faster ones, handle a bigger rush."
+      "like": "Cooks in a kitchen. Each one handles a few orders at a time; more cooks, or faster ones, handle a bigger rush.",
+      "aliases": ["server", "servers", "service", "app server", "backend", "api", "worker", "workers", "ec2"]
     },
     {
       "type": "queue",
@@ -136,7 +140,8 @@
       "latencyMs": 8,
       "limitRps": 100000,
       "pricePerMillion": 0.4,
-      "like": "The token system at a bank. Customers take a token and wait; tellers call the next token when they are free."
+      "like": "The token system at a bank. Customers take a token and wait; tellers call the next token when they are free.",
+      "aliases": ["queue", "sqs", "kafka", "rabbitmq", "stream"]
     },
     {
       "type": "cache",
@@ -216,7 +221,8 @@
           }
         ]
       },
-      "like": "The water bottle on your desk. It is one sip away, so you only walk to the kitchen when it is empty. Write-back is a shopkeeper noting sales in a notebook and copying them into the ledger later: quick, until the notebook is lost."
+      "like": "The water bottle on your desk. It is one sip away, so you only walk to the kitchen when it is empty. Write-back is a shopkeeper noting sales in a notebook and copying them into the ledger later: quick, until the notebook is lost.",
+      "aliases": ["cache", "redis", "memcached", "elasticache"]
     },
     {
       "type": "database",
@@ -262,7 +268,8 @@
         "downMinutes": 30,
         "failoverMinutes": 2
       },
-      "like": "The shop's ledger: the one record everyone trusts, so every change has to be written into it carefully."
+      "like": "The shop's ledger: the one record everyone trusts, so every change has to be written into it carefully.",
+      "aliases": ["database", "db", "postgres", "postgresql", "mysql", "rds", "aurora"]
     }
   ],
   "example": {
@@ -888,5 +895,22 @@
       "id": "advanced",
       "label": "Advanced"
     }
-  ]
+  ],
+  "import": {
+    "title": "Import your own architecture",
+    "intro": "Type your system one chain per line, joining components with ->. The same name on two lines is the same component; add :name to tell two apart (Server:orders, Server:workers).",
+    "placeholder": "Clients 3000 rush -> Load Balancer -> Server:orders x4 auto up to 12 -> Cache 85% hits -> Database db.m5.large multi-az\nServer:orders -> Queue -> Server:workers x2 -> Database",
+    "options": [
+      "Clients: a number is requests a second; rush, sale or steady sets the pattern",
+      "Server: x4 instances, a size such as m5.large, auto up to 12, 3 queries",
+      "Cache: 85% hits, 10% writes, write-back",
+      "Database: a size such as m5.xlarge, multi-az"
+    ],
+    "file": "Or open a JSON file exported from the Lab",
+    "create": "Create design",
+    "cancel": "Cancel",
+    "export": "Export JSON",
+    "menu": "Import…",
+    "summary": "{nodes} components, {edges} arrows"
+  }
 }
