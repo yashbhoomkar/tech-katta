@@ -200,6 +200,25 @@ test('lab validation checks the cache behaviour fields, which are optional', () 
   assert.deepEqual(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { writePolicy: 'back', onDown: 'fail' } }); }).filter((p) => !p.includes('no traffic')), []);
 });
 
+test('site validation checks the landing challenge and fact, which are optional', () => {
+  const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
+  assert.deepEqual(check((s) => { delete s.challenge; delete s.fact; delete s.hero.primaryHref; }), []);
+  assert.ok(check((s) => { s.challenge.viewers[0][0] = 5; }).some((p) => p.includes('viewers must start at minute 0')));
+  assert.ok(check((s) => { s.challenge.viewers.reverse(); }).some((p) => p.includes('viewers must start at minute 0')));
+  assert.ok(check((s) => { s.challenge.viewers[3][1] = -1; }).some((p) => p.includes('never go below 0')));
+  assert.ok(check((s) => { s.challenge.viewers[2] = [10, 'many']; }).some((p) => p.includes('challenge.viewers[2][1]: needs a number')));
+  assert.ok(check((s) => { s.challenge.moments.push([999, 'Later']); }).some((p) => p.includes('minute 999 is outside the match')));
+  assert.ok(check((s) => { s.challenge.serverGbps = 0; }).some((p) => p.includes('serverGbps must be above 0')));
+  assert.ok(check((s) => { s.challenge.autoscale.target = 1.5; }).some((p) => p.includes('autoscale.target')));
+  assert.ok(check((s) => { s.challenge.autoscale.bootMinutes = 0.5; }).some((p) => p.includes('autoscale.bootMinutes')));
+  assert.ok(check((s) => { s.challenge.cdn.options[2].offload = 1; }).some((p) => p.includes('offload of cdn98')));
+  assert.ok(check((s) => { s.challenge.cdn.default = 'edge'; }).some((p) => p.includes('cdn.default')));
+  assert.ok(check((s) => { s.challenge.scaling.options[0].id = 'magic'; }).some((p) => p.includes('scaling.options[0].id')));
+  assert.ok(check((s) => { s.challenge.servers.default = 5000; }).some((p) => p.includes('challenge.servers needs')));
+  assert.ok(check((s) => { delete s.challenge.note; }).some((p) => p.includes('challenge.note')));
+  assert.ok(check((s) => { s.fact.points = []; }).some((p) => p.includes('fact.points')));
+});
+
 test('content preflight allows If-None-Match', async () => {
   const response = await get('/v1/lab', { method: 'OPTIONS' });
   assert.equal(response.status, 204);

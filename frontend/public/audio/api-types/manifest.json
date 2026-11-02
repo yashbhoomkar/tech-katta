@@ -1,0 +1,222 @@
+{
+"voice": "af_heart",
+"model": "kokoro-v1.0",
+"chunks": [
+{
+"text": "APIs: the main types, and which one to use where. Seven ways programs talk to each other, what each one is good at, and how to choose, explained through one food delivery app.",
+"file": "1035b56dd2f7.mp3"
+},
+{
+"text": "In 30 seconds. Two questions decide most API choices: who starts the conversation, and does the caller wait for the answer? Default to REST. Pick something else only when you can name the reason.",
+"file": "37ab42753021.mp3"
+},
+{
+"text": "Graph Q L when screens need different data. g R P C between your own services. WebSockets or S S E for live updates. Webhooks for events from other companies. Queues for work that can happen later.",
+"file": "35791dc5c131.mp3"
+},
+{
+"text": "Whatever the type: check who is calling, limit the rate, paginate lists, make retries safe, and plan for versions.",
+"file": "93667737c7be.mp3"
+},
+{
+"text": "The example system: Zotato, a food delivery app. This article explains each idea through one made-up system: Zotato, a food delivery app.",
+"file": "9a9e4e5378a4.mp3"
+},
+{
+"text": "Customers order, restaurants cook, riders deliver, and an outside payment provider takes the money. Apps: Customer app (Android, iOS, web), Restaurant app, Rider app.",
+"file": "ca113f7221a8.mp3"
+},
+{
+"text": "Services: Orders, Payments, Dispatch (matches riders to orders), Notifications, Invoices. Outside Zotato: Payment provider, Restaurants' own billing systems.",
+"file": "4d1ceecf93a3.mp3"
+},
+{
+"text": "Figure 1. The four patterns behind every API type, inside Zotato. Request/response: the app asks and waits.",
+"file": "46ea38c44871.mp3"
+},
+{
+"text": "Open connection: messages flow without new requests (both ways with WebSockets, server to client only with S S E). Callback: the payment provider calls Zotato. Queue: the Order service hands work off and does not wait.",
+"file": "08aa6e48a35d.mp3"
+},
+{
+"text": "The seven types",
+"file": "9adaabb17501.mp3"
+},
+{
+"text": "An API is a contract: what one program can ask another for, in what format, and what comes back.",
+"file": "f5a80d56d068.mp3"
+},
+{
+"text": "REST and g R P C are two styles of request/response: REST names things (slash orders slash 42), RPC names actions (AuthorizePayment).",
+"file": "d320885c52bd.mp3"
+},
+{
+"text": "REST. Resources at URLs, HTTP methods to act on them, Jason back. Use it for: Public and partner APIs, CRUD, anything other teams integrate with.",
+"file": "c9741eab1ef8.mp3"
+},
+{
+"text": "Avoid it for: Screens that need data from many places at once; they end up making many calls. In Zotato: Restaurants' billing systems call GET slash orders status equals new to see orders waiting to be accepted.",
+"file": "9dcd92aded0a.mp3"
+},
+{
+"text": "Graph Q L. One endpoint and a typed schema; the client asks for exactly the fields it wants. Use it for: Frontends whose screens each need a different slice of data from several services.",
+"file": "0c90e6385b9f.mp3"
+},
+{
+"text": "Avoid it for: Simple CRUD, or public APIs where plain HTTP caching matters. In Zotato: The home screen gets nearby restaurants, offers and your last three orders in one query.",
+"file": "c60b6786c03d.mp3"
+},
+{
+"text": "g R P C. Call a function on another service. The contract lives in a dot proto file; messages are binary, over HTTP 2. Use it for: Fast calls between your own services, including services written in different languages.",
+"file": "fe675e70c469.mp3"
+},
+{
+"text": "Avoid it for: Browsers, which need g R P C Web and a proxy (or a REST gateway in front), and partners who expect plain HTTP and Jason.",
+"file": "76cd23b8214b.mp3"
+},
+{
+"text": "In Zotato: At checkout, the Order service calls Payment (AuthorizePayment) and Dispatch (FindRider) while you wait.",
+"file": "e41d7b5d04f3.mp3"
+},
+{
+"text": "WebSockets. One connection stays open and both sides send messages whenever they like. Use it for: Chat, live location, games: frequent small messages in both directions.",
+"file": "04de7b22d347.mp3"
+},
+{
+"text": "Avoid it for: Cases where only the server talks (use S S E) or updates are rare (just poll). In Zotato: The rider app sends its location every few seconds and receives new delivery jobs on the same connection.",
+"file": "39d9ee2e7d9b.mp3"
+},
+{
+"text": "Server-sent events (S S E). The server keeps an HTTP response open and writes events down it as they happen. Use it for: Live feeds, notifications and progress, where the client only listens.",
+"file": "f68d2aeb34fa.mp3"
+},
+{
+"text": "Avoid it for: Two-way traffic, or binary data. In Zotato: Order tracking: \"Restaurant accepted\", \"Rider picked up\", \"Arriving in 4 minutes\". Cancel is a normal REST call.",
+"file": "f55f510f32a5.mp3"
+},
+{
+"text": "Webhooks. Another company calls a URL you gave them whenever something happens on their side. Use it for: Hearing about events in systems you do not own, without asking every few seconds.",
+"file": "c741496baac6.mp3"
+},
+{
+"text": "Avoid it for: Anything that needs an answer right now. In Zotato: The payment provider posts payment.captured to Zotato, which then marks the order paid.",
+"file": "f6f0121d8575.mp3"
+},
+{
+"text": "Queues and event streams. The producer drops a message on a queue or log and moves on; consumers process it when ready. Use it for: Work that can wait, absorbing traffic spikes, and one event feeding many consumers.",
+"file": "f34f8e086b72.mp3"
+},
+{
+"text": "Avoid it for: Cases where the caller needs the result now. In Zotato: order.placed on Kafka feeds the SMS, the restaurant's ticket and the invoice. If invoicing is down for ten minutes, orders still go through.",
+"file": "c379dfb00ce5.mp3"
+},
+{
+"text": "You will also meet SOAP (XML messages described by a W S D L file) in banks, insurers and government systems. Integrate with it; rarely choose it.",
+"file": "7d5d89dcaf9a.mp3"
+},
+{
+"text": "Which one to use where",
+"file": "c20333a7ed67.mp3"
+},
+{
+"text": "Figure 2. Ask from the top and stop at the first yes.",
+"file": "257251f71f7e.mp3"
+},
+{
+"text": "The dot walks three Zotato cases: the order SMS can happen later, so it goes on a queue; on the tracking screen the server pushes and the app only listens, so S S E; the restaurant partner API matches none of the earlier questions, so REST.",
+"file": "e86370cb79b7.mp3"
+},
+{
+"text": "Others will call it: REST, documented with an OpenAPI spec. (Zotato's restaurant API.) Each screen needs a different mix of data: Graph Q L, or one REST endpoint per screen. (Zotato's home screen.)",
+"file": "0d156cd3aec6.mp3"
+},
+{
+"text": "Your own services call each other and speed matters: g R P C. (Order to Payment.) The client only listens: S S E. Both sides talk often: WebSockets. (Tracking; the rider app.)",
+"file": "15a05ba33aae.mp3"
+},
+{
+"text": "You would otherwise keep asking another company whether something is done: webhooks. (Payments.) Nobody needs the result right now, or load comes in bursts: a queue. (SMS, tickets, invoices.)",
+"file": "7496d9d03e84.mp3"
+},
+{
+"text": "Figure 3. One Zotato order uses almost every type. 1 The home screen loads with Graph Q L. 2 The app places the order with REST. 3 The Order API calls Payments and Dispatch over g R P C while you wait.",
+"file": "3d38d7b8cd46.mp3"
+},
+{
+"text": "4 The payment provider confirms with a webhook. 5 and 6 order.placed goes to Kafka, which feeds the SMS, the restaurant ticket and the invoice. 7 Your tracking screen updates over S S E.",
+"file": "3b2852c9e033.mp3"
+},
+{
+"text": "8 The rider app and Dispatch talk over a WebSocket.",
+"file": "b4f0eaeb797f.mp3"
+},
+{
+"text": "Designing Zotato's REST API",
+"file": "b0fd48e92aab.mp3"
+},
+{
+"text": "Name things, not actions: plural nouns such as slash orders and slash restaurants. slash placeOrder becomes POST slash orders.",
+"file": "4c4de7c828fc.mp3"
+},
+{
+"text": "Path for what the request cannot do without (slash restaurants slash id slash menu), query string for optional filters and pages ( area, after), body for the data you send.",
+"file": "7d480cb7053a.mp3"
+},
+{
+"text": "Know what a retry does: GET, PUT and DELETE are safe to repeat; POST is not, so POST slash orders takes an idempotency key.",
+"file": "4a91b7df503c.mp3"
+},
+{
+"text": "Status codes: 4-hundreds means the caller has to change something, 5-hundreds means the server failed and a retry may work.",
+"file": "557c80a35448.mp3"
+},
+{
+"text": "The endpoints: list restaurants filtered by area, get one restaurant's menu, place an order, track an order, change its delivery note, cancel it before the restaurant accepts, and page through a user's order history.",
+"file": "d7cc75b74657.mp3"
+},
+{
+"text": "Figure 4. Why POST slash orders carries an idempotency key. The first reply is lost on a patchy network, so the app sends the same request again with the same key.",
+"file": "b272562fe323.mp3"
+},
+{
+"text": "The Order API finds the key and returns the order it already made instead of creating, and charging for, a second one.",
+"file": "6acac4361263.mp3"
+},
+{
+"text": "What every API needs",
+"file": "2bede2513b47.mp3"
+},
+{
+"text": "Auth: who is calling, and may they touch this record? A customer reads order 123 only if it is theirs.",
+"file": "37338700bb01.mp3"
+},
+{
+"text": "Rate limits that answer 429: Zotato's OTP login allows a few requests per phone number per hour, because every SMS costs money. Pagination for lists that grow: order history uses cursors.",
+"file": "449a6c92b88c.mp3"
+},
+{
+"text": "Idempotency keys on POST, so a retried payment is not charged twice. Stateless servers: each request carries its token and cursor, so Zotato can add servers at dinner time.",
+"file": "6c4a237f343a.mp3"
+},
+{
+"text": "Consistency: the same parameter names and error shape on every endpoint. A versioning plan: old app versions stay on phones for months, so slash v1 keeps working after slash v2 ships.",
+"file": "0aa871535c17.mp3"
+},
+{
+"text": "In an interview",
+"file": "31235b0a12da.mp3"
+},
+{
+"text": "Spend about five minutes on the API, then move on. Say REST unless the question gives you a reason not to. Name the pattern first: who calls whom, and does the caller wait?",
+"file": "61d38dc6f44e.mp3"
+},
+{
+"text": "List the endpoints users call; mention internal g R P C in the high-level design.",
+"file": "8c2dcff1dbe6.mp3"
+},
+{
+"text": "Give one cost for each choice: pagination for REST, query limits for Graph Q L, open connections for WebSockets, idempotency for webhooks and queues.",
+"file": "009f0b476e36.mp3"
+}
+]
+}

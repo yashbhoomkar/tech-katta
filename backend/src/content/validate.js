@@ -61,7 +61,15 @@ export const VISUALS = new Set(['cap', 'path', 'steps']);
 const SITE = {
   brand: { name: 'text', descriptor: 'text', footer: 'text', footerNote: 'text' },
   nav: [{ tuple: ['text', 'text'] }],
-  hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', secondary: 'text', figure: 'text', status: 'text', caption: 'text' },
+  hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', 'primaryHref?': 'text', secondary: 'text', 'secondaryHref?': 'text', figure: 'text', status: 'text', caption: 'text' },
+  // Landing page: the IND vs PAK challenge (frontend/src/challenge.js) and the "did you know" fact.
+  'challenge?': { eyebrow: 'text', title: 'text', desc: 'text', viewers: [{ tuple: ['number', 'number'] }], moments: [{ tuple: ['number', 'text'] }], mbps: 'number', serverGbps: 'number', serverHourly: 'number',
+    autoscale: { target: 'number', bootMinutes: 'number', scaleInMinutes: 'number' },
+    cdn: { label: 'text', default: 'text', options: [{ id: 'text', label: 'text', desc: 'text', offload: 'number' }] },
+    servers: { label: 'text', min: 'number', max: 'number', step: 'number', default: 'number' },
+    scaling: { label: 'text', default: 'text', options: [{ id: { oneOf: new Set(['auto', 'prewarm']) }, label: 'text', desc: 'text' }] },
+    play: 'text', replay: 'text', axis: 'text', survived: 'text', failed: 'text', noCdn: 'text', statViewers: 'text', statServers: 'text', statCost: 'text', cta: 'text', ctaHref: 'text', note: 'text' },
+  'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
   numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },
@@ -70,6 +78,23 @@ const SITE = {
   example: 'text',
 };
 const EXAMPLE = { name: 'text', kind: 'text', text: 'text', parts: [{ tuple: ['text', 'text'] }] };
+// The numbers the challenge simulates with: a viewer curve from minute 0 with minutes going up,
+// sensible rates, CDN shares from 0 to under 1, a servers range, and defaults that exist.
+function checkChallenge(ch, problems) {
+  const at = 'site.json: challenge';
+  const pts = list(ch.viewers).filter((p) => Array.isArray(p) && p.every(isNumber));
+  if (pts.length && (pts[0][0] !== 0 || pts.some((p, i) => p[1] < 0 || (i > 0 && p[0] < pts[i - 1][0])))) problems.push(`${at}.viewers must start at minute 0, keep minutes in order and never go below 0`);
+  const end = pts.length ? pts.at(-1)[0] : 0;
+  for (const m of list(ch.moments)) if (Array.isArray(m) && isNumber(m[0]) && (m[0] < 0 || m[0] > end)) problems.push(`${at}.moments: minute ${m[0]} is outside the match`);
+  for (const k of ['mbps', 'serverGbps', 'serverHourly']) if (isNumber(ch[k]) && !(ch[k] > 0)) problems.push(`${at}.${k} must be above 0`);
+  const a = ch.autoscale || {};
+  if (isNumber(a.target) && !(a.target > 0 && a.target <= 1)) problems.push(`${at}.autoscale.target must be above 0 and at most 1`);
+  for (const k of ['bootMinutes', 'scaleInMinutes']) if (isNumber(a[k]) && !(a[k] >= 1 && Number.isInteger(a[k]))) problems.push(`${at}.autoscale.${k} must be a whole number of minutes, at least 1`);
+  for (const o of list(ch.cdn?.options)) if (o && isNumber(o.offload) && !(o.offload >= 0 && o.offload < 1)) problems.push(`${at}.cdn: offload of ${o.id} must be from 0 to under 1`);
+  for (const k of ['cdn', 'scaling']) if (ch[k] && !list(ch[k].options).some((o) => o && o.id === ch[k].default)) problems.push(`${at}.${k}.default is not one of its options`);
+  const r = ch.servers || {};
+  if ([r.min, r.max, r.step, r.default].every(isNumber) && !(r.min >= 1 && r.min <= r.default && r.default <= r.max && r.step >= 1)) problems.push(`${at}.servers needs 1 ≤ min ≤ default ≤ max and a step of at least 1`);
+}
 export function validateSite(site, examples, problems = []) {
   if (!site) { problems.push('site.json: missing'); return problems; }
   shape(site, SITE, 'site.json', problems);
@@ -79,6 +104,7 @@ export function validateSite(site, examples, problems = []) {
   for (const s of list(site.dashboard?.sections)) if (Array.isArray(s) && s[2] && !cards.has(s[2])) problems.push(`site.json: dashboard section ${s[0]} points at unknown card ${s[2]}`);
   const navNames = new Set(list(site.nav).map((n) => n && n[0]));
   for (const l of list(site.footer?.links)) if (!navNames.has(l)) problems.push(`site.json: footer link ${l} is not in nav`);
+  if (site.challenge) checkChallenge(site.challenge, problems);
   if (!examples || !examples[site.example]) problems.push(`site.json: example "${site.example}" has no examples/<id>.json`);
   for (const [id, ex] of Object.entries(examples || {})) shape(ex, EXAMPLE, `examples/${id}.json`, problems);
   return problems;

@@ -6,6 +6,7 @@
   "date": "31 Oct 2026",
   "title": "APIs: the main types, and which one to use where",
   "dek": "Seven ways programs talk to each other, what each one is good at, and how to choose, explained through one food delivery app.",
+  "audio": true,
   "body": [
     {
       "t": "tldr",
