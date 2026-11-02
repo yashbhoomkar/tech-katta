@@ -8,33 +8,35 @@
   "nav": [
     [
       "Concepts",
-      "#concepts"
+      "/dashboard/#concepts"
     ],
     [
       "Components",
-      "#components"
+      "/dashboard/#components"
     ],
     [
       "Interview Questions",
-      "#problems"
+      "/dashboard/#interview-questions"
     ],
     [
-      "Quick Notes",
-      "#notes"
+      "Lab",
+      "/dashboard/#lab"
     ]
   ],
   "hero": {
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
-    "description": "Concepts, components and interview questions. For each one: how it works, where it fails, and what you trade away by using it.",
-    "primary": "Dashboard",
-    "secondary": "Quick Notes",
+    "description": "Short, structured notes on how systems work, and a Lab where you build one and watch it break.",
+    "primary": "Open the Lab",
+    "secondary": "Read the library",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
-    "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read."
+    "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
+    "primaryHref": "/dashboard/#lab",
+    "secondaryHref": "/dashboard/"
   },
   "topics": {
-    "eyebrow": "01 / TECHNICAL LIBRARY",
+    "eyebrow": "03 / LIBRARY",
     "title": "Concepts · Components · Interview Questions",
     "index": "INDEX: ARCHITECTURAL FOUNDATIONS",
     "cards": [
@@ -71,7 +73,7 @@
     ]
   },
   "notes": {
-    "eyebrow": "02 / QUICK NOTES",
+    "eyebrow": "QUICK NOTES",
     "title": "Quick Notes",
     "desc": "Short notes on one system at a time: how it works, where it breaks, and the trade-off it makes. Each one is a few minutes' read.",
     "items": [
@@ -103,7 +105,7 @@
     "all": "See all quick notes"
   },
   "numbers": {
-    "eyebrow": "03 / NUMBERS WORTH KNOWING",
+    "eyebrow": "NUMBERS WORTH KNOWING",
     "title": "The numbers behind a design.",
     "desc": "Rough latencies, and the arithmetic that turns a requirement into requests per second and terabytes. Orders of magnitude, not benchmarks.",
     "figure": "FIG. 02 — WHERE THE TIME GOES, LOG SCALE",
@@ -252,8 +254,104 @@
       "Concepts",
       "Components",
       "Interview Questions",
-      "Quick Notes"
+      "Lab"
     ]
   },
-  "example": "zotato"
+  "example": "zotato",
+  "challenge": {
+    "eyebrow": "01 / TRY IT",
+    "title": "Can your design survive IND vs PAK?",
+    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. You run the video servers tonight. Set them up and play the match.",
+    "viewers": [[0, 0.3], [8, 0.4], [10, 0.5], [14, 1.4], [30, 1.5], [60, 1.7], [90, 2.0], [100, 2.2], [105, 1.1], [118, 1.1], [122, 1.8], [150, 2.0], [180, 2.4], [192, 2.6], [198, 3.5], [203, 3.4], [206, 1.2], [215, 0.4]],
+    "moments": [[10, "Toss"], [100, "Break"], [122, "Chase"], [198, "Last over"]],
+    "mbps": 2,
+    "serverGbps": 10,
+    "serverHourly": 0.5,
+    "autoscale": {
+      "target": 0.7,
+      "bootMinutes": 5,
+      "scaleInMinutes": 10
+    },
+    "cdn": {
+      "label": "CDN",
+      "options": [
+        {
+          "id": "none",
+          "label": "No CDN",
+          "desc": "Every viewer streams from your servers.",
+          "offload": 0
+        },
+        {
+          "id": "cdn90",
+          "label": "CDN, 90% from the edge",
+          "desc": "Servers near the viewers keep the video; 1 request in 10 reaches yours.",
+          "offload": 0.9
+        },
+        {
+          "id": "cdn98",
+          "label": "CDN, 98% from the edge",
+          "desc": "A well-tuned CDN: 1 request in 50 reaches your servers.",
+          "offload": 0.98
+        }
+      ],
+      "default": "cdn98"
+    },
+    "servers": {
+      "label": "Most servers you can run",
+      "min": 10,
+      "max": 2000,
+      "step": 10,
+      "default": 100
+    },
+    "scaling": {
+      "label": "Scaling",
+      "options": [
+        {
+          "id": "auto",
+          "label": "Autoscale",
+          "desc": "Start small and add servers as viewers arrive. New ones take 5 minutes to boot."
+        },
+        {
+          "id": "prewarm",
+          "label": "Start them all before the toss",
+          "desc": "Pay for every server from the start, so nothing has to boot mid-match."
+        }
+      ],
+      "default": "auto"
+    },
+    "play": "Play the match",
+    "replay": "Play again",
+    "axis": "Live viewers (crore) · your servers' limit",
+    "survived": "You survived. Every viewer got the last over.",
+    "failed": "Buffering for {crore} crore viewers around the {moment}. {minutes} minutes with buffering in all.",
+    "noCdn": "Without a CDN the last over needs {servers} servers sending {tbps} Tbps from one origin. Nobody does that: add a CDN.",
+    "statViewers": "Peak viewers",
+    "statServers": "Most servers running",
+    "statCost": "Your servers tonight",
+    "cta": "Build it properly in the Lab",
+    "ctaHref": "/dashboard/#lab",
+    "note": "Viewer curve: a typical close evening match, peaking at the 3.5 crore record (ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster). The app here is made up. 2 Mbps a viewer, 10 Gbps and about $0.50 an hour a server, and CDN shares are rules of thumb, not measurements."
+  },
+  "fact": {
+    "eyebrow": "02 / DID YOU KNOW",
+    "title": "One of the busiest websites on Earth is an adult video site.",
+    "desc": "It reported about 115 million visits a day in 2019, and in 2018 it sent 4,403 petabytes of video: roughly 147 GB every second, busiest late at night. Here is how a site like that stays up.",
+    "points": [
+      [
+        "Video is cut into chunks",
+        "Each video is split into pieces a few seconds long, in several qualities. Any server can send any piece, and a player can switch quality between pieces when the network slows."
+      ],
+      [
+        "The CDN does the heavy lifting",
+        "Servers in hundreds of cities keep the popular pieces close to viewers. Almost every request ends there; the company's own servers see a small share."
+      ],
+      [
+        "Plan for the peak, not the average",
+        "Traffic is far higher at night than in the afternoon. Capacity is sized for the busiest hour, and the CDN absorbs the surges."
+      ]
+    ],
+    "source": "Figures from the site's own published yearly reports for 2018 and 2019.",
+    "link": "Try a traffic spike yourself",
+    "linkHref": "#challenge"
+  }
 }
