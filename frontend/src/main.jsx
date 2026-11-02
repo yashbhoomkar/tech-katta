@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import"./styles.css";
+import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./styles.css";
 // FIG. 01 — one 8s loop: the producer hashes each key to a partition, the broker appends it to that partition's log, and each consumer in the group reads its own partition in offset order. On narrow screens it scales down and a zoom button opens it full-screen.
 const LOOP="8s",BLUE="#2855d9",SLOT={E:["#fff","#fff","#8a94a3"],W:["#fff",BLUE,BLUE],C:[BLUE,BLUE,"#fff"]};
 const cell=(o,r,w,c)=>w?[[0,"E",o],[w,"W",r],[c,"C",r],[.92,"E",o]]:[[0,"E",o],[.92,"E",o]];
@@ -38,5 +38,5 @@ function App(){const[open,setOpen]=useState(false);return <><header className="h
 </main><footer className="footer"><div className="wrap foot"><div><b><i/>{c.footer.label}</b><p>{c.brand.footer}<br/>{c.brand.footerNote}</p></div><nav>{c.footer.links.map(x=><a key={x} href={c.nav.find(n=>n[0]===x)?.[1]??"#"+x.toLowerCase()}>{x}</a>)}</nav><small>{c.footer.updated}: {__BUILD_DATE__}</small></div></footer></>}
 // Content comes from the API; render the page once it has loaded.
 let c;const root=createRoot(document.getElementById("root"));
-function boot(){root.render(<Loading/>);getJSON("/v1/site").then(site=>{c=site;root.render(<React.StrictMode><App/></React.StrictMode>)}).catch(()=>root.render(<LoadError retry={boot}/>))}
+function boot(){root.render(<Loading/>);getJSON("/v1/site").then(site=>{c=site;root.render(<React.StrictMode><Boundary><App/></Boundary></React.StrictMode>)}).catch(()=>root.render(<LoadError retry={boot}/>))}
 boot();

@@ -68,3 +68,9 @@ test("a design keeps its challenge only while the catalogue has that challenge",
   assert.equal(cleanDesign({nodes:[],edges:[],challenge:"gone"},lab,"x").challenge,undefined);
   assert.equal(cleanDesign({nodes:[],edges:[],challenge:{}},lab,"x").challenge,undefined);
 });
+
+test("huge or absurd saved designs are cut down (QA M5, L7)",()=>{
+  const out=cleanDesign({nodes:Array.from({length:500},(_,i)=>({id:"n"+i,type:"server",x:1e308,y:-5})),edges:[]},lab,"x");
+  assert.equal(out.nodes.length,200);
+  assert.deepEqual([out.nodes[0].x,out.nodes[0].y],[0,-5]);
+});
