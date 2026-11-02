@@ -9,7 +9,9 @@ const live=steps.filter(s=>visible(document.querySelector(s.target)));const[i,se
 const step=live[i];
 useLayoutEffect(()=>{if(!step)return;const el=document.querySelector(step.target);if(!el)return;el.scrollIntoView({block:"nearest",inline:"nearest"});
 const place=()=>{const r=el.getBoundingClientRect();setBox({x:r.left,y:r.top,w:r.width,h:r.height})};place();addEventListener("resize",place);addEventListener("scroll",place,true);return()=>{removeEventListener("resize",place);removeEventListener("scroll",place,true)}},[step]);// eslint-disable-line
-useEffect(()=>{card.current?.focus();const k=e=>{if(e.key==="Escape")onClose();if(e.key==="ArrowRight")setI(v=>Math.min(v+1,live.length-1));if(e.key==="ArrowLeft")setI(v=>Math.max(v-1,0))};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[i]);// eslint-disable-line
+// Focus moves to the card once it is placed, and Tab stays inside it (QA M9).
+useEffect(()=>{if(box)card.current?.focus()},[i,!!box]);// eslint-disable-line
+useEffect(()=>{const k=e=>{if(e.key==="Tab"&&card.current){const f=[...card.current.querySelectorAll("button")],at=f.indexOf(document.activeElement);if(e.shiftKey&&at<=0){e.preventDefault();f.at(-1).focus()}else if(!e.shiftKey&&(at===-1||at===f.length-1)){e.preventDefault();f[0].focus()}return}if(e.key==="Escape")onClose();if(e.key==="ArrowRight")setI(v=>Math.min(v+1,live.length-1));if(e.key==="ArrowLeft")setI(v=>Math.max(v-1,0))};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[i]);// eslint-disable-line
 useEffect(()=>{if(!live.length)onClose()},[]);// eslint-disable-line
 if(!step||!box)return null;
 // Card below the target if there is room, else above; on narrow screens a sheet at the bottom.
