@@ -7,7 +7,8 @@
 // ":label" to tell two of the same kind apart; the same kind and label on several lines is the same
 // component. The rest of the item sets its options; anything not understood is reported, not guessed.
 // The design is then laid out left to right and repaired against the catalogue (store.js cleanDesign).
-import{cleanDesign}from"./store.js";
+import{cleanDesign,MAX_NODES}from"./store.js";
+export const MAX_TEXT=20000,MAX_FILE=1e6;
 
 const norm=s=>s.toLowerCase().replace(/\s+/g," ").trim();
 function aliasesOf(lab){const out=[];for(const c of lab.components)for(const a of [c.name,c.type,...(c.aliases||[])])out.push([norm(a),c]);return out.sort((a,b)=>b[0].length-a[0].length)}
@@ -44,6 +45,7 @@ function options(comp,rest){
 
 export function parseText(text,lab){
   const names=aliasesOf(lab),nodes=new Map(),edges=[],errors=[],warnings=[],seen=new Set();
+  if(String(text||"").length>MAX_TEXT)return{errors:[{line:0,message:`That is more than ${MAX_TEXT.toLocaleString("en-US")} characters. Import a smaller design.`}],warnings:[]};
   const lines=String(text||"").split(/\r?\n/);
   lines.forEach((raw,li)=>{
     const line=raw.replace(/#.*$/,"").trim();if(!line)return;const n=li+1;
@@ -57,7 +59,8 @@ export function parseText(text,lab){
       const m=rest.match(/^\s*:\s*([\w.-]+)/);if(m){label=m[1].toLowerCase();rest=rest.slice(m[0].length)}
       const key=comp.type+(label?":"+label:"");const{config,unknown}=options(comp,rest);
       if(unknown.length)warnings.push({line:n,message:`Ignored "${unknown.join(" ")}" on ${comp.name}${label?":"+label:""}.`});
-      if(!nodes.has(key))nodes.set(key,{id:key.replace(/[^a-z0-9:_-]/g,"-"),type:comp.type,label,config:{}});
+      // ids keep labels apart: "a.b" and "a-b" stay two components (labels can't contain ~)
+      if(!nodes.has(key)){if(nodes.size>=MAX_NODES){errors.push({line:n,message:`A design can have at most ${MAX_NODES} components.`});ids.push(null);continue}nodes.set(key,{id:key.replace(/\./g,"~").replace(/[^a-z0-9:_~-]/g,"-"),type:comp.type,label,config:{}})}
       Object.assign(nodes.get(key).config,config);ids.push(key);
     }
     for(let i=0;i+1<ids.length;i++){const a=ids[i],b=ids[i+1];if(!a||!b)continue;const A=nodes.get(a),Bn=nodes.get(b);
@@ -72,22 +75,24 @@ export function parseText(text,lab){
 }
 
 // Left to right by depth from the Clients (longest path), stacked in each column, then repaired.
-export function layout(design,lab){
+export function layout(design,lab,name="Imported design"){
   const depth=new Map(design.nodes.map(n=>[n.id,0]));
   for(let k=0;k<design.nodes.length;k++)for(const e of design.edges)if(depth.has(e.from)&&depth.has(e.to)&&depth.get(e.to)<depth.get(e.from)+1)depth.set(e.to,Math.min(depth.get(e.from)+1,design.nodes.length));
   const cols=new Map();for(const n of design.nodes){const d=depth.get(n.id);if(!cols.has(d))cols.set(d,[]);cols.get(d).push(n)}
   const nodes=design.nodes.map(n=>{const col=cols.get(depth.get(n.id)),i=col.indexOf(n);return{...n,x:depth.get(n.id)*240,y:Math.round((i-(col.length-1)/2)*150)}});
-  return cleanDesign({name:"Imported design",nodes,edges:design.edges},lab,"import");
+  return cleanDesign({name,nodes,edges:design.edges},lab,"import");
 }
 
 // JSON: what exportDesign() writes, or a bare {nodes, edges}. Repaired like saved designs.
 export function parseJSON(text,lab){
+  if(String(text).length>MAX_FILE)return{errors:[{line:0,message:"That file is over 1 MB. Export a design from the Lab and import that."}]};
   let d;try{d=JSON.parse(text)}catch{return{errors:[{line:0,message:"That file isn't valid JSON."}]}}
   const src=d&&d.tk==="lab-design"?d.design:d;
   if(!src||!Array.isArray(src.nodes)||!src.nodes.length)return{errors:[{line:0,message:"No components found. Export a design from the Lab, or give {\"nodes\": [...], \"edges\": [...]}."}]};
   const hasXY=src.nodes.every(n=>Number.isFinite(n?.x)&&Number.isFinite(n?.y));
   const clean=cleanDesign(src,lab,"import");
   if(!clean.nodes.length)return{errors:[{line:0,message:"None of those components are in the Lab's catalogue."}]};
-  return{design:hasXY?clean:layout(clean,lab),errors:[],warnings:clean.nodes.length<src.nodes.length?[{line:0,message:`Skipped ${src.nodes.length-clean.nodes.length} component(s) the Lab doesn't know.`}]:[]};
+  if(src.nodes.length>MAX_NODES)return{errors:[{line:0,message:`That design has ${src.nodes.length} components; the Lab takes at most ${MAX_NODES}.`}]};
+  return{design:hasXY?clean:layout(clean,lab,clean.name),errors:[],warnings:clean.nodes.length<src.nodes.length?[{line:0,message:`Skipped ${src.nodes.length-clean.nodes.length} component(s) the Lab doesn't know.`}]:[]};
 }
 export const exportDesign=d=>JSON.stringify({tk:"lab-design",version:1,design:{name:d.name,nodes:d.nodes,edges:d.edges}},null,2);

@@ -6,7 +6,7 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars,markStep}from"../progress.js";
+import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars,markStep}from"../progress.js";
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
 // on a simulated clock. SPEEDS = simulated hours per real second.
@@ -27,10 +27,12 @@ const Ctx=createContext(null);
 // Designs live in localStorage (store.js); what is read back is checked and repaired first.
 const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}return readStore(raw,lab)};
 const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}};
+// Add a new design to what is stored now (and make it the one the full Lab opens, unless current is null).
+const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
 const savedSpeed=()=>{let v=NaN;try{v=+localStorage.getItem("tk-lab-speed")}catch{}return SPEEDS.some(s=>s[1]===v)?v:1/60};
 const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{}}})),edges:d.edges.map(e=>edge(e.from,e.to))});
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
-const edge=(source,target)=>({id:`e-${source}-${target}`,source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
+const edge=(source,target)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
 
 const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
@@ -130,7 +132,7 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 // Import your own architecture: type it as text (one chain per line) or open an exported JSON file.
 function Import({lab,create,close}){const t=lab.import;const[text,setText]=useState("");const[file,setFile]=useState(null);const ref=useRef(null);useEffect(()=>{ref.current?.focus()},[]);
 const res=useMemo(()=>file?parseJSON(file,lab):text.trim()?parseText(text,lab):null,[text,file,lab]);const nodes=res?.design?.nodes.length||0,edges=res?.design?.edges.length||0;
-const pick=e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>1e6){setFile("{}");return}f.text().then(setFile,()=>setFile("{}"))};
+const pick=e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>1e6){setFile(" ".repeat(1e6+1));return}f.text().then(setFile,()=>setFile("{}"))};
 return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarget)close()}} onKeyDown={e=>{if(e.key==="Escape")close()}}><div className="lab-score lab-import" role="dialog" aria-modal="true" aria-labelledby="imp-t">
 <div className="lab-h">IMPORT</div><h3 id="imp-t">{t.title}</h3><p className="lab-desc">{t.intro}</p>
 <textarea ref={ref} value={text} onChange={e=>{setText(e.target.value);setFile(null)}} placeholder={t.placeholder} rows={5} spellCheck="false" aria-label={t.title}/>
@@ -146,20 +148,35 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
 function Canvas({lab,start,embedded}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
-const[store,setStore]=useState(()=>{const s=load(lab);if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
+const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.challenges||[]).find(c=>c.id===start);
+// Opened on a challenge (the landing page, #lab/<id>): open this browser's latest design for it, or make
+// one from its start, without creating the example design too (QA H7).
+if(sc){const mine=Object.values(s.designs).filter(d=>d.challenge===start).sort((a,b)=>b.updated-a.updated)[0];if(mine){s.current=mine.id;return s}const id=newId("design");s.designs[id]={id,name:sc.title,updated:Date.now(),...structuredClone({nodes:sc.start.nodes,edges:sc.start.edges}),credit:{spent:0,hours:0},challenge:start};s.current=id;persistNew(lab,s.designs[id],embedded?null:id);return s}
+if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,name:lab.example.name,updated:Date.now(),...structuredClone({nodes:lab.example.nodes,edges:lab.example.edges})};s.current=id}if(!s.designs[s.current])s.current=Object.keys(s.designs)[0];return s});
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
 const[name,setName]=useState(cur.name);const[running,setRunning]=useState(false);const[credit,setCredit]=useState(()=>cur.credit||{spent:0,hours:0});const[run,setRun]=useState(newRun);const[speed,setSpeedState]=useState(savedSpeed);const setSpeed=v=>{setSpeedState(v);try{localStorage.setItem("tk-lab-speed",String(v))}catch{}};const[ended,setEnded]=useState(false);const[menu,setMenu]=useState(false);const wrap=useRef(null);const loaded=useRef(store.current);
 useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);setCredit(store.designs[store.current].credit||{spent:0,hours:0});setEnded(false);setRun(newRun());setRunning(false);setTimeout(()=>rf.fitView({padding:.25,maxZoom:1}),30)},[store.current]);// eslint-disable-line
-// Autosave the open design (debounced). The id is captured now, so a save that fires after
-// switching designs still goes to the design these nodes belong to.
-useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>setStore(s=>{if(!s.designs[id])return s;const d={...s.designs[id],name:name.trim()||"Untitled design",updated:Date.now(),...fromFlow(nodes,edges),credit};const next={...s,designs:{...s.designs,[id]:d}};save(next);return next}),400);return()=>clearTimeout(t)},[nodes,edges,name,credit]);// eslint-disable-line
+// Saving (QA H3, H4): every save re-reads what is stored and writes back only this design, so two
+// tabs don't overwrite each other's designs. Edits are saved 400 ms after they stop; while traffic
+// runs, the spent credit is saved at most every 2 s; leaving the page, the section or the design
+// saves at once. The embedded Lab (landing page) never changes which design the full Lab opens.
+const snap=useRef(null);snap.current={nodes,edges,name,credit};const storeRef=useRef(store);storeRef.current=store;
+const writeDesign=useCallback(id=>{const mem=storeRef.current.designs[id];if(!id||!mem)return;const latest=load(lab),cur=snap.current;
+const d={...(latest.designs[id]||mem),name:cur.name.trim()||"Untitled design",updated:Date.now(),...fromFlow(cur.nodes,cur.edges),credit:cur.credit};
+latest.designs[id]=d;if(!embedded)latest.current=storeRef.current.current;save(latest);setStore(s=>({...s,designs:{...latest.designs,[id]:d}}))},[lab,embedded]);
+useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>writeDesign(id),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
+const lastCredit=useRef(0);useEffect(()=>{const now=Date.now();if(now-lastCredit.current<2000)return;lastCredit.current=now;writeDesign(loaded.current)},[credit]);// eslint-disable-line
+useEffect(()=>{if(!running)writeDesign(loaded.current)},[running]);// eslint-disable-line
+useEffect(()=>{const flush=()=>writeDesign(loaded.current);addEventListener("pagehide",flush);return()=>{removeEventListener("pagehide",flush);flush()}},[writeDesign]);
+// Another tab changed the designs: take its list, keep what this tab has open.
+useEffect(()=>{const on=e=>{if(e.key!==STORE_KEY)return;const latest=load(lab);setStore(s=>({...latest,current:latest.designs[s.current]?s.current:latest.current}))};addEventListener("storage",on);return()=>removeEventListener("storage",on)},[lab]);
 const progress=useProgress();const ch=(lab.challenges||[]).find(c=>c.id===store.designs[store.current]?.challenge)||null;const[chMenu,setChMenu]=useState(false);const[importing,setImporting]=useState(false);const[score,setScore]=useState(null);
 // In a challenge the challenge's traffic (and fixed settings) are what runs.
 const design=useMemo(()=>{const d=fromFlow(nodes,edges);return ch?applyChallenge(d,ch):d},[nodes,edges,ch]);const downKey=Object.keys(run.down).sort().join();
 // What the design is doing now: crashed parts, queue backlogs, autoscaled instances, and the Clients'
 // traffic at the simulated time of day.
-const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;const chRef=useRef(ch);chRef.current=ch;
+const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;const nodesRef=useRef(nodes);nodesRef.current=nodes;const chRef=useRef(ch);chRef.current=ch;
 const names=useMemo(()=>Object.fromEntries(nodes.map(n=>[n.id,{kind:n.data.kind}])),[nodes]);
 const selected=nodes.find(n=>n.selected);const selEdge=selected?null:edges.find(e=>e.selected);
 const labelOf=id=>{const n=nodes.find(x=>x.id===id);return n?cat[n.data.kind]?.name||n.data.kind:"?"};const removeEdge=id=>setEdges(es=>es.filter(e=>e.id!==id));
@@ -169,7 +186,7 @@ useEffect(()=>{if(!running)return;const iv=setInterval(()=>{setRun(r=>{let n=adv
 // Stop the clock exactly when the credit runs out (part of the last tick).
 if(c.spent+cost>=lab.budget)return{spent:lab.budget,hours:c.hours+(cost>0?hours*(lab.budget-c.spent)/cost:hours)};return{spent:c.spent+cost,hours:c.hours+hours}})},TICK);return()=>clearInterval(iv)},[running,speed,lab.budget,lab]);
 useEffect(()=>{if(running&&credit.spent>=lab.budget){setRunning(false);setEnded(true)}},[credit,running,lab.budget]);
-const add=useCallback((kind,pos)=>{const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
+const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
 setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:defaultConfig(comp)}}])},[cat,rf,setNodes]);
 const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data,config}}:n));
 const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
@@ -178,15 +195,17 @@ const onConnect=useCallback(c=>setEdges(es=>addEdge(edge(c.source,c.target),es))
 const[dragging,setDragging]=useState(false);
 // Drop from the palette: only when released over the canvas.
 const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;add(kind,rf.screenToFlowPosition({x,y}))};
-const pick=id=>{setStore(s=>({...s,current:id}));setMenu(false)};
-const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0},...(src?.challenge?{challenge:src.challenge}:{})};setStore(s=>{const n={...s,current:id,designs:{...s.designs,[id]:d}};save(n);return n});setMenu(false)};
+const pick=id=>{writeDesign(loaded.current);setStore(s=>({...s,current:id}));if(!embedded){const latest=load(lab);if(latest.designs[id]){latest.current=id;save(latest)}}setMenu(false)};
+const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0},...(src?.challenge?{challenge:src.challenge}:{})};writeDesign(loaded.current);persistNew(lab,d,embedded?null:id);setStore(s=>({...s,current:id,designs:{...s.designs,[id]:d}}));setMenu(false)};
 // Start a challenge: reopen this browser's latest design for it, or start one from its starting design.
 const startChallenge=id=>{const c=(lab.challenges||[]).find(x=>x.id===id);if(!c)return;setChMenu(false);setScore(null);const mine=Object.values(store.designs).filter(d=>d.challenge===id).sort((a,b)=>b.updated-a.updated)[0];if(mine)pick(mine.id);else create({name:c.title,nodes:c.start.nodes,edges:c.start.edges,challenge:id})};
-useEffect(()=>{if(start)startChallenge(start)},[start]);// eslint-disable-line
+const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.current)startChallenge(start);firstStart.current=null},[start]);// eslint-disable-line
 const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error)recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
-const del=id=>setStore(s=>{const designs={...s.designs};delete designs[id];if(!Object.keys(designs).length){const nid=newId("design");designs[nid]={id:nid,name:"Untitled design",updated:Date.now(),nodes:[],edges:[]}}const n={...s,designs,current:designs[s.current]?s.current:Object.keys(designs)[0]};save(n);return n});
+const del=id=>{const latest=load(lab);delete latest.designs[id];const designs={...storeRef.current.designs};delete designs[id];for(const k of Object.keys(designs))if(!latest.designs[k])delete designs[k];Object.assign(designs,latest.designs);
+if(!Object.keys(designs).length){const nid=newId("design");designs[nid]=latest.designs[nid]={id:nid,name:"Untitled design",updated:Date.now(),nodes:[],edges:[]}}
+const current=designs[storeRef.current.current]?storeRef.current.current:Object.keys(designs)[0];if(!embedded)latest.current=current;save(latest);setStore({...storeRef.current,designs,current})};
 const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
 const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>{const dead=run.down[e.source]!==undefined||run.down[e.target]!==undefined;return{...e,animated:running&&!dead,className:dead?"dead":running?"live":""}}),[edges,running,downKey]);// eslint-disable-line
@@ -201,7 +220,7 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 <button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){markStep("lab:run");if(run.t===0){let h=credit.hours;if(ch){const day=Math.floor(h/24+1e-9);h=day*24+ch.startHour;if(h<credit.hours-1e-6)h+=24;setCredit(c=>({...c,hours:h}))}setRun({...newRun(),start:h})}}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
 {chMenu&&<Challenges lab={lab} progress={progress} start={startChallenge} close={()=>setChMenu(false)}/>}
 {importing&&<Import lab={lab} close={()=>setImporting(false)} create={d=>{create(d);setImporting(false)}}/>}
-{menu&&<Designs lab={lab} onImport={()=>{setMenu(false);setImporting(true)}} onExport={()=>{setMenu(false);const d=store.designs[store.current];const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([exportDesign({...d,...fromFlow(nodes,edges),name})],{type:"application/json"}));a.download=(name.trim()||"design").replace(/[^\w.-]+/g,"-")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}} store={store} current={store.current} budget={lab.budget} open={pick} create={()=>create()} example={()=>create(lab.example)} duplicate={duplicate} remove={del} close={()=>setMenu(false)}/>}</header>
+{menu&&<Designs lab={lab} onImport={()=>{setMenu(false);setImporting(true)}} onExport={()=>{setMenu(false);const d=store.designs[store.current];const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([exportDesign({...d,...fromFlow(nodes,edges),name})],{type:"application/json"}));a.download=((name.trim()||"design").replace(/[^\p{L}\p{N}._-]+/gu,"-").replace(/^-+|-+$/g,"")||"design")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}} store={store} current={store.current} budget={lab.budget} open={pick} create={()=>create()} example={()=>create(lab.example)} duplicate={duplicate} remove={del} close={()=>setMenu(false)}/>}</header>
 <div className="lab-status" aria-live="polite">{blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."} Designs → ⧉ duplicates it with a fresh {usd(lab.budget)}.</span>
 :running?<><span><b>{simTime(credit.hours)}</b></span><span><b>{num(t.sentRps)}</b> req/s sent{t.clients>1?` by ${t.clients} Clients`:""}</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span><span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>{t.retryRps>0.5&&<span>+<b>{num(t.retryRps)}</b> retries/s</span>}{run.sent>0&&<span className={run.served/run.sent<0.999?"bad":""}>availability <b>{(100*run.served/run.sent).toFixed(2)}%</b></span>}{t.down.length>0&&<span className="lab-warn"><b>{t.down.length}</b> crashed</span>}{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
 :<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>

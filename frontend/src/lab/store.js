@@ -4,6 +4,8 @@
 // Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges,credit}}}.
 export const STORE_KEY="tk-lab-v1";
 export const STORE_VERSION=1;
+// A design has at most this many components: more is never a real design and makes the canvas crawl.
+export const MAX_NODES=200;
 const obj=v=>v!==null&&typeof v==="object"&&!Array.isArray(v);
 const fin=v=>typeof v==="number"&&Number.isFinite(v);
 const text=v=>typeof v==="string"&&v.trim()!=="";
@@ -16,6 +18,7 @@ export function cleanDesign(d,lab,id){
   const cat=Object.fromEntries((lab.components||[]).map(c=>[c.type,c]));
   const nodes=[],seen=new Set();
   for(const n of Array.isArray(d.nodes)?d.nodes:[]){
+    if(nodes.length>=MAX_NODES)break;
     if(!obj(n)||!text(n.id)||seen.has(n.id)||!has(cat,n.type))continue;
     const c=cat[n.type],src=obj(n.config)?n.config:{},config={};
     if(c.type==="client"){if(clamp(src.rps,c.rps)!==undefined)config.rps=clamp(src.rps,c.rps);if(Array.isArray(c.patterns)&&c.patterns.some(p=>p.id===src.pattern))config.pattern=src.pattern}
@@ -26,7 +29,7 @@ export function cleanDesign(d,lab,id){
       for(const k of["writePolicy","onDown"])if(c[k]&&Array.isArray(c[k].options)&&c[k].options.some(o=>o.id===src[k]))config[k]=src[k]}
     if(Array.isArray(c.sizes)&&c.sizes.some(s=>s.id===src.size))config.size=src.size;
     if(c.type==="database"&&typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
-    seen.add(n.id);nodes.push({id:n.id,type:n.type,x:fin(n.x)?n.x:0,y:fin(n.y)?n.y:0,config});
+    seen.add(n.id);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,config});
   }
   const kind=Object.fromEntries(nodes.map(n=>[n.id,n.type])),edges=[],links=new Set();
   for(const e of Array.isArray(d.edges)?d.edges:[]){

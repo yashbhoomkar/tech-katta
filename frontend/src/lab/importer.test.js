@@ -53,3 +53,17 @@ test('JSON: an exported design comes back as it was; bad files are refused', () 
   const noXY = parseJSON('{"nodes":[{"id":"c","type":"client"},{"id":"s","type":"server"}],"edges":[{"from":"c","to":"s"}]}', lab);
   assert.ok(noXY.design.nodes[1].x > noXY.design.nodes[0].x, 'laid out when positions are missing');
 });
+
+test('limits and names: size caps, labels kept apart, file names kept (QA M5, L4, L6)', () => {
+  assert.match(parseText('x'.repeat(20001), lab).errors[0].message, /more than 20,000 characters/);
+  const many = Array.from({ length: 210 }, (_, i) => `Clients -> Server:s${i}`).join('\n');
+  const r = parseText(many, lab);
+  assert.ok(r.errors.some((e) => /at most 200 components/.test(e.message)));
+  assert.ok(r.design.nodes.length <= 200);
+  const two = parseText('Clients -> Server:a.b -> Database\nClients -> Server:a-b -> Database', lab);
+  assert.equal(two.design.nodes.filter((n) => n.type === 'server').length, 2, 'a.b and a-b are two servers');
+  const named = parseJSON('{"name":"P","nodes":[{"id":"c","type":"client"},{"id":"s","type":"server"}],"edges":[{"from":"c","to":"s"}]}', lab);
+  assert.equal(named.design.name, 'P');
+  assert.match(parseJSON(' '.repeat(1e6 + 1), lab).errors[0].message, /over 1 MB/);
+  assert.match(parseJSON(JSON.stringify({ nodes: Array.from({ length: 300 }, (_, i) => ({ id: 'n' + i, type: 'server' })), edges: [] }), lab).errors[0].message, /at most 200/);
+});

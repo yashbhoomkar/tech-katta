@@ -1,4 +1,4 @@
-import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import"./dashboard.css";
+import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";
 import Numbers from"./numbers.jsx";import{readProgress,markStep,setLevel}from"./progress.js";import Tour from"./tour.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
@@ -100,7 +100,7 @@ function useVoices(){const[vs,set]=useState([]);useEffect(()=>{if(!canSpeak)retu
 // Only articles marked `audio:true` (recorded with tools/tts) have a manifest; others are not fetched.
 function useRecording(a){const[m,set]=useState(null);useEffect(()=>{let on=true;set(null);if(!a.audio)return;fetch(`/audio/${a.slug}/manifest.json`).then(r=>r.ok?r.json():null).then(j=>{if(on&&j?.chunks)set(j)}).catch(()=>{});return()=>{on=false}},[a]);return m}
 function useReader(a){const q=React.useMemo(()=>chunks(a),[a]);const voices=useVoices();const rec=useRecording(a);
-const[voice,setVoiceName]=useState(()=>localStorage.getItem("tk-voice")||"");const[state,setState]=useState("idle");const[cur,setCur]=useState(null);const[rate,setRate]=useState(1);
+const[voice,setVoiceName]=useState(()=>lsGet("tk-voice")||"");const[state,setState]=useState("idle");const[cur,setCur]=useState(null);const[rate,setRate]=useState(1);
 const run=useRef(0),idx=useRef(0),rateRef=useRef(1),voiceRef=useRef(null),el=useRef(null),next=useRef(null),usingRec=useRef(false);
 const recOn=!!rec&&(voice===""||voice===REC||!voices.some(v=>v.name===voice));
 voiceRef.current=recOn?null:voices.find(v=>v.name===voice)||voices[0]||null;
@@ -122,7 +122,7 @@ const resume=()=>{if(usingRec.current&&el.current&&el.current.src&&el.current.on
 return{q,state,cur,rate,voices,rec:!!rec,voice:recOn?REC:voiceRef.current?.name||"",usingRec:recOn,
 play:()=>state==="paused"?resume():play(0),pause,stop:()=>{halt();idx.current=0;setState("idle");setCur(null)},
 setRate:r=>{rateRef.current=r;setRate(r);if(usingRec.current&&el.current)el.current.playbackRate=r;else restart()},
-setVoice:n=>{localStorage.setItem("tk-voice",n);setVoiceName(n);restart()}}}
+setVoice:n=>{lsSet("tk-voice",n);setVoiceName(n);restart()}}}
 const vLabel=v=>v.name.replace(/^(Microsoft|Google)\s+/,"").replace(/\s+Online\s+\(Natural\)/," (natural)").replace(/\s*-\s*English.*$/,"")+(/^en[-_]IN/i.test(v.lang)?" · IN":/^en[-_]GB/i.test(v.lang)?" · UK":/^en[-_]US/i.test(v.lang)?" · US":"");
 function Reader({r}){if(!canSpeak&&!r.rec)return null;return <div className={"reader"+(r.state!=="idle"?" on":"")} role="group" aria-label="Listen to this article">
 <button type="button" className="r-btn primary" onClick={r.state==="playing"?r.pause:r.play} aria-pressed={r.state==="playing"}>{r.state==="playing"?"❚❚ Pause":r.state==="paused"?"▶ Resume":"▶ Listen"}</button>
@@ -202,12 +202,12 @@ function List({id}){const list=articles.filter(a=>a.section===id);return list.le
 // The System Design Lab (React Flow + simulation) loads only when its tab is opened.
 const Lab=lazy(()=>import("./lab/Lab.jsx"));
 
-function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route.sec;const[collapsed,setCollapsed]=useState(()=>localStorage.getItem("tk-sidebar")==="collapsed");
+function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
 // The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
 // other pages is untouched), and the toggle works per mode.
 const inLab=active==="lab"&&!route.art;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
 useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false);scrollTo(0,0)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
-useEffect(()=>{localStorage.setItem("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
+useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
 // Guided tour: once on the first visit to Learn and to the Lab (not for automated browsers), and from the Tour button.
 const[tour,setTour]=useState(null);const closeTour=()=>{markStep("tour:"+tour);setTour(null)};
 useEffect(()=>{if(!c.tour||navigator.webdriver)return;const want=active==="lab"&&!route.art?"lab":active==="learn"?"dashboard":null;if(!want||readProgress().steps["tour:"+want])return;
@@ -225,6 +225,8 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:<Section id={active}/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
+// Storage can be blocked (private modes, site settings): every read and write is optional (QA M1).
+const lsGet=k=>{try{return localStorage.getItem(k)}catch{return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const root=createRoot(document.getElementById("root"));
-function boot(){root.render(<Loading/>);Promise.all([getJSON("/v1/site"),getJSON("/v1/articles")]).then(([site,list])=>{c=site;d=site.dashboard;ids=d.sections.map(s=>s[0]);example=site.example;articles=list.articles;root.render(<React.StrictMode><Dashboard/></React.StrictMode>)}).catch(()=>root.render(<LoadError retry={boot}/>))}
+function boot(){root.render(<Loading/>);Promise.all([getJSON("/v1/site"),getJSON("/v1/articles")]).then(([site,list])=>{c=site;d=site.dashboard;ids=d.sections.map(s=>s[0]);example=site.example;articles=list.articles;root.render(<React.StrictMode><Boundary><Dashboard/></Boundary></React.StrictMode>)}).catch(()=>root.render(<LoadError retry={boot}/>))}
 boot();
