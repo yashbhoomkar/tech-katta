@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadContent, buildBodies } from './content/store.js';
+import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
+import { accountRoutes } from './auth/routes.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -38,6 +40,7 @@ function healthPayload() {
     version: packageJson.version,
     uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
     content: { release: content.release, articles: content.articles.length },
+    auth: auth.enabled ? 'on' : 'off',
     timestamp: new Date().toISOString(),
   };
 }
@@ -95,6 +98,18 @@ process.on('SIGHUP', async () => {
 });
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
+// Sign-in with Google and accounts (MongoDB). Off until GOOGLE_CLIENT_ID, MONGODB_URI and
+// SESSION_SECRET are all set; the content API works the same either way. MongoDB is connected on
+// first use, so the API starts (and serves content) even when the database is unreachable.
+const auth = authConfig();
+const accounts = auth.enabled ? openAccounts({ uri: auth.uri, dbName: auth.dbName, secret: auth.secret }) : null;
+const handleAccount = accountRoutes({
+  enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
+  verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
+});
+console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
+const ACCOUNT_PATHS = new Set(['/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/me', '/v1/me/lab']);
+
 function handleContent(request, response, pathname, searchParams) {
   if (!['GET', 'HEAD'].includes(request.method || '')) {
     response.setHeader('Allow', 'GET, HEAD, OPTIONS');
@@ -126,6 +141,11 @@ const server = http.createServer((request, response) => {
       return;
     }
     handleContent(request, response, pathname, url.searchParams);
+    return;
+  }
+
+  if (ACCOUNT_PATHS.has(pathname)) {
+    handleAccount(request, response, pathname);
     return;
   }
 
@@ -170,6 +190,7 @@ server.listen(port, host, () => {
 
 function shutdown(signal) {
   console.log(`Received ${signal}; shutting down API server.`);
+  accounts?.close().catch(() => {});
   server.close((error) => {
     if (error) {
       console.error('HTTP server shutdown failed:', error);

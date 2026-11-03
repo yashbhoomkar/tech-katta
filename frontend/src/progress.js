@@ -15,11 +15,13 @@ export function cleanProgress(raw) {
   return out;
 }
 export function readProgress() { let raw = null; try { raw = localStorage.getItem(PROGRESS_KEY) } catch {} return cleanProgress(raw) }
-function save(p) {
+function save(p, source) {
   try { localStorage.setItem(PROGRESS_KEY, JSON.stringify({ version: 1, steps: { ...p.steps }, stars: { ...p.stars }, goals: { ...p.goals } })) } catch {}
-  try { dispatchEvent(new Event("tk-progress")) } catch {}
+  try { dispatchEvent(new CustomEvent("tk-progress", { detail: source || "local" })) } catch {}
   return p;
 }
+// Replace progress with what an account sync returned (marked "sync", so it doesn't start another).
+export const replaceProgress = (p) => save(cleanProgress(JSON.stringify(p ?? null)), "sync");
 export const markStep = (id) => { const p = readProgress(); if (p.steps[id]) return p; p.steps[id] = true; return save(p) };
 // Keeps the best result: a worse run never takes stars away.
 // `goals` (which goals that run met) is kept with the best result, so the panel ticks the right ones.

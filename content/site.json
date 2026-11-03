@@ -379,5 +379,44 @@
       "best": "Your best",
       "full": "Build it yourself in the full Lab (on a laptop)"
     }
+  },
+  "account": {
+    "signedIn": "Signed in",
+    "saved": "Your Lab designs and challenge stars are saved to your account, so they are the same on every device.",
+    "syncing": "Saving…",
+    "syncFailed": "Couldn't reach your account just now; your work is safe in this browser and will be saved next time.",
+    "signInFailed": "Sign-in didn't work. Try again.",
+    "signOut": "Sign out",
+    "delete": "Delete my account",
+    "deleteConfirm": "Delete your account? Your designs and stars are removed from your account for good. This browser keeps its own copy.",
+    "privacy": "Privacy",
+    "menu": "Account"
+  },
+  "privacy": {
+    "eyebrow": "PRIVACY",
+    "title": "What is kept when you sign in",
+    "updated": "Last updated 3 November 2026",
+    "sections": [
+      [
+        "Signing in is optional",
+        "Everything on the site works without an account. Without one, your Lab designs and challenge stars stay in this browser's storage and nowhere else."
+      ],
+      [
+        "What is kept",
+        "When you sign in with Google: your Google account ID, name, email address and the link to your profile picture, and when you signed in. Your Lab designs and challenge stars, so they follow you to other devices. Your Google password is never seen by this site."
+      ],
+      [
+        "Where it is kept",
+        "In a MongoDB Atlas database used only by this site. You stay signed in with a random token in a cookie that only the site's API can read; it ends when you sign out or after 30 days."
+      ],
+      [
+        "What is not done with it",
+        "No ads, no tracking cookies, no selling or sharing your data. Your email is not used to contact you."
+      ],
+      [
+        "Deleting it",
+        "Use Delete my account in the account menu. Your account, designs and stars are removed from the database straight away. The copy in your own browser stays until you clear it."
+      ]
+    ]
   }
 }

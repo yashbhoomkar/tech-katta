@@ -49,9 +49,23 @@ jobs:
       # Deploys exactly the commit the test job checked (github.sha), not whatever main is now.
       # The new release is live only when /health reports it; if the service does not come back,
       # the previous code and content release are restored and the job fails.
+      # Sign-in settings (GitHub secrets) travel base64-encoded, so characters such as & ? = % in the
+      # MongoDB URI survive the shell on the way; the encoded values are masked in the log too.
+      - name: Prepare API settings
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        run: |
+          for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET; do
+            value=$(printenv "$name" || true)
+            if [ -n "$value" ]; then encoded=$(printf %s "$value" | base64 -w0); echo "::add-mask::$encoded"; else encoded=''; fi
+            echo "${name}_B64=$encoded" >> "$GITHUB_ENV"
+          done
       - name: Deploy to VPS and check local endpoint
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
+          envs: GOOGLE_CLIENT_ID_B64,MONGODB_URI_B64,SESSION_SECRET_B64
           # TODO(owner): add VPS_HOST, VPS_USER and VPS_FINGERPRINT secrets, then delete the fallbacks.
           host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
           username: ${{ secrets.VPS_USER || 'yash' }}
@@ -112,8 +126,22 @@ jobs:
             app node "$APP/backend/scripts/check-content.mjs" "$REL"
             point "$REL"
 
+            # Sign-in settings: written to a root-only file when all three secrets are set; otherwise
+            # the file is left as it is (sign-in stays off until it exists). Values never reach the log.
+            ENVDIR=/etc/tech-katta
+            if [ -n "${GOOGLE_CLIENT_ID_B64:-}" ] && [ -n "${MONGODB_URI_B64:-}" ] && [ -n "${SESSION_SECRET_B64:-}" ]; then
+              sudo -n mkdir -p "$ENVDIR"
+              for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET; do
+                eval "encoded=\${${name}_B64}"
+                printf '%s="%s"\n' "$name" "$(printf %s "$encoded" | base64 -d | sed 's/[\\"$]/\\&/g')"
+              done | sudo -n sh -c "umask 077; cat > '$ENVDIR/api.env.next' && mv -f '$ENVDIR/api.env.next' '$ENVDIR/api.env'"
+              echo 'Sign-in settings written.'
+            else
+              echo 'Sign-in secrets not all set; leaving sign-in settings as they are.'
+            fi
+
             sudo -n mkdir -p /etc/systemd/system/tech-katta-api.service.d
-            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' "Environment=CONTENT_DIR=$BASE/current" | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
+            printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' "Environment=CONTENT_DIR=$BASE/current" "EnvironmentFile=-$ENVDIR/api.env" | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
             sudo -n systemctl daemon-reload
             sudo -n systemctl restart tech-katta-api
             healthy "$NAME" || { echo "API did not come back serving $NAME."; exit 1; }
@@ -132,7 +160,7 @@ jobs:
               cat /tmp/health.json; echo
               # The public API must serve the release this run just deployed.
               grep -q "\"release\":\"20[0-9TZ]*-${GITHUB_SHA:0:7}\"" /tmp/health.json || { echo "API is not serving the release for ${GITHUB_SHA:0:7} yet."; sleep 3; continue; }
-              for path in /v1/site /v1/articles /v1/lab; do curl --fail --silent --show-error -o /dev/null "https://tech-api.katta.cc$path"; done
+              for path in /v1/site /v1/articles /v1/lab /v1/auth/config; do curl --fail --silent --show-error -o /dev/null "https://tech-api.katta.cc$path"; done
               echo 'Content endpoints OK.'
               exit 0
             fi
