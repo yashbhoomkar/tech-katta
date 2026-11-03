@@ -6,7 +6,7 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars}from"../progress.js";
+import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue}from"../account.js";
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
 // on a simulated clock. SPEEDS = simulated hours per real second.
@@ -26,7 +26,7 @@ const Ctx=createContext(null);
 
 // Designs live in localStorage (store.js); what is read back is checked and repaired first.
 const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}return readStore(raw,lab)};
-const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}};
+const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}try{dispatchEvent(new Event("tk-lab-saved"))}catch{}};// a signed-in user's account syncs after saves (account.js)
 // Add a new design to what is stored now (and make it the one the full Lab opens, unless current is null).
 const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
 const savedSpeed=()=>{let v=NaN;try{v=+localStorage.getItem("tk-lab-speed")}catch{}return SPEEDS.some(s=>s[1]===v)?v:1/60};
@@ -165,14 +165,18 @@ useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.cur
 // saves at once. The embedded Lab (landing page) never changes which design the full Lab opens.
 const snap=useRef(null);snap.current={nodes,edges,name,credit};const storeRef=useRef(store);storeRef.current=store;
 const writeDesign=useCallback(id=>{const mem=storeRef.current.designs[id];if(!id||!mem)return;const latest=load(lab),cur=snap.current;
-const d={...(latest.designs[id]||mem),name:cur.name.trim()||"Untitled design",updated:Date.now(),...fromFlow(cur.nodes,cur.edges),credit:cur.credit};
+const base=latest.designs[id]||mem,next={name:cur.name.trim()||"Untitled design",...fromFlow(cur.nodes,cur.edges),credit:cur.credit};
+// Unchanged designs aren't re-saved: a save stamps "updated", and a needless stamp would make an old
+// copy look newer than a deletion or edit synced from another device.
+const same=k=>JSON.stringify(base[k]??null)===JSON.stringify(next[k]??null);if(latest.designs[id]&&["name","nodes","edges","credit"].every(same))return;
+const d={...base,...next,updated:Date.now()};
 latest.designs[id]=d;if(!embedded)latest.current=storeRef.current.current;save(latest);setStore(s=>({...s,designs:{...latest.designs,[id]:d}}))},[lab,embedded]);
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>writeDesign(id),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
 const lastCredit=useRef(0);useEffect(()=>{const now=Date.now();if(now-lastCredit.current<2000)return;lastCredit.current=now;writeDesign(loaded.current)},[credit]);// eslint-disable-line
 useEffect(()=>{if(!running)writeDesign(loaded.current)},[running]);// eslint-disable-line
 useEffect(()=>{const flush=()=>writeDesign(loaded.current);addEventListener("pagehide",flush);return()=>{removeEventListener("pagehide",flush);flush()}},[writeDesign]);
 // Another tab changed the designs: take its list, keep what this tab has open.
-useEffect(()=>{const on=e=>{if(e.key!==STORE_KEY)return;const latest=load(lab);setStore(s=>({...latest,current:latest.designs[s.current]?s.current:latest.current}))};addEventListener("storage",on);return()=>removeEventListener("storage",on)},[lab]);
+useEffect(()=>{const on=e=>{if(e.key!==STORE_KEY)return;const latest=load(lab);setStore(s=>({...latest,current:latest.designs[s.current]?s.current:latest.current}))};const synced=()=>on({key:STORE_KEY});addEventListener("storage",on);addEventListener("tk-lab-synced",synced);return()=>{removeEventListener("storage",on);removeEventListener("tk-lab-synced",synced)}},[lab]);
 const progress=useProgress();const ch=(lab.challenges||[]).find(c=>c.id===store.designs[store.current]?.challenge)||null;const[chMenu,setChMenu]=useState(false);const[importing,setImporting]=useState(false);const[score,setScore]=useState(null);
 // In a challenge the challenge's traffic (and fixed settings) are what runs.
 const design=useMemo(()=>{const d=fromFlow(nodes,edges);return ch?applyChallenge(d,ch):d},[nodes,edges,ch]);const downKey=Object.keys(run.down).sort().join();
@@ -209,7 +213,7 @@ const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.curre
 const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error)recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
-const del=id=>{const latest=load(lab);delete latest.designs[id];const designs={...storeRef.current.designs};delete designs[id];for(const k of Object.keys(designs))if(!latest.designs[k])delete designs[k];Object.assign(designs,latest.designs);
+const del=id=>{noteDeleted(id);const latest=load(lab);delete latest.designs[id];const designs={...storeRef.current.designs};delete designs[id];for(const k of Object.keys(designs))if(!latest.designs[k])delete designs[k];Object.assign(designs,latest.designs);
 if(!Object.keys(designs).length){const nid=newId("design");designs[nid]=latest.designs[nid]={id:nid,name:"Untitled design",updated:Date.now(),nodes:[],edges:[]}}
 const current=designs[storeRef.current.current]?storeRef.current.current:Object.keys(designs)[0];if(!embedded)latest.current=current;save(latest);setStore({...storeRef.current,designs,current})};
 const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
@@ -240,6 +244,8 @@ fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapT
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={!embedded&&nextCh&&(()=>startChallenge(nextCh.id))} more={embedded}/>}
 </div></Ctx.Provider>}
 
-export default function Lab({challenge,embedded}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
+// Signed in, the account's designs are merged in before the Lab opens (at most 4 s), so a stale copy
+// in this browser is never what gets edited.
+export default function Lab({challenge,embedded}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the Lab" retry={go}/>;if(!st.lab)return <Loading label="Loading the Lab"/>;
 return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge} embedded={embedded}/></ReactFlowProvider></div>}

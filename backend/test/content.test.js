@@ -356,3 +356,12 @@ test('the API refuses to start on invalid content', async (t) => {
   assert.notEqual(code, 0);
   assert.match(stderr, /unknown figure missing/);
 });
+
+test('without its three settings, sign-in is off: config says so, account routes answer 503, health says auth off', async () => {
+  assert.deepEqual(await (await get('/v1/auth/config')).json(), { enabled: false });
+  const me = await get('/v1/me');
+  assert.equal(me.status, 503);
+  assert.deepEqual(await me.json(), { error: 'sign_in_not_configured' });
+  assert.equal((await (await get('/health')).json()).auth, 'off');
+  assert.equal((await (await get('/v1/site')).json()).brand.name, site.brand.name, 'content is unaffected');
+});
