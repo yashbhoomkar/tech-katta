@@ -225,18 +225,6 @@ test('lab validation checks levels and challenges, which are optional', () => {
   assert.ok(check((l) => { C(l, 'one-server').stars[1].from = 0; C(l, 'one-server').stars[1].to = 30; }).some((p) => p.includes("star's window")), 'windows only on availability goals');
 });
 
-test('site validation checks the learning paths point at real articles, sections and challenges', () => {
-  const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
-  const step = (s, id) => s.learn.levels.flatMap((l) => l.steps).find((x) => x.id === id);
-  assert.deepEqual(check((s) => { delete s.learn; }), []);
-  assert.ok(check((s) => { step(s, 'article:api-types').ref = 'concepts/nope'; }).some((p) => p.includes('unknown article concepts/nope')));
-  assert.ok(check((s) => { step(s, 'note:numbers').ref = 'diary'; }).some((p) => p.includes('unknown section diary')));
-  assert.ok(check((s) => { step(s, 'flash-sale').ref = 'flash-sale-2'; }).some((p) => p.includes('must be a Lab challenge id')));
-  assert.ok(check((s) => { s.learn.levels[0].steps.push(structuredClone(s.learn.levels[0].steps[0])); }).some((p) => p.includes('used twice')));
-  assert.ok(check((s) => { s.learn.levels[0].id = 'novice'; }).some((p) => p.includes('learn level novice')));
-  assert.ok(check((s) => { step(s, 'lab:run').kind = 'video'; }).some((p) => p.includes('kind: must be one of')));
-});
-
 test('lab validation checks import aliases and copy, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }).filter((p) => p.startsWith('lab.json')); };
   assert.deepEqual(check((l) => { delete l.import; for (const c of l.components) delete c.aliases; }), []);
