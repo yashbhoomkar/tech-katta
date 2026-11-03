@@ -4,7 +4,7 @@
 //   GET    /v1/auth/config    {enabled, clientId}         — whether to show "Sign in with Google"
 //   POST   /v1/auth/google    {credential} → {user}       — verify Google's ID token, start a session
 //   POST   /v1/auth/signout                               — end this session
-//   GET    /v1/me             {user} | 401
+//   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
@@ -79,7 +79,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         return send(request, response, 200, { ok: true }, { 'Set-Cookie': cookie('', 0) });
       }
       const me = await accounts.userFor(tokenOf(request));
-      if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return me ? send(request, response, 200, { user: me.user }) : send(request, response, 401, { error: 'signed_out' });
+      if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return send(request, response, 200, { user: me ? me.user : null });
       if (!me) return send(request, response, 401, { error: 'signed_out' });
       if (pathname === '/v1/me' && method === 'DELETE') {
         await accounts.deleteAccount(me.id);

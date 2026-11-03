@@ -102,13 +102,14 @@ test('Lab data syncs and merges: newest design wins, deletions stick, best stars
   assert.equal((await fetch(base + '/v1/me/lab', { method: 'POST', headers: { Origin: ORIGIN, Cookie: cookie, 'Content-Type': 'application/json' }, body: '{nope' })).status, 400);
 });
 
-test('signed out: 401 everywhere; sign-out ends the session; deleting the account removes everything', async () => {
-  assert.equal((await call('/v1/me')).status, 401);
+test('signed out: no user, 401 for Lab data; sign-out ends the session; deleting the account removes everything', async () => {
+  assert.deepEqual(await (await call('/v1/me')).json(), { user: null }, 'signed out is not an error');
   assert.equal((await call('/v1/me/lab')).status, 401);
-  assert.equal((await call('/v1/me', { cookie: 'tk_session=forged-token-forged-token-forged' })).status, 401);
+  assert.deepEqual(await (await call('/v1/me', { cookie: 'tk_session=forged-token-forged-token-forged' })).json(), { user: null });
+  assert.equal((await call('/v1/me/lab', { cookie: 'tk_session=forged-token-forged-token-forged' })).status, 401);
   const a = await signIn({ sub: '3003' });
   assert.equal((await call('/v1/auth/signout', { method: 'POST', cookie: a.cookie })).status, 200);
-  assert.equal((await call('/v1/me', { cookie: a.cookie })).status, 401);
+  assert.deepEqual(await (await call('/v1/me', { cookie: a.cookie })).json(), { user: null });
   const b = await signIn({ sub: '3003' });
   await call('/v1/me/lab', { method: 'POST', cookie: b.cookie, body: { designs: [] } });
   const db = client.db('tk_test'), user = await db.collection('users').findOne({ googleSub: '3003' });
