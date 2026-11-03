@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";
-import Numbers from"./numbers.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";
+import Numbers from"./numbers.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={"did-you-know":"M10 2.5a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM7.5 16h5M8.5 18h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
@@ -7,7 +7,7 @@ const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:ids[0]};return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
+const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 // Read time of the main text; "more" sections and type details are extra.
 const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
@@ -180,6 +180,11 @@ return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="m
 // Did you know: a surprising fact about traffic at scale (site.json `fact`), moved off the landing page.
 function Fact(){const f=c.fact;return <section className="d-panel" aria-labelledby="d-title"><label>{f.eyebrow}</label><h1 id="d-title">{f.title}</h1><p className="d-desc">{f.desc}</p>
 <ol className="d-fact">{f.points.map(([t,x],i)=><li key={t}><span>{String(i+1).padStart(2,"0")}</span><b>{t}</b><p>{x}</p></li>)}</ol><p className="d-fact-src">{f.source} <a href={f.linkHref}>{f.link} →</a></p></section>}
+// The dashboard's start page (no tab selected): the three library cards. A card opens its section
+// (tab selected in the sidebar and top bar) and that section's first article, or the section itself
+// while it has none.
+function Home(){const href=x=>{const sec=d.sections.find(s=>s[2]===x.id)?.[0];if(!sec)return"#";const first=articles.find(a=>a.section===sec);return first?`#${sec}/${first.slug}`:`#${sec}`};
+return <section className="d-panel d-start" aria-labelledby="d-title"><label>{c.topics.eyebrow}</label><h1 id="d-title">{c.topics.title}</h1><LibraryCards cards={c.topics.cards} href={href}/></section>}
 function Section({id}){if(id==="did-you-know"&&c.fact)return <Fact/>;const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
 return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.notes.eyebrow}</label><h1 id="d-title">{label}</h1><p className="d-desc">{t?t.desc:c.notes.desc}</p>
 {id==="quick-notes"?<><ol className="d-notes">{c.notes.items.map(([n,title,tag,status])=><li key={n}><span className="d-no">{n}</span><b>{title}</b><span className="d-tag">{tag}</span><em className={status==="DRAFT"?"draft":""}>{status}</em></li>)}</ol><Numbers n={c.numbers}/></>
@@ -206,7 +211,7 @@ const[tour,setTour]=useState(null);const closeTour=()=>{markStep("tour:"+tour);s
 useEffect(()=>{if(!c.tour||navigator.webdriver)return;const want=active==="lab"?(route.art?null:"lab"):"dashboard";if(!want||readProgress().steps["tour:"+want])return;
 let n=0;const iv=setInterval(()=>{const ready=document.querySelector(want==="lab"?".lab-pal":".tabs");if(ready||++n>40){clearInterval(iv);if(ready)setTour(want)}},150);return()=>clearInterval(iv)},[active,route.art]);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
-useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:`${s[1]} · Dashboard | Tech Katta`},[route]);
+useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
 const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
 {subs.length>0&&<div className="side-sub">{subs.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</div>}</React.Fragment>});
 return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
@@ -215,7 +220,7 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav>{c.tour&&<button type="button" className="d-tour" onClick={()=>setTour(active==="lab"?"lab":"dashboard")}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
-<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:<Section id={active}/>}</main></div></div>}
+<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active?<Section id={active}/>:<Home/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
 // Storage can be blocked (private modes, site settings): every read and write is optional (QA M1).
