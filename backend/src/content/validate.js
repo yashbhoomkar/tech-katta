@@ -66,7 +66,6 @@ const SITE = {
   // The IND vs PAK Lab on the landing page (a Lab challenge) and the "did you know" dashboard tab.
   'landingLab?': { eyebrow: 'text', title: 'text', desc: 'text', challenge: 'text', loading: 'text', open: 'text', openHref: 'text', note: 'text',
     'lite?': Object.fromEntries(['diagram', 'viewers', 'viewersSub', 'cdnBox', 'cdnSub', 'lbBox', 'lbSub', 'lbSubCdn', 'serversBox', 'prewarmShort', 'autoShort', 'cdn', 'cdnHelp', 'servers', 'serversHelp', 'fewer', 'more', 'scaling', 'prewarm', 'auto', 'score', 'needCdn', 'allStars', 'someStars', 'noStars', 'best', 'full'].map((k) => [k, 'text'])) },
-  'learn?': { eyebrow: 'text', title: 'text', desc: 'text', levels: [{ id: 'text', label: 'text', desc: 'text', steps: [{ id: 'text', kind: { oneOf: new Set(['article', 'landing', 'lab', 'note', 'challenge']) }, ref: 'text', title: 'text', why: 'text' }] }], done: 'text', open: 'text', stars: 'text', progress: 'text', levelNote: 'text' },
   'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', dashboard: [{ target: 'text', title: 'text', text: 'text' }], lab: [{ target: 'text', title: 'text', text: 'text' }] },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
@@ -254,22 +253,6 @@ export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
   if (site && site.landingLab && lab && Array.isArray(lab.challenges) && !lab.challenges.some((c) => c && c.id === site.landingLab.challenge)) problems.push(`site.json: landingLab.challenge ${site.landingLab.challenge} is not a Lab challenge`);
-  // Learning paths point at real things: articles, dashboard sections, Lab challenges and levels.
-  if (site && site.learn && Array.isArray(site.learn.levels)) {
-    const arts = new Set(list(articles).map((a) => a && `${a.section}/${a.slug}`)), secs = new Set(list(site.dashboard?.sections).map((s) => s && s[0]));
-    const chs = new Set(list(lab?.challenges).map((c) => c && c.id)), lvls = list(lab?.levels).map((l) => l && l.id), stepIds = new Set();
-    for (const l of site.learn.levels) {
-      if (!l || !Array.isArray(l.steps)) continue;
-      if (lab?.levels && !lvls.includes(l.id)) problems.push(`site.json: learn level ${l.id} is not a Lab level`);
-      for (const st of l.steps) {
-        if (!st) continue;
-        if (stepIds.has(st.id)) problems.push(`site.json: learn step id ${st.id} is used twice`); stepIds.add(st.id);
-        if (st.kind === 'article' && !arts.has(st.ref)) problems.push(`site.json: learn step ${st.id} points at unknown article ${st.ref}`);
-        if ((st.kind === 'note' || st.kind === 'lab') && !secs.has(st.ref)) problems.push(`site.json: learn step ${st.id} points at unknown section ${st.ref}`);
-        if (st.kind === 'challenge' && (st.id !== st.ref || (lab && !chs.has(st.ref)))) problems.push(`site.json: learn step ${st.id} must be a Lab challenge id`);
-      }
-    }
-  }
   validateSite(site, examples, problems);
   const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
   const slugs = new Set();
