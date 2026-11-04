@@ -1,7 +1,7 @@
 // Figures for the Components articles. Same conventions as the API article's figures (parts.jsx):
 // 640-wide viewBox, Swiss colours, SMIL packets on a loop, nothing animated when `still`, and a
 // `uid` so the full-screen copy gets its own marker ids.
-import React from"react";import{Dot,Box,Glow,Show,Mark}from"./parts.jsx";
+import React from"react";import{Dot,Box,Arr,Glow,Show,Mark}from"./parts.jsx";
 
 const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d";
 // A straight arrow between any two points (Arr in parts.jsx is horizontal only).
@@ -144,6 +144,37 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`autt${uid}`}><tit
 <line x1={x(0)} x2={x(50)} y1={y(0)} y2={y(0)} stroke={GREY}/>{[[0,"7:45 pm"],[15,"8:00"],[30,"8:15"],[45,"8:30"]].map(([t,l])=><g key={t}><line x1={x(t)} x2={x(t)} y1={y(0)-4} y2={y(0)+4} stroke={GREY}/><text x={x(t)} y={y(0)+20} textAnchor="middle" className="fl">{l}</text></g>)}
 {!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(50)} y={y(0)} t0={.03} t1={.93} dur={D}/><Glow x={x(15)} y={y(8000)} w={x(19)-x(15)} h={y(3000)-y(8000)} t0={.3} t1={.42} dur={D}/></g>}</svg>}
 
+// Cache, FIG: cache-aside for one menu. Hit: Redis answers in about 1 ms. Miss: Redis has nothing,
+// the Order API reads the database and stores the result with a TTL for the next request.
+function CacheAsideFig({still,uid=""}){const M=`cas${uid}`,D="12s",AX=150,RX=468;
+const lanes=[[60,"GET menu:r42",false,"→"],[84,"the menu (hit) · nothing (miss)",true,"←"],[108,"SET menu:r42 EX 300",false,"→"],[204,"SELECT … FROM menu_items",false,"→"],[228,"rows",true,"←"]];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`cast${uid}`}><title id={`cast${uid}`}>Cache-aside for one restaurant menu. The Order API first asks Redis for menu:r42. On a hit, Redis returns the menu in about a millisecond and the database is never asked. On a miss, Redis returns nothing, the Order API reads the menu from the database in about 5 milliseconds, and stores it in Redis with a 5 minute expiry for the next request. When the restaurant changes its menu, the API updates the database and deletes the key.</title><Mark m={M}/>
+<rect x="20" y="40" width={AX-20} height="210" fill="#fff" stroke={GREY}/><text x={(20+AX)/2} y="140" textAnchor="middle" className="fb">Order API</text><text x={(20+AX)/2} y="156" textAnchor="middle" className="fl">your code</text>
+<rect x={RX} y="44" width="152" height="80" fill="#f8faff" stroke="#2855d9"/><text x={RX+76} y="80" textAnchor="middle" className="fb">Redis</text><text x={RX+76} y="96" textAnchor="middle" className="fl">about 1 ms</text>
+<rect x={RX} y="188" width="152" height="56" fill="#fff" stroke={GREY}/><text x={RX+76} y="212" textAnchor="middle" className="fb">Database</text><text x={RX+76} y="228" textAnchor="middle" className="fl">about 5 ms</text>
+{lanes.map(([y,t,back])=><Arr key={y} m={M} x1={back?RX-2:AX+2} x2={back?AX+4:RX-4} y={y} t={t} dash={back}/>)}
+<text x="0" y="284" className="fl">On a menu change: UPDATE the database, then DEL menu:r42. The next read misses and loads the new menu.</text>
+{!still&&<g aria-hidden="true">
+<Dot x1={AX+4} x2={RX-8} y={60} t0={.02} t1={.1} dur={D}/><Glow x={RX} y={44} w={152} h={80} t0={.1} t1={.14} dur={D}/><Dot x1={RX-6} x2={AX+8} y={84} t0={.14} t1={.22} dur={D}/><Show t0={.14} t1={.3} dur={D}><text x={RX+76} y="138" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>HIT</text></Show>
+<Dot x1={AX+4} x2={RX-8} y={60} t0={.36} t1={.44} dur={D}/><Show t0={.44} t1={.62} dur={D}><text x={RX+76} y="138" textAnchor="middle" className="fl" style={{fill:RED}}>MISS</text></Show><Dot x1={RX-6} x2={AX+8} y={84} t0={.46} t1={.52} dur={D}/>
+<Dot x1={AX+4} x2={RX-8} y={204} t0={.54} t1={.62} dur={D}/><Glow x={RX} y={188} w={152} h={56} t0={.62} t1={.66} dur={D}/><Dot x1={RX-6} x2={AX+8} y={228} t0={.66} t1={.74} dur={D}/><Dot x1={AX+4} x2={RX-8} y={108} t0={.76} t1={.84} dur={D}/><Glow x={RX} y={44} w={152} h={80} t0={.84} t1={.9} dur={D}/></g>}</svg>}
+
+// Cache, FIG: the "cache restarts at dinner" challenge. 12,000 queries a second, 90% hits, 10% writes:
+// the database (db.m5.large, about 2,500 a second) normally sees about 2,300. The cache is down for
+// 10 minutes (every query goes to the database), then comes back empty and warms up over 10 minutes.
+function CacheWarmFig({still,uid=""}){const D="10s",x=t=>80+t*11.5,y=q=>232-q*.0145,CAP=2500,BASE=2280,ALL=12000;
+const load=[[0,BASE],[15,BASE],[15,ALL],[25,ALL],[35,BASE],[45,BASE]],path=load.map(([t,q],i)=>`${i?"L":"M"}${x(t)} ${y(q)}`).join("");
+const over=`M${x(15)} ${y(CAP)}L${x(15)} ${y(ALL)}L${x(25)} ${y(ALL)}L${x(25+10*(ALL-CAP)/(ALL-BASE))} ${y(CAP)}Z`;
+return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>Database queries a second during Zotato's dinner rush. With the cache working, the database sees about 2,300 a second, just under the 2,500 a db.m5.large handles. At 8:15 the cache crashes and every one of the 12,000 queries a second goes to the database for 10 minutes. When the cache returns at 8:25 it is empty, so the load falls back only as the cache warms up, reaching normal at 8:35. For about 20 minutes the database is asked for far more than it can handle.</title>
+{[0,5000,10000].map(q=><g key={q}><line x1={x(0)} x2={x(45)} y1={y(q)} y2={y(q)} stroke="#eef1f5"/><text x={x(0)-8} y={y(q)+4} textAnchor="end" className="fl">{q.toLocaleString("en-IN")}</text></g>)}
+<text x="0" y="30" className="fl">database queries/s</text>
+<path d={over} fill="#fde3e1"/><line x1={x(0)} x2={x(45)} y1={y(CAP)} y2={y(CAP)} stroke={RED} strokeDasharray="4 3"/><text x={x(0)+4} y={y(CAP)-6} className="fl" style={{fill:RED}}>database limit · 2,500</text>
+<path d={path} fill="none" stroke={INK} strokeWidth="2"/>
+<text x={(x(15)+x(25))/2} y={y(ALL)-10} textAnchor="middle" className="fl">cache down</text><text x={(x(25)+x(35))/2+14} y={y(7600)} className="fl">back, empty:</text><text x={(x(25)+x(35))/2+14} y={y(7600)+14} className="fl">warming up</text>
+<text x={x(1)} y={y(BASE)+18} className="fl">cache working: 90% hits</text>
+<line x1={x(0)} x2={x(45)} y1={y(0)} y2={y(0)} stroke={GREY}/>{[[0,"8:00 pm"],[15,"8:15"],[25,"8:25"],[35,"8:35"],[45,"8:45"]].map(([t,l])=><g key={t}><line x1={x(t)} x2={x(t)} y1={y(0)-4} y2={y(0)+4} stroke={GREY}/><text x={x(t)} y={y(0)+20} textAnchor="middle" className="fl">{l}</text></g>)}
+{!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(45)} y={y(0)} t0={.03} t1={.93} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
@@ -154,5 +185,7 @@ export const COMPONENT_FIGS={
 "gw-front":{C:GwFrontFig,ar:640/300,title:n=>`ONE FRONT DOOR FOR ${n}`},
 "rate-limit":{C:RateFig,ar:640/300,title:()=>"THREE RATE LIMITERS, 5 REQUESTS A SECOND"},
 "scale-out":{C:ScaleFig,ar:640/280,title:()=>"SCALE UP OR SCALE OUT"},
+"cache-aside":{C:CacheAsideFig,ar:640/300,title:()=>"ONE MENU READ: A HIT AND A MISS"},
+"cache-warm":{C:CacheWarmFig,ar:640/290,title:n=>`WHEN ${n}'S CACHE RESTARTS AT DINNER`},
 "autoscale":{C:AutoFig,ar:640/280,title:n=>`AUTOSCALING THROUGH ${n}'S FLASH SALE`},
 };
