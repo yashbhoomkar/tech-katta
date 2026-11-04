@@ -1,0 +1,64 @@
+{
+  "section": "components",
+  "slug": "api-gateways",
+  "group": "edge",
+  "no": "COMPONENT // 03",
+  "tag": "EDGE",
+  "date": "4 Nov 2026",
+  "title": "API gateways and rate limiting: the front door and its bouncer",
+  "dek": "What a gateway does before a request reaches your code, how it differs from a load balancer, and how rate limiters decide who gets a 429.",
+  "body": [
+    {"t": "tldr", "items": [
+      "An API gateway is one front door for many services. It ends HTTPS, checks who is calling, applies rate limits and routes each request to the right service.",
+      "A load balancer spreads requests across copies of one service. A gateway decides which service, and whether the request may go in at all. Many systems use both.",
+      "Rate limiting protects you from abuse, from runaway clients and from your own costs. Over the limit, the answer is `429 Too Many Requests`.",
+      "Token bucket is the usual algorithm: it allows short bursts and a steady average. Fixed windows are simpler but let twice the limit through at a window edge.",
+      "A gateway adds a few milliseconds and a per-request bill. Keep business logic out of it."
+    ]},
+    {"t": "example"},
+    {"t": "fig", "id": "gw-front", "cap": "Every Zotato request goes through the gateway's four checks in order. A customer's order passes them all and is routed to Orders. A restaurant's billing system that has sent too many requests is stopped at check 3 with `429` and never touches a service."},
+    {"t": "h2", "x": "What a gateway does"},
+    {"t": "p", "x": "Zotato has separate services for orders, menus and payments. Without a gateway, each would need its own public address, its own HTTPS setup, its own login check and its own limits, and the apps would need to know about all of them. With a gateway, the apps call `api.zotato.in` and the gateway handles the shared work once."},
+    {"t": "list", "items": [
+      "Routing: `/orders/*` to the Order service, `/menus/*` to the Menu service. Services can move or split without the apps changing.",
+      "Authentication: reject requests without a valid token or API key before they reach any service. Services still check what the caller may do.",
+      "Rate limits and quotas: per user, per API key, per endpoint.",
+      "Everything else that is the same for every service: HTTPS, CORS, request size limits, logging, metrics, request IDs for tracing."
+    ]},
+    {"t": "analogy", "x": "The security desk of an office building. It checks your ID, tells you which floor to go to, and stops letting people in when the lobby is full. The people upstairs do the actual work and never deal with strangers at the door."},
+    {"t": "h2", "x": "Gateway or load balancer?"},
+    {"t": "p", "x": "They overlap, because a layer 7 load balancer can also route by path. The difference is what they know. A load balancer knows servers: which copies are healthy and how busy each is. A gateway knows the API: who the caller is, which plan they are on, how many requests they have left. A common setup is gateway first, then a load balancer in front of each service's servers. Managed gateways (Amazon API Gateway, Google Apigee, Azure API Management) do the balancing for you; self-hosted ones (Kong, Tyk, Envoy-based gateways, Nginx) run behind your own load balancer."},
+    {"t": "more", "label": "Backend for frontend, and gateways inside the system", "body": [
+      {"t": "p", "x": "Some teams run one small gateway per app, a \"backend for frontend\". The customer app's gateway combines the home screen's three calls into one; the restaurant app's gateway shapes data for the kitchen screen. It keeps app-specific code out of the shared services."},
+      {"t": "p", "x": "Traffic between your own services usually does not go back out through the edge gateway. A service mesh (Istio, Linkerd) or the services' own client libraries handle retries, timeouts and encryption between them."}
+    ]},
+    {"t": "h2", "x": "Rate limiting"},
+    {"t": "p", "x": "A rate limit caps how many requests a caller can make in a period. It protects the system from a single caller using all of it: a buggy app retrying in a loop, a scraper, an attacker guessing passwords, or a partner whose batch job runs at the wrong time. It also protects money. Zotato's OTP login allows a few requests per phone number per hour, because every SMS costs money."},
+    {"t": "p", "x": "Over the limit, the gateway answers `429 Too Many Requests`, ideally with a `Retry-After` header saying when to try again. Good clients wait and retry with backoff instead of hammering harder."},
+    {"t": "fig", "id": "rate-limit", "cap": "The same 17 requests through three limiters, each allowing 5 a second. The fixed window lets 10 through in about two thirds of a second, because its count resets at the 1 second mark (14 of 17 overall). The sliding window never allows more than 5 in any second (10 of 17). The token bucket starts full and keeps refilling, so it lets most of the bursts through, then about one request every fifth of a second (14 of 17)."},
+    {"t": "type", "name": "Token bucket", "kind": "THE USUAL CHOICE", "what": "Each caller has a bucket of tokens that refills at a steady rate up to a maximum. Each request takes one token; no token, no entry.", "use": "Most APIs: it allows short bursts (a screen loading several things at once) but holds the average to the refill rate.", "avoid": "Cases that need a perfectly smooth output rate; use a leaky bucket or a queue.", "ex": "Each restaurant's billing system gets a bucket of 20 that refills at 10 a second: a burst of 20 order checks is fine, a steady 50 a second is not.", "like": "Darshan passes at a temple counter: a few are kept ready, more are printed every few minutes, and when they run out you wait.", "more": ["Two numbers to choose: the refill rate (the long-term average you allow) and the bucket size (the largest burst).", "It is cheap to store: two values per caller, the token count and the time it was last updated. The refill is calculated when the next request arrives; nothing runs in the background."]},
+    {"t": "type", "name": "Fixed window", "kind": "SIMPLEST", "what": "Count requests per caller in each clock window (this minute, this second) and reject past the limit. The count resets when the window changes.", "use": "Daily or monthly quotas, where an edge effect does not matter.", "avoid": "Short limits that protect capacity: a caller can send the full limit at the end of one window and again at the start of the next.", "ex": "A partner's plan includes 1 lakh requests a day, counted from midnight.", "like": "A canteen that serves 100 plates per hour slot: 100 people at 12:59 and another 100 at 1:00 still crowd the kitchen.", "more": ["In Redis it is one `INCR` on a key such as `rl:partner42:2026-11-04` plus an expiry, which is why it is so common."]},
+    {"t": "type", "name": "Sliding window", "kind": "STRICT", "what": "Count requests in the last N seconds, measured from now, not from the clock.", "use": "Limits that must hold in any period, such as login attempts.", "avoid": "Very high traffic per key if you keep a log of every request; use the counter version.", "ex": "At most 5 OTP requests per phone number in any hour, not five at 9:59 and five more at 10:00.", "like": "A bank that allows five withdrawals in any 30 days, counted back from today.", "more": ["The log version stores every request's time and counts them: exact, but memory grows with traffic. The counter version keeps this window's and the previous window's count and weights the previous one by how much of it still overlaps: nearly exact, and only two numbers."]},
+    {"t": "more", "label": "Rate limiting across many servers", "body": [
+      {"t": "p", "x": "One gateway server can count in its own memory. Ten gateway servers each counting alone would let ten times the limit through. The usual fix is a shared counter in Redis, updated with one atomic operation (a Lua script for a token bucket). It adds about a millisecond per request."},
+      {"t": "p", "x": "Decide what happens if Redis is down. Most teams fail open (let requests through, maybe with a looser limit in each server's memory) for normal endpoints, and fail closed for expensive or risky ones like OTPs and payments."},
+      {"t": "p", "x": "Choose the key carefully. Per user or per API key is fair. Per IP address catches anonymous abuse, but many people can share one IP address behind a mobile network or an office."}
+    ]},
+    {"t": "h2", "x": "What it costs you"},
+    {"t": "list", "items": [
+      "Latency: every request passes through one more hop. A managed gateway often adds around 10 ms.",
+      "Money: managed gateways bill per request, about $3.50 per million for Amazon's REST APIs. At an average of 1,000 requests a second, that is 2.6 billion requests and about $9,000 a month, often more than the servers behind it.",
+      "One more thing that can fail or become the bottleneck. Managed gateways also have their own limits (around 10,000 requests a second per account by default on Amazon API Gateway) that you must raise ahead of a big event.",
+      "A tempting place for logic. Keep business rules in the services; a gateway full of special cases becomes the hardest part of the system to change."
+    ]},
+    {"t": "h2", "x": "In an interview"},
+    {"t": "list", "items": [
+      "Put a gateway at the edge when there are several services or outside partners, and say what it does: auth, rate limits, routing.",
+      "Name the algorithm and its two numbers: \"token bucket per API key, refill 10 a second, burst 20\".",
+      "Say where the counters live (Redis) and what happens when Redis is unavailable.",
+      "Return `429` with `Retry-After`, and expect clients to back off.",
+      "If cost or latency comes up, mention that a self-hosted gateway or a plain load balancer can be cheaper at very high request rates."
+    ]},
+    {"t": "lab", "x": "A full day of Zotato traffic goes through an API Gateway. Keep every request flowing at the 8:30 pm peak, and watch what the gateway costs at this traffic.", "to": "lab/first-rush", "go": "Try \"Lunch and dinner rush\""}
+  ]
+}

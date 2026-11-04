@@ -2,6 +2,7 @@
   "articles": [
     "concepts/api-types",
     "components/load-balancers",
-    "components/cdns"
+    "components/cdns",
+    "components/api-gateways"
   ]
 }

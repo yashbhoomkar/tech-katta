@@ -71,6 +71,45 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`cdtt${uid}`}><tit
 {REQS.map((r,i)=>still?<g key={i}>{mark(r)}</g>:<Show key={i} t0={+(r[0]/100*.9+.02).toFixed(3)} t1={.98} dur={D}>{mark(r)}</Show>)}
 {!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(100)} y={134} t0={.02} t1={.92} dur={D}/></g>}</svg>}
 
+// API gateway, FIG: one front door. The customer app's request passes the four checks and is routed
+// to Orders; a restaurant's billing system goes over its limit and gets 429 back.
+const GW_STEPS=["1  HTTPS ends here","2  Who is calling?","3  Within their limit?","4  Route by path"];
+function GwFrontFig({still,uid=""}){const M=`gwf${uid}`,D="10s",GX=200,GW=210,SX=490,SY=[70,150,230],RY=[88,132,176,220];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`gwft${uid}`}><title id={`gwft${uid}`}>Every request to Zotato goes through one API gateway. It ends HTTPS, checks who is calling, checks that they are within their rate limit, and routes by path to the Orders, Menus or Payments service. A customer's order passes all four checks and reaches Orders. A restaurant's billing system that has sent too many requests gets 429 Too Many Requests and never reaches a service.</title><Mark m={M}/>
+<Line x1={130} y1={90} x2={GX-2} y2={90} m={M}/><Line x1={130} y1={210} x2={GX-2} y2={210} m={M}/>
+{SY.map(y=><Line key={y} x1={GX+GW} y1={220} x2={SX-2} y2={y} m={M} c={GREY}/>)}
+<Box x={0} y={90} w={130} t="Customer app"/><Box x={0} y={210} w={130} t="Restaurant billing"/><text x="65" y="241" textAnchor="middle" className="fl">partner, API key</text>
+<rect x={GX} y="44" width={GW} height="200" fill="#f8faff" stroke="#2855d9"/><text x={GX+GW/2} y="64" textAnchor="middle" className="fk">API GATEWAY</text>
+{GW_STEPS.map((t,i)=><g key={t}><rect x={GX+10} y={RY[i]-14} width={GW-20} height="28" fill="#fff" stroke="#d9dee7"/><text x={GX+20} y={RY[i]+4} className="fq">{t}</text></g>)}
+{[["Orders","/orders"],["Menus","/menus"],["Payments","/payments"]].map(([n,p],i)=><g key={n}><Box x={SX} y={SY[i]} w={150} t={n}/><text x={SX+75} y={SY[i]+31} textAnchor="middle" className="fl">{p}</text></g>)}
+{!still&&<g aria-hidden="true">
+<Dot x1={132} x2={GX-4} y={90} t0={.02} t1={.08} dur={D}/>{RY.map((y,i)=><Glow key={i} x={GX+10} y={y-14} w={GW-20} h={28} t0={+(.08+i*.06).toFixed(2)} t1={+(.14+i*.06).toFixed(2)} dur={D}/>)}<Dot x1={GX+GW+2} x2={SX-4} y={220} y2={72} t0={.32} t1={.4} dur={D}/><Glow x={SX} y={53} w={150} h={34} t0={.4} t1={.46} dur={D}/>
+<Dot x1={132} x2={GX-4} y={210} t0={.52} t1={.58} dur={D}/><Glow x={GX+10} y={RY[0]-14} w={GW-20} h={28} t0={.58} t1={.64} dur={D}/><Glow x={GX+10} y={RY[1]-14} w={GW-20} h={28} t0={.64} t1={.7} dur={D}/>
+<Show t0={.7} t1={.92} dur={D}><rect x={GX+10} y={RY[2]-14} width={GW-20} height="28" fill="#fff5f4" stroke={RED}/><text x={GX+20} y={RY[2]+4} className="fq">3  Over the limit: stop</text></Show>
+<Dot x1={GX-4} x2={132} y={222} t0={.74} t1={.82} dur={D}/><Show t0={.76} t1={.94} dur={D}><text x="165" y="200" textAnchor="middle" className="fl" style={{fill:RED}}>429</text></Show></g>}</svg>}
+
+// Rate limiting, FIG: the same requests through three limiters, each allowing 5 requests a second.
+// Decisions are computed, not drawn: a burst just before and just after 1 s shows the fixed window
+// letting 10 through in about 0.65 s, the sliding window holding to 5 in any second, the token
+// bucket letting most of the bursts through (it starts full) and then about one request every 0.2 s.
+const RT=[.62,.68,.74,.8,.86,.92,1.02,1.08,1.14,1.2,1.26,1.6,1.85,2.1,2.35,2.6,2.85];
+const fixedW=()=>{const n={};return RT.map(t=>{const w=Math.floor(t);n[w]=(n[w]||0)+1;return n[w]<=5})};
+const slideW=()=>{const ok=[];return RT.map(t=>{const c=ok.filter(x=>x>t-1).length;if(c<5){ok.push(t);return true}return false})};
+const bucket=()=>{let tok=5,last=0;return RT.map(t=>{tok=Math.min(5,tok+(t-last)*5);last=t;if(tok>=1){tok-=1;return true}return false})};
+const LIMITERS=[["FIXED WINDOW","5 per clock second",fixedW()],["SLIDING WINDOW","5 in any 1 second",slideW()],["TOKEN BUCKET","holds 5, refills 5 a second",bucket()]];
+function RateFig({still,uid=""}){const D="10s",x=t=>150+t*135,RY0=56;
+const dot=(t,ok,y)=>ok?<circle cx={x(t)} cy={y} r="4" fill="#2855d9"/>:<circle cx={x(t)} cy={y} r="3.5" fill="#fff" stroke={RED} strokeWidth="1.5"/>;
+const at=t=>+(t/3*.85+.03).toFixed(3);
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><title id={`rlt${uid}`}>The same 17 requests, a burst just before one second, a burst just after it, then one every quarter second, go through three rate limiters that each allow 5 requests a second. The fixed window lets 10 requests through within about two thirds of a second because the count resets at one second. The sliding window never lets more than 5 through in any second. The token bucket starts full and keeps refilling, so it lets most of the bursts through and then about one request every fifth of a second.</title>
+<text x="0" y="22" className="fl">filled = let through · open = rejected with 429</text>
+<text x="0" y={RY0+4} className="fk">REQUESTS</text>{RT.map((t,i)=>still?<circle key={i} cx={x(t)} cy={RY0} r="4" fill={GREY}/>:<Show key={i} t0={at(t)} t1={.98} dur={D}><circle cx={x(t)} cy={RY0} r="4" fill={GREY}/></Show>)}
+{LIMITERS.map(([n,sub,ok],r)=>{const y=RY0+58*(r+1);return <g key={n}><line x1="0" x2="640" y1={y-29} y2={y-29} stroke="#d9dee7"/><text x="0" y={y} className="fk">{n}</text><text x="0" y={y+15} className="fsub">{sub}</text>
+{r===0&&[1,2].map(w=><line key={w} x1={x(w)} x2={x(w)} y1={y-20} y2={y+12} stroke={GREY} strokeDasharray="2 3"/>)}
+{RT.map((t,i)=>still?<g key={i}>{dot(t,ok[i],y)}</g>:<Show key={i} t0={at(t)} t1={.98} dur={D}>{dot(t,ok[i],y)}</Show>)}
+<text x="640" y={y+4} textAnchor="end" className="fl">{ok.filter(Boolean).length} of {RT.length}</text></g>})}
+<line x1={x(0)} x2={x(3)} y1="268" y2="268" stroke={GREY}/>{[0,1,2,3].map(t=><g key={t}><line x1={x(t)} x2={x(t)} y1="264" y2="272" stroke={GREY}/><text x={x(t)} y="288" textAnchor="middle" className="fl">{t} s</text></g>)}
+{!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(3)} y={268} t0={.03} t1={.88} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
@@ -78,4 +117,6 @@ export const COMPONENT_FIGS={
 "lb-algos":{C:LbAlgosFig,ar:640/330,title:()=>"THREE WAYS TO PICK A SERVER"},
 "cdn-edge":{C:CdnEdgeFig,ar:640/320,title:n=>`${n}'S PHOTOS, SERVED FROM NEARBY`},
 "cdn-ttl":{C:CdnTtlFig,ar:640/260,title:()=>"ONE MENU AT ONE EDGE, 7 TO 8:40 PM"},
+"gw-front":{C:GwFrontFig,ar:640/300,title:n=>`ONE FRONT DOOR FOR ${n}`},
+"rate-limit":{C:RateFig,ar:640/300,title:()=>"THREE RATE LIMITERS, 5 REQUESTS A SECOND"},
 };
