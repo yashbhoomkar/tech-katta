@@ -4,10 +4,12 @@
 //            A session lasts SESSION_DAYS from its last use (renewed at most once a day), and never
 //            more than MAX_SESSION_DAYS after sign-in.
 //   lab      { userId (unique), designs: [design], deleted: [{id, at}], progress, updatedAt }
+//   events   { name, at, visitor, userId?, device, page, props }  — usage events (events.js), TTL 13 months
 // The browser holds a random session token in an HttpOnly cookie; only an HMAC of it (keyed with
 // SESSION_SECRET) is stored, so the sessions collection alone can't be used to sign in.
 import { MongoClient } from 'mongodb';
 import { createHmac, randomBytes } from 'node:crypto';
+import { RETENTION_DAYS } from './events.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
 const DAY = 86_400_000;
@@ -31,7 +33,7 @@ export function errorKind(error) {
 export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, now = () => Date.now() }) {
   const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 10, appName: 'tech-katta-api' });
   const db = mongo.db(dbName);
-  const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab');
+  const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab'), events = db.collection('events');
   let ready = null, health = 'checking', checkedAt = 0, checking = null;
   const init = () => (ready ||= Promise.all([
     users.createIndex({ googleSub: 1 }, { unique: true }),
@@ -39,6 +41,10 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     sessions.createIndex({ userId: 1 }),
     lab.createIndex({ userId: 1 }, { unique: true }),
+    events.createIndex({ at: 1 }, { expireAfterSeconds: RETENTION_DAYS * 86_400 }),
+    events.createIndex({ name: 1, at: -1 }),
+    events.createIndex({ visitor: 1, at: -1 }),
+    events.createIndex({ userId: 1, at: -1 }, { sparse: true }),
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
@@ -78,8 +84,10 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     async signOut(token) { if (typeof token === 'string') await sessions.deleteOne({ tokenHash: hash(token) }); },
     // Every session of the account ends (lost phone, shared computer). Returns how many there were.
     async signOutAll(userId) { return (await sessions.deleteMany({ userId })).deletedCount; },
-    // Everything stored about the user goes: Lab data, sessions, the account.
+    // Everything stored about the user goes: usage events tied to the account, Lab data, sessions, the account.
+    async logEvents(docs) { if (docs.length) { await init(); await events.insertMany(docs, { ordered: false }); } },
     async deleteAccount(userId) {
+      await events.deleteMany({ userId });
       await lab.deleteOne({ userId });
       await sessions.deleteMany({ userId });
       await users.deleteOne({ _id: userId });

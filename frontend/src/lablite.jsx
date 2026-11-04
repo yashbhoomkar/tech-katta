@@ -2,7 +2,7 @@
 // stars as the full Lab, but driven by three controls instead of a canvas, which can't be used with
 // a thumb (QA H5, H6). The design it builds: Viewers → (CDN) → Load Balancer → Servers.
 import React,{useEffect,useMemo,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";
-import{runChallenge}from"./lab/challenges.js";import{readProgress,recordStars}from"./progress.js";import"./lablite.css";import{KeepStars}from"./accountui.jsx";
+import{runChallenge}from"./lab/challenges.js";import{readProgress,recordStars}from"./progress.js";import"./lablite.css";import{KeepStars}from"./accountui.jsx";import{track}from"./analytics.js";
 const N=(id,type,config={})=>({id,type,x:0,y:0,config});
 export function liteDesign({cdn,servers,prewarm}){const ns=[N("viewers","client"),...(cdn?[N("cdn","cdn")]:[]),N("lb","lb"),N("origin","server",{size:"c5.2xlarge",count:prewarm?servers:Math.min(5,servers),maxCount:servers,autoscale:!prewarm,queriesPerRequest:1})];
 return{nodes:ns,edges:ns.slice(1).map((n,i)=>({from:ns[i].id,to:n.id}))}}
@@ -12,7 +12,7 @@ const[cdn,setCdn]=useState(false),[servers,setServers]=useState(10),[prewarm,set
 const ch=st.lab?.challenges?.find(c=>c.id===l.challenge);const design=useMemo(()=>liteDesign({cdn,servers,prewarm}),[cdn,servers,prewarm]);
 useEffect(()=>setRes(null),[cdn,servers,prewarm]);
 if(st.err)return <LoadError what="the challenge" retry={go}/>;if(!st.lab)return <Loading label={l.loading}/>;if(!ch)return null;
-const score=()=>{const r=runChallenge(design,st.lab,ch);if(!r.error)recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));setRes(r)};const best=readProgress().stars[ch.id]||0;
+const score=()=>{const r=runChallenge(design,st.lab,ch);if(!r.error){recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));track("score",{challenge:ch.id,stars:r.stars,max:r.max,passed:r.checks.map(c=>c.ok?1:0).join(""),lite:true})}setRes(r)};const best=readProgress().stars[ch.id]||0;
 const box=(k,label,sub,on=true)=><div className={"ll-box"+(on?"":" off")} key={k}><b>{label}</b><small>{sub}</small></div>;
 return <div className="ll">
 <div className="ll-flow" aria-label={t.diagram}>{box("v",t.viewers,t.viewersSub)}<i aria-hidden="true">↓</i>

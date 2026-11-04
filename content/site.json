@@ -439,12 +439,16 @@
         "In a MongoDB Atlas database used only by this site. You stay signed in with a random token in a cookie that only the site's API can read; it ends when you sign out, after 30 days without a visit, or 90 days after you signed in. \"Sign out on all devices\" ends it everywhere at once."
       ],
       [
+        "How the site is used",
+        "To learn which articles and Lab challenges help, the site records what you do on it: pages and articles you open, how far you read, components you add, runs, scores, and signing in or out. Each browser gets a random ID kept in its own storage, not a cookie. When you're signed in, these records are linked to your account. They stay in the same database, are never shared, and are deleted after 13 months. If your browser asks sites not to track you (Global Privacy Control or Do Not Track), nothing is recorded."
+      ],
+      [
         "What is not done with it",
-        "No ads, no tracking cookies, no selling or sharing your data. Your email is not used to contact you."
+        "No ads, no tracking cookies, no selling or sharing your data, nothing sent to other analytics companies. Your email is not used to contact you."
       ],
       [
         "Deleting it",
-        "Use Delete my account in the account menu. Your account, designs and stars are removed from the database straight away. The copy in your own browser stays until you clear it."
+        "Use Delete my account in the account menu. Your account, designs, stars and the usage records linked to it are removed from the database straight away. The copy in your own browser stays until you clear it."
       ]
     ]
   }

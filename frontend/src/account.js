@@ -3,7 +3,7 @@
 // account's are merged (lab/merge.js, the same rules the API uses) on sign-in, when the Lab opens,
 // and a few seconds after each change, so the same designs and stars show up on every device.
 import{API}from"./api.js";import{STORE_KEY,STORE_VERSION,readStore}from"./lab/store.js";import{mergeLab}from"./lab/merge.js";
-import{readProgress,replaceProgress}from"./progress.js";
+import{readProgress,replaceProgress}from"./progress.js";import{track}from"./analytics.js";
 
 export const DELETED_KEY="tk-lab-deleted";// {design id: when it was deleted}, so deletions reach other devices
 const call=async(path,{method="GET",body}={})=>{const r=await fetch(API+path,{method,credentials:"include",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined});
@@ -25,11 +25,11 @@ export function loadGoogle(){return gis||=new Promise((res,rej)=>{if(window.goog
 let initialised=false;
 export async function renderGoogleButton(el,{text="signin_with"}={}){const g=await loadGoogle();if(!initialised){g.accounts.id.initialize({client_id:state.clientId,callback:r=>signIn(r.credential),ux_mode:"popup",auto_select:false,itp_support:true,use_fedcm_for_prompt:true});initialised=true}
 g.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
-export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential}});setState({user:r.user});await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
-export async function signOut(){try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
+export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential}});setState({user:r.user});track("sign_in");await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
+export async function signOut(){track("sign_out");try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 // Every device signed in to this account is signed out (lost phone, shared computer).
-export async function signOutAll(){await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
-export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
+export async function signOutAll(){track("sign_out_all");await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
+export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});track("delete_account");try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 
 // --- Lab sync
 const readJSON=k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}};

@@ -6,7 +6,7 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";
+import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";
 const deletedIds=()=>{try{return new Set(Object.keys(JSON.parse(localStorage.getItem(DELETED_KEY)||"{}")||{}))}catch{return new Set()}};
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
@@ -150,7 +150,8 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
-function Canvas({lab,start,embedded}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();
+function Canvas({lab,start,embedded}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
+
 const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.challenges||[]).find(c=>c.id===start);
 // Opened on a challenge (the landing page, #lab/<id>): open this browser's latest design for it, or make
 // one from its start, without creating the example design too (QA H7).
@@ -195,7 +196,7 @@ useEffect(()=>{if(!running)return;const iv=setInterval(()=>{setRun(r=>{let n=adv
 // Stop the clock exactly when the credit runs out (part of the last tick).
 if(c.spent+cost>=lab.budget)return{spent:lab.budget,hours:c.hours+(cost>0?hours*(lab.budget-c.spent)/cost:hours)};return{spent:c.spent+cost,hours:c.hours+hours}})},TICK);return()=>clearInterval(iv)},[running,speed,lab.budget,lab]);
 useEffect(()=>{if(running&&credit.spent>=lab.budget){setRunning(false);setEnded(true)}},[credit,running,lab.budget]);
-const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
+const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;track("component_add",{type:kind});const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
 setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:defaultConfig(comp)}}])},[cat,rf,setNodes]);
 const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data,config}}:n));
 const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
@@ -207,13 +208,13 @@ const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[
 const pick=id=>{writeDesign(loaded.current);setStore(s=>({...s,current:id}));if(!embedded){const latest=load(lab);if(latest.designs[id]){latest.current=id;save(latest)}}setMenu(false)};
 const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],credit:{spent:0,hours:0},...(src?.challenge?{challenge:src.challenge}:{})};writeDesign(loaded.current);persistNew(lab,d,embedded?null:id);setStore(s=>({...s,current:id,designs:{...s.designs,[id]:d}}));setMenu(false)};
 // Start a challenge: reopen this browser's latest design for it, or start one from its starting design.
-const startChallenge=id=>{const c=(lab.challenges||[]).find(x=>x.id===id);if(!c)return;setChMenu(false);setScore(null);const mine=Object.values(store.designs).filter(d=>d.challenge===id).sort((a,b)=>b.updated-a.updated)[0];if(mine)pick(mine.id);else create({name:c.title,nodes:c.start.nodes,edges:c.start.edges,challenge:id})};
+const startChallenge=id=>{const c=(lab.challenges||[]).find(x=>x.id===id);if(!c)return;track("challenge_start",{challenge:id});setChMenu(false);setScore(null);const mine=Object.values(store.designs).filter(d=>d.challenge===id).sort((a,b)=>b.updated-a.updated)[0];if(mine)pick(mine.id);else create({name:c.title,nodes:c.start.nodes,edges:c.start.edges,challenge:id})};
 // Menus close on Esc or a click outside them (QA L1).
 useEffect(()=>{if(!menu&&!chMenu)return;const shut=()=>{setMenu(false);setChMenu(false)};const k=e=>{if(e.key==="Escape")shut()};const m=e=>{if(!e.target.closest?.(".lab-menu,.lab-designs-btn,.lab-ch-btn"))shut()};addEventListener("keydown",k);addEventListener("pointerdown",m,true);return()=>{removeEventListener("keydown",k);removeEventListener("pointerdown",m,true)}},[menu,chMenu]);
 // A link to a challenge that doesn't exist says so instead of silently opening the last design (QA L3).
 const badStart=start&&!(lab.challenges||[]).some(c=>c.id===start)?start:null;
 const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.current)startChallenge(start);firstStart.current=null},[start]);// eslint-disable-line
-const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error)recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));setScore(r)};
+const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error){recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));track("score",{challenge:ch.id,stars:r.stars,max:r.max,passed:r.checks.map(c=>c.ok?1:0).join(""),lite:false})}setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 const duplicate=id=>{const s=store.designs[id];create({...s,name:`${s.name} (copy)`})};
 const del=id=>{noteDeleted(id);const latest=load(lab);delete latest.designs[id];const designs={...storeRef.current.designs};delete designs[id];for(const k of Object.keys(designs))if(!latest.designs[k])delete designs[k];Object.assign(designs,latest.designs);
@@ -230,7 +231,7 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
 <div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{cents(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
 <label className="lab-speed"><span className="sr">Simulation speed</span><select value={speed} onChange={e=>setSpeed(+e.target.value)}>{SPEEDS.map(([l,h])=><option key={l} value={h}>{l}</option>)}</select></label>
-<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){if(run.t===0){let h=credit.hours;if(ch){const day=Math.floor(h/24+1e-9);h=day*24+ch.startHour;if(h<credit.hours-1e-6)h+=24;setCredit(c=>({...c,hours:h}))}setRun({...newRun(),start:h})}}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
+<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){track("run_start",{nodes:nodes.length,challenge:ch?.id||""});if(run.t===0){let h=credit.hours;if(ch){const day=Math.floor(h/24+1e-9);h=day*24+ch.startHour;if(h<credit.hours-1e-6)h+=24;setCredit(c=>({...c,hours:h}))}setRun({...newRun(),start:h})}}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
 {chMenu&&<Challenges lab={lab} progress={progress} start={startChallenge} close={()=>setChMenu(false)}/>}
 {importing&&<Import lab={lab} close={()=>setImporting(false)} create={d=>{create(d);setImporting(false)}}/>}
 {menu&&<Designs lab={lab} onImport={()=>{setMenu(false);setImporting(true)}} onExport={()=>{setMenu(false);const d=store.designs[store.current];const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([exportDesign({...d,...fromFlow(nodes,edges),name})],{type:"application/json"}));a.download=((name.trim()||"design").replace(/[^\p{L}\p{N}._-]+/gu,"-").replace(/^-+|-+$/g,"")||"design")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}} store={store} current={store.current} budget={lab.budget} open={pick} create={()=>create()} example={()=>create(lab.example)} duplicate={duplicate} remove={del} close={()=>setMenu(false)}/>}</header>
