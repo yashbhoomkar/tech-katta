@@ -23,8 +23,8 @@ catch{setState({ready:true,enabled:false})}})()}
 let gis=null;
 export function loadGoogle(){return gis||=new Promise((res,rej)=>{if(window.google?.accounts?.id)return res(window.google);const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=()=>window.google?.accounts?.id?res(window.google):rej(new Error("gis"));s.onerror=()=>{gis=null;rej(new Error("gis"))};document.head.appendChild(s)})}
 let initialised=false;
-export async function renderGoogleButton(el,small){const g=await loadGoogle();if(!initialised){g.accounts.id.initialize({client_id:state.clientId,callback:r=>signIn(r.credential),ux_mode:"popup",auto_select:false,itp_support:true,use_fedcm_for_prompt:true});initialised=true}
-g.accounts.id.renderButton(el,small?{type:"icon",theme:"outline",size:"medium",shape:"square"}:{type:"standard",theme:"outline",size:"medium",text:"signin_with",shape:"rectangular",logo_alignment:"left"})}
+export async function renderGoogleButton(el,{text="signin_with"}={}){const g=await loadGoogle();if(!initialised){g.accounts.id.initialize({client_id:state.clientId,callback:r=>signIn(r.credential),ux_mode:"popup",auto_select:false,itp_support:true,use_fedcm_for_prompt:true});initialised=true}
+g.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
 export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential}});setState({user:r.user});await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
 export async function signOut(){try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}

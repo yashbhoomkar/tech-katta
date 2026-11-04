@@ -2,12 +2,12 @@
 // stars as the full Lab, but driven by three controls instead of a canvas, which can't be used with
 // a thumb (QA H5, H6). The design it builds: Viewers → (CDN) → Load Balancer → Servers.
 import React,{useEffect,useMemo,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";
-import{runChallenge}from"./lab/challenges.js";import{readProgress,recordStars}from"./progress.js";import"./lablite.css";
+import{runChallenge}from"./lab/challenges.js";import{readProgress,recordStars}from"./progress.js";import"./lablite.css";import{KeepStars}from"./accountui.jsx";
 const N=(id,type,config={})=>({id,type,x:0,y:0,config});
 export function liteDesign({cdn,servers,prewarm}){const ns=[N("viewers","client"),...(cdn?[N("cdn","cdn")]:[]),N("lb","lb"),N("origin","server",{size:"c5.2xlarge",count:prewarm?servers:Math.min(5,servers),maxCount:servers,autoscale:!prewarm,queriesPerRequest:1})];
 return{nodes:ns,edges:ns.slice(1).map((n,i)=>({from:ns[i].id,to:n.id}))}}
 const val=c=>c.kind==="availability"?`${c.value.toFixed(2)}%`:"";
-export default function LabLite({l}){const t=l.lite;const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
+export default function LabLite({l,account}){const t=l.lite;const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(lab=>set({lab}),()=>set({err:1}))};useEffect(go,[]);
 const[cdn,setCdn]=useState(false),[servers,setServers]=useState(10),[prewarm,setPrewarm]=useState(true),[res,setRes]=useState(null);
 const ch=st.lab?.challenges?.find(c=>c.id===l.challenge);const design=useMemo(()=>liteDesign({cdn,servers,prewarm}),[cdn,servers,prewarm]);
 useEffect(()=>setRes(null),[cdn,servers,prewarm]);
@@ -26,5 +26,5 @@ return <div className="ll">
 {res&&<div className="ll-res" role="status"><div className="ll-stars" aria-label={`${res.stars} of ${res.max} stars`}>{"★".repeat(res.stars)}<i>{"★".repeat(res.max-res.stars)}</i></div>
 {res.missing?<p className="bad">{t.needCdn}</p>:null}
 <ul>{res.checks.map((c,i)=><li key={i} className={c.ok?"ok":"no"}><b>{c.ok?"✓":"✕"}</b><span>{c.label}</span><small>{val(c)}</small></li>)}</ul>
-<p>{res.stars===res.max?t.allStars:res.stars?t.someStars:t.noStars}</p></div>}
+<p>{res.stars===res.max?t.allStars:res.stars?t.someStars:t.noStars}</p>{res.stars>0&&<KeepStars t={account}/>}</div>}
 <p className="ll-more">{best?`${t.best}: ${"★".repeat(best)} · `:""}<a href={l.openHref}>{t.full} →</a></p></div>}
