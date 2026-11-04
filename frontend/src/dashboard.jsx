@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";
-import Numbers from"./numbers.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{account,startAccount,wireSync,renderGoogleButton,signOut,deleteAccount}from"./account.js";
+import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{account,startAccount,wireSync,renderGoogleButton,signOut,deleteAccount}from"./account.js";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={"did-you-know":"M10 2.5a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM7.5 16h5M8.5 18h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
@@ -20,10 +20,6 @@ function useStill(){const q="(prefers-reduced-motion: reduce)";const[s,set]=useS
 // FIG. 01 of the API article: the four interaction patterns inside Zotato (viewBox 640×372).
 // Animated with SMIL on an 8 s loop: a Dot travels x1→x2 between fractions t0 and t1 of the loop
 // and is hidden the rest of the time. Reduced motion renders the static diagram.
-const LOOP="8s";
-const Dot=({x1,x2,y,y2=y,t0,t1,dur=LOOP})=><circle cx={x1} cy={y} r="4" fill="#2855d9" opacity="0"><animate attributeName="cx" values={`${x1};${x1};${x2};${x2}`} keyTimes={`0;${t0};${t1};1`} dur={dur} repeatCount="indefinite"/>{y2!==y&&<animate attributeName="cy" values={`${y};${y};${y2};${y2}`} keyTimes={`0;${t0};${t1};1`} dur={dur} repeatCount="indefinite"/>}<animate attributeName="opacity" values="0;1;0" keyTimes={`0;${t0};${t1}`} calcMode="discrete" dur={dur} repeatCount="indefinite"/></circle>;
-const Box=({x,y,w=124,t,blue})=><g><rect x={x} y={y-17} width={w} height="34" fill={blue?"#f8faff":"#fff"} stroke={blue?"#2855d9":"#9aa5b4"}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
-const Arr=({x1,x2,y,t,dash,ty,m="ah"})=><g><line x1={x1} y1={y} x2={x2} y2={y} stroke="#1c2733" strokeDasharray={dash?"4 3":undefined} markerEnd={`url(#${m})`}/>{t&&<text x={(x1+x2)/2} y={ty??y-6} textAnchor="middle" className="fl">{t}</text>}</g>;
 const ROWS=[["REQUEST / RESPONSE","REST · GraphQL · gRPC"],["OPEN CONNECTION","WebSockets · SSE"],["CALLBACK","Webhooks"],["ASYNCHRONOUS","Queues · event streams"]];
 function ApiFig({still,uid=""}){const M=`ah${uid}`;return <svg viewBox="0 0 640 372" role="img" aria-labelledby={`fig1t${uid}`}><title id={`fig1t${uid}`}>Four API interaction patterns in Zotato: the customer app requests an order and waits for the response; the rider app and Dispatch keep a connection open and send messages both ways; the payment provider calls Zotato's webhook; the Order service puts an event on Kafka for the Notification service.</title><defs><marker id={M} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#1c2733"/></marker></defs>
 {ROWS.map(([a,b],i)=><g key={a}>{i>0&&<line x1="0" x2="640" y1={i*93} y2={i*93} stroke="#d9dee7"/>}<text x="0" y={i*93+42} className="fk">{a}</text><text x="0" y={i*93+58} className="fsub">{b}</text></g>)}
@@ -40,9 +36,6 @@ function ApiFig({still,uid=""}){const M=`ah${uid}`;return <svg viewBox="0 0 640 
 
 // More figures for the API article, same conventions as FIG. 01: 640-wide viewBox, SMIL packets
 // on a loop, nothing animated when `still`. Glow outlines a box during [t0,t1] of the loop.
-const Glow=({x,y,w,h,t0,t1,dur})=><rect x={x-3} y={y-3} width={w+6} height={h+6} fill="none" stroke="#2855d9" strokeWidth="2" opacity="0"><animate attributeName="opacity" values="0;1;0" keyTimes={`0;${t0};${t1}`} calcMode="discrete" dur={dur} repeatCount="indefinite"/></rect>;
-const Show=({t0,t1,dur,children})=><g opacity="0"><animate attributeName="opacity" values="0;1;0" keyTimes={`0;${t0};${t1}`} calcMode="discrete" dur={dur} repeatCount="indefinite"/>{children}</g>;
-const Mark=({m})=><defs><marker id={m} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#1c2733"/></marker></defs>;
 
 // FIG: choosing an API type. Ask from the top, stop at the first yes; the packet walks three Zotato cases.
 // Order matters: the ladder stops at the first yes, so "another company reporting an event" comes
@@ -87,7 +80,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`frt${uid}`}><titl
 {!still&&<g aria-hidden="true"><Dot x1={A+8} x2={B-10} y={76} t0={.03} t1={.15} dur={D}/><Glow x={B+8} y={89} w={154} h={26} t0={.15} t1={.27} dur={D}/><Dot x1={B-8} x2={304} y={138} t0={.28} t1={.38} dur={D}/>
 <Dot x1={A+8} x2={B-10} y={180} t0={.45} t1={.57} dur={D}/><Glow x={B+8} y={193} w={154} h={26} t0={.57} t1={.68} dur={D}/><Dot x1={B-8} x2={A+10} y={244} t0={.69} t1={.81} dur={D}/></g>}</svg>}
 
-const FIGS={patterns:{C:ApiFig,ar:640/372,title:n=>`FOUR WAYS TWO PROGRAMS TALK, IN ${n}`},choose:{C:ChooseFig,ar:640/470,title:()=>"CHOOSING AN API TYPE"},order:{C:OrderFig,ar:640/364,title:n=>`ONE ${n} ORDER, END TO END`},retry:{C:RetryFig,ar:640/300,title:()=>"A RETRY THAT DOES NOT CHARGE TWICE"}};
+const FIGS={patterns:{C:ApiFig,ar:640/372,title:n=>`FOUR WAYS TWO PROGRAMS TALK, IN ${n}`},choose:{C:ChooseFig,ar:640/470,title:()=>"CHOOSING AN API TYPE"},order:{C:OrderFig,ar:640/364,title:n=>`ONE ${n} ORDER, END TO END`},retry:{C:RetryFig,ar:640/300,title:()=>"A RETRY THAT DOES NOT CHARGE TWICE"},...COMPONENT_FIGS};
 // Read aloud. Articles with a recording (tools/tts → /audio/<slug>/manifest.json) play a natural
 // Kokoro voice from MP3s, chunk by chunk; any chunk without a matching recording, and articles
 // without one, use the browser's speech engine (Web Speech API). The block being read is highlighted.
@@ -159,7 +152,8 @@ case"type":return <section className={cls("a-type")}><h3>{b.name}<small>{b.kind}
 case"analogy":return <aside className={cls("a-analogy")} aria-label="In real life"><b>IN REAL LIFE</b><p>{inline(b.x)}</p></aside>;
 case"code":return <figure className={cls("a-code")}><figcaption>{b.label}</figcaption><pre tabIndex="0" aria-label={b.say}><code>{b.x}</code></pre></figure>;
 case"fig":return <Fig id={b.id} n={fn?.[k]??1} cap={b.cap} still={still} rd={rd?rd(k):""}/>;
-case"table":return <div className={cls("a-table")} role="region" aria-label="API types compared" tabIndex="0"><table role="table"><thead role="rowgroup"><tr role="row">{b.head.map(h=><th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead><tbody role="rowgroup">{b.rows.map(r=><tr key={r[0]} role="row"><th scope="row" role="rowheader">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} role="cell" data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>;
+case"lab":return <a className={cls("a-lab")} href={`#${b.to}`}><b>TRY IT IN THE LAB</b><p>{inline(b.x)}</p><em>{b.go||"Open the Lab"} →</em></a>;
+case"table":return <div className={cls("a-table")} role="region" aria-label={b.label||"Comparison table"} tabIndex="0"><table role="table"><thead role="rowgroup"><tr role="row">{b.head.map(h=><th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead><tbody role="rowgroup">{b.rows.map(r=><tr key={r[0]} role="row"><th scope="row" role="rowheader">{r[0]}</th>{r.slice(1).map((x,j)=><td key={j} role="cell" data-label={b.head[j+1]}>{x}</td>)}</tr>)}</tbody></table></div>;
 case"more":return <details className="a-more a-deeper"><summary><small>GO DEEPER</small>{b.label}</summary>{b.body.map((x,j)=><Block key={j} b={x} i={`${k}.${j}`} still={still}/>)}</details>;
 default:return null}}
 
@@ -204,7 +198,13 @@ function Section({id}){if(id==="did-you-know"&&c.fact)return <Fact/>;const[,labe
 return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.notes.eyebrow}</label><h1 id="d-title">{label}</h1><p className="d-desc">{t?t.desc:c.notes.desc}</p>
 {id==="quick-notes"?<><ol className="d-notes">{c.notes.items.map(([n,title,tag,status])=><li key={n}><span className="d-no">{n}</span><b>{title}</b><span className="d-tag">{tag}</span><em className={status==="DRAFT"?"draft":""}>{status}</em></li>)}</ol><Numbers n={c.numbers}/></>
 :<List id={id}/>}</section>}
-function List({id}){const list=articles.filter(a=>a.section===id);return list.length?<div className="d-list"><span>{list.length} {list.length>1?"PAGES":"PAGE"}</span><ol>{list.map(a=><li key={a.slug}><a href={`#${id}/${a.slug}`}><small>{a.no}</small><b>{a.title}</b><p>{a.dek}</p><em>Read →</em></a></li>)}</ol></div>
+// A section's articles under its subsection headings (site.json dashboard.groups[section]: [[id, label, desc]],
+// article "group"), in that order; articles without a known group come last. No groups: one plain list.
+const grouped=(id,list)=>{const g=d.groups?.[id];if(!g)return[[null,list]];const known=new Set(g.map(x=>x[0]));const rest=list.filter(a=>!known.has(a.group));
+return[...g.map(([gid,label,desc])=>[{gid,label,desc},list.filter(a=>a.group===gid)]),...(rest.length?[[null,rest]]:[])]};
+const Item=({id,a})=><li><a href={`#${id}/${a.slug}`}><small>{a.no}</small><b>{a.title}</b><p>{a.dek}</p><em>Read →</em></a></li>;
+function List({id}){const list=articles.filter(a=>a.section===id);return list.length?<div className="d-list"><span>{list.length} {list.length>1?"PAGES":"PAGE"}</span>
+{grouped(id,list).map(([g,items],i)=>g?<section className="d-group" key={g.gid} aria-labelledby={`g-${g.gid}`}><h2 id={`g-${g.gid}`}>{g.label}</h2><p>{g.desc}</p>{items.length?<ol>{items.map(a=><Item key={a.slug} id={id} a={a}/>)}</ol>:<p className="d-soon">{d.groupEmpty||"Coming soon."}</p>}</section>:<ol key={i}>{items.map(a=><Item key={a.slug} id={id} a={a}/>)}</ol>)}</div>
 :<div className="d-empty"><span>0 PAGES</span><p>{d.empty}</p></div>}
 
 // The System Design Lab (React Flow + simulation) loads only when its tab is opened.
@@ -228,7 +228,7 @@ let n=0;const iv=setInterval(()=>{const ready=document.querySelector(want==="lab
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:active==="privacy"?`${c.privacy.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
 const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
-{subs.length>0&&<div className="side-sub">{subs.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</div>}</React.Fragment>});
+{subs.length>0&&<div className="side-sub">{grouped(id,subs).map(([g,items],i)=>items.length>0&&<React.Fragment key={g?.gid||i}>{g&&<span className="side-group">{g.label}</span>}{items.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</React.Fragment>)}</div>}</React.Fragment>});
 return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b>TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={fold?"Expand sidebar":"Collapse sidebar"} aria-expanded={!fold} aria-controls="sidebar" onClick={toggle}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
 <div className="side-label">{d.label}</div><nav className="side-nav">{links("side-link")}</nav>
