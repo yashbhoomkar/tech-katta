@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";
-import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{AccountControl}from"./accountui.jsx";
+import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle}from"./analytics.js";import{AccountControl}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={"did-you-know":"M10 2.5a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM7.5 16h5M8.5 18h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
@@ -99,7 +99,7 @@ const recOn=!!rec&&(voice===""||voice===REC||!voices.some(v=>v.name===voice));
 voiceRef.current=recOn?null:voices.find(v=>v.name===voice)||voices[0]||null;
 const src=i=>{const c=rec?.chunks?.[i];return recOn&&c&&c.text===q[i]?.text?`/audio/${a.slug}/${c.file}`:null};
 const halt=()=>{run.current++;if(canSpeak)speechSynthesis.cancel();if(el.current){el.current.onended=el.current.onerror=null;el.current.pause()}};
-const play=from=>{halt();const id=run.current;
+const play=from=>{halt();track("read_aloud",{from});const id=run.current;
 const done=()=>{setState("idle");setCur(null);idx.current=0};
 const device=i=>{if(!canSpeak)return say(i+1);const u=new SpeechSynthesisUtterance(q[i].text);const v=voiceRef.current;if(v){u.voice=v;u.lang=v.lang}u.rate=rateRef.current;u.onend=()=>say(i+1);u.onerror=e=>{if(e.error!=="interrupted"&&e.error!=="canceled")say(i+1)};speechSynthesis.speak(u)};
 const say=i=>{if(id!==run.current)return;if(i>=q.length)return done();idx.current=i;setCur(q[i].key);const s=src(i);usingRec.current=!!s;
@@ -168,7 +168,7 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
 // Article bodies are fetched when opened; the summaries list came with the dashboard.
-function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);
+function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
 return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
 
 // Did you know: a surprising fact about traffic at scale (site.json `fact`), moved off the landing page.
@@ -197,7 +197,8 @@ function List({id}){const list=articles.filter(a=>a.section===id);return list.le
 // The System Design Lab (React Flow + simulation) loads only when its tab is opened.
 const Lab=lazy(()=>import("./lab/Lab.jsx"));
 
-function Dashboard(){const[route,setRoute]=useState(fromHash);const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
+function Dashboard(){const[route,setRoute]=useState(fromHash);const firstView=useRef(true);useEffect(()=>{track("page_view",{section:route.sec||"home",slug:route.art?.slug||route.sub||"",ref:firstView.current?referrer():""});firstView.current=false},[route.sec,route.art?.slug,route.sub]);// eslint-disable-line
+const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
 // The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
 // other pages is untouched), and the toggle works per mode.
 const inLab=active==="lab"&&!route.art;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);

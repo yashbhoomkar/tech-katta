@@ -197,3 +197,42 @@ test('a session in use is renewed to 30 days from now, never past 90 days after 
   await sessions.updateOne({ userId: user._id }, { $set: { expiresAt: new Date(Date.now() - 1000) } });
   assert.deepEqual(await (await call('/v1/me', { cookie: a.cookie })).json(), { user: null });
 });
+
+test('usage events: allowlisted events and fields stored, signed-in ones tied to the account, deleted with it', async () => {
+  const { cleanBatch, MAX_BATCH } = await import('../src/auth/events.js');
+  const events = client.db('tk_test').collection('events');
+  const visitor = 'v'.repeat(20);
+  const batch = { visitor, device: 'phone', events: [
+    { name: 'page_view', age: 2000, page: '/dashboard/#concepts/api-types', props: { section: 'concepts', slug: 'api-types', ref: 'google.com', extra: 'dropped' } },
+    { name: 'score', props: { challenge: 'ind-vs-pak', stars: 3, max: 3, passed: '111', lite: true } },
+    { name: 'not_an_event', props: { x: 1 } },
+    { name: 'component_add', props: { type: '<script>' } },
+  ] };
+  // signed out, from another site, bad visitor id
+  assert.equal((await call('/v1/events', { method: 'POST', body: batch, origin: 'https://evil.example' })).status, 403);
+  assert.equal((await call('/v1/events', { method: 'POST', body: { ...batch, visitor: 'short' } })).status, 204);
+  assert.equal(await events.countDocuments({}), 0, 'bad visitor id stores nothing');
+  assert.equal((await call('/v1/events', { method: 'POST', body: batch })).status, 204);
+  const stored = await events.find({ visitor }).sort({ name: 1 }).toArray();
+  assert.deepEqual(stored.map((e) => e.name), ['component_add', 'page_view', 'score'], 'unknown event dropped');
+  const pv = stored.find((e) => e.name === 'page_view');
+  assert.deepEqual(pv.props, { section: 'concepts', slug: 'api-types', ref: 'google.com' }, 'unknown field dropped');
+  assert.equal(pv.device, 'phone'); assert.equal(pv.page, '/dashboard/#concepts/api-types'); assert.equal(pv.userId, undefined);
+  assert.ok(Date.now() - pv.at.getTime() >= 1500, 'age moves the time back');
+  assert.deepEqual(stored.find((e) => e.name === 'component_add').props, {}, 'unsafe text dropped');
+  // signed in: tied to the account; deleting the account deletes those events
+  const a = await signIn({ sub: '7007' });
+  const user = await client.db('tk_test').collection('users').findOne({ googleSub: '7007' });
+  await call('/v1/events', { method: 'POST', cookie: a.cookie, body: { visitor, events: [{ name: 'lab_open', props: { embedded: false, challenge: '' } }] } });
+  assert.equal(await events.countDocuments({ userId: user._id, name: 'lab_open' }), 1);
+  await call('/v1/me', { method: 'DELETE', cookie: a.cookie });
+  assert.equal(await events.countDocuments({ userId: user._id }), 0);
+  assert.equal(await events.countDocuments({ visitor }), 3, 'signed-out events stay (not tied to anyone)');
+  // TTL index: 13 months
+  const ttl = (await events.indexes()).find((i) => i.key.at === 1 && i.expireAfterSeconds);
+  assert.equal(ttl.expireAfterSeconds, 395 * 86_400);
+  // batch cap, time clamp
+  assert.equal(cleanBatch({ visitor, events: Array(80).fill({ name: 'sign_in' }) }).length, MAX_BATCH);
+  const [old] = cleanBatch({ visitor, events: [{ name: 'sign_in', age: 1e12 }] }, { now: 1e13 });
+  assert.equal(old.at.getTime(), 1e13 - 15 * 60_000);
+});

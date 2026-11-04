@@ -7,10 +7,12 @@
 //   POST   /v1/auth/signout-all                           — end every session of this account
 //   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
+//   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
 import { AuthError, SESSION_DAYS, errorKind } from './index.js';
+import { cleanBatch } from './events.js';
 
 export const COOKIE = 'tk_session';
 const MAX_BODY = 2 * 1024 * 1024;
@@ -85,6 +87,11 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       const token = tokenOf(request), me = await accounts.userFor(token);
       // a renewed session gets a renewed cookie, so it lasts as long in the browser as on the server
       if (me?.renewedUntil) response.setHeader('Set-Cookie', cookie(token, Math.floor((me.renewedUntil.getTime() - Date.now()) / 1000)));
+      if (pathname === '/v1/events' && method === 'POST') {
+        if (limited(request, 'events', 60, 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
+        await accounts.logEvents(cleanBatch(await readJson(request), { userId: me ? me.id : null }));
+        response.writeHead(204, { 'Cache-Control': 'no-store', ...cors(request) }); response.end(); return;
+      }
       if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return send(request, response, 200, { user: me ? me.user : null });
       if (!me) return send(request, response, 401, { error: 'signed_out' });
       if (pathname === '/v1/auth/signout-all' && method === 'POST') {

@@ -1,6 +1,6 @@
 // All site content comes from the API (backend/src/content). VITE_API_BASE points a local build at
 // a local API (e.g. VITE_API_BASE=http://127.0.0.1:5000 npm run dev).
-export const API=(import.meta.env.VITE_API_BASE||"https://tech-api.katta.cc").replace(/\/$/,"");
+export const API=(import.meta.env?.VITE_API_BASE||"https://tech-api.katta.cc").replace(/\/$/,"");
 const cache=new Map();
 // GET a JSON path once per page load; retries once on network errors and 5xx, gives up after 8 s.
 export function getJSON(path,{timeout=8000,retries=1}={}){
