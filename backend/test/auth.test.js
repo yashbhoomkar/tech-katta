@@ -250,7 +250,7 @@ test('ads consent: opt-in at sign-in, first/last name and country stored, never 
   const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
   assert.equal((await r.json()).user.adsConsent, true);
   u = await users.findOne({ googleSub: '8008' });
-  assert.equal(u.adsConsent.ads, true); assert.ok(u.adsConsent.at instanceof Date); assert.equal(u.adsConsent.version, '2026-11-04');
+  assert.equal(u.adsConsent.ads, true); assert.ok(u.adsConsent.at instanceof Date); assert.equal(u.adsConsent.version, '2026-11-04.2');
   assert.equal(u.country, 'IN', 'first country kept'); assert.equal(u.lastCountry, 'AE');
   // signing in again without the box does not withdraw it; a bogus country is ignored
   await post({ credential: idToken({ sub: '8008' }), adsConsent: 'yes' }, { 'CF-IPCountry': 'XX' });

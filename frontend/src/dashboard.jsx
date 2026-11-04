@@ -7,7 +7,7 @@ const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
+const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 // Read time of the main text; "more" sections and type details are extra.
 const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
@@ -179,7 +179,8 @@ function Fact(){const f=c.fact;return <section className="d-panel" aria-labelled
 // while it has none.
 function Home(){const href=x=>{const sec=d.sections.find(s=>s[2]===x.id)?.[0];if(!sec)return"#";const first=articles.find(a=>a.section===sec);return first?`#${sec}/${first.slug}`:`#${sec}`};
 return <section className="d-panel d-start" aria-labelledby="d-title"><label>{c.topics.eyebrow}</label><h1 id="d-title">{c.topics.title}</h1><LibraryCards cards={c.topics.cards} href={href}/></section>}
-function Privacy(){const p=c.privacy;return <section className="d-panel" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.updated}</p>
+// Privacy and Terms pages (site.json "privacy", "terms").
+function Policy({p}){return <section className="d-panel" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.updated}</p>
 {p.sections.map(([h,x])=><div className="priv" key={h}><h2>{h}</h2><p>{x}</p></div>)}</section>}
 function Section({id}){if(id==="did-you-know"&&c.fact)return <Fact/>;const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
 return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.notes.eyebrow}</label><h1 id="d-title">{label}</h1><p className="d-desc">{t?t.desc:c.notes.desc}</p>
@@ -214,16 +215,16 @@ const[tour,setTour]=useState(null);const closeTour=()=>{markStep("tour:"+tour);s
 useEffect(()=>{if(!c.tour||navigator.webdriver)return;const want=active==="lab"?(route.art?null:"lab"):"dashboard";if(!want||readProgress().steps["tour:"+want])return;
 let n=0;const iv=setInterval(()=>{const ready=document.querySelector(want==="lab"?".lab-pal":".tabs");if(ready||++n>40){clearInterval(iv);if(ready)setTour(want)}},150);return()=>clearInterval(iv)},[active,route.art]);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
-useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:active==="privacy"?`${c.privacy.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
+useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
 const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
 {subs.length>0&&<div className="side-sub">{grouped(id,subs).map(([g,items],i)=>items.length>0&&<React.Fragment key={g?.gid||i}>{g&&<span className="side-group">{g.label}</span>}{items.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</React.Fragment>)}</div>}</React.Fragment>});
 return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}>
 <aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b>TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={fold?"Expand sidebar":"Collapse sidebar"} aria-expanded={!fold} aria-controls="sidebar" onClick={toggle}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
 <div className="side-label">{d.label}</div><nav className="side-nav">{links("side-link")}</nav>
-{c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
+{c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}{c.terms&&<a className="side-priv" href="#terms">{c.account?.termsLink||c.terms.title}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>setTour(active==="lab"?"lab":"dashboard")}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
-<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active==="privacy"?<Privacy/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
+<main className={"d-body"+(active==="lab"&&!route.art?" d-lab":"")}>{route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
 // Storage can be blocked (private modes, site settings): every read and write is optional (QA M1).

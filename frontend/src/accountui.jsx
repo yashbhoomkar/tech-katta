@@ -28,8 +28,9 @@ export function KeepStars({t}){const a=useAccount();if(!t?.keepStars||!a.ready||
 return <div className="acct-keep"><p>{t.keepStars}</p><GoogleButton t={t} text="continue_with"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div>}
 
 // Opt-in box shown next to a sign-in button: unticked; the choice goes with the sign-in.
-export function ConsentBox({t,privacyHref="#privacy"}){const[on,setOn]=useState(false);useEffect(()=>()=>setAdsChoice(false),[]);if(!t?.adsConsent)return null;
-return <label className="acct-consent"><input type="checkbox" checked={on} onChange={e=>{setOn(e.target.checked);setAdsChoice(e.target.checked)}}/><span>{t.adsConsent} <a href={privacyHref}>{t.privacy}</a></span></label>}
+// "I agree to the Terms and conditions" (unticked, optional); the Terms page says what it covers.
+export function ConsentBox({t,termsHref="#terms",privacyHref="#privacy"}){const[on,setOn]=useState(false);useEffect(()=>()=>setAdsChoice(false),[]);if(!t?.adsConsent)return null;
+return <><label className="acct-consent"><input type="checkbox" checked={on} onChange={e=>{setOn(e.target.checked);setAdsChoice(e.target.checked)}}/><span>{t.adsConsent} <a href={termsHref}>{t.termsLink}</a></span></label>{t.privacyLink&&<a className="acct-agree" href={privacyHref}>{t.privacyLink}</a>}</>}
 
 // The landing page Lab: blurred and locked until the visitor signs in with Google (owner, 11-04).
 // When sign-in is off on the API, the Lab is open as before.
@@ -40,7 +41,7 @@ useEffect(()=>{if(locked&&!seen.current){seen.current=true;track("lab_locked",{l
 if(waiting)return <div className="lock"><div className="lock-blur" ref={inert} aria-hidden="true">{children}</div></div>;
 if(!locked)return children;
 return <div className="lock"><div className="lock-blur" ref={inert} aria-hidden="true">{children}</div>
-<div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b><p>{lock.text}</p><GoogleButton t={t} text="continue_with"/><ConsentBox t={t} privacyHref="/dashboard/#privacy"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div></div>}
+<div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b><p>{lock.text}</p><GoogleButton t={t} text="continue_with"/><ConsentBox t={t} termsHref="/dashboard/#terms" privacyHref="/dashboard/#privacy"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div></div>}
 
 // Account menu switch for the ads opt-in: flips at once, goes back if the API can't be reached.
 function AdsSwitch({t,on}){const[v,setV]=useState(on);useEffect(()=>setV(on),[on]);
