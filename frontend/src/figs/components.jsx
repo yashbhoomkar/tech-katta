@@ -175,6 +175,42 @@ return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`cwt${uid}`}><titl
 <line x1={x(0)} x2={x(45)} y1={y(0)} y2={y(0)} stroke={GREY}/>{[[0,"8:00 pm"],[15,"8:15"],[25,"8:25"],[35,"8:35"],[45,"8:45"]].map(([t,l])=><g key={t}><line x1={x(t)} x2={x(t)} y1={y(0)-4} y2={y(0)+4} stroke={GREY}/><text x={x(t)} y={y(0)+20} textAnchor="middle" className="fl">{l}</text></g>)}
 {!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(45)} y={y(0)} t0={.03} t1={.93} dur={D}/></g>}</svg>}
 
+// Database, FIG: "my last 20 orders" without and with an index on (customer_id, created_at).
+// Left: a scan reads every row. Right: the index's tree is walked root → branch → leaf.
+function DbIndexFig({still,uid=""}){const M=`dbi${uid}`,D="9s",rows=[...Array(14).keys()],hits=new Set([2,8,11]);
+const br=[400,495,590],lf=[365,423,481,539,597];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dbit${uid}`}><title id={`dbit${uid}`}>Finding one customer's latest orders in a table of 5 crore orders. Without an index the database reads every row to find the few that match, which takes seconds. With an index on customer ID and order time, it walks a small tree from the root to one branch to one leaf, three or four page reads, and finds the 20 newest orders in about a millisecond.</title><Mark m={M}/>
+<text x="0" y="22" className="fk">WITHOUT AN INDEX</text><text x="0" y="38" className="fsub">Read every row, keep the matches</text>
+{rows.map(i=><rect key={i} x="20" y={56+i*13} width="250" height="11" fill={hits.has(i)?"#e7edff":"#f5f7fa"} stroke={hits.has(i)?"#2855d9":"#e3e7ee"}/>)}
+<text x="145" y="252" textAnchor="middle" className="fl">orders · 5 crore rows</text><text x="0" y="284" className="fl">every row read: seconds</text>
+{!still&&<rect x="16" y="54" width="258" height="15" fill="none" stroke={INK} strokeWidth="1.5"><animate attributeName="y" values="54;54;223;223" keyTimes="0;.05;.9;1" dur={D} repeatCount="indefinite"/></rect>}
+<line x1="315" x2="315" y1="10" y2="290" stroke="#d9dee7"/>
+<text x="335" y="22" className="fk">WITH AN INDEX</text><text x="335" y="38" className="fsub">on (customer_id, created_at)</text>
+<SBox x={470} y={74} w={90} t="root" blue/>
+{br.map((c,i)=><g key={c}><Line x1={515} y1={86} x2={c} y2={130} c={i===1?INK:GREY} m={i===1?M:undefined}/><SBox x={c-40} y={142} w={80} t={["1 – 40","41 – 90","91 – …"][i]}/></g>)}
+{lf.map((c,i)=><g key={c}><Line x1={495} y1={154} x2={c} y2={198} c={i===2?INK:GREY} m={i===2?M:undefined}/><SBox x={c-25} y={210} w={50} t={i===2?"77":"·"} blue={i===2}/></g>)}
+<text x="481" y="240" textAnchor="middle" className="fl">customer 77: newest 20 orders</text><text x="335" y="284" className="fl">3–4 page reads: about a millisecond</text>
+{!still&&<g aria-hidden="true"><Glow x={470} y={62} w={90} h={24} t0={.1} t1={.25} dur={D}/><Dot x1={505} x2={497} y={88} y2={128} t0={.25} t1={.38} dur={D}/><Glow x={455} y={130} w={80} h={24} t0={.38} t1={.52} dur={D}/><Dot x1={493} x2={483} y={156} y2={196} t0={.52} t1={.65} dur={D}/><Glow x={456} y={198} w={50} h={24} t0={.65} t1={.95} dur={D}/></g>}</svg>}
+
+// Database, FIG: a primary with a Multi-AZ standby (synchronous) and two read replicas
+// (asynchronous). An order is written to the primary; a read sent to a replica a moment later
+// does not find it yet.
+function DbReplicasFig({still,uid=""}){const M=`dbr${uid}`,D="12s";
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dbrt${uid}`}><title id={`dbrt${uid}`}>Zotato's Order API writes to the primary database in zone A. Every write is copied to a standby in zone B before the write is confirmed, so the standby can take over if the primary fails; it serves no reads. Two read replicas receive the same writes asynchronously, about 100 milliseconds behind, and serve reads. A customer who places an order and immediately opens My orders from a replica may not see the new order yet.</title><Mark m={M}/>
+<Box x={0} y={150} w={120} t="Order API"/>
+<Line x1={122} y1={140} x2={218} y2={98} m={M}/><text x="150" y="104" className="fl">writes</text>
+<Line x1={122} y1={160} x2={476} y2={126} m={M} dash/><text x="130" y="194" className="fl">reads (may be a bit old)</text>
+<Box x={220} y={90} w={140} t="Primary · zone A" blue/>
+<Line x1={290} y1={108} x2={290} y2={211} m={M}/><text x="298" y="185" className="fl">sync: copied before OK</text>
+<rect x="220" y="213" width="140" height="34" fill="#fff" stroke={GREY} strokeDasharray="4 3"/><text x="290" y="234" textAnchor="middle" className="fb">Standby · zone B</text><text x="290" y="266" textAnchor="middle" className="fl">Multi-AZ: takes over, no reads</text>
+<Line x1={362} y1={84} x2={476} y2={56} m={M} c={GREY}/><Line x1={362} y1={96} x2={476} y2={118} m={M} c={GREY}/><text x="398" y="40" textAnchor="middle" className="fl">async: ~100 ms behind</text>
+<Box x={480} y={56} w={150} t="Read replica 1"/><Box x={480} y={122} w={150} t="Read replica 2"/>
+{!still&&<g aria-hidden="true">
+<Dot x1={124} x2={214} y={139} y2={100} t0={.02} t1={.1} dur={D}/><Glow x={220} y={73} w={140} h={34} t0={.1} t1={.16} dur={D}/><Dot x1={290} x2={290} y={110} y2={208} t0={.12} t1={.2} dur={D}/><Glow x={220} y={213} w={140} h={34} t0={.2} t1={.25} dur={D}/>
+<Show t0={.25} t1={.42} dur={D}><text x="60" y="122" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>order placed</text></Show>
+<Dot x1={124} x2={472} y={160} y2={127} t0={.3} t1={.4} dur={D}/><Show t0={.4} t1={.6} dur={D}><text x="555" y="156" textAnchor="middle" className="fl" style={{fill:RED}}>not there yet</text></Show>
+<Dot x1={364} x2={472} y={96} y2={117} t0={.5} t1={.62} dur={D}/><Dot x1={364} x2={472} y={84} y2={57} t0={.5} t1={.62} dur={D}/><Show t0={.62} t1={.92} dur={D}><text x="555" y="156" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>now it is</text></Show></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
@@ -185,6 +221,8 @@ export const COMPONENT_FIGS={
 "gw-front":{C:GwFrontFig,ar:640/300,title:n=>`ONE FRONT DOOR FOR ${n}`},
 "rate-limit":{C:RateFig,ar:640/300,title:()=>"THREE RATE LIMITERS, 5 REQUESTS A SECOND"},
 "scale-out":{C:ScaleFig,ar:640/280,title:()=>"SCALE UP OR SCALE OUT"},
+"db-index":{C:DbIndexFig,ar:640/300,title:()=>"FINDING ONE CUSTOMER'S ORDERS"},
+"db-replicas":{C:DbReplicasFig,ar:640/300,title:n=>`${n}'S DATABASE: PRIMARY, STANDBY, REPLICAS`},
 "cache-aside":{C:CacheAsideFig,ar:640/300,title:()=>"ONE MENU READ: A HIT AND A MISS"},
 "cache-warm":{C:CacheWarmFig,ar:640/290,title:n=>`WHEN ${n}'S CACHE RESTARTS AT DINNER`},
 "autoscale":{C:AutoFig,ar:640/280,title:n=>`AUTOSCALING THROUGH ${n}'S FLASH SALE`},
