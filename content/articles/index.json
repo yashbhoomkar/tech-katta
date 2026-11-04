@@ -4,6 +4,7 @@
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",
-    "components/app-servers"
+    "components/app-servers",
+    "components/caches"
   ]
 }
