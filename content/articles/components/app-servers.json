@@ -1,0 +1,66 @@
+{
+  "section": "components",
+  "slug": "app-servers",
+  "group": "compute",
+  "no": "COMPONENT // 04",
+  "tag": "COMPUTE",
+  "date": "4 Nov 2026",
+  "title": "App servers and autoscaling: more cooks for the rush",
+  "dek": "Why app servers should keep no state, when a bigger machine beats more machines, and how autoscaling follows the day without failing the first minutes of a spike.",
+  "body": [
+    {"t": "tldr", "items": [
+      "App servers run your code. Make them stateless: everything that must survive goes to a database, cache or object store, so any server can answer any request.",
+      "Scale up (a bigger machine) is simple but has a ceiling and one point of failure. Scale out (more machines behind a load balancer) has neither.",
+      "Size from measurements: requests a second one instance handles at a safe load, then divide your peak by that.",
+      "Autoscaling adds and removes instances to hold a target load, usually 50 to 70%. New instances take minutes to start, so a sudden spike still lands on the ones already running.",
+      "For a spike you know about (a sale, a match), scale out before it starts. Autoscaling is for the spikes you didn't plan."
+    ]},
+    {"t": "example"},
+    {"t": "h2", "x": "Stateless servers"},
+    {"t": "p", "x": "Zotato's Order API runs as several identical copies. A request to place an order can land on any of them, and the next request from the same phone can land on a different one. That only works if no copy keeps anything important in its own memory or disk."},
+    {"t": "list", "items": [
+      "Orders, users and payments go to the database.",
+      "Logins are a signed token the app sends with every request, or a session kept in a shared store such as Redis.",
+      "Uploaded photos go to object storage, not the server's disk.",
+      "Work that takes long, like generating an invoice PDF, goes on a queue for workers."
+    ]},
+    {"t": "p", "x": "Then a server can be added, replaced or killed at any time, and that is what makes everything else in this article possible."},
+    {"t": "analogy", "x": "Cooks in a restaurant kitchen. Each order is written on a ticket, not remembered by one cook, so any free cook can pick up the next ticket. When the rush comes you bring in more cooks; when a cook goes home, nothing is lost."},
+    {"t": "h2", "x": "Scale up or scale out"},
+    {"t": "fig", "id": "scale-out", "cap": "Scale up: swap an m5.large (about 600 requests a second) for a c5.2xlarge (about 2,500). Scale out: keep the size and add copies behind a load balancer, 600 requests a second each. The Lab uses these sizes and numbers."},
+    {"t": "type", "name": "Scale up", "kind": "VERTICAL", "what": "Move to a machine with more CPU and memory.", "use": "Things that are hard to split, like a single database primary, and early on when one server is enough.", "avoid": "Relying on it for growth: the biggest machine is the limit, and that one machine going down takes everything with it.", "ex": "Zotato's first version ran on one server. Moving it to a bigger one bought months without changing any code.", "like": "Hiring one very fast cook. Great, until that cook is sick.", "more": ["Bigger is not always more expensive per request. In the Lab's prices, four m5.large (2,400 requests a second) cost $0.404 an hour and one c5.2xlarge (2,500) costs $0.34. The reason to scale out anyway is that losing one of four servers costs a quarter of your capacity; losing the only one costs all of it.", "Resizing usually means a restart, so it is a planned change, not something to do in the middle of a rush."]},
+    {"t": "type", "name": "Scale out", "kind": "HORIZONTAL", "what": "Run more copies of the same server behind a load balancer.", "use": "Stateless app servers and workers: almost every web backend.", "avoid": "Servers that keep state locally; fix that first.", "ex": "The Order API runs 5 instances most evenings and 23 during the flash sale.", "like": "More cooks of the same skill, each taking the next ticket.", "more": ["Keep at least two instances, in different availability zones, even when one would be enough for the load. That is what keeps the service up when an instance or a zone fails.", "Everything behind the servers must keep up too. Twenty servers, each with a pool of 20 database connections, open 400 connections; many databases slow down or refuse long before that. Use a connection pooler, or smaller pools per server."]},
+    {"t": "h2", "x": "How many servers?"},
+    {"t": "p", "x": "Measure one instance with a load test against realistic requests: how many requests a second it handles before response times climb. Then plan to run it at about 60% of that, which leaves room for uneven load, a slow dependency or one instance failing."},
+    {"t": "p", "x": "Zotato's evening peak is 1,600 requests a second. An m5.large handles about 600, so at 60% each takes 360: 1,600 ÷ 360 = 4.4, so 5 instances. The flash sale's 8,000 needs 23. At $0.101 an hour, 5 instances cost about $370 a month; 23 running all month would cost about $1,700."},
+    {"t": "h2", "x": "Autoscaling"},
+    {"t": "p", "x": "Autoscaling runs the group between a minimum and a maximum number of instances and changes the count to follow the load. It saves money at night and adds capacity in the rush. But it reacts: it sees load rise, asks for instances, and they take a few minutes to boot and pass their health checks."},
+    {"t": "fig", "id": "autoscale", "cap": "The 8 pm flash sale with autoscaling at a 60% target. At 8:00 demand jumps from 1,600 to 8,000 requests a second. The group asks for 23 instances right away, but they take 4 minutes to boot, so for those 4 minutes everything above 3,000 a second fails. After the sale ends at 8:15, the group waits 15 minutes of low load before removing instances, so Zotato pays for idle ones until 8:30."},
+    {"t": "type", "name": "Target tracking", "kind": "THE DEFAULT", "what": "Keep a metric near a target, such as average CPU at 60% or requests per instance at 360. The autoscaler works out how many instances that needs.", "use": "Most web services. One number to choose.", "avoid": "Metrics that don't follow load. CPU says little about a service that mostly waits on other services; use requests per instance or queue length.", "ex": "The Order API tracks requests per instance with a target of 360.", "like": "Opening more ticket counters at the station when the queues get long. It helps, but a new clerk takes a few minutes to sit down.", "more": ["Scaling out is quick to trigger; scaling in is deliberately slow (here, 15 minutes of low load). Removing instances too eagerly makes the group flap: add, remove, add again, with users paying for every cold start."]},
+    {"t": "type", "name": "Scheduled", "kind": "FOR KNOWN EVENTS", "what": "Set the size for a time: \"from 7:50 pm, at least 24 instances\".", "use": "Sales, launches, match days, the 9 am office rush: anything you can see coming.", "avoid": "Using it for normal daily ups and downs; target tracking already follows those.", "ex": "Zotato schedules 24 instances from 7:50 pm on sale days, so the sale starts on servers that are already warm.", "like": "A railway adding coaches to the trains before Diwali, not after the platform fills.", "more": ["Predictive scaling, offered by some clouds, learns the daily pattern from past weeks and scales ahead of it. It helps with regular peaks, not with one-off events."]},
+    {"t": "more", "label": "Making new instances start faster", "body": [
+      {"t": "list", "items": [
+        "Bake the code into the machine image or container image, so a new instance doesn't install anything when it starts.",
+        "Keep start-up work small: load configuration and connect, and warm caches in the background.",
+        "Containers on a running cluster (Kubernetes, ECS) start in seconds instead of minutes, if the cluster has spare nodes. If it has to add nodes first, you are back to minutes.",
+        "Serverless functions (AWS Lambda, Cloud Run) scale per request and start fastest, but every new copy pays a cold start, and you trade control of the machine for a per-request price."
+      ]}
+    ]},
+    {"t": "h2", "x": "What it costs you"},
+    {"t": "list", "items": [
+      "Headroom costs money: running at 60% means paying for 40% you don't use, most of the time. That is the price of not failing when traffic jumps.",
+      "Autoscaling is late by design. The first minutes of a sudden spike land on the instances already running.",
+      "Every layer behind the servers must scale too: database connections, cache capacity, and the rate limits of the services you call.",
+      "Set the maximum on purpose. Too low and autoscaling stops before the spike is covered; too high and a bug or an attack can run up a large bill."
+    ]},
+    {"t": "h2", "x": "In an interview"},
+    {"t": "list", "items": [
+      "Say the servers are stateless and name where state lives: database, cache, object storage, queue.",
+      "Do the sizing maths: peak requests a second ÷ what one instance handles at a safe load = instances, plus at least one spare across zones.",
+      "Mention autoscaling with its metric and target, and that it reacts in minutes.",
+      "For a known spike, say you would scale out ahead of it.",
+      "Check what scaling out does to the database: connections and queries grow with the number of servers."
+    ]},
+    {"t": "lab", "x": "At 8 pm Zotato's flash sale brings 8,000 requests a second for 15 minutes, five times the usual. New instances take 4 minutes to boot. Keep 99.9% of requests succeeding without blowing the budget.", "to": "lab/flash-sale", "go": "Try \"The 8 pm flash sale\""}
+  ]
+}
