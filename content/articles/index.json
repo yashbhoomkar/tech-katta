@@ -5,6 +5,7 @@
     "components/cdns",
     "components/api-gateways",
     "components/app-servers",
-    "components/caches"
+    "components/caches",
+    "components/databases"
   ]
 }
