@@ -15,7 +15,7 @@ import { RETENTION_DAYS } from './events.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
 // The wording the user agreed to is site.json account.adsConsent; bump this when it changes.
-export const CONSENT_VERSION = '2026-11-04';
+export const CONSENT_VERSION = '2026-11-04.2'; // .2: box wording shortened, details moved to Terms
 const DAY = 86_400_000;
 
 // What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
