@@ -27,6 +27,8 @@ export async function renderGoogleButton(el,{text="signin_with"}={}){const g=awa
 g.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
 export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential}});setState({user:r.user});await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
 export async function signOut(){try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
+// Every device signed in to this account is signed out (lost phone, shared computer).
+export async function signOutAll(){await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 
 // --- Lab sync

@@ -412,6 +412,8 @@
     "syncFailed": "Couldn't reach your account just now; your work is safe in this browser and will be saved next time.",
     "signInFailed": "Sign-in didn't work. Try again.",
     "signOut": "Sign out",
+    "signOutAll": "Sign out on all devices",
+    "signOutAllConfirm": "Sign out on every phone and computer where you're signed in? Your designs and stars stay in your account.",
     "delete": "Delete my account",
     "deleteConfirm": "Delete your account? Your designs and stars are removed from your account for good. This browser keeps its own copy.",
     "privacy": "Privacy",
@@ -422,7 +424,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 3 November 2026",
+    "updated": "Last updated 4 November 2026",
     "sections": [
       [
         "Signing in is optional",
@@ -434,7 +436,7 @@
       ],
       [
         "Where it is kept",
-        "In a MongoDB Atlas database used only by this site. You stay signed in with a random token in a cookie that only the site's API can read; it ends when you sign out or after 30 days."
+        "In a MongoDB Atlas database used only by this site. You stay signed in with a random token in a cookie that only the site's API can read; it ends when you sign out, after 30 days without a visit, or 90 days after you signed in. \"Sign out on all devices\" ends it everywhere at once."
       ],
       [
         "What is not done with it",

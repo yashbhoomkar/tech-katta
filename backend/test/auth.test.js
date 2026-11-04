@@ -31,7 +31,7 @@ test.before(async () => {
   jwks.listen(0, '127.0.0.1'); await once(jwks, 'listening');
   const port = await freePort();
   api = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), MONGODB_DB: 'tk_test', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
+    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), ACCOUNTS_DB: 'tk_test', MONGODB_DB: 'old_backend_db', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
   base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i += 1) { try { if ((await fetch(base + '/health')).ok) break; } catch {} await new Promise((r) => setTimeout(r, 50)); }
   client = await MongoClient.connect(mongo.getUri());
@@ -149,4 +149,51 @@ test('errorKind names a MongoDB failure without its message', async () => {
   assert.ok(!k.includes('secret') && !k.includes('127.0.0.1'), k);
   assert.equal(errorKind(Object.assign(new Error('bad auth: x'), { name: 'MongoServerError', codeName: 'AuthenticationFailed' })), 'AuthenticationFailed');
   assert.equal(errorKind({ name: 'has spaces <b>' }), 'Error');
+});
+
+test('signing in again in the same browser ends its old session', async () => {
+  const a = await signIn({ sub: '4004' });
+  const r = await call('/v1/auth/google', { method: 'POST', cookie: a.cookie, body: { credential: idToken({ sub: '4004' }) } });
+  assert.equal(r.status, 200);
+  const fresh = (r.headers.get('set-cookie') || '').split(';')[0];
+  assert.deepEqual(await (await call('/v1/me', { cookie: a.cookie })).json(), { user: null }, 'old session gone');
+  assert.equal((await (await call('/v1/me', { cookie: fresh })).json()).user.name, 'Asha');
+  const user = await client.db('tk_test').collection('users').findOne({ googleSub: '4004' });
+  assert.equal(await client.db('tk_test').collection('sessions').countDocuments({ userId: user._id }), 1);
+  assert.equal(await client.db('old_backend_db').collection('users').countDocuments({}), 0, 'MONGODB_DB (the old backend\'s setting) is ignored');
+});
+
+test('sign out on all devices ends every session of the account, not other accounts', async () => {
+  const phone = await signIn({ sub: '5005' }), laptop = await signIn({ sub: '5005' }), someoneElse = await signIn({ sub: '5006' });
+  assert.equal((await call('/v1/auth/signout-all', { method: 'POST', cookie: phone.cookie, origin: 'https://evil.example' })).status, 403);
+  assert.equal((await call('/v1/auth/signout-all', { method: 'POST' })).status, 401, 'signed out');
+  const r = await call('/v1/auth/signout-all', { method: 'POST', cookie: phone.cookie });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).ended, 2);
+  assert.match(r.headers.get('set-cookie'), /Max-Age=0/);
+  for (const c of [phone, laptop]) assert.deepEqual(await (await call('/v1/me', { cookie: c.cookie })).json(), { user: null });
+  assert.equal((await (await call('/v1/me', { cookie: someoneElse.cookie })).json()).user.name, 'Asha');
+});
+
+test('a session in use is renewed to 30 days from now, never past 90 days after sign-in', async () => {
+  const DAY = 86_400_000, sessions = client.db('tk_test').collection('sessions');
+  const a = await signIn({ sub: '6006' });
+  const user = await client.db('tk_test').collection('users').findOne({ googleSub: '6006' });
+  // fresh session: no renewal, no new cookie
+  let r = await call('/v1/me', { cookie: a.cookie });
+  assert.equal(r.headers.get('set-cookie'), null);
+  // last renewed 20 days ago (10 left): renewed to ~30 days, cookie extended
+  await sessions.updateOne({ userId: user._id }, { $set: { createdAt: new Date(Date.now() - 20 * DAY), expiresAt: new Date(Date.now() + 10 * DAY) } });
+  r = await call('/v1/me', { cookie: a.cookie });
+  assert.match(r.headers.get('set-cookie'), /tk_session=.+Max-Age=259\d{4}/);
+  let s = await sessions.findOne({ userId: user._id });
+  assert.ok(Math.abs(s.expiresAt - (Date.now() + 30 * DAY)) < 60_000);
+  // signed in 85 days ago: capped at 90 days after sign-in
+  await sessions.updateOne({ userId: user._id }, { $set: { createdAt: new Date(Date.now() - 85 * DAY), expiresAt: new Date(Date.now() + 2 * DAY) } });
+  await call('/v1/me', { cookie: a.cookie });
+  s = await sessions.findOne({ userId: user._id });
+  assert.ok(Math.abs(s.expiresAt - (Date.now() + 5 * DAY)) < 60_000);
+  // expired: signed out
+  await sessions.updateOne({ userId: user._id }, { $set: { expiresAt: new Date(Date.now() - 1000) } });
+  assert.deepEqual(await (await call('/v1/me', { cookie: a.cookie })).json(), { user: null });
 });
