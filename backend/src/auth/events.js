@@ -18,7 +18,8 @@ export const EVENTS = {
   run_start: { nodes: N, challenge: S },
   challenge_start: { challenge: S },
   score: { challenge: S, stars: N, max: N, passed: S, lite: B },
-  sign_in: {}, sign_out: {}, sign_out_all: {}, delete_account: {},
+  lab_locked: { lite: B },
+  sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
 };
 export const MAX_BATCH = 50;
 const VISITOR = /^[a-z0-9]{16,40}$/;

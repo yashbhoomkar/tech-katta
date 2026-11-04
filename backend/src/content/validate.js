@@ -74,8 +74,9 @@ const SITE = {
   hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', 'primaryHref?': 'text', secondary: 'text', 'secondaryHref?': 'text', figure: 'text', status: 'text', caption: 'text' },
   // The IND vs PAK Lab on the landing page (a Lab challenge) and the "did you know" dashboard tab.
   'landingLab?': { eyebrow: 'text', title: 'text', desc: 'text', challenge: 'text', loading: 'text', open: 'text', openHref: 'text', note: 'text',
+    'lock?': { title: 'text', text: 'text' },
     'lite?': Object.fromEntries(['diagram', 'viewers', 'viewersSub', 'cdnBox', 'cdnSub', 'lbBox', 'lbSub', 'lbSubCdn', 'serversBox', 'prewarmShort', 'autoShort', 'cdn', 'cdnHelp', 'servers', 'serversHelp', 'fewer', 'more', 'scaling', 'prewarm', 'auto', 'score', 'needCdn', 'allStars', 'someStars', 'noStars', 'best', 'full'].map((k) => [k, 'text'])) },
-  'account?': { ...Object.fromEntries(['signedIn', 'saved', 'syncing', 'syncFailed', 'signInFailed', 'signOut', 'delete', 'deleteConfirm', 'privacy', 'menu'].map((k) => [k, 'text'])), 'keepStars?': 'text', 'googleBlocked?': 'text', 'signOutAll?': 'text', 'signOutAllConfirm?': 'text' },
+  'account?': { ...Object.fromEntries(['signedIn', 'saved', 'syncing', 'syncFailed', 'signInFailed', 'signOut', 'delete', 'deleteConfirm', 'privacy', 'menu'].map((k) => [k, 'text'])), 'keepStars?': 'text', 'googleBlocked?': 'text', 'signOutAll?': 'text', 'signOutAllConfirm?': 'text', 'adsConsent?': 'text', 'adsMenu?': 'text' },
   'privacy?': { eyebrow: 'text', title: 'text', updated: 'text', sections: [{ tuple: ['text', 'text'] }] },
   'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', dashboard: [{ target: 'text', title: 'text', text: 'text' }], lab: [{ target: 'text', title: 'text', text: 'text' }] },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },

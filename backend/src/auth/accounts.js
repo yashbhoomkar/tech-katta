@@ -1,5 +1,7 @@
 // Accounts in MongoDB (database `techkatta_app` by default; the commit ledger lives elsewhere).
-//   users    { _id, googleSub (unique), email, name, picture, createdAt, lastLoginAt }
+//   users    { _id, googleSub (unique), email, name, firstName, lastName, picture, country (first
+//              sign-in), lastCountry, createdAt, lastLoginAt,
+//              adsConsent: { ads: bool, at, version } }  — opt-in to Tech Katta ads on Facebook/Instagram
 //   sessions { tokenHash (unique), userId, createdAt, expiresAt }  — removed by a TTL index on expiry.
 //            A session lasts SESSION_DAYS from its last use (renewed at most once a day), and never
 //            more than MAX_SESSION_DAYS after sign-in.
@@ -12,6 +14,8 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { RETENTION_DAYS } from './events.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
+// The wording the user agreed to is site.json account.adsConsent; bump this when it changes.
+export const CONSENT_VERSION = '2026-11-04';
 const DAY = 86_400_000;
 
 // What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
@@ -48,16 +52,21 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
-  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '' });
+  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads });
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
-    async signIn(profile) {
+    // `country` (2 letters, from Cloudflare) and `adsConsent` (only `true` is recorded here: signing
+    // in without ticking the box never withdraws an earlier opt-in) are optional.
+    async signIn(profile, { country = '', adsConsent = false } = {}) {
       await init();
       const now = new Date(clock());
+      const set = { email: profile.email, name: profile.name, firstName: profile.firstName || '', lastName: profile.lastName || '', picture: profile.picture, lastLoginAt: now };
+      if (country) set.lastCountry = country;
+      if (adsConsent) set.adsConsent = { ads: true, at: now, version: CONSENT_VERSION };
       const user = await users.findOneAndUpdate(
         { googleSub: profile.sub },
-        { $set: { email: profile.email, name: profile.name, picture: profile.picture, lastLoginAt: now }, $setOnInsert: { googleSub: profile.sub, createdAt: now } },
+        { $set: set, $setOnInsert: { googleSub: profile.sub, createdAt: now, ...(country ? { country } : {}) } },
         { upsert: true, returnDocument: 'after' });
       const token = randomBytes(32).toString('base64url');
       await sessions.insertOne({ tokenHash: hash(token), userId: user._id, createdAt: now, expiresAt: new Date(now.getTime() + SESSION_DAYS * DAY) });
@@ -81,6 +90,13 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
       }
       return { id: user._id, user: view(user), renewedUntil };
     },
+    // Opt in or out of Tech Katta ads on Facebook/Instagram (Meta Custom Audiences); returns the user.
+    async setAdsConsent(userId, ads) {
+      const user = await users.findOneAndUpdate({ _id: userId }, { $set: { adsConsent: { ads: !!ads, at: new Date(clock()), version: CONSENT_VERSION } } }, { returnDocument: 'after' });
+      return user ? view(user) : null;
+    },
+    // Accounts that opted in, for the Meta audience export (scripts/meta-audience.mjs).
+    async consentedUsers() { return users.find({ 'adsConsent.ads': true }, { projection: { email: 1, firstName: 1, lastName: 1, country: 1, lastCountry: 1 } }).toArray(); },
     async signOut(token) { if (typeof token === 'string') await sessions.deleteOne({ tokenHash: hash(token) }); },
     // Every session of the account ends (lost phone, shared computer). Returns how many there were.
     async signOutAll(userId) { return (await sessions.deleteMany({ userId })).deletedCount; },
