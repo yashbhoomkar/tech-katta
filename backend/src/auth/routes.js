@@ -9,7 +9,7 @@
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
-import { AuthError, SESSION_DAYS } from './index.js';
+import { AuthError, SESSION_DAYS, errorKind } from './index.js';
 
 export const COOKIE = 'tk_session';
 const MAX_BODY = 2 * 1024 * 1024;
@@ -99,7 +99,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const status = error.code === 'too_large' ? 413 : error.code === 'bad_json' ? 400 : error.code === 'keys_unavailable' ? 503 : 401;
         return send(request, response, status, { error: error.code });
       }
-      log.error('Account request failed:', error?.message || error);
+      log.error('Account request failed:', errorKind(error), error?.message || error);
       return send(request, response, 503, { error: 'accounts_unavailable' });
     }
   };
