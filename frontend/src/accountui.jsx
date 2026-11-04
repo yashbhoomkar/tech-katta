@@ -1,7 +1,7 @@
 // Sign in with Google, as the page shows it (state and sync live in account.js). Used by the landing
 // page header (the place to sign in), the landing IND vs PAK result (an invite after a score), and the
 // dashboard header (only once signed in: the avatar menu, no sign-in button there).
-import React,{useEffect,useRef,useState}from"react";import{account,renderGoogleButton,signOut,deleteAccount}from"./account.js";import"./account.css";
+import React,{useEffect,useRef,useState}from"react";import{account,renderGoogleButton,signOut,signOutAll,deleteAccount}from"./account.js";import"./account.css";
 
 export function useAccount(){const[s,set]=useState(account);useEffect(()=>{const on=()=>set(account());on();addEventListener("tk-account",on);return()=>removeEventListener("tk-account",on)},[]);return s}
 
@@ -19,6 +19,7 @@ const who=a.user.name||a.user.email||t.menu;
 return <div className="acct" ref={box}><button type="button" className="acct-btn" aria-expanded={open} aria-haspopup="true" aria-label={`${t.menu}: ${who}`} onClick={()=>setOpen(o=>!o)}>{a.user.picture?<img src={a.user.picture} alt="" referrerPolicy="no-referrer"/>:<i aria-hidden="true">{who[0].toUpperCase()}</i>}<span>{who}</span></button>
 {open&&<div className="acct-menu"><b>{a.user.name}</b><small>{a.user.email}</small><p className={a.error?"bad":""}>{a.syncing?t.syncing:a.error?t.syncFailed:t.saved}</p>
 <a href={privacyHref} onClick={()=>setOpen(false)}>{t.privacy}</a><button type="button" onClick={()=>{setOpen(false);signOut()}}>{t.signOut}</button>
+{t.signOutAll&&<button type="button" onClick={async()=>{if(confirm(t.signOutAllConfirm)){setOpen(false);try{await signOutAll()}catch{alert(t.syncFailed)}}}}>{t.signOutAll}</button>}
 <button type="button" className="danger" onClick={async()=>{if(confirm(t.deleteConfirm)){setOpen(false);try{await deleteAccount()}catch{alert(t.syncFailed)}}}}>{t.delete}</button></div>}</div>}
 
 // Under a challenge score while signed out: why signing in helps, and the button right there.

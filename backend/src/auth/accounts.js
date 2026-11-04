@@ -1,13 +1,16 @@
 // Accounts in MongoDB (database `techkatta_app` by default; the commit ledger lives elsewhere).
 //   users    { _id, googleSub (unique), email, name, picture, createdAt, lastLoginAt }
-//   sessions { tokenHash (unique), userId, createdAt, expiresAt }  — removed by a TTL index on expiry
+//   sessions { tokenHash (unique), userId, createdAt, expiresAt }  — removed by a TTL index on expiry.
+//            A session lasts SESSION_DAYS from its last use (renewed at most once a day), and never
+//            more than MAX_SESSION_DAYS after sign-in.
 //   lab      { userId (unique), designs: [design], deleted: [{id, at}], progress, updatedAt }
 // The browser holds a random session token in an HttpOnly cookie; only an HMAC of it (keyed with
 // SESSION_SECRET) is stored, so the sessions collection alone can't be used to sign in.
 import { MongoClient } from 'mongodb';
 import { createHmac, randomBytes } from 'node:crypto';
 
-export const SESSION_DAYS = 30;
+export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
+const DAY = 86_400_000;
 
 // What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
 // error class or server code name (e.g. AuthenticationFailed, MongoServerSelectionError), a system
@@ -25,7 +28,7 @@ export function errorKind(error) {
   return parts.slice(0, 4).join(' / ');
 }
 
-export function openAccounts({ uri, dbName = 'techkatta_app', secret, client }) {
+export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, now = () => Date.now() }) {
   const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 10, appName: 'tech-katta-api' });
   const db = mongo.db(dbName);
   const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab');
@@ -38,31 +41,43 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client }) 
     lab.createIndex({ userId: 1 }, { unique: true }),
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
+  const clock = now;
   const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '' });
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
     async signIn(profile) {
       await init();
-      const now = new Date();
+      const now = new Date(clock());
       const user = await users.findOneAndUpdate(
         { googleSub: profile.sub },
         { $set: { email: profile.email, name: profile.name, picture: profile.picture, lastLoginAt: now }, $setOnInsert: { googleSub: profile.sub, createdAt: now } },
         { upsert: true, returnDocument: 'after' });
       const token = randomBytes(32).toString('base64url');
-      await sessions.insertOne({ tokenHash: hash(token), userId: user._id, createdAt: now, expiresAt: new Date(now.getTime() + SESSION_DAYS * 86_400_000) });
+      await sessions.insertOne({ tokenHash: hash(token), userId: user._id, createdAt: now, expiresAt: new Date(now.getTime() + SESSION_DAYS * DAY) });
       return { token, user: view(user) };
     },
-    // The signed-in user for a session token, or null.
+    // The signed-in user for a session token, or null. A session used more than a day after it was
+    // last renewed is extended to SESSION_DAYS from now (capped at MAX_SESSION_DAYS after sign-in);
+    // `renewedUntil` then says when, so the cookie can be extended too.
     async userFor(token) {
       if (typeof token !== 'string' || token.length < 20 || token.length > 100) return null;
       await init();
-      const session = await sessions.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date() } });
+      const t = clock(), session = await sessions.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date(t) } });
       if (!session) return null;
       const user = await users.findOne({ _id: session.userId });
-      return user ? { id: user._id, user: view(user) } : null;
+      if (!user) return null;
+      const cap = session.createdAt.getTime() + MAX_SESSION_DAYS * DAY, until = Math.min(t + SESSION_DAYS * DAY, cap);
+      let renewedUntil = null;
+      if (until - session.expiresAt.getTime() > DAY) {
+        await sessions.updateOne({ _id: session._id }, { $set: { expiresAt: new Date(until) } });
+        renewedUntil = new Date(until);
+      }
+      return { id: user._id, user: view(user), renewedUntil };
     },
     async signOut(token) { if (typeof token === 'string') await sessions.deleteOne({ tokenHash: hash(token) }); },
+    // Every session of the account ends (lost phone, shared computer). Returns how many there were.
+    async signOutAll(userId) { return (await sessions.deleteMany({ userId })).deletedCount; },
     // Everything stored about the user goes: Lab data, sessions, the account.
     async deleteAccount(userId) {
       await lab.deleteOne({ userId });

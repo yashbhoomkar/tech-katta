@@ -4,6 +4,7 @@
 //   GET    /v1/auth/config    {enabled, clientId}         — whether to show "Sign in with Google"
 //   POST   /v1/auth/google    {credential} → {user}       — verify Google's ID token, start a session
 //   POST   /v1/auth/signout                               — end this session
+//   POST   /v1/auth/signout-all                           — end every session of this account
 //   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
@@ -71,6 +72,9 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         if (limited(request, 'signin', 30, 10 * 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
         const body = await readJson(request);
         const profile = await verify(body?.credential);
+        // signing in again in this browser replaces its session; the old one ends rather than lingering
+        const previous = tokenOf(request);
+        if (previous) await accounts.signOut(previous);
         const { token, user } = await accounts.signIn(profile);
         return send(request, response, 200, { user }, { 'Set-Cookie': cookie(token, SESSION_DAYS * 86_400) });
       }
@@ -78,9 +82,15 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         await accounts.signOut(tokenOf(request));
         return send(request, response, 200, { ok: true }, { 'Set-Cookie': cookie('', 0) });
       }
-      const me = await accounts.userFor(tokenOf(request));
+      const token = tokenOf(request), me = await accounts.userFor(token);
+      // a renewed session gets a renewed cookie, so it lasts as long in the browser as on the server
+      if (me?.renewedUntil) response.setHeader('Set-Cookie', cookie(token, Math.floor((me.renewedUntil.getTime() - Date.now()) / 1000)));
       if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return send(request, response, 200, { user: me ? me.user : null });
       if (!me) return send(request, response, 401, { error: 'signed_out' });
+      if (pathname === '/v1/auth/signout-all' && method === 'POST') {
+        const ended = await accounts.signOutAll(me.id);
+        return send(request, response, 200, { ok: true, ended }, { 'Set-Cookie': cookie('', 0) });
+      }
       if (pathname === '/v1/me' && method === 'DELETE') {
         await accounts.deleteAccount(me.id);
         return send(request, response, 200, { ok: true }, { 'Set-Cookie': cookie('', 0) });
