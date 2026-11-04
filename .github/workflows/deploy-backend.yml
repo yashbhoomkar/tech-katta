@@ -62,6 +62,21 @@ jobs:
             if [ -n "$value" ]; then encoded=$(printf %s "$value" | base64 -w0); echo "::add-mask::$encoded"; else encoded=''; fi
             echo "${name}_B64=$encoded" >> "$GITHUB_ENV"
           done
+          # Shape of MONGODB_URI as yes/no facts only (never the value), so a bad secret is easy to spot.
+          node -e '
+            const u = process.env.MONGODB_URI || ""; const yn = (b) => (b ? "yes" : "NO");
+            const m = /^mongodb(\+srv)?:\/\/([^:@\/]*)(?::([^@]*))?@([^\/?]+)/.exec(u);
+            const user = m ? decodeURIComponent(m[2]) : "";
+            console.log("MONGODB_URI check:", [
+              "set " + yn(u.length > 0),
+              "starts with mongodb+srv:// " + yn(u.startsWith("mongodb+srv://")),
+              "user techkatta-api " + yn(user === "techkatta-api"),
+              "has a password " + yn(!!(m && m[3])),
+              "host is Cluster0 " + yn(!!m && /^cluster0\.[a-z0-9]+\.mongodb\.net$/.test(m[4])),
+              "no < > " + yn(!/[<>]/.test(u)),
+              "no spaces or quotes " + yn(!/[\s"\x27]/.test(u)),
+              "password URL-safe " + yn(!m || !m[3] || !/[@:\/?#\[\]]/.test(m[3])),
+            ].join(" | "));'
       - name: Deploy to VPS and check local endpoint
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
