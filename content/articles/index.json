@@ -1,6 +1,7 @@
 {
   "articles": [
     "concepts/api-types",
-    "components/load-balancers"
+    "components/load-balancers",
+    "components/cdns"
   ]
 }
