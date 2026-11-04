@@ -415,7 +415,9 @@
     "delete": "Delete my account",
     "deleteConfirm": "Delete your account? Your designs and stars are removed from your account for good. This browser keeps its own copy.",
     "privacy": "Privacy",
-    "menu": "Account"
+    "menu": "Account",
+    "keepStars": "Sign in to keep your stars and Lab designs on every device.",
+    "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser."
   },
   "privacy": {
     "eyebrow": "PRIVACY",
