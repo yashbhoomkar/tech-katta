@@ -424,12 +424,10 @@
     "menu": "Account",
     "keepStars": "Sign in to keep your stars and Lab designs on every device.",
     "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser.",
-    "adsConsent": "Show me Tech Katta updates on Facebook and Instagram.",
+    "adsConsent": "I agree to the",
     "adsMenu": "Tech Katta updates on Facebook and Instagram",
     "termsLink": "Terms and conditions",
-    "privacyLink": "Privacy policy",
-    "agree": "By continuing you agree to the",
-    "and": "and the"
+    "privacyLink": "Privacy policy"
   },
   "privacy": {
     "eyebrow": "PRIVACY",
@@ -454,7 +452,7 @@
       ],
       [
         "Ads on Facebook and Instagram",
-        "Only if you tick \"Show me Tech Katta updates on Facebook and Instagram\" (it is never ticked for you). Then your email, name and country are hashed and uploaded to Meta to show you Tech Katta ads. The full details are in the Terms and conditions. You can turn it off any time in the account menu."
+        "Only if you tick \"I agree to the Terms and conditions\" when you sign in (it is never ticked for you). Then your email, name and country are hashed and uploaded to Meta to show you Tech Katta ads. The full details are in the Terms and conditions. You can turn it off any time in the account menu."
       ],
       [
         "What is not done with it",
@@ -485,7 +483,7 @@
       ],
       [
         "Updates on Facebook and Instagram",
-        "This applies only if you tick \"Show me Tech Katta updates on Facebook and Instagram\" when you sign in, or turn it on later in the account menu. It is never ticked for you, and you can use everything on the site without it. If you tick it, your email address, first and last name and country are turned into codes (SHA-256 hashes) and uploaded to Meta from time to time, so Meta can show Tech Katta ads to you on Facebook and Instagram, and to people with similar interests. Meta matches the codes against its own accounts. It does not get your designs, your stars or what you do on this site. You can turn it off any time in the account menu; you are then left out of the next upload, and you can ask Meta to forget you in your Facebook or Instagram ad settings."
+        "This applies only if you tick \"I agree to the Terms and conditions\" when you sign in, or turn on \"Tech Katta updates on Facebook and Instagram\" later in the account menu. It is never ticked for you, and you can use everything on the site without it. If you tick it, your email address, first and last name and country are turned into codes (SHA-256 hashes) and uploaded to Meta from time to time, so Meta can show Tech Katta ads to you on Facebook and Instagram, and to people with similar interests. Meta matches the codes against its own accounts. It does not get your designs, your stars or what you do on this site. You can turn it off any time in the account menu; you are then left out of the next upload, and you can ask Meta to forget you in your Facebook or Instagram ad settings."
       ],
       [
         "How the site is used",
