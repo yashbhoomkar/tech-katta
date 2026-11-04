@@ -44,6 +44,9 @@ const signIn = async (claims) => { const r = await call('/v1/auth/google', { met
 test('config says sign-in is on and gives the public client ID; health says auth is on', async () => {
   assert.deepEqual(await (await call('/v1/auth/config')).json(), { enabled: true, clientId: CLIENT });
   assert.equal((await (await fetch(base + '/health')).json()).auth, 'on');
+  // the database check runs in the background; the next look says whether MongoDB answered
+  let h; for (let i = 0; i < 50 && (h = (await (await fetch(base + '/health')).json()).accounts) === 'checking'; i += 1) await new Promise((r) => setTimeout(r, 50));
+  assert.equal(h, 'ok');
 });
 
 test('a valid Google token signs in: HttpOnly SameSite cookie, user stored, session stored as a hash', async () => {
@@ -134,4 +137,16 @@ test('Google key handling: cached per Cache-Control, an unknown kid refreshes at
   assert.equal(fetches, 2, 'one refresh for unknown keys a minute later, not one per request');
   t += 101_000; await verify(tok('k1'));
   assert.equal(fetches, 3, 'refetched after max-age');
+});
+
+test('errorKind names a MongoDB failure without its message', async () => {
+  const { errorKind } = await import('../src/auth/accounts.js');
+  const { MongoClient } = await import('mongodb');
+  const c = new MongoClient('mongodb://user:secret-pw@127.0.0.1:1/?directConnection=true', { serverSelectionTimeoutMS: 300 });
+  const e = await c.db('x').command({ ping: 1 }).catch((x) => x); await c.close();
+  const k = errorKind(e);
+  assert.match(k, /^MongoServerSelectionError/);
+  assert.ok(!k.includes('secret') && !k.includes('127.0.0.1'), k);
+  assert.equal(errorKind(Object.assign(new Error('bad auth: x'), { name: 'MongoServerError', codeName: 'AuthenticationFailed' })), 'AuthenticationFailed');
+  assert.equal(errorKind({ name: 'has spaces <b>' }), 'Error');
 });

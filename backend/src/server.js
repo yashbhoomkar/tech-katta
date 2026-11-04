@@ -41,6 +41,7 @@ function healthPayload() {
     uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
     content: { release: content.release, articles: content.articles.length },
     auth: auth.enabled ? 'on' : 'off',
+    ...(accounts ? { accounts: accounts.health() } : {}),
     timestamp: new Date().toISOString(),
   };
 }

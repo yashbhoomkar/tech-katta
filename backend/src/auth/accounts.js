@@ -9,11 +9,27 @@ import { createHmac, randomBytes } from 'node:crypto';
 
 export const SESSION_DAYS = 30;
 
+// What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
+// error class or server code name (e.g. AuthenticationFailed, MongoServerSelectionError), a system
+// code (ENOTFOUND), and for "couldn't reach the cluster" the names of the per-server errors. Never
+// the message, which can carry host names.
+export function errorKind(error) {
+  const name = (v) => (typeof v === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,59}$/.test(v) ? v : null);
+  const parts = [name(error?.codeName) || name(error?.name) || 'Error'];
+  if (typeof error?.code === 'string' && /^E[A-Z_]{2,30}$/.test(error.code)) parts.push(error.code);
+  const servers = error?.reason?.servers;
+  if (servers && typeof servers.values === 'function') {
+    for (const sd of servers.values()) { const n = name(sd?.error?.codeName) || name(sd?.error?.name); if (n && !parts.includes(n)) parts.push(n); }
+  }
+  if (name(error?.cause?.code) && !parts.includes(error.cause.code)) parts.push(error.cause.code);
+  return parts.slice(0, 4).join(' / ');
+}
+
 export function openAccounts({ uri, dbName = 'techkatta_app', secret, client }) {
   const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 10, appName: 'tech-katta-api' });
   const db = mongo.db(dbName);
   const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab');
-  let ready = null;
+  let ready = null, health = 'checking', checkedAt = 0, checking = null;
   const init = () => (ready ||= Promise.all([
     users.createIndex({ googleSub: 1 }, { unique: true }),
     sessions.createIndex({ tokenHash: 1 }, { unique: true }),
@@ -61,6 +77,16 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client }) 
       await lab.updateOne({ userId }, { $set: { designs: data.designs, deleted: data.deleted, progress: data.progress, updatedAt: new Date() } }, { upsert: true });
     },
     async ping() { await db.command({ ping: 1 }); },
+    // "ok" or the kind of the last failure (errorKind); checked at most every 30 s, in the background,
+    // so /health never waits on the database.
+    health() {
+      const now = Date.now();
+      if (!checking && now - checkedAt > 30_000) {
+        checkedAt = now;
+        checking = db.command({ ping: 1 }).then(() => { health = 'ok'; }, (error) => { health = errorKind(error); }).finally(() => { checking = null; });
+      }
+      return health;
+    },
     close: () => mongo.close(),
   };
 }

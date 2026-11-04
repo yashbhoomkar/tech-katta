@@ -5,7 +5,7 @@
 //   SESSION_SECRET     at least 32 random characters, keys the stored session-token hashes (secret)
 // Optional: MONGODB_DB (default techkatta_app), GOOGLE_JWKS_URL (tests), COOKIE_SECURE=0 (local http).
 export { AuthError, googleVerifier } from './google.js';
-export { openAccounts, SESSION_DAYS } from './accounts.js';
+export { openAccounts, SESSION_DAYS, errorKind } from './accounts.js';
 
 export function authConfig(env = process.env) {
   const clientId = (env.GOOGLE_CLIENT_ID || '').trim(), uri = (env.MONGODB_URI || '').trim(), secret = env.SESSION_SECRET || '';
