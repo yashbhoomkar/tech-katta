@@ -29,13 +29,25 @@ A release is validated (`node backend/scripts/check-content.mjs <dir>`) before `
 
 ## Article blocks
 
-An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`). Body blocks; text may use `` `code` ``:
+An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
-- `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`)
+- `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
-- `table {head, rows}` · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+- `table {head, rows, label?}` (`label` names it for screen readers) ·
+- `lab {x, to, go?}` "Try it in the Lab" card: `to` is `lab` or `lab/<challenge id>` (checked against `lab.json`), `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+
+## Subsections
+
+`site.json` `dashboard.groups` maps a section to its subsections, in order: `{"components": [[id, label,
+description], …]}`. An article in that section sets `"group": "<id>"`. The section page lists each
+subsection with its articles (an empty one shows `dashboard.groupEmpty`), and the sidebar groups the
+section's articles the same way. Sections without groups show one plain list.
+
+Components subsections and the planned articles (in writing order): **Edge**: load balancers, CDNs,
+API gateways and rate limiting · **Compute**: app servers and autoscaling · **Storage**: caches,
+databases, sharding and partitioning, object storage · **Messaging**: queues vs event streams.
 
 ## Lab catalogue (`lab.json`)
 

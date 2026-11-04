@@ -1,14 +1,14 @@
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
-const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy']);
+const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy', 'lab']);
 // Figure ids the frontend can draw (FIGS in frontend/src/dashboard.jsx).
-export const FIGS = new Set(['patterns', 'choose', 'order', 'retry']);
+export const FIGS = new Set(['patterns', 'choose', 'order', 'retry', 'lb-spread', 'lb-algos']);
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 const list = (v) => (Array.isArray(v) ? v : []);
 const isText = (value) => typeof value === 'string' && value.trim() !== '';
 
-function checkBlocks(blocks, where, problems) {
+function checkBlocks(blocks, where, problems, challenges = new Set()) {
   if (!Array.isArray(blocks) || blocks.length === 0) { problems.push(`${where}: body must be a non-empty array`); return; }
   blocks.forEach((b, i) => {
     const at = `${where}[${i}]`;
@@ -27,7 +27,16 @@ function checkBlocks(blocks, where, problems) {
       if (!(Array.isArray(b.rows) && b.rows.length && b.rows.every((r) => Array.isArray(r) && r.length === list(b.head).length))) problems.push(`${at}: every row needs ${list(b.head).length} cells`);
       else if (!b.rows.every((r) => r.every(isText))) problems.push(`${at}: every cell needs text`);
     }
-    if (b.t === 'more') { if (!isText(b.label)) problems.push(`${at}: needs label`); checkBlocks(b.body, `${at}.body`, problems); }
+    if (b.t === 'table' && b.label !== undefined && !isText(b.label)) problems.push(`${at}: label must be text`);
+    // "Try it in the Lab": to is "lab" or "lab/<challenge id>"
+    if (b.t === 'lab') {
+      if (!isText(b.x)) problems.push(`${at}: needs text x`);
+      if (b.go !== undefined && !isText(b.go)) problems.push(`${at}: go must be text`);
+      const m = /^lab(?:\/([a-z0-9-]+))?$/.exec(typeof b.to === 'string' ? b.to : '');
+      if (!m) problems.push(`${at}: to must be "lab" or "lab/<challenge id>"`);
+      else if (m[1] && !challenges.has(m[1])) problems.push(`${at}: unknown Lab challenge ${m[1]}`);
+    }
+    if (b.t === 'more') { if (!isText(b.label)) problems.push(`${at}: needs label`); checkBlocks(b.body, `${at}.body`, problems, challenges); }
   });
 }
 
@@ -73,7 +82,7 @@ const SITE = {
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
   numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },
-  dashboard: { label: 'text', back: 'text', empty: 'text', sections: [{ tuple: ['text', 'text', 'textOrNull'] }] },
+  dashboard: { label: 'text', back: 'text', empty: 'text', 'groupEmpty?': 'text', sections: [{ tuple: ['text', 'text', 'textOrNull'] }] },
   footer: { label: 'text', updated: 'text', links: ['text'] },
   example: 'text',
 };
@@ -257,6 +266,19 @@ export function validateContent({ site, examples, articles, lab }) {
   if (site && site.landingLab && lab && Array.isArray(lab.challenges) && !lab.challenges.some((c) => c && c.id === site.landingLab.challenge)) problems.push(`site.json: landingLab.challenge ${site.landingLab.challenge} is not a Lab challenge`);
   validateSite(site, examples, problems);
   const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
+  // Subsections: dashboard.groups = {section: [[id, label, desc], …]}; an article's "group" must be one of its section's.
+  const groups = site?.dashboard?.groups, groupIds = new Map();
+  if (groups !== undefined) {
+    if (!groups || typeof groups !== 'object' || Array.isArray(groups)) problems.push('site.json: dashboard.groups needs an object');
+    else for (const [sec, g] of Object.entries(groups)) {
+      if (!sections.has(sec)) problems.push(`site.json: dashboard.groups.${sec} is not a section`);
+      shape(g, [{ tuple: ['text', 'text', 'text'] }], `site.json: dashboard.groups.${sec}`, problems);
+      const ids = list(g).map((x) => Array.isArray(x) && x[0]);
+      if (!ids.every((x) => typeof x === 'string' && SLUG.test(x)) || new Set(ids).size !== ids.length) problems.push(`site.json: dashboard.groups.${sec} needs unique lowercase ids`);
+      groupIds.set(sec, new Set(ids));
+    }
+  }
+  const challenges = new Set(list(lab?.challenges).map((c) => c && c.id));
   const slugs = new Set();
   for (const a of list(articles)) {
     if (!a || typeof a !== 'object') { problems.push('articles: an article file is not a JSON object'); continue; }
@@ -266,7 +288,8 @@ export function validateContent({ site, examples, articles, lab }) {
     slugs.add(a.slug);
     if (!sections.has(a.section)) problems.push(`${at}: unknown section ${a.section}`);
     for (const key of ['no', 'tag', 'date', 'title', 'dek']) if (!isText(a[key])) problems.push(`${at}: needs ${key}`);
-    checkBlocks(a.body, at, problems);
+    if (a.group !== undefined && !groupIds.get(a.section)?.has(a.group)) problems.push(`${at}: unknown group ${a.group} for section ${a.section}`);
+    checkBlocks(a.body, at, problems, challenges);
   }
   return problems;
 }

@@ -1,5 +1,6 @@
 {
   "articles": [
-    "concepts/api-types"
+    "concepts/api-types",
+    "components/load-balancers"
   ]
 }

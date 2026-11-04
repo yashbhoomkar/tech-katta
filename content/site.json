@@ -250,7 +250,32 @@
         "Lab",
         null
       ]
-    ]
+    ],
+    "groups": {
+      "components": [
+        [
+          "edge",
+          "Edge",
+          "Getting requests in: load balancers, CDNs, API gateways."
+        ],
+        [
+          "compute",
+          "Compute",
+          "Running your code: app servers and autoscaling."
+        ],
+        [
+          "storage",
+          "Storage",
+          "Keeping data: caches, databases, sharding, object storage."
+        ],
+        [
+          "messaging",
+          "Messaging",
+          "Work that can wait: queues and event streams."
+        ]
+      ]
+    },
+    "groupEmpty": "Coming soon."
   },
   "footer": {
     "label": "TECH KATTA / SYSTEMS KNOWLEDGE",

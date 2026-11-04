@@ -365,3 +365,28 @@ test('without its three settings, sign-in is off: config says so, account routes
   assert.equal((await (await get('/health')).json()).auth, 'off');
   assert.equal((await (await get('/v1/site')).json()).brand.name, site.brand.name, 'content is unaffected');
 });
+
+test('subsections and "Try it in the Lab" blocks are checked', () => {
+  const check = (changeSite, changeArticle) => {
+    const s = structuredClone(site), arts = structuredClone(allArticles);
+    changeSite?.(s); changeArticle?.(arts.find((a) => a.slug === 'load-balancers'));
+    return validateContent({ site: s, examples, articles: arts, lab });
+  };
+  assert.deepEqual(check(), []);
+  assert.match(check(null, (a) => { a.group = 'nope'; }).join(), /unknown group nope/);
+  assert.match(check((s) => { s.dashboard.groups.nope = [['a', 'A', 'x']]; }).join(), /groups\.nope is not a section/);
+  assert.match(check((s) => { s.dashboard.groups.components.push(['edge', 'Again', 'x']); }).join(), /unique lowercase ids/);
+  const labBlock = (a) => a.body.find((b) => b.t === 'lab');
+  assert.match(check(null, (a) => { labBlock(a).to = 'lab/no-such-challenge'; }).join(), /unknown Lab challenge no-such-challenge/);
+  assert.match(check(null, (a) => { labBlock(a).to = 'https://evil.example'; }).join(), /to must be "lab"/);
+  assert.deepEqual(check(null, (a) => { labBlock(a).to = 'lab'; }), []);
+});
+
+test('the figure ids the content may use are exactly the ones the frontend draws', async () => {
+  const { FIGS } = await import('../src/content/validate.js');
+  const { readFile } = await import('node:fs/promises');
+  const src = (f) => readFile(new URL(`../../frontend/src/${f}`, import.meta.url), 'utf8');
+  const dash = (await src('dashboard.jsx')).match(/const FIGS=\{(.*)\};/)[1], comp = (await src('figs/components.jsx')).match(/COMPONENT_FIGS=\{([\s\S]*?)\n\};/)[1];
+  const ids = [...dash.matchAll(/(?:^|\},)"?([a-z-]+)"?:\{C:/g), ...comp.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]);
+  assert.deepEqual(ids.sort(), [...FIGS].sort());
+});

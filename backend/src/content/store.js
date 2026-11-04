@@ -29,7 +29,7 @@ export async function loadContent(dir) {
   return { site, examples, articles, lab, release };
 }
 
-const SUMMARY_FIELDS = ['section', 'slug', 'no', 'tag', 'date', 'title', 'dek', 'audio'];
+const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'date', 'title', 'dek', 'audio'];
 const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
