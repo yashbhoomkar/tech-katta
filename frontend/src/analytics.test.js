@@ -57,3 +57,10 @@ test('Global Privacy Control or Do Not Track: nothing is sent', () => {
   track('page_view', { section: 'home' });
   assert.equal(sent.length, 0);
 });
+
+test('automated browsers (navigator.webdriver) send nothing', () => {
+  sent.length = 0; pending = null; navigator.doNotTrack = undefined; navigator.webdriver = true;
+  track('page_view', { section: 'home' });
+  assert.equal(pending, null); assert.equal(sent.length, 0);
+  navigator.webdriver = undefined;
+});

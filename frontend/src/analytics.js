@@ -2,11 +2,12 @@
 // fields, see backend/src/auth/events.js). No cookies are added: a visitor is a random id kept in this
 // browser's storage; when signed in, the API adds the account from the existing session. Events wait in
 // a small queue and go out every few seconds, and when the page is hidden or closed. Browsers asking not
-// to be tracked (Global Privacy Control or Do Not Track) send nothing.
+// to be tracked (Global Privacy Control or Do Not Track) send nothing; nor do automated browsers.
 import{API}from"./api.js";
 
 const KEY="tk-visitor",FLUSH_MS=5000,MAX_QUEUE=50;
-const off=()=>{try{return navigator.globalPrivacyControl===true||navigator.doNotTrack==="1"}catch{return false}};
+// automated browsers (navigator.webdriver: test scripts, crawlers that admit it) are not visitors
+const off=()=>{try{return navigator.globalPrivacyControl===true||navigator.doNotTrack==="1"||navigator.webdriver===true}catch{return false}};
 let visitorId=null;
 export function visitor(){if(visitorId)return visitorId;let v=null;try{v=localStorage.getItem(KEY)}catch{}
 if(!v||!/^[a-z0-9]{16,40}$/.test(v)){v=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>(b%36).toString(36)).join("");try{localStorage.setItem(KEY,v)}catch{}}return visitorId=v}
