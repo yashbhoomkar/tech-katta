@@ -3,6 +3,7 @@
     "concepts/api-types",
     "components/load-balancers",
     "components/cdns",
-    "components/api-gateways"
+    "components/api-gateways",
+    "components/app-servers"
   ]
 }

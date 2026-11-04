@@ -32,7 +32,7 @@ A release is validated (`node backend/scripts/check-content.mjs <dir>`) before `
 An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
-- `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
+- `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit`, `scale-out`, `autoscale` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
