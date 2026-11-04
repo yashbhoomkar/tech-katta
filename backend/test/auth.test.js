@@ -52,12 +52,12 @@ test('config says sign-in is on and gives the public client ID; health says auth
 test('a valid Google token signs in: HttpOnly SameSite cookie, user stored, session stored as a hash', async () => {
   const { r, cookie } = await signIn();
   assert.equal(r.status, 200);
-  assert.deepEqual(await r.json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png' } });
+  assert.deepEqual(await r.json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: false } });
   const set = r.headers.get('set-cookie');
   assert.match(set, /tk_session=[\w-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000/);
   assert.equal(r.headers.get('access-control-allow-origin'), ORIGIN);
   assert.equal(r.headers.get('access-control-allow-credentials'), 'true');
-  assert.deepEqual(await (await call('/v1/me', { cookie })).json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png' } });
+  assert.deepEqual(await (await call('/v1/me', { cookie })).json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: false } });
   const db = client.db('tk_test');
   assert.equal(await db.collection('users').countDocuments({ googleSub: '1001' }), 1);
   const s = await db.collection('sessions').findOne({});
@@ -235,4 +235,49 @@ test('usage events: allowlisted events and fields stored, signed-in ones tied to
   assert.equal(cleanBatch({ visitor, events: Array(80).fill({ name: 'sign_in' }) }).length, MAX_BATCH);
   const [old] = cleanBatch({ visitor, events: [{ name: 'sign_in', age: 1e12 }] }, { now: 1e13 });
   assert.equal(old.at.getTime(), 1e13 - 15 * 60_000);
+});
+
+test('ads consent: opt-in at sign-in, first/last name and country stored, never withdrawn by a plain sign-in, withdrawn from the menu', async () => {
+  const users = client.db('tk_test').collection('users');
+  const post = (body, extra = {}) => fetch(base + '/v1/auth/google', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', ...extra }, body: JSON.stringify(body) });
+  // no consent ticked
+  let r = await post({ credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }) }, { 'CF-IPCountry': 'IN' });
+  assert.equal((await r.json()).user.adsConsent, false);
+  let u = await users.findOne({ googleSub: '8008' });
+  assert.deepEqual([u.firstName, u.lastName, u.country, u.lastCountry, u.adsConsent], ['Asha', 'Rao', 'IN', 'IN', undefined]);
+  // ticked
+  r = await post({ credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }), adsConsent: true }, { 'CF-IPCountry': 'AE' });
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  assert.equal((await r.json()).user.adsConsent, true);
+  u = await users.findOne({ googleSub: '8008' });
+  assert.equal(u.adsConsent.ads, true); assert.ok(u.adsConsent.at instanceof Date); assert.equal(u.adsConsent.version, '2026-11-04');
+  assert.equal(u.country, 'IN', 'first country kept'); assert.equal(u.lastCountry, 'AE');
+  // signing in again without the box does not withdraw it; a bogus country is ignored
+  await post({ credential: idToken({ sub: '8008' }), adsConsent: 'yes' }, { 'CF-IPCountry': 'XX' });
+  u = await users.findOne({ googleSub: '8008' });
+  assert.equal(u.adsConsent.ads, true); assert.equal(u.lastCountry, 'AE');
+  // withdraw / opt in from the account menu
+  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: 'no' } })).status, 400);
+  assert.equal((await call('/v1/me/consent', { method: 'POST', body: { ads: false } })).status, 401);
+  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false }, origin: 'https://evil.example' })).status, 403);
+  r = await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
+  assert.equal((await r.json()).user.adsConsent, false);
+  assert.equal((await users.findOne({ googleSub: '8008' })).adsConsent.ads, false);
+  assert.equal((await (await call('/v1/me', { cookie })).json()).user.adsConsent, false);
+});
+
+test('Meta audience export: consented accounts only, normalised and SHA-256 hashed', async () => {
+  const { audienceCsv, norm } = await import('../src/auth/audience.js');
+  const { createHash } = await import('node:crypto');
+  const h = (v) => createHash('sha256').update(v).digest('hex');
+  assert.equal(norm.email('  Asha.Rao@Example.COM '), 'asha.rao@example.com');
+  assert.equal(norm.name(" D'Souza-Pai "), 'dsouzapai');
+  assert.equal(norm.country('IN'), 'in'); assert.equal(norm.country('India'), '');
+  const csv = audienceCsv([{ email: 'Asha@Example.com', firstName: 'Asha', lastName: 'Rao', country: 'IN' }, { email: '', firstName: 'x' }, { email: 'b@example.com', lastCountry: 'AE' }]);
+  const lines = csv.trim().split('\n');
+  assert.equal(lines[0], 'email,fn,ln,country');
+  assert.equal(lines[1], [h('asha@example.com'), h('asha'), h('rao'), h('in')].join(','));
+  assert.equal(lines[2], [h('b@example.com'), '', '', h('ae')].join(','));
+  assert.equal(lines.length, 3, 'row without email skipped');
+  assert.ok(!csv.includes('@'), 'no readable email');
 });

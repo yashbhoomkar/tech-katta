@@ -25,8 +25,13 @@ export function loadGoogle(){return gis||=new Promise((res,rej)=>{if(window.goog
 let initialised=false;
 export async function renderGoogleButton(el,{text="signin_with"}={}){const g=await loadGoogle();if(!initialised){g.accounts.id.initialize({client_id:state.clientId,callback:r=>signIn(r.credential),ux_mode:"popup",auto_select:false,itp_support:true,use_fedcm_for_prompt:true});initialised=true}
 g.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
-export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential}});setState({user:r.user});track("sign_in");await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
+// The "show me Tech Katta updates on Facebook and Instagram" box next to a sign-in button (opt-in;
+// unticked by default). Read when Google hands back the credential.
+let adsChoice=false;export const setAdsChoice=v=>{adsChoice=!!v};
+export async function signIn(credential){setState({error:null});try{const r=await call("/v1/auth/google",{method:"POST",body:{credential,adsConsent:adsChoice}});setState({user:r.user});track("sign_in",{ads:adsChoice});await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
 export async function signOut(){track("sign_out");try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
+// Opt in or out later, from the account menu.
+export async function setAdsConsent(ads){const r=await call("/v1/me/consent",{method:"POST",body:{ads:!!ads}});setState({user:r.user});track("ads_consent",{ads:!!ads})}
 // Every device signed in to this account is signed out (lost phone, shared computer).
 export async function signOutAll(){track("sign_out_all");await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});track("delete_account");try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}

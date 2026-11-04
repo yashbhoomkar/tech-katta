@@ -8,6 +8,7 @@
 //   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
 //   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
+//   POST   /v1/me/consent     {ads} → {user}               — opt in/out of Tech Katta ads on Facebook/Instagram
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
@@ -77,7 +78,8 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         // signing in again in this browser replaces its session; the old one ends rather than lingering
         const previous = tokenOf(request);
         if (previous) await accounts.signOut(previous);
-        const { token, user } = await accounts.signIn(profile);
+        const cc = String(request.headers['cf-ipcountry'] || '').toUpperCase();
+        const { token, user } = await accounts.signIn(profile, { country: /^[A-Z]{2}$/.test(cc) && cc !== 'XX' && cc !== 'T1' ? cc : '', adsConsent: body?.adsConsent === true });
         return send(request, response, 200, { user }, { 'Set-Cookie': cookie(token, SESSION_DAYS * 86_400) });
       }
       if (pathname === '/v1/auth/signout' && method === 'POST') {
@@ -101,6 +103,11 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       if (pathname === '/v1/me' && method === 'DELETE') {
         await accounts.deleteAccount(me.id);
         return send(request, response, 200, { ok: true }, { 'Set-Cookie': cookie('', 0) });
+      }
+      if (pathname === '/v1/me/consent' && method === 'POST') {
+        const b = await readJson(request);
+        if (typeof b?.ads !== 'boolean') return send(request, response, 400, { error: 'bad_consent' });
+        return send(request, response, 200, { user: await accounts.setAdsConsent(me.id, b.ads) });
       }
       if (pathname === '/v1/me/lab' && method === 'GET') return send(request, response, 200, storable(mergeLab(await accounts.getLab(me.id), {}, labCatalogue())));
       if (pathname === '/v1/me/lab' && method === 'POST') {

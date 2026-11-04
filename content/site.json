@@ -403,6 +403,10 @@
       "noStars": "The stream went down. Start with the CDN.",
       "best": "Your best",
       "full": "Build it yourself in the full Lab (on a laptop)"
+    },
+    "lock": {
+      "title": "Sign in to play",
+      "text": "Sign in with Google to try the IND vs PAK challenge. It's free, and your stars and designs are saved to your account."
     }
   },
   "account": {
@@ -419,7 +423,9 @@
     "privacy": "Privacy",
     "menu": "Account",
     "keepStars": "Sign in to keep your stars and Lab designs on every device.",
-    "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser."
+    "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser.",
+    "adsConsent": "Show me Tech Katta updates on Facebook and Instagram. This uses my email, and I can turn it off any time.",
+    "adsMenu": "Tech Katta updates on Facebook and Instagram"
   },
   "privacy": {
     "eyebrow": "PRIVACY",
@@ -428,11 +434,11 @@
     "sections": [
       [
         "Signing in is optional",
-        "Everything on the site works without an account. Without one, your Lab designs and challenge stars stay in this browser's storage and nowhere else."
+        "Articles, notes and the full Lab on the dashboard work without an account. The IND vs PAK challenge on the home page asks you to sign in first. Without an account, your Lab designs and challenge stars stay in this browser's storage and nowhere else."
       ],
       [
         "What is kept",
-        "When you sign in with Google: your Google account ID, name, email address and the link to your profile picture, and when you signed in. Your Lab designs and challenge stars, so they follow you to other devices. Your Google password is never seen by this site."
+        "When you sign in with Google: your Google account ID, name (first and last), email address, the link to your profile picture, the country you signed in from, and when you signed in. Your Lab designs and challenge stars, so they follow you to other devices. Whether you agreed to see Tech Katta updates on Facebook and Instagram, and when. Your Google password is never seen by this site."
       ],
       [
         "Where it is kept",
@@ -443,8 +449,12 @@
         "To learn which articles and Lab challenges help, the site records what you do on it: pages and articles you open, how far you read, components you add, runs, scores, and signing in or out. Each browser gets a random ID kept in its own storage, not a cookie. When you're signed in, these records are linked to your account. They stay in the same database, are never shared, and are deleted after 13 months. If your browser asks sites not to track you (Global Privacy Control or Do Not Track), nothing is recorded."
       ],
       [
+        "Ads on Facebook and Instagram",
+        "Only if you tick \"Show me Tech Katta updates on Facebook and Instagram\" (it is never ticked for you). Then your email, name and country are turned into codes (SHA-256 hashes) and uploaded to Meta, so Meta can show Tech Katta ads to you and to people like you. Meta matches the codes to its own accounts; it does not get your Lab designs or what you do on this site. You can turn it off any time in the account menu, and you are left out of the next upload."
+      ],
+      [
         "What is not done with it",
-        "No ads, no tracking cookies, no selling or sharing your data, nothing sent to other analytics companies. Your email is not used to contact you."
+        "No selling your data, no tracking cookies, nothing sent to analytics companies. Your email is not used to email you."
       ],
       [
         "Deleting it",

@@ -54,6 +54,6 @@ export function googleVerifier({ clientId, jwksUrl = GOOGLE_JWKS, fetchImpl = fe
     if (typeof payload.sub !== 'string' || !payload.sub || payload.sub.length > 255) throw new AuthError('bad_token');
     if (typeof payload.email !== 'string' || payload.email_verified !== true) throw new AuthError('email_not_verified');
     const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
-    return { sub: payload.sub, email: str(payload.email, 320), name: str(payload.name, 120), picture: /^https:\/\//.test(payload.picture || '') ? str(payload.picture, 500) : '' };
+    return { sub: payload.sub, email: str(payload.email, 320), name: str(payload.name, 120), firstName: str(payload.given_name, 80), lastName: str(payload.family_name, 80), picture: /^https:\/\//.test(payload.picture || '') ? str(payload.picture, 500) : '' };
   };
 }
