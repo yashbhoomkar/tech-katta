@@ -71,14 +71,14 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
 | 1 | build | Dashboard overflow at 320–390 px | done | shipped run 7: the 0.2 s `margin-left` transition on `.d-main` ran when the window crossed the 900 px breakpoint (~100 ms of overflow); off below 900 px |
-| 3 | content | Lab challenge for the URL shortener (`lab.json`): a redirect flood a cache must absorb | ready | business plan: every question gets a "build it, break it" challenge; content lane if the engine needs no change |
-| 4 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 5 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 6 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
-| 7 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
-| 8 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 9 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 10 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 2 | content | Lab challenge for the URL shortener (`lab.json`): a redirect flood a cache must absorb | ready | business plan: every question gets a "build it, break it" challenge; content lane if the engine needs no change |
+| 3 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
+| 4 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 5 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
+| 6 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
+| 7 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 8 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 9 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
 
