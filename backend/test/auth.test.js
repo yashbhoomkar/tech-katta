@@ -427,3 +427,28 @@ test('admins: a verified email whose hash is listed, ADMIN_EMAILS, or role', asy
   // an unverified email never signs in at all (google.js), so it can't claim an admin address
   assert.equal((await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken({ sub: '9602', email: 'ops@example.com', email_verified: false }) } })).status, 401);
 });
+
+test('rate limiter: a flood of new addresses never resets a counted one; full of live windows, new ones wait', async () => {
+  const { makeLimiter } = await import('../src/auth/routes.js');
+  let t = 0; const limit = makeLimiter({ maxKeys: 1_000, now: () => t });
+  for (let i = 0; i < 30; i += 1) assert.equal(limit('signin:1.2.3.4', 30, 600_000), false);
+  assert.equal(limit('signin:1.2.3.4', 30, 600_000), true, 'the 31st in the window is refused');
+  let refused = 0;
+  for (let i = 0; i < 5_000; i += 1) { t += 1; if (limit(`signin:10.0.${i >> 8}.${i & 255}`, 30, 600_000)) refused += 1; }
+  assert.equal(refused, 5_000 - 999, 'once full of live windows, new addresses are refused');
+  assert.equal(limit('signin:1.2.3.4', 30, 600_000), true, 'the counted address is still over its limit');
+  t += 600_001;
+  assert.equal(limit('signin:9.9.9.9', 30, 600_000), false, 'after the windows expire they are swept and new addresses work');
+  assert.equal(limit('signin:1.2.3.4', 30, 600_000), false, 'and the old address starts a fresh window');
+});
+
+test('request bodies: small routes refuse more than 64 KB, the Lab sync accepts big ones; JSON carries a CSP', async () => {
+  const big = 'x'.repeat(100 * 1024);
+  const r = await fetch(base + '/v1/events', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.7' }, body: JSON.stringify({ visitor: 'v'.repeat(20), pad: big }) });
+  assert.equal(r.status, 413);
+  const a = await signIn({ sub: '9701' });
+  const D = (id) => ({ id, name: 'D ' + id, updated: 1, nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: {} }], edges: [], pad: 'y'.repeat(4_000) });
+  const lab = await call('/v1/me/lab', { method: 'POST', cookie: a.cookie, body: { designs: Array.from({ length: 30 }, (_, i) => D('d' + i)) } });
+  assert.equal(lab.status, 200, 'a ~120 KB Lab sync is fine');
+  for (const res of [lab, await fetch(base + '/health'), await fetch(base + '/v1/site'), await fetch(base + '/nope')]) assert.match(res.headers.get('content-security-policy') || '', /default-src 'none'/);
+});
