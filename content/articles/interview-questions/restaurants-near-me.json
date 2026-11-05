@@ -15,7 +15,7 @@
         "A normal index can't do it: an index on latitude alone returns a strip across the whole country. You need a geo index that keeps nearby places together.",
         "Geohash cuts the map into named cells; places close together share a prefix. Look up your cell and its 8 neighbours, never just your own.",
         "\"Near me\" for delivery means \"delivers to me\". Keep a list per cell of the restaurants that serve it, and check open or busy at query time.",
-        "Many people in one area ask the same question at dinner: cache the answer per cell and filter for a minute or so."
+        "Many people in one area ask the same question at dinner: cache each cell's candidates for a minute or so."
       ]
     },
     {
@@ -69,7 +69,7 @@
       "t": "list",
       "items": [
         "Data: 3 lakh restaurants × about 1 KB (location, cuisines, rating, zone) is 300 MB. It fits in memory on one server, so every server can hold a full copy.",
-        "Reads: 2 crore people × 5 home-screen loads is 10 crore a day ÷ 86,400 s ≈ 1,200 a second, about 6,000 at the dinner peak.",
+        "Reads: 2 crore people × 5 home-screen loads is 10 crore a day ÷ 86,400 s ≈ 1,200 a second, about 6,000 at the dinner peak. Dinner packs most of the day's opens into a few hours.",
         "Writes: locations almost never change. Status does: 3 lakh restaurants × about 10 changes a day is 30 lakh a day, about 35 a second.",
         "So this is read-heavy by a wide margin, and small enough to copy everywhere. The design follows from that."
       ]
@@ -89,7 +89,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET /restaurants/nearby?lat=12.9352&lng=77.6245&sort=distance&veg=true&cursor=…\n→ 200 { \"restaurants\": [ { \"id\": \"r_88\", \"name\": \"Meghana Foods\", \"km\": 1.4, \"rating\": 4.4, \"eta_min\": 28 }, … ],\n        \"cursor\": \"c_3f…\" }\n\nPUT /restaurants/r_88/status   { \"state\": \"busy\", \"until\": \"21:30\" }   (restaurant app)\n→ 204",
+      "x": "GET /restaurants/nearby?lat=12.9352&lng=77.6245&sort=distance&veg=true&cursor=…\n→ 200 { \"restaurants\": [ { \"id\": \"r_88\", \"name\": \"Thindi Mane\", \"km\": 1.4, \"rating\": 4.4, \"eta_min\": 28 }, … ],\n        \"cursor\": \"c_3f…\" }\n\nPUT /restaurants/r_88/status   { \"state\": \"busy\", \"until\": \"21:30\" }   (restaurant app)\n→ 204",
       "say": "Two calls. The customer app asks for nearby restaurants with its latitude and longitude, a sort order, filters and a cursor, and gets a page of restaurants with distance, rating and delivery time, plus a cursor for the next page. The restaurant app sets its status to open, busy or closed, optionally until a time."
     },
     {
@@ -119,7 +119,7 @@
       "kind": "LATITUDE AND LONGITUDE RANGES",
       "what": "Store `lat` and `lng` with an index on each, and ask for rows where both fall inside a box around the customer.",
       "use": "Works with any database and is easy to explain.",
-      "avoid": "The database uses one index at a time. `lat BETWEEN …` alone matches a strip across the whole country, Mumbai to Kolkata, and every row in it is then checked for longitude.",
+      "avoid": "The database usually uses one index well. `lat BETWEEN …` alone matches a strip across the whole country, and every row in it is then checked for longitude.",
       "ex": "A box around Koramangala matches every restaurant at that latitude, from Mangaluru to Chennai.",
       "like": "Looking for your neighbours by asking everyone born in the same year."
     },
@@ -159,7 +159,7 @@
     {
       "t": "list",
       "items": [
-        "Turn it around: for every small cell, keep the list of restaurants whose zone covers it. A lookup is then one read by cell id.",
+        "Turn it around: for every small cell, keep the list of restaurants whose zone covers it. A lookup is then one read by cell id. A cell goes on a restaurant's list if its zone touches the cell at all; check the exact point against the zone afterwards. That's why one cell is enough here, while a radius search needs all nine.",
         "Rebuild a restaurant's cells when its zone changes. That's a few hundred cells, a handful of times a day, which is cheap.",
         "Check status after the lookup, from Redis. Busy and closed change every few minutes, so they never go into the index itself."
       ]
@@ -171,7 +171,7 @@
     {
       "t": "list",
       "items": [
-        "Thousands of people in the same few cells ask the same question at once. Cache the ranked list per cell and filter for 30 to 60 seconds; most home screens become a cache read.",
+        "Thousands of people in the same few cells ask the same question at once. Cache the cell's candidates (with ratings) for 30 to 60 seconds; most home screens become a cache read. Sort by distance per request; 200 items is cheap.",
         "Apply status after the cache, so a kitchen that just closed disappears at once even when the cached list still has it.",
         "Every nearby server has the full index in memory. Add servers for more reads; no sharding is needed at 300 MB.",
         "If the index or Redis is slow, show the last cached list for the cell. A slightly old home screen is better than an empty one."

@@ -121,7 +121,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><titl
 <rect x={bx-4} y={by-4} width="8" height="8" fill={RED}/><text x={X+2*C+35} y={by-24} textAnchor="middle" className="fl" style={{fill:RED}}>Biryani</text><text x={X+2*C+35} y={by-12} textAnchor="middle" className="fl" style={{fill:RED}}>Zone</text>
 <line x1={ux} y1={uy} x2={bx} y2={by} stroke={RED} strokeDasharray="3 2"/><text x={X+2*C+35} y={by+22} textAnchor="middle" className="fl">300 m</text>
 <text x={X} y={Y-12} className="fl">3 × 3 cells around you</text>
-<text x="300" y="70" className="fb">Your cell only</text><text x="300" y="88" className="fl">misses Biryani Zone, 300 m away, just across the border</text>
+<text x="300" y="70" className="fb">Your cell only</text><text x="300" y="88" className="fl">misses Biryani Zone, 300 m away,</text><text x="300" y="104" className="fl">just across the border</text>
 <text x="300" y="130" className="fb" style={{fill:BLUE}}>Your cell + 8 neighbours</text><text x="300" y="148" className="fl">9 lookups; nothing within reach is missed</text>
 <text x="300" y="190" className="fb">Cell size</text><text x="300" y="208" className="fl">at least as wide as the search radius,</text><text x="300" y="224" className="fl">e.g. 5-character geohash ≈ 5 km a side</text>
 {!still&&<g aria-hidden="true"><Show t0={0} t1={.45} dur={D}><rect x={X+C} y={Y+C} width={C} height={C} fill="none" stroke={BLUE} strokeWidth="3"/></Show><Show t0={.5} t1={.99} dur={D}><rect x={X} y={Y} width={3*C} height={3*C} fill="none" stroke={BLUE} strokeWidth="3"/></Show></g>}
