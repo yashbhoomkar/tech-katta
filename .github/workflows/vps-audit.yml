@@ -1,0 +1,51 @@
+name: VPS Resource Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vps-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect VPS resources over SSH
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ secrets.VPS_USER || 'yash' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          port: 22
+          command_timeout: 2m
+          script: |
+            set -eu
+            echo '=== HOST ==='
+            hostname
+            date -u
+            echo '=== CPU ==='
+            nproc
+            uptime
+            top -bn1 | head -n 8
+            echo '=== MEMORY ==='
+            free -h
+            echo '=== DISK ==='
+            df -hT
+            echo '=== DISK INODES ==='
+            df -ih
+            echo '=== TOP PROCESSES ==='
+            ps -eo pid,ppid,user,%cpu,%mem,rss,etime,comm --sort=-%cpu | head -n 15
+            echo '=== SYSTEMD SERVICES ==='
+            systemctl --no-pager --type=service --state=running | grep -E 'tech-katta|nginx|caddy|docker|mong' || true
+            echo '=== NETWORK ==='
+            ss -s
+            echo '=== TECH KATTA HEALTH (LOCAL) ==='
+            curl --max-time 5 -sS http://127.0.0.1:5000/health || true
+            echo
+            echo '=== TECH KATTA PROCESS ==='
+            systemctl --no-pager status tech-katta-api | head -n 25 || true
