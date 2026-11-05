@@ -70,14 +70,13 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q04 10-minute grocery delivery (easy) | done | shipped run 9 with figures `minutes-flow`, `stock-hold`; also sms-link says 10 crore phones |
-| 2 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 3 | build | Analytics: record `lab_score` (challenge id, stars) when someone scores a Lab challenge | ready | Builder, run 9: real usage numbers for the business plan before Practice mode; no new data fields beyond the event |
-| 4 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
-| 5 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
-| 6 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 7 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 8 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 1 | build | Library card text: `.meta` and `.card-foot` up to 11px | done | shipped run 10; the footer wraps to two lines where cards are narrow (about 900–1100 px) |
+| 2 | build | Analytics: record `lab_score` (challenge id, stars) when someone scores a Lab challenge | ready | Builder, run 9: real usage numbers for the business plan before Practice mode; no new data fields beyond the event |
+| 3 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
+| 4 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
+| 5 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 6 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 7 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
 
@@ -121,10 +120,14 @@ for the owner to confirm):
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
-  overflow), #180 (Lab challenge sms-link), and this run's Q04 PR.
+  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), and this run's card
+  text PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 10 — Production healthy; #181 checked live (five Learner fixes visible, Q04 under
+  Easy). Card meta and footer text 9px/8px → 11px; checked 320–1440 px: no overflow, nothing clipped
+  out of a card; the footer wraps where three cards share about 1,000 px.
 - 2026-11-05 run 9 — Production healthy; #180 checked live (8 challenges listed, sms-link scores 0★ at
   start). Learner: "a crore SMS" didn't fit 2.7 crore taps; now 10 crore phones. Q04: Learner's
   must-have was the shelf disagreeing with the system (missing scans, swaps, cycle counts) and holds
@@ -171,7 +174,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Q04 10-minute grocery delivery, with figures `minutes-flow` and `stock-hold`.
+- 2026-11-05 — Library cards: meta and footer text up to 11px.
+- 2026-11-05 — PR #181: Q04 10-minute grocery delivery, with figures `minutes-flow` and `stock-hold`.
 - 2026-11-05 — PR #180: Lab challenge "The link in a crore SMS" for the URL shortener.
 - 2026-11-05 — PR #179: dashboard, no brief overflow when the window crosses the 900 px breakpoint.
 - 2026-11-05 — PR #178: unknown figure ids skipped instead of drawn as the API figure.
