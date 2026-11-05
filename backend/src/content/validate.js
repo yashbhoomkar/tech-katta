@@ -2,7 +2,7 @@
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
 const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy', 'lab']);
 // Figure ids the frontend can draw (FIGS in frontend/src/dashboard.jsx).
-export const FIGS = new Set(['patterns', 'choose', 'order', 'retry', 'lb-spread', 'lb-algos', 'cdn-edge', 'cdn-ttl', 'gw-front', 'rate-limit', 'scale-out', 'autoscale', 'cache-aside', 'cache-warm', 'db-index', 'db-replicas', 'shard-key', 'hot-shard', 'obj-upload', 'obj-tiers', 'queue-vs-stream', 'consumer-lag', 'repl-sync', 'repl-failover', 'consistency-timeline', 'double-accept', 'cap-split', 'pacelc', 'interview-clock', 'shortener-flow', 'short-codes']);
+export const FIGS = new Set(['patterns', 'choose', 'order', 'retry', 'lb-spread', 'lb-algos', 'cdn-edge', 'cdn-ttl', 'gw-front', 'rate-limit', 'scale-out', 'autoscale', 'cache-aside', 'cache-warm', 'db-index', 'db-replicas', 'shard-key', 'hot-shard', 'obj-upload', 'obj-tiers', 'queue-vs-stream', 'consumer-lag', 'repl-sync', 'repl-failover', 'consistency-timeline', 'double-accept', 'cap-split', 'pacelc', 'interview-clock', 'shortener-flow', 'short-codes', 'sync-flow', 'file-chunks']);
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 const list = (v) => (Array.isArray(v) ? v : []);

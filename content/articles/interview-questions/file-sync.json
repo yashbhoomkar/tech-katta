@@ -1,0 +1,239 @@
+{
+  "section": "interview-questions",
+  "slug": "file-sync",
+  "group": "easy",
+  "no": "QUESTION // 02",
+  "tag": "EASY",
+  "date": "5 Nov 2026",
+  "title": "Design file storage and sync",
+  "dek": "A bakery owner in Pune fixes a price in the menu PDF on the counter laptop, and the copy on their phone updates a few seconds later. Store people's files safely, keep every device in step, and don't resend a 200 MB video because one second of it changed.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Two kinds of data: the file bytes go to object storage, and the file list (names, folders, versions, which chunks make up each file) goes to a database.",
+        "Split every file into 4 MB chunks named by their hash. Upload only the chunks the server doesn't already have, straight to storage with short-lived signed URLs.",
+        "A file changes only when its new chunk list is committed, with a version check. A half-finished upload never shows, and two edits can't silently overwrite each other.",
+        "Every change goes into a per-user change log with a rising number. Each device remembers how far it has read and asks for everything after that.",
+        "A push or a held-open connection tells devices \"something changed\"; the change log tells them what. A missed push costs a few seconds, never a file."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Upload and download files of any size, up to 50 GB, from phone, laptop and web.",
+        "Edit a file on one device and every other signed-in device gets the new version on its own, usually within seconds.",
+        "Work offline: edits made on a train with no signal sync when the phone is back online.",
+        "Share a file or folder with other people, as viewer or editor.",
+        "Out of scope here: two people typing in the same document at once (that's Collaborative docs, question 24), search inside files, and previews."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Durability",
+          "A file that was saved is never lost: the most important number here"
+        ],
+        [
+          "Sync delay",
+          "A change shows on other online devices within about 10 seconds"
+        ],
+        [
+          "Networks",
+          "Uploads survive patchy mobile data: a dropped connection resumes, not restarts"
+        ],
+        [
+          "Consistency",
+          "Your own device sees your change at once; other devices may lag a few seconds"
+        ],
+        [
+          "Scale",
+          "5 crore users, 1 crore of them active on a given day"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Stored bytes: 5 crore users × 2 GB on average is 10 crore GB, about 100 PB. That only fits in object storage, never in a database.",
+        "Changes: 1 crore daily users × 4 new or edited files is 4 crore a day ÷ 86,400 s ≈ 460 a second, about 1,500 at peak.",
+        "Bytes coming in: at 2 MB per change that's 80 TB a day, close to 1 GB a second. Too much to stream through your API servers; clients upload straight to storage.",
+        "File list: 5 crore users × 2,000 files is 10,000 crore rows. At about 300 bytes each that's 30 TB, so the metadata database is sharded, by user.",
+        "Waiting devices: maybe 50 lakh devices online at the busiest hour, each holding a connection open for change alerts. At around 50,000 idle connections a server, that's about 100 servers."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "File: `file_id`, `owner`, `parent_folder`, `name`, `size`, `version`, `chunks` (list of hashes), `deleted`.",
+        "Chunk: `hash` (SHA-256 of its bytes), `size`, where it sits in object storage.",
+        "Change: `user`, `seq` (rises by one per change), `file_id`, `version`, what happened (created, edited, moved, deleted).",
+        "Device: `device_id`, `user`, `cursor` (the last `seq` it has applied). Share: `folder`, `user`, `role`."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /uploads   { \"path\": \"/Menu/menu.pdf\", \"size\": 9437184,\n                  \"chunks\": [\"9f2c…\", \"41ab…\", \"c07e…\"], \"base_version\": 7 }\n→ 200 { \"upload_id\": \"u_81\", \"missing\": [{ \"hash\": \"41ab…\", \"url\": \"<signed PUT URL, 15 min>\" }] }\n\nPUT <signed URL>          (chunk bytes go straight to object storage)\n\nPOST /uploads/u_81/commit\n→ 201 { \"file_id\": \"f_42\", \"version\": 8 }\n→ 409 if the file is no longer at version 7\n\nGET /changes?cursor=8812\n→ 200 { \"changes\": [ … ], \"cursor\": 8840, \"more\": false }\n\nGET /files/f_42           → chunk list with signed download URLs\nPOST /shares             { \"path\": \"/Menu\", \"with\": \"<user id>\", \"role\": \"editor\" }",
+      "say": "Upload in three steps. First, post the file's path, size, the hashes of its chunks, and the version you started from. The server answers with signed URLs for only the chunks it doesn't have. Second, put those chunks straight into object storage. Third, commit. The server makes it version 8, or answers 409 if someone else changed the file first. Devices get changes by asking for everything after their cursor. Downloads return signed URLs for each chunk, and shares give a folder to another user as viewer or editor."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "sync-flow",
+      "cap": "The laptop uploads only the changed chunk straight to object storage, then commits the new chunk list to the metadata service. The commit adds a line to the change log, and the notifier tells the phone. The phone asks for changes since its cursor and downloads just that chunk."
+    },
+    {
+      "t": "p",
+      "x": "Four parts. A sync client on each device watches the local folder and keeps a small database of what it last synced. The metadata service owns the file list, versions and the change log. Object storage holds the chunks. A notifier keeps a connection open to each online device and only ever says \"you have changes\"."
+    },
+    {
+      "t": "p",
+      "x": "The bytes never pass through the metadata service. It hands out signed URLs and records what was uploaded, so a few servers can handle 1,500 commits a second while object storage takes the gigabyte a second."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Big files on patchy networks"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ONE BIG UPLOAD",
+      "what": "Send the whole file in one request to an API server, which writes it to storage.",
+      "use": "Simple, and fine for a few small files.",
+      "avoid": "A dropped connection at 90% starts over from zero. API servers spend their time copying bytes, and a 50 GB file hits every request timeout on the way.",
+      "ex": "A restaurant uploads a 1.5 GB kitchen video on 4G; the signal drops in a lift and the whole upload starts again.",
+      "like": "Carrying all your shopping home in one trip: drop one bag and you go back for everything."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "CHUNKS, STRAIGHT TO STORAGE",
+      "what": "Split the file into 4 MB chunks and upload each one directly to object storage with a signed URL. Retry a failed chunk on its own, and send a few in parallel.",
+      "use": "A dropped connection loses at most one chunk. API servers never touch the bytes.",
+      "avoid": "Editing one page of a 200 MB file still re-uploads all 50 chunks, unless you also know which chunks the server already has.",
+      "ex": "The 1.5 GB video is 375 chunks; after the lift, the phone resumes at chunk 341.",
+      "like": "Moving house in labelled boxes: lose one box and you redo only that box."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "CHUNKS NAMED BY THEIR HASH",
+      "what": "Name each chunk by the SHA-256 of its bytes. Before uploading, send the list of hashes; the server answers with the ones it doesn't have, and only those are sent.",
+      "use": "An edit uploads only the chunks that changed. A file moved or copied between folders uploads nothing.",
+      "avoid": "Fixed 4 MB cuts shift when bytes are inserted near the start, changing every chunk after it. Content-defined chunking (see the follow-ups) fixes that.",
+      "ex": "Changing a price on page 2 of the menu PDF changes one chunk out of three, so 4 MB goes up instead of 9.",
+      "like": "A packing list: the new flat already has the sofa, so you only send the boxes it's missing."
+    },
+    {
+      "t": "fig",
+      "id": "file-chunks",
+      "cap": "The 9 MB menu PDF is three chunks (4, 4 and 1 MB), each named by its hash. A price changes on page 2: only the middle chunk's hash changes, so only that chunk is uploaded. The new version is the old list with one hash swapped."
+    },
+    {
+      "t": "h2",
+      "x": "Keeping devices in step"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every commit appends a row to the owner's change log with the next `seq`. The log, not the notifications, is the record of what happened.",
+        "A device keeps its `cursor`. On start-up, after a notification, or every few minutes anyway, it calls `GET /changes?cursor=…` and applies what comes back, oldest first.",
+        "Notifications carry no data, just \"you have changes\". Lost one? The next poll catches up. That's why a slow notifier never loses a file.",
+        "Online laptops hold a long-poll or WebSocket connection to the notifier. Phones in the background get a mobile push instead, because the OS closes their connections.",
+        "A device that has been away too long (the log is trimmed after, say, 30 days) does a full compare of its file list against the server's."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Two edits at once"
+    },
+    {
+      "t": "p",
+      "x": "The counter laptop and the owner's phone both edit `menu.pdf` while offline, starting from version 7. The laptop comes online first and commits version 8. The phone's commit still says `base_version: 7`, so it gets a 409. Instead of overwriting, the phone saves its edit as `menu (conflicted copy, Ravi's phone).pdf` next to the original. Its chunks are already uploaded, so the conflicted copy is just a new file entry. Both edits survive and a person picks. Last-write-wins would be simpler and would quietly throw one of them away."
+    },
+    {
+      "t": "h2",
+      "x": "Never losing a file"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Object storage keeps copies across availability zones (or erasure codes them), which is where the many-nines durability comes from. Don't build that yourself.",
+        "Commit order: chunks first, then the file list. A file never points at a chunk that isn't stored yet.",
+        "The commit checks that every listed hash is really stored, so a client can't commit a file that points at a chunk it never uploaded.",
+        "Chunks nobody points at, from abandoned uploads, are deleted by a cleanup job after a day. Never on the upload path.",
+        "Keep old versions and deleted files for 30 days, so a bad sync or an accidental delete can be undone. Their chunks stay until the last version using them goes."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Sharing and safety"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A shared folder gets its own change log. Each device follows its own log plus the logs of the folders shared with its user.",
+        "Signed URLs expire in minutes and allow one chunk each, so a leaked URL is nearly useless.",
+        "Skip uploading a chunk only if the same user (or shared folder) already has it. Skipping across all users would tell a stranger that someone else has that exact file.",
+        "Encrypt at rest, rate-limit uploads per user, and scan files behind public share links."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: bytes in object storage, the file list in a database, upload and download, and some way for other devices to find out about changes.",
+        "Senior: chunking with resumable direct uploads, sending only changed chunks, a change log with a cursor per device, version checks on commit.",
+        "Lead: conflicts without losing data, durability and the commit order, notifications as hints rather than the source of truth, sharding the metadata, and the privacy cost of cross-user dedup."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Inserting one byte at the start shifts every 4 MB chunk. Now what?\" Cut chunks where a rolling hash of the content hits a pattern, not every 4 MB. An insert then changes only the chunk it lands in.",
+            "\"A folder is shared with 10,000 people.\" Don't copy the change into 10,000 logs; each member's devices read the folder's one log. Notify them in batches.",
+            "\"How do you shard the metadata?\" By user (or by shared folder), since every list, change and commit is within one user's files. A shared folder lives on one shard and members read it there.",
+            "\"Why not let the phone keep a permanent connection?\" Android and iOS close background connections to save battery; mobile push is the only reliable wake-up.",
+            "\"A 50 GB upload?\" Same chunks, more of them, with object storage's multipart upload underneath. Show progress per chunk, and let it pause and resume across app restarts."
+          ]
+        }
+      ]
+    }
+  ]
+}
