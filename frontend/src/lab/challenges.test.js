@@ -11,6 +11,7 @@ const solutions = {
   'one-server': chain(N('c', 'client'), N('s', 'server', { size: 'm5.large', count: 4 }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'first-rush': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 2, maxCount: 10, autoscale: true }), N('d', 'database', { size: 'db.r5.2xlarge' })),
   'flash-sale': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 14 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.m5.xlarge' })),
+  'sms-link': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 13 }), N('k', 'cache', { size: 'cache.r5.large' }), N('d', 'database', { size: 'db.m5.large' })),
   'read-heavy': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.xlarge', count: 5 }), N('k', 'cache', { size: 'cache.m5.large' }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'cache-restart': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 8 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.r5.2xlarge' })),
   'ind-vs-pak': chain(N('v', 'client'), N('cdn', 'cdn'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 40 })),
