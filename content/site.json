@@ -416,7 +416,7 @@
     ]
   },
   "practice": {
-    "button": "Practise this question: 45 minutes",
+    "button": "Practise before you read: 45 minutes",
     "again": "Practise it again",
     "practised": "✓ practised",
     "title": "Practice",
@@ -472,7 +472,8 @@
           "Boxes that serve every call, end to end",
           "Walk each call through the boxes out loud",
           "Where each thing is stored, with its key fields",
-          "Say where a cache or a queue will be needed"
+          "Say where a cache or a queue will be needed",
+          "A quick estimate where it changes a choice: one database? fits in memory?"
         ]
       },
       {

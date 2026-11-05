@@ -72,7 +72,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 |---|---|---|---|---|
 | 1 | build | Practice mode v1: "Practise this question" on every Interview Question | done | shipped run 12: full-screen 45-minute run through the six steps with checklists, time per step at the end, `practice:<slug>` in progress steps; no new data fields |
 | 2 | build | Library card footers level at 768–1100 px (one wraps, two don't) | ready | Learner, run 10; cosmetic: stack label above link at those widths |
-| 3 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change |
+| 3 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
 | 4 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
 | 5 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
 | 6 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |

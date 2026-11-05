@@ -23,8 +23,9 @@ return createPortal(<div className="pr" role="dialog" aria-modal="true" aria-lab
 <tbody>{steps.map((x,k)=><tr key={x.name} className={spent[k]>x.minutes*60?"over":""}><td>{x.name}</td><td>{x.minutes} min</td><td>{mmss(spent[k])}</td></tr>)}</tbody></table>
 <button type="button" className="pr-go" onClick={onClose}>{p.compare} →</button></div>
 :<div className="pr-body">
+<p className="pr-prompt">{a.dek}</p>
 <div className="pr-clock"><span className={used>total?"over":""}>{used>total?"+"+mmss(used-total):mmss(total-used)}</span><small>{used>total?p.overAll:p.left}</small>{!run&&<em>{p.paused}</em>}</div>
-<ol className="pr-steps" aria-label={p.stepsLabel}>{steps.map((x,k)=><li key={x.name} className={k<i?"done":k===i?"now":""} style={{flexGrow:x.minutes}} aria-current={k===i?"step":undefined}><span>{x.name}</span></li>)}</ol>
+<ol className="pr-steps" aria-label={p.stepsLabel}>{steps.map((x,k)=><li key={x.name} className={k<i?"done":k===i?"now":""} style={{flexGrow:x.minutes}} aria-current={k===i?"step":undefined}><b>{k+1}</b><span>{x.name}</span></li>)}</ol>
 <h2>{i+1}. {s.name}<small>{s.minutes} min · <span className={left<0?"over":""}>{left<0?`${mmss(left)} ${p.over}`:`${mmss(left)} ${p.stepLeft}`}</span></small></h2>
 <ul className="pr-checks">{s.checks.map((c,k)=>{const id=i+"-"+k;return <li key={id}><label><input type="checkbox" checked={!!ticked[id]} onChange={e=>setTicked(m=>({...m,[id]:e.target.checked}))}/><span>{c}</span></label></li>})}</ul>
 <div className="pr-act"><button type="button" className="pr-ghost" onClick={()=>setRun(r=>!r)}>{run?p.pause:p.resume}</button>{i<steps.length-1?<button type="button" className="pr-go" onClick={()=>setI(i+1)}>{p.next} →</button>:<button type="button" className="pr-go" onClick={finish}>{p.finish}</button>}</div>
