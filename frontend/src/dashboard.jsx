@@ -131,7 +131,7 @@ useEffect(()=>{const page=document.getElementById("root"),prev=document.activeEl
 const fit=()=>{const r=stage.current?.getBoundingClientRect();if(!r)return;const turn=r.height>r.width*1.15;const w=turn?Math.min(r.height,r.width*ar):Math.min(r.width,r.height*ar);setBox({w,turn})};fit();addEventListener("resize",fit);
 return()=>{document.body.style.overflow="";if(page)page.inert=false;document.removeEventListener("keydown",key);removeEventListener("resize",fit);prev?.focus?.()}},[]);
 return createPortal(<div className="fs" role="dialog" aria-modal="true" aria-label={title}><div className="fs-head"><div className="fs-title"><b>{title}</b><span className="fs-hint">Turn your phone sideways for a bigger view</span></div><button ref={close} type="button" className="r-btn" onClick={onClose}>Close ✕</button></div><div className="fs-stage" ref={stage}>{box&&<div className="fs-fig" style={{width:box.w,transform:`translate(-50%,-50%)${box.turn?" rotate(90deg)":""}`}}>{children}</div>}</div></div>,document.body)}
-function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const f=FIGS[id]||FIGS.patterns,C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
+function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const f=FIGS[id];if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
 return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><C still={still}/></div>
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><C still={still} uid="fs"/></FullFig>}</figure>}
 
@@ -168,7 +168,11 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
 // Article bodies are fetched when opened; the summaries list came with the dashboard.
-function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
+// A figure id this build doesn't know (new content can go live a few minutes before the frontend that
+// draws it) is left out, so the page, the figure numbers and read aloud all skip it instead of showing
+// the wrong diagram.
+const knownFigs=a=>a.body.some(x=>x.t==="fig"&&!FIGS[x.id])?{...a,body:a.body.filter(x=>x.t!=="fig"||FIGS[x.id])}:a;
+function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a:knownFigs(a)}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
 return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
 
 // Did you know: a surprising fact about traffic at scale (site.json `fact`), moved off the landing page.
