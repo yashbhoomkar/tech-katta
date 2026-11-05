@@ -70,13 +70,18 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Skip-to-content link and `:focus-visible` outlines | done | shipped run 4; `.acct-btn` (sign-in UI) left for the owner |
-| 2 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
-| 3 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 4 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 5 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 6 | build | Dashboard home overflowed at 320–390 px once in a scripted run (prod too) after visiting `/` and the Lab; not reproduced alone | ready | low; find the sequence before fixing |
-| 7 | content | Q06–Q36, one per run, in plan order | ready | |
+| 1 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
+| 2 | content | Lab challenge for the URL shortener (`lab.json`): a redirect flood a cache must absorb | ready | business plan: every question gets a "build it, break it" challenge; content lane if the engine needs no change |
+| 3 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
+| 4 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 5 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
+| 6 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
+| 7 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 8 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 9 | build | Dashboard home overflowed at 320–390 px once in a scripted run (prod too); not reproduced alone | ready | low; find the sequence before fixing |
+| 10 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
+| — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice |
 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
@@ -88,6 +93,20 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 22 Ride hailing · 23 Stock trading · 24 Collaborative docs · 25 Web crawler · 26 Ad click counting ·
 27 Post search · 28 Payments (UPI-style) · 29 Metrics and alerting · 30 Online chess · 31 AI chat app ·
 32 Flash sale · Practice: 33 Food reviews · 34 Game leaderboard · 35 Donations site · 36 CI job runner.
+
+## Business plan (owner, 2026-11-05)
+
+The owner will sell Tech Katta at ₹99 a month or ₹249 a year per account. Decided (agent proposal,
+for the owner to confirm):
+- **Free:** Concepts, Components, Q00–Q02 and one question per difficulty after that, the first three
+  Lab challenges. Free needs sign-in (as now), so every reader is a lead.
+- **Paid:** every Interview Question, every Lab challenge (one per question), Practice mode, recorded
+  narration, progress across devices.
+- **Build order:** depth first (one Interview Question per content run until all 37 are done, each
+  with a Lab challenge), then Practice mode, then public previews for search, then the paywall.
+  Payments stay owner-only (rule 5) until the owner changes that rule.
+- **Measured by:** sign-ups, `lab_open` and `article_open` per user, return visits in 7 days. On
+  2026-11-05 there was 1 account and 36 page views in total, so getting readers is the bottleneck.
 
 ## Owner only (agents never do these; remind in a run summary at most once a day)
 
@@ -102,12 +121,13 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Context repo pending
 
-- Handover §12 rows: #171 (agents' to-do list in the site repo), #172 (Q01 fix: aliases vs counter codes,
-  no cached 404s from replicas), #173 (Lab Import dialog keyboard
-  fixes), #174 (Q02 file storage and sync), and this run's skip link PR.
+- Handover §12 row: #175 (skip link and visible focus outlines).
 
 ## Review notes (newest first)
 
+- 2026-11-05 — Run 4's live checks were cut short by a usage limit; #175 was verified live by bundle
+  string and pre-merge browser checks only. Owner asked for a product and business plan (₹99/month,
+  ₹249/year): Queue reordered around it (see Business plan). Ledger now fills itself on merge.
 - 2026-11-05 run 4 — Production healthy (chaos 11/11, sweep clean, Q02 live and readable on phone).
   Skip link and outlines: a global `a/button:focus-visible` outline already existed in dashboard.css;
   component rules with `outline:none` were cancelling it. One scripted run showed `/dashboard/`
@@ -131,7 +151,7 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Done log (newest first)
 
-- 2026-11-05 — Skip-to-content link (landing and dashboard) and visible focus outlines.
+- 2026-11-05 — PR #175: skip-to-content link (landing and dashboard) and visible focus outlines.
 - 2026-11-05 — PR #174: Q02 File storage and sync, with figures `sync-flow` and `file-chunks`.
 - 2026-11-05 — PR #173: Lab Import dialog, focus trap, Escape from anywhere, focus back to Designs.
 - 2026-11-05 — PR #172: Q01 fix, aliases kept apart from counter codes; no cached 404s from lagging replicas.
