@@ -3,6 +3,7 @@
     "concepts/api-types",
     "concepts/replication",
     "concepts/consistency",
+    "concepts/cap-pacelc",
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",
