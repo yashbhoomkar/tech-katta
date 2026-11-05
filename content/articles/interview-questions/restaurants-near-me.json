@@ -1,0 +1,227 @@
+{
+  "section": "interview-questions",
+  "slug": "restaurants-near-me",
+  "group": "easy",
+  "no": "QUESTION // 03",
+  "tag": "EASY",
+  "date": "5 Nov 2026",
+  "title": "Design restaurants near me",
+  "dek": "Open Zotato in Koramangala at 8 pm and the home screen lists restaurants that deliver to you, nearest and best first, in a blink. Find those few hundred among 3 lakh restaurants, thousands of times a second, while kitchens switch on and off all evening.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "All 3 lakh restaurants fit in about 300 MB, so the data isn't the problem. The problem is answering \"what's near this point?\" 6,000 times a second.",
+        "A normal index can't do it: an index on latitude alone returns a strip across the whole country. You need a geo index that keeps nearby places together.",
+        "Geohash cuts the map into named cells; places close together share a prefix. Look up your cell and its 8 neighbours, never just your own.",
+        "\"Near me\" for delivery means \"delivers to me\". Keep a list per cell of the restaurants that serve it, and check open or busy at query time.",
+        "Many people in one area ask the same question at dinner: cache the answer per cell and filter for a minute or so."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Given the customer's location, list restaurants that deliver there, open right now.",
+        "Sort by distance, rating or delivery time, and filter by cuisine, veg only, or rating 4+.",
+        "Scroll through results page by page without seeing the same restaurant twice.",
+        "Restaurants can change their own status: open, busy (taking fewer orders) or closed.",
+        "Out of scope here: search by dish name, personal ranking, and how the delivery time is worked out (that's dispatch)."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Results in under 200 ms for nearly every request"
+        ],
+        [
+          "Freshness",
+          "A closed kitchen disappears within a minute; a new restaurant shows within an hour"
+        ],
+        [
+          "Availability",
+          "The home screen always loads; slightly old results beat an error"
+        ],
+        [
+          "Scale",
+          "3 lakh restaurants, 2 crore people opening the app each day"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Data: 3 lakh restaurants × about 1 KB (location, cuisines, rating, zone) is 300 MB. It fits in memory on one server, so every server can hold a full copy.",
+        "Reads: 2 crore people × 5 home-screen loads is 10 crore a day ÷ 86,400 s ≈ 1,200 a second, about 6,000 at the dinner peak.",
+        "Writes: locations almost never change. Status does: 3 lakh restaurants × about 10 changes a day is 30 lakh a day, about 35 a second.",
+        "So this is read-heavy by a wide margin, and small enough to copy everywhere. The design follows from that."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Restaurant: `id`, `name`, `lat`, `lng`, `cuisines`, `veg_only`, `rating`, `zone` (where it delivers).",
+        "Status: `restaurant_id`, `state` (open, busy, closed), `until`.",
+        "Cell: a geohash, and the list of restaurants that deliver into it."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET /restaurants/nearby?lat=12.9352&lng=77.6245&sort=distance&veg=true&cursor=…\n→ 200 { \"restaurants\": [ { \"id\": \"r_88\", \"name\": \"Meghana Foods\", \"km\": 1.4, \"rating\": 4.4, \"eta_min\": 28 }, … ],\n        \"cursor\": \"c_3f…\" }\n\nPUT /restaurants/r_88/status   { \"state\": \"busy\", \"until\": \"21:30\" }   (restaurant app)\n→ 204",
+      "say": "Two calls. The customer app asks for nearby restaurants with its latitude and longitude, a sort order, filters and a cursor, and gets a page of restaurants with distance, rating and delivery time, plus a cursor for the next page. The restaurant app sets its status to open, busy or closed, optionally until a time."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "nearby-flow",
+      "cap": "The nearby service turns the customer's location into a cell, reads which restaurants deliver into that cell from an in-memory geo index, drops the ones that are closed or busy, adds names and ratings from a cache, ranks them and returns the first 20."
+    },
+    {
+      "t": "p",
+      "x": "The nearby service is stateless and keeps the whole geo index in memory, so adding servers adds capacity. The restaurant database stays the source of truth; every change flows from it to the index through a change stream, and status lives in Redis because it changes all evening."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Finding what's nearby"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "LATITUDE AND LONGITUDE RANGES",
+      "what": "Store `lat` and `lng` with an index on each, and ask for rows where both fall inside a box around the customer.",
+      "use": "Works with any database and is easy to explain.",
+      "avoid": "The database uses one index at a time. `lat BETWEEN …` alone matches a strip across the whole country, Mumbai to Kolkata, and every row in it is then checked for longitude.",
+      "ex": "A box around Koramangala matches every restaurant at that latitude, from Mangaluru to Chennai.",
+      "like": "Looking for your neighbours by asking everyone born in the same year."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "GEOHASH",
+      "what": "Interleave the bits of latitude and longitude into one short string. Each extra character makes the cell smaller, and places close together share a prefix, so a normal index on the string finds them.",
+      "use": "One index, prefix lookups, works in any database or in Redis (which uses the same idea for its geo commands).",
+      "avoid": "Two places a few metres apart can sit either side of a cell border and share no prefix. Always search your cell and the 8 around it.",
+      "ex": "5-character cells are roughly 5 km a side; 6-character cells are about 1.2 × 0.6 km.",
+      "like": "PIN codes: neighbours usually share the first digits, but the house across a district border doesn't."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "CELLS THAT SPLIT WHERE IT'S BUSY",
+      "what": "A quadtree starts with the whole map as one cell and splits any cell holding more than, say, 100 restaurants into four, again and again.",
+      "use": "Dense areas get small cells and empty areas big ones, so every lookup touches about the same number of restaurants.",
+      "avoid": "It lives in memory and must be rebuilt or updated as restaurants are added. In an interview, say that databases' built-in geo indexes (PostGIS, MongoDB's 2dsphere) already do this kind of work.",
+      "ex": "Koramangala ends up in cells a few hundred metres wide; a stretch of highway in Rajasthan is one cell tens of kilometres wide.",
+      "like": "A city map with an inset for the crowded old town."
+    },
+    {
+      "t": "fig",
+      "id": "geo-cells",
+      "cap": "The customer is near the edge of their cell. Biryani Zone is 300 m away but in the next cell, so searching one cell misses it. Searching the 3 × 3 block finds it. With cells at least as wide as the search radius, the block always covers the circle."
+    },
+    {
+      "t": "h2",
+      "x": "Near me means \"delivers to me\""
+    },
+    {
+      "t": "p",
+      "x": "A restaurant 2 km away across Silk Board may not deliver to you, while one 6 km away on a straight road does. Each restaurant has its own delivery zone, which Zotato shrinks when it rains hard or riders are short. So the question isn't \"who is within 5 km\" but \"whose zone contains this point\"."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Turn it around: for every small cell, keep the list of restaurants whose zone covers it. A lookup is then one read by cell id.",
+        "Rebuild a restaurant's cells when its zone changes. That's a few hundred cells, a handful of times a day, which is cheap.",
+        "Check status after the lookup, from Redis. Busy and closed change every few minutes, so they never go into the index itself."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The 8 pm rush"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Thousands of people in the same few cells ask the same question at once. Cache the ranked list per cell and filter for 30 to 60 seconds; most home screens become a cache read.",
+        "Apply status after the cache, so a kitchen that just closed disappears at once even when the cached list still has it.",
+        "Every nearby server has the full index in memory. Add servers for more reads; no sharding is needed at 300 MB.",
+        "If the index or Redis is slow, show the last cached list for the cell. A slightly old home screen is better than an empty one."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Ranking and pages"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Take the 200 or so restaurants in the cells, sort by the chosen order, and return 20 at a time.",
+        "Straight-line distance is fine for sorting candidates; show delivery time from the dispatch service only for the page on screen.",
+        "Results change between pages as kitchens open and close. Keep the candidate list for a few minutes behind the cursor, so the second page carries on from the first without repeats."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: why a plain index on latitude and longitude fails, one geo index (geohash is fine), checking neighbouring cells, and a cache.",
+        "Senior: the numbers (300 MB, 6,000 reads a second) leading to an in-memory index on every server, delivery zones rather than radius, status kept apart from the index.",
+        "Lead: freshness through a change stream, caching per cell with status applied afterwards, stable pages, and what the home screen shows when parts of this are down."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"What if nothing is open within reach?\" Say so and suggest scheduling for later, rather than silently showing restaurants that can't deliver.",
+            "\"The customer is moving, say in an auto.\" Ask for results again only when they move into a new cell, not on every location update.",
+            "\"Restaurants in 800 cities, not one?\" Still 300 MB in total, so every server keeps all of it. Split by city only if the data grows a lot, for example with dish-level search.",
+            "\"How is distance worked out?\" The haversine formula gives straight-line distance on a sphere. Road distance comes from the maps or dispatch service, and only for the few results on screen.",
+            "\"How do you test it?\" Seed known points near cell borders and on both sides of a zone boundary, and check that the right restaurants come back."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "\"The menu everyone reads\" is the same shape as the 8 pm home screen: a flood of identical reads. Put a cache in front and watch the database calm down.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}
