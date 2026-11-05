@@ -12,6 +12,8 @@
     "components/databases",
     "components/sharding",
     "components/object-storage",
-    "components/queues-and-streams"
+    "components/queues-and-streams",
+    "interview-questions/how-to-answer",
+    "interview-questions/url-shortener"
   ]
 }

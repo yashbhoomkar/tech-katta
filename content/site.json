@@ -295,6 +295,33 @@
           "Agreeing",
           "Consensus, leader election and transactions across services."
         ]
+      ],
+      "interview-questions": [
+        [
+          "start",
+          "Start here",
+          "How to answer any system design question, step by step."
+        ],
+        [
+          "easy",
+          "Easy",
+          "Good first questions: one main flow, a clear bottleneck."
+        ],
+        [
+          "medium",
+          "Medium",
+          "The common interview level: several flows and a real trade-off or two."
+        ],
+        [
+          "hard",
+          "Hard",
+          "Scale, money or real-time constraints that shape the whole design."
+        ],
+        [
+          "practice",
+          "Practice",
+          "Shorter questions to try on your own with the method."
+        ]
       ]
     },
     "groupEmpty": "Coming soon."

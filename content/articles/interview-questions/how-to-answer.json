@@ -1,0 +1,192 @@
+{
+  "section": "interview-questions",
+  "slug": "how-to-answer",
+  "group": "start",
+  "no": "QUESTION // 00",
+  "tag": "METHOD",
+  "date": "5 Nov 2026",
+  "title": "How to answer a system design question",
+  "dek": "The same six steps for every question, how long to spend on each, and what the interviewer is listening for at each one. Every question in this section follows them.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Pin down what to build before drawing anything: three or so features, what's out of scope, and a few qualities with numbers.",
+        "Name the main things the system stores, then write the API calls the features need.",
+        "Draw a simple design that handles every feature end to end. Caches, queues and shards come after it works.",
+        "Use the remaining time to make it hold up: the numbers, the failure cases, and the part the interviewer pushes on.",
+        "Talk while you work, do maths only when it changes a decision, and leave room for the interviewer to steer."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The clock"
+    },
+    {
+      "t": "fig",
+      "id": "interview-clock",
+      "cap": "A 45-minute interview, roughly: requirements 5 minutes, entities 2, API 5, a high-level design 15, deep dives 13, and the last 5 for your questions. Spending 20 minutes on requirements or skipping straight to sharding are the two most common ways to run out of time."
+    },
+    {
+      "t": "analogy",
+      "x": "Building a house for a client. You ask how many people will live there and what they need, sketch the rooms, check the plumbing reaches every one, and only then argue about the brand of tiles."
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "p",
+      "x": "Ask questions like a product manager would. Settle on about three features the system must do and say a few things it won't do in this interview. Then name three to five qualities, each with a number where you can: how fast, how many, how available, how consistent."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Features as user actions: \"a restaurant creates a short link\", \"a customer opens it\". Not technology.",
+        "Out of scope, said out loud: \"I'll leave out user accounts and custom domains\". It shows judgement and saves time.",
+        "Qualities with numbers: \"redirects in under 100 ms\", \"links never point to the wrong page\", \"99.9% of redirects work\".",
+        "Note what's unusual about the system. A URL shortener is read a hundred times more than it's written; a payment system must never charge twice. That one fact drives most of the design."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "p",
+      "x": "Don't fill a page with estimates up front. Do a calculation when its answer changes a choice: whether one database can take the writes, whether the hot data fits in memory, whether you need to shard. Say why you're doing it: \"let me check whether one machine can hold this\"."
+    },
+    {
+      "t": "p",
+      "x": "Keep the handful of conversions in your head: a day is about 10⁵ seconds, 10 lakh requests a day is about 12 a second, peaks are 2–3 times the average. The Quick Notes page has the rest."
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "List the nouns the system stores, as a rough first pass: link, click, user. Fields can wait until the design needs them.",
+        "Write one API call per feature. REST is the default: `POST /links`, `GET /{code}`. Use another style only when you can say why.",
+        "Take the user from their login token, not from the request body, so nobody can act as someone else.",
+        "For pipelines with many steps (upload, process, publish), list the steps in order before drawing; it keeps the design honest."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "p",
+      "x": "Draw the simplest set of boxes that serves every API call, then walk through each call in turn: where the request enters, what it reads and writes, what it returns. Write the key fields next to each data store as you go. If you see where a cache or a queue will be needed, say so and leave it for the deep dives."
+    },
+    {
+      "t": "p",
+      "x": "The goal at the end of this step is a design that works. A complete, simple design beats a half-finished clever one."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "p",
+      "x": "Now make the design meet its numbers and survive failures. Pick the two or three hardest parts, often the ones the qualities point to, and improve each. A useful way to talk through each one is three steps:"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "THE OBVIOUS ANSWER",
+      "what": "What most people would do first, and where it breaks.",
+      "use": "Showing you see the problem, not just the fix.",
+      "avoid": "Stopping here.",
+      "ex": "\"Hash the URL and take the first 7 characters\", then: \"but two URLs can share a prefix\".",
+      "like": "The first draft of an essay."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "FIXES THE MAIN PROBLEM",
+      "what": "A change that removes the first try's flaw, with its own cost.",
+      "use": "Most interviews: this is often enough at mid level.",
+      "avoid": "Hiding the new cost.",
+      "ex": "\"Use a counter so codes never clash\", then: \"but one counter is a bottleneck\".",
+      "like": "The second draft."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "WHAT YOU'D SHIP",
+      "what": "The choice that meets the numbers, and why its trade-offs are acceptable here.",
+      "use": "Senior answers: say what you'd build and what you'd watch.",
+      "avoid": "Over-building past what the requirements need.",
+      "ex": "\"Each server takes blocks of 1,000 IDs from the counter\".",
+      "like": "The version you hand in."
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "table",
+      "label": "Roughly what interviewers look for",
+      "head": [
+        "Level",
+        "Leads",
+        "Expected"
+      ],
+      "rows": [
+        [
+          "Junior / mid",
+          "Requirements and a working design",
+          "A clear end-to-end design; deep dives can follow the interviewer's prompts"
+        ],
+        [
+          "Senior",
+          "Most of the interview",
+          "Spots the hard parts unprompted, compares options with numbers, explains trade-offs"
+        ],
+        [
+          "Lead / staff",
+          "The whole interview",
+          "Picks the few decisions that matter most, covers failure and operations, keeps it simple"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Common mistakes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Designing before asking: building a global system when the interviewer wanted one city.",
+        "Naming technologies instead of reasons: \"Kafka\" is not an answer; \"a log several services can read at their own pace\" is.",
+        "Adding every component you know. Each box needs a requirement that asks for it.",
+        "Going quiet. The interviewer can only grade what they hear.",
+        "Never saying what could go wrong. Every design has a weak point; name it before you're asked."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How to practise"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Take a question from this section, set a 45-minute timer, and say your answer out loud or on paper before reading ours.",
+        "Compare: which requirements did you miss, which deep dive did you skip?",
+        "Build the design in the Lab and push traffic through it: you'll see which box gives out first."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Before your first question, try a Lab challenge: it's the high-level-design and deep-dive steps with numbers attached.",
+      "to": "lab",
+      "go": "Open the Lab"
+    }
+  ]
+}

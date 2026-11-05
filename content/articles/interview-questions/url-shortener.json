@@ -1,0 +1,230 @@
+{
+  "section": "interview-questions",
+  "slug": "url-shortener",
+  "group": "easy",
+  "no": "QUESTION // 01",
+  "tag": "EASY",
+  "date": "5 Nov 2026",
+  "title": "Design a URL shortener",
+  "dek": "Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Two calls: create a short link, and open one. Opening happens about a hundred times more often, so the design is built around fast reads.",
+        "Codes come from a counter written in base 62 (0–9, a–z, A–Z). Each server takes a block of 1,000 numbers at a time, so codes never clash and the counter is rarely asked.",
+        "Store `code → long URL` in a database keyed by the code; keep hot codes in Redis, so most redirects never touch the database.",
+        "Answer with 302 if you want to count every click (the browser asks you each time), 301 if you'd rather the browser remember it.",
+        "Send clicks to a stream for analytics, so counting never slows a redirect."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A restaurant's marketing tool turns a long URL into a short one, optionally with a custom name (`zot.to/biryani50`) and an expiry date.",
+        "Anyone who opens the short link is sent to the long URL.",
+        "Out of scope here: user accounts, a dashboard, custom domains, and detailed analytics beyond counting clicks."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Redirect speed",
+          "Under 100 ms for most clicks"
+        ],
+        [
+          "Availability",
+          "99.9% of redirects work; creating links can be slightly less available"
+        ],
+        [
+          "Correctness",
+          "A code always points to the URL it was made for; no two links share a code"
+        ],
+        [
+          "Scale",
+          "10 crore new links a day, about 100 opens per link"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Writes: 10 crore links a day ÷ 86,400 s ≈ 1,200 a second. One database handles that.",
+        "Reads: 100 opens per link ≈ 1.2 lakh redirects a second on average, about 3.5 lakh at peak. That needs a cache in front.",
+        "Storage: about 500 bytes per link is 50 GB a day, roughly 18 TB a year. More than one machine should hold for long, so plan to shard by code.",
+        "Codes: 6 base-62 characters give 5,600 crore codes, gone in about 18 months at this rate. 7 characters give 3.5 lakh crore, enough for decades."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Link: `code`, `long_url`, `created_by`, `created_at`, `expires_at`.",
+        "Click: `code`, `at`, `country`, `device` (written to a stream, counted later)."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /links        { \"url\": \"https://zotato.in/r/42/menu?offer=FIRST50\", \"alias\": \"biryani50\", \"expires\": \"2026-12-31\" }\n→ 201 { \"short\": \"https://zot.to/biryani50\" }\n\nGET /{code}\n→ 302 Location: https://zotato.in/r/42/menu?offer=FIRST50\n→ 404 if the code doesn't exist or has expired",
+      "say": "Two calls. POST to links with the long URL, and optionally a custom alias and an expiry, returns the short link. GET on the code answers with a 302 redirect to the long URL, or 404 if the code doesn't exist or has expired."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "shortener-flow",
+      "cap": "Creating a link: the links API turns its next ID into a code, stores `code → URL` and returns `zot.to/2Bi`. Opening one, a hundred times more often: the redirect service checks Redis, falls back to the database on a miss, answers 302, and drops a click event into a stream for analytics."
+    },
+    {
+      "t": "p",
+      "x": "Creating and opening are separate services because they scale differently: a few servers create links, many more answer redirects. Both use the same database, keyed by the code, so a redirect is one lookup by primary key."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Making short codes"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "HASH THE URL",
+      "what": "Hash the long URL (say MD5) and keep the first 7 characters.",
+      "use": "No coordination: any server can make a code alone, and the same URL always gets the same code.",
+      "avoid": "Two different URLs can share those 7 characters. You must check the database and retry on a clash, and the checks grow as the table fills.",
+      "ex": "Two restaurants' offer pages happen to start with the same hash prefix; the second one silently gets the first one's code unless you check.",
+      "like": "Naming children by the first letters of their surname: fine until two families share one."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "ONE COUNTER",
+      "what": "A single counter gives every new link the next number, written in base 62.",
+      "use": "Codes never clash, and they're as short as possible.",
+      "avoid": "Every create waits on one counter, a single point of failure. And codes are guessable in order: anyone can walk through `zot.to/2Bi`, `2Bj`, `2Bk`.",
+      "ex": "Link number 10,000 becomes `2Bi`.",
+      "like": "Token numbers at a bank counter: never two the same, but one machine prints them all."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "BLOCKS OF IDS",
+      "what": "Each links server reserves a block of 1,000 numbers from the counter and hands them out from memory. If a server dies, the rest of its block is simply skipped.",
+      "use": "No clashes, one counter call per 1,000 links, and servers keep working briefly if the counter is down.",
+      "avoid": "Codes are still in order within a block. If guessable links matter (private documents), scramble the number first with a reversible shuffle, or add random characters.",
+      "ex": "Server A holds 10,000–10,999, server B 11,000–11,999.",
+      "like": "Each bank counter gets its own roll of tokens."
+    },
+    {
+      "t": "fig",
+      "id": "short-codes",
+      "cap": "The counter hands each links server a block of 1,000 IDs; each turns its next ID into base 62. Server A's 10,000 becomes `2Bi`, server B's 11,157 becomes `2TX`. No two servers can produce the same code."
+    },
+    {
+      "t": "p",
+      "x": "Custom aliases (`biryani50`) skip the counter: insert the alias as the code and let the database's unique key reject a duplicate, then ask the user to pick another."
+    },
+    {
+      "t": "h2",
+      "x": "Fast redirects at 3.5 lakh a second"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Index: the code is the primary key, so even without a cache a lookup is about a millisecond. Fine for a start, not for 3.5 lakh a second on one database.",
+        "Cache: most clicks are on links made in the last few days. Keeping the hottest 20% of a day's links in Redis is about 10 GB, and most redirects never reach the database. Cache-aside with a TTL, as in the Caches article.",
+        "Edge: put the redirect behind a CDN that caches the 302 for a short time, so a link blasted in a crore SMS is answered near the customer. You lose per-click counting at the edge unless the CDN reports it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "301 or 302"
+    },
+    {
+      "t": "p",
+      "x": "A 301 tells the browser the move is permanent, so next time it skips you entirely: less load, but you never see those clicks and can't change or expire the link. A 302 sends every open through you: more load, but accurate click counts and the freedom to change where a link goes. Zotato's marketing team wants the counts, so it's 302, with caching to carry the load."
+    },
+    {
+      "t": "h2",
+      "x": "Scaling the data"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Shard the links table by code (hash of the code), since every redirect looks up exactly one code. See the Sharding article.",
+        "Replicate each shard; redirects can read from replicas, because a link that's a few hundred milliseconds old is rarely opened that fast.",
+        "Expired links: don't delete them on the hot path. A nightly job removes them, and the redirect checks `expires_at` before answering."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Abuse"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Rate-limit link creation per account, so nobody makes millions of codes.",
+        "Check long URLs against a list of known malware and phishing sites before creating a link, and let people report bad links.",
+        "Never redirect to `javascript:` or other non-web schemes."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: the two calls, a database keyed by code, a working way to make codes (a counter is fine), and a cache once the read numbers come up.",
+        "Senior: the read-heavy numbers early, blocks of IDs or another clash-free scheme with its trade-offs, 301 vs 302 with a reason, sharding by code.",
+        "Lead: what happens when the counter or a shard is down, guessable codes, abuse, the edge cache vs click counting trade-off, and keeping it simple."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"The same long URL is shortened twice: same code?\" Optional: keep an index on `long_url` per account and return the existing code, at the cost of one more lookup per create.",
+            "\"How do you count clicks without slowing redirects?\" Write a click event to a stream (Kafka) and count in a separate consumer; the redirect never waits for it.",
+            "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the cache-restart challenge.",
+            "\"Links in two regions?\" Give each region its own range of IDs, so codes stay unique without talking across regions."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "\"The menu everyone reads\" is the same shape: a flood of reads for a few popular items. Put a cache in front and see how much it takes off the database.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}
