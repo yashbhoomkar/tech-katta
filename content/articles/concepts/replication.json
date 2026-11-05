@@ -1,0 +1,221 @@
+{
+  "section": "concepts",
+  "slug": "replication",
+  "group": "data",
+  "no": "CONCEPT // 02",
+  "tag": "DATA",
+  "date": "5 Nov 2026",
+  "title": "Replication: keeping copies of your data, and what goes wrong",
+  "dek": "Why every serious database keeps copies, the price of waiting for them, the odd bugs a lagging copy causes, and what really happens when the main copy dies.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Replication means keeping the same data on several machines. It keeps you up when one fails, spreads reads, and puts data closer to users.",
+        "Most databases use one leader: all writes go to it, and followers copy them in order. Simple and predictable.",
+        "Synchronous copies wait for a follower before saying OK, so a crash loses nothing but every write is a little slower. Asynchronous copies don't wait, so writes are fast but the last few can be lost.",
+        "Followers lag behind. Reading from them causes strange moments: your own change missing, a refresh showing older data. Read from the leader when it matters.",
+        "When the leader dies, a follower takes over. Plan for the writes it didn't have, and make sure the old leader can't come back and act as leader too."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why keep copies"
+    },
+    {
+      "t": "list",
+      "items": [
+        "To stay up: when a machine or a whole zone fails, another copy takes over in a minute or two instead of hours of restoring backups.",
+        "To spread reads: \"my orders\", restaurant dashboards and reports read from followers, leaving the leader for writes.",
+        "To be close to users: a copy in another region answers its users faster, if they can live with slightly older data."
+      ]
+    },
+    {
+      "t": "analogy",
+      "x": "A school's master attendance register and the photocopies in each class. Only the office changes the master; copies are updated from it during the day. A teacher reading a copy at 10 am might not see a late arrival marked at 9:55."
+    },
+    {
+      "t": "h2",
+      "x": "One leader, many followers"
+    },
+    {
+      "t": "p",
+      "x": "The leader takes every write and records it in its log. Followers read that log and apply the same changes in the same order, so they end up with the same data. Reads can go to any copy; writes go only to the leader. PostgreSQL, MySQL, MongoDB and most managed databases work this way, and it's the right default."
+    },
+    {
+      "t": "fig",
+      "id": "repl-sync",
+      "cap": "A payment written to Zotato's database. With synchronous replication the leader waits for the follower in the other zone before saying OK: a couple of milliseconds more, and the payment survives the leader crashing a moment later. With asynchronous replication OK comes at once and the copy follows; a crash in between loses that payment."
+    },
+    {
+      "t": "type",
+      "name": "Synchronous",
+      "kind": "WAIT FOR A COPY",
+      "what": "The leader confirms a write only after a follower has it.",
+      "use": "Data you must not lose even when a machine dies: payments, orders, account balances.",
+      "avoid": "Followers far away: waiting for a copy in another region adds tens of milliseconds to every write. And if the only synchronous follower is down, writes stop.",
+      "ex": "RDS Multi-AZ: the standby in the second zone has every write before it is confirmed.",
+      "like": "Not leaving the bank counter until the clerk stamps your copy of the slip."
+    },
+    {
+      "t": "type",
+      "name": "Asynchronous",
+      "kind": "DON'T WAIT",
+      "what": "The leader confirms at once and sends the change to followers right after.",
+      "use": "Read replicas and copies in other regions, where speed matters more than the last second of writes.",
+      "avoid": "Being the only copy you'd fail over to for money: the writes it hadn't received yet are lost.",
+      "ex": "Two read replicas serving order history, usually a few milliseconds behind.",
+      "like": "Dropping a letter in the post box: you're done, and it arrives a bit later, almost always."
+    },
+    {
+      "t": "type",
+      "name": "Semi-synchronous",
+      "kind": "ONE WAITS, THE REST DON'T",
+      "what": "One follower is synchronous, the others asynchronous. If the synchronous one fails, another is made synchronous.",
+      "use": "The usual production setup: one safe copy for failover, more copies for reads.",
+      "avoid": "Thinking it means every copy is up to date: only one is.",
+      "ex": "Zotato's primary with a synchronous standby and two async read replicas.",
+      "like": "One witness signs the document now; the photocopies are made later."
+    },
+    {
+      "t": "h2",
+      "x": "Followers lag, and it shows"
+    },
+    {
+      "t": "p",
+      "x": "An asynchronous follower is usually milliseconds behind, but under heavy writes, a long-running query or a slow network it can fall seconds or minutes behind. Reading from it then produces bugs that look like magic."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Your own change is missing: a restaurant updates the price of a biryani, the page reloads from a follower, and the old price is back. Fix: after a user changes something, read their data from the leader for a short while, or until the follower has caught up to that change.",
+        "Time goes backwards: refresh \"my orders\" twice, landing on two followers at different points, and an order appears then vanishes. Fix: send each user's reads to the same follower.",
+        "Effects before causes: a support agent sees the refund before the complaint it answers, because the two came from different shards that lag differently. Fix: write things that belong together to the same place, or carry a version and wait for it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When the leader dies"
+    },
+    {
+      "t": "fig",
+      "id": "repl-failover",
+      "cap": "The leader dies while follower 1 is two writes behind. Follower 1 is promoted for term 2 and those two writes are gone. When the old leader comes back it still thinks it leads term 1; because every write carries the term and only term 2 is accepted, it is refused, steps down and follows. Without that check there would be two leaders taking different writes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Noticing takes time. The system has to wait before declaring a leader dead, usually tens of seconds; too short and a slow moment triggers a needless failover, too long and writes are down longer. Managed databases usually finish a failover in one to two minutes.",
+        "Choose the most up-to-date follower. With a synchronous standby that's simple and nothing is lost; with only asynchronous followers, the newest writes may be gone for good.",
+        "Lost writes can still hurt after the fact: an order ID that the old leader handed out may be handed out again by the new one. Use IDs that don't depend on the leader.",
+        "Fence the old leader. Number each leadership period (a term or epoch), and have the database and clients refuse anything from an older one. Two leaders accepting writes at once, called split brain, is far worse than a short outage.",
+        "Clients must find the new leader: a DNS name or a proxy that moves, and app code that reconnects and retries."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "More than one leader, or none"
+    },
+    {
+      "t": "type",
+      "name": "Multi-leader",
+      "kind": "A LEADER PER REGION",
+      "what": "Each region takes writes and sends them to the others.",
+      "use": "Users spread across regions who must be able to write locally and keep working when a region is cut off.",
+      "avoid": "Data where two people may change the same thing at once: the copies then disagree and something has to decide which change wins.",
+      "ex": "A global note-taking app where each user mostly edits their own notes.",
+      "like": "Two branch offices each updating their own copy of the customer list and swapping changes every evening."
+    },
+    {
+      "t": "type",
+      "name": "Leaderless",
+      "kind": "DYNAMO-STYLE · CASSANDRA",
+      "what": "Writes go to several copies at once and succeed when enough of them reply. Reads ask several copies and take the newest answer.",
+      "use": "Very high write volumes that must keep going while some machines are down.",
+      "avoid": "Things that need one clear order of events, such as a balance with many withdrawals.",
+      "ex": "Rider location history in Cassandra, written to 3 copies and confirmed by 2.",
+      "like": "Asking three friends what time the movie starts and going with the two who agree."
+    },
+    {
+      "t": "more",
+      "label": "Quorums: how many copies is enough",
+      "body": [
+        {
+          "t": "p",
+          "x": "With N copies, a write waits for W of them and a read asks R of them. If `W + R > N`, every read set overlaps every write set, so a read always reaches at least one copy that has the newest write. The common choice is N = 3, W = 2, R = 2: one copy can be down and both reads and writes still work."
+        },
+        {
+          "t": "table",
+          "label": "Choosing W and R for N = 3",
+          "head": [
+            "W",
+            "R",
+            "What you get"
+          ],
+          "rows": [
+            [
+              "2",
+              "2",
+              "Reads see the latest write; one copy can be down"
+            ],
+            [
+              "3",
+              "1",
+              "Fast reads; a write fails if any copy is down"
+            ],
+            [
+              "1",
+              "3",
+              "Fast writes; reads wait for all three"
+            ],
+            [
+              "1",
+              "1",
+              "Fastest, but reads may miss the latest write"
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "x": "Conflicting writes in multi-leader and leaderless setups need a rule. \"Last write wins\" by timestamp is simple and quietly drops one of the changes. Keeping both and merging them (as shopping carts or CRDTs do) keeps the data, at the cost of more work."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Money: every copy is another full database instance, with its own storage.",
+        "Slower writes for synchronous copies, and more for each region they cross.",
+        "Bugs from lag, which only show up under load and are hard to reproduce.",
+        "Failover is a moment of risk: practise it on purpose, before it happens at 8 pm on match night."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start with one leader and followers, and say which reads go to followers.",
+        "Say what's synchronous: \"a synchronous standby in a second zone for orders and payments, async read replicas for history\".",
+        "Bring up lag and read-your-writes before you're asked.",
+        "Describe failover: detection time, promoting the newest copy, what can be lost, and fencing the old leader.",
+        "Mention quorums if you choose a leaderless store, with numbers: N = 3, W = 2, R = 2."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "In the Lab, load the example design, raise the Clients until the database crashes and note how long it's down. Then turn on Multi-AZ, a synchronous standby in another zone, and run it again.",
+      "to": "lab",
+      "go": "Open the Lab"
+    }
+  ]
+}

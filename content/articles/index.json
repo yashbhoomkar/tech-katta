@@ -1,6 +1,7 @@
 {
   "articles": [
     "concepts/api-types",
+    "concepts/replication",
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",

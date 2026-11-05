@@ -273,6 +273,28 @@
           "Messaging",
           "Work that can wait: queues and event streams."
         ]
+      ],
+      "concepts": [
+        [
+          "basics",
+          "Basics",
+          "How programs talk, and the numbers to reason with."
+        ],
+        [
+          "data",
+          "Data across machines",
+          "Copies and their trade-offs: replication, consistency, CAP."
+        ],
+        [
+          "reliability",
+          "Staying up",
+          "Availability, timeouts, retries and circuit breakers."
+        ],
+        [
+          "coordination",
+          "Agreeing",
+          "Consensus, leader election and transactions across services."
+        ]
       ]
     },
     "groupEmpty": "Coming soon."
