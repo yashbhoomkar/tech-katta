@@ -18,7 +18,7 @@
     {"t": "example"},
     {"t": "fig", "id": "cache-aside", "cap": "Cache-aside for one restaurant's menu. On a hit, Redis answers in about a millisecond and the database is not asked. On a miss, Redis returns nothing, the Order API reads the menu from the database and stores it with a 5-minute expiry (`EX 300`), so the next request is a hit. A menu change updates the database and deletes the key."},
     {"t": "h2", "x": "Why cache"},
-    {"t": "p", "x": "Most systems read far more than they write. When 5,000 people a second open restaurant menus and each request makes 4 queries, that is 20,000 queries a second, almost all reads of the same few thousand menus. No ordinary database instance takes that; a db.m5.large handles about 2,500. With a cache in front answering 85% of the reads, about 3,000 a second reach the database."},
+    {"t": "p", "x": "Most systems read far more than they write. When 5,000 people a second open restaurant menus and each request makes 4 queries, that is 20,000 queries a second, almost all reads of the same few thousand menus. That is far more than one mid-sized database should carry; in the Lab's numbers a db.m5.large handles about 2,500. With a cache in front answering 85% of the reads, about 3,000 a second reach the database."},
     {"t": "p", "x": "Reads from memory are also fast: about a millisecond from Redis against 5 ms or more from the database, and far less when a query would have joined several tables."},
     {"t": "analogy", "x": "The water bottle on your desk. It is one sip away, so you only walk to the kitchen when it is empty. Most of the time you never leave your chair."},
     {"t": "h2", "x": "Reading through a cache"},
@@ -67,6 +67,6 @@
       "Mention what happens when the cache fails or restarts, and how the database survives it.",
       "If one key is very popular, mention stampedes and hot keys."
     ]},
-    {"t": "lab", "x": "5,000 people a second open restaurant menus, 4 queries each. No database takes 20,000 queries a second. Put a cache in front and keep it standing.", "to": "lab/read-heavy", "go": "Try \"The menu everyone reads\""}
+    {"t": "lab", "x": "5,000 people a second open restaurant menus, 4 queries each. Even the Lab's biggest database tops out at 12,000 queries a second. Put a cache in front and keep it standing.", "to": "lab/read-heavy", "go": "Try \"The menu everyone reads\""}
   ]
 }
