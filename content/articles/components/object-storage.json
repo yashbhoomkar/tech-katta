@@ -1,0 +1,229 @@
+{
+  "section": "components",
+  "slug": "object-storage",
+  "group": "storage",
+  "no": "COMPONENT // 08",
+  "tag": "STORAGE",
+  "date": "5 Nov 2026",
+  "title": "Object storage: where the photos, PDFs and videos go",
+  "dek": "Why files don't belong in the database or on a server's disk, how uploads go straight from the phone to storage, how to keep private files private, and how old files get cheaper on their own.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Object storage (S3, Google Cloud Storage, Azure Blob) keeps files as objects in a bucket, each under a key. You put, get and delete whole objects over HTTP.",
+        "It holds almost any amount, keeps several copies across data centres, and costs a few cents per GB a month. It's where photos, invoices, videos, logs and backups go.",
+        "Keep the file in the bucket and only its key in the database. Never on an app server's disk: servers are replaced, and the file goes with them.",
+        "Let phones upload and download directly with short-lived pre-signed URLs, so your API never carries the bytes. Put a CDN in front of anything public.",
+        "Block public access on private buckets, and let lifecycle rules move old files to cheaper classes and delete what you no longer need."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "What it is"
+    },
+    {
+      "t": "p",
+      "x": "A bucket is a flat store of objects. Each object is a file plus a little metadata (type, size, your own tags), and it lives under a key such as `restaurants/12/menu/9f3c2a.jpg`. The slashes only look like folders; they are part of the name, and listing by a prefix is how you see \"a folder\"."
+    },
+    {
+      "t": "p",
+      "x": "You work with whole objects. To change one byte you upload the object again. There is no rename, only copy then delete. In return you get storage that never fills up, survives the loss of a data centre, and is reached the same way from anywhere."
+    },
+    {
+      "t": "analogy",
+      "x": "A railway parcel office. You hand over a parcel and get a receipt number. Anyone with the receipt collects the whole parcel; nobody opens it to change one item. To send a different version, you send a new parcel."
+    },
+    {
+      "t": "h2",
+      "x": "Where each kind of data goes"
+    },
+    {
+      "t": "type",
+      "name": "Object storage",
+      "kind": "S3, CLOUD STORAGE, AZURE BLOB",
+      "what": "Files by key in a bucket, over HTTP. Replicated across zones by the service.",
+      "use": "Anything file-shaped: images, PDFs, video, exports, logs, backups, ML datasets.",
+      "avoid": "Data you query or update in small pieces, and tiny reads in a hot loop: each request takes tens of milliseconds.",
+      "ex": "Menu photos, invoices, delivery-proof photos, riders' licence scans.",
+      "like": "The parcel office: send whole parcels, collect them with the receipt."
+    },
+    {
+      "t": "type",
+      "name": "Block storage",
+      "kind": "EBS, PERSISTENT DISK",
+      "what": "A virtual disk attached to one server, with a normal file system on it.",
+      "use": "The disk under a database or anything that needs a real file system and fast small reads.",
+      "avoid": "Files users upload: only the one server sees them, and they're gone if it is replaced.",
+      "ex": "The disk of the PostgreSQL primary.",
+      "like": "The drawer of your own desk: fast, but only at your desk."
+    },
+    {
+      "t": "type",
+      "name": "File storage",
+      "kind": "EFS, FILESTORE",
+      "what": "A shared network file system many servers mount at once.",
+      "use": "Old software that expects shared folders, or tools that need real files on several machines.",
+      "avoid": "New applications: it costs several times more than object storage and is slower to scale.",
+      "ex": "A legacy report generator that writes to a shared folder.",
+      "like": "The office shared cupboard: everyone can reach it, and it's crowded."
+    },
+    {
+      "t": "type",
+      "name": "Database",
+      "kind": "POSTGRESQL, DYNAMODB",
+      "what": "Rows you query and update in small pieces.",
+      "use": "The facts about a file: who uploaded it, its key, size, type, which order it belongs to.",
+      "avoid": "The file's bytes. Large blobs bloat backups, replicas and the cache, and slow every query near them.",
+      "ex": "`order_photos(order_id, key, size, uploaded_at)`.",
+      "like": "The register at the parcel office: one line per parcel, not the parcel itself."
+    },
+    {
+      "t": "h2",
+      "x": "Uploads and downloads"
+    },
+    {
+      "t": "fig",
+      "id": "obj-upload",
+      "cap": "A restaurant uploads a menu photo. The app asks Zotato's API for a pre-signed upload URL, valid for five minutes and only for that key, size and type. The photo goes straight from the phone to the bucket, so the API never carries the bytes. The bucket's event starts a worker that writes small and large versions, and customers load them through the CDN."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pre-signed URLs: the API signs a URL that allows one action (upload or download) on one key for a few minutes. The phone uses it directly; no storage keys ever reach the app.",
+        "Choose the key yourself, with a random part: `restaurants/12/menu/9f3c2a.jpg`. Never use the name the user sent; it can be anything.",
+        "Check after upload, not before: the worker confirms the type and size, strips location data from photos, and only then marks the photo ready in the database.",
+        "Big files (videos, exports) go up in parts with multipart upload, so a dropped connection resends one part, not the whole file.",
+        "Downloads of private files work the same way: the API checks who is asking and returns a short-lived signed URL."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Public and private"
+    },
+    {
+      "t": "p",
+      "x": "Menu photos are public, so they're served through the CDN. Even then the bucket itself stays closed: only the CDN may read it (origin access control on CloudFront), so nobody can list or scrape it directly, and every byte is cached near the customer."
+    },
+    {
+      "t": "p",
+      "x": "Riders' licence and ID scans are private and sensitive. They go in a separate bucket with public access blocked at the account level, encryption on, and access logged. Support staff see a document through a signed URL that expires in a few minutes, and only after the app checks their role. Most file leaks in the news are a bucket someone made public by mistake."
+    },
+    {
+      "t": "h2",
+      "x": "What it costs"
+    },
+    {
+      "t": "fig",
+      "id": "obj-tiers",
+      "cap": "A delivery-proof photo is looked at by support in its first month, rarely after that, and never after a year. A lifecycle rule moves it from Standard to Infrequent Access at 30 days and to Deep Archive at 90, and deletes it at one year. Per GB, the year costs about $0.07 instead of $0.30 in Standard all along. Prices are S3 in Mumbai, rounded; check the current ones."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Storage: per GB per month, by storage class. Zotato's delivery photos are about 20 lakh a day at 200 KB, roughly 400 GB a day, so the class matters quickly.",
+        "Requests: about $0.005 per 1,000 uploads and $0.0004 per 1,000 downloads. Millions of tiny files cost more in requests than in storage.",
+        "Data out: sending a GB to the internet costs several times more than storing it for a month. This is the main reason public files go through a CDN.",
+        "Cheaper classes charge to read back, and have a minimum stay (30 days for Infrequent Access, 180 for Deep Archive). Deep Archive takes hours to return a file: fine for old photos, wrong for anything a customer waits on."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Storage classes compared",
+      "body": [
+        {
+          "t": "table",
+          "label": "S3 storage classes, Mumbai, rounded",
+          "head": [
+            "Class",
+            "Per GB a month",
+            "First byte",
+            "Good for"
+          ],
+          "rows": [
+            [
+              "Standard",
+              "$0.025",
+              "Milliseconds",
+              "Anything read often"
+            ],
+            [
+              "Infrequent Access",
+              "$0.014",
+              "Milliseconds, plus a fee per GB read",
+              "Read about once a month or less"
+            ],
+            [
+              "Glacier Instant Retrieval",
+              "$0.005",
+              "Milliseconds, higher read fee",
+              "Read about once a quarter"
+            ],
+            [
+              "Glacier Deep Archive",
+              "$0.002",
+              "12 hours or so",
+              "Kept for the record, almost never read"
+            ]
+          ]
+        },
+        {
+          "t": "p",
+          "x": "Intelligent-Tiering moves objects between classes on its own based on how they are used, for a small monthly fee per object. It suits data whose pattern you don't know yet."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Durability isn't a backup"
+    },
+    {
+      "t": "p",
+      "x": "S3 is designed for eleven nines of durability: it won't lose a file because a disk or a data centre fails. It will delete a file the moment your code, or a person with access, asks it to. Protect against that separately."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Versioning keeps the old copy when an object is overwritten or deleted, so mistakes can be undone. Add a lifecycle rule that removes old versions after some days, or they pile up.",
+        "Object Lock makes backups impossible to delete for a set time, even by an admin. That's what stops ransomware from wiping them.",
+        "Replicate important buckets to another region if losing a whole region for a day would hurt."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Things that surprise people"
+    },
+    {
+      "t": "list",
+      "items": [
+        "It's slower per request than a disk: tens of milliseconds to the first byte. Fine for a photo, wrong for a lookup in a loop. Cache hot small objects or keep them in a database.",
+        "Listing a prefix with millions of keys is slow and paginated. Keep your own list of files in the database instead of listing the bucket.",
+        "Each prefix handles thousands of requests a second (S3: about 3,500 writes and 5,500 reads), and S3 splits busy prefixes on its own. Spreading keys over many prefixes helps the busiest buckets.",
+        "Bucket names are global and public; don't put secrets or customer names in them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say where files go as soon as they appear: \"photos to S3, the key in the orders table, served through the CDN\".",
+        "Describe the upload: pre-signed URL from the API, direct upload, an event to a worker that validates and resizes.",
+        "Separate public from private: the CDN in front of public files, signed URLs for private ones, public access blocked.",
+        "Do the storage maths once: files a day × size × how long you keep them, and name a lifecycle rule.",
+        "Mention versioning or Object Lock when backups come up."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The video for IND vs PAK sits in object storage and reaches viewers through the CDN. Play the challenge with the CDN off, then on, and watch what the origin has to carry.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try IND vs PAK in the Lab"
+    }
+  ]
+}
