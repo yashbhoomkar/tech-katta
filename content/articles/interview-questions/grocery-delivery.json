@@ -1,0 +1,224 @@
+{
+  "section": "interview-questions",
+  "slug": "grocery-delivery",
+  "group": "easy",
+  "no": "QUESTION // 04",
+  "tag": "EASY",
+  "date": "5 Nov 2026",
+  "title": "Design 10-minute grocery delivery",
+  "dek": "Zotato Minutes promises milk, bread and instant noodles at your door in 10 minutes. That only works if the store is close, the shelf count is right, and nobody sells the last packet twice.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Ten minutes is a budget: about 1 to order, 3 to pick and pack, 6 to ride. Six minutes on a scooter is about 2 km, so every customer needs a small warehouse (a dark store) within 2 km.",
+        "Each dark store is its own little world: its stock, its pickers, its riders. Partition everything by store.",
+        "Stock shown while browsing can be a few seconds old. Stock taken at checkout must be exact: one conditional update that only succeeds if enough is left.",
+        "Hold the items for a few minutes while the customer pays, then confirm or release. Nobody pays for something that isn't on the shelf.",
+        "Pick and find a rider at the same time, not one after the other. When riders run out (rain, a match), promise a longer time or pause the store, instead of breaking the promise."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Show what the nearest dark store has in stock, and only what it has.",
+        "Place an order and pay; the items are kept for you until you do.",
+        "Pickers in the store get the order at once; a rider is ready when the bag is.",
+        "Track the order live, and tell the customer early if the promise slips.",
+        "Out of scope here: buying stock from suppliers, pricing, and how a rider's route is drawn."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Promise",
+          "Most orders at the door within 10 minutes of ordering"
+        ],
+        [
+          "Correctness",
+          "Never take money for an item the store doesn't have"
+        ],
+        [
+          "Freshness",
+          "Stock on screen at most a few seconds behind the shelf"
+        ],
+        [
+          "Scale",
+          "500 dark stores, 15 lakh orders a day"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Stock: 500 stores × about 6,000 items is 30 lakh rows. Small; the hard part is keeping them right, not storing them.",
+        "Orders: 15 lakh a day ÷ 86,400 s ≈ 17 a second, about 70 at the evening peak. With about 8 items each, that's some 560 stock updates a second at peak, spread over 500 stores.",
+        "Browsing: 1 crore app opens × 20 products seen is 20 crore stock reads a day, about 2,300 a second and over 10,000 at peak. Reads outnumber writes about 20 to 1.",
+        "One busy store: 3,000 orders a day is 5 a minute at its peak hour. That's the load one store's pickers and riders must keep up with."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Store: `id`, `location`, `area it serves`, `status` (open, slow, paused).",
+        "Stock: `store_id`, `item_id`, `available` (can still be sold), `held` (kept for orders not yet paid).",
+        "Order: `id`, `store_id`, `items`, `state` (held, paid, picking, packed, on the way, delivered), `promised_at`.",
+        "Rider and picker: `id`, `store_id`, `state` (free, busy)."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET  /stores/nearest?lat=19.1176&lng=72.9060\n→ 200 { \"store\": \"s_17\", \"eta_min\": 9 }\n\nGET  /stores/s_17/items?category=dairy\n→ 200 { \"items\": [ { \"id\": \"milk-500\", \"name\": \"Toned milk 500 ml\", \"left\": 3 }, … ] }\n\nPOST /orders   { \"store\": \"s_17\", \"items\": [ { \"id\": \"milk-500\", \"qty\": 2 } ] }\n→ 201 { \"order\": \"o_91\", \"held_until\": \"20:04:30\", \"pay\": \"…\" }\n→ 409 { \"short\": [ { \"id\": \"milk-500\", \"left\": 1 } ] }\n\nPOST /orders/o_91/paid     (from the payment provider)\nGET  /orders/o_91          → state and live position",
+      "say": "Find the nearest store and its delivery time from the customer's location. List that store's items with how many are left. Placing an order holds the items for a few minutes and returns a payment link, or a 409 listing what ran short. The payment provider confirms payment, and the app polls or subscribes for the order's state."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "minutes-flow",
+      "cap": "One order against the 10-minute clock. Holding the stock and paying take about a minute. The picker starts the moment payment lands, and a rider is assigned in the same instant, so the bag and the rider meet at the door of the store around minute 4. The ride is the last 6 minutes."
+    },
+    {
+      "t": "p",
+      "x": "A store service per city owns its stores' stock, pickers and riders, partitioned by store. The app reads stock through a cache; orders go to the store service, which holds stock, takes payment through the provider, and then fans out to the picker app and to dispatch at the same time."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "The last packet of milk"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "CHECK, THEN SUBTRACT",
+      "what": "Read how many are left; if there's enough, take payment and subtract.",
+      "use": "Easy to write, and fine when only one person shops at a time.",
+      "avoid": "Two people read \"1 left\" at the same moment, both pay, and one of them gets a refund and an apology ten minutes later.",
+      "ex": "Andheri store, 9 pm, one packet of toned milk left; two customers tap Pay within a second of each other.",
+      "like": "Two cashiers both selling the last cinema seat because each checked the chart before the other wrote on it."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "ONE CONDITIONAL UPDATE",
+      "what": "Subtract only if enough is left, in one statement: `UPDATE stock SET available = available - 1 WHERE store_id = 's_17' AND item_id = 'milk-500' AND available >= 1`. If no row changed, it ran out.",
+      "use": "The database settles the race: exactly one of the two buyers gets the packet, with no locks held across the network.",
+      "avoid": "If you subtract before payment and the payment fails, the stock has to be put back, and a customer who closes the app leaves it stuck.",
+      "ex": "The second buyer's update changes 0 rows; the app says it's sold out before taking any money.",
+      "like": "Taking the last packet off the shelf yourself instead of asking whether it's there."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "HOLD, THEN CONFIRM OR RELEASE",
+      "what": "At checkout, move the quantity from `available` to `held` with the same conditional update and a 5-minute expiry. Payment confirms the hold; failure or timeout puts it back.",
+      "use": "Nobody pays for missing stock, and stock doesn't leak when people walk away. A sweeper job returns expired holds every few seconds.",
+      "avoid": "Holds hide stock from other buyers for a few minutes. Keep the expiry short and release at once when the customer cancels.",
+      "ex": "Hold placed at 20:00:00, payment arrives at 20:00:40: confirmed. No payment by 20:05: the 2 packets can be sold again.",
+      "like": "A shop keeping your items at the counter while you fetch your wallet, but not all evening."
+    },
+    {
+      "t": "fig",
+      "id": "stock-hold",
+      "cap": "Two customers want the last packet. Both send the same conditional update; the database applies one first. The first holds the packet and pays; the second changes no rows and is told before paying."
+    },
+    {
+      "t": "h2",
+      "x": "When the shelf and the system disagree"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Packets get dropped, misplaced or expire, so the count drifts. The picker's scan is the moment of truth: an item not found is marked missing.",
+        "Then offer a swap (another brand of the same size) or take it off the bill, before the rider leaves. Never hold the whole order for one missing item.",
+        "Each missing scan corrects the count at once, and a nightly count of a few shelves catches the rest."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping the 10 minutes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Assign a rider the moment payment lands, while picking starts. Waiting until the bag is packed adds 2 to 3 minutes for nothing.",
+        "Riders wait at the store between trips, so \"assign\" means picking the free rider who came back first, not driving one across town.",
+        "Lay out the store so the most-ordered items are nearest the packing table; the picker's list is sorted in walking order.",
+        "Watch each store's free riders and open orders. When riders run short (rain in Mumbai, a big match), raise the promised time on the app or pause the store, before taking orders it can't keep."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Showing stock while browsing"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Browsing reads come from a cache per store, refreshed every few seconds or when stock changes. 10,000 reads a second never touch the stock table.",
+        "Show \"only 2 left\" from the cache, but trust only the hold at checkout. A slightly old count costs a 409 now and then, never a wrong charge.",
+        "Hide items with nothing on the shelf right away, so people don't fill a cart with things that will bounce."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: dark stores near customers, per-store stock, an order flow, and why checking stock and subtracting separately can oversell.",
+        "Senior: the 10-minute budget worked backwards to a 2 km radius, an atomic conditional update, holds with expiry, partitioning by store, a stock cache for browsing.",
+        "Lead: picking and dispatch in parallel, rider supply setting the promise, what happens when the shelf disagrees with the system, and pausing a store rather than breaking promises."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"The customer is between two stores.\" Pick the one that has every item and a free rider soonest; splitting an order across stores doubles the riders.",
+            "\"Payment is confirmed after the hold expired.\" Try to hold again; if the stock is gone, refund at once and say so. The payment provider's webhook must be safe to receive twice.",
+            "\"Why not lock the row while the customer pays?\" A lock held for a minute blocks every other buyer of that item in the store. A hold is a row update, not a lock.",
+            "\"A store loses its network.\" The picker app queues scans and syncs when it's back; the store is paused on the customer app until it does.",
+            "\"How would you test the race?\" Fire 100 checkouts for the last 10 packets at once and check exactly 10 succeed and the count ends at 0."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Rain at 8 pm is a flash sale you didn't plan: everyone orders at once. See how a fixed number of servers copes with five times the usual load.",
+      "to": "lab/flash-sale",
+      "go": "Try the flash sale challenge"
+    }
+  ]
+}
