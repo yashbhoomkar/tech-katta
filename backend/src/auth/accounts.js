@@ -1,7 +1,9 @@
 // Accounts in MongoDB (database `techkatta_app` by default; the commit ledger lives elsewhere).
 //   users    { _id, googleSub (unique), email, name, firstName, lastName, picture, country (first
 //              sign-in), lastCountry, createdAt, lastLoginAt,
+//              terms: { at, version },  — when the Terms and conditions + Privacy policy were accepted
 //              adsConsent: { ads: bool, at, version },  — opt-in to Tech Katta ads on Facebook/Instagram
+//                                                       (account menu switch only, off until turned on)
 //              adsConsentLog: [{ ads, at, version }] }   — every change, newest last (at most 50)
 //   sessions { tokenHash (unique), userId, createdAt, expiresAt }  — removed by a TTL index on expiry.
 //            A session lasts SESSION_DAYS from its last use (renewed at most once a day), and never
@@ -18,7 +20,9 @@ import { RETENTION_DAYS } from './events.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
 // The wording the user agreed to is site.json account.adsConsent; bump this when it changes.
-export const CONSENT_VERSION = '2026-11-04.2'; // .2: box wording shortened, details moved to Terms
+export const CONSENT_VERSION = '2026-11-05'; // ads switch in the account menu only
+// Version of the Terms and conditions + Privacy policy a sign-in accepts (site.json terms/privacy).
+export const TERMS_VERSION = '2026-11-05';
 const DAY = 86_400_000;
 // The free Atlas cluster holds 512 MB. Usage events stop being written (accounts keep working) once
 // this database passes EVENTS_MAX_MB, so analytics can never fill the cluster and break sign-in.
@@ -63,12 +67,12 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
-    // `country` (2 letters, from Cloudflare) and `adsConsent` (only `true` is recorded here: signing
-    // in without ticking the box never withdraws an earlier opt-in) are optional.
+    // `country` (2 letters, from Cloudflare) is optional. Accepting the Terms is checked by the route;
+    // each sign-in records it. The ads opt-in is never set here (account menu only).
     async signIn(profile, { country = '', adsConsent = false } = {}) {
       await init();
       const now = new Date(clock());
-      const set = { email: profile.email, name: profile.name, firstName: profile.firstName || '', lastName: profile.lastName || '', picture: profile.picture, lastLoginAt: now };
+      const set = { email: profile.email, name: profile.name, firstName: profile.firstName || '', lastName: profile.lastName || '', picture: profile.picture, lastLoginAt: now, terms: { at: now, version: TERMS_VERSION } };
       if (country) set.lastCountry = country;
       const consent = { ads: true, at: now, version: CONSENT_VERSION };
       if (adsConsent) set.adsConsent = consent;

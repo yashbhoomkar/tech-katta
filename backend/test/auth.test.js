@@ -38,8 +38,10 @@ test.before(async () => {
 });
 test.after(async () => { api?.kill('SIGTERM'); jwks?.close(); await client?.close(); await mongo?.stop(); });
 
-const call = (path, { method = 'GET', body, cookie, origin = ORIGIN } = {}) => fetch(base + path, { method, headers: { ...(origin ? { Origin: origin } : {}), ...(cookie ? { Cookie: cookie } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
-const signIn = async (claims) => { const r = await call('/v1/auth/google', { method: 'POST', body: { credential: idToken(claims) } }); return { r, cookie: (r.headers.get('set-cookie') || '').split(';')[0] }; };
+// each request from its own made-up IP, so the per-IP sign-in limit (30 per 10 min) isn't what a test hits
+let ipN = 0;
+const call = (path, { method = 'GET', body, cookie, origin = ORIGIN } = {}) => fetch(base + path, { method, headers: { 'CF-Connecting-IP': `10.0.${(ipN += 1) >> 8 & 255}.${ipN & 255}`, ...(origin ? { Origin: origin } : {}), ...(cookie ? { Cookie: cookie } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+const signIn = async (claims) => { const r = await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken(claims) } }); return { r, cookie: (r.headers.get('set-cookie') || '').split(';')[0] }; };
 
 test('config says sign-in is on and gives the public client ID; health says auth is on', async () => {
   assert.deepEqual(await (await call('/v1/auth/config')).json(), { enabled: true, clientId: CLIENT });
@@ -71,16 +73,16 @@ test('bad tokens are refused: wrong audience, issuer, key, signature, algorithm,
     idToken({}, { key: other.privateKey }), idToken({}, { kid: 'nope' }), idToken({}, { alg: 'HS256' }), 'a.b.c', 'x'.repeat(5000),
   ];
   for (const credential of bad) {
-    const r = await call('/v1/auth/google', { method: 'POST', body: { credential } });
+    const r = await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential } });
     assert.equal(r.status, 401, credential.slice(0, 30));
     assert.equal(r.headers.get('set-cookie'), null);
   }
-  assert.equal((await call('/v1/auth/google', { method: 'POST', body: {} })).status, 401);
+  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true } })).status, 401);
 });
 
 test('requests that change things must come from the site; others get no CORS', async () => {
-  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { credential: idToken() }, origin: 'https://evil.example' })).status, 403);
-  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { credential: idToken() }, origin: null })).status, 403);
+  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken() }, origin: 'https://evil.example' })).status, 403);
+  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken() }, origin: null })).status, 403);
   const r = await call('/v1/me', { origin: 'https://evil.example' });
   assert.equal(r.headers.get('access-control-allow-origin'), null);
   const pre = await fetch(base + '/v1/me/lab', { method: 'OPTIONS', headers: { Origin: ORIGIN } });
@@ -153,7 +155,7 @@ test('errorKind names a MongoDB failure without its message', async () => {
 
 test('signing in again in the same browser ends its old session', async () => {
   const a = await signIn({ sub: '4004' });
-  const r = await call('/v1/auth/google', { method: 'POST', cookie: a.cookie, body: { credential: idToken({ sub: '4004' }) } });
+  const r = await call('/v1/auth/google', { method: 'POST', cookie: a.cookie, body: { termsAccepted: true, credential: idToken({ sub: '4004' }) } });
   assert.equal(r.status, 200);
   const fresh = (r.headers.get('set-cookie') || '').split(';')[0];
   assert.deepEqual(await (await call('/v1/me', { cookie: a.cookie })).json(), { user: null }, 'old session gone');
@@ -237,33 +239,39 @@ test('usage events: allowlisted events and fields stored, signed-in ones tied to
   assert.equal(old.at.getTime(), 1e13 - 15 * 60_000);
 });
 
-test('ads consent: opt-in at sign-in, first/last name and country stored, never withdrawn by a plain sign-in, withdrawn from the menu', async () => {
+test('sign-in needs the Terms ticked (recorded on the account); the ads opt-in is only the menu switch; names and country stored', async () => {
   const users = client.db('tk_test').collection('users');
   const post = (body, extra = {}) => fetch(base + '/v1/auth/google', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', ...extra }, body: JSON.stringify(body) });
-  // no consent ticked
-  let r = await post({ credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }) }, { 'CF-IPCountry': 'IN' });
+  // box not ticked: refused, nothing stored
+  for (const body of [{ credential: idToken({ sub: '8008' }) }, { credential: idToken({ sub: '8008' }), termsAccepted: 'yes' }]) {
+    const r = await post(body);
+    assert.equal(r.status, 400); assert.equal((await r.json()).error, 'terms_required'); assert.equal(r.headers.get('set-cookie'), null);
+  }
+  assert.equal(await users.countDocuments({ googleSub: '8008' }), 0);
+  // ticked; an old client still sending adsConsent:true does not opt in
+  let r = await post({ termsAccepted: true, adsConsent: true, credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }) }, { 'CF-IPCountry': 'IN' });
+  assert.equal(r.status, 200);
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
   assert.equal((await r.json()).user.adsConsent, false);
   let u = await users.findOne({ googleSub: '8008' });
   assert.deepEqual([u.firstName, u.lastName, u.country, u.lastCountry, u.adsConsent], ['Asha', 'Rao', 'IN', 'IN', undefined]);
-  // ticked
-  r = await post({ credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }), adsConsent: true }, { 'CF-IPCountry': 'AE' });
-  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  assert.ok(u.terms.at instanceof Date); assert.equal(u.terms.version, '2026-11-05');
+  await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) }, { 'CF-IPCountry': 'XX' });
+  u = await users.findOne({ googleSub: '8008' });
+  assert.equal(u.country, 'IN'); assert.equal(u.lastCountry, 'IN', 'bogus country ignored');
+  // the menu switch
+  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: 'no' } })).status, 400);
+  assert.equal((await call('/v1/me/consent', { method: 'POST', body: { ads: true } })).status, 401);
+  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true }, origin: 'https://evil.example' })).status, 403);
+  r = await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
   assert.equal((await r.json()).user.adsConsent, true);
   u = await users.findOne({ googleSub: '8008' });
-  assert.equal(u.adsConsent.ads, true); assert.ok(u.adsConsent.at instanceof Date); assert.equal(u.adsConsent.version, '2026-11-04.2');
-  assert.equal(u.country, 'IN', 'first country kept'); assert.equal(u.lastCountry, 'AE');
-  // signing in again without the box does not withdraw it; a bogus country is ignored
-  await post({ credential: idToken({ sub: '8008' }), adsConsent: 'yes' }, { 'CF-IPCountry': 'XX' });
-  u = await users.findOne({ googleSub: '8008' });
-  assert.equal(u.adsConsent.ads, true); assert.equal(u.lastCountry, 'AE');
-  // withdraw / opt in from the account menu
-  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: 'no' } })).status, 400);
-  assert.equal((await call('/v1/me/consent', { method: 'POST', body: { ads: false } })).status, 401);
-  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false }, origin: 'https://evil.example' })).status, 403);
+  assert.equal(u.adsConsent.ads, true); assert.equal(u.adsConsent.version, '2026-11-05');
+  // signing in again keeps the choice
+  await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) });
+  assert.equal((await users.findOne({ googleSub: '8008' })).adsConsent.ads, true);
   r = await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
   assert.equal((await r.json()).user.adsConsent, false);
-  assert.equal((await users.findOne({ googleSub: '8008' })).adsConsent.ads, false);
-  assert.equal((await (await call('/v1/me', { cookie })).json()).user.adsConsent, false);
 });
 
 test('Meta audience export: consented accounts only, normalised and SHA-256 hashed', async () => {
@@ -305,8 +313,9 @@ test('first sign-in from two tabs at once makes one account; consent changes are
   const rs = await Promise.all([signIn({ sub: '9301' }), signIn({ sub: '9301' }), signIn({ sub: '9301' })]);
   assert.deepEqual(rs.map((x) => x.r.status), [200, 200, 200]);
   assert.equal(await users.countDocuments({ googleSub: '9301' }), 1);
-  const r = await call('/v1/auth/google', { method: 'POST', body: { credential: idToken({ sub: '9301' }), adsConsent: true } });
+  const r = await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken({ sub: '9301' }) } });
   const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
   await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
   await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
   const u = await users.findOne({ googleSub: '9301' });
@@ -333,4 +342,10 @@ test('health reports storage; usage events pause over the limit while accounts k
   assert.equal(await ok.logEvents([doc]), true); await ok.close();
   const h = await (await fetch(base + '/health')).json();
   assert.equal(typeof h.storage?.mb, 'number'); assert.equal(h.storage.eventsPaused, false);
+});
+
+test('sign-in is limited to 30 tries per IP per 10 minutes', async () => {
+  const one = () => fetch(base + '/v1/auth/google', { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.9' }, body: JSON.stringify({ termsAccepted: true, credential: 'a.b.c' }) });
+  const codes = []; for (let i = 0; i < 31; i += 1) codes.push((await one()).status);
+  assert.deepEqual(codes.slice(0, 30), Array(30).fill(401)); assert.equal(codes[30], 429);
 });
