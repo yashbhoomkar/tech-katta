@@ -244,6 +244,40 @@ return <g key={i}><rect x={x} y={B-shown} width="90" height={shown} rx="2" fill=
 {(still?[1]:[0,1,2]).map(k=>{const t=<text key={k} x={x+45} y={B-phases[k][i]*U-6} textAnchor="middle" className="fl" style={k===1&&hot?{fill:RED}:undefined}>{phases[k][i]}%</text>;return still?t:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{t}</Show>})}</g>})}
 {(still?[1]:[0,1,2]).map(k=>{const t=[["7 pm · orders spread evenly",""],["8 pm, IND vs PAK · one biryani chain = 30% of orders","every one of them on shard 3, which slows down"],["Fix · split the chain over 8 sub-keys","restaurant_id + (order_id % 8)"]][k];const g=<g key={k}><text x="10" y="24" className="fb" style={k===1?{fill:RED}:undefined}>{t[0]}</text><text x="10" y="42" className="fl">{t[1]}</text></g>;return still?g:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{g}</Show>})}</svg>}
 
+// Object storage, FIG: a restaurant uploads a menu photo. The app asks the API for a pre-signed
+// upload URL, sends the photo straight to the bucket (the API never carries the bytes), the bucket's
+// event starts a worker that writes resized copies, and customers fetch them through the CDN.
+function ObjUploadFig({still,uid=""}){const M=`obu${uid}`,D="12s";
+const steps=["1 · app asks the API for an upload URL","2 · photo goes straight to the bucket","3 · the bucket tells a worker; it makes sizes","4 · customers get the photo from the CDN"];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`obut${uid}`}><title id={`obut${uid}`}>A restaurant's phone asks Zotato's API for a pre-signed upload URL and gets one that works for five minutes. The phone uploads the menu photo directly to the S3 bucket, so the API never carries the file. The bucket sends an event to a resize worker, which writes small and large copies back to the bucket. Customers load the photos through the CDN, which fetches them from the bucket once and then serves them from nearby.</title><Mark m={M}/>
+<Box x={0} y={150} w={120} t="Restaurant app"/>
+<Box x={240} y={70} w={140} t="Order API"/><Line x1={122} y1={140} x2={236} y2={78} m={M}/><Line x1={236} y1={92} x2={124} y2={152} m={M} dash/><text x="246" y="106" className="fl">signed upload URL, 5 min</text>
+<Box x={240} y={230} w={140} t="S3 bucket" blue/><Line x1={122} y1={162} x2={236} y2={226} m={M}/><text x="128" y="214" className="fl">PUT photo.jpg</text>
+<Box x={480} y={230} w={150} t="Resize worker"/><Line x1={382} y1={224} x2={476} y2={224} m={M}/><text x="429" y="216" textAnchor="middle" className="fl">event</text><Line x1={476} y1={238} x2={384} y2={238} m={M} c={GREY}/><text x="429" y="256" textAnchor="middle" className="fl">small, large</text>
+<Box x={480} y={110} w={150} t="CDN"/><Line x1={382} y1={218} x2={476} y2={122} m={M} c={GREY}/><text x="555" y="74" textAnchor="middle" className="fl">customers</text><Line x1={555} y1={92} x2={555} y2={80} m={M}/>
+{still?<text x="10" y="24" className="fl">ask → upload direct → resize → serve through the CDN</text>:<g aria-hidden="true">
+{steps.map((t,i)=><Show key={i} t0={i/4} t1={(i+1)/4} dur={D}><text x="10" y="24" className="fb">{t}</text></Show>)}
+<Dot x1={124} x2={232} y={140} y2={80} t0={.02} t1={.1} dur={D}/><Glow x={240} y={53} w={140} h={34} t0={.1} t1={.16} dur={D}/><Dot x1={232} x2={128} y={92} y2={150} t0={.15} t1={.23} dur={D}/>
+<Dot x1={124} x2={232} y={162} y2={225} t0={.27} t1={.4} dur={D}/><Glow x={240} y={213} w={140} h={34} t0={.4} t1={.47} dur={D}/>
+<Dot x1={384} x2={472} y={224} t0={.52} t1={.6} dur={D}/><Glow x={480} y={213} w={150} h={34} t0={.6} t1={.66} dur={D}/><Dot x1={472} x2={388} y={238} t0={.66} t1={.73} dur={D}/>
+<Dot x1={384} x2={472} y={218} y2={124} t0={.78} t1={.86} dur={D}/><Glow x={480} y={93} w={150} h={34} t0={.86} t1={.92} dur={D}/><Dot x1={555} x2={555} y={92} y2={80} t0={.92} t1={.97} dur={D}/></g>}</svg>}
+
+// Object storage, FIG: one delivery photo moving through storage classes as it ages, with the price
+// per GB per month of each (S3 in Mumbai, rounded): Standard for the first month, Standard-IA until
+// 90 days, Glacier Deep Archive until the one-year mark, then deleted by a lifecycle rule.
+function ObjTiersFig({still,uid=""}){const D="10s",Y=150,X0=40,X1=600;
+const tiers=[["Standard","$0.025",0,30,"#2855d9"],["Infrequent access","$0.014",30,90,"#6f8fe6"],["Deep archive","$0.002",90,365,"#b9c9ff"]];
+// three equal steps (time is not to scale): uploaded, day 30, day 90, one year
+const x=(d)=>X0+({0:0,30:1,90:2,365:3}[d]/3)*(X1-X0);
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`obtt${uid}`}><title id={`obtt${uid}`}>A delivery-proof photo stays in S3 Standard, at about 2.5 cents per gigabyte per month, for its first 30 days while support may need it. A lifecycle rule moves it to Standard Infrequent Access, about 1.4 cents, until day 90, then to Glacier Deep Archive, about 0.2 cents, and deletes it after one year. Storing the same photos in Standard all year would cost about four times as much.</title>
+{tiers.map(([n,pr,a,b,c],i)=><g key={n}><rect x={x(a)} y={Y-22} width={x(b)-x(a)-2} height="44" rx="2" fill={c}/><text x={(x(a)+x(b))/2} y={Y-34} textAnchor="middle" className="fb">{n}</text><text x={(x(a)+x(b))/2} y={Y+5} textAnchor="middle" className="fb" style={{fill:i<2?"#fff":INK}}>{pr} / GB</text></g>)}
+<line x1={x(365)} y1={Y-30} x2={x(365)} y2={Y+30} stroke={RED} strokeDasharray="4 3"/><text x={x(365)-4} y={Y+46} textAnchor="end" className="fl" style={{fill:RED}}>deleted at 1 year</text>
+{[0,30,90,365].map(d=><text key={d} x={x(d)} y={Y+46} textAnchor={d===0?"start":"middle"} className="fl">{d===0?"uploaded":d===365?"":`day ${d}`}</text>)}
+<text x="10" y="232" className="fl">per GB per month, S3 Mumbai, rounded · time not to scale · a lifecycle rule does the moving</text>
+<text x="10" y="250" className="fl">a year of photos: about $0.07 per GB instead of $0.30 if all of it stayed in Standard</text>
+{!still&&<circle cx={x(0)} cy={Y-60} r="6" fill={INK} aria-hidden="true"><animate attributeName="cx" values={`${x(0)};${x(30)};${x(90)};${x(365)};${x(365)}`} keyTimes="0;.25;.5;.85;1" dur={D} repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;1;1;0" keyTimes="0;.25;.5;.85;1" calcMode="discrete" dur={D} repeatCount="indefinite"/></circle>}
+{!still&&<text x={x(0)} y={Y-72} className="fl" aria-hidden="true">photo<animate attributeName="x" values={`${x(0)};${x(30)};${x(90)};${x(365)};${x(365)}`} keyTimes="0;.25;.5;.85;1" dur={D} repeatCount="indefinite"/></text>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
@@ -261,4 +295,6 @@ export const COMPONENT_FIGS={
 "autoscale":{C:AutoFig,ar:640/280,title:n=>`AUTOSCALING THROUGH ${n}'S FLASH SALE`},
 "shard-key":{C:ShardKeyFig,ar:640/300,title:n=>`${n}'S ORDERS, SPLIT BY CUSTOMER`},
 "hot-shard":{C:HotShardFig,ar:640/300,title:()=>"ONE HOT KEY ON MATCH NIGHT"},
+"obj-upload":{C:ObjUploadFig,ar:640/300,title:n=>`A MENU PHOTO INTO ${n}'S STORAGE`},
+"obj-tiers":{C:ObjTiersFig,ar:640/260,title:()=>"ONE PHOTO, CHEAPER AS IT AGES"},
 };
