@@ -1,0 +1,228 @@
+{
+  "section": "concepts",
+  "slug": "cap-pacelc",
+  "group": "data",
+  "no": "CONCEPT // 04",
+  "tag": "DATA",
+  "date": "5 Nov 2026",
+  "title": "CAP and PACELC in practice: what to do when copies can't talk",
+  "dek": "What the CAP theorem really says, why \"pick two of three\" is the wrong way to read it, and the trade-off you make every day even when the network is fine.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "CAP is about one situation: the network splits, and copies of the data can't reach each other. Then each side must either refuse some requests or answer without the other side and risk disagreeing.",
+        "Refusing keeps the data consistent (CP). Answering keeps the service available (AP). There is no third option during the split.",
+        "\"Pick two of three\" misleads: splits aren't optional on a network, so the real choice is what to do when one happens.",
+        "PACELC adds the everyday half: if there's a Partition, choose Availability or Consistency; Else, choose Latency or Consistency. Waiting for a far copy makes every write slower, even on a good day.",
+        "Decide per feature. Zotato's wallet refuses during a split; its menus, carts and reviews keep working and merge afterwards."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "What CAP actually says"
+    },
+    {
+      "t": "p",
+      "x": "Take a system that keeps copies of its data on machines connected by a network. Consistency here means every read sees the latest write, as if there were one copy (the strong model from the previous article). Availability means every request to a working machine gets an answer, not an error. A partition is the network losing messages between groups of machines, so they can't reach each other."
+    },
+    {
+      "t": "p",
+      "x": "The theorem: while a partition lasts, you can't have both. A machine that can't reach the others either answers from what it has, and may be wrong, or refuses until it can check."
+    },
+    {
+      "t": "analogy",
+      "x": "Two branches of a bank lose their connection. A customer asks for cash. The branch can refuse until the line is back, so no account is ever overdrawn, or pay out and sort it out later, accepting that someone may withdraw the same money twice."
+    },
+    {
+      "t": "h2",
+      "x": "During a split"
+    },
+    {
+      "t": "fig",
+      "id": "cap-split",
+      "cap": "Zotato keeps copies in Mumbai and Hyderabad. When the link between them breaks, a wallet top-up in Hyderabad is refused: Hyderabad can't confirm the balance without Mumbai. A restaurant's menu edit in Hyderabad is accepted: Mumbai shows the old menu for a while, and the edits are merged when the link is back."
+    },
+    {
+      "t": "type",
+      "name": "Consistency first",
+      "kind": "CP",
+      "what": "During a split, the side that can't confirm with the others refuses writes (and maybe reads), so no two copies ever disagree.",
+      "use": "Money, stock, uniqueness and assignment: wallet balances, payments, the last coupon, one rider per order.",
+      "avoid": "Features where an error is worse than old data: a customer who can't open the menu just leaves.",
+      "ex": "Wallet writes go only to the region that owns the account; if it can't be reached, the app says \"try again in a minute\".",
+      "like": "The careful branch: no cash until the line is back."
+    },
+    {
+      "t": "type",
+      "name": "Availability first",
+      "kind": "AP",
+      "what": "Every side keeps answering with what it has. Copies may differ during the split and are reconciled afterwards.",
+      "use": "Things where old or merged data is acceptable: menus, photos, carts, reviews, likes, the rider's location trail.",
+      "avoid": "Anything where two answers can't both stand, because you'll have to undo one of them later.",
+      "ex": "Carts accept items in either region and are merged, keeping every item, when the link returns.",
+      "like": "The friendly branch: pay out now, sort it out later."
+    },
+    {
+      "t": "h2",
+      "x": "Choosing for Zotato"
+    },
+    {
+      "t": "table",
+      "label": "Zotato's features during a split between regions",
+      "head": [
+        "Feature",
+        "Choice",
+        "What users see during the split"
+      ],
+      "rows": [
+        [
+          "Wallet and payments",
+          "Consistency",
+          "\"Try again in a minute\" on the side cut off from the account's home"
+        ],
+        [
+          "Rider accepts an order",
+          "Consistency",
+          "Only riders in the order's region can accept it"
+        ],
+        [
+          "Placing an order",
+          "Consistency, per region",
+          "Works where the restaurant's region is reachable"
+        ],
+        [
+          "Menus and photos",
+          "Availability",
+          "Possibly a slightly old menu"
+        ],
+        [
+          "Cart",
+          "Availability",
+          "Works; merged afterwards"
+        ],
+        [
+          "Reviews and ratings",
+          "Availability",
+          "New reviews show up late elsewhere"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "A trick that keeps most things working: give every record a home region (a restaurant's city, a customer's account) and send its writes there. Only users cut off from that home see refusals, and that's usually a small share of them."
+    },
+    {
+      "t": "h2",
+      "x": "Every day: latency or consistency"
+    },
+    {
+      "t": "fig",
+      "id": "pacelc",
+      "cap": "Even with the network fine, waiting for copies costs time. One write from Mumbai takes about 1 ms if only its own machine must have it, 3 ms with a standby in another Mumbai zone, 25 ms with a copy in Hyderabad and 65 ms with one in Singapore. Each copy you wait for survives a bigger disaster and makes every write slower."
+    },
+    {
+      "t": "p",
+      "x": "This is the \"Else\" in PACELC, and it matters more often than the partition case: splits are rare, but every write pays the waiting time. Most systems wait for a copy in another zone of the same region, a few milliseconds, and copy to other regions without waiting."
+    },
+    {
+      "t": "more",
+      "label": "How common systems lean, by default",
+      "body": [
+        {
+          "t": "table",
+          "label": "Rough defaults; most can be tuned",
+          "head": [
+            "System",
+            "During a split",
+            "Normally",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "PostgreSQL / MySQL, one primary",
+              "Consistency: no primary, no writes",
+              "Consistency",
+              "Reads from async replicas are the exception"
+            ],
+            [
+              "DynamoDB",
+              "Availability",
+              "Latency",
+              "Strongly consistent reads on request, in one region"
+            ],
+            [
+              "Cassandra",
+              "Your choice per query",
+              "Your choice per query",
+              "`QUORUM` vs `ONE`"
+            ],
+            [
+              "Spanner, CockroachDB",
+              "Consistency",
+              "Consistency",
+              "Writes wait for a majority of copies"
+            ],
+            [
+              "Caches and CDNs",
+              "Availability",
+              "Latency",
+              "They serve what they have"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Myths worth dropping"
+    },
+    {
+      "t": "list",
+      "items": [
+        "\"Pick any two.\" A system spread over a network can't opt out of splits. The choice is only what to do during one.",
+        "\"SQL is CP, NoSQL is AP.\" It depends on how each is set up and how you read from it. One database can do both, per query.",
+        "\"CA systems.\" A single machine has no partitions because it has no copies; it's not a distributed system, and it's down whenever that machine is.",
+        "\"Available\" in CAP means every working machine answers. It's not the same as 99.9% uptime: a CP system can still meet a high uptime target, because splits are rare and short.",
+        "Splits aren't only cut cables. A machine stuck in a long garbage-collection pause, or overloaded so it answers after the timeout, looks exactly like one."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Designing for splits"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Write down, per feature, which way it leans and what the user sees. Decide before the outage, not during it.",
+        "Fail gracefully on the consistency side: a clear \"try again\" message, read-only mode, or queueing the request to finish later.",
+        "On the availability side, plan the merge: what happens when two copies changed the same thing. Keep both, merge, or let the later one win, knowingly.",
+        "Make writes idempotent, so retrying after the split doesn't do things twice.",
+        "Practise: cut the link between regions on purpose in a test, and watch what each feature does."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't recite \"pick two\". Say what happens during a split, feature by feature.",
+        "Name what must be consistent (payments, assignment) and what can be available (menus, carts, reviews).",
+        "Mention PACELC: even without splits, waiting for a far copy costs latency, so say which copies a write waits for.",
+        "Suggest home regions to keep most users unaffected by a split.",
+        "Say how the available side reconciles afterwards."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The Lab runs in one region, but the same choice shows up inside it: crash the database with Multi-AZ on and watch the minute or two when writes stop while the standby takes over. That's consistency chosen over availability.",
+      "to": "lab",
+      "go": "Open the Lab"
+    }
+  ]
+}
