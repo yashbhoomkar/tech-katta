@@ -1,5 +1,5 @@
 // Accounts in MongoDB (database `techkatta_app` by default; the commit ledger lives elsewhere).
-//   users    { _id, googleSub (unique), role? ("admin": may read analytics.katta.cc), email, name, firstName, lastName, picture, country (first
+//   users    { _id, googleSub (unique), role? ("admin": may read analytics.katta.cc; see isAdmin), email, name, firstName, lastName, picture, country (first
 //              sign-in), lastCountry, createdAt, lastLoginAt,
 //              terms: { at, version },  — when the Terms and conditions + Privacy policy were accepted
 //              adsConsent: { ads: bool, at, version },  — opt-in to Tech Katta ads on Facebook/Instagram
@@ -15,7 +15,7 @@
 // The browser holds a random session token in an HttpOnly cookie; only an HMAC of it (keyed with
 // SESSION_SECRET) is stored, so the sessions collection alone can't be used to sign in.
 import { MongoClient } from 'mongodb';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { RETENTION_DAYS } from './events.js';
 import { adminSummary } from './admin.js';
 
@@ -29,6 +29,17 @@ const DAY = 86_400_000;
 // this database passes EVENTS_MAX_MB, so analytics can never fill the cluster and break sign-in.
 export const EVENTS_MAX_MB = 400;
 const DUPLICATE = 11000;
+// Admins (analytics.katta.cc): accounts whose Google-verified email hashes to one of these (SHA-256 of
+// the lowercase address, so the address itself isn't in this public repo), plus ADMIN_EMAILS (comma
+// separated, optional) and any account with role "admin".
+export const ADMIN_EMAIL_SHA256 = new Set(['5c880b9112b631b5e304093d427bdc4cb736087f59d0fbf3647aa1fc74ba5bfd']);
+const sha256 = (v) => createHash('sha256').update(v).digest('hex');
+export function isAdmin(u, extra = (process.env.ADMIN_EMAILS || '')) {
+  if (u?.role === 'admin') return true;
+  const email = String(u?.email || '').trim().toLowerCase();
+  if (!email) return false;
+  return ADMIN_EMAIL_SHA256.has(sha256(email)) || extra.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean).includes(email);
+}
 
 // What kind of failure a MongoDB error is, as a short name safe to show on /health: the driver's
 // error class or server code name (e.g. AuthenticationFailed, MongoServerSelectionError), a system
@@ -64,7 +75,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
-  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads, ...(u.role === 'admin' ? { admin: true } : {}) });
+  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads, ...(isAdmin(u) ? { admin: true } : {}) });
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.

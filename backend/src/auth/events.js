@@ -19,6 +19,7 @@ export const EVENTS = {
   challenge_start: { challenge: S },
   score: { challenge: S, stars: N, max: N, passed: S, lite: B },
   lab_locked: { lite: B },
+  page_locked: { section: S, slug: S },
   sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
 };
 export const MAX_BATCH = 50;
