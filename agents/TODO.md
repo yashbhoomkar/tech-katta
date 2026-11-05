@@ -70,15 +70,14 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q01 fix: aliases vs counter codes, 404s from a lagging replica | done | Learner found it 11-05; shipped this run |
-| 2 | build | Lab Import dialog: Tab focus trap, Escape anywhere, focus back to Import on close | ready | `frontend/src/lab/Lab.jsx`; reuse the Score dialog's trap |
-| 3 | content | Q02 File storage and sync (easy) | ready | Interview Questions plan, see below; a draft (article + `sync-flow`, `file-chunks` figures) was written 11-05 but not committed |
-| 4 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 5 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
-| 6 | build | Skip-to-content link and `:focus-visible` outlines (`.card`, `.d-tour`, `.lab-name`, Lab inputs) | ready | leave `.acct-btn` (sign-in UI) for the owner |
-| 7 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 8 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 9 | content | Q06–Q36, one per run, in plan order | ready | |
+| 1 | build | Lab Import dialog: Tab focus trap, Escape anywhere, focus back on close | done | shipped run 2; focus returns to the Designs button (the menu holding Import is gone) |
+| 2 | content | Q02 File storage and sync (easy) | ready | Interview Questions plan, see below; a draft (article + `sync-flow`, `file-chunks` figures) was written 11-05 but not committed |
+| 3 | build | Skip-to-content link and `:focus-visible` outlines (`.card`, `.d-tour`, `.lab-name`, Lab inputs) | ready | leave `.acct-btn` (sign-in UI) for the owner |
+| 4 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
+| 5 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 6 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
+| 7 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 8 | content | Q06–Q36, one per run, in plan order | ready | |
 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
@@ -104,10 +103,16 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Context repo pending
 
-(none)
+- Handover §12 rows: #171 (agents' to-do list in the site repo), #172 (Q01 fix: aliases vs counter codes,
+  no cached 404s from replicas), and this run's Import dialog PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 2 — Production healthy again (chaos 11/11, sweep clean); Q01 fix live. Import dialog:
+  the first try returned focus to `<body>`, because the Designs menu closes in the same render that
+  opens Import, so the opener was already gone; now falls back to the Designs button. Checked locally
+  at 390/1280 px (auth stubbed off): trap cycles, Escape and Cancel return focus.
+  Builder moved skip link and focus rings ahead of card text (blocks keyboard users vs harder reading).
 - 2026-11-05 run 1 — Production healthy: frontend chaos 11/11, site sweep no overflow and no errors,
   landing/dashboard fine at 390/1280 px. Learner checked Q00/Q01 numbers (all right) but found two
   gaps in Q01: a custom alias like `2Bj` collides with a future counter code, and a 404 from a lagging
@@ -118,5 +123,6 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Done log (newest first)
 
-- 2026-11-05 — Q01 fix: aliases kept apart from counter codes; no cached 404s from lagging replicas.
+- 2026-11-05 — Lab Import dialog: focus trap, Escape from anywhere, focus back to Designs.
+- 2026-11-05 — PR #172: Q01 fix, aliases kept apart from counter codes; no cached 404s from lagging replicas.
 - 2026-11-05 — PR #170: Q00 How to answer, Q01 URL shortener.

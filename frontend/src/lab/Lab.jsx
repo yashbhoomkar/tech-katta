@@ -133,10 +133,14 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.chaos?.length?", with the crash the challenge causes":""}.</p></>}
 <div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 // Import your own architecture: type it as text (one chain per line) or open an exported JSON file.
-function Import({lab,create,close}){const t=lab.import;const[text,setText]=useState("");const[file,setFile]=useState(null);const ref=useRef(null);useEffect(()=>{ref.current?.focus()},[]);
+// Keyboard: Tab stays inside, Escape closes from anywhere, and focus goes back to what opened it (the
+// Designs button when the menu that held Import has closed).
+function Import({lab,create,close}){const t=lab.import;const[text,setText]=useState("");const[file,setFile]=useState(null);const ref=useRef(null);const box=useRef(null);
+const trap=e=>{if(e.key!=="Tab")return;const f=[...box.current.querySelectorAll("button:not(:disabled),a[href],textarea,input")];if(!f.length)return;const i=f.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f.at(-1).focus()}else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus()}};
+useEffect(()=>{const from=document.activeElement;ref.current?.focus();const k=e=>{if(e.key==="Escape")close()};addEventListener("keydown",k);return()=>{removeEventListener("keydown",k);(from?.isConnected&&from!==document.body?from:document.querySelector(".lab-designs-btn"))?.focus()}},[]);// eslint-disable-line
 const res=useMemo(()=>file?parseJSON(file,lab):text.trim()?parseText(text,lab):null,[text,file,lab]);const nodes=res?.design?.nodes.length||0,edges=res?.design?.edges.length||0;
 const pick=e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>1e6){setFile(" ".repeat(1e6+1));return}f.text().then(setFile,()=>setFile("{}"))};
-return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarget)close()}} onKeyDown={e=>{if(e.key==="Escape")close()}}><div className="lab-score lab-import" role="dialog" aria-modal="true" aria-labelledby="imp-t">
+return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="lab-score lab-import" role="dialog" aria-modal="true" aria-labelledby="imp-t" ref={box} onKeyDown={trap}>
 <div className="lab-h">IMPORT</div><h3 id="imp-t">{t.title}</h3><p className="lab-desc">{t.intro}</p>
 <textarea ref={ref} value={text} onChange={e=>{setText(e.target.value);setFile(null)}} placeholder={t.placeholder} rows={5} spellCheck="false" aria-label={t.title}/>
 <ul className="lab-imp-help">{t.options.map(o=><li key={o}>{o}</li>)}</ul>
