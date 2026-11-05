@@ -281,3 +281,56 @@ test('Meta audience export: consented accounts only, normalised and SHA-256 hash
   assert.equal(lines.length, 3, 'row without email skipped');
   assert.ok(!csv.includes('@'), 'no readable email');
 });
+
+test('Lab saves from many devices at the same moment all land (no lost updates); old docs without rev still save', async () => {
+  const D = (id, updated, name) => ({ id, name, updated, nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: {} }], edges: [] });
+  const a = await signIn({ sub: '9201' });
+  const user = await client.db('tk_test').collection('users').findOne({ googleSub: '9201' });
+  const lab = client.db('tk_test').collection('lab');
+  // ten devices, each with its own design, saving at once (the first save also creates the doc)
+  const rs = await Promise.all(Array.from({ length: 10 }, (_, i) => call('/v1/me/lab', { method: 'POST', cookie: a.cookie, body: { designs: [D(`d${i}`, 100 + i, `Design ${i}`)] } })));
+  assert.deepEqual(rs.map((r) => r.status), Array(10).fill(200));
+  const doc = await lab.findOne({ userId: user._id });
+  assert.deepEqual(doc.designs.map((d) => d.id).sort(), Array.from({ length: 10 }, (_, i) => `d${i}`).sort(), 'every device\'s design kept');
+  assert.equal(doc.rev, 10);
+  // a lab document saved before rev existed
+  await lab.updateOne({ userId: user._id }, { $unset: { rev: '' } });
+  assert.equal((await call('/v1/me/lab', { method: 'POST', cookie: a.cookie, body: { designs: [D('late', 500, 'Late')] } })).status, 200);
+  const after = await lab.findOne({ userId: user._id });
+  assert.equal(after.rev, 1); assert.equal(after.designs.length, 11);
+});
+
+test('first sign-in from two tabs at once makes one account; consent changes are logged; delete leaves no account behind', async () => {
+  const users = client.db('tk_test').collection('users');
+  const rs = await Promise.all([signIn({ sub: '9301' }), signIn({ sub: '9301' }), signIn({ sub: '9301' })]);
+  assert.deepEqual(rs.map((x) => x.r.status), [200, 200, 200]);
+  assert.equal(await users.countDocuments({ googleSub: '9301' }), 1);
+  const r = await call('/v1/auth/google', { method: 'POST', body: { credential: idToken({ sub: '9301' }), adsConsent: true } });
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
+  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
+  const u = await users.findOne({ googleSub: '9301' });
+  assert.deepEqual(u.adsConsentLog.map((c) => c.ads), [true, false, true], 'every change kept, in order');
+  assert.ok(u.adsConsentLog.every((c) => c.at instanceof Date && c.version));
+  await call('/v1/me', { method: 'DELETE', cookie });
+  assert.equal(await users.countDocuments({ googleSub: '9301' }), 0);
+  assert.equal(await client.db('tk_test').collection('sessions').countDocuments({ userId: u._id }), 0);
+});
+
+test('health reports storage; usage events pause over the limit while accounts keep working', async () => {
+  const { openAccounts } = await import('../src/auth/accounts.js');
+  const acc = openAccounts({ uri: mongo.getUri(), dbName: 'tk_limit', secret: 'x'.repeat(40), eventsMaxMB: -1 });
+  assert.equal(await acc.warmUp(), true);
+  acc.health(); for (let i = 0; i < 50 && !acc.storage(); i += 1) await new Promise((r) => setTimeout(r, 20));
+  assert.equal(typeof acc.storage().mb, 'number'); assert.equal(acc.storage().eventsPaused, true);
+  const doc = { name: 'sign_in', at: new Date(), visitor: 'v'.repeat(20), device: 'phone', page: '/', props: {} };
+  assert.equal(await acc.logEvents([doc]), false);
+  assert.equal(await client.db('tk_limit').collection('events').countDocuments(), 0, 'nothing written while paused');
+  const { token } = await acc.signIn({ sub: '9401', email: 'z@example.com', name: 'Z', picture: '' });
+  assert.equal((await acc.userFor(token)).user.name, 'Z', 'sign-in still works');
+  await acc.close();
+  const ok = openAccounts({ uri: mongo.getUri(), dbName: 'tk_limit2', secret: 'x'.repeat(40) });
+  assert.equal(await ok.logEvents([doc]), true); await ok.close();
+  const h = await (await fetch(base + '/health')).json();
+  assert.equal(typeof h.storage?.mb, 'number'); assert.equal(h.storage.eventsPaused, false);
+});

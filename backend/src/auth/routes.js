@@ -113,8 +113,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       if (pathname === '/v1/me/lab' && method === 'POST') {
         if (limited(request, 'lab', 120, 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
         const incoming = await readJson(request);
-        const merged = storable(mergeLab(await accounts.getLab(me.id), incoming, labCatalogue()));
-        await accounts.saveLab(me.id, merged);
+        const merged = await accounts.updateLab(me.id, (stored) => storable(mergeLab(stored, incoming, labCatalogue())));
         return send(request, response, 200, merged);
       }
       return send(request, response, 404, { error: 'not_found' });

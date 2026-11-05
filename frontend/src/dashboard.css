@@ -29,3 +29,6 @@
 .a-lab{display:block;margin:28px 0 0;max-width:680px;border:1px solid var(--blue,#2855d9);padding:16px 20px;background:#f8faff}.a-lab:hover{background:#eef3ff}.a-lab b{font:600 10px var(--mono);letter-spacing:.08em;color:var(--blue,#2855d9)}.a-lab p{margin:8px 0 0;font-size:15px;line-height:1.6;color:#1c2733}.a-lab em{display:inline-block;margin-top:10px;font:600 11px var(--mono);font-style:normal;color:var(--blue,#2855d9)}.a-lab:focus-visible{outline:2px solid var(--blue,#2855d9);outline-offset:2px}
 
 .d-head .acct+.d-tour{margin-left:10px}
+
+/* Start page: the Library cards sit straight on the page; they have their own frames. */
+.d-panel.d-start{background:none;border:0;padding:8px 0 0}

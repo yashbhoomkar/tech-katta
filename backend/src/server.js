@@ -41,7 +41,7 @@ function healthPayload() {
     uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
     content: { release: content.release, articles: content.articles.length },
     auth: auth.enabled ? 'on' : 'off',
-    ...(accounts ? { accounts: accounts.health() } : {}),
+    ...(accounts ? { accounts: accounts.health(), ...(accounts.storage() ? { storage: accounts.storage() } : {}) } : {}),
     timestamp: new Date().toISOString(),
   };
 }
@@ -109,6 +109,8 @@ const handleAccount = accountRoutes({
   verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
 });
 console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
+// indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
+accounts?.warmUp().then(() => accounts.health());
 const ACCOUNT_PATHS = new Set(['/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab']);
 
 function handleContent(request, response, pathname, searchParams) {
