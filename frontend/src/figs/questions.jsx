@@ -127,6 +127,36 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><titl
 {!still&&<g aria-hidden="true"><Show t0={0} t1={.45} dur={D}><rect x={X+C} y={Y+C} width={C} height={C} fill="none" stroke={BLUE} strokeWidth="3"/></Show><Show t0={.5} t1={.99} dur={D}><rect x={X} y={Y} width={3*C} height={3*C} fill="none" stroke={BLUE} strokeWidth="3"/></Show></g>}
 {still&&<rect x={X} y={Y} width={3*C} height={3*C} fill="none" stroke={BLUE} strokeWidth="3"/>}</svg>}
 
+// Grocery delivery, FIG: one order against the 10-minute clock. The customer holds stock and pays
+// (minute 0-1); payment starts the picker and assigns a rider at the same moment; picking and packing take
+// to minute 4 while the rider waits at the store; the ride is minutes 4-10. A red line walks the clock.
+function MinutesFig({still,uid=""}){const D="12s",X0=96,W=520,x=(m)=>X0+m*W/10;
+const lanes=[["Customer",[[0,1,"hold + pay",BLUE]]],["Picker",[[1,4,"pick, pack",BLUE]]],["Rider",[[1,4,"assigned, waits at store","#e6eaf0"],[4,10,"ride, about 2 km",BLUE]]]];
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`mnt${uid}`}><title id={`mnt${uid}`}>One order against a 10-minute clock. Minute 0 to 1: the customer's items are held and they pay. The moment payment lands, a picker starts and a rider is assigned. Minutes 1 to 4: the picker picks and packs while the rider waits at the store. Minutes 4 to 10: the rider rides about 2 kilometres to the door.</title>
+{lanes.map(([n,bars],i)=>{const y=60+i*60;return <g key={n}><text x="0" y={y+5} className="fb">{n}</text>
+{bars.map(([a,b,t,c])=>{const out=b-a<2;return <g key={t}><rect x={x(a)} y={y-16} width={x(b)-x(a)-2} height="32" fill={c} stroke={c===BLUE?BLUE:GREY}/><text x={out?x(b)+8:(x(a)+x(b))/2} y={y+4} textAnchor={out?"start":"middle"} className="fl" style={{fill:c===BLUE&&!out?"#fff":INK}}>{t}</text></g>})}</g>})}
+<line x1={x(1)} y1="36" x2={x(1)} y2="196" stroke={INK} strokeDasharray="3 2"/><text x={x(1)+4} y="32" className="fl">paid: picker and rider start together</text>
+{[0,1,2,3,4,5,6,7,8,9,10].map(m=><g key={m}><line x1={x(m)} y1="206" x2={x(m)} y2="212" stroke={GREY}/><text x={x(m)} y="226" textAnchor="middle" className="fl">{m}</text></g>)}
+<text x={x(10)} y="246" textAnchor="end" className="fl">minutes after ordering</text>
+{!still&&<line x1={x(0)} y1="40" x2={x(0)} y2="200" stroke={RED} strokeWidth="2" aria-hidden="true"><animate attributeName="x1" values={`${x(0)};${x(10)}`} dur={D} repeatCount="indefinite"/><animate attributeName="x2" values={`${x(0)};${x(10)}`} dur={D} repeatCount="indefinite"/></line>}</svg>}
+
+// Grocery delivery, FIG: the last packet. Two customers send the same conditional update ("hold 1 if at
+// least 1 is on the shelf"); the database applies them one after the other. A's changes one row and
+// holds the packet; B's changes none, so B is told it's sold out before paying.
+function StockHoldFig({still,uid=""}){const M=`sh4${uid}`,D="12s";
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`skt${uid}`}><title id={`skt${uid}`}>Two customers want the last packet of milk. Both send the same update: hold 1 if at least 1 is on the shelf. The database applies them one at a time. Customer A's update changes one row, so the packet is held and A pays. Customer B's update changes no rows, so B is told it is sold out before paying anything.</title><Mark m={M}/>
+<text x="320" y="24" textAnchor="middle" className="fl">both send: hold 1 if on_shelf ≥ 1</text>
+<SBox x={0} y={70} w={110} t="Customer A"/><SBox x={0} y={190} w={110} t="Customer B"/>
+<SBox x={240} y={130} w={160} t="Stock: milk 500 ml" blue/><text x="320" y="162" textAnchor="middle" className="fl">on_shelf 1 → 0</text><text x="320" y="176" textAnchor="middle" className="fl">held 0 → 1</text>
+<Line x1={112} y1={74} x2={236} y2={124} m={M}/><text x="150" y="112" textAnchor="end" className="fl">1st</text>
+<Line x1={112} y1={186} x2={236} y2={136} m={M}/><text x="150" y="152" textAnchor="end" className="fl">2nd</text>
+<Line x1={402} y1={124} x2={476} y2={74} m={M}/><Line x1={402} y1={136} x2={476} y2={186} m={M} c={GREY}/>
+<SBox x={480} y={70} w={150} t="1 row changed" blue/><text x="555" y="100" textAnchor="middle" className="fl">held; A pays</text>
+<SBox x={480} y={190} w={150} t="0 rows changed"/><text x="555" y="220" textAnchor="middle" className="fl" style={{fill:RED}}>sold out, no charge</text>
+{!still&&<g aria-hidden="true">
+<Dot x1={114} x2={234} y={75} y2={123} t0={.03} t1={.15} dur={D}/><Glow x={240} y={118} w={160} h={24} t0={.15} t1={.25} dur={D}/><Dot x1={404} x2={474} y={123} y2={75} t0={.25} t1={.35} dur={D}/><Glow x={480} y={58} w={150} h={24} t0={.35} t1={.5} dur={D}/>
+<Dot x1={114} x2={234} y={185} y2={137} t0={.45} t1={.57} dur={D}/><Glow x={240} y={118} w={160} h={24} t0={.57} t1={.67} dur={D}/><Dot x1={404} x2={474} y={137} y2={185} t0={.67} t1={.77} dur={D}/><Glow x={480} y={178} w={150} h={24} t0={.77} t1={.95} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -137,4 +167,6 @@ export const QUESTION_FIGS={
 "file-chunks":{C:ChunksFig,ar:640/240,title:()=>"SEND ONLY THE CHUNK THAT CHANGED"},
 "nearby-flow":{C:NearbyFig,ar:640/260,title:()=>"ONE HOME SCREEN, THREE LOOKUPS"},
 "geo-cells":{C:GeoCellsFig,ar:640/280,title:()=>"WHY YOU SEARCH NINE CELLS"},
+"minutes-flow":{C:MinutesFig,ar:640/260,title:()=>"WHERE THE 10 MINUTES GO"},
+"stock-hold":{C:StockHoldFig,ar:640/260,title:()=>"THE LAST PACKET, TWO BUYERS"},
 };

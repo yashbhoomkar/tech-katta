@@ -776,8 +776,8 @@
     {
       "id": "sms-link",
       "level": "intermediate",
-      "title": "The link in a crore SMS",
-      "brief": "At 8 pm Zotato texts a promo link to crores of phones. For 15 minutes, 30,000 people a second tap zot.to links, five times the evening's usual. Every tap is one lookup of a short code.",
+      "title": "The link in 10 crore SMS",
+      "brief": "At 8 pm Zotato texts a promo link to 10 crore phones. For 15 minutes, 30,000 people a second tap zot.to links, five times the evening's usual. Every tap is one lookup of a short code.",
       "hint": "No database here answers 30,000 lookups a second, and new servers take 4 minutes to boot. The same few codes are read over and over: 95% of lookups can come from a cache. A CDN would also work, but it bills every request.",
       "hours": 3,
       "startHour": 19,

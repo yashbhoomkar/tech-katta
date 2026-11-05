@@ -70,9 +70,9 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Lab challenge for the URL shortener: "The link in a crore SMS" (`sms-link`) | done | shipped run 8; Q01's Lab card now points to it |
-| 2 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 3 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 1 | content | Q04 10-minute grocery delivery (easy) | done | shipped run 9 with figures `minutes-flow`, `stock-hold`; also sms-link says 10 crore phones |
+| 2 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 3 | build | Analytics: record `lab_score` (challenge id, stars) when someone scores a Lab challenge | ready | Builder, run 9: real usage numbers for the business plan before Practice mode; no new data fields beyond the event |
 | 4 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
 | 5 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
 | 6 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
@@ -84,7 +84,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
 00 How to answer ✅ · 01 URL shortener ✅ · Easy: 02 File storage and sync ✅ · 03 Restaurants near me ✅ ·
-04 10-minute grocery delivery · Medium: 05 Match ticket booking · 06 Photo sharing · 07 News feed ·
+04 10-minute grocery delivery ✅ · Medium: 05 Match ticket booking · 06 Photo sharing · 07 News feed ·
 08 Dating app swipes · 09 Coding judge · 10 Chat app · 11 Fitness tracker · 12 Distributed cache ·
 13 Rate limiter · 14 Online auction · 15 Video platform · 16 Job scheduler · 17 Live comments ·
 18 News aggregator · 19 Price tracker · 20 Notification system · Hard: 21 Top-K trending ·
@@ -121,10 +121,14 @@ for the owner to confirm):
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
-  overflow), and this run's Lab challenge PR.
+  overflow), #180 (Lab challenge sms-link), and this run's Q04 PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 9 — Production healthy; #180 checked live (8 challenges listed, sms-link scores 0★ at
+  start). Learner: "a crore SMS" didn't fit 2.7 crore taps; now 10 crore phones. Q04: Learner's
+  must-have was the shelf disagreeing with the system (missing scans, swaps, cycle counts) and holds
+  expiring on their own; both covered. A figure label overflowed a 1-minute bar; moved beside it.
 - 2026-11-05 run 8 — Production healthy; #179 checked live (no overflow jumping 1440 → 320 px, drawer
   still slides). `sms-link` calibrated by running designs through `runChallenge`: cache + 13
   c5.2xlarge earns 3★ ($3,707/month); a CDN works but bills every tap (~$19k, 2★); a bigger database
@@ -167,7 +171,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Lab challenge "The link in a crore SMS" for the URL shortener.
+- 2026-11-05 — Q04 10-minute grocery delivery, with figures `minutes-flow` and `stock-hold`.
+- 2026-11-05 — PR #180: Lab challenge "The link in a crore SMS" for the URL shortener.
 - 2026-11-05 — PR #179: dashboard, no brief overflow when the window crosses the 900 px breakpoint.
 - 2026-11-05 — PR #178: unknown figure ids skipped instead of drawn as the API figure.
 - 2026-11-05 — PR #177: Q03 Restaurants near me, with figures `nearby-flow` and `geo-cells`.
