@@ -70,10 +70,10 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Library card text: `.meta` and `.card-foot` up to 11px | done | shipped run 10; the footer wraps to two lines where cards are narrow (about 900–1100 px) |
-| 2 | build | Analytics: record `lab_score` (challenge id, stars) when someone scores a Lab challenge | ready | Builder, run 9: real usage numbers for the business plan before Practice mode; no new data fields beyond the event |
-| 3 | content | Concepts › Staying up: timeouts, retries, circuit breakers (one article) | ready | the group exists in `site.json` with no articles |
-| 4 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
+| 1 | build | Analytics: Lab challenge scores | done | already there: the `score` event (challenge, stars, max, passed) and the admin dashboard's scores table; nothing to build |
+| 2 | content | Concepts › Staying up: timeouts, retries, circuit breakers | done | shipped run 11 with figures `slow-call`, `breaker`; also the Interview Questions card no longer promises unpublished questions |
+| 3 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
+| 4 | build | Library card footers level at 768–1100 px (one wraps, two don't) | ready | Learner, run 10; cosmetic: stack label above link at those widths |
 | 5 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
 | 6 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
 | 7 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
@@ -120,11 +120,15 @@ for the owner to confirm):
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
-  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), and this run's card
-  text PR.
+  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), and
+  this run's Staying up PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 11 — Production healthy; #182 checked live (dashboard-home.js passes without sign-in).
+  The lab_score item turned out to exist already (`score` event, admin scores table). Wrote the first
+  Staying up concept instead; Learner's card note fixed (the Interview Questions card promised a rate
+  limiter and an event pipeline that aren't written).
 - 2026-11-05 run 10 — Production healthy; #181 checked live (five Learner fixes visible, Q04 under
   Easy). Card meta and footer text 9px/8px → 11px; checked 320–1440 px: no overflow, nothing clipped
   out of a card; the footer wraps where three cards share about 1,000 px.
@@ -174,7 +178,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Library cards: meta and footer text up to 11px.
+- 2026-11-05 — Concept 05: timeouts, retries and circuit breakers, with figures `slow-call` and `breaker`.
+- 2026-11-05 — PR #182: library cards, meta and footer text up to 11px.
 - 2026-11-05 — PR #181: Q04 10-minute grocery delivery, with figures `minutes-flow` and `stock-hold`.
 - 2026-11-05 — PR #180: Lab challenge "The link in a crore SMS" for the URL shortener.
 - 2026-11-05 — PR #179: dashboard, no brief overflow when the window crosses the 900 px breakpoint.

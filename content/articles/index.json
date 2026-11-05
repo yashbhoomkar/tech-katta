@@ -4,6 +4,7 @@
     "concepts/replication",
     "concepts/consistency",
     "concepts/cap-pacelc",
+    "concepts/timeouts-retries",
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",
