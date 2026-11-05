@@ -6,7 +6,7 @@
   "tag": "EASY",
   "date": "5 Nov 2026",
   "title": "Design 10-minute grocery delivery",
-  "dek": "Zotato Minutes promises milk, bread and Maggi at your door in 10 minutes. That only works if the store is close, the shelf count is right, and nobody sells the last packet twice.",
+  "dek": "Zotato Minutes promises milk, bread and instant noodles at your door in 10 minutes. That only works if the store is close, the shelf count is right, and nobody sells the last packet twice.",
   "body": [
     {
       "t": "tldr",
@@ -45,7 +45,7 @@
       "rows": [
         [
           "Promise",
-          "Most orders at the door within 10 minutes of paying"
+          "Most orders at the door within 10 minutes of ordering"
         ],
         [
           "Correctness",
@@ -82,7 +82,7 @@
       "t": "list",
       "items": [
         "Store: `id`, `location`, `area it serves`, `status` (open, slow, paused).",
-        "Stock: `store_id`, `item_id`, `on_shelf`, `held` (kept for orders not yet paid).",
+        "Stock: `store_id`, `item_id`, `available` (can still be sold), `held` (kept for orders not yet paid).",
         "Order: `id`, `store_id`, `items`, `state` (held, paid, picking, packed, on the way, delivered), `promised_at`.",
         "Rider and picker: `id`, `store_id`, `state` (free, busy)."
       ]
@@ -121,27 +121,27 @@
       "what": "Read how many are left; if there's enough, take payment and subtract.",
       "use": "Easy to write, and fine when only one person shops at a time.",
       "avoid": "Two people read \"1 left\" at the same moment, both pay, and one of them gets a refund and an apology ten minutes later.",
-      "ex": "Andheri store, 9 pm, one packet of Amul Taaza left; two customers tap Pay within a second of each other.",
+      "ex": "Andheri store, 9 pm, one packet of toned milk left; two customers tap Pay within a second of each other.",
       "like": "Two cashiers both selling the last cinema seat because each checked the chart before the other wrote on it."
     },
     {
       "t": "type",
       "name": "Better",
       "kind": "ONE CONDITIONAL UPDATE",
-      "what": "Subtract only if enough is left, in one statement: `UPDATE stock SET on_shelf = on_shelf - 2 WHERE store_id = 's_17' AND item_id = 'milk-500' AND on_shelf >= 2`. If no row changed, it ran out.",
+      "what": "Subtract only if enough is left, in one statement: `UPDATE stock SET available = available - 1 WHERE store_id = 's_17' AND item_id = 'milk-500' AND available >= 1`. If no row changed, it ran out.",
       "use": "The database settles the race: exactly one of the two buyers gets the packet, with no locks held across the network.",
       "avoid": "If you subtract before payment and the payment fails, the stock has to be put back, and a customer who closes the app leaves it stuck.",
-      "ex": "The second buyer's update changes 0 rows; the app says \"only 0 left\" before taking any money.",
+      "ex": "The second buyer's update changes 0 rows; the app says it's sold out before taking any money.",
       "like": "Taking the last packet off the shelf yourself instead of asking whether it's there."
     },
     {
       "t": "type",
       "name": "Best",
       "kind": "HOLD, THEN CONFIRM OR RELEASE",
-      "what": "At checkout, move the quantity from `on_shelf` to `held` with the same conditional update and a 5-minute expiry. Payment confirms the hold; failure or timeout puts it back.",
+      "what": "At checkout, move the quantity from `available` to `held` with the same conditional update and a 5-minute expiry. Payment confirms the hold; failure or timeout puts it back.",
       "use": "Nobody pays for missing stock, and stock doesn't leak when people walk away. A sweeper job returns expired holds every few seconds.",
       "avoid": "Holds hide stock from other buyers for a few minutes. Keep the expiry short and release at once when the customer cancels.",
-      "ex": "Hold placed at 20:00:00, payment arrives at 20:00:40: confirmed. No payment by 20:05: the 2 packets are back on the shelf.",
+      "ex": "Hold placed at 20:00:00, payment arrives at 20:00:40: confirmed. No payment by 20:05: the 2 packets can be sold again.",
       "like": "A shop keeping your items at the counter while you fetch your wallet, but not all evening."
     },
     {

@@ -141,13 +141,13 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`mnt${uid}`}><titl
 {!still&&<line x1={x(0)} y1="40" x2={x(0)} y2="200" stroke={RED} strokeWidth="2" aria-hidden="true"><animate attributeName="x1" values={`${x(0)};${x(10)}`} dur={D} repeatCount="indefinite"/><animate attributeName="x2" values={`${x(0)};${x(10)}`} dur={D} repeatCount="indefinite"/></line>}</svg>}
 
 // Grocery delivery, FIG: the last packet. Two customers send the same conditional update ("hold 1 if at
-// least 1 is on the shelf"); the database applies them one after the other. A's changes one row and
+// least 1 is available"); the database applies them one after the other. A's changes one row and
 // holds the packet; B's changes none, so B is told it's sold out before paying.
 function StockHoldFig({still,uid=""}){const M=`sh4${uid}`,D="12s";
-return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`skt${uid}`}><title id={`skt${uid}`}>Two customers want the last packet of milk. Both send the same update: hold 1 if at least 1 is on the shelf. The database applies them one at a time. Customer A's update changes one row, so the packet is held and A pays. Customer B's update changes no rows, so B is told it is sold out before paying anything.</title><Mark m={M}/>
-<text x="320" y="24" textAnchor="middle" className="fl">both send: hold 1 if on_shelf ≥ 1</text>
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`skt${uid}`}><title id={`skt${uid}`}>Two customers want the last packet of milk. Both send the same update: hold 1 if at least 1 is available. The database applies them one at a time. Customer A's update changes one row, so the packet is held and A pays. Customer B's update changes no rows, so B is told it is sold out before paying anything.</title><Mark m={M}/>
+<text x="320" y="24" textAnchor="middle" className="fl">both send: hold 1 if available ≥ 1</text>
 <SBox x={0} y={70} w={110} t="Customer A"/><SBox x={0} y={190} w={110} t="Customer B"/>
-<SBox x={240} y={130} w={160} t="Stock: milk 500 ml" blue/><text x="320" y="162" textAnchor="middle" className="fl">on_shelf 1 → 0</text><text x="320" y="176" textAnchor="middle" className="fl">held 0 → 1</text>
+<SBox x={240} y={130} w={160} t="Stock: milk 500 ml" blue/><text x="320" y="162" textAnchor="middle" className="fl">available 1 → 0</text><text x="320" y="176" textAnchor="middle" className="fl">held 0 → 1</text>
 <Line x1={112} y1={74} x2={236} y2={124} m={M}/><text x="150" y="112" textAnchor="end" className="fl">1st</text>
 <Line x1={112} y1={186} x2={236} y2={136} m={M}/><text x="150" y="152" textAnchor="end" className="fl">2nd</text>
 <Line x1={402} y1={124} x2={476} y2={74} m={M}/><Line x1={402} y1={136} x2={476} y2={186} m={M} c={GREY}/>
