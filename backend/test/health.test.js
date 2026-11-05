@@ -75,3 +75,27 @@ test('health route rejects unsupported methods', async (t) => {
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('allow'), 'GET, HEAD, OPTIONS');
 });
+
+test('SIGTERM shuts down cleanly and quickly (deploy restarts)', async () => {
+  const running = await startServer();
+  const t0 = Date.now();
+  running.server.kill('SIGTERM');
+  const [code] = await once(running.server, 'exit');
+  assert.equal(code, 0);
+  assert.ok(Date.now() - t0 < 3_000, 'exits in well under the 10 s limit');
+});
+
+test('slow clients are cut off: headers must arrive within 10 s', async (t) => {
+  const running = await startServer();
+  t.after(() => running.server.kill('SIGTERM'));
+  const { connect } = await import('node:net');
+  const port = Number(new URL(running.baseUrl).port);
+  const sock = connect(port, '127.0.0.1'); await once(sock, 'connect');
+  sock.write('GET /health HTTP/1.1\r\nHost: x\r\n'); // never finishes the headers
+  const t0 = Date.now(); let data = '';
+  sock.on('data', (d) => { data += d; });
+  await once(sock, 'close');
+  const waited = Date.now() - t0;
+  assert.ok(waited >= 9_000 && waited < 20_000, `closed after ${waited} ms`);
+  assert.match(data, /408|^$/);
+});

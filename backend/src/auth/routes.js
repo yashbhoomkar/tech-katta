@@ -21,17 +21,35 @@ import { cleanBatch } from './events.js';
 import { audienceCsv } from './audience.js';
 
 export const COOKIE = 'tk_session';
-const MAX_BODY = 2 * 1024 * 1024;
+// Request bodies: a Lab sync can be big (many designs); everything else is a few hundred bytes.
+const MAX_BODY = 2 * 1024 * 1024, SMALL_BODY = 64 * 1024;
+// JSON never needs to run as a page; this stops it if it's ever opened as one.
+export const JSON_CSP = "default-src 'none'; frame-ancestors 'none'";
+// The visitor's address. Nginx sets X-Real-IP from Cloudflare's CF-Connecting-IP, and only Cloudflare
+// can reach the VPS (UFW), so neither can be set by a visitor; the socket is always Nginx (127.0.0.1).
+export const clientIp = (request) => String(request.headers['x-real-ip'] || request.headers['cf-connecting-ip'] || request.socket?.remoteAddress || '?');
+
+// A few requests per key per window. Expired windows are swept out when the map is full. If it is
+// still full of live windows (a flood of new addresses), new keys are refused until windows expire;
+// keys already counted are never forgotten, so a flood can't reset an attacker's own count. (It used
+// to clear the whole map at 10,000 keys.) limit(key, max, windowMs) → true when over the limit.
+export function makeLimiter({ maxKeys = 100_000, now = () => Date.now() } = {}) {
+  const hits = new Map(); let sweptAt = -Infinity;
+  return function limit(key, max, windowMs) {
+    const t = now(), h = hits.get(key);
+    if (h && t - h.start <= windowMs) { h.n += 1; return h.n > max; }
+    if (!h && hits.size >= maxKeys) {
+      // sweep at most once a second, so a flood can't make every request scan the whole map
+      if (t - sweptAt >= 1_000) { sweptAt = t; for (const [k, v] of hits) if (t - v.start > v.windowMs) hits.delete(k); }
+      if (hits.size >= maxKeys) return true;
+    }
+    hits.set(key, { start: t, n: 1, windowMs }); return false;
+  };
+}
 
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
-  // a few requests per IP per window; Cloudflare puts the visitor's IP in CF-Connecting-IP
-  const hits = new Map();
-  const limited = (request, bucket, max, windowMs) => {
-    const ip = String(request.headers['cf-connecting-ip'] || request.socket?.remoteAddress || '?');
-    const key = `${bucket}:${ip}`, now = Date.now(), h = hits.get(key);
-    if (!h || now - h.start > windowMs) { hits.set(key, { start: now, n: 1 }); if (hits.size > 10_000) hits.clear(); return false; }
-    h.n += 1; return h.n > max;
-  };
+  const limiter = makeLimiter();
+  const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
   // the site, and (for reading only) the owner's analytics dashboard
   const readers = new Set([allowedOrigin, analyticsOrigin].filter(Boolean));
   const cors = (request) => (readers.has(request.headers.origin)
@@ -39,7 +57,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
   const send = (request, response, status, body, extra = {}) => {
     response.writeHead(status, {
       'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', ...cors(request), ...extra });
+      'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Content-Security-Policy': JSON_CSP, ...cors(request), ...extra });
     response.end(request.method === 'HEAD' ? undefined : JSON.stringify(body));
   };
   const cookie = (token, maxAge) => `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureCookie ? '; Secure' : ''}`;
@@ -50,10 +68,10 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
     }
     return null;
   };
-  const readJson = (request) => new Promise((resolve, reject) => {
+  const readJson = (request, limit = SMALL_BODY) => new Promise((resolve, reject) => {
     // Over the limit, the rest is read and thrown away, so the client gets a clean 413.
-    let size = 0, over = Number(request.headers['content-length']) > MAX_BODY; const chunks = [];
-    request.on('data', (c) => { size += c.length; if (size > MAX_BODY) over = true; if (!over) chunks.push(c); });
+    let size = 0, over = Number(request.headers['content-length']) > limit; const chunks = [];
+    request.on('data', (c) => { size += c.length; if (size > limit) over = true; if (!over) chunks.push(c); });
     request.on('end', () => { if (over) return reject(new AuthError('too_large')); try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(new AuthError('bad_json')); } });
     request.on('error', reject);
   });
@@ -131,7 +149,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       if (pathname === '/v1/me/lab' && method === 'GET') return send(request, response, 200, storable(mergeLab(await accounts.getLab(me.id), {}, labCatalogue())));
       if (pathname === '/v1/me/lab' && method === 'POST') {
         if (limited(request, 'lab', 120, 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
-        const incoming = await readJson(request);
+        const incoming = await readJson(request, MAX_BODY);
         const merged = await accounts.updateLab(me.id, (stored) => storable(mergeLab(stored, incoming, labCatalogue())));
         return send(request, response, 200, merged);
       }

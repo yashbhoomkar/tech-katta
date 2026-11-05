@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadContent, buildBodies } from './content/store.js';
 import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
-import { accountRoutes } from './auth/routes.js';
+import { accountRoutes, JSON_CSP } from './auth/routes.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -25,6 +25,7 @@ function sendJson(request, response, statusCode, body) {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Content-Security-Policy': JSON_CSP,
     ...(request.headers.origin === allowedOrigin ? {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Vary': 'Origin',
@@ -56,6 +57,7 @@ const contentHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': JSON_CSP,
 };
 const etagCache = new WeakMap();
 
@@ -134,7 +136,9 @@ function handleContent(request, response, pathname, searchParams) {
   return sendContent(request, response, article);
 }
 
-const server = http.createServer((request, response) => {
+// Behind Nginx: a request has 30 s to arrive in full and its headers 10 s; Node checks every 2 s
+// (its default is 30 s, which let a stalled client hold a connection that long).
+const server = http.createServer({ requestTimeout: 30_000, headersTimeout: 10_000, connectionsCheckingInterval: 2_000 }, (request, response) => {
   const url = new URL(request.url || '/', 'http://localhost');
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
@@ -188,24 +192,32 @@ const server = http.createServer((request, response) => {
   });
 });
 
+// Idle keep-alive connections close after 5 s, so stalled clients can't pile up connections.
+server.keepAliveTimeout = 5_000;
+server.maxRequestsPerSocket = 1_000;
+
 server.listen(port, host, () => {
   console.log(`Tech Katta API listening on http://${host}:${port}`);
 });
 
+// Stop taking new connections, let requests in flight finish (up to 10 s), then close MongoDB.
 function shutdown(signal) {
   console.log(`Received ${signal}; shutting down API server.`);
-  accounts?.close().catch(() => {});
   server.close((error) => {
-    if (error) {
-      console.error('HTTP server shutdown failed:', error);
-      process.exitCode = 1;
-    }
+    if (error) { console.error('HTTP server shutdown failed:', error); process.exitCode = 1; }
+    Promise.resolve(accounts?.close()).catch(() => {}).finally(() => process.exit());
   });
+  server.closeIdleConnections();
   setTimeout(() => {
     console.error('Graceful shutdown timed out.');
     process.exit(1);
   }, 10_000).unref();
 }
+
+// An unexpected error leaves the process in an unknown state: log it and exit, and systemd
+// (Restart=always, written by the deploy) starts a clean one.
+process.on('uncaughtException', (error) => { console.error('Uncaught exception, exiting:', error); process.exit(1); });
+process.on('unhandledRejection', (error) => { console.error('Unhandled rejection, exiting:', error); process.exit(1); });
 
 process.once('SIGTERM', () => shutdown('SIGTERM'));
 process.once('SIGINT', () => shutdown('SIGINT'));
