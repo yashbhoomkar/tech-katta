@@ -168,7 +168,11 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
 // Article bodies are fetched when opened; the summaries list came with the dashboard.
-function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
+// A figure id this build doesn't know (new content can go live a few minutes before the frontend that
+// draws it) is left out, so the page, the figure numbers and read aloud all skip it instead of showing
+// the wrong diagram.
+const knownFigs=a=>a.body.some(x=>x.t==="fig"&&!FIGS[x.id])?{...a,body:a.body.filter(x=>x.t!=="fig"||FIGS[x.id])}:a;
+function ArticlePage({s}){const[st,set]=useState({});const load=()=>{set({});getJSON(`/v1/articles/${s.slug}`).then(a=>set({a:knownFigs(a)}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
 return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
 
 // Did you know: a surprising fact about traffic at scale (site.json `fact`), moved off the landing page.

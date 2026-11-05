@@ -70,7 +70,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q03 Restaurants near me (easy) | done | shipped run 5 with figures `nearby-flow`, `geo-cells` |
+| 1 | build | Skip figure ids this build can't draw, instead of showing the API figure in their place | done | shipped run 6; Builder found it during the 7-minute Vercel lag after #177 |
 | 2 | build | Dashboard home overflowed at 320–390 px once in a scripted run (prod too); not reproduced alone | ready | Builder: existing bug, so ahead of new work; find the sequence first |
 | 3 | content | Lab challenge for the URL shortener (`lab.json`): a redirect flood a cache must absorb | ready | business plan: every question gets a "build it, break it" challenge; content lane if the engine needs no change |
 | 4 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
@@ -122,10 +122,14 @@ for the owner to confirm):
 ## Context repo pending
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
-  list), and this run's Q03 PR.
+  list), #177 (Q03 restaurants near me), and this run's figure-fallback PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 6 — Production healthy; Q03 live and checked on phone. After #177 the API had the new
+  content ~7 minutes before Vercel had the figures, and `FIGS[id]||FIGS.patterns` drew the API figure
+  in their place (reproduced on production by injecting an unknown id). Unknown figure ids are now
+  dropped when the article loads, so page, numbering and read aloud agree.
 - 2026-11-05 run 5 — Production healthy (chaos 11/11, sweep clean); #175 checked live by the Learner
   (skip link above the viewport until Tab, at 390 and 1280). Q03: Learner's must-have was the 3×3
   cell search plus delivery zones and open status; first render had two labels crossing lines, fixed.
@@ -155,7 +159,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Q03 Restaurants near me, with figures `nearby-flow` and `geo-cells`.
+- 2026-11-05 — Unknown figure ids skipped instead of drawn as the API figure.
+- 2026-11-05 — PR #177: Q03 Restaurants near me, with figures `nearby-flow` and `geo-cells`.
 - 2026-11-05 — PR #176: business plan for the paid launch in this file.
 - 2026-11-05 — PR #175: skip-to-content link (landing and dashboard) and visible focus outlines.
 - 2026-11-05 — PR #174: Q02 File storage and sync, with figures `sync-flow` and `file-chunks`.
