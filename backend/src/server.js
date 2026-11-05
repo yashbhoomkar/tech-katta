@@ -106,12 +106,13 @@ const auth = authConfig();
 const accounts = auth.enabled ? openAccounts({ uri: auth.uri, dbName: auth.dbName, secret: auth.secret }) : null;
 const handleAccount = accountRoutes({
   enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
+  analyticsOrigin: process.env.ANALYTICS_ORIGIN ?? 'https://analytics.katta.cc',
   verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
 });
 console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
 // indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
 accounts?.warmUp().then(() => accounts.health());
-const ACCOUNT_PATHS = new Set(['/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab']);
+const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab']);
 
 function handleContent(request, response, pathname, searchParams) {
   if (!['GET', 'HEAD'].includes(request.method || '')) {

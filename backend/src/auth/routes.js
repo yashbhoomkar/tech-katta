@@ -10,16 +10,20 @@
 //   DELETE /v1/me                                         — delete the account and all its data
 //   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
 //   POST   /v1/me/consent     {ads} → {user}               — opt in/out of Tech Katta ads on Facebook/Instagram
+//   GET    /v1/admin/summary?days=7   analytics summary (admin accounts only; also readable from
+//                                      ANALYTICS_ORIGIN, the dashboard at analytics.katta.cc)
+//   GET    /v1/admin/audience.csv     Meta Custom Audience file of the accounts that opted in (admin)
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
 import { AuthError, SESSION_DAYS, errorKind } from './index.js';
 import { cleanBatch } from './events.js';
+import { audienceCsv } from './audience.js';
 
 export const COOKIE = 'tk_session';
 const MAX_BODY = 2 * 1024 * 1024;
 
-export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, allowedOrigin, secureCookie = true, log = console }) {
+export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   // a few requests per IP per window; Cloudflare puts the visitor's IP in CF-Connecting-IP
   const hits = new Map();
   const limited = (request, bucket, max, windowMs) => {
@@ -28,8 +32,10 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
     if (!h || now - h.start > windowMs) { hits.set(key, { start: now, n: 1 }); if (hits.size > 10_000) hits.clear(); return false; }
     h.n += 1; return h.n > max;
   };
-  const cors = (request) => (request.headers.origin === allowedOrigin
-    ? { 'Access-Control-Allow-Origin': allowedOrigin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : {});
+  // the site, and (for reading only) the owner's analytics dashboard
+  const readers = new Set([allowedOrigin, analyticsOrigin].filter(Boolean));
+  const cors = (request) => (readers.has(request.headers.origin)
+    ? { 'Access-Control-Allow-Origin': request.headers.origin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : {});
   const send = (request, response, status, body, extra = {}) => {
     response.writeHead(status, {
       'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
@@ -98,6 +104,17 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       }
       if (pathname === '/v1/me' && (method === 'GET' || method === 'HEAD')) return send(request, response, 200, { user: me ? me.user : null });
       if (!me) return send(request, response, 401, { error: 'signed_out' });
+      if (pathname === '/v1/admin/summary' || pathname === '/v1/admin/audience.csv') {
+        if (!me.user.admin) return send(request, response, 403, { error: 'not_admin' });
+        if (method !== 'GET') return send(request, response, 405, { error: 'method_not_allowed' }, { Allow: 'GET' });
+        if (pathname === '/v1/admin/summary') {
+          const days = Math.min(Math.max(Math.round(Number(new URL(request.url || '/', 'http://x').searchParams.get('days')) || 7), 1), 395);
+          return send(request, response, 200, await accounts.summary(days));
+        }
+        const csv = audienceCsv(await accounts.consentedUsers());
+        response.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="tech-katta-meta-audience.csv"', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...cors(request) });
+        response.end(csv); return;
+      }
       if (pathname === '/v1/auth/signout-all' && method === 'POST') {
         const ended = await accounts.signOutAll(me.id);
         return send(request, response, 200, { ok: true, ended }, { 'Set-Cookie': cookie('', 0) });
