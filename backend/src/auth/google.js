@@ -23,7 +23,9 @@ export function googleVerifier({ clientId, jwksUrl = GOOGLE_JWKS, fetchImpl = fe
     if (!force && cache.until > now()) return cache.keys;
     if (force && now() - lastRefresh < 60_000) return cache.keys;
     lastRefresh = now();
-    const res = await fetchImpl(jwksUrl);
+    // Chaos testing found sign-in hanging for minutes when Google's key server didn't answer: give it 5 s.
+    let res;
+    try { res = await fetchImpl(jwksUrl, { signal: AbortSignal.timeout(5000) }); } catch { throw new AuthError('keys_unavailable'); }
     if (!res.ok) throw new AuthError('keys_unavailable');
     const body = await res.json();
     const map = new Map();

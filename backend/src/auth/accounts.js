@@ -58,7 +58,10 @@ export function errorKind(error) {
 }
 
 export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, now = () => Date.now(), eventsMaxMB = EVENTS_MAX_MB }) {
-  const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, maxPoolSize: 10, appName: 'tech-katta-api' });
+  // Timeouts found by chaos testing (tools/chaos): with only serverSelectionTimeoutMS, a database that
+  // stops answering on an open connection (a network black hole) made requests wait ~40 s. Now a new
+  // connection gets 5 s and any single wait on a socket 10 s, so requests fail within seconds instead.
+  const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000, socketTimeoutMS: 10_000, maxPoolSize: 10, appName: 'tech-katta-api' });
   const db = mongo.db(dbName);
   const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab'), events = db.collection('events');
   let ready = null, health = 'checking', checkedAt = 0, checking = null, storageMB = null;
@@ -129,9 +132,12 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     // Every session of the account ends (lost phone, shared computer). Returns how many there were.
     async signOutAll(userId) { return (await sessions.deleteMany({ userId })).deletedCount; },
     // Everything stored about the user goes: usage events tied to the account, Lab data, sessions, the account.
-    // Returns false (and stores nothing) while the database is over eventsMaxMB.
+    // Returns false (and stores nothing) while the database is over eventsMaxMB, or while the last
+    // health check found it down: events are best-effort, so they're dropped at once rather than
+    // holding a request for the 5 s it takes to find no database.
     async logEvents(docs) {
       if (!docs.length) return true;
+      if (health !== 'ok' && health !== 'checking') { this.health(); return false; }
       await init();
       if (storageMB !== null && storageMB > eventsMaxMB) return false;
       await events.insertMany(docs, { ordered: false });

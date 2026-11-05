@@ -452,3 +452,12 @@ test('request bodies: small routes refuse more than 64 KB, the Lab sync accepts 
   assert.equal(lab.status, 200, 'a ~120 KB Lab sync is fine');
   for (const res of [lab, await fetch(base + '/health'), await fetch(base + '/v1/site'), await fetch(base + '/nope')]) assert.match(res.headers.get('content-security-policy') || '', /default-src 'none'/);
 });
+
+test('Google key server not answering: sign-in fails with keys_unavailable within ~5 s, never hangs', async () => {
+  const hang = (url, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason)));
+  const verify = googleVerifier({ clientId: CLIENT, fetchImpl: hang });
+  const t0 = Date.now();
+  await assert.rejects(verify(idToken()), (e) => e.code === 'keys_unavailable');
+  const took = Date.now() - t0;
+  assert.ok(took >= 4_500 && took < 8_000, `gave up after ${took} ms`);
+});
