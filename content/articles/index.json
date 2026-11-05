@@ -14,6 +14,7 @@
     "components/object-storage",
     "components/queues-and-streams",
     "interview-questions/how-to-answer",
-    "interview-questions/url-shortener"
+    "interview-questions/url-shortener",
+    "interview-questions/file-sync"
   ]
 }

@@ -70,18 +70,17 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Lab Import dialog: Tab focus trap, Escape anywhere, focus back on close | done | shipped run 2; focus returns to the Designs button (the menu holding Import is gone) |
-| 2 | content | Q02 File storage and sync (easy) | ready | Interview Questions plan, see below; a draft (article + `sync-flow`, `file-chunks` figures) was written 11-05 but not committed |
-| 3 | build | Skip-to-content link and `:focus-visible` outlines (`.card`, `.d-tour`, `.lab-name`, Lab inputs) | ready | leave `.acct-btn` (sign-in UI) for the owner |
-| 4 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
-| 5 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 6 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 7 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 8 | content | Q06–Q36, one per run, in plan order | ready | |
+| 1 | content | Q02 File storage and sync (easy) | done | shipped run 3 with figures `sync-flow`, `file-chunks` |
+| 2 | build | Skip-to-content link and `:focus-visible` outlines (`.card`, `.d-tour`, `.lab-name`, Lab inputs) | ready | leave `.acct-btn` (sign-in UI) for the owner |
+| 3 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
+| 4 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 5 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
+| 6 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 7 | content | Q06–Q36, one per run, in plan order | ready | |
 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
-00 How to answer ✅ · 01 URL shortener ✅ · Easy: 02 File storage and sync · 03 Restaurants near me ·
+00 How to answer ✅ · 01 URL shortener ✅ · Easy: 02 File storage and sync ✅ · 03 Restaurants near me ·
 04 10-minute grocery delivery · Medium: 05 Match ticket booking · 06 Photo sharing · 07 News feed ·
 08 Dating app swipes · 09 Coding judge · 10 Chat app · 11 Fitness tracker · 12 Distributed cache ·
 13 Rate limiter · 14 Online auction · 15 Video platform · 16 Job scheduler · 17 Live comments ·
@@ -104,10 +103,15 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 ## Context repo pending
 
 - Handover §12 rows: #171 (agents' to-do list in the site repo), #172 (Q01 fix: aliases vs counter codes,
-  no cached 404s from replicas), and this run's Import dialog PR.
+  no cached 404s from replicas), #173 (Lab Import dialog keyboard
+  fixes), and this run's Q02 PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 3 — Production healthy (chaos and sweep clean; #173 checked live on phone and desktop).
+  Q02 reviews caught real mistakes before shipping: a 9 MB PDF drawn as "three 4 MB chunks" (now 4, 4
+  and 1 MB), a `<title>` id reused from the interview-clock figure, and labels crossing arrows in
+  `sync-flow`. The Learner added the commit-time hash check and why a conflicted copy costs no upload.
 - 2026-11-05 run 2 — Production healthy again (chaos 11/11, sweep clean); Q01 fix live. Import dialog:
   the first try returned focus to `<body>`, because the Designs menu closes in the same render that
   opens Import, so the opener was already gone; now falls back to the Designs button. Checked locally
@@ -123,6 +127,7 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Done log (newest first)
 
-- 2026-11-05 — Lab Import dialog: focus trap, Escape from anywhere, focus back to Designs.
+- 2026-11-05 — Q02 File storage and sync, with figures `sync-flow` and `file-chunks`.
+- 2026-11-05 — PR #173: Lab Import dialog, focus trap, Escape from anywhere, focus back to Designs.
 - 2026-11-05 — PR #172: Q01 fix, aliases kept apart from counter codes; no cached 404s from lagging replicas.
 - 2026-11-05 — PR #170: Q00 How to answer, Q01 URL shortener.

@@ -57,10 +57,47 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`sct${uid}`}><titl
 {!still&&<g aria-hidden="true"><Dot x1={132} x2={224} y={130} y2={80} t0={.05} t1={.15} dur={D}/><Glow x={230} y={68} w={110} h={24} t0={.15} t1={.3} dur={D}/><Dot x1={342} x2={404} y={80} t0={.25} t1={.33} dur={D}/>
 <Dot x1={132} x2={224} y={130} y2={180} t0={.5} t1={.6} dur={D}/><Glow x={230} y={168} w={110} h={24} t0={.6} t1={.75} dur={D}/><Dot x1={342} x2={404} y={180} t0={.7} t1={.78} dur={D}/></g>}</svg>}
 
+// File sync, FIG: one edit reaching another device. 1 the laptop puts the changed chunk straight into object
+// storage, 2 commits the new chunk list (the change log gets #8840), 3 the notifier tells the phone,
+// 4 the phone asks for changes after its cursor, 5 and downloads just that chunk.
+function SyncFig({still,uid=""}){const M=`sy${uid}`,D="14s";
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`syt${uid}`}><title id={`syt${uid}`}>One edit reaching another device. First, the counter laptop uploads only the changed chunk of menu.pdf straight to object storage with a signed URL. Second, it commits the new chunk list to the metadata service, which records version 8 and adds change number 8840 to the owner's change log. Third, the notifier tells the owner's phone it has changes. Fourth, the phone asks the metadata service for changes after its cursor, 8839. Fifth, it downloads just the new chunk from object storage.</title><Mark m={M}/>
+<SBox x={0} y={60} w={120} t="Counter laptop"/><SBox x={250} y={60} w={140} t="Metadata service" blue/><SBox x={500} y={60} w={140} t="Notifier"/>
+<SBox x={250} y={230} w={140} t="Object storage"/><SBox x={500} y={230} w={140} t="Owner's phone"/>
+<Line x1={122} y1={60} x2={246} y2={60} m={M}/><text x="184" y="52" textAnchor="middle" className="fl">2 commit v8</text>
+<Line x1={392} y1={60} x2={496} y2={60} m={M}/><text x="444" y="52" textAnchor="middle" className="fl">3 "changes"</text>
+<text x="320" y="92" textAnchor="middle" className="fl">change log: #8840 menu.pdf v8</text>
+<Line x1={90} y1={73} x2={246} y2={222} m={M}/><text x="170" y="160" textAnchor="end" className="fl">1 PUT chunk 41ab</text><text x="180" y="174" textAnchor="end" className="fl" style={{fill:GREY}}>signed URL, no API server</text>
+<Line x1={570} y1={73} x2={570} y2={216} m={M} dash/><text x="578" y="150" className="fl">push</text>
+<Line x1={520} y1={217} x2={380} y2={74} m={M} c={GREY}/><text x="458" y="140" className="fl">4 GET /changes</text><text x="470" y="154" className="fl" style={{fill:GREY}}>cursor=8839</text>
+<Line x1={392} y1={230} x2={496} y2={230} m={M}/><text x="444" y="222" textAnchor="middle" className="fl">5 GET 41ab</text>
+{!still&&<g aria-hidden="true">
+<Dot x1={92} x2={244} y={75} y2={220} t0={.02} t1={.14} dur={D}/><Glow x={250} y={218} w={140} h={24} t0={.14} t1={.22} dur={D}/>
+<Dot x1={124} x2={244} y={60} t0={.22} t1={.32} dur={D}/><Glow x={250} y={48} w={140} h={24} t0={.32} t1={.4} dur={D}/>
+<Show t0={.32} t1={.6} dur={D}><text x="320" y="108" textAnchor="middle" className="fl" style={{fill:BLUE}}>#8840 added</text></Show>
+<Dot x1={394} x2={494} y={60} t0={.4} t1={.48} dur={D}/><Dot x1={570} x2={570} y={76} y2={214} t0={.48} t1={.56} dur={D}/>
+<Dot x1={518} x2={382} y={215} y2={76} t0={.58} t1={.7} dur={D}/><Dot x1={394} x2={494} y={230} t0={.72} t1={.82} dur={D}/><Glow x={500} y={218} w={140} h={24} t0={.82} t1={.98} dur={D}/>
+<Show t0={.84} t1={.98} dur={D}><text x="570" y="262" textAnchor="middle" className="fl" style={{fill:BLUE}}>menu.pdf v8</text></Show></g>}</svg>}
+
+// File sync, FIG: chunks named by their hash. menu.pdf (9 MB) is three chunks of 4, 4 and 1 MB; a price change on page 2
+// changes only the middle chunk's hash, so only that chunk is uploaded.
+function ChunksFig({still,uid=""}){const M=`fc${uid}`,D="10s",X=[130,240,350];
+const v7=["9f2c…","41ab…","c07e…"],v8=["9f2c…","d51e…","c07e…"],pg=["page 1","page 2: price","page 3"];
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fct${uid}`}><title id={`fct${uid}`}>menu.pdf, version 7, is 9 MB: three chunks of 4, 4 and 1 MB, named by their hashes: 9f2c, 41ab and c07e. A price changes on page 2. In version 8 the first and last chunks are unchanged; only the middle chunk is new, with hash d51e, so only that one chunk is uploaded to object storage: 4 MB instead of 9.</title><Mark m={M}/>
+<text x="0" y="64" className="fb">menu.pdf v7</text><text x="0" y="80" className="fl">9 MB</text><text x="0" y="174" className="fb">menu.pdf v8</text>
+{X.map((x,i)=><g key={i}><SBox x={x} y={60} w={100} t={v7[i]}/><text x={x+50} y={90} textAnchor="middle" className="fl">{pg[i]}</text>
+<Line x1={x+50} y1={98} x2={x+50} y2={156} c={i===1?BLUE:GREY} dash={i!==1}/><text x={x+56} y={132} className="fl" style={{fill:i===1?BLUE:GREY}}>{i===1?"edited":"same"}</text>
+<SBox x={x} y={170} w={100} t={v8[i]} blue={i===1}/></g>)}
+<Line x1={452} y1={170} x2={506} y2={170} m={M}/><SBox x={510} y={170} w={130} t="Object storage"/>
+<text x="0" y="222" className="fl">1 chunk of 3 sent: 4 MB instead of 9. The new version is the old list with one hash swapped.</text>
+{!still&&<g aria-hidden="true"><Glow x={240} y={158} w={100} h={24} t0={.15} t1={.5} dur={D}/><Dot x1={454} x2={504} y={170} t0={.45} t1={.6} dur={D}/><Glow x={510} y={158} w={130} h={24} t0={.6} t1={.8} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
 "interview-clock":{C:ClockFig,ar:640/240,title:()=>"WHERE THE 45 MINUTES GO"},
 "shortener-flow":{C:ShortenerFig,ar:640/300,title:()=>"CREATE A LINK, OPEN A LINK"},
 "short-codes":{C:ShortCodesFig,ar:640/260,title:()=>"SHORT CODES THAT NEVER CLASH"},
+"sync-flow":{C:SyncFig,ar:640/280,title:()=>"ONE EDIT, EVERY DEVICE"},
+"file-chunks":{C:ChunksFig,ar:640/240,title:()=>"SEND ONLY THE CHUNK THAT CHANGED"},
 };
