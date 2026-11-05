@@ -1,0 +1,227 @@
+{
+  "section": "components",
+  "slug": "queues-and-streams",
+  "group": "messaging",
+  "no": "COMPONENT // 09",
+  "tag": "MESSAGING",
+  "date": "5 Nov 2026",
+  "title": "Queues and event streams: work that can wait, and events many services need",
+  "dek": "Why the order screen shouldn't wait for the SMS, how a queue differs from a stream like Kafka, what at-least-once delivery means for your code, and what to do when readers fall behind.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Put a queue or a stream between two services when the caller doesn't need the answer right away. The order is saved and confirmed now; the SMS, the receipt and the analytics happen a moment later.",
+        "A queue is a to-do list: each message goes to one worker, which deletes it when done. Use it for jobs: send this SMS, resize this photo, pay this restaurant.",
+        "A stream (Kafka, Kinesis) is a log kept for days: every event in order, and any number of services read all of it, each at its own place. Use it when many services care about the same events, or you want to replay them.",
+        "Both deliver at least once, so the same message can arrive twice. Make every handler safe to run twice, usually by keying it on the order ID.",
+        "Watch how far behind the readers are. A backlog that keeps growing means add consumers, and in a stream you can't have more consumers in a group than partitions."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why put something in between"
+    },
+    {
+      "t": "p",
+      "x": "When a customer places an order, Zotato has to save it, charge the payment, tell the restaurant, text the customer, update the rider app, feed analytics and check for fraud. If the Order API called all of these one by one before answering, the customer would wait for the slowest, and an SMS provider being down would fail the order."
+    },
+    {
+      "t": "p",
+      "x": "So the API does only what the customer must wait for: save the order and take the payment. It then publishes one event, \"order 123 placed\", and answers. Everything else reads that event and does its part in its own time. A burst of orders becomes a longer line, not an outage, and a slow SMS provider slows only the SMS."
+    },
+    {
+      "t": "analogy",
+      "x": "A queue is the kitchen's order rail: each ticket is taken by one cook and gone once the dish is out. A stream is the scorer's book at a cricket match: every ball written down in order, kept after the match, and the commentators, the stats team and the umpires' review can each read it from wherever they are."
+    },
+    {
+      "t": "h2",
+      "x": "Queue or stream"
+    },
+    {
+      "t": "fig",
+      "id": "queue-vs-stream",
+      "cap": "The same order events, two ways. On a queue each job goes to one of the workers and is deleted when done, so adding workers shares the load. On a stream the events stay in order for days; notifications, analytics and the restaurant tablet service each read every event at their own offset, so analytics can be behind, or replay last week, without touching the others."
+    },
+    {
+      "t": "type",
+      "name": "Queue",
+      "kind": "SQS, RABBITMQ",
+      "what": "Messages wait until a worker takes one. The worker deletes it when the job is done; if it doesn't, the message comes back after a timeout.",
+      "use": "Jobs: one message, one piece of work, done once. Send an SMS, resize a photo, generate an invoice, pay out a restaurant.",
+      "avoid": "Many services needing the same message, or reading old messages again: once a job is done, it's gone.",
+      "ex": "`send-sms` queue: the Order API adds a job, ten SMS workers share them.",
+      "like": "The order rail in a kitchen."
+    },
+    {
+      "t": "type",
+      "name": "Stream",
+      "kind": "KAFKA, KINESIS, PULSAR",
+      "what": "An append-only log split into partitions, kept for a set time (often 7 days). Readers track their own position and move forward.",
+      "use": "Events several services react to, high volumes, keeping order per key, and replaying history to rebuild a view or fix a bug.",
+      "avoid": "Simple one-off jobs, or teams that can't run it: a self-managed Kafka cluster is real work. Managed versions (MSK, Confluent) help.",
+      "ex": "`orders` topic: every placed, accepted, picked-up and delivered event, read by notifications, analytics, fraud and the rider app.",
+      "like": "The scorer's book at a match."
+    },
+    {
+      "t": "type",
+      "name": "Pub/sub",
+      "kind": "SNS, GOOGLE PUB/SUB",
+      "what": "A topic that copies each message to every subscriber, often into one queue per subscriber.",
+      "use": "Fan-out to a few services without running a stream: each gets its own queue and works at its own pace.",
+      "avoid": "Replay and long history: messages aren't kept once delivered.",
+      "ex": "`order-placed` topic copied into the SMS queue, the email queue and the loyalty-points queue.",
+      "like": "A WhatsApp group: everyone gets the message, nobody can scroll back past joining."
+    },
+    {
+      "t": "more",
+      "label": "Queue, stream and pub/sub compared",
+      "body": [
+        {
+          "t": "table",
+          "label": "Three ways to pass messages",
+          "head": [
+            "Feature",
+            "Queue",
+            "Stream",
+            "Pub/sub"
+          ],
+          "rows": [
+            [
+              "Who gets a message",
+              "One worker",
+              "Every reader group",
+              "Every subscriber"
+            ],
+            [
+              "After it's handled",
+              "Deleted",
+              "Kept until retention ends",
+              "Deleted per subscriber"
+            ],
+            [
+              "Order",
+              "None, or FIFO per group",
+              "Per partition",
+              "Usually none"
+            ],
+            [
+              "Replay",
+              "No",
+              "Yes, from any offset",
+              "No"
+            ],
+            [
+              "Grows by",
+              "More workers",
+              "More partitions and readers",
+              "More subscribers"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Delivered at least once"
+    },
+    {
+      "t": "p",
+      "x": "A worker can finish the job and crash before it says \"done\". The message comes back and the job runs again. Every queue and stream behaves this way, so every handler must be safe to run twice."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Key the work on something unique. Before sending the \"order confirmed\" SMS, record `sms_sent(order_id)`; if the row already exists, skip.",
+        "Set the visibility timeout (SQS) longer than the job takes, or a slow job is handed to a second worker while the first is still working.",
+        "Retry with growing gaps (1 s, 10 s, a minute) instead of at once, so a struggling provider gets room.",
+        "After a few failed tries, move the message to a dead-letter queue and alert. One bad message must not block the rest or retry forever.",
+        "\"Exactly once\" usually means at least once plus duplicates removed. Kafka's transactions give it only for reading from and writing to Kafka itself."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Order and partitions"
+    },
+    {
+      "t": "p",
+      "x": "A Kafka topic is split into partitions, and order holds only inside one partition. Events with the same key always go to the same partition, so key order events by `order_id`: \"placed\", \"accepted\" and \"delivered\" for one order stay in order, while different orders spread across partitions."
+    },
+    {
+      "t": "list",
+      "items": [
+        "In a consumer group each partition is read by one consumer at a time. Six partitions allow at most six consumers in the group; a seventh sits idle. Choose enough partitions for the busiest day you expect.",
+        "The hot-key problem from sharding returns here: a key that carries a big share of events overloads its partition.",
+        "SQS standard queues don't keep order. FIFO queues keep it per message group, at lower throughput."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When readers fall behind"
+    },
+    {
+      "t": "fig",
+      "id": "consumer-lag",
+      "cap": "Match night. From 8 pm orders produce 2,000 events a second and three consumers handle 1,200, so 800 a second pile up: 4.8 lakh by 8:10, and a new order's notification waits about seven minutes. Growing the group to six consumers, one per partition, drains it by 8:30 while orders keep coming."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Watch the lag: in a stream, how many events behind each group is; in a queue, the age of the oldest message. Alert on minutes of delay, not on a count.",
+        "Scale consumers on that lag. In a stream that stops at the partition count, so the partitions you created earlier set the ceiling.",
+        "Keep retention longer than your worst lag. If readers are a day behind and the stream keeps only a day, events are lost before anyone reads them.",
+        "Slow work in a handler slows the whole partition. Keep handlers short and hand heavy work to a queue of its own."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Saved but never published: the outbox",
+      "body": [
+        {
+          "t": "p",
+          "x": "The Order API saves the order in the database and then publishes the event. If it crashes between the two, the order exists but nothing downstream hears of it; publish first and the database write may fail instead. Two systems can't be written in one step."
+        },
+        {
+          "t": "p",
+          "x": "The fix is an outbox: in the same database transaction as the order, insert a row into an `outbox` table. A small relay reads new outbox rows and publishes them, marking each as sent. Either both the order and its outbox row exist or neither does, and the relay retries until the event is out. Change-data-capture tools such as Debezium do the relay's job by reading the database's change log."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Things happen later: the customer sees \"order placed\" before the SMS arrives and before the restaurant's tablet beeps. Design screens that are fine with a few seconds' delay.",
+        "Harder debugging: one order now crosses several services. Put the order ID and a trace ID in every message and every log line.",
+        "Duplicates and retries are normal, so every handler needs to be idempotent.",
+        "Money and running costs: SQS is about $0.40 per million requests; a Kafka cluster means brokers, disks and someone who knows them, or a managed service's bill."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Split the request into what the user must wait for and what can happen after. Draw the queue or stream at that line.",
+        "Say which one and why: a queue for jobs, a stream when several services need the events or replay matters.",
+        "Say \"at least once\" before you're asked, and how your handlers ignore duplicates.",
+        "Name the partition key and what it keeps in order.",
+        "Mention lag monitoring, a dead-letter queue, and the outbox for saving and publishing together."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "In the Lab, put a Queue between the Order API and a worker server, choose the flash-sale traffic pattern, and run it. Watch the backlog fill during the sale and drain after it, then add workers and run it again.",
+      "to": "lab",
+      "go": "Open the Lab"
+    }
+  ]
+}
