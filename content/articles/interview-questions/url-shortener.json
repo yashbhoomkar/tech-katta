@@ -223,9 +223,9 @@
     },
     {
       "t": "lab",
-      "x": "\"The menu everyone reads\" is the same shape: a flood of reads for a few popular items. Put a cache in front and see how much it takes off the database.",
-      "to": "lab/read-heavy",
-      "go": "Try the read-heavy challenge"
+      "x": "The same flood in the Lab: a promo SMS at 8 pm sends 30,000 taps a second at short links for 15 minutes. Keep redirects up without paying for a database that size.",
+      "to": "lab/sms-link",
+      "go": "Try the SMS link challenge"
     }
   ]
 }

@@ -774,6 +774,99 @@
       "requires": ["server", "database"]
     },
     {
+      "id": "sms-link",
+      "level": "intermediate",
+      "title": "The link in a crore SMS",
+      "brief": "At 8 pm Zotato texts a promo link to crores of phones. For 15 minutes, 30,000 people a second tap zot.to links, five times the evening's usual. Every tap is one lookup of a short code.",
+      "hint": "No database here answers 30,000 lookups a second, and new servers take 4 minutes to boot. The same few codes are read over and over: 95% of lookups can come from a cache. A CDN would also work, but it bills every request.",
+      "hours": 3,
+      "startHour": 19,
+      "traffic": {
+        "rps": 30000,
+        "pattern": "sale"
+      },
+      "fixed": {
+        "queriesPerRequest": 1,
+        "hitPct": 95,
+        "writePct": 0
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 30000,
+              "pattern": "sale"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "links",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "links"
+          },
+          {
+            "from": "links",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of taps reach the right page"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 4000,
+          "label": "Costs at most $4,000 a month"
+        }
+      ],
+      "requires": [
+        "server",
+        "database"
+      ]
+    },
+    {
       "id": "cache-restart",
       "level": "advanced",
       "title": "The cache restarts at dinner",
