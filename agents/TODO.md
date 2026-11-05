@@ -70,8 +70,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Skip figure ids this build can't draw, instead of showing the API figure in their place | done | shipped run 6; Builder found it during the 7-minute Vercel lag after #177 |
-| 2 | build | Dashboard home overflowed at 320–390 px once in a scripted run (prod too); not reproduced alone | ready | Builder: existing bug, so ahead of new work; find the sequence first |
+| 1 | build | Dashboard overflow at 320–390 px | done | shipped run 7: the 0.2 s `margin-left` transition on `.d-main` ran when the window crossed the 900 px breakpoint (~100 ms of overflow); off below 900 px |
 | 3 | content | Lab challenge for the URL shortener (`lab.json`): a redirect flood a cache must absorb | ready | business plan: every question gets a "build it, break it" challenge; content lane if the engine needs no change |
 | 4 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
 | 5 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
@@ -122,10 +121,15 @@ for the owner to confirm):
 ## Context repo pending
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
-  list), #177 (Q03 restaurants near me), and this run's figure-fallback PR.
+  list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), and this run's
+  overflow PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 7 — Production healthy; #178 checked live (every figure on four articles). The
+  overflow seen in scripted runs was real but brief: jumping the viewport from 1440 to 320 px left
+  `.d-main` animating its 260 px margin to 0 for 0.2 s (107 px overflow at once, 0 by 100 ms; never
+  under reduced motion). The transition is now off below 900 px; desktop collapse still animates.
 - 2026-11-05 run 6 — Production healthy; Q03 live and checked on phone. After #177 the API had the new
   content ~7 minutes before Vercel had the figures, and `FIGS[id]||FIGS.patterns` drew the API figure
   in their place (reproduced on production by injecting an unknown id). Unknown figure ids are now
@@ -159,7 +163,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Unknown figure ids skipped instead of drawn as the API figure.
+- 2026-11-05 — Dashboard: no brief overflow when the window crosses the 900 px breakpoint.
+- 2026-11-05 — PR #178: unknown figure ids skipped instead of drawn as the API figure.
 - 2026-11-05 — PR #177: Q03 Restaurants near me, with figures `nearby-flow` and `geo-cells`.
 - 2026-11-05 — PR #176: business plan for the paid launch in this file.
 - 2026-11-05 — PR #175: skip-to-content link (landing and dashboard) and visible focus outlines.
