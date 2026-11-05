@@ -11,6 +11,10 @@
     {
       "source": "/dashboard",
       "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/analytics",
+      "destination": "/analytics/index.html"
     }
   ],
   "headers": [
@@ -34,6 +38,32 @@
           "value": "camera=(), microphone=(), geolocation=()"
         }
       ]
+    },
+    {
+      "source": "/analytics/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "analytics.katta.cc"
+        }
+      ],
+      "destination": "/analytics/",
+      "permanent": false
     }
   ]
 }

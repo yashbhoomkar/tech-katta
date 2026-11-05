@@ -349,3 +349,61 @@ test('sign-in is limited to 30 tries per IP per 10 minutes', async () => {
   const codes = []; for (let i = 0; i < 31; i += 1) codes.push((await one()).status);
   assert.deepEqual(codes.slice(0, 30), Array(30).fill(401)); assert.equal(codes[30], 429);
 });
+
+test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV for admins; readable from analytics.katta.cc', async () => {
+  const db = client.db('tk_test'), users = db.collection('users'), events = db.collection('events');
+  const ANALYTICS = 'https://analytics.katta.cc';
+  const get = (path, cookie, origin = ANALYTICS) => fetch(base + path, { headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}) } });
+  assert.equal((await get('/v1/admin/summary')).status, 401);
+  const plain = await signIn({ sub: '9501' });
+  assert.equal((await get('/v1/admin/summary', plain.cookie)).status, 403);
+  assert.equal((await get('/v1/admin/audience.csv', plain.cookie)).status, 403);
+  const owner = await signIn({ sub: '9502', email: 'owner@example.com', given_name: 'Owner', family_name: 'K' });
+  await users.updateOne({ googleSub: '9502' }, { $set: { role: 'admin', country: 'IN' } });
+  assert.equal((await (await call('/v1/me', { cookie: owner.cookie })).json()).user.admin, true);
+  // a known little story, two visitors, inside the range; one old event outside it
+  await events.deleteMany({});
+  const at = (minsAgo) => new Date(Date.now() - minsAgo * 60_000);
+  const v1 = 'a'.repeat(20), v2 = 'b'.repeat(20);
+  await events.insertMany([
+    { name: 'page_view', at: at(30), visitor: v1, device: 'phone', page: '/', props: { section: 'landing', slug: '', ref: 'instagram.com' } },
+    { name: 'lab_locked', at: at(29), visitor: v1, device: 'phone', page: '/', props: { lite: true } },
+    { name: 'sign_in', at: at(28), visitor: v1, device: 'phone', page: '/', props: { ads: false } },
+    { name: 'score', at: at(27), visitor: v1, device: 'phone', page: '/', props: { challenge: 'ind-vs-pak', stars: 2, max: 3, passed: '110', lite: true } },
+    { name: 'score', at: at(26), visitor: v1, device: 'phone', page: '/', props: { challenge: 'ind-vs-pak', stars: 3, max: 3, passed: '111', lite: true } },
+    { name: 'page_view', at: at(20), visitor: v2, device: 'desktop', page: '/', props: { section: 'landing', slug: '', ref: '' } },
+    { name: 'lab_locked', at: at(19), visitor: v2, device: 'desktop', page: '/', props: { lite: false } },
+    { name: 'article_open', at: at(10), visitor: v2, device: 'desktop', page: '/dashboard/#concepts/api-types', props: { section: 'concepts', slug: 'api-types' } },
+    { name: 'article_close', at: at(5), visitor: v2, device: 'desktop', page: '/dashboard/#concepts/api-types', props: { section: 'concepts', slug: 'api-types', pct: 80, seconds: 120 } },
+    { name: 'component_add', at: at(4), visitor: v2, device: 'desktop', page: '/dashboard/#lab', props: { type: 'cache' } },
+    { name: 'page_view', at: at(60 * 24 * 10), visitor: 'c'.repeat(20), device: 'phone', page: '/', props: { section: 'landing', slug: '', ref: '' } },
+  ]);
+  const r = await get('/v1/admin/summary?days=7', owner.cookie);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('access-control-allow-origin'), ANALYTICS);
+  assert.equal(r.headers.get('access-control-allow-credentials'), 'true');
+  assert.equal(r.headers.get('cache-control'), 'no-store');
+  const s = await r.json();
+  assert.equal(s.days, 7);
+  assert.deepEqual(s.totals, { events: 10, visitors: 2, users: 0 });
+  assert.deepEqual(s.devices.map((d) => `${d.device}:${d.visitors}`).sort(), ['desktop:1', 'phone:1']);
+  assert.deepEqual(s.funnel.map((x) => x.visitors), [2, 2, 1, 1]);
+  assert.deepEqual(s.referrers, [{ ref: 'instagram.com', views: 1, visitors: 1 }]);
+  assert.deepEqual(s.articles, [{ section: 'concepts', slug: 'api-types', opens: 1, finishes: 0, pct: 80, seconds: 120 }]);
+  assert.deepEqual(s.lab.components, [{ type: 'cache', n: 1 }]);
+  const sc = s.lab.scores[0];
+  assert.deepEqual([sc.challenge, sc.attempts, sc.visitors, sc.stars, sc.best, sc.max, sc.lite, sc.checkPass], ['ind-vs-pak', 2, 1, 2.5, 3, 3, 2, [100, 100, 50]]);
+  assert.equal(s.daily.reduce((a, d) => a + d.views, 0), 2);
+  assert.ok(s.accounts.total >= 2); assert.ok(s.accounts.recent.some((u) => u.email === 'owner@example.com' && u.country === 'IN'));
+  assert.ok(!JSON.stringify(s).includes('googleSub') && !JSON.stringify(s).includes('tokenHash'), 'no ids or hashes');
+  // range is clamped, other sites can't read it
+  assert.equal((await (await get('/v1/admin/summary?days=99999', owner.cookie)).json()).days, 395);
+  assert.equal((await get('/v1/admin/summary', owner.cookie, 'https://evil.example')).headers.get('access-control-allow-origin'), null);
+  // the Meta file: consented accounts only, hashed
+  await call('/v1/me/consent', { method: 'POST', cookie: owner.cookie, body: { ads: true } });
+  const csv = await get('/v1/admin/audience.csv', owner.cookie);
+  assert.equal(csv.status, 200); assert.match(csv.headers.get('content-type'), /text\/csv/); assert.match(csv.headers.get('content-disposition'), /attachment/);
+  const lines = (await csv.text()).trim().split('\n');
+  assert.equal(lines[0], 'email,fn,ln,country'); assert.ok(lines.length >= 2); assert.ok(!lines.join('').includes('@'));
+  assert.equal((await fetch(base + '/v1/admin/summary', { method: 'POST', headers: { Origin: ORIGIN, Cookie: owner.cookie } })).status, 405);
+});

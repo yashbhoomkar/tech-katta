@@ -1,5 +1,5 @@
 // Accounts in MongoDB (database `techkatta_app` by default; the commit ledger lives elsewhere).
-//   users    { _id, googleSub (unique), email, name, firstName, lastName, picture, country (first
+//   users    { _id, googleSub (unique), role? ("admin": may read analytics.katta.cc), email, name, firstName, lastName, picture, country (first
 //              sign-in), lastCountry, createdAt, lastLoginAt,
 //              terms: { at, version },  — when the Terms and conditions + Privacy policy were accepted
 //              adsConsent: { ads: bool, at, version },  — opt-in to Tech Katta ads on Facebook/Instagram
@@ -17,6 +17,7 @@
 import { MongoClient } from 'mongodb';
 import { createHmac, randomBytes } from 'node:crypto';
 import { RETENTION_DAYS } from './events.js';
+import { adminSummary } from './admin.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
 // The wording the user agreed to is site.json account.adsConsent; bump this when it changes.
@@ -63,7 +64,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
-  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads });
+  const view = (u) => ({ name: u.name || '', email: u.email || '', picture: u.picture || '', adsConsent: !!u.adsConsent?.ads, ...(u.role === 'admin' ? { admin: true } : {}) });
 
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
@@ -154,6 +155,8 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
       }
       throw new Error('lab_busy');
     },
+    // The analytics summary for analytics.katta.cc (admin.js); the route checks the caller is an admin.
+    async summary(days) { await init(); return adminSummary({ events, users }, { days, now: clock() }); },
     async ping() { await db.command({ ping: 1 }); },
     // "ok" or the kind of the last failure (errorKind); checked at most every 30 s, in the background,
     // so /health never waits on the database.
