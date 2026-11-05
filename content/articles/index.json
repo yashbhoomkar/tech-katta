@@ -6,6 +6,7 @@
     "components/api-gateways",
     "components/app-servers",
     "components/caches",
-    "components/databases"
+    "components/databases",
+    "components/sharding"
   ]
 }

@@ -1,0 +1,250 @@
+{
+  "section": "components",
+  "slug": "sharding",
+  "group": "storage",
+  "no": "COMPONENT // 07",
+  "tag": "STORAGE",
+  "date": "5 Nov 2026",
+  "title": "Sharding and partitioning: splitting data across machines",
+  "dek": "When one database can't keep up, split the data by a key. How to choose that key, why one popular restaurant can sink a shard, and what you give up once the data lives in many places.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Sharding splits one big table across several databases. Each shard holds a slice of the rows and takes only that slice's reads and writes.",
+        "Shard last. A bigger machine, read replicas, a cache and archiving old rows go a long way, and none of them change your code.",
+        "The shard key decides everything. A query that includes it goes to one shard; a query without it has to ask every shard.",
+        "Pick a key with many values, even traffic, and the one your main queries already filter by. For Zotato's orders that is the customer, not the restaurant or the date.",
+        "Plan for adding shards from day one: split into many small buckets and move whole buckets, so a new machine takes over a few buckets instead of half the data."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Partitioning and sharding"
+    },
+    {
+      "t": "p",
+      "x": "Partitioning means cutting a table into pieces by some rule: orders by month, users by country. The pieces can all stay on one machine. PostgreSQL does this with partitioned tables, and it already helps: a query for this month reads one piece, and dropping a year of old orders is deleting one piece instead of crores of rows."
+    },
+    {
+      "t": "p",
+      "x": "Sharding is partitioning where the pieces live on different machines. Now each piece has its own CPU, memory and disk, so the total grows with the number of machines. That is the point of it, and also where the trouble starts: the database can no longer see all your data at once."
+    },
+    {
+      "t": "analogy",
+      "x": "A railway reservation office with one counter per range of train numbers. Each queue is short and each clerk only needs the charts for their trains. Ask \"which trains still have seats to Pune tonight?\" and you have to go to every counter."
+    },
+    {
+      "t": "h2",
+      "x": "When to shard"
+    },
+    {
+      "t": "p",
+      "x": "Shard when one primary can't take the writes, or the data no longer fits one machine, and the cheaper fixes are used up. Reads alone are rarely the reason; replicas and caches handle reads."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Writes: the largest instance is near its limit. For a relational database that is often somewhere in the tens of thousands of writes a second, depending on the rows.",
+        "Size: the table is several terabytes, or the part that's read often no longer fits in memory and every query waits on the disk.",
+        "Before that: a bigger instance, read replicas, a cache in front, batching writes, moving write-heavy data such as rider locations to a store built for it, and archiving orders older than a year."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Choosing the shard key"
+    },
+    {
+      "t": "fig",
+      "id": "shard-key",
+      "cap": "Zotato's orders split over four shards by `hash(customer_id)`. \"My orders\" carries the customer's ID, so the router asks one shard. \"Restaurant 12's orders today\" has no customer in it, so the router asks all four and merges what comes back: four times the work, and as slow as the slowest shard."
+    },
+    {
+      "t": "p",
+      "x": "Write down the queries that matter most and see which field they all filter by. Zotato's busiest order queries are \"my orders\", \"this order's status\" and \"place an order\", all for one customer. So orders are sharded by `customer_id`, and the restaurant dashboard, which asks by restaurant, reads from a separate copy built for it."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Many values: crores of customers spread well; 28 states don't.",
+        "Even traffic: no single value may carry a big share of the load. A key's busiest value should be a tiny fraction of the total.",
+        "In the main queries: the key should be in the `WHERE` of the queries you run most, or every one of them asks every shard.",
+        "Never changes: moving a row to another shard because its key changed is a delete on one machine and an insert on another."
+      ]
+    },
+    {
+      "t": "type",
+      "name": "Hash",
+      "kind": "THE DEFAULT",
+      "what": "Hash the key and use the result to pick the shard. Neighbouring keys land far apart.",
+      "use": "Spreading load evenly when you look rows up by key.",
+      "avoid": "Range queries on the key, such as \"customers 1,000 to 2,000\": they hit every shard.",
+      "ex": "Orders by `hash(customer_id)`.",
+      "like": "Dealing cards round the table: every player gets about the same number, whatever the cards."
+    },
+    {
+      "t": "type",
+      "name": "Range",
+      "kind": "ORDERED",
+      "what": "Each shard holds a continuous range of the key: A to F, G to M, or January, February.",
+      "use": "Scans over a range of the key, such as time-ordered data read by date.",
+      "avoid": "Keys that grow, like time or an auto-increment ID: every new write goes to the last shard, which becomes the hot one.",
+      "ex": "Monthly settlement reports by date, where last month's shard is read and older ones rarely are.",
+      "like": "Volumes of an encyclopedia: easy to find a range of words, but one volume can end up much thicker."
+    },
+    {
+      "t": "type",
+      "name": "Directory",
+      "kind": "LOOKUP TABLE",
+      "what": "A small table says which shard holds each key or group of keys. The router looks it up first.",
+      "use": "Moving one big customer to its own shard, or placing data by rules a hash can't express.",
+      "avoid": "Cases where a hash would do: the directory is one more thing to keep fast, cached and correct.",
+      "ex": "A restaurant chain with 400 outlets placed on its own shard.",
+      "like": "A building's notice board: it tells you which floor each office is on, and someone has to keep it up to date."
+    },
+    {
+      "t": "type",
+      "name": "Geographic",
+      "kind": "BY REGION",
+      "what": "Rows live in the region of the user they belong to.",
+      "use": "Keeping data close to users, or inside a country when the law asks for it.",
+      "avoid": "Products where users and data move between regions often.",
+      "ex": "A Zotato that expands abroad keeps Indian customers' data in Mumbai and UAE customers' in Dubai.",
+      "like": "Regional offices: each keeps the files for its own area."
+    },
+    {
+      "t": "h2",
+      "x": "Hot shards"
+    },
+    {
+      "t": "fig",
+      "id": "hot-shard",
+      "cap": "If orders were sharded by `restaurant_id`, IND vs PAK night shows why it's a bad key. A biryani chain running a match offer takes 30% of all orders, and every one of them lands on shard 3, which goes past its capacity while the other three sit at half load. Splitting that one key over eight sub-keys spreads it out again."
+    },
+    {
+      "t": "p",
+      "x": "A shard is only as fast as its busiest key. Even with a good key, one value can still get hot: a celebrity's profile, a flash-sale product, a chain on match night. Look at the traffic per key, not just per shard."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Choose a key with no giants. Customers are fine; restaurants, cities and dates are not.",
+        "Split a hot key: store it as `key + (n % 8)` so its rows spread over eight places, and read all eight when you need them together.",
+        "Put a cache in front of hot reads, so the shard sees one read where users made thousands.",
+        "Give a known giant its own shard with a directory entry."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Adding shards later"
+    },
+    {
+      "t": "p",
+      "x": "With `hash(key) % 4`, going to five shards changes the answer for about four keys in five, so almost all the data would move at once. Don't tie the data to the number of machines."
+    },
+    {
+      "t": "p",
+      "x": "Instead, split the keys into many fixed buckets, say 1,024, with `hash(key) % 1024`, and keep a small map of which bucket lives on which machine. Four machines hold 256 buckets each. Adding a fifth means moving about 205 buckets to it, one at a time, while the rest keep serving. Consistent hashing does the same job with a ring instead of a table. Managed stores such as DynamoDB, and Vitess or Citus on top of MySQL and PostgreSQL, move these pieces for you."
+    },
+    {
+      "t": "more",
+      "label": "Moving a bucket without downtime",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "Copy the bucket's rows to the new shard while the old one keeps serving.",
+            "Stream the changes made during the copy, until the new shard is a few seconds behind.",
+            "Pause writes for that bucket only, for a second or two, apply the last changes, and switch the map.",
+            "Keep the old copy for a while and delete it once nothing reads it."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What you give up"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Joins across shards: the database can't join a customer's order on shard 1 with a restaurant row on shard 3. Copy the few fields you need into the order (restaurant name, price at the time), or join in the app.",
+        "Transactions across shards: an order and the restaurant's stock on different shards can't change in one transaction. Keep things that change together on one shard, or use a saga: steps with undo steps, through a queue.",
+        "Queries without the key: they ask every shard. Serve them from a second copy keyed the other way, or from a search index or warehouse fed by the change stream.",
+        "Unique values across shards: auto-increment IDs clash. Use IDs made without asking a database, such as Snowflake-style IDs (time + machine + counter) or UUIDs. Putting the shard number in the order ID lets anyone find an order's shard from its ID alone.",
+        "Operations: backups, schema changes and upgrades now run on every shard, and something has to route each query. All of it is work you didn't have with one database."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Sharding compared with replicas and partitions",
+      "body": [
+        {
+          "t": "table",
+          "label": "Three ways to split a database",
+          "head": [
+            "What it does",
+            "Read replicas",
+            "Partitions (one machine)",
+            "Shards"
+          ],
+          "rows": [
+            [
+              "Copies or splits",
+              "Copies all of it",
+              "Splits it",
+              "Splits it"
+            ],
+            [
+              "Helps reads",
+              "Yes",
+              "Some, by skipping pieces",
+              "Yes"
+            ],
+            [
+              "Helps writes",
+              "No",
+              "A little",
+              "Yes, with each shard"
+            ],
+            [
+              "Helps size",
+              "No",
+              "Easier cleanup",
+              "Yes"
+            ],
+            [
+              "Code changes",
+              "Read routing",
+              "None",
+              "Every query needs the key"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't shard first. Say what one database plus replicas and a cache can take, with rough numbers, and shard only when the writes or the size need it.",
+        "Name the shard key and the queries it serves: \"orders by customer_id, because 'my orders' and 'place order' are per customer\".",
+        "Say what happens to the queries without the key, and how you'd serve them.",
+        "Bring up hot keys before the interviewer does, with an example and a fix.",
+        "Explain how you'd add shards: many buckets, a map, moving buckets one at a time."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The Lab doesn't have shards yet. Load the example design and find the point where one database gives up: raise the Clients until it crashes, then try a bigger database and a cache before thinking about more.",
+      "to": "lab",
+      "go": "Open the Lab"
+    }
+  ]
+}

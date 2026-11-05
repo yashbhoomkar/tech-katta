@@ -211,6 +211,39 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dbrt${uid}`}><tit
 <Dot x1={124} x2={472} y={160} y2={127} t0={.3} t1={.4} dur={D}/><Show t0={.4} t1={.6} dur={D}><text x="555" y="156" textAnchor="middle" className="fl" style={{fill:RED}}>not there yet</text></Show>
 <Dot x1={364} x2={472} y={96} y2={117} t0={.5} t1={.62} dur={D}/><Dot x1={364} x2={472} y={84} y2={57} t0={.5} t1={.62} dur={D}/><Show t0={.62} t1={.92} dur={D}><text x="555" y="156" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>now it is</text></Show></g>}</svg>}
 
+// Sharding, FIG: orders split over four shards by hash(customer_id). "My orders" for one customer
+// goes to one shard; "a restaurant's orders today" has no customer in it, so every shard is asked
+// and the router merges the answers.
+function ShardKeyFig({still,uid=""}){const M=`shk${uid}`,D="12s",YS=[60,120,180,240];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`shkt${uid}`}><title id={`shkt${uid}`}>Zotato's orders are split over four database shards by a hash of the customer ID. A request for one customer's orders includes the shard key, so the router sends it to one shard. A request for one restaurant's orders today has no customer ID, so the router asks all four shards and merges the results.</title><Mark m={M}/>
+<Box x={0} y={150} w={110} t="Order API"/><Line x1={112} y1={150} x2={166} y2={150} m={M}/>
+<Box x={170} y={150} w={150} t="Router" blue/><text x="245" y="186" textAnchor="middle" className="fl">hash(customer_id) % 4</text>
+{YS.map((y,i)=><g key={i}><Line x1={322} y1={150} x2={426} y2={y} m={M} c={GREY}/><SBox x={430} y={y} w={200} t={`Shard ${i+1} · hash % 4 = ${i}`}/></g>)}
+{still?<text x="10" y="30" className="fl">one key → one shard · no key → every shard</text>:<g aria-hidden="true">
+<Show t0={0} t1={.44} dur={D}><text x="10" y="30" className="fb">"My orders" · customer 77</text><text x="10" y="48" className="fl">the key is in the query</text></Show>
+<Dot x1={112} x2={166} y={150} t0={.03} t1={.09} dur={D}/><Glow x={170} y={133} w={150} h={34} t0={.09} t1={.15} dur={D}/>
+<Dot x1={322} x2={426} y={150} y2={180} t0={.15} t1={.24} dur={D}/><Glow x={430} y={168} w={200} h={24} t0={.24} t1={.36} dur={D}/>
+<Show t0={.26} t1={.44} dur={D}><text x="245" y="230" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>1 shard asked · fast</text></Show>
+<Show t0={.5} t1={.96} dur={D}><text x="10" y="30" className="fb">Restaurant 12 · today's orders</text><text x="10" y="48" className="fl">no customer_id in the query</text></Show>
+<Dot x1={112} x2={166} y={150} t0={.52} t1={.58} dur={D}/><Glow x={170} y={133} w={150} h={34} t0={.58} t1={.64} dur={D}/>
+{YS.map((y,i)=><g key={i}><Dot x1={322} x2={426} y={150} y2={y} t0={.64} t1={.73} dur={D}/><Glow x={430} y={y-12} w={200} h={24} t0={.73} t1={.85} dur={D}/></g>)}
+<Show t0={.75} t1={.96} dur={D}><text x="245" y="230" textAnchor="middle" className="fl" style={{fill:RED}}>all 4 asked, answers merged</text></Show></g>}</svg>}
+
+// Sharding, FIG: orders sharded by restaurant_id. At 7 pm the four shards are even. On IND vs PAK night
+// one biryani chain takes 30% of all orders, all of them on shard 3, which goes past its capacity
+// while the others idle. Splitting the chain's key over eight sub-keys spreads it out again.
+function HotShardFig({still,uid=""}){const D="12s",B=250,U=1.2;// 100% load = 120 px
+const phases=[[40,45,42,38],[52,48,150,50],[70,66,74,68]],X=[90,220,350,480];
+const kt="0;.3;.33;.63;.66;1",h=(i)=>phases.map(p=>p[i]*U);
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`hst${uid}`}><title id={`hst${uid}`}>Four shards of Zotato's orders, split by restaurant ID. At 7 pm each carries about 40% of its capacity. On IND vs PAK night one biryani chain takes 30% of all orders; they all land on shard 3, which runs at 150% of capacity and slows down while the other shards sit near half load. After the chain's orders are spread over eight sub-keys, all four shards run at about 70%.</title>
+<line x1="60" y1={B-100*U} x2="600" y2={B-100*U} stroke={RED} strokeDasharray="4 3"/><text x="600" y={B-100*U-6} textAnchor="end" className="fl" style={{fill:RED}}>capacity</text>
+<line x1="60" y1={B} x2="600" y2={B} stroke={GREY}/>
+{X.map((x,i)=>{const H=h(i),v=[H[0],H[0],H[1],H[1],H[2],H[2]];const shown=still?H[1]:H[0];const hot=i===2;
+return <g key={i}><rect x={x} y={B-shown} width="90" height={shown} rx="2" fill={hot&&still?RED:"#9db3ef"}>{!still&&<><animate attributeName="height" values={v.join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/><animate attributeName="y" values={v.map(q=>B-q).join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/>{hot&&<animate attributeName="fill" values="#9db3ef;#9db3ef;#c8372d;#c8372d;#9db3ef;#9db3ef" keyTimes={kt} dur={D} repeatCount="indefinite"/>}</>}</rect>
+<text x={x+45} y={B+18} textAnchor="middle" className="fb">Shard {i+1}</text>
+{(still?[1]:[0,1,2]).map(k=>{const t=<text key={k} x={x+45} y={B-phases[k][i]*U-6} textAnchor="middle" className="fl" style={k===1&&hot?{fill:RED}:undefined}>{phases[k][i]}%</text>;return still?t:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{t}</Show>})}</g>})}
+{(still?[1]:[0,1,2]).map(k=>{const t=[["7 pm · orders spread evenly",""],["8 pm, IND vs PAK · one biryani chain = 30% of orders","every one of them on shard 3, which slows down"],["Fix · split the chain over 8 sub-keys","restaurant_id + (order_id % 8)"]][k];const g=<g key={k}><text x="10" y="24" className="fb" style={k===1?{fill:RED}:undefined}>{t[0]}</text><text x="10" y="42" className="fl">{t[1]}</text></g>;return still?g:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{g}</Show>})}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
@@ -226,4 +259,6 @@ export const COMPONENT_FIGS={
 "cache-aside":{C:CacheAsideFig,ar:640/300,title:()=>"ONE MENU READ: A HIT AND A MISS"},
 "cache-warm":{C:CacheWarmFig,ar:640/290,title:n=>`WHEN ${n}'S CACHE RESTARTS AT DINNER`},
 "autoscale":{C:AutoFig,ar:640/280,title:n=>`AUTOSCALING THROUGH ${n}'S FLASH SALE`},
+"shard-key":{C:ShardKeyFig,ar:640/300,title:n=>`${n}'S ORDERS, SPLIT BY CUSTOMER`},
+"hot-shard":{C:HotShardFig,ar:640/300,title:()=>"ONE HOT KEY ON MATCH NIGHT"},
 };
