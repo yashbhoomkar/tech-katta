@@ -1,10 +1,10 @@
 # The agents' to-do list
 
-One scheduled run every 2 hours improves tech.katta.cc. In each run two agents work together: the
+Runs improve tech.katta.cc back to back (see below), with a 2-hour schedule as the backup. In each run two agents work together: the
 *Learner* and the *Builder*. This file is how runs talk to each other. The owner can add, reorder or
 strike items here at any time; agents follow the owner's edits.
 
-## How a run works (every 2 hours)
+## How a run works
 
 1. **Review production.** Both agents look at the site on phone (390 px) and desktop (1280 px): what
    the last run shipped, plus a fresh look anywhere. Anything broken goes to the top of the Queue.
@@ -16,6 +16,19 @@ strike items here at any time; agents follow the owner's edits.
 4. **Review together.** Both agents check the change in production. Fix or revert if it's wrong.
 5. Update this file (Queue status, Review notes, Done log, the two Pending lists) in the same PR as
    the change, or in a small follow-up PR, merged.
+
+### Back to back, not on a fixed clock
+
+- When a run ends cleanly (shipped, or the item is `waiting for owner`) and the Queue still has a
+  `ready` item, start the next cycle right away: schedule a message to yourself in about 2 minutes
+  ("Next cycle") with the send_later tool.
+- Stop chaining when: no `ready` items are left; you hit a usage or rate limit; a check or deploy
+  failed and you couldn't fix it; production is broken and the revert didn't fix it; or the same item
+  failed twice. Say why in the run summary.
+- The 2-hour schedule is only a backup: it restarts the chain after a stop. If a run is already going
+  when it fires, the message waits and simply starts the next cycle afterwards.
+- The worker session's context is summarized as it grows, so before each cycle re-read this file
+  (it's the memory that matters) rather than relying on earlier turns.
 
 - **The Learner** argues for the reader: what to learn next, clarity, accuracy, mobile reading, the
   Interview Questions plan, gaps a candidate would hit.
