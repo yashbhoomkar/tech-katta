@@ -92,6 +92,41 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fct${uid}`}><titl
 <text x="0" y="222" className="fl">1 chunk of 3 sent: 4 MB instead of 9. The new version is the old list with one hash swapped.</text>
 {!still&&<g aria-hidden="true"><Glow x={240} y={158} w={100} h={24} t0={.15} t1={.5} dur={D}/><Dot x1={454} x2={504} y={170} t0={.45} t1={.6} dur={D}/><Glow x={510} y={158} w={130} h={24} t0={.6} t1={.8} dur={D}/></g>}</svg>}
 
+// Restaurants near me, FIG: one home-screen request. The nearby service turns the location into a cell,
+// 1 reads which restaurants deliver into it from the in-memory geo index, 2 drops closed or busy ones
+// (status in Redis), 3 adds names and ratings from a cache, then ranks and returns 20.
+function NearbyFig({still,uid=""}){const M=`nb${uid}`,D="12s";
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`nbt${uid}`}><title id={`nbt${uid}`}>One home-screen request. The customer app sends its location to the nearby service. The service turns it into a map cell and first reads, from an in-memory geo index, the restaurants that deliver into that cell: about 180. Second, it checks their status in Redis and drops the closed and busy ones. Third, it adds names and ratings from a cache. Then it ranks them and returns the first 20 to the app.</title><Mark m={M}/>
+<SBox x={0} y={130} w={120} t="Customer app"/><SBox x={190} y={130} w={130} t="Nearby service" blue/>
+<SBox x={450} y={50} w={190} t="Geo index (in memory)"/><SBox x={450} y={130} w={190} t="Open or busy (Redis)"/><SBox x={450} y={210} w={190} t="Names, ratings (cache)"/>
+<Line x1={122} y1={124} x2={186} y2={124} m={M}/><text x="154" y="114" textAnchor="middle" className="fl">GET /nearby</text>
+<Line x1={188} y1={138} x2={124} y2={138} m={M} dash/><text x="154" y="156" textAnchor="middle" className="fl">top 20</text>
+<Line x1={322} y1={122} x2={446} y2={54} m={M}/><text x="392" y="68" textAnchor="end" className="fl">1 cell → 180</text>
+<Line x1={322} y1={130} x2={446} y2={130} m={M}/><text x="384" y="122" textAnchor="middle" className="fl">2 open now?</text>
+<Line x1={322} y1={138} x2={446} y2={206} m={M}/><text x="334" y="196" className="fl">3 details</text>
+<text x="255" y="170" textAnchor="middle" className="fl" style={{fill:GREY}}>rank, page</text>
+{!still&&<g aria-hidden="true">
+<Dot x1={124} x2={184} y={124} t0={.02} t1={.12} dur={D}/><Glow x={190} y={118} w={130} h={24} t0={.12} t1={.2} dur={D}/>
+<Dot x1={324} x2={444} y={121} y2={55} t0={.2} t1={.32} dur={D}/><Glow x={450} y={38} w={190} h={24} t0={.32} t1={.4} dur={D}/>
+<Dot x1={324} x2={444} y={130} t0={.4} t1={.5} dur={D}/><Glow x={450} y={118} w={190} h={24} t0={.5} t1={.58} dur={D}/>
+<Dot x1={324} x2={444} y={139} y2={205} t0={.58} t1={.7} dur={D}/><Glow x={450} y={198} w={190} h={24} t0={.7} t1={.78} dur={D}/>
+<Dot x1={186} x2={126} y={138} t0={.8} t1={.9} dur={D}/><Show t0={.88} t1={.99} dur={D}><text x="60" y="166" textAnchor="middle" className="fl" style={{fill:BLUE}}>20 restaurants</text></Show></g>}</svg>}
+
+// Restaurants near me, FIG: why you search 9 cells. The customer sits near the right edge of their cell;
+// Biryani Zone is 300 m away but in the next cell. One cell misses it; the 3 × 3 block finds it.
+function GeoCellsFig({still,uid=""}){const D="10s",X=40,Y=40,C=70,ux=X+C+62,uy=Y+C+34,bx=X+2*C+14,by=Y+C+30;
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><title id={`gct${uid}`}>A 3 by 3 block of map cells. The customer is near the right edge of the middle cell. Biryani Zone is 300 metres away, but just across the border in the cell to the right. Searching only the customer's cell misses it; searching the customer's cell and the 8 around it finds it. If cells are at least as wide as the search radius, the 3 by 3 block always covers the whole search circle.</title>
+{[0,1,2].map(r=>[0,1,2].map(c=><rect key={r+"-"+c} x={X+c*C} y={Y+r*C} width={C} height={C} fill={r===1&&c===1?"#eef2ff":"#fff"} stroke={GREY}/>))}
+<circle cx={ux} cy={uy} r="5" fill={INK}/><text x={ux-4} y={uy+18} textAnchor="end" className="fl">you</text>
+<rect x={bx-4} y={by-4} width="8" height="8" fill={RED}/><text x={X+2*C+35} y={by-24} textAnchor="middle" className="fl" style={{fill:RED}}>Biryani</text><text x={X+2*C+35} y={by-12} textAnchor="middle" className="fl" style={{fill:RED}}>Zone</text>
+<line x1={ux} y1={uy} x2={bx} y2={by} stroke={RED} strokeDasharray="3 2"/><text x={X+2*C+35} y={by+22} textAnchor="middle" className="fl">300 m</text>
+<text x={X} y={Y-12} className="fl">3 × 3 cells around you</text>
+<text x="300" y="70" className="fb">Your cell only</text><text x="300" y="88" className="fl">misses Biryani Zone, 300 m away,</text><text x="300" y="104" className="fl">just across the border</text>
+<text x="300" y="130" className="fb" style={{fill:BLUE}}>Your cell + 8 neighbours</text><text x="300" y="148" className="fl">9 lookups; nothing within reach is missed</text>
+<text x="300" y="190" className="fb">Cell size</text><text x="300" y="208" className="fl">at least as wide as the search radius,</text><text x="300" y="224" className="fl">e.g. 5-character geohash ≈ 5 km a side</text>
+{!still&&<g aria-hidden="true"><Show t0={0} t1={.45} dur={D}><rect x={X+C} y={Y+C} width={C} height={C} fill="none" stroke={BLUE} strokeWidth="3"/></Show><Show t0={.5} t1={.99} dur={D}><rect x={X} y={Y} width={3*C} height={3*C} fill="none" stroke={BLUE} strokeWidth="3"/></Show></g>}
+{still&&<rect x={X} y={Y} width={3*C} height={3*C} fill="none" stroke={BLUE} strokeWidth="3"/>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -100,4 +135,6 @@ export const QUESTION_FIGS={
 "short-codes":{C:ShortCodesFig,ar:640/260,title:()=>"SHORT CODES THAT NEVER CLASH"},
 "sync-flow":{C:SyncFig,ar:640/280,title:()=>"ONE EDIT, EVERY DEVICE"},
 "file-chunks":{C:ChunksFig,ar:640/240,title:()=>"SEND ONLY THE CHUNK THAT CHANGED"},
+"nearby-flow":{C:NearbyFig,ar:640/260,title:()=>"ONE HOME SCREEN, THREE LOOKUPS"},
+"geo-cells":{C:GeoCellsFig,ar:640/280,title:()=>"WHY YOU SEARCH NINE CELLS"},
 };
