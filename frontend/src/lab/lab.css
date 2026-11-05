@@ -6,7 +6,7 @@
 .lab{flex:1;min-height:0;display:grid;grid-template-columns:208px minmax(0,1fr) 272px;grid-template-rows:auto auto minmax(0,1fr);background:#fff}
 .lab-top{grid-column:1/-1;position:relative;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
 .lab-name{flex:0 1 280px;min-width:0;height:36px;padding:0 10px;border:1px solid transparent;border-radius:2px;font:600 16px Inter,sans-serif;letter-spacing:-.01em;color:#1c2733;background:none}
-.lab-name:hover{border-color:var(--line)}.lab-name:focus{outline:none;border-color:var(--blue)}
+.lab-name:hover{border-color:var(--line)}.lab-name:focus{outline:none;border-color:var(--blue)}.lab-name:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 .lab-btn{height:36px;padding:0 14px;border:1px solid var(--blue);border-radius:2px;background:var(--blue);color:#fff;font:600 11px var(--mono);letter-spacing:.03em;cursor:pointer;white-space:nowrap}
 .lab-btn:hover{background:#1f47c0}.lab-btn:disabled{background:#c7cfdb;border-color:#c7cfdb;cursor:not-allowed}
 .lab-btn.ghost{background:#fff;color:#1c2733;border-color:var(--line)}.lab-btn.ghost:hover{border-color:var(--blue);color:var(--blue)}
@@ -28,7 +28,7 @@
 .lab-ins h3{display:flex;align-items:center;gap:8px;margin:0;font-size:18px;letter-spacing:-.015em}
 .lab-f{display:grid;gap:6px;margin:12px 0}.lab-f>span{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .lab-f input[type=number],.lab-f select{height:36px;padding:0 8px;border:1px solid var(--line);border-radius:2px;font:500 13px var(--mono);color:#1c2733;background:#fff;min-width:0;width:100%}
-.lab-f input:focus,.lab-f select:focus{outline:none;border-color:var(--blue)}.lab-f input[type=range]{accent-color:var(--blue)}
+.lab-f input:focus,.lab-f select:focus{outline:none;border-color:var(--blue)}.lab-f input:focus-visible,.lab-f select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}.lab-f input[type=range]{accent-color:var(--blue)}
 .lab-check{display:flex;align-items:center;gap:8px;margin:12px 0;font-size:14px}.lab-check input{accent-color:var(--blue);width:16px;height:16px}
 .lab-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:14px 0;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 .lab-kv dt{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:2px}.lab-kv dd{margin:0;text-align:right;font-family:var(--mono)}

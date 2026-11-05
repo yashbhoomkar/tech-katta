@@ -70,12 +70,12 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q02 File storage and sync (easy) | done | shipped run 3 with figures `sync-flow`, `file-chunks` |
-| 2 | build | Skip-to-content link and `:focus-visible` outlines (`.card`, `.d-tour`, `.lab-name`, Lab inputs) | ready | leave `.acct-btn` (sign-in UI) for the owner |
-| 3 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
-| 4 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
-| 5 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
-| 6 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 1 | build | Skip-to-content link and `:focus-visible` outlines | done | shipped run 4; `.acct-btn` (sign-in UI) left for the owner |
+| 2 | content | Q03 Restaurants near me (easy) | ready | geo index, geohash/quadtree |
+| 3 | build | Library card text: `.meta` 9px and `.card-foot` 8px up to at least 11px | ready | `library.css`; recheck overflow 320–1440 px |
+| 4 | content | Q04 10-minute grocery delivery (easy) | ready | dark stores, inventory, slotting |
+| 5 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 6 | build | Dashboard home overflowed at 320–390 px once in a scripted run (prod too) after visiting `/` and the Lab; not reproduced alone | ready | low; find the sequence before fixing |
 | 7 | content | Q06–Q36, one per run, in plan order | ready | |
 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
@@ -104,10 +104,14 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 - Handover §12 rows: #171 (agents' to-do list in the site repo), #172 (Q01 fix: aliases vs counter codes,
   no cached 404s from replicas), #173 (Lab Import dialog keyboard
-  fixes), and this run's Q02 PR.
+  fixes), #174 (Q02 file storage and sync), and this run's skip link PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 4 — Production healthy (chaos 11/11, sweep clean, Q02 live and readable on phone).
+  Skip link and outlines: a global `a/button:focus-visible` outline already existed in dashboard.css;
+  component rules with `outline:none` were cancelling it. One scripted run showed `/dashboard/`
+  overflowing at 320–390 px on production as well; it didn't reproduce alone, so it's queued low.
 - 2026-11-05 run 3 — Production healthy (chaos and sweep clean; #173 checked live on phone and desktop).
   Q02 reviews caught real mistakes before shipping: a 9 MB PDF drawn as "three 4 MB chunks" (now 4, 4
   and 1 MB), a `<title>` id reused from the interview-clock figure, and labels crossing arrows in
@@ -127,7 +131,8 @@ article per PR; shape as in `content/articles/interview-questions/url-shortener.
 
 ## Done log (newest first)
 
-- 2026-11-05 — Q02 File storage and sync, with figures `sync-flow` and `file-chunks`.
+- 2026-11-05 — Skip-to-content link (landing and dashboard) and visible focus outlines.
+- 2026-11-05 — PR #174: Q02 File storage and sync, with figures `sync-flow` and `file-chunks`.
 - 2026-11-05 — PR #173: Lab Import dialog, focus trap, Escape from anywhere, focus back to Designs.
 - 2026-11-05 — PR #172: Q01 fix, aliases kept apart from counter codes; no cached 404s from lagging replicas.
 - 2026-11-05 — PR #170: Q00 How to answer, Q01 URL shortener.

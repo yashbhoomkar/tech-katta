@@ -6,7 +6,7 @@
 .tour-card p{margin:0;font-size:14px;line-height:1.55;color:#36424f}
 .tour-act{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .tour-act button{height:34px;padding:0 12px;border:1px solid #d9dee7;background:#fff;font:600 11px "IBM Plex Mono",monospace;color:#1c2733;cursor:pointer}
-.tour-act button:hover,.tour-act button:focus-visible{border-color:#2855d9;color:#2855d9;outline:none}
+.tour-act button:hover,.tour-act button:focus-visible{border-color:#2855d9;color:#2855d9}.tour-act button:focus-visible{outline:2px solid #2855d9;outline-offset:2px}
 .tour-act .tour-next{background:#2855d9;border-color:#2855d9;color:#fff}.tour-act .tour-next:hover,.tour-act .tour-next:focus-visible{color:#fff;background:#1f46b8}
 .tour-act .tour-skip{margin-right:auto;border-color:transparent;color:#586575}
 @media(prefers-reduced-motion:reduce){.tour-hole{transition:none}}
