@@ -65,7 +65,7 @@
         "no": "SECTION // 03",
         "kind": "PRACTICE",
         "title": "Interview Questions",
-        "desc": "Common system design questions, like a URL shortener, a rate limiter or an event ingestion pipeline, worked from requirements and rough numbers to a design you can defend.",
+        "desc": "Common system design questions, like a URL shortener, restaurants near me or 10-minute grocery delivery, worked from requirements and rough numbers to a design you can defend.",
         "foot": "REQUIREMENTS TO DESIGN",
         "link": "Explore Questions",
         "visual": "steps"

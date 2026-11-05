@@ -1,0 +1,158 @@
+{
+  "section": "concepts",
+  "slug": "timeouts-retries",
+  "group": "reliability",
+  "no": "CONCEPT // 05",
+  "tag": "RELIABILITY",
+  "date": "5 Nov 2026",
+  "title": "Timeouts, retries and circuit breakers: staying up when something you call is slow",
+  "dek": "Most outages don't start with something down. They start with something slow, and every caller waiting for it. Three small habits stop one slow service from taking the rest with it.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A call with no timeout can wait for ever, and each waiting request holds a worker. When a dependency slows down, your own service runs out of workers and stops, even for requests that never touch it.",
+        "Give every network call a timeout a little above how slow it normally gets, and shorter than whoever is waiting on you.",
+        "Retry only what is safe to repeat, a few times, waiting longer each time with some randomness, and retry in one layer only.",
+        "A circuit breaker notices a dependency failing, stops calling it for a while and fails at once, then lets a few test calls through.",
+        "Decide in advance what the user gets instead: an older answer, a queued job, or a clear message."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "How a slow call takes everything down"
+    },
+    {
+      "t": "p",
+      "x": "Zotato's order service calls the payment provider for every order. It normally answers in 200 ms. At 8:30 pm, mid dinner rush, the provider starts taking 30 seconds."
+    },
+    {
+      "t": "p",
+      "x": "The number of requests in flight is the arrival rate times how long each one takes (Little's law). At 2,000 orders a second and 0.2 s each, about 400 are in flight. At 30 s each, it's 60,000. The order service has 10 servers with 200 workers each: 2,000 in total. They fill in about a second, and then the menu pages and order tracking on the same servers fail too, though nothing is wrong with them."
+    },
+    {
+      "t": "fig",
+      "id": "slow-call",
+      "cap": "Requests in flight are the arrival rate times the time each takes. Normally 400 of Zotato's 2,000 workers are busy. When the payment call takes 30 s, 60,000 would be, so every worker is stuck. A 0.5 s timeout caps it at 1,000."
+    },
+    {
+      "t": "analogy",
+      "x": "A restaurant with ten tables where every diner waits for one slow cashier. The kitchen is fine, but nobody new can sit down."
+    },
+    {
+      "t": "h2",
+      "x": "Timeouts"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every call over a network gets one: HTTP, database, cache, queue. Many libraries default to waiting for ever.",
+        "Base it on how slow the call normally gets, not on hope. If 99% of payment calls finish in 300 ms, a timeout around 0.5 to 1 s is sensible.",
+        "Make the budgets nest: the app waits 10 s for the order API, which gives the payment call 3 s, so there's time left to answer the user with a proper message.",
+        "A timeout doesn't mean the call failed, only that you stopped waiting. The payment may have gone through. Check its status with the same idempotency key before trying again (see the APIs article)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Retries"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "RETRY AT ONCE",
+      "what": "When a call fails, send it again straight away, up to three times.",
+      "use": "Fixes a dropped connection or one unlucky server in a pool.",
+      "avoid": "If the dependency is overloaded, instant retries multiply its load just when it can least take it.",
+      "ex": "The provider slows down; every order service worker sends each payment call up to four times in a row, so the provider sees four times the traffic.",
+      "like": "Redialling a busy number the moment it rings busy, with everyone else doing the same."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "BACK OFF",
+      "what": "Wait before each retry, longer each time: 100 ms, then 200 ms, then 400 ms.",
+      "use": "Gives a struggling dependency room to recover.",
+      "avoid": "Clients that failed together retry together, so the retries arrive in waves at the same moments.",
+      "ex": "All the calls that failed at 20:30:00 retry at exactly 20:30:00.1, then 20:30:00.3.",
+      "like": "Everyone agreeing to call back in five minutes, and all calling back at once."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "BACK OFF, JITTER, BUDGET",
+      "what": "Back off with a random amount added to each wait, give up after a few tries or when the caller's deadline is near, and cap retries at about 10% of all calls.",
+      "use": "Spreads the retries out and puts a hard limit on extra load.",
+      "avoid": "Only for calls that are safe to repeat: reads, and writes that carry an idempotency key.",
+      "ex": "Waits of 80 to 120 ms, then 160 to 240, then stop; if more than 1 call in 10 is already a retry, don't retry at all.",
+      "like": "Calling back at a random time in the next few minutes, and only if not many people already are."
+    },
+    {
+      "t": "p",
+      "x": "Retry in one layer only. If the app, the API and the order service each retry three times, one tap can become 4 × 4 × 4 = 64 calls to the payment provider."
+    },
+    {
+      "t": "h2",
+      "x": "Circuit breakers"
+    },
+    {
+      "t": "p",
+      "x": "Timeouts stop one call waiting for ever, but every call still waits the full timeout. When a dependency is clearly failing, it's better not to call it at all for a while. A circuit breaker wraps the calls to one dependency and has three states."
+    },
+    {
+      "t": "fig",
+      "id": "breaker",
+      "cap": "Closed: calls go through and failures are counted. When half of the last 20 fail (and only once there have been at least 20 calls, so two early failures don't trip it), it opens: calls fail at once without waiting. After 30 seconds it lets a few test calls through. If they pass it closes; if one fails it opens again."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep one breaker per dependency in each server, so a slow payment provider doesn't stop calls to maps or SMS.",
+        "Count slow calls as failures, not just errors. A dependency that answers in 25 s is not healthy.",
+        "Log every change of state and alert on \"open\". An open breaker is your system telling you something is wrong."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What the user gets instead"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Restaurant recommendations down: show the most popular restaurants in the area from a cache.",
+        "Delivery time service slow: show a range such as \"30 to 40 min\" instead of an exact minute.",
+        "Payment provider failing: say so, and offer another method or cash on delivery. Never pretend a payment went through.",
+        "Notifications failing: put them on a queue and send later. Nobody minds an SMS a minute late."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keep the slow part in its own pool"
+    },
+    {
+      "t": "p",
+      "x": "Give calls to each risky dependency their own small pool of workers or connections. If the payment provider eats its 300 workers, the other 1,700 keep serving menus and tracking. Ships use the same idea: watertight walls between compartments, so one leak doesn't sink the ship. The pattern is called a bulkhead."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say \"every call has a timeout\" early, with a number based on normal latency.",
+        "When you add retries, say which calls are safe to repeat and how you avoid retry storms.",
+        "Name a fallback for each dependency on the request path: what the user sees when it's down.",
+        "Use requests in flight = rate × time to show how a slow dependency fills your workers."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "In the Lab, Clients retry every failed request once. Push one server past its limit and watch the retries pile on top of the overload.",
+      "to": "lab/one-server",
+      "go": "Try the one-server challenge"
+    }
+  ]
+}
