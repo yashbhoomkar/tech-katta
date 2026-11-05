@@ -8,6 +8,7 @@
     "components/caches",
     "components/databases",
     "components/sharding",
-    "components/object-storage"
+    "components/object-storage",
+    "components/queues-and-streams"
   ]
 }
