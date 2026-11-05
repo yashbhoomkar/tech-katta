@@ -6,7 +6,8 @@ import{API}from"./api.js";import{STORE_KEY,STORE_VERSION,readStore}from"./lab/st
 import{readProgress,replaceProgress}from"./progress.js";import{track}from"./analytics.js";
 
 export const DELETED_KEY="tk-lab-deleted";// {design id: when it was deleted}, so deletions reach other devices
-const call=async(path,{method="GET",body}={})=>{const r=await fetch(API+path,{method,credentials:"include",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined});
+// every account call gives up after 15 s, so a bad network shows "couldn't reach your account" instead of hanging
+const call=async(path,{method="GET",body}={})=>{const r=await fetch(API+path,{method,credentials:"include",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout?.(15000)});
 let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(new Error(data?.error||`HTTP ${r.status}`),{status:r.status});return data};
 
 // --- account state, shared by every part of the page ("tk-account" event on change)
