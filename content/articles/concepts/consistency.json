@@ -1,0 +1,203 @@
+{
+  "section": "concepts",
+  "slug": "consistency",
+  "group": "data",
+  "no": "CONCEPT // 03",
+  "tag": "DATA",
+  "date": "5 Nov 2026",
+  "title": "Consistency models: how up to date does a read have to be?",
+  "dek": "Strong, eventual and the useful guarantees in between, what each costs, and how to choose one feature at a time: a rider's assignment, a menu price, a like count.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Once data has copies, a read can land on a copy that hasn't caught up. A consistency model is the promise about what a read may see.",
+        "Strong (linearizable): every read sees the latest completed write, as if there were one copy. Needed for things only one person may have: a rider assignment, the last coupon, a username, a balance.",
+        "Eventual: copies agree if writes stop for a moment; until then a read may be old. Fine for menus, ratings, counts and search.",
+        "In between are the guarantees users notice: see your own changes, never go back in time, and see causes before effects. They're cheap and fix most complaints.",
+        "Choose per feature, not per system. Strong costs time on every request, and across regions it can mean refusing requests during a network split."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Two different things called consistency"
+    },
+    {
+      "t": "p",
+      "x": "The C in ACID means a transaction never breaks the rules you set, such as a non-negative balance or a foreign key. Isolation, the I, is about transactions running at the same time on one database; the Databases article covers that with the last coupon. This article is about the other meaning: when the same data lives on several machines, how fresh is what a read returns?"
+    },
+    {
+      "t": "analogy",
+      "x": "An India match. People in the stadium see each ball as it's bowled. The TV feed is a few seconds behind, the score app a little more, and tomorrow's newspaper a day. They all end up agreeing on the result; what differs is how old the score is when you look."
+    },
+    {
+      "t": "h2",
+      "x": "From strongest to weakest"
+    },
+    {
+      "t": "fig",
+      "id": "consistency-timeline",
+      "cap": "A restaurant changes a biryani from ₹250 to ₹280 at 100 ms. A strong read shows ₹280 from that moment, and so does the owner when their reads go to the leader after a change. A customer on a replica 250 ms behind sees the old price until 350 ms. A customer whose reads bounce between two replicas sees ₹280, then ₹250 again: time going backwards."
+    },
+    {
+      "t": "type",
+      "name": "Strong",
+      "kind": "LINEARIZABLE",
+      "what": "Once a write is confirmed, every read anywhere returns it or something newer. The system behaves as if there were one copy.",
+      "use": "Anything only one person may have: assigning a rider, the last unit of stock or coupon, unique usernames, account balances, locks and leader election.",
+      "avoid": "Reads that can be slightly old: you pay for strong on every request, and across regions each one waits for a round trip.",
+      "ex": "Accepting order 123 with `UPDATE … WHERE rider_id IS NULL` on the leader.",
+      "like": "One register on one desk: whoever writes in it first, everyone after sees it."
+    },
+    {
+      "t": "type",
+      "name": "Causal",
+      "kind": "CAUSES BEFORE EFFECTS",
+      "what": "If one write depends on another, everyone sees them in that order. Unrelated writes may appear in any order.",
+      "use": "Conversations and anything with replies: support chats, comments, a refund after its complaint.",
+      "avoid": "Things needing one global winner, such as the last item in stock: causal order doesn't pick one.",
+      "ex": "A customer's message and the agent's reply always appear in that order.",
+      "like": "A WhatsApp group: you never see the answer before the question."
+    },
+    {
+      "t": "type",
+      "name": "Session guarantees",
+      "kind": "READ YOUR WRITES · MONOTONIC READS",
+      "what": "Promises for one user's session: you see your own changes, and you never see older data than you already saw.",
+      "use": "Almost every screen where a user edits something and looks again. These fix most \"it didn't save\" complaints.",
+      "avoid": "Relying on them across users: another user may still see the old value.",
+      "ex": "After a restaurant edits its menu, its own reads go to the leader for a minute; customers can lag.",
+      "like": "Your own notebook: whatever you wrote, you see on the next page."
+    },
+    {
+      "t": "type",
+      "name": "Eventual",
+      "kind": "THEY'LL AGREE, LATER",
+      "what": "If writes stop, all copies end up the same. Until then, any read may be old, and two reads may disagree.",
+      "use": "Menus, photos, ratings, like and view counts, search results, recommendations, analytics.",
+      "avoid": "Anything that must not be decided twice: two replicas can each say yes.",
+      "ex": "The rating shown on a restaurant card, updated a few seconds after a review.",
+      "like": "News spreading through a family WhatsApp: everyone hears, not at the same moment."
+    },
+    {
+      "t": "h2",
+      "x": "Where you need strong"
+    },
+    {
+      "t": "fig",
+      "id": "double-accept",
+      "cap": "Two riders tap Accept on order 123 a few milliseconds apart. If each replica decides, both see the order as free and both say yes. If one copy decides with a conditional write, only the first changes a row; the second changes nothing and the app tells the rider the order is taken."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Uniqueness: one username, one rider per order, the last unit of stock. Let one copy decide, with a unique index or a conditional write.",
+        "Money: balances and wallet top-ups go through the leader in a transaction. Read them from the leader too when the number matters.",
+        "Coordination: locks, leader election and configuration go in a store built for it (etcd, ZooKeeper, or the database's leader), not a cache.",
+        "Everything else can be weaker. Ask \"what breaks if this read is two seconds old?\" If the answer is \"nothing much\", it doesn't need strong."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Where eventual is fine, and how fine"
+    },
+    {
+      "t": "p",
+      "x": "\"Eventually\" needs a number. Say how stale is acceptable: the menu within 5 seconds, a rating within a minute, the analytics dashboard within an hour. That number decides the design: a cache TTL, how far replicas may lag before they're taken out, how often a search index refreshes."
+    },
+    {
+      "t": "p",
+      "x": "Remember that caches and CDNs are copies too. A page served from a CDN with a 60-second TTL is eventually consistent, whatever the database behind it promises."
+    },
+    {
+      "t": "h2",
+      "x": "Getting the model you want"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Single-leader databases: read from the leader for strong, from replicas for eventual. Read-your-writes is \"leader for this user right after a change\".",
+        "DynamoDB: reads are eventual by default; ask for a strongly consistent read and pay twice the read units, in one region.",
+        "Cassandra and other quorum stores: choose per query. `QUORUM` writes and reads give read-your-latest-write; `ONE` is fast and eventual.",
+        "Global strong consistency (Spanner, CockroachDB) works by having copies agree through consensus on every write, so writes take at least one round trip between regions.",
+        "Monotonic reads: keep each user on the same replica (by user ID), or carry the last version seen and wait for a replica that has it."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Isolation levels, briefly",
+      "body": [
+        {
+          "t": "p",
+          "x": "Isolation is consistency's cousin inside one database: what one transaction can see of others running at the same time. Most databases default to the middle."
+        },
+        {
+          "t": "table",
+          "label": "Isolation levels",
+          "head": [
+            "Level",
+            "Prevents",
+            "Still possible",
+            "Default in"
+          ],
+          "rows": [
+            [
+              "Read committed",
+              "Seeing uncommitted changes",
+              "Two reads in one transaction disagree; lost updates",
+              "PostgreSQL, Oracle"
+            ],
+            [
+              "Snapshot / repeatable read",
+              "Reads changing under you",
+              "Write skew: two transactions each check, then both write",
+              "MySQL InnoDB"
+            ],
+            [
+              "Serializable",
+              "All of the above",
+              "Nothing; some transactions are aborted and must retry",
+              "CockroachDB; opt-in elsewhere"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Strong costs latency: a read or write waits for the one copy that decides, and across regions that is tens of milliseconds or more.",
+        "Strong costs availability in a split: if a region is cut off from the copy that decides, it must refuse writes rather than risk two answers. The CAP article goes into this.",
+        "Eventual costs code: screens and support processes must cope with old data, and some bugs only appear under lag.",
+        "Mixing models costs clarity. Write down, per feature, which one it uses."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't say \"we need strong consistency\" for everything. Go feature by feature.",
+        "Name the strong ones and how: \"rider assignment is a conditional update on the leader\".",
+        "Give eventual a number: \"menus can be 5 seconds stale; we cache for 5 seconds\".",
+        "Mention read-your-writes for anyone editing their own data.",
+        "If there are several regions, say what happens to writes when one is cut off."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "\"The menu everyone reads\" is a read-heavy challenge where a cache in front of the database is the answer, and the cache serves copies that can be a little old. Try it and decide how stale a menu may be.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}
