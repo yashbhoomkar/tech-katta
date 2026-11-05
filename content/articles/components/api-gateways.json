@@ -47,7 +47,7 @@
     {"t": "h2", "x": "What it costs you"},
     {"t": "list", "items": [
       "Latency: every request passes through one more hop. A managed gateway often adds around 10 ms.",
-      "Money: managed gateways bill per request, about $3.50 per million for Amazon's REST APIs. At an average of 1,000 requests a second, that is 2.6 billion requests and about $9,000 a month, often more than the servers behind it.",
+      "Money: managed gateways bill per request, about $3.50 per million for Amazon's REST APIs. At an average of 1,000 requests a second, that is 2.6 billion requests a month: about $6,800 once the cheaper rates for high volume kick in, often more than the servers behind it.",
       "One more thing that can fail or become the bottleneck. Managed gateways also have their own limits (around 10,000 requests a second per account by default on Amazon API Gateway) that you must raise ahead of a big event.",
       "A tempting place for logic. Keep business rules in the services; a gateway full of special cases becomes the hardest part of the system to change."
     ]},

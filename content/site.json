@@ -141,9 +141,9 @@
         "Why Kafka appends to a log and reads it sequentially."
       ],
       [
-        "Round trip, US ↔ Europe",
-        "~150 ms",
-        150000000,
+        "Round trip, Mumbai ↔ US East",
+        "~200 ms",
+        200000000,
         "Why data is replicated close to users."
       ]
     ],
