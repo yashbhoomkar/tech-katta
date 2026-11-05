@@ -31,7 +31,7 @@
     },
     {
       "t": "p",
-      "x": "The number of requests in flight is the arrival rate times how long each one takes. At 2,000 orders a second and 0.2 s each, about 400 are in flight. At 30 s each, it's 60,000. The order service has 10 servers with 200 workers each: 2,000 in total. They fill in about a second, and then the menu pages and order tracking on the same servers fail too, though nothing is wrong with them."
+      "x": "The number of requests in flight is the arrival rate times how long each one takes (Little's law). At 2,000 orders a second and 0.2 s each, about 400 are in flight. At 30 s each, it's 60,000. The order service has 10 servers with 200 workers each: 2,000 in total. They fill in about a second, and then the menu pages and order tracking on the same servers fail too, though nothing is wrong with them."
     },
     {
       "t": "fig",
@@ -104,7 +104,7 @@
     {
       "t": "fig",
       "id": "breaker",
-      "cap": "Closed: calls go through and failures are counted. When half of the last 20 fail, it opens: calls fail at once without waiting. After 30 seconds it lets a few test calls through. If they pass it closes; if one fails it opens again."
+      "cap": "Closed: calls go through and failures are counted. When half of the last 20 fail (and only once there have been at least 20 calls, so two early failures don't trip it), it opens: calls fail at once without waiting. After 30 seconds it lets a few test calls through. If they pass it closes; if one fails it opens again."
     },
     {
       "t": "list",
@@ -133,7 +133,7 @@
     },
     {
       "t": "p",
-      "x": "Give calls to each risky dependency their own small pool of workers or connections. If the payment provider eats its 300 workers, the other 1,700 keep serving menus and tracking. Ships use the same idea: watertight walls between compartments, so one leak doesn't sink the ship."
+      "x": "Give calls to each risky dependency their own small pool of workers or connections. If the payment provider eats its 300 workers, the other 1,700 keep serving menus and tracking. Ships use the same idea: watertight walls between compartments, so one leak doesn't sink the ship. The pattern is called a bulkhead."
     },
     {
       "t": "h2",
