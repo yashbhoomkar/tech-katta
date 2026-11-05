@@ -147,7 +147,7 @@
     },
     {
       "t": "p",
-      "x": "Custom aliases (`biryani50`) skip the counter: insert the alias as the code and let the database's unique key reject a duplicate, then ask the user to pick another."
+      "x": "Custom aliases (`biryani50`) skip the counter: insert the alias as the code and let the database's unique key reject a duplicate, then ask the user to pick another. Keep aliases out of the counter's way too: if someone takes `2Bj`, the counter will hand out `2Bj` later and hit the same key. Require aliases of 8 characters or more, a length the counter won't reach for decades, or one with a `-`, which base 62 never uses."
     },
     {
       "t": "h2",
@@ -177,7 +177,7 @@
       "t": "list",
       "items": [
         "Shard the links table by code (hash of the code), since every redirect looks up exactly one code. See the Sharding article.",
-        "Replicate each shard; redirects can read from replicas, because a link that's a few hundred milliseconds old is rarely opened that fast.",
+        "Replicate each shard; redirects can read from replicas, because a link that's a few hundred milliseconds old is rarely opened that fast. If a replica says a code doesn't exist, ask the primary before answering 404, and cache a 404 for seconds at most, so a brand-new link isn't stuck broken.",
         "Expired links: don't delete them on the hot path. A nightly job removes them, and the redirect checks `expires_at` before answering."
       ]
     },
@@ -213,6 +213,7 @@
           "t": "list",
           "items": [
             "\"The same long URL is shortened twice: same code?\" Optional: keep an index on `long_url` per account and return the existing code, at the cost of one more lookup per create.",
+            "\"Can a custom alias clash with a generated code?\" Yes, if they share a format: an alias `2Bj` is a code the counter will reach. Give them separate spaces: aliases of 8 or more characters, or with a `-`.",
             "\"How do you count clicks without slowing redirects?\" Write a click event to a stream (Kafka) and count in a separate consumer; the redirect never waits for it.",
             "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the cache-restart challenge.",
             "\"Links in two regions?\" Give each region its own range of IDs, so codes stay unique without talking across regions."
