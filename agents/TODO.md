@@ -70,13 +70,12 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Analytics: Lab challenge scores | done | already there: the `score` event (challenge, stars, max, passed) and the admin dashboard's scores table; nothing to build |
-| 2 | content | Concepts › Staying up: timeouts, retries, circuit breakers | done | shipped run 11 with figures `slow-call`, `breaker`; also the Interview Questions card no longer promises unpublished questions |
-| 3 | build | Practice mode: a 45-minute timed run through the six steps of Q00 with a self-check list per step | ready | business plan; no AI, no new service; progress kept like the Lab's |
-| 4 | build | Library card footers level at 768–1100 px (one wraps, two don't) | ready | Learner, run 10; cosmetic: stack label above link at those widths |
-| 5 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
-| 6 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 7 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 1 | build | Practice mode v1: "Practise this question" on every Interview Question | done | shipped run 12: full-screen 45-minute run through the six steps with checklists, time per step at the end, `practice:<slug>` in progress steps; no new data fields |
+| 2 | build | Library card footers level at 768–1100 px (one wraps, two don't) | ready | Learner, run 10; cosmetic: stack label above link at those widths |
+| 3 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
+| 4 | content | Q05 Match ticket booking (medium) | ready | seat holds, flash demand, queues |
+| 5 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 6 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
 
@@ -120,11 +119,15 @@ for the owner to confirm):
 
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
-  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), and
-  this run's Staying up PR.
+  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
+  retries, circuit breakers), and this run's Practice mode PR.
 
 ## Review notes (newest first)
 
+- 2026-11-05 run 12 — Production healthy; #183 checked live (Concepts at 5 pages). Practice mode v1
+  scoped to one run: no sync or data-model change (uses the existing progress `steps` flags), no new
+  analytics event yet. Checked with a fake clock at 390/1280 px: timer, pause, over-time in red, six
+  steps, summary, flag saved, focus back to the button, Escape closes, the article hidden behind.
 - 2026-11-05 run 11 — Production healthy; #182 checked live (dashboard-home.js passes without sign-in).
   The lab_score item turned out to exist already (`score` event, admin scores table). Wrote the first
   Staying up concept instead; Learner's card note fixed (the Interview Questions card promised a rate
@@ -178,7 +181,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-05 — Concept 05: timeouts, retries and circuit breakers, with figures `slow-call` and `breaker`.
+- 2026-11-05 — Practice mode v1 on Interview Questions.
+- 2026-11-05 — PR #183: Concept 05, timeouts, retries and circuit breakers, with figures `slow-call` and `breaker`.
 - 2026-11-05 — PR #182: library cards, meta and footer text up to 11px.
 - 2026-11-05 — PR #181: Q04 10-minute grocery delivery, with figures `minutes-flow` and `stock-hold`.
 - 2026-11-05 — PR #180: Lab challenge "The link in a crore SMS" for the URL shortener.
