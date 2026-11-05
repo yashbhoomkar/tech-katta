@@ -415,6 +415,87 @@
       }
     ]
   },
+  "practice": {
+    "button": "Practise this question: 45 minutes",
+    "again": "Practise it again",
+    "practised": "✓ practised",
+    "title": "Practice",
+    "close": "Stop",
+    "left": "of 45 minutes left",
+    "overAll": "over 45 minutes",
+    "paused": "Paused",
+    "stepsLabel": "The six steps",
+    "stepLeft": "left in this step",
+    "over": "over",
+    "pause": "Pause",
+    "resume": "Resume",
+    "next": "Next step",
+    "finish": "Finish",
+    "doneTitle": "Done. Now compare.",
+    "doneText": "Read the worked answer and look for what you missed: a requirement, a number, a deep dive, a failure case. Steps that ran over are in red.",
+    "step": "Step",
+    "planned": "Planned",
+    "used": "Used",
+    "compare": "Read the worked answer",
+    "steps": [
+      {
+        "name": "Requirements",
+        "minutes": 5,
+        "checks": [
+          "Three or so features, as things people do",
+          "What's out of scope, said out loud",
+          "Qualities with numbers: how fast, how many, how available",
+          "What's unusual about this system: read-heavy, spiky, money involved?"
+        ]
+      },
+      {
+        "name": "Entities",
+        "minutes": 2,
+        "checks": [
+          "The main things the system stores",
+          "Only the fields you need right now"
+        ]
+      },
+      {
+        "name": "API",
+        "minutes": 5,
+        "checks": [
+          "One call per feature, with method and path",
+          "Who's calling comes from the login, not the request body",
+          "What each call returns, and its main error"
+        ]
+      },
+      {
+        "name": "High-level design",
+        "minutes": 15,
+        "checks": [
+          "Boxes that serve every call, end to end",
+          "Walk each call through the boxes out loud",
+          "Where each thing is stored, with its key fields",
+          "Say where a cache or a queue will be needed"
+        ]
+      },
+      {
+        "name": "Deep dives",
+        "minutes": 13,
+        "checks": [
+          "The two or three hardest parts, picked from the qualities",
+          "For each: the problem, the options, your choice and why",
+          "The numbers that show it holds",
+          "What happens when a part fails"
+        ]
+      },
+      {
+        "name": "Wrap-up and questions",
+        "minutes": 5,
+        "checks": [
+          "Sum up the design in two sentences",
+          "Name its weakest point before you're asked",
+          "Your own questions for the interviewer"
+        ]
+      }
+    ]
+  },
   "landingLab": {
     "eyebrow": "01 / TRY IT",
     "title": "Can your design survive IND vs PAK?",

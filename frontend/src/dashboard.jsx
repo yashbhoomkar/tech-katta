@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";
-import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import LibraryCards from"./library.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
+import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import LibraryCards from"./library.jsx";import Practice from"./practice.jsx";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={"did-you-know":"M10 2.5a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM7.5 16h5M8.5 18h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
@@ -158,12 +158,16 @@ case"more":return <details className="a-more a-deeper"><summary><small>GO DEEPER
 default:return null}}
 
 function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
+// Interview Questions (not the method page) get a Practice button: answer it yourself against the clock first.
+const pr=c.practice&&a.section==="interview-questions"&&a.group!=="start";const[practising,setPractising]=useState(false);const[practised,setPractised]=useState(()=>!!readProgress().steps["practice:"+a.slug]);
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
 const fn={};a.body.reduce((n,b,i)=>b.t==="fig"?(fn[i]=n+1):n,0);
 const main=Math.max(1,Math.round(words(a)/220)),all=Math.max(main,Math.round((words(a)+extraWords(a))/220));
 return <article className="d-panel d-article" aria-labelledby="d-title">
 <nav className="crumbs" aria-label="Breadcrumb"><a href={`#${a.section}`}>{label}</a><span aria-hidden="true">/</span><span>{a.no}</span></nav>
 <label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{a.date} · {main} MIN READ{all>main?` · ${all} WITH DETAILS`:""}</span><Share a={a}/></div>
+{pr&&<button type="button" className="pr-open" onClick={()=>setPractising(true)}>{practised?c.practice.again:c.practice.button}{practised&&<small>{c.practice.practised}</small>}</button>}
+{practising&&<Practice p={c.practice} a={a} onClose={()=>{setPractising(false);setPractised(!!readProgress().steps["practice:"+a.slug])}}/>}
 {a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
 <a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
 
