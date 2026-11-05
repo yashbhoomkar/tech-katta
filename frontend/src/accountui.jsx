@@ -48,6 +48,13 @@ if(!locked)return children;
 return <div className="lock"><div className="lock-blur" ref={inert} aria-hidden="true">{children}</div>
 <div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b><p>{lock.text}</p><SignInBox t={t} base="/dashboard/"/>{a.error&&<span className="acct-err" role="alert">{a.error==="terms_required"?t.agreeFirst:t.signInFailed}</span>}</div></div>}
 
+// A dashboard tab while signed out (owner, 11-05): a blurred stand-in (the real page isn't loaded, so
+// nothing is fetched and no "opened" events are counted) under the sign-in card naming the page.
+export function PageLock({t,lock,title,section,slug=""}){const a=useAccount(),seen=useRef(false);
+useEffect(()=>{if(!seen.current){seen.current=true;track("page_locked",{section,slug})}},[section,slug]);
+return <div className="lock lock-page"><div className="lock-blur lock-skel" ref={inert} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div>
+<div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b>{title&&<em>{title}</em>}<p>{lock.text}</p><SignInBox t={t}/>{a.error&&<span className="acct-err" role="alert">{a.error==="terms_required"?t.agreeFirst:t.signInFailed}</span>}</div></div>}
+
 // Account menu switch for the ads opt-in: flips at once, goes back if the API can't be reached.
 function AdsSwitch({t,on}){const[v,setV]=useState(on);useEffect(()=>setV(on),[on]);
 return <label className="acct-ads"><input type="checkbox" checked={v} onChange={e=>{const want=e.target.checked;setV(want);setAdsConsent(want).catch(()=>{setV(!want);alert(t.syncFailed)})}}/><span>{t.adsMenu}</span></label>}

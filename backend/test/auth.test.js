@@ -31,7 +31,7 @@ test.before(async () => {
   jwks.listen(0, '127.0.0.1'); await once(jwks, 'listening');
   const port = await freePort();
   api = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), ACCOUNTS_DB: 'tk_test', MONGODB_DB: 'old_backend_db', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
+    env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), FRONTEND_ORIGIN: ORIGIN, GOOGLE_CLIENT_ID: CLIENT, MONGODB_URI: mongo.getUri(), ACCOUNTS_DB: 'tk_test', MONGODB_DB: 'old_backend_db', ADMIN_EMAILS: 'ops@example.com', SESSION_SECRET: 'x'.repeat(40), COOKIE_SECURE: '0', GOOGLE_JWKS_URL: `http://127.0.0.1:${jwks.address().port}/certs` } });
   base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i += 1) { try { if ((await fetch(base + '/health')).ok) break; } catch {} await new Promise((r) => setTimeout(r, 50)); }
   client = await MongoClient.connect(mongo.getUri());
@@ -406,4 +406,24 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   const lines = (await csv.text()).trim().split('\n');
   assert.equal(lines[0], 'email,fn,ln,country'); assert.ok(lines.length >= 2); assert.ok(!lines.join('').includes('@'));
   assert.equal((await fetch(base + '/v1/admin/summary', { method: 'POST', headers: { Origin: ORIGIN, Cookie: owner.cookie } })).status, 405);
+});
+
+test('admins: a verified email whose hash is listed, ADMIN_EMAILS, or role', async () => {
+  const { isAdmin, ADMIN_EMAIL_SHA256 } = await import('../src/auth/accounts.js');
+  const { createHash } = await import('node:crypto');
+  const h = (v) => createHash('sha256').update(v).digest('hex');
+  assert.equal(ADMIN_EMAIL_SHA256.size, 1, 'one owner hash in the code (the owner address itself is not in the repo)');
+  ADMIN_EMAIL_SHA256.add(h('owner.test@example.com'));
+  assert.equal(isAdmin({ email: ' Owner.Test@Example.com ' }, ''), true, 'case and spaces');
+  assert.equal(isAdmin({ email: 'someone@example.com' }, ''), false);
+  assert.equal(isAdmin({ email: 'ops@example.com' }, 'x@example.com, OPS@example.com'), true);
+  assert.equal(isAdmin({ email: 'someone@example.com', role: 'admin' }, ''), true);
+  assert.equal(isAdmin({}, ''), false);
+  ADMIN_EMAIL_SHA256.delete(h('owner.test@example.com'));
+  // through the API (the test server runs with ADMIN_EMAILS=ops@example.com)
+  const o = await signIn({ sub: '9601', email: 'ops@example.com' });
+  assert.equal((await (await call('/v1/me', { cookie: o.cookie })).json()).user.admin, true);
+  assert.equal((await fetch(base + '/v1/admin/summary', { headers: { Cookie: o.cookie } })).status, 200);
+  // an unverified email never signs in at all (google.js), so it can't claim an admin address
+  assert.equal((await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken({ sub: '9602', email: 'ops@example.com', email_verified: false }) } })).status, 401);
 });
