@@ -1,7 +1,7 @@
 // Sign in with Google, as the page shows it (state and sync live in account.js). Used by the landing
 // page header (the place to sign in), the landing IND vs PAK result (an invite after a score), and the
 // dashboard header (only once signed in: the avatar menu, no sign-in button there).
-import React,{useEffect,useRef,useState}from"react";import{account,renderGoogleButton,signOut,signOutAll,deleteAccount,setAdsChoice,setAdsConsent}from"./account.js";import{track}from"./analytics.js";import"./account.css";
+import React,{useEffect,useRef,useState}from"react";import{account,renderGoogleButton,signOut,signOutAll,deleteAccount,setTermsChoice,setAdsConsent}from"./account.js";import{track}from"./analytics.js";import"./account.css";
 
 export function useAccount(){const[s,set]=useState(account);useEffect(()=>{const on=()=>set(account());on();addEventListener("tk-account",on);return()=>removeEventListener("tk-account",on)},[]);return s}
 
@@ -11,10 +11,11 @@ useEffect(()=>{if(a.ready&&a.enabled&&!a.user&&g.current)renderGoogleButton(g.cu
 return <span className="acct-gwrap"><span ref={g} className="acct-g"/>{blocked&&t?.googleBlocked&&<span className="acct-err" role="alert">{t.googleBlocked}</span>}</span>}
 
 // Header control. Signed out: Google's button (unless `button` is false). Signed in: avatar + menu.
-export function AccountControl({t,privacyHref="#privacy",button=true,text}){const a=useAccount(),box=useRef(null);const[open,setOpen]=useState(false);
+export function AccountControl({t,privacyHref="#privacy",button=true,signInHref}){const a=useAccount(),box=useRef(null);const[open,setOpen]=useState(false);
 useEffect(()=>{if(!open)return;const k=e=>{if(e.key==="Escape")setOpen(false)};const m=e=>{if(!box.current?.contains(e.target))setOpen(false)};addEventListener("keydown",k);addEventListener("pointerdown",m,true);return()=>{removeEventListener("keydown",k);removeEventListener("pointerdown",m,true)}},[open]);
 if(!t||!a.ready||!a.enabled)return null;
-if(!a.user)return button?<div className="acct"><GoogleButton t={t} text={text}/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div>:null;
+// signed out, the header only points to the sign-in card (where the Terms box is)
+if(!a.user)return button&&signInHref?<div className="acct"><a className="acct-signin-link" href={signInHref}>{t.signIn}</a></div>:null;
 const who=a.user.name||a.user.email||t.menu;
 return <div className="acct" ref={box}><button type="button" className="acct-btn" aria-expanded={open} aria-haspopup="true" aria-label={`${t.menu}: ${who}`} onClick={()=>setOpen(o=>!o)}>{a.user.picture?<img src={a.user.picture} alt="" referrerPolicy="no-referrer"/>:<i aria-hidden="true">{who[0].toUpperCase()}</i>}<span>{who}</span></button>
 {open&&<div className="acct-menu"><b>{a.user.name}</b><small>{a.user.email}</small><p className={a.error?"bad":""}>{a.syncing?t.syncing:a.error?t.syncFailed:t.saved}</p>
@@ -25,12 +26,16 @@ return <div className="acct" ref={box}><button type="button" className="acct-btn
 
 // Under a challenge score while signed out: why signing in helps, and the button right there.
 export function KeepStars({t}){const a=useAccount();if(!t?.keepStars||!a.ready||!a.enabled||a.user)return null;
-return <div className="acct-keep"><p>{t.keepStars}</p><GoogleButton t={t} text="continue_with"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div>}
+return <div className="acct-keep"><p>{t.keepStars}</p><SignInBox t={t} base="/dashboard/"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div>}
 
 // Opt-in box shown next to a sign-in button: unticked; the choice goes with the sign-in.
-// "I agree to the Terms and conditions" (unticked, optional); the Terms page says what it covers.
-export function ConsentBox({t,termsHref="#terms",privacyHref="#privacy"}){const[on,setOn]=useState(false);useEffect(()=>()=>setAdsChoice(false),[]);if(!t?.adsConsent)return null;
-return <><label className="acct-consent"><input type="checkbox" checked={on} onChange={e=>{setOn(e.target.checked);setAdsChoice(e.target.checked)}}/><span>{t.adsConsent} <a href={termsHref}>{t.termsLink}</a></span></label>{t.privacyLink&&<a className="acct-agree" href={privacyHref}>{t.privacyLink}</a>}</>}
+// Signing in: the Terms box (required, unticked) and Google's button, which can't be used until the
+// box is ticked; a tap on it before that says so.
+export function SignInBox({t,base="",text="continue_with"}){const[on,setOn]=useState(false),[hint,setHint]=useState(false);useEffect(()=>()=>setTermsChoice(false),[]);
+const tick=v=>{setOn(v);setTermsChoice(v);if(v)setHint(false)};
+return <div className="acct-signin"><label className={"acct-consent"+(hint?" hint":"")}><input type="checkbox" checked={on} onChange={e=>tick(e.target.checked)} required/><span>{t.agree} <a href={base+"#terms"}>{t.termsLink}</a> {t.and} <a href={base+"#privacy"}>{t.privacyLink}</a>.</span></label>
+<div className={"acct-gate"+(on?"":" off")}><GoogleButton t={t} text={text}/>{!on&&<button type="button" className="acct-gate-cover" aria-label={t.agreeFirst} onClick={()=>setHint(true)}/>}</div>
+{hint&&!on&&<span className="acct-err" role="alert">{t.agreeFirst}</span>}</div>}
 
 // The landing page Lab: blurred and locked until the visitor signs in with Google (owner, 11-04).
 // When sign-in is off on the API, the Lab is open as before.
@@ -41,7 +46,7 @@ useEffect(()=>{if(locked&&!seen.current){seen.current=true;track("lab_locked",{l
 if(waiting)return <div className="lock"><div className="lock-blur" ref={inert} aria-hidden="true">{children}</div></div>;
 if(!locked)return children;
 return <div className="lock"><div className="lock-blur" ref={inert} aria-hidden="true">{children}</div>
-<div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b><p>{lock.text}</p><GoogleButton t={t} text="continue_with"/><ConsentBox t={t} termsHref="/dashboard/#terms" privacyHref="/dashboard/#privacy"/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div></div>}
+<div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b><p>{lock.text}</p><SignInBox t={t} base="/dashboard/"/>{a.error&&<span className="acct-err" role="alert">{a.error==="terms_required"?t.agreeFirst:t.signInFailed}</span>}</div></div>}
 
 // Account menu switch for the ads opt-in: flips at once, goes back if the API can't be reached.
 function AdsSwitch({t,on}){const[v,setV]=useState(on);useEffect(()=>setV(on),[on]);
