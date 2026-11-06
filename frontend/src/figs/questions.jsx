@@ -494,6 +494,33 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><titl
 {bands.map(([b,n],i)=>{const y=44+i*32,w=Math.max(4,n/max*W),me=i===2;return <g key={b}><text x={0} y={y+14} className="fl">{b}</text><rect x={X} y={y} width={w} height={20} fill={me?BLUE:"#b9c9ff"}/><text x={X+w+8} y={y+14} className="fl">{n.toLocaleString("en-IN")}</text></g>})}
 {still?<g><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></g>:<Show t0={.3} t1={.98} dur={D}><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></Show>}</svg>}
 
+// Ad clicks, FIG: two paths for the same events. Fast: clicks go through a log to an aggregator that counts
+// per ad per minute in memory and writes minute totals for dashboards. Exact: the same events are kept raw,
+// and a nightly recount produces the numbers advertisers are billed on.
+function ClickFlowFig({still,uid=""}){const M=`ck${uid}`,D="12s";
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ckt${uid}`}><title id={`ckt${uid}`}>Two paths for the same click events. Fast path: the click service logs each click to an event log, an aggregator counts clicks per ad per minute in memory, and writes minute totals that dashboards read within a minute. Exact path: the same events are kept raw in storage, and a nightly recount produces the numbers advertisers are billed on.</title><Mark m={M}/>
+<SBox x={0} y={60} w={100} t="App"/><SBox x={140} y={60} w={120} t="Click service"/><SBox x={300} y={60} w={100} t="Event log"/>
+<SBox x={440} y={30} w={130} t="Aggregator" blue/><SBox x={440} y={90} w={130} t="Minute totals"/><text x={505} y={124} textAnchor="middle" className="fl">dashboards, in a minute</text>
+<SBox x={300} y={170} w={100} t="Raw events"/><SBox x={440} y={170} w={130} t="Nightly recount"/><text x={505} y={204} textAnchor="middle" className="fl">the bill, next morning</text>
+<Line x1={102} y1={60} x2={136} y2={60} m={M}/><Line x1={262} y1={60} x2={296} y2={60} m={M}/><text x={200} y={44} textAnchor="middle" className="fl">click id</text>
+<Line x1={402} y1={54} x2={436} y2={36} m={M}/><Line x1={505} y1={42} x2={505} y2={76} m={M}/><Line x1={350} y1={72} x2={350} y2={156} m={M}/><Line x1={402} y1={170} x2={436} y2={170} m={M}/>
+<text x={0} y={120} className="fb">Fast</text><text x={0} y={136} className="fl">for watching</text><text x={0} y={176} className="fb">Exact</text><text x={0} y={192} className="fl">for money</text>
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={134} y={60} t0={.02} t1={.08} dur={D}/><Dot x1={264} x2={294} y={60} t0={.1} t1={.16} dur={D}/><Dot x1={404} x2={434} y={54} y2={36} t0={.2} t1={.26} dur={D}/><Glow x={440} y={18} w={130} h={24} t0={.26} t1={.38} dur={D}/><Dot x1={505} x2={505} y={44} y2={74} t0={.4} t1={.46} dur={D}/>
+<Dot x1={350} x2={350} y={74} y2={154} t0={.55} t1={.65} dur={D}/><Dot x1={404} x2={434} y={170} t0={.7} t1={.76} dur={D}/><Glow x={440} y={158} w={130} h={24} t0={.76} t1={.9} dur={D}/></g>}</svg>}
+
+// Ad clicks, FIG: windows by event time. Clicks are counted in the minute they happened, not the minute
+// they arrived. A click from 20:41 that arrives at 20:43 (a phone back in signal) still counts for 20:41.
+// After a 5-minute allowance the minute is closed; anything later is left to the nightly recount.
+function WindowsFig({still,uid=""}){const D="10s",X=60,W=110;
+const mins=["20:40","20:41","20:42","20:43","20:44"];
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`wnt${uid}`}><title id={`wnt${uid}`}>Counting by the minute a click happened. Each minute from 20:40 to 20:44 is its own window. A click made at 20:41 that only arrives at 20:43, from a phone that was out of signal, is still counted in the 20:41 window. Each window stays open for 5 minutes after it ends; clicks later than that are left to the nightly recount.</title>
+{mins.map((m,i)=><g key={m}><rect x={X+i*W} y={50} width={W-8} height={60} fill={i===1?"#f8faff":"#fff"} stroke={i===1?BLUE:GREY}/><text x={X+i*W+8} y={44} className="fl">{m}</text>{Array.from({length:[5,6,4,7,3][i]},(_,j)=><circle key={j} cx={X+i*W+14+j*12} cy={80} r={4} fill="#b9c9ff"/>)}</g>)}
+<text x={0} y={84} className="fl">clicks</text>
+{step(.3,<g><circle cx={X+3*W+40} cy={150} r={5} fill={BLUE}/><text x={X+3*W+52} y={154} className="fl" style={{fill:BLUE}}>arrives 20:43</text><path d={`M${X+3*W+34} 150 H${X+W+86} V86`} fill="none" stroke={BLUE} strokeDasharray="4 3"/><circle cx={X+W+86} cy={80} r={5} fill={BLUE}/></g>)}
+{step(.55,<text x={X+W+8} y={172} className="fl" style={{fill:BLUE}}>counted in 20:41, when it happened</text>)}
+{step(.75,<text x={0} y={204} className="fl">each minute stays open 5 more minutes; later clicks go to the nightly recount</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -530,4 +557,6 @@ export const QUESTION_FIGS={
 "polite":{C:PoliteFig,ar:640/230,title:()=>"ONE QUEUE PER SITE"},
 "lb-flow":{C:LbFlowFig,ar:640/230,title:()=>"SCORED WHEN THE QUESTION CLOSES"},
 "lb-rank":{C:LbRankFig,ar:640/240,title:()=>"YOUR RANK FROM A FEW COUNTS"},
+"click-flow":{C:ClickFlowFig,ar:640/230,title:()=>"FAST FOR WATCHING, EXACT FOR MONEY"},
+"windows":{C:WindowsFig,ar:640/220,title:()=>"COUNTED WHEN IT HAPPENED"},
 };
