@@ -164,7 +164,7 @@
     {
       "t": "fig",
       "id": "like-counter",
-      "cap": "One row taking every like for a viral photo becomes a queue of writers. Split the count over 8 rows: each like adds 1 to a random one, and reading the count adds the 8 up. The hot row now takes an eighth of the writes."
+      "cap": "One row taking every like for a viral photo becomes a queue of writers. Split the count over 8 rows: each like adds 1 to a random one, and reading the count adds the 8 up. Each row now takes an eighth of the writes."
     },
     {
       "t": "list",
@@ -182,8 +182,8 @@
       "t": "list",
       "items": [
         "The resize worker also checks the image: an automated scan for unsafe content, and a person reviews anything it flags.",
-        "Remove location data from the photo before making the sizes; people don't always know their phone adds it.",
-        "A deleted photo is marked removed at once, purged from the CDN, and its files deleted after a few days, in case the delete was a mistake."
+        "Remove location data before making the sizes; people don't always know their phone adds it. Keep originals in a private bucket the CDN can't reach, since they still carry it.",
+        "A deleted photo is marked removed at once, its by-restaurant row deleted, purged from the CDN, and its files deleted after a few days, in case the delete was a mistake."
       ]
     },
     {
