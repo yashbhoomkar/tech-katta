@@ -129,14 +129,26 @@ for the owner to confirm):
 
 ## Ledger pending
 
-(none)
+Check each key in both canonical collections and insert only the missing ones in `frontend_git_commits`
+(value as in the ledger doc's #216–#218 table in the context repo); then clear this list and note the
+result and the row count under Review notes. The 01:15 IST session couldn't reach Atlas, so these are
+unverified, not known missing.
+- #216: `4c78226232b3dbbd210a24d77b45b5567c7bc790`, `680fa62609ff0234dfd208e8003e13625ef63cf6`, merge `05be25dd2a22bc96152981fe604bfe5bd2361890`
+- #217: `cfcf4d0c9ccb9ce144419ee1fa2ea239c8886488`, `3442440f29c0b26e5dedf45be1ac99ef4684161c`, `2527493434df786bbbe168c7999d979b7f530dc6`, merge `b718f8616cc01af3b0c5a86be7786586fc944b20`
+- #218: `cc7986651024342e4e9bce8db59c6dfa31cfb6c8`, `1378cee746b4a050a954b4bb189ec0e282b1ca3b`, merge `863069bb65220b07f749a9a322dd67af4daa7300`
 
 ## Context repo pending
 
-(none — handover and ledger checked through #215 on 2026-11-06)
+(none — handover checked through #218 on 2026-11-07 01:15 IST; ledger for #216–#218 under Ledger pending.
+Every merged PR adds its handover §12 row here, so a human-led session sees what to copy.)
 
 ## Review notes (newest first)
 
+- 2026-11-07 01:15 IST — Human-led session: handover, ledger doc and git history updated through #218 in
+  the context repo. Vercel stopped after the #218 preview (17:53 IST, daily limit): production frontend is
+  still #215, so Q21/Q22 show without figures until the next deploy; the first cycle after it live-checks
+  `video-pipe`, `abr`, `search-flow`, `inverted`. Atlas was unreachable from that session, so #216–#218
+  are under Ledger pending. #216 and #218 hadn't added Context repo pending rows; please do (rule 9).
 - 2026-11-06 17:40 IST — Ledger and docs checked at the owner's request: all 36 SHAs of #204–#215 were
   already in `frontend_git_commits` (501 rows); handover §1, §12, §13 and the ledger doc updated in the
   context repo. Vercel production is at #215 (`a7e4093`).
