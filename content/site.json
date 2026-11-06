@@ -26,7 +26,7 @@
   "hero": {
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
-    "description": "Short, structured notes on how systems work, and a Lab where you build one and watch it break.",
+    "description": "Worked interview questions, a 45-minute practice clock, and a Lab that scores your design. Short, plain, and built for Indian scale.",
     "primary": "Dashboard",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
@@ -521,8 +521,45 @@
     "next": "Next problem",
     "allProblems": "All problems and your progress →"
   },
+  "inside": {
+    "eyebrow": "WHAT'S INSIDE",
+    "title": "Practise system design the way interviews test it",
+    "desc": "Worked questions to learn from, a clock to practise against, and a Lab that scores your design. Sign in with Google to start.",
+    "items": [
+      {
+        "kind": "{questions} QUESTIONS",
+        "title": "Interview Questions",
+        "text": "From a URL shortener to a chat app, each one worked from requirements and rough numbers to a design you can defend, with the traps an interviewer looks for.",
+        "link": "See the questions",
+        "href": "/dashboard/#interview-questions"
+      },
+      {
+        "kind": "45 MINUTES",
+        "title": "Practice mode",
+        "text": "Answer a question yourself against the interview clock, one step at a time, then compare with the worked answer and see what you missed.",
+        "link": "Pick a problem",
+        "href": "/dashboard/#problems"
+      },
+      {
+        "kind": "{challenges} CHALLENGES",
+        "title": "The Lab",
+        "text": "Build a design, send it a real evening's traffic, and earn up to three stars for staying up, not crashing and keeping to the budget.",
+        "link": "Open the Lab",
+        "href": "/dashboard/#lab"
+      },
+      {
+        "kind": "{articles} ARTICLES",
+        "title": "Concepts and Components",
+        "text": "Short, plain articles on the parts every design uses: caches, queues, databases, replication, retries.",
+        "link": "Start reading",
+        "href": "/dashboard/#concepts"
+      }
+    ],
+    "cta": "All problems and your progress",
+    "ctaHref": "/dashboard/#problems"
+  },
   "landingLab": {
-    "eyebrow": "01 / TRY IT",
+    "eyebrow": "TRY IT NOW",
     "title": "Can your design survive IND vs PAK?",
     "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Here is the real Lab with that match loaded. Add what's missing, press Score, and see if the stream holds from the toss to the last over.",
     "challenge": "ind-vs-pak",

@@ -50,6 +50,8 @@ const get = (path, init) => fetch(running.baseUrl + path, init);
 
 test('GET /v1/site returns all site copy plus the example system, publicly cacheable', async () => {
   const response = await get('/v1/site');
+  const counted = await (await get('/v1/site')).json();
+  assert.deepEqual(counted.counts, { questions: allArticles.filter(a => a.section === 'interview-questions' && a.group !== 'start').length, concepts: allArticles.filter(a => a.section === 'concepts').length, components: allArticles.filter(a => a.section === 'components').length, challenges: lab.challenges.length });
   assert.equal(response.status, 200);
   assert.ok((response.headers.get('content-type') || '').includes('application/json'));
   assert.equal(response.headers.get('access-control-allow-origin'), '*');
