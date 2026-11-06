@@ -32,6 +32,8 @@ let termsChoice=false;export const setTermsChoice=v=>{termsChoice=!!v};
 export async function signIn(credential){setState({error:null});if(!termsChoice){setState({error:"terms_required"});return}try{const r=await call("/v1/auth/google",{method:"POST",body:{credential,termsAccepted:true}});setState({user:r.user});track("sign_in",{ads:!!r.user?.adsConsent});await syncLab()}catch(e){setState({error:"sign_in_failed"})}}
 export async function signOut(){track("sign_out");try{await call("/v1/auth/signout",{method:"POST"})}catch{}try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 // Opt in or out later, from the account menu.
+// A problem's Submit, judged again on the API and counted (solve.jsx); null when signed out or it fails.
+export async function submitProblem(body){if(!state.user)return null;try{return await call("/v1/me/submissions",{method:"POST",body})}catch{return null}}
 export async function setAdsConsent(ads){const r=await call("/v1/me/consent",{method:"POST",body:{ads:!!ads}});setState({user:r.user});track("ads_consent",{ads:!!ads})}
 // Every device signed in to this account is signed out (lost phone, shared computer).
 export async function signOutAll(){track("sign_out_all");await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}

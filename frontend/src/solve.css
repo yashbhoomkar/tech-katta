@@ -55,3 +55,4 @@
 .sv-nav{display:flex;gap:2px;margin-left:4px}.sv-nav a,.sv-nav span{display:grid;place-items:center;width:28px;height:28px;font-size:18px;line-height:1;color:#3a4654;text-decoration:none;border:1px solid transparent}.sv-nav a:hover{border-color:var(--line);background:#fff;color:var(--blue)}.sv-nav span{color:#c9d0da}
 .sv-clock,.sv-reset{height:30px;padding:0 10px;border:1px solid var(--line);background:#fff;font:600 12px var(--mono);color:#3a4654;cursor:pointer}.sv-clock.on{color:var(--blue);border-color:var(--blue)}.sv-reset:hover,.sv-clock:hover{color:var(--blue)}
 @media(max-width:900px){.sv-nav,.sv-clock,.sv-reset{display:none}}
+.sv-server{margin:0;padding:8px 16px;border-bottom:1px solid var(--line);font:500 12px var(--mono);color:#3a4654;background:#f8faff}.sv-server b{color:#1a7f37}
