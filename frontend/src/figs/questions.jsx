@@ -471,6 +471,29 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`plt${uid}`}><titl
 {hosts.map(([h,n,t],i)=>{const y=60+i*36,ready=t==="now";const row=<g><rect x={0} y={y-16} width={200} height={26} fill={ready?"#f8faff":"#fff"} stroke={ready?BLUE:GREY}/><text x={10} y={y+2} className="fl">{h}</text><text x={210} y={y+2} className="fl">{n}</text><text x={340} y={y+2} className="fb" style={{fill:ready?BLUE:GREY}}>{t}</text>{ready&&<text x={410} y={y+2} className="fl" style={{fill:BLUE}}>→ a fetcher takes one</text>}</g>;return still?<g key={h}>{row}</g>:<Show key={h} t0={.05+i*.15} t1={.98} dur={D}>{row}</Show>})}
 <text x={0} y={216} className="fl">one queue per site, one page at a time each; the big site never blocks the small ones</text></svg>}
 
+// Leaderboard, FIG: the path. Answers are saved as they arrive. When a question closes, the scorer adds
+// points for the right answers in batches to sorted sets split across several Redis shards. The leaderboard
+// API serves the top 100 (cached for a second) and each player's own rank.
+function LbFlowFig({still,uid=""}){const M=`lb${uid}`,D="12s";
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><title id={`lbt${uid}`}>Players' answers are saved as they arrive. When a question closes, the scorer adds points for every right answer, in batches, to sorted sets split across several Redis shards. The leaderboard API serves the top 100, cached for a second, and each player's own rank. The saved answers are the record; the shards can always be rebuilt from them.</title><Mark m={M}/>
+<SBox x={0} y={50} w={110} t="Players"/><SBox x={160} y={50} w={130} t="Answer service"/><SBox x={340} y={50} w={120} t="Answers (saved)"/>
+<SBox x={340} y={130} w={120} t="Scorer"/><SBox x={510} y={100} w={130} t="Shard 1" blue/><SBox x={510} y={130} w={130} t="Shard 2" blue/><SBox x={510} y={160} w={130} t="Shard 3" blue/>
+<SBox x={160} y={200} w={160} t="Leaderboard API"/>
+<Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={292} y1={50} x2={336} y2={50} m={M}/><Line x1={400} y1={62} x2={400} y2={116} m={M}/><text x={408} y={94} className="fl">question closes</text>
+<Line x1={462} y1={124} x2={506} y2={104} m={M}/><Line x1={462} y1={130} x2={506} y2={130} m={M}/><Line x1={462} y1={136} x2={506} y2={156} m={M}/><text x={484} y={196} textAnchor="middle" className="fl">points, in batches</text>
+<Line x1={508} y1={168} x2={324} y2={198} m={M} dash/><Line x1={158} y1={200} x2={60} y2={66} m={M} dash/><text x={66} y={150} className="fl">top 100 · my rank</text>
+{!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={294} x2={334} y={50} t0={.1} t1={.16} dur={D}/><Dot x1={400} x2={400} y={64} y2={114} t0={.24} t1={.32} dur={D}/><Glow x={510} y={88} w={130} h={84} t0={.36} t1={.5} dur={D}/><Dot x1={506} x2={326} y={170} y2={198} t0={.56} t1={.66} dur={D}/><Dot x1={156} x2={62} y={198} y2={68} t0={.7} t1={.82} dur={D}/></g>}</svg>}
+
+// Leaderboard, FIG: rank from counts. Keep how many players have each score band. Ananya has 340 points:
+// the 37,200 players in the bands above are ahead, plus those above her in her own band: about rank 80,000,
+// the top 2%, without asking every shard.
+function LbRankFig({still,uid=""}){const D="10s";
+const bands=[["400+",1200],["350–399",36000],["300–349",173200],["250–299",410000],["200–249",820000]],max=820000,X=120,W=330;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><title id={`lrt${uid}`}>Rank from counts. The leaderboard keeps how many players have each band of scores: 1,200 have 400 or more, 36,000 have 350 to 399, 1,73,200 have 300 to 349, and so on. Ananya has 340 points. Everyone in the two bands above hers, 37,200 players, is ahead, plus those above her within her own band, so her rank, about 80,000th, the top 2% of 50 lakh, is found with one count inside her band instead of asking every shard.</title>
+<text x={0} y={22} className="fb">Score band</text><text x={X} y={22} className="fb">Players</text>
+{bands.map(([b,n],i)=>{const y=44+i*32,w=Math.max(4,n/max*W),me=i===2;return <g key={b}><text x={0} y={y+14} className="fl">{b}</text><rect x={X} y={y} width={w} height={20} fill={me?BLUE:"#b9c9ff"}/><text x={X+w+8} y={y+14} className="fl">{n.toLocaleString("en-IN")}</text></g>})}
+{still?<g><text x={X} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></g>:<Show t0={.3} t1={.98} dur={D}><text x={X} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></Show>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -505,4 +528,6 @@ export const QUESTION_FIGS={
 "lease":{C:LeaseFig,ar:640/220,title:()=>"WHEN A WORKER DIES MID-JOB"},
 "crawl-flow":{C:CrawlFlowFig,ar:640/200,title:()=>"FETCH, PARSE, FILTER, REPEAT"},
 "polite":{C:PoliteFig,ar:640/230,title:()=>"ONE QUEUE PER SITE"},
+"lb-flow":{C:LbFlowFig,ar:640/230,title:()=>"SCORED WHEN THE QUESTION CLOSES"},
+"lb-rank":{C:LbRankFig,ar:640/240,title:()=>"YOUR RANK FROM A FEW COUNTS"},
 };

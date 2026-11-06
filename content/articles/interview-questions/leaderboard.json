@@ -1,0 +1,201 @@
+{
+  "section": "interview-questions",
+  "slug": "leaderboard",
+  "group": "medium",
+  "no": "QUESTION // 16",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a live leaderboard",
+  "dek": "During an IPL match, Zotato runs a quiz: a question after every few overs, 20 seconds to answer, points for being right. 50 lakh people play, and each wants the top 100 and their own rank, updated seconds after every question.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A sorted set (in Redis) keeps players ordered by score: adding points, reading the top 100 and finding one player's rank are each fast, even with lakhs of players.",
+        "The hard moment is the 20-second window: up to 50 lakh answers arrive at once. Save the answers first, and add the points when the question closes, in batches.",
+        "One sorted set can't take 50 lakh updates in seconds, so split players across a few shards. The top 100 is the best of each shard's top 100, merged.",
+        "A player's exact rank across shards means asking every shard. Keeping counts per score band gives a close rank (\"about 80,000th, top 2%\") with one lookup.",
+        "The saved answers are the truth. The leaderboard is a fast copy that can always be rebuilt from them."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Players answer each question within 20 seconds; right answers score points, faster answers score a little more.",
+        "Show the top 100 and each player's own rank and score, updated within a few seconds of each question closing.",
+        "Ties are broken by who reached the score first.",
+        "Out of scope here: friends' leaderboards (a follow-up), prizes, and cheating detection beyond the basics."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Freshness",
+          "Ranks updated within 5 seconds of a question closing"
+        ],
+        [
+          "Correct scores",
+          "Every right answer counted once; ranks can be approximate, scores can't"
+        ],
+        [
+          "Speed",
+          "Top 100 and my rank in under 100 ms"
+        ],
+        [
+          "Scale",
+          "50 lakh players, 40 questions a match, all answering in the same 20 seconds"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Answers: 50 lakh in 20 seconds is 2.5 lakh writes a second for those 20 seconds, then almost nothing until the next question.",
+        "Score updates: if 60% answer correctly, that's 30 lakh point updates per question. Done in 5 seconds, 6 lakh updates a second.",
+        "Redis does very roughly 1 lakh updates a second per shard with batching, so 6 to 8 shards finish a question's updates in about 5 seconds.",
+        "Reads: after each question, most players open the leaderboard: 50 lakh reads in a minute is about 80,000 a second. The top 100 is the same for everyone, so cache it.",
+        "Memory: 50 lakh players × about 100 bytes in a sorted set is around 500 MB in total; small for Redis."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Answer: `match_id`, `question_id`, `player_id`, `choice`, `received_at`. One per player per question (a unique key).",
+        "Score: per player and match, `points` and `reached_at` (when they got to those points), in the sorted sets.",
+        "Band counts: per match, how many players are in each score band, updated with the scores."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /matches/m_7/questions/q_12/answer   { \"choice\": \"B\" }   → 202\nGET  /matches/m_7/leaderboard?top=100     → 200 { \"rows\": [ { \"rank\": 1, \"name\": \"…\", \"points\": 460 }, … ] }\nGET  /matches/m_7/me                      → 200 { \"points\": 340, \"rank\": 80412, \"top\": \"2%\" }",
+      "say": "Send an answer (one per question; a resend changes nothing). Read the top 100. Read your own score and rank."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "lb-flow",
+      "cap": "Answers are saved as they arrive. When the question closes, the scorer adds points in batches to sorted sets split across Redis shards. The API serves the top 100, cached for a second, and each player's own rank."
+    },
+    {
+      "t": "p",
+      "x": "Answering and scoring are separated by time: the 20-second window only saves answers, which is a simple append. Scoring happens once, after the window, when the right answer is known."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Keeping it sorted"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "SORT THE TABLE ON EVERY READ",
+      "what": "Keep scores in a database table and run ORDER BY points DESC LIMIT 100, and COUNT(*) WHERE points > mine for a rank.",
+      "use": "Correct and simple for a few thousand players.",
+      "avoid": "With 50 lakh rows and 80,000 reads a second, each rank query counts lakhs of rows. The database melts right after every question.",
+      "ex": "At the end of the 12th over, every player opens the leaderboard and the page takes 20 seconds.",
+      "like": "Re-sorting the whole class register every time a student asks their position."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "SORTED SETS, SPLIT INTO SHARDS",
+      "what": "Keep scores in Redis sorted sets, players split across shards by a hash of their id. Add points with one command per player, in batches. Top 100: take each shard's top 100 and merge. My rank: add up, over the shards, how many players have more points than me.",
+      "use": "Each operation is fast, and the shards share the burst of updates.",
+      "avoid": "An exact rank asks every shard on every request. Fine for 8 shards; for more, use band counts (below).",
+      "ex": "After the 12th over, 30 lakh scores are updated across 8 shards in about 5 seconds, and the top 100 is cached for everyone.",
+      "like": "Eight house captains each keep their house's list in order; the school's top 10 is the best of their lists."
+    },
+    {
+      "t": "h2",
+      "x": "Your rank, cheaply"
+    },
+    {
+      "t": "fig",
+      "id": "lb-rank",
+      "cap": "Keep how many players have each band of scores. Ananya has 340: everyone in the higher bands is ahead of her, and one count inside her own band finishes the job. One small lookup gives a close rank and her top percentage."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Update the band counts in the same batch as the scores: one player moves from one band to another.",
+        "For anyone outside the top few thousand, show the band-based rank and a percentage. Nobody can tell 80,412 from 80,399, and \"top 2%\" means more to them.",
+        "For the top few thousand, use exact ranks from the shards; that's where people care about each place."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Ties, fairness and truth"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ties: whoever reached the score first ranks higher. Pack both into the sorted set's score: points first, then a part that's bigger for earlier times.",
+        "One answer per player per question: a unique key on the answers table. A resend from a bad network changes nothing.",
+        "Answers after the 20 seconds are refused by the server's clock, not the phone's.",
+        "If a shard is lost, rebuild it from the saved answers. Scores are never kept only in Redis."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a sorted set for scores, top-N and rank commands, a cache for the top 100.",
+        "Senior: the 20-second burst and saving answers before scoring, sharding the sets, merging top lists, tie-breaking.",
+        "Lead: band counts for cheap ranks, rebuilding from answers, server-side deadlines, read caching after each question."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Friends' leaderboard?\" Fetch the scores of your 50 friends by id from the shards and sort them; it's a small list.",
+            "\"Weekly leaderboard across matches?\" A separate sorted set per week, added to after each match; start a new one each Monday.",
+            "\"Someone answers with a script in 50 ms?\" Faster answers earn only a little more, cap the speed bonus, and flag answers faster than a human can read.",
+            "\"Show live score changes as they happen?\" Push the top 10 and the player's own new rank over an open connection after each question, not every update.",
+            "\"How do you test it?\" Simulate 50 lakh answers in 20 seconds against a test copy and check the ranks match a full sort of the saved answers."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "A leaderboard during a match is a spike at moments you know in advance. The IND vs PAK challenge is the same night, for video.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try the IND vs PAK challenge"
+    }
+  ]
+}
