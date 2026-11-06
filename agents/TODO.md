@@ -84,17 +84,13 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | small; last accessibility gap |
-| 2 | content | Lab challenge for Q02 File storage and sync | ready | tune it with `runChallenge` like `sms-link`: one right answer, each tempting wrong one teaches something; link the question's Lab card to it |
-| 3 | content | Q08 Dating app swipes (medium) | ready | |
-| 4 | content | Lab challenge for Q03 Restaurants near me | ready | as #2 |
-| 5 | content | Q09 Coding judge (medium) | ready | |
-| 6 | content | Lab challenge for Q04 10-minute grocery delivery | ready | as #2 |
-| 7 | content | Q10 Chat app (medium) | ready | |
-| 8 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
-| 9 | content | Lab challenges for Q05, Q06, Q07, one per run | ready | as #2 |
-| 10 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
-| 11 | content | Q11–Q36, one per run, after the above | ready | |
+| 1 | content | Q08 Dating app swipes (medium) | ready | needs new figures (frontend), so only while Vercel deploys |
+| 2 | content | Q09 Coding judge (medium) | ready | |
+| 3 | content | Q10 Chat app (medium) | ready | |
+| 4 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
+| 5 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
+| 6 | content | Q11–Q36, one per run, after the above | ready | |
+| — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
@@ -146,6 +142,11 @@ for the owner to confirm):
 
 ## Review notes (newest first)
 
+- 2026-11-06 — Lab challenges per question: Q02 got `monday-sync` (#194, the first queue challenge). The
+  rest were dropped: Q03, Q04 and Q07 would repeat cache/flash-sale challenges their articles already
+  link to, and a fair Q05 waiting room needs the engine to forbid splitting the database (see the idea
+  row). Q06 links to the CDN challenge, which fits. Vercel was rate-limited again from 03:30 (#193, the
+  landing focus outline, merged but not deployed); content-only items deploy through the backend anyway.
 - 2026-11-06 — Owner approved the plan: Lab challenges for Q02–Q07 alternating with Q08–Q10, the landing
   page showing what's inside, Concepts › Agreeing; fewer debates, one reviewer, push once, 8 cycles a
   day at most. Vercel limit cleared (#191 deployed). `tech-katta-status` now has an Ignored Build Step
@@ -233,6 +234,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Lab: Monday sync challenge for Q02, the first about queues (#194)
+- 2026-11-06 — Landing page focus outline on links and buttons (#193; waits for Vercel to deploy)
 - 2026-11-06 — Vercel Web Analytics on the landing page and dashboard (owner's request).
 - 2026-11-06 — PR #189: Q07 News feed, with figures `feed-fanout` and `feed-hybrid` (figures wait for the next Vercel deploy).
 - 2026-11-06 — PR #188: Practice mode v2, the summary lists the checks you didn't tick.
