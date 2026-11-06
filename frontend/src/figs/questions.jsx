@@ -480,7 +480,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><titl
 <SBox x={340} y={130} w={120} t="Scorer"/><SBox x={510} y={100} w={130} t="Shard 1" blue/><SBox x={510} y={130} w={130} t="Shard 2" blue/><SBox x={510} y={160} w={130} t="Shard 3" blue/>
 <SBox x={160} y={200} w={160} t="Leaderboard API"/>
 <Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={292} y1={50} x2={336} y2={50} m={M}/><Line x1={400} y1={62} x2={400} y2={116} m={M}/><text x={408} y={94} className="fl">question closes</text>
-<Line x1={462} y1={124} x2={506} y2={104} m={M}/><Line x1={462} y1={130} x2={506} y2={130} m={M}/><Line x1={462} y1={136} x2={506} y2={156} m={M}/><text x={484} y={196} textAnchor="middle" className="fl">points, in batches</text>
+<Line x1={462} y1={124} x2={506} y2={104} m={M}/><Line x1={462} y1={130} x2={506} y2={130} m={M}/><Line x1={462} y1={136} x2={506} y2={156} m={M}/><text x={400} y={162} textAnchor="middle" className="fl">points, in batches</text>
 <Line x1={508} y1={168} x2={324} y2={198} m={M} dash/><Line x1={158} y1={200} x2={60} y2={66} m={M} dash/><text x={104} y={112} className="fl">top 100 · my rank</text>
 {!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={294} x2={334} y={50} t0={.1} t1={.16} dur={D}/><Dot x1={400} x2={400} y={64} y2={114} t0={.24} t1={.32} dur={D}/><Glow x={510} y={88} w={130} h={84} t0={.36} t1={.5} dur={D}/><Dot x1={506} x2={326} y={170} y2={198} t0={.56} t1={.66} dur={D}/><Dot x1={156} x2={62} y={198} y2={68} t0={.7} t1={.82} dur={D}/></g>}</svg>}
 
@@ -489,10 +489,10 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><titl
 // the top 2%, without asking every shard.
 function LbRankFig({still,uid=""}){const D="10s";
 const bands=[["400+",1200],["350–399",36000],["300–349",173200],["250–299",410000],["200–249",820000]],max=820000,X=120,W=330;
-return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><title id={`lrt${uid}`}>Rank from counts. The leaderboard keeps how many players have each band of scores: 1,200 have 400 or more, 36,000 have 350 to 399, 1,73,200 have 300 to 349, and so on. Ananya has 340 points. Everyone in the two bands above hers, 37,200 players, is ahead, plus those above her within her own band, so her rank, about 80,000th, the top 2% of 50 lakh, is found with one count inside her band instead of asking every shard.</title>
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><title id={`lrt${uid}`}>Rank from counts. The leaderboard keeps how many players have each band of scores: 1,200 have 400 or more, 36,000 have 350 to 399, 1,73,200 have 300 to 349, and so on. Ananya has 340 points. Everyone in the two bands above hers, 37,200 players, is ahead, plus those above her within her own band, so her rank, about 80,000th, the top 2% of 50 lakh, is estimated from these counts instead of asking every shard.</title>
 <text x={0} y={22} className="fb">Score band</text><text x={X} y={22} className="fb">Players</text>
 {bands.map(([b,n],i)=>{const y=44+i*32,w=Math.max(4,n/max*W),me=i===2;return <g key={b}><text x={0} y={y+14} className="fl">{b}</text><rect x={X} y={y} width={w} height={20} fill={me?BLUE:"#b9c9ff"}/><text x={X+w+8} y={y+14} className="fl">{n.toLocaleString("en-IN")}</text></g>})}
-{still?<g><text x={X} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></g>:<Show t0={.3} t1={.98} dur={D}><text x={X} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></Show>}</svg>}
+{still?<g><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></g>:<Show t0={.3} t1={.98} dur={D}><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></Show>}</svg>}
 
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.

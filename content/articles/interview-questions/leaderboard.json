@@ -69,7 +69,7 @@
       "items": [
         "Answers: 50 lakh in 20 seconds is 2.5 lakh writes a second for those 20 seconds, then almost nothing until the next question.",
         "Score updates: if 60% answer correctly, that's 30 lakh point updates per question. Done in 5 seconds, 6 lakh updates a second.",
-        "Redis does very roughly 1 lakh updates a second per shard with batching, so 6 to 8 shards finish a question's updates in about 5 seconds.",
+        "Plan on about 1 lakh updates a second per shard (pipelined, Redis can do several times that), so 6 to 8 shards finish a question's updates in about 5 seconds.",
         "Reads: after each question, most players open the leaderboard: 50 lakh reads in a minute is about 80,000 a second. The top 100 is the same for everyone, so cache it.",
         "Memory: 50 lakh players × about 100 bytes in a sorted set is around 500 MB in total; small for Redis."
       ]
@@ -140,12 +140,12 @@
     {
       "t": "fig",
       "id": "lb-rank",
-      "cap": "Keep how many players have each band of scores. Ananya has 340: everyone in the higher bands is ahead of her, and one count inside her own band finishes the job. One small lookup gives a close rank and her top percentage."
+      "cap": "Keep how many players have each band of scores. Ananya has 340: everyone in the higher bands is ahead of her, and an estimate of where 340 sits inside her band finishes the job (or keep a count for every score: there are only about 1,000). One small lookup gives a close rank and her top percentage."
     },
     {
       "t": "list",
       "items": [
-        "Update the band counts in the same batch as the scores: one player moves from one band to another.",
+        "Update the band counts in the same batch as the scores: the scorer adds up each batch's band moves and applies them as one update per band.",
         "For anyone outside the top few thousand, show the band-based rank and a percentage. Nobody can tell 80,412 from 80,399, and \"top 2%\" means more to them.",
         "For the top few thousand, use exact ranks from the shards; that's where people care about each place."
       ]
@@ -157,7 +157,7 @@
     {
       "t": "list",
       "items": [
-        "Ties: whoever reached the score first ranks higher. Pack both into the sorted set's score: points first, then a part that's bigger for earlier times.",
+        "Ties: whoever reached the score first ranks higher. Pack both into the sorted set's score: points first, then a part that's bigger for earlier times (milliseconds since the match started, so it fits). The scorer sets the whole score with ZADD rather than adding to it.",
         "One answer per player per question: a unique key on the answers table. A resend from a bad network changes nothing.",
         "Answers after the 20 seconds are refused by the server's clock, not the phone's.",
         "If a shard is lost, rebuild it from the saved answers. Scores are never kept only in Redis."
