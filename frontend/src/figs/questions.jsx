@@ -481,7 +481,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><titl
 <SBox x={160} y={200} w={160} t="Leaderboard API"/>
 <Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={292} y1={50} x2={336} y2={50} m={M}/><Line x1={400} y1={62} x2={400} y2={116} m={M}/><text x={408} y={94} className="fl">question closes</text>
 <Line x1={462} y1={124} x2={506} y2={104} m={M}/><Line x1={462} y1={130} x2={506} y2={130} m={M}/><Line x1={462} y1={136} x2={506} y2={156} m={M}/><text x={484} y={196} textAnchor="middle" className="fl">points, in batches</text>
-<Line x1={508} y1={168} x2={324} y2={198} m={M} dash/><Line x1={158} y1={200} x2={60} y2={66} m={M} dash/><text x={66} y={150} className="fl">top 100 · my rank</text>
+<Line x1={508} y1={168} x2={324} y2={198} m={M} dash/><Line x1={158} y1={200} x2={60} y2={66} m={M} dash/><text x={104} y={112} className="fl">top 100 · my rank</text>
 {!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={294} x2={334} y={50} t0={.1} t1={.16} dur={D}/><Dot x1={400} x2={400} y={64} y2={114} t0={.24} t1={.32} dur={D}/><Glow x={510} y={88} w={130} h={84} t0={.36} t1={.5} dur={D}/><Dot x1={506} x2={326} y={170} y2={198} t0={.56} t1={.66} dur={D}/><Dot x1={156} x2={62} y={198} y2={68} t0={.7} t1={.82} dur={D}/></g>}</svg>}
 
 // Leaderboard, FIG: rank from counts. Keep how many players have each score band. Ananya has 340 points:
