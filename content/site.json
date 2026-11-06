@@ -541,7 +541,8 @@
         "Problem",
         "Difficulty",
         "Lab",
-        "Best score"
+        "Best score",
+        "Acceptance"
       ],
       "designed": "Attempted",
       "tabQ": "Description",
@@ -661,7 +662,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 6 November 2026",
+    "updated": "Last updated 7 November 2026",
     "sections": [
       [
         "Signing in",
@@ -674,6 +675,10 @@
       [
         "Where it is kept",
         "In a MongoDB Atlas database used only by this site. You stay signed in with a random token in a cookie that only the site's API can read; it ends when you sign out, after 30 days without a visit, or 90 days after you signed in. \"Sign out on all devices\" ends it everywhere at once."
+      ],
+      [
+        "Problems you submit",
+        "When you submit a problem while signed in, the API checks your design again and keeps the result: which problem, when, whether it was accepted, the score, its cost and latency, and how many hints you opened. Not the design itself or what you wrote. These results make each problem's acceptance rate and the \"cheaper than\" comparison. They are deleted with your account."
       ],
       [
         "How the site is used",

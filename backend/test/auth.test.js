@@ -461,3 +461,39 @@ test('Google key server not answering: sign-in fails with keys_unavailable withi
   const took = Date.now() - t0;
   assert.ok(took >= 4_500 && took < 8_000, `gave up after ${took} ms`);
 });
+
+test('a problem submitted while signed in is judged again on the server and counted, result only', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const a = JSON.parse(await readFile(new URL('../../content/articles/interview-questions/url-shortener.json', import.meta.url), 'utf8'));
+  const { cookie } = await signIn({ sub: '7001', email: 'judge@example.com' });
+  const submit = (body, opts = {}) => call('/v1/me/submissions', { method: 'POST', cookie, body, ...opts });
+  // the starting design fails; the reference passes; the server decides, not the page
+  let r = await submit({ slug: 'url-shortener', design: a.practice.start, answer: {}, hints: 0 });
+  assert.equal(r.status, 200);
+  let j = await r.json();
+  assert.equal(j.verdict, 'failed'); assert.equal(j.score, 0); assert.equal(j.submissions, 1); assert.equal(j.accepted, 0);
+  r = await submit({ slug: 'url-shortener', design: a.practice.reference, answer: { fr: 'shorten, redirect, custom alias, expiry, count clicks' }, hints: 1 });
+  j = await r.json();
+  assert.equal(j.verdict, 'accepted'); assert.equal(j.passed, j.total); assert.equal(j.score, 12 + 50 - 3); assert.equal(j.accepted, 1); assert.equal(j.cheaperThan, null);
+  // a pricier accepted design: the reference is now cheaper than 100% of the others
+  const pricey = structuredClone(a.practice.reference); pricey.nodes.find((n) => n.id === 'app1').config.count = 20;
+  j = await (await submit({ slug: 'url-shortener', design: pricey, answer: {} })).json();
+  assert.equal(j.verdict, 'accepted'); assert.equal(j.cheaperThan, 0);
+  j = await (await submit({ slug: 'url-shortener', design: a.practice.reference, answer: {} })).json();
+  assert.equal(j.cheaperThan, 50);
+  // stored without the design or the answer
+  const docs = await client.db('tk_test').collection('submissions').find({ slug: 'url-shortener' }).toArray();
+  assert.equal(docs.length, 4); assert.equal(docs[0].design, undefined); assert.equal(docs[0].answer, undefined);
+  // public stats per problem
+  const stats = await (await call('/v1/problems/stats', { origin: null })).json();
+  assert.deepEqual(stats.problems['url-shortener'], { submissions: 4, accepted: 3, solvers: 1 });
+  // bad input
+  assert.equal((await submit({ slug: 'nope', design: a.practice.reference })).status, 404);
+  assert.equal((await submit({ slug: '../x', design: a.practice.reference })).status, 404);
+  assert.equal((await submit({ slug: 'url-shortener', design: 'x' })).status, 400);
+  assert.equal((await call('/v1/me/submissions', { method: 'POST', body: { slug: 'url-shortener', design: a.practice.reference } })).status, 401);
+  assert.equal((await submit({ slug: 'url-shortener', design: a.practice.reference }, { origin: 'https://evil.example' })).status, 403);
+  // deleting the account deletes its submissions
+  assert.equal((await call('/v1/me', { method: 'DELETE', cookie })).status, 200);
+  assert.equal(await client.db('tk_test').collection('submissions').countDocuments({ slug: 'url-shortener' }), 0);
+});

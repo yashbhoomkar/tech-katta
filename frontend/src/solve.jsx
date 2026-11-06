@@ -10,7 +10,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -68,7 +68,9 @@ setTimeout(()=>{const d=design.current||P.start;let out;try{const j=judge(d,lab,
 if(kind==="submit"){const g=gradeAnswer(ans,P.rubric),sc=score(g,j,hints);out.g=g;out.sc=sc;setGraded(g);
 const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints};
 const all=read(SUBS);all[slug]=[sub,...readSubs(slug)].slice(0,30);write(SUBS,all);setSubs(all[slug]);
-markStep("practice:"+slug);if(j.verdict==="accepted")markStep("solved:"+slug)}}
+markStep("practice:"+slug);if(j.verdict==="accepted")markStep("solved:"+slug);
+// signed in: the API judges it again and says how it compares with everyone else's
+out.server="pending";submitProblem({slug,design:d,answer:ans,hints}).then(v=>setRes(r=>r&&r.j===j?{...r,server:v||"off"}:r))}}
 catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false)},30)};
 const tabs=[["description","Description",`#problems/${slug}`],["answer","Your answer"],["hints",`Hints${P?` (${P.hints.length})`:""}`],["solution",s.tabA,`#interview-questions/${slug}`],["subs",`Submissions${subs.length?` (${subs.length})`:""}`]];
 return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-canvas":"")} style={{"--qw":w+"px"}}>
@@ -115,6 +117,7 @@ return <section className="sv-console" aria-live="polite" aria-label="Test resul
 <li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
+{res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
 {!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
 <ul className="sv-checks">{r.checks.map(c=><li key={c.label} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul></details></li>)}</ol>}

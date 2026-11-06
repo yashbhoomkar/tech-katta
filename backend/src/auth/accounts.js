@@ -12,6 +12,9 @@
 //            rev goes up by one on every save; a save only lands on the rev it was merged from, so two
 //            devices syncing at the same moment can't overwrite each other (the loser merges again).
 //   events   { name, at, visitor, userId?, device, page, props }  — usage events (events.js), TTL 13 months
+//   submissions { userId, slug, at, verdict, passed, total, score, cost, p99, hints }  — a problem's
+//            Submit, judged again on the server (routes.js). Only the result: the design and the written
+//            answer are not kept. Gives each problem its acceptance rate and "cheaper than N%".
 // The browser holds a random session token in an HttpOnly cookie; only an HMAC of it (keyed with
 // SESSION_SECRET) is stored, so the sessions collection alone can't be used to sign in.
 import { MongoClient } from 'mongodb';
@@ -63,8 +66,8 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   // connection gets 5 s and any single wait on a socket 10 s, so requests fail within seconds instead.
   const mongo = client || new MongoClient(uri, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000, socketTimeoutMS: 10_000, maxPoolSize: 10, appName: 'tech-katta-api' });
   const db = mongo.db(dbName);
-  const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab'), events = db.collection('events');
-  let ready = null, health = 'checking', checkedAt = 0, checking = null, storageMB = null;
+  const users = db.collection('users'), sessions = db.collection('sessions'), lab = db.collection('lab'), events = db.collection('events'), submissions = db.collection('submissions');
+  let ready = null, health = 'checking', checkedAt = 0, checking = null, storageMB = null, statsCache = null;
   const init = () => (ready ||= Promise.all([
     users.createIndex({ googleSub: 1 }, { unique: true }),
     sessions.createIndex({ tokenHash: 1 }, { unique: true }),
@@ -75,6 +78,8 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     events.createIndex({ name: 1, at: -1 }),
     events.createIndex({ visitor: 1, at: -1 }),
     events.createIndex({ userId: 1, at: -1 }, { sparse: true }),
+    submissions.createIndex({ slug: 1, verdict: 1, cost: 1 }),
+    submissions.createIndex({ userId: 1, at: -1 }),
   ]).catch((error) => { ready = null; throw error; }));
   const hash = (token) => createHmac('sha256', secret).update(String(token)).digest('hex');
   const clock = now;
@@ -147,6 +152,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     // at no account (signed out, removed at expiry) rather than leaving an account nobody can reach.
     async deleteAccount(userId) {
       await events.deleteMany({ userId });
+      await submissions.deleteMany({ userId });
       await lab.deleteOne({ userId });
       await users.deleteOne({ _id: userId });
       await sessions.deleteMany({ userId });
@@ -171,6 +177,25 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
         } catch (error) { if (error?.code !== DUPLICATE) throw error; }
       }
       throw new Error('lab_busy');
+    },
+    // A judged submission; returns how it compares: of the accepted designs for this problem, the share
+    // that cost more (so "cheaper than N%"), and the problem's totals.
+    async addSubmission(doc) {
+      await init();
+      await submissions.insertOne(doc);
+      const accepted = await submissions.countDocuments({ slug: doc.slug, verdict: 'accepted' });
+      const pricier = doc.verdict === 'accepted' && Number.isFinite(doc.cost) ? await submissions.countDocuments({ slug: doc.slug, verdict: 'accepted', cost: { $gt: doc.cost } }) : null;
+      const total = await submissions.countDocuments({ slug: doc.slug });
+      return { submissions: total, accepted, cheaperThan: pricier === null || accepted <= 1 ? null : Math.round(100 * pricier / (accepted - 1)) };
+    },
+    // Per problem: submissions, accepted ones, and people who solved it. Kept for a minute.
+    async problemStats() {
+      if (statsCache && clock() - statsCache.at < 60_000) return statsCache.value;
+      await init();
+      const rows = await submissions.aggregate([{ $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, solvers: { $addToSet: { $cond: [{ $eq: ['$verdict', 'accepted'] }, '$userId', '$$REMOVE'] } } } }]).toArray();
+      const value = Object.fromEntries(rows.map((r) => [r._id, { submissions: r.submissions, accepted: r.accepted, solvers: r.solvers.length }]));
+      statsCache = { at: clock(), value };
+      return value;
     },
     // The analytics summary for analytics.katta.cc (admin.js); the route checks the caller is an admin.
     async summary(days) { await init(); return adminSummary({ events, users }, { days, now: clock() }); },
