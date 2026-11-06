@@ -630,6 +630,34 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`abt${uid}`}><titl
 <text x={0} y={150} className="fl">each bar: 4 s</text>
 <text x={0} y={200} className="fl">quality changes from one segment to the next; the picture never stops</text></svg>}
 
+// Menu search, FIG: the path. A query is cleaned up (spelling, Hinglish, synonyms), sent to every shard of
+// the city's index at once, each returns its best 20, and the merged list is re-ranked for this person.
+// Separately, menu changes flow from the menus database through an indexer into the shards within a minute.
+function SearchFlowFig({still,uid=""}){const M=`sr${uid}`,D="12s";
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`srt${uid}`}><title id={`srt${uid}`}>A search for "panir butter masala" goes to the query service, which fixes the spelling and adds synonyms. It asks every shard of the city's index at once; each shard returns its best 20 dishes, and the query service merges them and re-ranks the list for this person by distance, open now and past orders. Separately, menu changes flow from the menus database through an indexer into the shards within a minute.</title><Mark m={M}/>
+<SBox x={0} y={60} w={120} t="Search box"/><SBox x={160} y={60} w={140} t="Query service" blue/>
+<SBox x={360} y={30} w={130} t="Pune shard 1"/><SBox x={360} y={70} w={130} t="Pune shard 2"/><SBox x={360} y={110} w={130} t="Pune shard 3"/>
+<SBox x={530} y={70} w={106} t="Top 20, ranked" blue/>
+<Line x1={122} y1={60} x2={156} y2={60} m={M}/><text x={0} y={92} className="fl">"panir butter masala"</text><text x={230} y={92} textAnchor="middle" className="fl">→ paneer, makhani…</text>
+<Line x1={302} y1={56} x2={356} y2={34} m={M}/><Line x1={302} y1={60} x2={356} y2={70} m={M}/><Line x1={302} y1={64} x2={356} y2={106} m={M}/>
+<Line x1={492} y1={30} x2={526} y2={64} m={M}/><Line x1={492} y1={70} x2={526} y2={70} m={M}/><Line x1={492} y1={110} x2={526} y2={76} m={M}/>
+<SBox x={0} y={200} w={130} t="Menus database"/><SBox x={180} y={200} w={120} t="Indexer"/>
+<Line x1={132} y1={200} x2={176} y2={200} m={M}/><Line x1={302} y1={196} x2={420} y2={124} m={M} dash/><text x={150} y={186} textAnchor="middle" className="fl">changes</text><text x={372} y={176} className="fl">within a minute</text>
+{!still&&<g aria-hidden="true"><Dot x1={124} x2={154} y={60} t0={.02} t1={.08} dur={D}/><Glow x={160} y={48} w={140} h={24} t0={.08} t1={.18} dur={D}/><Dot x1={304} x2={354} y={56} y2={34} t0={.2} t1={.28} dur={D}/><Dot x1={304} x2={354} y={60} y2={70} t0={.2} t1={.28} dur={D}/><Dot x1={304} x2={354} y={64} y2={106} t0={.2} t1={.28} dur={D}/><Glow x={530} y={58} w={106} h={24} t0={.34} t1={.48} dur={D}/><Dot x1={134} x2={174} y={200} t0={.6} t1={.66} dur={D}/><Dot x1={304} x2={418} y={196} y2={126} t0={.7} t1={.82} dur={D}/></g>}</svg>}
+
+// Menu search, FIG: the inverted index. Each word points to the dishes that contain it. "paneer butter
+// masala" reads three short lists and combines them: d12 has all three words, d40 has two, d55 and d77 one.
+function InvertedFig({still,uid=""}){const D="10s";
+const rows=[["paneer",["d12","d40","d77"]],["butter",["d12","d55"]],["masala",["d12","d40","d90"]]];
+const res=[["d12","Paneer Butter Masala · 3 of 3",1],["d40","Paneer Masala Dosa · 2 of 3",0],["d55","Butter Naan · 1 of 3",0]];
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ivt${uid}`}><title id={`ivt${uid}`}>An inverted index: each word points to the dishes that contain it. paneer points to d12, d40 and d77; butter to d12 and d55; masala to d12, d40 and d90. A search for paneer butter masala reads these three short lists and combines them: d12, Paneer Butter Masala, has all three words and ranks first; d40, Paneer Masala Dosa, has two; d55, Butter Naan, has one.</title>
+<text x={0} y={22} className="fb">Word</text><text x={100} y={22} className="fb">Dishes that contain it</text>
+{rows.map(([w,ids],i)=>{const y=52+i*34;return <g key={w}><rect x={0} y={y-16} width={86} height={26} fill="#f8faff" stroke={BLUE}/><text x={10} y={y+2} className="fb">{w}</text>{ids.map((d,j)=><g key={d}><rect x={100+j*54} y={y-16} width={48} height={26} fill={d==="d12"?"#b9c9ff":"#fff"} stroke={GREY}/><text x={124+j*54} y={y+2} textAnchor="middle" className="fl">{d}</text></g>)}</g>})}
+{step(.3,<text x={300} y={22} className="fb">"paneer butter masala"</text>)}
+{res.map(([d,t,top],i)=><g key={d}>{step(.4+i*.15,<text x={300} y={52+i*34} className="fl" style={{fill:top?BLUE:INK}}>{i+1}. {t}</text>)}</g>)}
+<text x={0} y={200} className="fl">three short lists instead of reading every dish in Pune; most words match a tiny share</text></svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -676,4 +704,6 @@ export const QUESTION_FIGS={
 "offer-states":{C:OfferStatesFig,ar:640/210,title:()=>"ONE ORDER AT A TIME"},
 "video-pipe":{C:VideoPipeFig,ar:640/240,title:()=>"ONE UPLOAD, FIVE SIZES"},
 "abr":{C:AbrFig,ar:640/220,title:()=>"QUALITY FOLLOWS THE NETWORK"},
+"search-flow":{C:SearchFlowFig,ar:640/240,title:()=>"FROM A TYPED QUERY TO TWENTY DISHES"},
+"inverted":{C:InvertedFig,ar:640/230,title:()=>"WORDS POINT TO DISHES"},
 };

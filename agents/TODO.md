@@ -89,7 +89,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q22–Q36, one per run (pick common questions not yet covered: a likes/views counter, a file-sharing link service, an API rate limiter as a question, a hotel/table booking system, …) | ready | |
+| 1 | content | Q23–Q36, one per run (pick common questions not yet covered and not already taught elsewhere on the site: e.g. a file-sharing link service, a distributed message queue as a question, a reviews and ratings system, …) | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
@@ -237,6 +237,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Q22 Design menu search, figures `search-flow` and `inverted`
 - 2026-11-06 — Q21 Design video streaming, figures `video-pipe` and `abr`
 - 2026-11-06 — Landing: "Start practising" goes to Problems; Problems in the landing nav
 - 2026-11-06, 17:26 IST — Vercel deployed again: #199–#214 live and checked (sweep clean, chaos 11/11, landing counts 20/9/16)
