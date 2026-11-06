@@ -320,3 +320,10 @@ test('parts that only pass requests on fail what they have nowhere to send', () 
   assert.equal(one('cdn', { hitPct: 90, live: true }), 0, 'a live stream needs its origin');
   assert.ok(one('server') > 99.9, 'a server can still answer on its own outside challenges');
 });
+
+test("a load balancer skips a crashed server group while another is up (health checks)",()=>{
+  const d={nodes:[{id:"c",type:"client",config:{rps:1000}},{id:"lb",type:"lb",config:{}},{id:"a",type:"server",config:{size:"m5.large",count:4}},{id:"b",type:"server",config:{size:"m5.large",count:4}},{id:"db",type:"database",config:{size:"db.r5.2xlarge"}}],edges:[{from:"c",to:"lb"},{from:"lb",to:"a"},{from:"lb",to:"b"},{from:"a",to:"db"},{from:"b",to:"db"}]};
+  const r=simulate(d,lab,{down:new Set(["a"])});
+  assert.equal(r.nodes.a.offered,0);assert.ok(r.total.successPct>99.9,`success ${r.total.successPct}`);
+  const both=simulate(d,lab,{down:new Set(["a","b"])});assert.ok(both.total.successPct<1);
+});

@@ -220,5 +220,899 @@
       "to": "lab/ind-vs-pak",
       "go": "Try the IND vs PAK challenge"
     }
-  ]
+  ],
+  "practice": {
+    "brief": "Each test sends photo views and page loads. Images can be answered at the edge (95%); the rest reach your servers, making 2 queries each, 90% of them answered by a cache. Your Clients' own rate is ignored.",
+    "fixed": {
+      "queriesPerRequest": 2,
+      "cdnHitPct": 95,
+      "hitPct": 90,
+      "writePct": 2
+    },
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 25000,
+            "pattern": "steady"
+          }
+        }
+      ],
+      "edges": []
+    },
+    "tests": [
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "sample": true,
+        "desc": "6,000 requests a second: photo grids and restaurant pages.",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 6000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 300,
+            "label": "p99 under 300 ms"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "sample": true,
+        "desc": "25,000 requests a second at 8 pm.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 300,
+            "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          },
+          {
+            "kind": "has",
+            "type": "cdn",
+            "label": "Images are served from the edge (CDN)"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "A celebrity posts",
+        "desc": "A film star posts a dosa photo at 8 pm: 80,000 requests a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 80000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests succeed"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          }
+        ]
+      },
+      {
+        "id": "server-dies",
+        "name": "A server group dies",
+        "desc": "At the peak (25,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "server"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.5,
+            "label": "At least 99.5% of requests still succeed"
+          },
+          {
+            "kind": "redundant",
+            "type": "server",
+            "label": "No server group that every request depends on (no single point of failure)"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.8,
+            "label": "At least 99.8% of requests still succeed"
+          },
+          {
+            "kind": "multiAz",
+            "label": "Every database has a standby in another zone (Multi-AZ)"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (6,000 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 6000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests succeed"
+          },
+          {
+            "kind": "cost",
+            "max": 25000,
+            "label": "Costs at most $25,000 a month"
+          }
+        ]
+      }
+    ],
+    "rubric": {
+      "fr": [
+        {
+          "label": "Post a photo with a caption, restaurant and dish",
+          "keys": [
+            "post",
+            "upload"
+          ]
+        },
+        {
+          "label": "See a person's or a restaurant's photos, newest first",
+          "keys": [
+            "newest",
+            "profile",
+            "restaurant's photos",
+            "grid",
+            "page"
+          ]
+        },
+        {
+          "label": "Like a photo and see the count",
+          "keys": [
+            "like"
+          ]
+        },
+        {
+          "label": "Delete my photo everywhere",
+          "keys": [
+            "delete",
+            "remove"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.999
+        ],
+        "p99": [
+          100,
+          1000
+        ],
+        "consistency": "eventual",
+        "readsPerWrite": [
+          50,
+          1000
+        ]
+      },
+      "est": [
+        {
+          "id": "uploads",
+          "label": "Uploads a second at peak",
+          "unit": "/s",
+          "answer": 100,
+          "tol": 3,
+          "how": "20 lakh a day ÷ 86,400 ≈ 23; ~4× at peak"
+        },
+        {
+          "id": "views",
+          "label": "Photo views a second at peak",
+          "unit": "/s",
+          "answer": 25000,
+          "tol": 3,
+          "how": "1 crore × 50 photos ÷ 86,400 ≈ 6,000; ~4× at peak"
+        },
+        {
+          "id": "bytes",
+          "label": "New originals a day",
+          "unit": "TB",
+          "answer": 6,
+          "tol": 3,
+          "how": "20 lakh × 3 MB"
+        }
+      ],
+      "api": [
+        {
+          "label": "Create a photo (get an upload URL)",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?photos/?$"
+        },
+        {
+          "label": "A person's or restaurant's photos",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(users|restaurants)/[^/]+/photos"
+        },
+        {
+          "label": "Like a photo",
+          "method": "PUT",
+          "path": "^/(api/)?(v\\d+/)?photos/[^/]+/like"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "Posting, viewing, liking and deleting. Which of these happens thousands of times more than the others?"
+      },
+      {
+        "step": "estimates",
+        "x": "Views × image size gives bytes a second. Is that a job for your servers?"
+      },
+      {
+        "step": "api",
+        "x": "Creating a photo returns a signed upload URL; the image goes straight to object storage."
+      },
+      {
+        "step": "design",
+        "x": "Images never change once made. Serve them from a CDN: 95% never reach you."
+      },
+      {
+        "step": "design",
+        "x": "What still reaches your servers (page data) reads the same rows again and again: a Cache in front of the database."
+      },
+      {
+        "step": "design",
+        "x": "A celebrity post triples the peak for 15 minutes. With a CDN in front, your servers only see 5% of it."
+      }
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 25000,
+            "pattern": "steady"
+          }
+        },
+        {
+          "id": "cdn",
+          "type": "cdn",
+          "x": 240,
+          "y": 0,
+          "config": {
+            "hitPct": 95
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 480,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app1",
+          "type": "server",
+          "x": 720,
+          "y": -75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 1,
+            "queriesPerRequest": 2
+          }
+        },
+        {
+          "id": "app2",
+          "type": "server",
+          "x": 720,
+          "y": 75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 1,
+            "queriesPerRequest": 2
+          }
+        },
+        {
+          "id": "cache1",
+          "type": "cache",
+          "x": 960,
+          "y": -75,
+          "config": {
+            "size": "cache.m5.large",
+            "hitPct": 90,
+            "writePct": 2,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "cache2",
+          "type": "cache",
+          "x": 960,
+          "y": 75,
+          "config": {
+            "size": "cache.m5.large",
+            "hitPct": 90,
+            "writePct": 2,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "db1",
+          "type": "database",
+          "x": 1200,
+          "y": 0,
+          "config": {
+            "size": "db.m5.large",
+            "multiAz": true
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "cdn"
+        },
+        {
+          "from": "cdn",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app1"
+        },
+        {
+          "from": "lb",
+          "to": "app2"
+        },
+        {
+          "from": "app1",
+          "to": "cache1"
+        },
+        {
+          "from": "app1",
+          "to": "cache2"
+        },
+        {
+          "from": "app2",
+          "to": "cache1"
+        },
+        {
+          "from": "app2",
+          "to": "cache2"
+        },
+        {
+          "from": "cache1",
+          "to": "db1"
+        },
+        {
+          "from": "cache2",
+          "to": "db1"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No cache",
+        "why": "Every read goes to the database, which can't take the peak.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 95
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.t3.medium",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "One server group",
+        "why": "When it crashes, nothing answers for 5 minutes.",
+        "fails": "server-dies",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 95
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "A crash keeps it down for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 95
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": false
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "Passes the load but costs far more than the traffic needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 95
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -93,10 +93,10 @@ test('requests that change things must come from the site; others get no CORS', 
 test('Lab data syncs and merges: newest design wins, deletions stick, best stars kept, junk dropped', async () => {
   const { cookie } = await signIn({ sub: '2002', email: 'ravi@example.com', name: 'Ravi' });
   const D = (id, updated, name) => ({ id, name, updated, nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: {} }], edges: [] });
-  let r = await call('/v1/me/lab', { method: 'POST', cookie, body: { designs: [D('a', 10, 'A1'), D('b', 10, 'B1')], progress: { stars: { 'one-server': 2, 'not-a-challenge': 3 }, goals: { 'one-server': [true, false, true] }, steps: { 'tour:lab': true, 'evil.$key': true } } } });
+  let r = await call('/v1/me/lab', { method: 'POST', cookie, body: { designs: [D('a', 10, 'A1'), D('b', 10, 'B1')], progress: { stars: { 'one-server': 2, 'not-a-challenge': 3 }, goals: { 'one-server': [true, false, true] }, steps: { 'tour:lab': true, 'solved:url-shortener': true, 'practice:chat-app': true, 'solved:Bad.Key': true, 'evil.$key': true } } } });
   assert.equal(r.status, 200);
   let m = await r.json();
-  assert.deepEqual(m.progress, { steps: { 'tour:lab': true }, stars: { 'one-server': 2 }, goals: { 'one-server': [true, false, true] } });
+  assert.deepEqual(m.progress, { steps: { 'tour:lab': true, 'solved:url-shortener': true, 'practice:chat-app': true }, stars: { 'one-server': 2 }, goals: { 'one-server': [true, false, true] } });
   r = await call('/v1/me/lab', { method: 'POST', cookie, body: { designs: [D('a', 5, 'A-old')], deleted: [{ id: 'b', at: 20 }], progress: { stars: { 'one-server': 1 } } } });
   m = await r.json();
   assert.deepEqual(m.designs.map((d) => `${d.id}:${d.name}`), ['a:A1'], 'older copy of a ignored, b deleted');

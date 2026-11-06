@@ -83,7 +83,7 @@ const SITE = {
   // Practice mode on Interview Questions: the copy, and the steps with their minutes and checklists.
   'practice?': { ...Object.fromEntries(['button', 'again', 'practised', 'title', 'close', 'left', 'overAll', 'paused', 'stepsLabel', 'stepLeft', 'over', 'pause', 'resume', 'next', 'finish', 'doneTitle', 'doneText', 'step', 'planned', 'used', 'compare', 'missed', 'allTicked'].map((k) => [k, 'text'])), steps: [{ name: 'text', minutes: 'number', checks: ['text'] }] },
   'inside?': { eyebrow: 'text', title: 'text', desc: 'text', items: [{ kind: 'text', title: 'text', text: 'text', link: 'text', href: 'text' }], cta: 'text', ctaHref: 'text' },
-  'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
+  'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
@@ -296,6 +296,82 @@ export function validateContent({ site, examples, articles, lab }) {
     for (const key of ['no', 'tag', 'date', 'title', 'dek']) if (!isText(a[key])) problems.push(`${at}: needs ${key}`);
     if (a.group !== undefined && !groupIds.get(a.section)?.has(a.group)) problems.push(`${at}: unknown group ${a.group} for section ${a.section}`);
     checkBlocks(a.body, at, problems, challenges);
+    // practice designs are checked against the Lab catalogue, so only when it is given
+    if (a.practice !== undefined && lab) validatePractice(a.practice, lab, `${at} practice`, problems);
   }
   return problems;
+}
+
+// An Interview Question as a problem to solve (article `practice`; judged by frontend/src/judge/judge.js):
+// the fixed settings every test applies, the starting design, the test suite (at least one sample test
+// shown before Submit), the rubric for the written steps, hints, and the designs that calibrate the
+// tests (the reference must pass every test, each wrong design must fail the test it names; checked by
+// frontend/src/judge/judge.test.js).
+const CHECK_KINDS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has']);
+const HINT_STEPS = new Set(['requirements', 'estimates', 'api', 'design', 'deep']);
+const ID = /^[a-z0-9][a-z0-9-]{0,40}$/;
+export function validatePractice(p, lab, at, problems) {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) { problems.push(`${at}: needs an object`); return; }
+  const byType = Object.fromEntries(list(lab?.components).map((c) => [c && c.type, c]));
+  const patterns = new Set(list(byType.client?.patterns).map((x) => x && x.id));
+  if (!isText(p.brief)) problems.push(`${at}: needs brief`);
+  const f = p.fixed;
+  if (f !== undefined) {
+    if (!f || typeof f !== 'object') problems.push(`${at}: fixed needs an object`);
+    else for (const [k, v] of Object.entries(f)) {
+      const r = { queriesPerRequest: byType.server?.queriesPerRequest, hitPct: byType.cache?.hitPct, writePct: byType.cache?.writePct, cdnHitPct: byType.cdn?.hitPct }[k];
+      if (k === 'cdnLive') { if (typeof v !== 'boolean') problems.push(`${at}: fixed.cdnLive must be true or false`); }
+      else if (!r) problems.push(`${at}: unknown fixed setting ${k}`);
+      else if (!(isNumber(v) && v >= r.min && v <= r.max)) problems.push(`${at}: fixed.${k} must be from ${r.min} to ${r.max}`);
+    }
+  }
+  validateDesign(p.start && { name: 'start', ...p.start }, lab, `${at} start`, problems);
+  validateDesign(p.reference && { name: 'reference', ...p.reference }, lab, `${at} reference`, problems);
+  const tests = list(p.tests), ids = new Set();
+  if (!tests.length) problems.push(`${at}: tests must be a non-empty list`);
+  if (!tests.some((t) => t && t.sample === true)) problems.push(`${at}: at least one test needs sample: true`);
+  for (const [i, t] of tests.entries()) {
+    const w = `${at} test ${t?.id || i}`;
+    if (!t || !ID.test(t.id || '')) { problems.push(`${w}: needs an id`); continue; }
+    if (ids.has(t.id)) problems.push(`${w}: duplicate id`); ids.add(t.id);
+    for (const k of ['name', 'desc']) if (!isText(t[k])) problems.push(`${w}: needs ${k}`);
+    if (t.sample !== undefined && typeof t.sample !== 'boolean') problems.push(`${w}: sample must be true or false`);
+    if (!(isNumber(t.hours) && t.hours > 0 && t.hours <= 48)) problems.push(`${w}: hours must be above 0 and at most 48`);
+    if (!(isNumber(t.startHour) && t.startHour >= 0 && t.startHour < 24)) problems.push(`${w}: startHour must be from 0 to under 24`);
+    const rps = byType.client?.rps;
+    if (!t.traffic || !isNumber(t.traffic.rps) || !rps || t.traffic.rps < rps.min || t.traffic.rps > rps.max) problems.push(`${w}: traffic.rps must be inside the Clients range`);
+    if (!t.traffic || !patterns.has(t.traffic.pattern)) problems.push(`${w}: traffic.pattern must be a Clients pattern`);
+    for (const c of t.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < t.hours * 60 && byType[c.type]?.crash)) problems.push(`${w}: a chaos event needs a minute (multiple of 5, inside the test) and a type that can crash`);
+    if (!list(t.checks).length) problems.push(`${w}: checks must be a non-empty list`);
+    for (const c of list(t.checks)) {
+      if (!c || !CHECK_KINDS.has(c.kind)) { problems.push(`${w}: unknown check ${c && c.kind}`); continue; }
+      if (!isText(c.label)) problems.push(`${w}: check ${c.kind} needs a label`);
+      if (c.kind === 'availability' && !(isNumber(c.min) && c.min > 0 && c.min <= 100)) problems.push(`${w}: availability min must be above 0 and at most 100`);
+      if (c.kind === 'availability' && (c.from !== undefined || c.to !== undefined) && !(isNumber(c.from) && isNumber(c.to) && c.from % 5 === 0 && c.to % 5 === 0 && c.from >= 0 && c.to > c.from && c.to <= t.hours * 60)) problems.push(`${w}: an availability window needs from < to, multiples of 5 minutes inside the test`);
+      if ((c.kind === 'p99' || c.kind === 'cost') && !(isNumber(c.max) && c.max > 0)) problems.push(`${w}: ${c.kind} max must be above 0`);
+      if (['redundant', 'has'].includes(c.kind) && !byType[c.type]) problems.push(`${w}: ${c.kind} needs a component type`);
+      if (c.kind === 'noCrash' && c.type !== undefined && !byType[c.type]) problems.push(`${w}: noCrash type ${c.type} is not a component`);
+      if (c.kind === 'requires' && !(Array.isArray(c.types) && c.types.length && c.types.every((x) => byType[x]))) problems.push(`${w}: requires must list component types`);
+    }
+  }
+  const r = p.rubric;
+  if (!r || typeof r !== 'object') problems.push(`${at}: needs rubric`);
+  else {
+    if (!list(r.fr).length || !r.fr.every((x) => x && isText(x.label) && Array.isArray(x.keys) && x.keys.length && x.keys.every((k) => isText(k) && k === k.toLowerCase()))) problems.push(`${at}: rubric.fr needs [{label, keys: [lowercase phrases]}]`);
+    const range = (v) => Array.isArray(v) && v.length === 2 && v.every(isNumber) && v[0] <= v[1];
+    const nfr = r.nfr || {};
+    for (const [k, v] of Object.entries(nfr)) {
+      if (k === 'consistency') { if (!['strong', 'eventual'].includes(v)) problems.push(`${at}: rubric.nfr.consistency must be strong or eventual`); }
+      else if (!['availability', 'p99', 'readsPerWrite'].includes(k)) problems.push(`${at}: unknown rubric.nfr.${k}`);
+      else if (!range(v)) problems.push(`${at}: rubric.nfr.${k} must be [min, max]`);
+    }
+    if (!list(r.est).length || !r.est.every((x) => x && ID.test(x.id || '') && isText(x.label) && isText(x.unit) && isNumber(x.answer) && x.answer > 0 && (x.tol === undefined || (isNumber(x.tol) && x.tol > 1)) && (x.how === undefined || isText(x.how)))) problems.push(`${at}: rubric.est needs [{id, label, unit, answer, tol?, how?}]`);
+    if (!list(r.api).length || !r.api.every((x) => x && isText(x.label) && ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(x.method) && isText(x.path) && (() => { try { new RegExp(x.path); return true; } catch { return false; } })())) problems.push(`${at}: rubric.api needs [{label, method, path (a regular expression)}]`);
+  }
+  if (!list(p.hints).length || !p.hints.every((h) => h && HINT_STEPS.has(h.step) && isText(h.x))) problems.push(`${at}: hints need [{step, x}] with step one of ${[...HINT_STEPS].join(', ')}`);
+  for (const [i, w] of list(p.wrong).entries()) {
+    if (!w || !isText(w.name) || !isText(w.why) || !ids.has(w.fails)) { problems.push(`${at} wrong design ${i}: needs name, why and fails (a test id)`); continue; }
+    validateDesign({ ...w }, lab, `${at} wrong design ${w.name}`, problems);
+  }
+  if (!list(p.wrong).length) problems.push(`${at}: needs at least one wrong design to calibrate the tests`);
 }

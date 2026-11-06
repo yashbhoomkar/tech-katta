@@ -215,5 +215,840 @@
       "to": "lab/lost-orders",
       "go": "Try the lost-orders challenge"
     }
-  ]
+  ],
+  "practice": {
+    "brief": "Each test sends payment requests. Each one writes the payment and its ledger entries: 4 queries, most of them writes. A confirmed payment must never be lost. Your Clients' own rate is ignored.",
+    "fixed": {
+      "queriesPerRequest": 4,
+      "hitPct": 50,
+      "writePct": 60
+    },
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 1000,
+            "pattern": "steady"
+          }
+        }
+      ],
+      "edges": []
+    },
+    "tests": [
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "sample": true,
+        "desc": "300 payment requests a second (payments, status checks and refunds).",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of payments succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 500,
+            "label": "p99 under 500 ms"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "sample": true,
+        "desc": "1,000 requests a second at 8 pm.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of payments succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 500,
+            "label": "p99 under 500 ms"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "The Diwali sale",
+        "desc": "At 8 pm a sale starts: 3,000 requests a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of payments succeed"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          }
+        ]
+      },
+      {
+        "id": "cache-crash",
+        "name": "A cache crashes",
+        "desc": "At the dinner peak a cache crashes. Any payment it had acknowledged but not yet written to the database is gone, which means money on the customer's statement and nothing in your books.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "cache"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99,
+            "label": "At least 99% of payments still go through"
+          },
+          {
+            "kind": "noLostWrites",
+            "label": "No confirmed payment is lost"
+          }
+        ]
+      },
+      {
+        "id": "server-dies",
+        "name": "A server group dies",
+        "desc": "At the peak (1,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "server"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.5,
+            "label": "At least 99.5% of payments still succeed"
+          },
+          {
+            "kind": "redundant",
+            "type": "server",
+            "label": "No server group that every request depends on (no single point of failure)"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99,
+            "label": "At least 99% of payments still succeed"
+          },
+          {
+            "kind": "multiAz",
+            "label": "Every database has a standby in another zone (Multi-AZ)"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (300 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of payments succeed"
+          },
+          {
+            "kind": "cost",
+            "max": 6500,
+            "label": "Costs at most $6,500 a month"
+          }
+        ]
+      }
+    ],
+    "rubric": {
+      "fr": [
+        {
+          "label": "Pay by UPI or card; confirm the order only when paid",
+          "keys": [
+            "upi",
+            "card",
+            "pay"
+          ]
+        },
+        {
+          "label": "Never charge twice (idempotency)",
+          "keys": [
+            "twice",
+            "double",
+            "idempoten",
+            "duplicate"
+          ]
+        },
+        {
+          "label": "Refunds, full or part",
+          "keys": [
+            "refund"
+          ]
+        },
+        {
+          "label": "A ledger that matches the gateway",
+          "keys": [
+            "ledger",
+            "reconcil",
+            "books",
+            "entries"
+          ]
+        },
+        {
+          "label": "Handle unknown / timed-out payments",
+          "keys": [
+            "unknown",
+            "pending",
+            "timeout",
+            "time out",
+            "checking"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.95,
+          99.999
+        ],
+        "p99": [
+          100,
+          2000
+        ],
+        "consistency": "strong",
+        "readsPerWrite": [
+          0.5,
+          5
+        ]
+      },
+      "est": [
+        {
+          "id": "avg",
+          "label": "Payments a second on average",
+          "unit": "/s",
+          "answer": 115,
+          "tol": 3,
+          "how": "1 crore a day ÷ 86,400"
+        },
+        {
+          "id": "peak",
+          "label": "Payments a second at dinner",
+          "unit": "/s",
+          "answer": 500,
+          "tol": 3,
+          "how": "about 4× the average"
+        },
+        {
+          "id": "ledger",
+          "label": "New ledger data a day",
+          "unit": "GB",
+          "answer": 10,
+          "tol": 3,
+          "how": "2–4 crore rows × 300 bytes"
+        }
+      ],
+      "api": [
+        {
+          "label": "Create a payment (with an idempotency key)",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?payments/?$"
+        },
+        {
+          "label": "Payment status",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?payments/[^/]+"
+        },
+        {
+          "label": "Refund",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(payments/[^/]+/)?refunds?"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "Money: what must never happen twice, and what must never be lost?"
+      },
+      {
+        "step": "estimates",
+        "x": "Volume is small (hundreds a second). The hard part is correctness, but work out the ledger growth too."
+      },
+      {
+        "step": "api",
+        "x": "POST /payments with an Idempotency-Key header, the amount taken from the order, never from the app."
+      },
+      {
+        "step": "design",
+        "x": "Most queries here are writes, so a cache helps little. Size the database for the writes."
+      },
+      {
+        "step": "design",
+        "x": "If you do add a cache, keep it write-through: a write-back cache that crashes loses payments it had already confirmed."
+      },
+      {
+        "step": "design",
+        "x": "Multi-AZ on the database, two server groups. Unknown payments get settled by a background check, never by charging again."
+      }
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 1000,
+            "pattern": "steady"
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app1",
+          "type": "server",
+          "x": 480,
+          "y": -75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 1,
+            "queriesPerRequest": 4
+          }
+        },
+        {
+          "id": "app2",
+          "type": "server",
+          "x": 480,
+          "y": 75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 1,
+            "queriesPerRequest": 4
+          }
+        },
+        {
+          "id": "db1",
+          "type": "database",
+          "x": 720,
+          "y": -75,
+          "config": {
+            "size": "db.r5.2xlarge",
+            "multiAz": true
+          }
+        },
+        {
+          "id": "db2",
+          "type": "database",
+          "x": 720,
+          "y": 75,
+          "config": {
+            "size": "db.r5.2xlarge",
+            "multiAz": true
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app1"
+        },
+        {
+          "from": "lb",
+          "to": "app2"
+        },
+        {
+          "from": "app1",
+          "to": "db1"
+        },
+        {
+          "from": "app1",
+          "to": "db2"
+        },
+        {
+          "from": "app2",
+          "to": "db1"
+        },
+        {
+          "from": "app2",
+          "to": "db2"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "One server group",
+        "why": "When it crashes, nothing answers for 5 minutes.",
+        "fails": "server-dies",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "A crash keeps it down for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": false
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": false
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "Passes the load but costs far more than the traffic needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Write-back cache in front of the ledger",
+        "why": "Fast, until the cache crashes and takes acknowledged payments with it.",
+        "fails": "cache-crash",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 50,
+              "writePct": 60,
+              "onDown": "database",
+              "writePolicy": "back"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 50,
+              "writePct": 60,
+              "onDown": "database",
+              "writePolicy": "back"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          }
+        ]
+      }
+    ]
+  }
 }

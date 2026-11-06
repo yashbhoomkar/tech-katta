@@ -412,3 +412,26 @@ test('the account sync keeps the problem a saved design was opened for', async (
   assert.equal(out.designs.find((x) => x.id === 'q-url-shortener').problem, 'url-shortener');
   assert.equal(out.designs.find((x) => x.id === 'q-bad').problem, undefined);
 });
+
+test('validation checks practice suites: tests, checks, rubric, hints, calibration designs', async () => {
+  const lab = JSON.parse(await readFile(path.join(repoContent, 'lab.json'), 'utf8'));
+  const q = structuredClone(allArticles.find((a) => a.practice));
+  assert.ok(q, 'an Interview Question has practice tests');
+  q.practice.tests[0].checks.push({ kind: 'teleport', label: 'x' });
+  q.practice.tests[1].traffic.pattern = 'nope';
+  q.practice.tests.forEach((t) => { t.sample = false; });
+  q.practice.rubric.fr[0].keys = ['UPPER'];
+  q.practice.rubric.api[0].path = '([';
+  q.practice.hints = [{ step: 'later', x: 'x' }];
+  q.practice.wrong[0].fails = 'missing-test';
+  const problems = validateContent({ site, examples, articles: [q], lab });
+  for (const m of ['unknown check teleport', 'traffic.pattern must be', 'at least one test needs sample', 'rubric.fr needs', 'rubric.api needs', 'hints need', 'fails (a test id)']) assert.ok(problems.some((p) => p.includes(m)), m);
+});
+
+test('a problem is served without its reference and wrong designs', async () => {
+  const response = await get('/v1/articles/url-shortener');
+  const a = await response.json();
+  assert.ok(a.practice && a.practice.tests.length > 0, 'tests are served');
+  assert.equal(a.practice.reference, undefined);
+  assert.equal(a.practice.wrong, undefined);
+});

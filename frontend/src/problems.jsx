@@ -4,7 +4,7 @@
 // challenges from GET /v1/lab. The question list is a LeetCode-style table (QuestionTable), also used by
 // the Interview Questions tab (Questions). With site.json problems.solve every question opens in the
 // workspace (solve.jsx): #problems/<slug> on its description, #interview-questions/<slug> on its answer.
-import React,{useEffect,useState}from"react";import{getJSON}from"./api.js";import{readProgress}from"./progress.js";import{readStore,STORE_KEY}from"./lab/store.js";import"./problems.css";
+import React,{useEffect,useState}from"react";import{getJSON}from"./api.js";import{readProgress}from"./progress.js";import{readStore,STORE_KEY}from"./lab/store.js";import{bestScore,readSubs}from"./practice.js";import"./problems.css";
 
 const fill=(t,v)=>t.replace(/\{(\w+)\}/g,(_,k)=>v[k]??"");
 const Stars=({n,max,label})=><span className="pb-stars" role="img" aria-label={label}>{Array.from({length:max},(_,i)=>i).map(i=><i key={i} className={i<n?"on":""} aria-hidden="true">★</i>)}</span>;
@@ -21,18 +21,20 @@ return{prog,lab,err,designed,tick}}
 
 // The question list: status, number, title, difficulty, the Lab challenge's stars; filters by difficulty.
 export function QuestionTable({p,qs,groups,base,data,todo}){
-const s=p.solve||{cols:["","#","","",""],designed:""},[level,setLevel]=useState("all");const{prog,lab,designed}=data;
+const s=p.solve||{cols:["","#","","","",""],designed:"",solved:""},[level,setLevel]=useState("all");const{prog,lab,designed}=data;
 const levels=(groups||[]).filter(g=>qs.some(a=>a.group===g[0]));
-const rows=qs.map(a=>({a,done:!!prog.steps["practice:"+a.slug],tried:designed.has(a.slug),ch:a.lab&&lab?.challenges.find(x=>x.id===a.lab)}))
+const rows=qs.map(a=>({a,done:!!prog.steps["solved:"+a.slug],tried:!!prog.steps["practice:"+a.slug]||designed.has(a.slug)||readSubs(a.slug).length>0,best:bestScore(a.slug),ch:a.lab&&lab?.challenges.find(x=>x.id===a.lab)}))
 .filter(r=>(level==="all"||r.a.group===level)&&(!todo||!r.done));
+const head=[s.cols[0],s.cols[1],s.cols[2],s.cols[3],s.cols[5],s.cols[4]],cls=["c0","c1","c2","c3","c5","c4"];
 return <div className="qt">
 {levels.length>1&&<div className="qt-levels" role="group" aria-label={s.cols[3]}>{[["all",p.all],...levels.map(g=>[g[0],g[1]])].map(([id,t])=><button key={id} type="button" aria-pressed={level===id} className={(level===id?"on ":"")+id} onClick={()=>setLevel(id)}>{t}</button>)}</div>}
-{rows.length?<table className="qt-table"><thead><tr>{s.cols.map((c,i)=><th key={c} scope="col" className={"c"+i}>{c}</th>)}</tr></thead><tbody>
-{rows.map(({a,done,tried,ch})=><tr key={a.slug}>
-<td className="c0">{done?<span className="qt-st done" title={p.practised}>✓<span className="sr">{p.practised}</span></span>:tried?<span className="qt-st tried" title={s.designed}>◐<span className="sr">{s.designed}</span></span>:<span className="qt-st" aria-hidden="true"></span>}</td>
+{rows.length?<table className="qt-table"><thead><tr>{head.map((c,i)=><th key={i} scope="col" className={cls[i]}>{c}</th>)}</tr></thead><tbody>
+{rows.map(({a,done,tried,best,ch})=><tr key={a.slug}>
+<td className="c0">{done?<span className="qt-st done" title={s.solved}>✓<span className="sr">{s.solved}</span></span>:tried?<span className="qt-st tried" title={s.designed}>◐<span className="sr">{s.designed}</span></span>:<span className="qt-st" aria-hidden="true"></span>}</td>
 <td className="c1">{qno(a)}</td>
 <td className="c2"><a href={`#${base}/${a.slug}`}>{a.title}</a></td>
 <td className="c3"><em className={"pb-tag "+a.group}>{a.tag}</em></td>
+<td className="c5">{best!=null?<b className="qt-score">{best}</b>:<span className="qt-none">—</span>}</td>
 <td className="c4">{ch?<a href={`#lab/${ch.id}`} title={ch.title}><Stars n={prog.stars[ch.id]||0} max={ch.stars.length} label={fill(p.starsLabel,{n:prog.stars[ch.id]||0,max:ch.stars.length})}/></a>:""}</td></tr>)}
 </tbody></table>:<p className="pb-none">{p.allDone}</p>}</div>}
 
@@ -48,7 +50,7 @@ const data=useProblemData();const{prog,lab,err}=data;const[todo,setTodo]=useStat
 const qs=articles.filter(a=>a.section==="interview-questions"&&a.group!=="start");
 const chs=(lab?.challenges||[]).map(ch=>({ch,n:prog.stars[ch.id]||0,max:ch.stars.length}));
 const levels=Object.fromEntries((lab?.levels||[]).map(l=>[l.id,l.label]));
-const sum=fill(p.summary,{q:qs.filter(a=>prog.steps["practice:"+a.slug]).length,qt:qs.length,s:chs.reduce((t,x)=>t+x.n,0),st:chs.reduce((t,x)=>t+x.max,0)});
+const sum=fill(p.summary,{q:qs.filter(a=>prog.steps["solved:"+a.slug]).length,qt:qs.length,s:chs.reduce((t,x)=>t+x.n,0),st:chs.reduce((t,x)=>t+x.max,0)});
 const showC=chs.filter(x=>!todo||x.n<x.max);
 return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.desc}</p>
 <div className="pb-bar"><p className="pb-sum" aria-live="polite">{lab||err?sum:"…"}</p>
