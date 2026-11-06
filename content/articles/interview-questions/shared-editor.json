@@ -1,0 +1,216 @@
+{
+  "section": "interview-questions",
+  "slug": "shared-editor",
+  "group": "medium",
+  "no": "QUESTION // 19",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a shared document editor",
+  "dek": "A restaurant's owner, chef and manager edit their Zotato menu together: one adds a dish while another changes a price, each seeing the other's changes as they type. Build editing where nobody's change is lost, and everyone ends up with the same menu.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Don't save whole documents: the last save would wipe out the other person's change. Send small edits instead (insert this, delete that).",
+        "Give each document one server that owns it at a time. It puts every edit in one order, numbers it, saves it to the document's log, and sends it to everyone else.",
+        "Edits made at the same moment were made against an older version. Adjust the later one for what landed first (operational transforms), so both survive.",
+        "Save a snapshot every few hundred edits, so opening a document is a snapshot plus a few recent edits, not its whole history.",
+        "Cursors and \"who's here\" are sent but never saved; losing one costs nothing."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Several people edit the same document (a menu, a notice) at once and see each other's changes within half a second.",
+        "No change is ever lost, and everyone ends up with exactly the same text.",
+        "Show who else is in the document and where they're typing.",
+        "Out of scope here: rich formatting and images (the same ideas apply), and comments."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Your own typing appears instantly; others' within half a second"
+        ],
+        [
+          "No lost edits",
+          "Every edit that was acknowledged is in the document"
+        ],
+        [
+          "Same result",
+          "All editors end with identical text"
+        ],
+        [
+          "Scale",
+          "20,000 documents open at the morning peak, 40,000 people editing"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Documents: 3 lakh restaurants, a menu of about 20 KB each. All of them fit in 6 GB; size isn't the problem.",
+        "Open at once: about 20,000 documents with 40,000 editors at the morning peak, when kitchens update the day's menus.",
+        "Edits: phones send typing in small batches every 200 ms or so. At about 1 batch a second per active editor, that's around 40,000 edits a second at peak.",
+        "Servers: if one server comfortably holds 2,000 open documents with their editors' connections, that's 10 servers, more with room to spare.",
+        "The log: about 100 bytes an edit, 40,000 a second during peak hours, is about 4 MB a second, roughly 15 GB per peak hour. Snapshots let old edits be archived."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Document: `id`, `owner_restaurant`, `latest_seq`, `snapshot_seq`, `snapshot` (text at that number).",
+        "Edit: `doc_id`, `seq` (the server's order), `author`, `client_edit_id`, `base_seq` (the version the author saw), `ops` (insert or delete at a position).",
+        "Access: who may view or edit each document."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Over the open connection",
+      "x": "← { \"open\": { \"doc\": \"menu_214\", \"seq\": 40, \"text\": \"Tikka ₹220…\" } }\n→ { \"edit\": { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": { \"at\": 7, \"len\": 3, \"with\": \"240\" } } ] } }\n← { \"edit\": { \"seq\": 41, \"by\": \"Ananya\", \"ops\": [ { \"insert\": { \"at\": 0, \"text\": \"Paneer \" } } ] } }\n← { \"ack\": { \"id\": \"e_77\", \"seq\": 42 } }\n→ { \"cursor\": { \"at\": 21 } }",
+      "say": "Open a document and get its text and number. Send an edit with the version you made it on; get back its number. Receive others' edits in order. Share your cursor."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "doc-flow",
+      "cap": "Everyone editing menu #214 talks to the one doc server that owns it. The server orders each edit, numbers it into the document's log and sends it to the others; every few hundred edits it saves a snapshot."
+    },
+    {
+      "t": "p",
+      "x": "One owner per document makes ordering simple: there's exactly one place deciding which edit came first. A registry (kept with consensus, as in the consensus article) says which server owns which document, and moves ownership if a server dies."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Two people, one line"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "SAVE THE WHOLE DOCUMENT",
+      "what": "Each editor sends the whole menu when they stop typing; the server keeps the latest.",
+      "use": "Simple, fine when one person edits at a time.",
+      "avoid": "Ananya saves her new dish; a second later Rohit saves his price change, made on the old menu. Ananya's dish is gone, and nobody notices until a customer asks.",
+      "ex": "The chef adds \"Paneer Tikka\"; the manager's price update, saved after, quietly removes it.",
+      "like": "Two people editing copies of the same printout and the last one to hand it in wins."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "SMALL EDITS, ORDERED AND ADJUSTED",
+      "what": "Send each change as a small edit with the version it was made on. The doc server puts edits in one order; if an edit was made on an older version, it adjusts the edit's positions for the edits that came first, then applies and sends it.",
+      "use": "Both changes survive, everyone applies the same edits in the same order, and everyone ends with the same text.",
+      "avoid": "The adjusting rules (operational transforms) are fiddly to get right for every pair of edit types; use a tested library rather than writing your own.",
+      "ex": "Rohit's price change made on #40 is shifted by the 7 characters Ananya added in #41, and both appear.",
+      "like": "A secretary who takes changes from everyone and fixes the line numbers in each before typing it in."
+    },
+    {
+      "t": "fig",
+      "id": "transform",
+      "cap": "\"Tikka ₹220\": Ananya adds \"Paneer \" while Rohit changes 220 to 240. The server takes Ananya's first, shifts Rohit's change right by her 7 characters, and everyone ends with \"Paneer Tikka ₹240\"."
+    },
+    {
+      "t": "p",
+      "x": "The other approach is data types that merge on their own (CRDTs): every character gets a unique id, so edits can be applied in any order and still agree. They suit offline-first apps and peer-to-peer syncing; they cost more memory. With a server always in the middle, ordered and adjusted edits are simpler."
+    },
+    {
+      "t": "h2",
+      "x": "Your own typing feels instant"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Show your edit on your screen at once, and keep it in a \"sent, not yet confirmed\" list.",
+        "When others' edits arrive, adjust each incoming edit past your unconfirmed ones before showing it, and your unconfirmed edits past it, so your screen matches what the server will have.",
+        "When the server confirms your edit with its number, drop it from the list."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Saving and opening"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The edit is saved to the log before it's confirmed; a server crash loses no confirmed edit.",
+        "Every few hundred edits, save a snapshot. Opening a document is the latest snapshot plus the edits after it.",
+        "An editor whose connection drops reconnects with its last number and gets everything after it, then resends its unconfirmed edits with their ids and the version each was made on. The server adjusts each one for the edits it missed; if it already has that id, it just sends back the number it gave it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A doc server dies: the registry gives its documents to other servers, which load the snapshot and log. Editors reconnect and resend unconfirmed edits.",
+        "Someone edits offline for an hour: their edits are adjusted against an hour of others' edits when they reconnect. For long offline work, CRDTs or a \"review changes\" step work better.",
+        "Two servers think they own a document (a pause during a handover): the log only accepts writes carrying the current owner's token, a number the registry raises at every handover (fencing), so one of them is refused."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: open connections, sending edits not whole documents, a server that orders them.",
+        "Senior: one owner per document, adjusting concurrent edits, local edits shown at once, snapshots plus a log.",
+        "Lead: the registry and moving ownership, fencing during handover, OT versus CRDTs and when each fits, reconnecting and offline edits."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"See the menu as it was last Tuesday?\" Replay the log from the snapshot before Tuesday up to the last edit of Tuesday.",
+            "\"Undo?\" Undo your own last edit by sending its opposite as a new edit, adjusted like any other; never rewind the shared log.",
+            "\"A document with 500 editors?\" Rare for menus; batch edits more and send cursors less often, or split very large documents.",
+            "\"Permissions change mid-edit?\" The server checks access on every edit, not only when opening.",
+            "\"How do you test it?\" Simulate many editors making random edits at once, in random orders and with dropped connections, and check every copy ends identical."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Doc servers hold open connections, like chat gateways. The first lesson is the same as any server's: one isn't enough.",
+      "to": "lab/one-server",
+      "go": "Try the one-server challenge"
+    }
+  ]
+}
