@@ -601,6 +601,35 @@ return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`oft${uid}`}><titl
 {step(.7,<g><Line x1={205} y1={58} x2={205} y2={30} dash c={RED}/><Line x1={205} y1={30} x2={60} y2={30} dash c={RED}/><Line x1={60} y1={30} x2={60} y2={56} m={M} dash c={RED}/><text x={215} y={26} className="fl" style={{fill:RED}}>declines or 20 s pass: free; order goes to the next rider</text></g>)}
 {step(.85,<text x={0} y={196} className="fl">the move to "offered" only happens if the rider is still free: one order at a time, never two</text>)}</svg>}
 
+// Video, FIG: the pipeline. The chef's app uploads the original straight to storage. A queue hands it to
+// transcoders, which split it into chunks and encode each chunk in five sizes at once. The result is short
+// segments plus a playlist, served through a CDN to viewers.
+function VideoPipeFig({still,uid=""}){const M=`vp${uid}`,D="12s";
+const sizes=["240p","360p","480p","720p","1080p"];
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`vpt${uid}`}><title id={`vpt${uid}`}>The chef's app uploads the original video straight to storage. A queue hands it to transcoders, which split it into chunks and encode each chunk in five sizes, from 240p to 1080p, at the same time. The result is 4-second segments for each size plus a playlist, served through a CDN to viewers.</title><Mark m={M}/>
+<SBox x={0} y={50} w={100} t="Chef's app"/><SBox x={140} y={50} w={110} t="Storage"/><SBox x={290} y={50} w={80} t="Queue"/><SBox x={410} y={50} w={130} t="Transcoders" blue/>
+<Line x1={102} y1={50} x2={136} y2={50} m={M}/><Line x1={252} y1={50} x2={286} y2={50} m={M}/><Line x1={372} y1={50} x2={406} y2={50} m={M}/><text x={120} y={36} textAnchor="middle" className="fl">original</text>
+{sizes.map((z,i)=><g key={z}><rect x={410+i*46} y={84} width={40} height={20} fill="#f8faff" stroke={BLUE}/><text x={430+i*46} y={98} textAnchor="middle" className="fl">{z}</text></g>)}
+<text x={475} y={122} textAnchor="middle" className="fl">every chunk, five sizes, in parallel</text>
+<SBox x={410} y={170} w={130} t="Segments + playlist"/><SBox x={250} y={170} w={110} t="CDN"/><SBox x={90} y={170} w={110} t="Viewers"/>
+<Line x1={475} y1={130} x2={475} y2={156} m={M}/><Line x1={408} y1={170} x2={364} y2={170} m={M}/><Line x1={248} y1={170} x2={204} y2={170} m={M}/>
+<text x={305} y={206} textAnchor="middle" className="fl">most views served from the edge</text>
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={134} y={50} t0={.02} t1={.1} dur={D}/><Dot x1={254} x2={284} y={50} t0={.12} t1={.18} dur={D}/><Dot x1={374} x2={404} y={50} t0={.2} t1={.26} dur={D}/><Glow x={410} y={78} w={226} h={32} t0={.28} t1={.46} dur={D}/><Dot x1={475} x2={475} y={132} y2={154} t0={.5} t1={.56} dur={D}/><Dot x1={406} x2={366} y={170} t0={.6} t1={.68} dur={D}/><Dot x1={246} x2={206} y={170} t0={.72} t1={.8} dur={D}/></g>}</svg>}
+
+// Video, FIG: changing quality. The player fetches 4-second segments and picks a size for each one from how
+// fast the last few downloaded. Strong 4G: 720p. In a lift the speed drops, so the next segments are 240p
+// and the video keeps playing. Out of the lift it climbs back to 480p, then 720p.
+function AbrFig({still,uid=""}){const D="10s",X=110,SW=40;
+const seg=[[720,"4G"],[720,"4G"],[720,"4G"],[240,"lift"],[240,"lift"],[480,"back"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"]];
+const h=(q)=>q===720?70:q===480?46:22;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`abt${uid}`}><title id={`abt${uid}`}>The player fetches 4-second segments and picks a size for each one from how fast the last few downloaded. On strong 4G it fetches 720p. In a lift the speed drops, so the next two segments are 240p and the video keeps playing without a pause. Out of the lift it climbs back to 480p, then 720p.</title>
+<text x={0} y={64} className="fl">720p</text><text x={0} y={88} className="fl">480p</text><text x={0} y={112} className="fl">240p</text>
+<line x1={X} y1={130} x2={X+seg.length*SW+4} y2={130} stroke={GREY}/>
+{seg.map(([q,n],i)=>{const el=<rect x={X+i*SW+2} y={130-h(q)} width={SW-6} height={h(q)} fill={q===240?"#f4c7c3":q===480?"#b9c9ff":BLUE}/>;return still?<g key={i}>{el}</g>:<Show key={i} t0={.03+i*.07} t1={.98} dur={D}>{el}</Show>})}
+<text x={X+3*SW+2} y={150} className="fl" style={{fill:RED}}>in a lift</text><text x={X+5*SW+2} y={166} className="fl">back</text>
+<text x={0} y={150} className="fl">each bar: 4 s</text>
+<text x={0} y={200} className="fl">quality changes from one segment to the next; the picture never stops</text></svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -645,4 +674,6 @@ export const QUESTION_FIGS={
 "transform":{C:TransformFig,ar:640/230,title:()=>"TWO EDITS, ONE RESULT"},
 "dispatch":{C:DispatchFig,ar:640/230,title:()=>"FROM PINGS TO AN OFFER"},
 "offer-states":{C:OfferStatesFig,ar:640/210,title:()=>"ONE ORDER AT A TIME"},
+"video-pipe":{C:VideoPipeFig,ar:640/240,title:()=>"ONE UPLOAD, FIVE SIZES"},
+"abr":{C:AbrFig,ar:640/220,title:()=>"QUALITY FOLLOWS THE NETWORK"},
 };
