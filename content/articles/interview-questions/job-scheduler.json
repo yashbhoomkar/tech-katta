@@ -258,7 +258,7 @@
         "id": "peak",
         "name": "The evening",
         "sample": true,
-        "desc": "3,000 a second at 9 pm, with dinner's rating reminders.",
+        "desc": "3,000 job operations a second at 9 pm, with dinner's rating reminders.",
         "hours": 1,
         "startHour": 21,
         "traffic": {
@@ -482,7 +482,7 @@
       "api": [
         {
           "label": "Create a job",
-          "method": "POST",
+          "method": "POST|PUT",
           "path": "^/(api/)?(v\\d+/)?jobs/?$"
         },
         {

@@ -492,7 +492,7 @@
         },
         {
           "label": "Like a photo",
-          "method": "PUT",
+          "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?photos/[^/]+/like"
         }
       ]

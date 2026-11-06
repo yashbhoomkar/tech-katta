@@ -156,7 +156,7 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9/{}:._ -]+/g,
 // rubric.fr: [{label, keys: [phrase]}] (any phrase present counts; phrases are lowercase)
 // rubric.nfr: {availability: [min, max], p99: [min, max], consistency: "strong" | "eventual", readsPerWrite: [min, max]}
 // rubric.est: [{id, label, unit, answer, tol}] (within answer ÷ tol … answer × tol)
-// rubric.api: [{label, method, path}] (path is a regular expression for the visitor's path)
+// rubric.api: [{label, method, path}] (method may be "PUT|POST"; path is a regular expression for the visitor's path)
 export function gradeAnswer(answer = {}, rubric = {}) {
   const text = norm(answer.fr);
   const fr = (rubric.fr || []).map((r) => ({ label: r.label, ok: r.keys.some((k) => text.includes(k)) }));
@@ -171,7 +171,8 @@ export function gradeAnswer(answer = {}, rubric = {}) {
     return { id: r.id, label: r.label, unit: r.unit, answer: r.answer, value: Number.isFinite(n) && n > 0 ? n : null, ok };
   });
   const rows = (answer.api || []).filter((a) => a && a.path);
-  const api = (rubric.api || []).map((r) => { const re = new RegExp(r.path, 'i'); const hit = rows.find((a) => a.method === r.method && re.test(String(a.path).trim())); return { label: r.label, method: r.method, ok: !!hit, got: hit ? `${hit.method} ${hit.path}` : null }; });
+  // a rubric method may list alternatives ("PUT|POST"): following someone can fairly be either
+  const api = (rubric.api || []).map((r) => { const re = new RegExp(r.path, 'i'), ms = r.method.split('|'); const hit = rows.find((a) => ms.includes(a.method) && re.test(String(a.path).trim())); return { label: r.label, method: r.method, ok: !!hit, got: hit ? `${hit.method} ${hit.path}` : null }; });
   const share = (xs) => (xs.length ? xs.filter((x) => x.ok).length / xs.length : 0);
   return { fr, nfr, est, api, parts: { fr: share(fr), nfr: share(nfr), est: share(est), api: share(api) } };
 }

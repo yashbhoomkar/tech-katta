@@ -475,7 +475,7 @@
         },
         {
           "label": "Put a key",
-          "method": "PUT",
+          "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?(kv|keys|store)/[^/]+"
         },
         {

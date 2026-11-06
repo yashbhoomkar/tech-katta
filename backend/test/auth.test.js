@@ -386,6 +386,7 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   const s = await r.json();
   assert.equal(s.days, 7);
   assert.deepEqual(s.totals, { events: 10, visitors: 2, users: 0 });
+  assert.ok(Array.isArray(s.problems), 'problems submitted, per problem');
   assert.deepEqual(s.devices.map((d) => `${d.device}:${d.visitors}`).sort(), ['desktop:1', 'phone:1']);
   assert.deepEqual(s.funnel.map((x) => x.visitors), [2, 2, 1, 1]);
   assert.deepEqual(s.referrers, [{ ref: 'instagram.com', views: 1, visitors: 1 }]);
@@ -493,6 +494,11 @@ test('a problem submitted while signed in is judged again on the server and coun
   assert.equal((await submit({ slug: 'url-shortener', design: 'x' })).status, 400);
   assert.equal((await call('/v1/me/submissions', { method: 'POST', body: { slug: 'url-shortener', design: a.practice.reference } })).status, 401);
   assert.equal((await submit({ slug: 'url-shortener', design: a.practice.reference }, { origin: 'https://evil.example' })).status, 403);
+  // the owner's analytics show them per problem
+  const ops = await signIn({ sub: '7002', email: 'ops@example.com' });
+  const sum = await (await call('/v1/admin/summary?days=7', { cookie: ops.cookie })).json();
+  const row = sum.problems.find((x) => x.slug === 'url-shortener');
+  assert.equal(row.submissions, 4); assert.equal(row.accepted, 3); assert.equal(row.people, 1);
   // deleting the account deletes its submissions
   assert.equal((await call('/v1/me', { method: 'DELETE', cookie })).status, 200);
   assert.equal(await client.db('tk_test').collection('submissions').countDocuments({ slug: 'url-shortener' }), 0);

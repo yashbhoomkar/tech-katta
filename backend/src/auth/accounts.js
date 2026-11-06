@@ -198,7 +198,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
       return value;
     },
     // The analytics summary for analytics.katta.cc (admin.js); the route checks the caller is an admin.
-    async summary(days) { await init(); return adminSummary({ events, users }, { days, now: clock() }); },
+    async summary(days) { await init(); return adminSummary({ events, users, submissions }, { days, now: clock() }); },
     async ping() { await db.command({ ping: 1 }); },
     // "ok" or the kind of the last failure (errorKind); checked at most every 30 s, in the background,
     // so /health never waits on the database.

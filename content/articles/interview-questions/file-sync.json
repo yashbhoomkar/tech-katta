@@ -550,7 +550,7 @@
         },
         {
           "label": "Commit the new version",
-          "method": "POST",
+          "method": "POST|PUT",
           "path": "^/(api/)?(v\\d+/)?(uploads|files)/[^/]+/(commit|complete|finish)"
         },
         {

@@ -271,7 +271,7 @@
         "id": "peak",
         "name": "The dinner peak",
         "sample": true,
-        "desc": "1,000 searches a second at 8 pm. Results must come back in under 200 ms.",
+        "desc": "1,000 searches a second at 8 pm, when most people look for dinner.",
         "hours": 1,
         "startHour": 20,
         "traffic": {

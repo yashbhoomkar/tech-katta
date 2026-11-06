@@ -523,7 +523,7 @@
         },
         {
           "label": "A restaurant changes its status",
-          "method": "PUT",
+          "method": "PUT|PATCH|POST",
           "path": "^/(api/)?(v\\d+/)?restaurants/[^/]+/status"
         }
       ]

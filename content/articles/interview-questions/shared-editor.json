@@ -492,7 +492,7 @@
         },
         {
           "label": "Send an edit",
-          "method": "POST",
+          "method": "POST|PATCH",
           "path": "^/(api/)?(v\\d+/)?(docs|documents)/[^/]+/(edits|ops|operations)"
         }
       ]

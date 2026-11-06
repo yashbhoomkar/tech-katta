@@ -5,8 +5,11 @@ const TZ = 'Asia/Kolkata';
 const count = { $sum: 1 };
 const visitors = [{ $group: { _id: '$visitor' } }, { $count: 'n' }];
 
-export async function adminSummary({ events, users }, { days = 7, now = Date.now() } = {}) {
+export async function adminSummary({ events, users, submissions }, { days = 7, now = Date.now() } = {}) {
   const from = new Date(now - days * 86_400_000);
+  // Problems submitted (judged on the server) in the range: per problem, submissions, accepted, people, scores.
+  const problems = submissions ? await submissions.aggregate([{ $match: { at: { $gte: from } } }, { $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, people: { $addToSet: '$userId' }, score: { $avg: '$score' }, best: { $max: '$score' } } },
+    { $project: { _id: 0, slug: '$_id', submissions: 1, accepted: 1, people: { $size: '$people' }, score: { $round: ['$score', 0] }, best: 1 } }, { $sort: { submissions: -1 } }]).toArray() : [];
   const [f] = await events.aggregate([
     { $match: { at: { $gte: from } } },
     { $facet: {
@@ -59,7 +62,7 @@ export async function adminSummary({ events, users }, { days = 7, now = Date.now
     totals: { events: 0, visitors: 0, users: 0, ...(f.totals[0] || {}) },
     daily: f.daily, byName: Object.fromEntries(f.byName.map((x) => [x._id, x.n])),
     devices: f.devices.map((x) => ({ device: x._id, visitors: x.visitors })),
-    pages: f.pages, referrers: f.referrers, articles: f.articles,
+    pages: f.pages, referrers: f.referrers, articles: f.articles, problems,
     lab: { components: f.components.map((x) => ({ type: x._id, n: x.n })), challengeStarts: f.challengeStarts.map((x) => ({ challenge: x._id, n: x.n })), scores },
     funnel: [['Visited the home page', n(f.landed)], ['Saw the locked Lab', n(f.locked)], ['Signed in', n(f.signedIn)], ['Scored a challenge', n(f.scored)]].map(([step, visitors]) => ({ step, visitors })),
     accounts: { total: n(acc.total), newInRange: n(acc.fresh), activeInRange: n(acc.active), adsOptIn: n(acc.ads), countries: acc.countries.map((x) => ({ country: x._id, n: x.n })), recent: acc.recent },
