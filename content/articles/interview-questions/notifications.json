@@ -100,7 +100,7 @@
     {
       "t": "fig",
       "id": "notify-flow",
-      "cap": "Services send events to the notification API. It checks preferences and devices, then puts each message in the lane for its priority. Channel workers take urgent first and send through push, SMS and email providers."
+      "cap": "Services send events to the notification API. It checks each person's preferences, then puts each message in the lane for its priority. Channel workers take urgent first and send through push, SMS and email providers."
     },
     {
       "t": "p",
@@ -120,9 +120,9 @@
       "kind": "ONE QUEUE FOR EVERYTHING",
       "what": "Every message goes on one queue, and workers send them in order.",
       "use": "Simple, and fine until the first big promotion.",
-      "avoid": "At 9 pm marketing queues 5 crore Diwali messages. An OTP queued a second later waits behind all of them, and the customer can't log in for an hour.",
+      "avoid": "At 8 pm marketing queues 5 crore Diwali messages. An OTP queued a second later waits behind all of them, and the customer can't log in for an hour.",
       "ex": "Ananya taps \"Send OTP\" three times during the Diwali blast. Three OTPs arrive 50 minutes later, all expired.",
-      "like": "A single billing counter where the person buying for a wedding is in front of you holding one bottle of water."
+      "like": "A single billing counter: you hold one bottle of water, and the person ahead is buying for a whole wedding."
     },
     {
       "t": "type",
@@ -147,7 +147,7 @@
       "t": "list",
       "items": [
         "The caller gives each event an id. If the order service retries after a timeout, the API sees the id, finds it already queued, and does nothing new.",
-        "Channel workers keep the same rule: a delivery is recorded per event and channel before the provider call is retried, so a retry after a crash doesn't send twice from our side. Push providers also take a collapse key and show only the newest message for it.",
+        "Channel workers record each event and channel as they send, and skip any already marked sent. A crash between sending and recording can still send one duplicate; providers are at-least-once too, so we cut duplicates down rather than promise none. Push providers also take a collapse key and show only the newest message for it.",
         "Order updates replace each other: if \"rider assigned\" is still waiting when \"on the way\" arrives with the same collapse key, send only \"on the way\". Nobody needs both."
       ]
     },
@@ -158,8 +158,8 @@
     {
       "t": "list",
       "items": [
-        "Check opt-outs and quiet hours before queuing, not in the worker: nothing should wait in a lane only to be dropped.",
-        "Promotions don't go out late at night, and promotional SMS must follow India's rules for registered templates and do-not-disturb preferences.",
+        "Check opt-outs and quiet hours before queuing, so little waits in a lane only to be dropped. Bulk messages wait longer, so the bulk worker checks again just before sending.",
+        "Promotions don't go out late at night, and promotional SMS must follow India's rules (TRAI's DLT: registered sender ids and templates, and the national do-not-disturb list).",
         "Cap promotions per person per week, so one person isn't hit by five campaigns in a day.",
         "Pick channels in order: push first (free, instant); SMS only for what must reach someone without the app, like OTPs."
       ]

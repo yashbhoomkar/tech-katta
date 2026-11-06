@@ -340,17 +340,17 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><titl
 // workers send through push, SMS and email providers and record what happened.
 function NotifyFlowFig({still,uid=""}){const M=`nf${uid}`,D="12s";
 const lanes=[["Urgent: OTPs",70],["Normal: order updates",120],["Bulk: promos",170]];
-return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><title id={`nft${uid}`}>Order, login and marketing services send events to the notification API. It checks the person's preferences and devices, then puts each message in a lane for its priority: urgent for OTPs, normal for order updates, bulk for promotions. Channel workers take from the lanes, urgent first, and send through push, SMS and email providers.</title><Mark m={M}/>
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><title id={`nft${uid}`}>Order, login and marketing services send events to the notification API. It checks the person's preferences, then puts each message in a lane for its priority: urgent for OTPs, normal for order updates, bulk for promotions. Channel workers take from the lanes, urgent first, and send through push, SMS and email providers.</title><Mark m={M}/>
 <SBox x={0} y={70} w={100} t="Login"/><SBox x={0} y={120} w={100} t="Orders"/><SBox x={0} y={170} w={100} t="Marketing"/>
 <SBox x={140} y={120} w={120} t="Notification API" blue/><SBox x={140} y={190} w={120} t="Preferences"/>
 {lanes.map(([t,y])=><SBox key={t} x={300} y={y} w={170} t={t}/>)}
-<SBox x={510} y={95} w={130} t="Channel workers" blue/><text x={575} y={140} textAnchor="middle" className="fl">push · SMS · email</text>
+<SBox x={510} y={95} w={126} t="Channel workers" blue/><text x={573} y={140} textAnchor="middle" className="fl">push · SMS · email</text>
 <Line x1={102} y1={70} x2={138} y2={114} m={M}/><Line x1={102} y1={120} x2={136} y2={120} m={M}/><Line x1={102} y1={170} x2={138} y2={126} m={M}/>
 <Line x1={200} y1={132} x2={200} y2={176} m={M}/>
 {lanes.map(([t,y])=><Line key={t} x1={262} y1={120} x2={296} y2={y} m={M}/>)}
-{lanes.map(([t,y])=><Line key={t} x1={472} y1={y} x2={508} y2={y<95?92:y>95?100:95} m={M}/>)}
+{lanes.map(([t,y])=><Line key={t} x1={472} y1={y} x2={508} y2={y<95?90:y<150?98:104} m={M}/>)}
 <text x={385} y={40} textAnchor="middle" className="fl">one lane per priority</text>
-{!still&&<g aria-hidden="true"><Dot x1={104} x2={136} y={70} y2={114} t0={.02} t1={.1} dur={D}/><Dot x1={200} x2={200} y={134} y2={174} t0={.12} t1={.2} dur={D}/><Dot x1={264} x2={294} y={120} y2={70} t0={.24} t1={.32} dur={D}/><Glow x={300} y={58} w={170} h={24} t0={.32} t1={.42} dur={D}/><Dot x1={474} x2={506} y={70} y2={92} t0={.44} t1={.52} dur={D}/><Glow x={510} y={83} w={130} h={24} t0={.52} t1={.66} dur={D}/></g>}</svg>}
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={136} y={70} y2={114} t0={.02} t1={.1} dur={D}/><Dot x1={200} x2={200} y={134} y2={174} t0={.12} t1={.2} dur={D}/><Dot x1={264} x2={294} y={120} y2={70} t0={.24} t1={.32} dur={D}/><Glow x={300} y={58} w={170} h={24} t0={.32} t1={.42} dur={D}/><Dot x1={474} x2={506} y={70} y2={90} t0={.44} t1={.52} dur={D}/><Glow x={510} y={83} w={126} h={24} t0={.52} t1={.66} dur={D}/></g>}</svg>}
 
 // Notifications, FIG: priority lanes. A promotion to 5 crore people fills the bulk lane, which drains at
 // a steady rate for an hour. An OTP arrives in the middle of it, goes into the empty urgent lane and is
