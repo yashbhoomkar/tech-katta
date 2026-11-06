@@ -5,6 +5,7 @@
     "concepts/consistency",
     "concepts/cap-pacelc",
     "concepts/timeouts-retries",
+    "concepts/consensus",
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",
