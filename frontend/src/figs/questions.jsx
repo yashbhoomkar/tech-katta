@@ -335,6 +335,37 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><titl
 {!still&&<g aria-hidden="true">{[2,3,4].map((i,k)=><Dot key={i} x1={i*128+60} x2={300} y={92} y2={168} t0={.3+k*.15} t1={.42+k*.15} dur={D}/>)}</g>}
 <text x="0" y="210" className="fl" style={{fill:GREY}}>a resend carries the phone's own message id, so it's saved once</text></svg>}
 
+// Notifications, FIG: the path. Order, login and marketing services send events to the notification API,
+// which checks preferences and devices, then puts each message in the lane for its priority. Channel
+// workers send through push, SMS and email providers and record what happened.
+function NotifyFlowFig({still,uid=""}){const M=`nf${uid}`,D="12s";
+const lanes=[["Urgent: OTPs",70],["Normal: order updates",120],["Bulk: promos",170]];
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><title id={`nft${uid}`}>Order, login and marketing services send events to the notification API. It checks the person's preferences, then puts each message in a lane for its priority: urgent for OTPs, normal for order updates, bulk for promotions. Channel workers take from the lanes, urgent first, and send through push, SMS and email providers.</title><Mark m={M}/>
+<SBox x={0} y={70} w={100} t="Login"/><SBox x={0} y={120} w={100} t="Orders"/><SBox x={0} y={170} w={100} t="Marketing"/>
+<SBox x={140} y={120} w={120} t="Notification API" blue/><SBox x={140} y={190} w={120} t="Preferences"/>
+{lanes.map(([t,y])=><SBox key={t} x={300} y={y} w={170} t={t}/>)}
+<SBox x={510} y={95} w={126} t="Channel workers" blue/><text x={573} y={140} textAnchor="middle" className="fl">push · SMS · email</text>
+<Line x1={102} y1={70} x2={138} y2={114} m={M}/><Line x1={102} y1={120} x2={136} y2={120} m={M}/><Line x1={102} y1={170} x2={138} y2={126} m={M}/>
+<Line x1={200} y1={132} x2={200} y2={176} m={M}/>
+{lanes.map(([t,y])=><Line key={t} x1={262} y1={120} x2={296} y2={y} m={M}/>)}
+{lanes.map(([t,y])=><Line key={t} x1={472} y1={y} x2={508} y2={y<95?90:y<150?98:104} m={M}/>)}
+<text x={385} y={40} textAnchor="middle" className="fl">one lane per priority</text>
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={136} y={70} y2={114} t0={.02} t1={.1} dur={D}/><Dot x1={200} x2={200} y={134} y2={174} t0={.12} t1={.2} dur={D}/><Dot x1={264} x2={294} y={120} y2={70} t0={.24} t1={.32} dur={D}/><Glow x={300} y={58} w={170} h={24} t0={.32} t1={.42} dur={D}/><Dot x1={474} x2={506} y={70} y2={90} t0={.44} t1={.52} dur={D}/><Glow x={510} y={83} w={126} h={24} t0={.52} t1={.66} dur={D}/></g>}</svg>}
+
+// Notifications, FIG: priority lanes. A promotion to 5 crore people fills the bulk lane, which drains at
+// a steady rate for an hour. An OTP arrives in the middle of it, goes into the empty urgent lane and is
+// sent in about 2 seconds, not after the promotion.
+function LanesFig({still,uid=""}){const D="10s",X=150,W=360;
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lnt${uid}`}><title id={`lnt${uid}`}>Two lanes. The bulk lane holds a promotion to 5 crore people and is drained at a steady rate over about an hour. An OTP arrives in the middle of it. It goes into the urgent lane, which is empty, and is sent in about 2 seconds instead of waiting behind the promotion.</title>
+<text x={0} y={64} className="fb">Bulk lane</text><rect x={X} y={44} width={W} height={32} fill="#fff" stroke={GREY}/>
+{Array.from({length:18},(_,i)=><rect key={i} x={X+6+i*19.5} y={50} width={14} height={20} fill="#e6eaf0"/>)}
+<text x={X+W+10} y={58} className="fl">5 crore promos</text><text x={X+W+10} y={74} className="fl">drained over ~1 hour</text>
+<text x={0} y={144} className="fb">Urgent lane</text><rect x={X} y={124} width={W} height={32} fill="#fff" stroke={BLUE}/>
+{step(.25,<g><rect x={X+W-24} y={130} width={18} height={20} fill={BLUE}/><text x={X+W+10} y={138} className="fl" style={{fill:BLUE}}>OTP for Ananya</text></g>)}
+{step(.5,<text x={X+W+10} y={154} className="fl" style={{fill:BLUE}}>sent in ~2 s</text>)}
+{step(.65,<text x={0} y={200} className="fl">workers always empty the urgent lane first; the promo blast never slows an OTP</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -359,4 +390,6 @@ export const QUESTION_FIGS={
 "sandbox":{C:SandboxFig,ar:640/240,title:()=>"INSIDE ONE SANDBOX"},
 "chat-flow":{C:ChatFlowFig,ar:640/270,title:()=>"A MESSAGE'S PATH"},
 "chat-sync":{C:ChatSyncFig,ar:640/220,title:()=>"CATCHING UP BY NUMBER"},
+"notify-flow":{C:NotifyFlowFig,ar:640/230,title:()=>"ONE API, THREE LANES"},
+"lanes":{C:LanesFig,ar:640/220,title:()=>"THE OTP DOESN'T WAIT"},
 };
