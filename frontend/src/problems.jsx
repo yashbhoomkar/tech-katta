@@ -56,7 +56,8 @@ const sum=fill(p.summary,{q:qs.filter(a=>prog.steps["solved:"+a.slug]).length,qt
 const showC=chs.filter(x=>!todo||x.n<x.max);
 return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.desc}</p>
 <div className="pb-bar"><p className="pb-sum" aria-live="polite">{lab||err?sum:"…"}</p>
-<div className="pb-filter" role="group" aria-label={p.filterLabel}>{[[false,p.all],[true,p.todo]].map(([v,t])=><button key={t} type="button" aria-pressed={todo===v} className={todo===v?"on":""} onClick={()=>setTodo(v)}>{t}</button>)}</div></div>
+<div className="pb-filter" role="group" aria-label={p.filterLabel}>{[[false,p.all],[true,p.todo]].map(([v,t])=><button key={t} type="button" aria-pressed={todo===v} className={todo===v?"on":""} onClick={()=>setTodo(v)}>{t}</button>)}
+<button type="button" className="pb-pick" onClick={()=>{const left=qs.filter(a=>!prog.steps["solved:"+a.slug]),from=left.length?left:qs;const a=from[Math.floor(Math.random()*from.length)];if(a)location.hash=`#problems/${a.slug}`}}>⚄ Pick one</button></div></div>
 <section className="pb-group" aria-labelledby="pb-q"><h2 id="pb-q">{p.questions}</h2><p>{p.questionsDesc}</p>
 <QuestionTable p={p} qs={qs} groups={groups} base="problems" data={data} todo={todo}/></section>
 <section className="pb-group" aria-labelledby="pb-c"><h2 id="pb-c">{p.challenges}</h2><p>{p.challengesDesc}</p>

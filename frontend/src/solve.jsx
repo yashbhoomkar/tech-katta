@@ -10,7 +10,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -83,7 +83,7 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 :view==="subs"?<Subs subs={subs}/>
 :<>
 <nav className="crumbs" aria-label="Breadcrumb"><a href="#problems">{s.back}</a><span aria-hidden="true">/</span><span>{a.no.replace(/^QUESTION\s*\/\/\s*/,"Q")}</span></nav>
-<label>{s.eyebrow} · {a.tag}</label><h1 id="sv-title">{a.title}</h1><p className="sv-dek">{a.dek}</p>
+<label>{s.eyebrow} · {a.tag}{readProgress().steps["solved:"+slug]&&<span className="sv-solved"> · ✓ {s.solved||"Solved"}</span>}</label><h1 id="sv-title">{a.title}</h1><p className="sv-dek">{a.dek}</p>
 <p className="sv-how">{s.how}</p>
 <div className="sv-body">{body.map((b,k)=><Block key={k} b={b} i={k}/>)}</div>
 {P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>

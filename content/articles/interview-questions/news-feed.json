@@ -495,7 +495,7 @@
         },
         {
           "label": "Follow someone",
-          "method": "PUT",
+          "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?follow"
         }
       ]

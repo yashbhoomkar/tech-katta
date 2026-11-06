@@ -366,7 +366,7 @@ export function validatePractice(p, lab, at, problems) {
       else if (!range(v)) problems.push(`${at}: rubric.nfr.${k} must be [min, max]`);
     }
     if (!list(r.est).length || !r.est.every((x) => x && ID.test(x.id || '') && isText(x.label) && isText(x.unit) && isNumber(x.answer) && x.answer > 0 && (x.tol === undefined || (isNumber(x.tol) && x.tol > 1)) && (x.how === undefined || isText(x.how)))) problems.push(`${at}: rubric.est needs [{id, label, unit, answer, tol?, how?}]`);
-    if (!list(r.api).length || !r.api.every((x) => x && isText(x.label) && ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(x.method) && isText(x.path) && (() => { try { new RegExp(x.path); return true; } catch { return false; } })())) problems.push(`${at}: rubric.api needs [{label, method, path (a regular expression)}]`);
+    if (!list(r.api).length || !r.api.every((x) => x && isText(x.label) && typeof x.method === 'string' && x.method.split('|').every((m) => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(m)) && isText(x.path) && (() => { try { new RegExp(x.path); return true; } catch { return false; } })())) problems.push(`${at}: rubric.api needs [{label, method, path (a regular expression)}]`);
   }
   if (!list(p.hints).length || !p.hints.every((h) => h && HINT_STEPS.has(h.step) && isText(h.x))) problems.push(`${at}: hints need [{step, x}] with step one of ${[...HINT_STEPS].join(', ')}`);
   for (const [i, w] of list(p.wrong).entries()) {

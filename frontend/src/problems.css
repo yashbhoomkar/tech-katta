@@ -29,3 +29,4 @@
 @media(max-width:600px){.qt-table tr{grid-template-columns:28px 36px minmax(0,1fr) auto auto;grid-template-areas:"st no title title title" ". . tag score lab"}.qt-table .c5{grid-area:score;width:auto}}
 .qt-table .c6{width:100px;text-align:right}.qt-acc{font:500 12px var(--mono);color:#3a4654}
 @media(max-width:600px){.qt-table .c6{display:none}}
+.pb-pick{min-height:36px;padding:0 12px;border:1px solid var(--blue);background:var(--blue);color:#fff;font:600 11px var(--mono);cursor:pointer}.pb-pick:hover{background:#1f46b8}

@@ -485,7 +485,7 @@
       "api": [
         {
           "label": "Rider location ping",
-          "method": "POST",
+          "method": "POST|PUT",
           "path": "^/(api/)?(v\\d+/)?riders/[^/]+/location"
         },
         {

@@ -32,6 +32,7 @@ test("gradeAnswer: keywords, ranges, tolerance and API paths",()=>{
   const g=gradeAnswer({fr:"Make a SHORT link for any URL",nfr:{availability:"99.95",consistency:"strong"},est:{rps:"12,000"},api:[{method:"POST",path:"/v1/urls"},{method:"GET",path:"/{code}"}]},rubric);
   assert.deepEqual(g.fr.map(x=>x.ok),[true,false]);assert.deepEqual(g.nfr.map(x=>x.ok),[true,false]);assert.equal(g.est[0].ok,true);assert.deepEqual(g.api.map(x=>x.ok),[true,true]);
   assert.equal(gradeAnswer({est:{rps:"5000"}},rubric).est[0].ok,false);
+  assert.equal(gradeAnswer({api:[{method:"POST",path:"/follows"}]},{api:[{label:"Follow",method:"PUT|POST",path:"^/follow"}]}).api[0].ok,true);
   assert.equal(gradeAnswer({},rubric).parts.api,0);
 });
 test("score: weights add to 100, hints cost 3 each up to 15",()=>{

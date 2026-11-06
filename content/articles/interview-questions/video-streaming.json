@@ -481,7 +481,7 @@
         },
         {
           "label": "Mark the upload finished",
-          "method": "POST",
+          "method": "POST|PUT|PATCH",
           "path": "^/(api/)?(v\\d+/)?videos/[^/]+/(uploaded|complete|finish)"
         },
         {
