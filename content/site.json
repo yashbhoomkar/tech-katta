@@ -30,7 +30,7 @@
   "hero": {
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
-    "description": "Worked interview questions, a 45-minute practice clock, and a Lab that scores your design. Short, plain, and built for Indian scale.",
+    "description": "Design interview problems on a canvas and have them judged: real traffic, crashed servers and the bill decide, and you get a score out of 100. Plus short, plain articles, built for Indian scale.",
     "primary": "Start practising",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
@@ -554,7 +554,7 @@
   "inside": {
     "eyebrow": "WHAT'S INSIDE",
     "title": "Practise system design the way interviews test it",
-    "desc": "Worked questions to learn from, a clock to practise against, and a Lab that scores your design. Sign in with Google to start.",
+    "desc": "Problems with test suites, a Lab that scores your design, and short articles to learn from. Sign in with Google to start.",
     "items": [
       {
         "kind": "{questions} QUESTIONS",
@@ -564,10 +564,10 @@
         "href": "/dashboard/#interview-questions"
       },
       {
-        "kind": "45 MINUTES",
-        "title": "Practice mode",
-        "text": "Answer a question yourself against the interview clock, one step at a time, then compare with the worked answer and see what you missed.",
-        "link": "Pick a problem",
+        "kind": "{questions} PROBLEMS",
+        "title": "Problems, judged",
+        "text": "Build your design on the canvas, Run the example tests, then Submit: peaks, spikes, a dead server and the monthly bill decide whether it's accepted. Your requirements, estimates and APIs are checked too.",
+        "link": "Solve a problem",
         "href": "/dashboard/#problems"
       },
       {
