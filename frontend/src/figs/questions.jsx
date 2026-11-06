@@ -277,6 +277,35 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><titl
 {note(320,200,.65,"It's a match: one message, a push to both phones","middle")}
 {!still&&<g aria-hidden="true"><Dot x1={112} x2={196} y={60} y2={86} t0={.05} t1={.18} dur={D}/><Dot x1={528} x2={444} y={60} y2={116} t0={.35} t1={.48} dur={D}/><Glow x={L} y={30} w={W} h={140} t0={.6} t1={.98} dur={D}/></g>}</svg>}
 
+// Coding judge, FIG: the path of a submission. The API saves the code and puts its id on a queue, then
+// answers at once. Judge workers take ids, run the code in a sandbox against the tests, and save the
+// verdict; the leaderboard updates and the candidate's screen gets the result.
+function JudgeFlowFig({still,uid=""}){const M=`jf${uid}`,D="12s";
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`jft${uid}`}><title id={`jft${uid}`}>A submission's path. The candidate's code goes to the API, which saves it and puts its id on a queue, then answers straight away. Judge workers take ids from the queue, run the code in a sandbox against the test cases, and save the verdict. The leaderboard updates and the candidate's screen shows the result.</title><Mark m={M}/>
+<SBox x={0} y={50} w={100} t="Candidate"/><SBox x={150} y={50} w={110} t="API" blue/><SBox x={320} y={50} w={110} t="Queue"/><SBox x={490} y={50} w={150} t="Judge workers"/>
+<SBox x={150} y={140} w={110} t="Code store"/><SBox x={490} y={140} w={150} t="Sandbox · tests"/><SBox x={320} y={220} w={110} t="Verdicts"/><SBox x={490} y={220} w={150} t="Leaderboard"/>
+<Line x1={102} y1={50} x2={146} y2={50} m={M}/><Line x1={262} y1={50} x2={316} y2={50} m={M}/><Line x1={432} y1={50} x2={486} y2={50} m={M}/><text x="289" y="42" textAnchor="middle" className="fl">id</text>
+<Line x1={205} y1={62} x2={205} y2={126} m={M}/><text x="212" y="100" className="fl">save code</text>
+<Line x1={565} y1={62} x2={565} y2={126} m={M}/><text x="572" y="100" className="fl">run</text>
+<Line x1={540} y1={152} x2={434} y2={212} m={M}/><text x="484" y="198" className="fl">verdict</text>
+<Line x1={432} y1={220} x2={486} y2={220} m={M}/><Line x1={318} y1={220} x2={50} y2={220} dash/><Line x1={50} y1={220} x2={50} y2={66} m={M} dash/><text x="60" y="210" className="fl">your result</text>
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={144} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={205} x2={205} y={64} y2={124} t0={.1} t1={.16} dur={D}/><Dot x1={264} x2={314} y={50} t0={.18} t1={.24} dur={D}/>
+<Dot x1={434} x2={484} y={50} t0={.3} t1={.36} dur={D}/><Dot x1={565} x2={565} y={64} y2={124} t0={.38} t1={.44} dur={D}/><Glow x={490} y={128} w={150} h={24} t0={.44} t1={.62} dur={D}/>
+<Dot x1={538} x2={436} y={154} y2={210} t0={.62} t1={.7} dur={D}/><Dot x1={434} x2={484} y={220} t0={.72} t1={.78} dur={D}/><Glow x={490} y={208} w={150} h={24} t0={.78} t1={.9} dur={D}/><Dot x1={316} x2={52} y={220} t0={.8} t1={.88} dur={D}/><Dot x1={50} x2={50} y={218} y2={68} t0={.88} t1={.95} dur={D}/></g>}</svg>}
+
+// Coding judge, FIG: inside one sandbox. The code runs with no network, capped memory, CPU time,
+// processes and output, on a read-only copy of the code and test input. Tests run one after another; the first one that fails
+// (here test 4, over the time limit) decides the verdict.
+function SandboxFig({still,uid=""}){const D="10s";
+const limits=["No network","256 MB memory","2 s CPU per test","64 processes","Output capped at 1 MB","Read-only code and input"];
+const tests=[["Test 1","passed",0],["Test 2","passed",0],["Test 3","passed",0],["Test 4","over 2 s",1],["Test 5","not run",2]];
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sbt${uid}`}><title id={`sbt${uid}`}>One sandbox. The candidate's code runs with no network, at most 256 MB of memory, 2 seconds of CPU per test, 64 processes and 1 MB of output, with a read-only copy of the code and the test input. Tests run one after another: tests 1 to 3 pass, test 4 goes over the time limit, so the verdict is "Time limit exceeded on test 4" and test 5 is not run.</title>
+<rect x={0} y={20} width={250} height={200} fill="#f8faff" stroke={BLUE}/><text x={12} y={42} className="fb">Sandbox</text>
+{limits.map((t,i)=><text key={t} x={12} y={70+i*26} className="fl">· {t}</text>)}
+<text x={300} y={42} className="fb">Running the tests</text>
+{tests.map(([t,r,bad],i)=>{const y=72+i*28,row=<g><text x={300} y={y} className="fl">{t}</text><text x={400} y={y} className="fb" style={{fill:bad===1?RED:bad===2?GREY:BLUE}}>{r}</text></g>;return still?<g key={t}>{row}</g>:<Show key={t} t0={.08+i*.13} t1={.98} dur={D}>{row}</Show>})}
+{still?<text x={300} y={218} className="fb" style={{fill:RED}}>Time limit exceeded on test 4</text>:<Show t0={.66} t1={.98} dur={D}><text x={300} y={218} className="fb" style={{fill:RED}}>Time limit exceeded on test 4</text></Show>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -297,4 +326,6 @@ export const QUESTION_FIGS={
 "feed-hybrid":{C:FeedHybridFig,ar:640/240,title:()=>"PUSHED, PULLED, MERGED"},
 "swipe-flow":{C:SwipeFlowFig,ar:640/300,title:()=>"A SWIPE, AND THE NEXT TWENTY"},
 "pair-row":{C:PairRowFig,ar:640/240,title:()=>"ONE ROW PER PAIR"},
+"judge-flow":{C:JudgeFlowFig,ar:640/260,title:()=>"A SUBMISSION'S PATH"},
+"sandbox":{C:SandboxFig,ar:640/240,title:()=>"INSIDE ONE SANDBOX"},
 };
