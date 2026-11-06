@@ -14,8 +14,8 @@
         "Uploads go straight from the phone to storage, in resumable pieces. Your servers never carry the video bytes.",
         "A transcoding pipeline turns the original into several sizes (240p to 1080p), each cut into short segments of about 4 seconds, plus a playlist that lists them.",
         "Split the video into chunks and encode them in parallel: a 10-minute video is ready in a minute or two instead of ten.",
-        "The player picks a size for each segment from how fast the last ones arrived (adaptive bitrate). Bad network: smaller segments, and the video keeps playing.",
-        "Almost all the bytes are served by a CDN. Video traffic is huge; your origin should only see the first viewer of each segment in each place."
+        "The player picks a size for each segment from how fast the last ones arrived (adaptive bitrate). Bad network: a smaller size, and the video keeps playing.",
+        "Almost all the bytes are served by a CDN. Video traffic is huge; your origin should mostly see just the first request for each segment at each edge."
       ]
     },
     {
@@ -68,7 +68,7 @@
       "t": "list",
       "items": [
         "Uploads: 5,000 a day at about 300 MB each is 1.5 TB of originals a day.",
-        "Encoded sizes: all five sizes together are usually smaller than a phone's original, say another 1 TB a day. Storage grows by about 2.5 TB a day; old originals can move to cheaper storage.",
+        "Encoded sizes: all five sizes together are often smaller than a phone's original, say another 1 TB a day. Storage grows by about 2.5 TB a day; old originals can move to cheaper storage.",
         "Viewing: 50 lakh views × about 3 minutes watched × about 1.5 Mbps is about 170 TB a day of video sent.",
         "That's about 16 Gbps on average and around 45 Gbps at dinner. No ordinary set of servers should carry that; a CDN does.",
         "Segments: a 5-minute video in 4-second segments is 75 segments per size, 375 files in all, each small enough to cache well."
@@ -89,8 +89,8 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /videos                   { \"title\": \"Paneer tikka in 10 minutes\" }  → 201 { \"id\": \"v_31\", \"upload_url\": \"…signed…\" }\nPUT  <upload_url>?part=7        (the bytes of part 7)                       → 200\nPOST /videos/v_31/uploaded                                                 → 202 { \"status\": \"processing\" }\nGET  /videos/v_31               → 200 { \"status\": \"ready\", \"play\": \"https://cdn…/v_31/master.m3u8\" }",
-      "say": "Create a video and get a signed upload address. Upload it in parts (a dropped part is resent alone). Say it's done. Later, get the playlist address the player opens."
+      "x": "POST /videos                   { \"title\": \"Paneer tikka in 10 minutes\" }  → 201 { \"id\": \"v_31\", \"part_urls\": [ \"…signed…\", … ] }\nPUT  <part_urls[7]>             (the bytes of part 7)                       → 200\nPOST /videos/v_31/uploaded                                                 → 202 { \"status\": \"processing\" }\nGET  /videos/v_31               → 200 { \"status\": \"ready\", \"play\": \"https://cdn…/v_31/master.m3u8\" }",
+      "say": "Create a video and get a signed upload address for each part. Upload the parts (a dropped part is resent alone). Say it's done. Later, get the playlist address the player opens."
     },
     {
       "t": "h2",
@@ -127,7 +127,7 @@
       "t": "type",
       "name": "Better",
       "kind": "SPLIT, ENCODE IN PARALLEL, JOIN",
-      "what": "Cut the original into chunks of about 30 seconds at clean cut points (keyframes). Each chunk and size is its own small task on any free worker. When all are done, write the playlists and mark the video ready.",
+      "what": "Cut the original into chunks of about 30 seconds (a whole number of 4-second segments) at keyframes. Every size puts keyframes at the same fixed times, so segments line up across sizes and the player can switch at any segment boundary. Each chunk and size is its own small task on any free worker. When all are done, join them in order, write the playlists and mark the video ready.",
       "use": "A 10-minute video becomes 20 chunks × 5 sizes = 100 small tasks; with enough workers it's ready in a minute or two.",
       "avoid": "Many small tasks need tracking: a task can fail or run twice, so name each output by video, chunk and size, so a rerun just overwrites the same file.",
       "ex": "The biryani video is split into 20 chunks at 7:00; by 7:02 every size is ready.",
@@ -158,7 +158,7 @@
     {
       "t": "list",
       "items": [
-        "Segments never change once written, so the CDN can cache them for days. Name them with the video and size, so nothing needs to be cleared.",
+        "Segments never change once written, so the CDN can cache them for days. Name them with the video and size, plus a version if you ever re-encode, so nothing needs to be cleared.",
         "Popular videos are served almost entirely from the edge. Old, rarely watched videos come from your storage, and that's fine: they're few.",
         "When a video is suddenly shared widely, its first segments are what everyone asks for; those are cached at the edge within the first few views."
       ]
