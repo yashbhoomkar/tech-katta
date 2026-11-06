@@ -3,7 +3,7 @@
 .pb-filter{display:flex;gap:6px}.pb-filter button{min-height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;color:#1c2733;font:600 11px var(--mono);cursor:pointer}.pb-filter button.on{border-color:var(--blue);background:#f8faff;color:var(--blue)}
 .pb-group{margin-top:26px}.pb-group>h2{margin:0;padding-top:14px;border-top:1px solid #1c2733;font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase}.pb-group>p{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
 .pb-group ol{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
-.pb-group a{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"meta state" "title state";align-items:center;gap:4px 14px;border:1px solid var(--line);padding:14px 16px;color:inherit;text-decoration:none}.pb-group a:hover{border-color:var(--blue)}
+.pb-group a:not(.pb-lab){display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"meta state" "title state";align-items:center;gap:4px 14px;border:1px solid var(--line);padding:14px 16px;color:inherit;text-decoration:none}.pb-group a:hover{border-color:var(--blue)}
 .pb-meta{grid-area:meta;display:flex;gap:8px;align-items:center}.pb-meta small{font:600 11px var(--mono);letter-spacing:.06em;color:var(--blue);text-transform:uppercase}
 .pb-tag{font:600 10px var(--mono);font-style:normal;letter-spacing:.06em;padding:2px 6px;border:1px solid var(--line);color:var(--muted)}.pb-tag.easy{color:#1a7f37;border-color:#b7e1c1}.pb-tag.medium{color:#9a6700;border-color:#f0d58a}.pb-tag.hard{color:#b42318;border-color:#f4c7c3}
 .pb-group b{grid-area:title;font-size:16px;line-height:1.35;letter-spacing:-.01em}
@@ -11,3 +11,4 @@
 .pb-stars{grid-area:state;font-size:16px;letter-spacing:2px;color:#c9d0da;white-space:nowrap}.pb-stars .on{color:#e3a008}.pb-stars i{font-style:normal}
 .pb-none{margin-top:12px!important;padding:14px 16px;border:1px dashed var(--line);font:500 12px var(--mono)}
 @media(max-width:600px){.pb-group a{padding:12px 14px}.pb-group b{font-size:15px}}
+.pb-lab{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:-1px;border:1px solid var(--line);border-top-style:dashed;padding:8px 16px;background:#fbfcfd;color:var(--muted);text-decoration:none;font:500 12px var(--mono)}.pb-lab:hover{border-color:var(--blue);color:var(--blue)}.pb-lab span{min-width:0}.pb-lab .pb-stars{font-size:13px}

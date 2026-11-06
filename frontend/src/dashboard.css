@@ -33,3 +33,4 @@
 /* Start page: the Library cards sit straight on the page; they have their own frames. */
 .d-panel.d-start{background:none;border:0;padding:8px 0 0}
 .skip{position:absolute;left:8px;top:-80px;z-index:200;background:#fff;border:2px solid #2855d9;padding:8px 12px;font:600 13px Inter,Arial,sans-serif;color:#1c2733;text-decoration:none}.skip:focus{top:8px}main:focus{outline:none}
+.a-next{margin-top:36px;display:grid;gap:10px}.a-next>a:first-child:not(.a-all){display:block;border:1px solid var(--line);padding:14px 16px;color:inherit;text-decoration:none}.a-next>a:first-child:not(.a-all):hover{border-color:var(--blue)}.a-next small{display:block;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}.a-next b{display:block;margin-top:4px;font-size:16px;line-height:1.35}.a-all{font:600 11px var(--mono);color:var(--blue)}.a-next+.a-back{margin-top:14px}

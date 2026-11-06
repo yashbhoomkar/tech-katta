@@ -516,7 +516,10 @@
     "notYet": "Not yet",
     "starsLabel": "{n} of {max} stars",
     "allDone": "All done here. Try them again, or come back for new ones.",
-    "labError": "The Lab challenges couldn't load. Refresh to try again."
+    "labError": "The Lab challenges couldn't load. Refresh to try again.",
+    "lab": "Lab",
+    "next": "Next problem",
+    "allProblems": "All problems and your progress →"
   },
   "landingLab": {
     "eyebrow": "01 / TRY IT",

@@ -32,6 +32,10 @@ export async function loadContent(dir) {
 const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'date', 'title', 'dek', 'audio'];
 const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
 
+// A summary also names the Lab challenge the article's Lab card opens (`lab`), for lists such as Problems.
+const labOf = (a) => { const card = (a.body || []).find((b) => b && b.t === 'lab' && typeof b.to === 'string' && b.to.startsWith('lab/')); return card ? card.to.slice(4) : undefined; };
+const summary = (a) => pick({ ...a, lab: labOf(a) }, [...SUMMARY_FIELDS, 'lab']);
+
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
 export function buildBodies({ site, examples, articles, lab }) {
   const example = examples[site.example];
@@ -41,7 +45,7 @@ export function buildBodies({ site, examples, articles, lab }) {
     site: { ...site, example },
     lab,
     list(section) {
-      if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map((a) => pick(a, SUMMARY_FIELDS)) });
+      if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map(summary) });
       return lists.get(section);
     },
     article: (slug) => full.get(slug) || null,

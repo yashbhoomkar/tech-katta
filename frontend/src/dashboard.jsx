@@ -169,7 +169,10 @@ return <article className="d-panel d-article" aria-labelledby="d-title">
 {pr&&<button type="button" className="pr-open" onClick={()=>setPractising(true)}>{practised?c.practice.again:c.practice.button}{practised&&<small>{c.practice.practised}</small>}</button>}
 {practising&&<Practice p={c.practice} a={a} onClose={()=>{setPractising(false);setPractised(!!readProgress().steps["practice:"+a.slug])}}/>}
 {a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
-<a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
+<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
+// After an Interview Question: the next one in the list (site.json "problems" copy), and the Problems page.
+function NextProblem({a}){const p=c.problems;if(!p?.next||a.section!=="interview-questions"||a.group==="start")return null;const qs=articles.filter(x=>x.section===a.section&&x.group!=="start");const n=qs[qs.findIndex(x=>x.slug===a.slug)+1];
+return <nav className="a-next" aria-label={p.next}>{n&&<a href={`#${n.section}/${n.slug}`}><small>{p.next}</small><b>{n.title} →</b></a>}<a className="a-all" href="#problems">{p.allProblems}</a></nav>}
 
 // Article bodies are fetched when opened; the summaries list came with the dashboard.
 // A figure id this build doesn't know (new content can go live a few minutes before the frontend that
