@@ -46,6 +46,13 @@
           "short": "IND vs PAK",
           "desc": "Quiet all day, a jump at the 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm.",
           "points": [[0, 0.01], [18.5, 0.03], [19, 0.086], [19.133, 0.114], [19.167, 0.143], [19.233, 0.4], [19.5, 0.429], [20, 0.486], [20.5, 0.571], [20.667, 0.629], [20.75, 0.314], [20.967, 0.314], [21.033, 0.514], [21.5, 0.571], [22, 0.686], [22.2, 0.743], [22.3, 1], [22.383, 0.971], [22.433, 0.343], [22.583, 0.114], [23.5, 0.03], [24, 0.01]]
+        },
+        {
+          "id": "monday",
+          "label": "Monday 10 am",
+          "short": "Monday 10 am",
+          "desc": "Quiet at night, the full rate for half an hour from 10 am, then about a sixth of it through the working day.",
+          "points": [[0, 0.02], [9.5, 0.05], [10, 1], [10.5, 1], [11, 0.15], [18, 0.15], [19, 0.05], [24, 0.02]]
         }
       ],
       "like": "The crowd at the door: everyone who wants something from you, all at once.",
@@ -859,6 +866,97 @@
           "kind": "cost",
           "max": 4000,
           "label": "Costs at most $4,000 a month"
+        }
+      ],
+      "requires": [
+        "server",
+        "database"
+      ]
+    },
+    {
+      "id": "monday-sync",
+      "level": "intermediate",
+      "title": "Monday 10 am: every laptop syncs",
+      "brief": "Offices open at 10 on Monday, and 30 lakh laptops sync the weekend's changes at once. For half an hour, 3,000 files a second land in storage; for the rest of the day, about 450. Each file then needs a preview, a virus scan and a search update: 8 database queries. The file is already safe, so nobody waits for this work.",
+      "hint": "No single database takes 24,000 queries a second, and two big ones blow the budget. But this work can wait a little: a queue holds the burst, and workers can clear it by evening. Careful, though: workers pull as fast as they can, so size them for what the database can take.",
+      "hours": 12,
+      "startHour": 9,
+      "traffic": {
+        "rps": 3000,
+        "pattern": "monday"
+      },
+      "fixed": {
+        "queriesPerRequest": 8
+      },
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "monday"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "queriesPerRequest": 8
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "work"
+          },
+          {
+            "from": "work",
+            "to": "db"
+          }
+        ]
+      },
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of files are processed by 9 pm"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 1500,
+          "label": "Costs at most $1,500 a month"
         }
       ],
       "requires": [
