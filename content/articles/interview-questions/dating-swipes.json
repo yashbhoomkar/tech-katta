@@ -31,7 +31,7 @@
         "Show a stack of profiles near me that fit my preferences (age range, distance), one at a time.",
         "Swipe left or right. When two people have both swiped right, create a match and tell both within a second or two.",
         "Don't show a profile I've already swiped on.",
-        "Out of scope here: chat after the match, photo upload (see the photo-sharing question), and ranking by attractiveness or activity, which we'll note where it plugs in."
+        "Out of scope here: chat after the match, photo upload (see the photo-sharing question), and ranking by activity or who's likely to swipe back, which we'll note where it plugs in."
       ]
     },
     {
@@ -132,20 +132,20 @@
       "t": "type",
       "name": "Better",
       "kind": "ONE ROW PER PAIR",
-      "what": "Keep one row for each pair, keyed by the two ids with the smaller first. A swipe sets its own side and reads the other side in one atomic update. Whoever sets the second yes creates the match.",
+      "what": "Keep one row for each pair, keyed by the two ids with the smaller first. A swipe sets its own side and reads the other side in one atomic update. The update that makes the second yes also sets `matched_at`, but only if it's still empty; that one creates the match. A resent swipe finds it set and creates nothing new.",
       "use": "Both swipes go to the same row, so one of them always lands second and sees the other. Exactly one match, without locks across machines.",
-      "avoid": "Rows exist only for pairs where someone swiped, but that's still crores of rows. Split them across database machines by the pair key.",
+      "avoid": "Rows exist only for pairs where someone swiped, but that's hundreds of crores of rows within weeks. Split them across database machines by the pair key.",
       "ex": "Ananya's update finds Rohit's side empty and stops. Rohit's update, a moment later on the same row, finds her yes and creates the match.",
       "like": "One shared sheet per pair of friends. Each ticks their own box and looks at the other box while holding the pen."
     },
     {
       "t": "fig",
       "id": "pair-row",
-      "cap": "Ananya and Rohit swipe right at the same moment. Both updates go to the same row and read the other side in the same step: hers sees 'no' and stops, his sees 'yes' and creates the match. Exactly one of them makes it."
+      "cap": "Ananya and Rohit swipe right at the same moment. Both updates go to the same row and read the other side in the same step: hers finds no answer from him yet and stops, his sees 'yes' and creates the match. Exactly one of them makes it."
     },
     {
       "t": "p",
-      "x": "Most databases can do this. In SQL, one `UPDATE … RETURNING` on the row. In Redis, a short script that sets one field and reads the other. Either way, the update and the read happen together."
+      "x": "Most databases can do this. In SQL, one `INSERT … ON CONFLICT DO UPDATE … RETURNING`, because the row may not exist yet. In Redis, a short script that sets one field and reads the other. Either way, the update and the read happen together. Both updates must go to the one primary that owns the row: if replicas or two regions accept writes for the same row, both can still read 'not yet'."
     },
     {
       "t": "h2",
@@ -169,8 +169,8 @@
       "t": "list",
       "items": [
         "Keeping every past swipe in memory for every person is too much. A Bloom filter answers 'have I seen this id?' in about 12 KB for 10,000 profiles.",
-        "It never says 'no' for someone you've seen. It sometimes says 'yes' for someone you haven't, and that person is skipped this time. A missed card is harmless; a repeated one annoys.",
-        "The full swipe history stays in the pair rows. If a filter is lost, rebuild it from them."
+        "It never says 'no' for someone you've seen. It sometimes says 'yes' for someone you haven't, and that person is skipped. A missed card is harmless; a repeated one annoys.",
+        "Each swipe adds the id to the swiper's filter. The full swipe history stays in the pair rows; if a filter is lost, rebuild it from them."
       ]
     },
     {
@@ -180,7 +180,7 @@
     {
       "t": "list",
       "items": [
-        "Nobody learns about a left swipe, or that they were swiped at all, unless it's a match.",
+        "Nobody learns about a left swipe, or that they were swiped at all, unless it's a match (or you choose to show 'people who liked you').",
         "Store areas, not coordinates, and show rounded distances (\"about 3 km\"). Otherwise someone could work out where a person lives by measuring from a few places.",
         "Blocking someone removes them from each other's decks and stops a match, even an old one, from showing."
       ]
@@ -192,7 +192,7 @@
     {
       "t": "list",
       "items": [
-        "Swipe service slow or down: the phone keeps swipes and sends them later. They're PUTs on the pair, so a resend is safe.",
+        "Swipe service slow or down: the phone keeps swipes and sends them later. They're PUTs, so a resend is safe.",
         "Deck cache lost: rebuild decks for people as they open the app. The first cards are a little slower for a while.",
         "Push service down: matches are already saved, and the queue holds the pushes. People see the match the next time they open the app."
       ]

@@ -269,8 +269,8 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><titl
 <SBox x={0} y={60} w={110} t="Ananya swipes →"/><SBox x={530} y={60} w={110} t="← Rohit swipes"/>
 <rect x={L} y={30} width={W} height={140} fill="#fff" stroke={GREY}/><text x={L+10} y={50} className="fl">one row: pair a_17 · r_42</text>
 <line x1={L} y1={62} x2={L+W} y2={62} stroke={GREY}/>
-<text x={L+10} y={90} className="fl">Ananya likes Rohit</text>{val(90,.2,"no","yes")}
-<text x={L+10} y={120} className="fl">Rohit likes Ananya</text>{val(120,.5,"no","yes")}
+<text x={L+10} y={90} className="fl">Ananya likes Rohit</text>{val(90,.2,"—","yes")}
+<text x={L+10} y={120} className="fl">Rohit likes Ananya</text>{val(120,.5,"—","yes")}
 <text x={L+10} y={150} className="fl">matched</text>{val(150,.6,"no","yes")}
 {note(55,96,.22,"Rohit: not yet","middle")}{note(55,112,.22,"→ nothing to do","middle")}
 {note(585,96,.52,"Ananya: yes","middle")}{note(585,112,.52,"→ create the match","middle")}
