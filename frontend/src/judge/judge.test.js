@@ -43,3 +43,10 @@ test("runTest explains a design without Clients instead of failing silently",()=
   const r=runTest({nodes:[],edges:[]},lab,{fixed:{}},{id:"x",hours:1,startHour:0,traffic:{rps:100,pattern:"steady"},checks:[{kind:"availability",min:99}]});
   assert.equal(r.ok,false);assert.match(r.error,/Clients/);
 });
+test("singlePoints: one group behind a load balancer is a single point of failure; two side by side are not",async()=>{
+  const{singlePoints}=await import("./judge.js");
+  const one={nodes:[{id:"c",type:"client"},{id:"lb",type:"lb"},{id:"a",type:"server"},{id:"q",type:"queue"},{id:"w1",type:"server"},{id:"w2",type:"server"},{id:"d",type:"database"}],edges:[["c","lb"],["lb","a"],["a","q"],["q","w1"],["q","w2"],["w1","d"],["w2","d"]].map(([from,to])=>({from,to}))};
+  assert.deepEqual(singlePoints(one,"server"),["a"]);
+  const two={nodes:[...one.nodes,{id:"b",type:"server"}],edges:[...one.edges,{from:"lb",to:"b"},{from:"b",to:"q"}]};
+  assert.deepEqual(singlePoints(two,"server"),[]);
+});

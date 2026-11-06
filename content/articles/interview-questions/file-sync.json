@@ -241,5 +241,1408 @@
       "to": "lab/monday-sync",
       "go": "Try the Monday sync challenge"
     }
-  ]
+  ],
+  "practice": {
+    "brief": "Each test sends file changes (the metadata commits; the bytes go straight to object storage). Every change makes 3 database queries. Your Clients' own rate is ignored.",
+    "fixed": {
+      "queriesPerRequest": 3
+    },
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 1500,
+            "pattern": "steady"
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2,
+            "queriesPerRequest": 3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "sample": true,
+        "desc": "500 file changes a second at 3 pm: each one checks its chunks, saves the new version and records the change.",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of syncs succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 300,
+            "label": "p99 under 300 ms"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The busiest hour",
+        "sample": true,
+        "desc": "1,500 changes a second at 10 am, the daily peak.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of syncs succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 300,
+            "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          },
+          {
+            "kind": "requires",
+            "types": [
+              "server",
+              "database"
+            ],
+            "label": "Every change is saved in a database"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "Monday 10 am",
+        "desc": "Every laptop wakes up after the weekend: for half an hour at 10 am changes arrive at 6,000 a second, then fall away. The sync can lag a little; it must not fail or crash.",
+        "hours": 4,
+        "startHour": 9,
+        "traffic": {
+          "rps": 6000,
+          "pattern": "monday"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of syncs succeed"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          },
+          {
+            "kind": "has",
+            "type": "queue",
+            "label": "A queue takes the burst"
+          }
+        ]
+      },
+      {
+        "id": "server-dies",
+        "name": "A server group dies",
+        "desc": "At the peak (1,500 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "server"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.5,
+            "label": "At least 99.5% of syncs still succeed"
+          },
+          {
+            "kind": "redundant",
+            "type": "server",
+            "label": "At least two server groups"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.8,
+            "label": "At least 99.8% of syncs still succeed"
+          },
+          {
+            "kind": "multiAz",
+            "label": "Every database has a standby in another zone (Multi-AZ)"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (500 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of syncs succeed"
+          },
+          {
+            "kind": "cost",
+            "max": 9000,
+            "label": "Costs at most $9,000 a month"
+          }
+        ]
+      }
+    ],
+    "rubric": {
+      "fr": [
+        {
+          "label": "Upload and download files",
+          "keys": [
+            "upload",
+            "download"
+          ]
+        },
+        {
+          "label": "Sync changes to my other devices",
+          "keys": [
+            "sync",
+            "other device",
+            "devices"
+          ]
+        },
+        {
+          "label": "Work offline and catch up later",
+          "keys": [
+            "offline",
+            "no signal",
+            "no network",
+            "catch up"
+          ]
+        },
+        {
+          "label": "Share a file or folder",
+          "keys": [
+            "share",
+            "sharing",
+            "collaborat"
+          ]
+        },
+        {
+          "label": "Versions or conflict copies",
+          "keys": [
+            "version",
+            "conflict",
+            "history"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.999
+        ],
+        "p99": [
+          100,
+          1000
+        ],
+        "consistency": "eventual",
+        "readsPerWrite": [
+          1,
+          20
+        ]
+      },
+      "est": [
+        {
+          "id": "changes",
+          "label": "Changes a second at peak",
+          "unit": "/s",
+          "answer": 1500,
+          "tol": 3,
+          "how": "1 crore users × 4 changes a day ÷ 86,400 ≈ 460 a second, ~3× at peak"
+        },
+        {
+          "id": "storage",
+          "label": "Total stored",
+          "unit": "PB",
+          "answer": 100,
+          "tol": 3,
+          "how": "5 crore users × 2 GB ≈ 100 PB"
+        },
+        {
+          "id": "bytes",
+          "label": "New bytes a day",
+          "unit": "TB",
+          "answer": 80,
+          "tol": 3,
+          "how": "4 crore changes × 2 MB ≈ 80 TB"
+        }
+      ],
+      "api": [
+        {
+          "label": "Start an upload",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(uploads|files)"
+        },
+        {
+          "label": "Commit the new version",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?(uploads|files)/[^/]+/(commit|complete|finish)"
+        },
+        {
+          "label": "Fetch changes since my cursor",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(changes|sync|events|delta)"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "Think of three devices and a train with no signal. What must happen to a file you edit on each?"
+      },
+      {
+        "step": "estimates",
+        "x": "Separate bytes from metadata: the bytes (petabytes) go to object storage; the database only holds file rows and changes."
+      },
+      {
+        "step": "api",
+        "x": "Clients ask which chunks are missing, upload those straight to storage, then commit a new version. Other devices pull changes since a cursor."
+      },
+      {
+        "step": "design",
+        "x": "The tests send only metadata commits. Each one makes 3 database queries, so 1,500 a second is 4,500 queries."
+      },
+      {
+        "step": "design",
+        "x": "On Monday morning 6,000 changes a second arrive at once. Nobody needs them applied that instant: put a Queue between the API servers and the workers that write to the database."
+      },
+      {
+        "step": "design",
+        "x": "Size the workers for a steady rate the database can take (say 2,500 a second); the queue holds the rest and drains by noon."
+      },
+      {
+        "step": "design",
+        "x": "A saved file is never lost: Multi-AZ on the database, and two groups of API servers."
+      }
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 1500,
+            "pattern": "steady"
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app1",
+          "type": "server",
+          "x": 480,
+          "y": -75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 2,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "app2",
+          "type": "server",
+          "x": 480,
+          "y": 75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 2,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "queue",
+          "type": "queue",
+          "x": 720,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "work1",
+          "type": "server",
+          "x": 960,
+          "y": -75,
+          "config": {
+            "size": "m5.large",
+            "count": 3,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "work2",
+          "type": "server",
+          "x": 960,
+          "y": 75,
+          "config": {
+            "size": "m5.large",
+            "count": 3,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "db1",
+          "type": "database",
+          "x": 1200,
+          "y": -75,
+          "config": {
+            "size": "db.r5.2xlarge",
+            "multiAz": true
+          }
+        },
+        {
+          "id": "db2",
+          "type": "database",
+          "x": 1200,
+          "y": 75,
+          "config": {
+            "size": "db.r5.2xlarge",
+            "multiAz": true
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app1"
+        },
+        {
+          "from": "lb",
+          "to": "app2"
+        },
+        {
+          "from": "app1",
+          "to": "queue"
+        },
+        {
+          "from": "app2",
+          "to": "queue"
+        },
+        {
+          "from": "queue",
+          "to": "work1"
+        },
+        {
+          "from": "queue",
+          "to": "work2"
+        },
+        {
+          "from": "work1",
+          "to": "db1"
+        },
+        {
+          "from": "work1",
+          "to": "db2"
+        },
+        {
+          "from": "work2",
+          "to": "db1"
+        },
+        {
+          "from": "work2",
+          "to": "db2"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "One server group",
+        "why": "When it crashes, nothing answers for 5 minutes.",
+        "fails": "server-dies",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "A crash keeps it down for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": false
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": false
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "No queue",
+        "why": "The burst hits the database directly and crashes it.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "Passes the load but costs far more than the traffic needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -1800,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -1650,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -1500,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": -1350,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": -1200,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": -1050,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db7",
+            "type": "database",
+            "x": 1200,
+            "y": -900,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db8",
+            "type": "database",
+            "x": 1200,
+            "y": -750,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db9",
+            "type": "database",
+            "x": 1200,
+            "y": -600,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db10",
+            "type": "database",
+            "x": 1200,
+            "y": -450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db11",
+            "type": "database",
+            "x": 1200,
+            "y": -300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db12",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db13",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db14",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db15",
+            "type": "database",
+            "x": 1200,
+            "y": 300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db16",
+            "type": "database",
+            "x": 1200,
+            "y": 450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db17",
+            "type": "database",
+            "x": 1200,
+            "y": 600,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db18",
+            "type": "database",
+            "x": 1200,
+            "y": 750,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db19",
+            "type": "database",
+            "x": 1200,
+            "y": 900,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db20",
+            "type": "database",
+            "x": 1200,
+            "y": 1050,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db21",
+            "type": "database",
+            "x": 1200,
+            "y": 1200,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db22",
+            "type": "database",
+            "x": 1200,
+            "y": 1350,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db23",
+            "type": "database",
+            "x": 1200,
+            "y": 1500,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db24",
+            "type": "database",
+            "x": 1200,
+            "y": 1650,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db25",
+            "type": "database",
+            "x": 1200,
+            "y": 1800,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work1",
+            "to": "db7"
+          },
+          {
+            "from": "work1",
+            "to": "db8"
+          },
+          {
+            "from": "work1",
+            "to": "db9"
+          },
+          {
+            "from": "work1",
+            "to": "db10"
+          },
+          {
+            "from": "work1",
+            "to": "db11"
+          },
+          {
+            "from": "work1",
+            "to": "db12"
+          },
+          {
+            "from": "work1",
+            "to": "db13"
+          },
+          {
+            "from": "work1",
+            "to": "db14"
+          },
+          {
+            "from": "work1",
+            "to": "db15"
+          },
+          {
+            "from": "work1",
+            "to": "db16"
+          },
+          {
+            "from": "work1",
+            "to": "db17"
+          },
+          {
+            "from": "work1",
+            "to": "db18"
+          },
+          {
+            "from": "work1",
+            "to": "db19"
+          },
+          {
+            "from": "work1",
+            "to": "db20"
+          },
+          {
+            "from": "work1",
+            "to": "db21"
+          },
+          {
+            "from": "work1",
+            "to": "db22"
+          },
+          {
+            "from": "work1",
+            "to": "db23"
+          },
+          {
+            "from": "work1",
+            "to": "db24"
+          },
+          {
+            "from": "work1",
+            "to": "db25"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db7"
+          },
+          {
+            "from": "work2",
+            "to": "db8"
+          },
+          {
+            "from": "work2",
+            "to": "db9"
+          },
+          {
+            "from": "work2",
+            "to": "db10"
+          },
+          {
+            "from": "work2",
+            "to": "db11"
+          },
+          {
+            "from": "work2",
+            "to": "db12"
+          },
+          {
+            "from": "work2",
+            "to": "db13"
+          },
+          {
+            "from": "work2",
+            "to": "db14"
+          },
+          {
+            "from": "work2",
+            "to": "db15"
+          },
+          {
+            "from": "work2",
+            "to": "db16"
+          },
+          {
+            "from": "work2",
+            "to": "db17"
+          },
+          {
+            "from": "work2",
+            "to": "db18"
+          },
+          {
+            "from": "work2",
+            "to": "db19"
+          },
+          {
+            "from": "work2",
+            "to": "db20"
+          },
+          {
+            "from": "work2",
+            "to": "db21"
+          },
+          {
+            "from": "work2",
+            "to": "db22"
+          },
+          {
+            "from": "work2",
+            "to": "db23"
+          },
+          {
+            "from": "work2",
+            "to": "db24"
+          },
+          {
+            "from": "work2",
+            "to": "db25"
+          }
+        ]
+      }
+    ]
+  }
 }

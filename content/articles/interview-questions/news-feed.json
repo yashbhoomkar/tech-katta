@@ -220,5 +220,837 @@
       "to": "lab/read-heavy",
       "go": "Try the read-heavy challenge"
     }
-  ]
+  ],
+  "practice": {
+    "brief": "Each test sends feed loads and posts. A feed load makes 3 queries (the feed list and the posts); feeds kept in a cache answer 95% of them; 10% of queries are writes (new posts fanned out to feeds). Your Clients' own rate is ignored.",
+    "fixed": {
+      "queriesPerRequest": 3,
+      "hitPct": 95,
+      "writePct": 10
+    },
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 3000,
+            "pattern": "steady"
+          }
+        }
+      ],
+      "edges": []
+    },
+    "tests": [
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "sample": true,
+        "desc": "1,500 requests a second: feed loads, posts and follows.",
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of feed loads succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 200,
+            "label": "p99 under 200 ms"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "sample": true,
+        "desc": "3,000 requests a second at 8 pm.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of feed loads succeed"
+          },
+          {
+            "kind": "p99",
+            "max": 200,
+            "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "A food blogger posts",
+        "desc": "At 8 pm a blogger with 50 lakh followers posts, and they all open the app: 12,000 requests a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 12000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of feed loads succeed"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          }
+        ]
+      },
+      {
+        "id": "server-dies",
+        "name": "A server group dies",
+        "desc": "At the peak (3,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "server"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.5,
+            "label": "At least 99.5% of feed loads still succeed"
+          },
+          {
+            "kind": "redundant",
+            "type": "server",
+            "label": "At least two server groups"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.8,
+            "label": "At least 99.8% of feed loads still succeed"
+          },
+          {
+            "kind": "multiAz",
+            "label": "Every database has a standby in another zone (Multi-AZ)"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (1,500 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of feed loads succeed"
+          },
+          {
+            "kind": "cost",
+            "max": 6000,
+            "label": "Costs at most $6,000 a month"
+          }
+        ]
+      }
+    ],
+    "rubric": {
+      "fr": [
+        {
+          "label": "Home feed: posts from people I follow, newest first",
+          "keys": [
+            "feed",
+            "follow"
+          ]
+        },
+        {
+          "label": "New posts appear in followers' feeds quickly",
+          "keys": [
+            "new post",
+            "appear",
+            "seconds",
+            "fresh"
+          ]
+        },
+        {
+          "label": "Follow and unfollow",
+          "keys": [
+            "unfollow",
+            "follow"
+          ]
+        },
+        {
+          "label": "Page through the feed",
+          "keys": [
+            "page",
+            "paginat",
+            "cursor",
+            "scroll"
+          ]
+        },
+        {
+          "label": "Deleted posts disappear",
+          "keys": [
+            "delete",
+            "remove"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.999
+        ],
+        "p99": [
+          50,
+          500
+        ],
+        "consistency": "eventual",
+        "readsPerWrite": [
+          10,
+          1000
+        ]
+      },
+      "est": [
+        {
+          "id": "reads",
+          "label": "Feed loads a second at peak",
+          "unit": "/s",
+          "answer": 3000,
+          "tol": 3,
+          "how": "1 crore × 5 opens ÷ 86,400 ≈ 600; ~5× at dinner"
+        },
+        {
+          "id": "fanout",
+          "label": "Feed inserts a second (fan-out)",
+          "unit": "/s",
+          "answer": 4600,
+          "tol": 3,
+          "how": "20 lakh posts × 200 followers ÷ 86,400"
+        },
+        {
+          "id": "posts",
+          "label": "Posts a second",
+          "unit": "/s",
+          "answer": 23,
+          "tol": 3,
+          "how": "20 lakh a day ÷ 86,400"
+        }
+      ],
+      "api": [
+        {
+          "label": "Get my feed",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?feed"
+        },
+        {
+          "label": "Create a post",
+          "method": "POST",
+          "path": "^/(api/)?(v\\d+/)?posts/?$"
+        },
+        {
+          "label": "Follow someone",
+          "method": "PUT",
+          "path": "^/(api/)?(v\\d+/)?follow"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "Reading the feed, posting, following. Which is most frequent, and how fresh must a feed be?"
+      },
+      {
+        "step": "estimates",
+        "x": "Posts are few (23 a second), but each one goes to ~200 followers. Work out the fan-out rate."
+      },
+      {
+        "step": "api",
+        "x": "GET the feed with a cursor; POST a post; PUT or DELETE a follow."
+      },
+      {
+        "step": "design",
+        "x": "Build each person's feed ahead of time (fan-out on write) and keep it in a cache, so a feed load is one fast read."
+      },
+      {
+        "step": "design",
+        "x": "With feeds cached, 95% of queries never reach the database. The blogger spike quadruples traffic; size servers for it."
+      },
+      {
+        "step": "design",
+        "x": "Two server groups and a Multi-AZ database so the feed always opens."
+      }
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 3000,
+            "pattern": "steady"
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app1",
+          "type": "server",
+          "x": 480,
+          "y": -75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 3,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "app2",
+          "type": "server",
+          "x": 480,
+          "y": 75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 3,
+            "queriesPerRequest": 3
+          }
+        },
+        {
+          "id": "cache1",
+          "type": "cache",
+          "x": 720,
+          "y": -75,
+          "config": {
+            "size": "cache.m5.large",
+            "hitPct": 95,
+            "writePct": 10,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "cache2",
+          "type": "cache",
+          "x": 720,
+          "y": 75,
+          "config": {
+            "size": "cache.m5.large",
+            "hitPct": 95,
+            "writePct": 10,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "db1",
+          "type": "database",
+          "x": 960,
+          "y": 0,
+          "config": {
+            "size": "db.r5.2xlarge",
+            "multiAz": true
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app1"
+        },
+        {
+          "from": "lb",
+          "to": "app2"
+        },
+        {
+          "from": "app1",
+          "to": "cache1"
+        },
+        {
+          "from": "app1",
+          "to": "cache2"
+        },
+        {
+          "from": "app2",
+          "to": "cache1"
+        },
+        {
+          "from": "app2",
+          "to": "cache2"
+        },
+        {
+          "from": "cache1",
+          "to": "db1"
+        },
+        {
+          "from": "cache2",
+          "to": "db1"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No cache",
+        "why": "Every read goes to the database, which can't take the peak.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "One server group",
+        "why": "When it crashes, nothing answers for 5 minutes.",
+        "fails": "server-dies",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "A crash keeps it down for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": false
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "Passes the load but costs far more than the traffic needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      }
+    ]
+  }
 }

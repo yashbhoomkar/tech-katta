@@ -12,7 +12,7 @@
 //         | {kind: "noCrash", type?}                 nothing (of that type) crashed from overload
 //         | {kind: "noLostWrites"}                   no acknowledged write lost
 //         | {kind: "requires", types: [type]}        every request passes through these types
-//         | {kind: "redundant", type}                at least two components of that type
+//         | {kind: "redundant", type}                no single component of that type that every request needs
 //         | {kind: "multiAz"}                        every database keeps a standby (Multi-AZ)
 //         | {kind: "has", type}                      the design has at least one of that type
 //
@@ -49,11 +49,23 @@ function p99At(d, lab, opts, mean) {
   return base + P99 * Math.max(0, mean - base);
 }
 
+// Components of a type whose loss would cut some Clients off from every place their requests end up
+// (a database, a queue's workers' database, …): single points of failure. One server group behind a
+// load balancer is one; two groups side by side are not, wherever they sit (API servers or workers).
+export function singlePoints(d, type) {
+  const out = new Map(d.nodes.map((n) => [n.id, []]));
+  for (const e of d.edges) if (out.has(e.from) && out.has(e.to)) out.get(e.from).push(e.to);
+  const ends = new Set(d.nodes.filter((n) => n.type !== 'client' && !out.get(n.id).length).map((n) => n.id));
+  const reach = (from, without) => { const seen = new Set([from]), todo = [from]; while (todo.length) { const x = todo.pop(); for (const y of out.get(x)) if (y !== without && !seen.has(y)) { seen.add(y); todo.push(y); } } return [...seen].filter((x) => ends.has(x)).length; };
+  const clients = d.nodes.filter((n) => n.type === 'client').map((n) => n.id);
+  return d.nodes.filter((n) => n.type === type && clients.some((c) => reach(c, null) > 0 && reach(c, n.id) === 0)).map((n) => n.id);
+}
+
 // Checks on the shape of the design (no simulation needed).
 function rule(c, d) {
   const of = (t) => d.nodes.filter((n) => n.type === t);
   if (c.kind === 'requires') { const miss = missingOnPath(d, c.types); return { ok: !miss, value: miss }; }
-  if (c.kind === 'redundant') { const n = of(c.type).length; return { ok: n >= 2, value: n }; }
+  if (c.kind === 'redundant') { const spof = singlePoints(d, c.type); return { ok: of(c.type).length > 0 && !spof.length, value: spof[0] || null, count: of(c.type).length }; }
   if (c.kind === 'multiAz') { const dbs = of('database'); const single = dbs.filter((n) => !n.config?.multiAz).length; return { ok: dbs.length > 0 && single === 0, value: single }; }
   if (c.kind === 'has') { const n = of(c.type).length; return { ok: n > 0, value: n }; }
   return null;
@@ -119,7 +131,7 @@ export function runTest(design, lab, problem, test) {
     else if (c.kind === 'noCrash') { const e = overload[0]; why.push(e ? `The ${nm[e.id]} crashed from overload at ${at(e.t)}.` : 'Something crashed from overload.'); }
     else if (c.kind === 'noLostWrites') why.push(`${fmt(c.value)} acknowledged writes were lost when a write-back cache went down.`);
     else if (c.kind === 'requires') why.push(`Some requests never pass through a ${cat[c.value]?.name || c.value}.`);
-    else if (c.kind === 'redundant') why.push(`There is only ${c.value} ${cat[c.type]?.name || c.type}: one failure takes that whole layer down.`);
+    else if (c.kind === 'redundant') why.push(c.count ? `The ${nm[c.value]} is a single point of failure: if it goes down, requests have no other way through. Put a second group beside it.` : `The design has no ${cat[c.type]?.name || c.type}.`);
     else if (c.kind === 'multiAz') why.push(c.value ? 'A database has no standby in another zone (Multi-AZ is off).' : 'There is no database.');
     else if (c.kind === 'has') why.push(`The design has no ${cat[c.type]?.name || c.type}.`);
   }

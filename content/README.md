@@ -38,6 +38,38 @@ An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optiona
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
 - `lab {x, to, go?}` "Try it in the Lab" card: `to` is `lab` or `lab/<challenge id>` (checked against `lab.json`), `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
 
+## Problems: tests for an Interview Question (`practice`)
+
+Every Interview Question except "Start here" has a `practice` object, which turns it into a LeetCode-style
+problem: the visitor writes an answer and builds a design on the Lab canvas, and the judge
+(`frontend/src/judge/judge.js`) runs the tests against that design. Nothing is compared with a model answer.
+
+```
+practice: {
+  brief,                          what the tests send, shown above the example tests
+  fixed: {queriesPerRequest, hitPct, writePct, cdnHitPct, cdnLive},   applied in every test
+  start: {nodes, edges},          the design a visitor starts from (Easy: Clients → LB → a small server)
+  tests: [{id, name, desc, sample?, hours, startHour, traffic: {rps, pattern}, chaos?: [{minute, type}],
+           checks: [{kind, label, …}]}],    at least one sample (shown, run by Run); Submit runs all
+  rubric: {fr: [{label, keys}], nfr: {availability, p99, readsPerWrite: [min, max], consistency},
+           est: [{id, label, unit, answer, tol?, how?}], api: [{label, method, path (regex)}]},
+  hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
+  reference: {nodes, edges},      must pass every test
+  wrong: [{name, why, fails, nodes, edges}]   each must fail the test `fails` names
+}
+```
+
+Check kinds: `availability {min, from?, to?}`, `p99 {max}` (ms), `cost {max}` (dollars a month),
+`noCrash {type?}`, `noLostWrites`, `requires {types}`, `redundant {type}` (no single component of that
+type every request needs), `multiAz`, `has {type}`. `cd frontend && npm test` runs the calibration: the
+reference passes everything, each wrong design fails its test, the starting design is not accepted, and
+the rubric accepts its own answers. Content changes run the frontend CI for this reason.
+
+Scoring (out of 100): functional requirements 12 (keywords), non-functional 8 (ranges), estimates 15
+(within `tol`×, default 3), API 15 (method + path regex), design tests 50 (share passed); each hint
+opened −3, at most −15. Known limit: two queues feeding the same workers each hand them their full
+capacity, so suites keep to one queue per worker pool.
+
 ## Subsections
 
 `site.json` `dashboard.groups` maps a section to its subsections, in order: `{"components": [[id, label,
