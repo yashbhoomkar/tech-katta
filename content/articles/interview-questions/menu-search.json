@@ -6,7 +6,7 @@
   "tag": "MEDIUM",
   "date": "6 Nov 2026",
   "title": "Design menu search",
-  "dek": "Someone in Pune types \"panir butter masala\" and expects the right dish from restaurants that are open and deliver to them, in a blink. Search 3 crore dishes across India by their words, cope with Hinglish spellings, and show a price change within a minute.",
+  "dek": "Someone in Pune opens Zotato and types \"panir butter masala\" and expects the right dish from restaurants that are open and deliver to them, in a blink. Search 3 crore dishes across India by their words, cope with Hinglish spellings, and show a price change within a minute.",
   "body": [
     {
       "t": "tldr",
@@ -14,7 +14,7 @@
         "Don't scan dishes for the words. Build an inverted index: for each word, the list of dishes that contain it. A search reads a few short lists and combines them.",
         "Clean the query first: fix spellings, map Hinglish and synonyms (\"panir\", \"panner\" → paneer; \"makhani\" ↔ butter), and use the same rules when indexing.",
         "Split the index by city, and within a big city into a few shards. A search asks every shard of its city at once and merges their best results.",
-        "Rank by how well the words match, then adjust for what matters here: open now, delivers to you, distance, how popular the dish is, what you've ordered before.",
+        "Keep only restaurants that are open and deliver to you, then rank by how well the words match, distance, how popular the dish is and what you've ordered before.",
         "Menu changes reach the index within a minute. Things that change constantly, like \"sold out\", are kept in a small fast layer checked at search time instead of re-indexing."
       ]
     },
@@ -157,7 +157,7 @@
       "t": "list",
       "items": [
         "Text match first: dishes with all the words, with rarer words counting more (\"makhani\" matters more than \"masala\").",
-        "Then what makes a result useful here: open now and delivers to you (filter out the rest), distance or delivery time, how often this dish is ordered, the restaurant's rating.",
+        "Before asking the shards, the query service gets the open restaurants that deliver to this location and passes them as a filter. Then rank by delivery time, how often the dish is ordered and the restaurant's rating.",
         "Personal touch last, on the merged top results only: dishes and restaurants this person has ordered before move up."
       ]
     },
@@ -169,7 +169,7 @@
       "t": "list",
       "items": [
         "Menu changes are written to the menus database and to a change log. The indexer reads the log and updates the index in small batches every second or so; changes are searchable within a minute.",
-        "\"Sold out\" and \"restaurant busy\" change many times an evening. Keep them in a small in-memory layer that the query service checks for the top results, instead of re-indexing dishes all evening.",
+        "\"Sold out\" and \"restaurant busy\" change many times an evening. Keep them in a small in-memory layer. The query service fetches about 50 candidates, drops sold-out dishes and busy restaurants, and fills a page of 20 from what's left, instead of re-indexing dishes all evening.",
         "Rebuild a city's index from the menus database every night into a new copy, then switch to it, so small errors don't pile up."
       ]
     },

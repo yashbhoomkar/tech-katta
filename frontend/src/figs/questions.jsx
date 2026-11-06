@@ -638,7 +638,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`srt${uid}`}><titl
 <SBox x={0} y={60} w={120} t="Search box"/><SBox x={160} y={60} w={140} t="Query service" blue/>
 <SBox x={360} y={30} w={130} t="Pune shard 1"/><SBox x={360} y={70} w={130} t="Pune shard 2"/><SBox x={360} y={110} w={130} t="Pune shard 3"/>
 <SBox x={530} y={70} w={106} t="Top 20, ranked" blue/>
-<Line x1={122} y1={60} x2={156} y2={60} m={M}/><text x={60} y={92} textAnchor="middle" className="fl">"panir butter masala"</text><text x={230} y={92} textAnchor="middle" className="fl">→ paneer, makhani…</text>
+<Line x1={122} y1={60} x2={156} y2={60} m={M}/><text x={0} y={92} className="fl">"panir butter masala"</text><text x={230} y={92} textAnchor="middle" className="fl">→ paneer, makhani…</text>
 <Line x1={302} y1={56} x2={356} y2={34} m={M}/><Line x1={302} y1={60} x2={356} y2={70} m={M}/><Line x1={302} y1={64} x2={356} y2={106} m={M}/>
 <Line x1={492} y1={30} x2={526} y2={64} m={M}/><Line x1={492} y1={70} x2={526} y2={70} m={M}/><Line x1={492} y1={110} x2={526} y2={76} m={M}/>
 <SBox x={0} y={200} w={130} t="Menus database"/><SBox x={180} y={200} w={120} t="Indexer"/>
@@ -656,7 +656,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ivt${uid}`}><titl
 {rows.map(([w,ids],i)=>{const y=52+i*34;return <g key={w}><rect x={0} y={y-16} width={86} height={26} fill="#f8faff" stroke={BLUE}/><text x={10} y={y+2} className="fb">{w}</text>{ids.map((d,j)=><g key={d}><rect x={100+j*54} y={y-16} width={48} height={26} fill={d==="d12"?"#b9c9ff":"#fff"} stroke={GREY}/><text x={124+j*54} y={y+2} textAnchor="middle" className="fl">{d}</text></g>)}</g>})}
 {step(.3,<text x={300} y={22} className="fb">"paneer butter masala"</text>)}
 {res.map(([d,t,top],i)=><g key={d}>{step(.4+i*.15,<text x={300} y={52+i*34} className="fl" style={{fill:top?BLUE:INK}}>{i+1}. {t}</text>)}</g>)}
-<text x={0} y={200} className="fl">three short lists instead of reading 3 crore dishes; most words match a tiny share of the menu</text></svg>}
+<text x={0} y={200} className="fl">three short lists instead of reading every dish in Pune; most words match a tiny share</text></svg>}
 
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
