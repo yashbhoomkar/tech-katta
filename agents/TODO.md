@@ -70,10 +70,10 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q06 Photo sharing (medium) | done | shipped run 15 (alternating with build) with figures `photo-upload`, `like-counter` |
-| 2 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
-| 3 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 4 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 1 | build | Practice mode v2: the summary lists the checks you didn't tick, by step | done | shipped run 16 |
+| 2 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 3 | content | Q07–Q36, one per run, in plan order; alternate with the items above | ready | |
+| — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
 
@@ -119,10 +119,13 @@ for the owner to confirm):
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
   overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
   retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), #186
-  (card footers level), and this run's Q06 PR.
+  (card footers level), #187 (Q06 photo sharing), and this run's Practice v2 PR.
 
 ## Review notes (newest first)
 
+- 2026-11-06 run 16 — Production healthy; #187 checked live. Practice v2 split: the not-ticked list in
+  the summary shipped (frontend and site.json copy only); the `practice_done` event would add to the
+  events allowlist under `backend/src/auth/`, which reads as the data model, so it waits for the owner.
 - 2026-11-06 run 15 — Production healthy; #186 checked live (footers level at 768/1280). Q06 kept to
   photos (the feed is Q07). Learner's must-have: the life of an upload (processing until every size
   and the check are done), workers safe to run twice, location data stripped, never-reused URLs.
@@ -191,7 +194,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-06 — Q06 Photo sharing, with figures `photo-upload` and `like-counter`.
+- 2026-11-06 — Practice mode v2: the summary lists the checks you didn't tick.
+- 2026-11-06 — PR #187: Q06 Photo sharing, with figures `photo-upload` and `like-counter`.
 - 2026-11-06 — PR #186: library card footers line up at every width.
 - 2026-11-06 — PR #185: Q05 Match ticket booking, with figures `waiting-room` and `seat-states`.
 - 2026-11-05 — PR #184: Practice mode v1 on Interview Questions.
