@@ -234,6 +234,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "The work after an upload (previews, scans, search) doesn't have to happen the moment the file lands. Try holding a Monday-morning burst in a queue and clearing it by evening.",
+      "to": "lab/monday-sync",
+      "go": "Try the Monday sync challenge"
     }
   ]
 }

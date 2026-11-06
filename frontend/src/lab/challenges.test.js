@@ -12,6 +12,7 @@ const solutions = {
   'first-rush': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 2, maxCount: 10, autoscale: true }), N('d', 'database', { size: 'db.r5.2xlarge' })),
   'flash-sale': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 14 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'sms-link': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 13 }), N('k', 'cache', { size: 'cache.r5.large' }), N('d', 'database', { size: 'db.m5.large' })),
+  'monday-sync': chain(N('c', 'client'), N('q', 'queue'), N('w', 'server', { size: 't3.medium', count: 2 }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'read-heavy': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.xlarge', count: 5 }), N('k', 'cache', { size: 'cache.m5.large' }), N('d', 'database', { size: 'db.m5.xlarge' })),
   'cache-restart': chain(N('c', 'client'), N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 8 }), N('k', 'cache', { size: 'cache.t3.medium' }), N('d', 'database', { size: 'db.r5.2xlarge' })),
   'ind-vs-pak': chain(N('v', 'client'), N('cdn', 'cdn'), N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 40 })),
@@ -78,4 +79,12 @@ test('a queue whose workers never catch up fails the messages still waiting', ()
     edges: [{ from: 'c', to: 's' }, { from: 's', to: 'q' }, { from: 'q', to: 'w' }, { from: 'w', to: 'd' }] };
   const r = runChallenge(slow, lab, ch);
   assert.ok(r.unprocessed > 0 && r.availability < 99, `${r.unprocessed} waiting, ${r.availability}%`);
+});
+
+test('Monday sync: a queue holds the burst, but workers faster than the database crash it', () => {
+  const ch = lab.challenges.find((c) => c.id === 'monday-sync');
+  const run = (...ns) => runChallenge(chain(N('c', 'client'), ...ns), lab, ch);
+  assert.equal(run(N('lb', 'lb'), N('s', 'server', { size: 'c5.2xlarge', count: 3 }), N('d', 'database', { size: 'db.r5.2xlarge' })).stars, 0, 'one database, however big, misses the burst');
+  assert.equal(run(N('q', 'queue'), N('w', 'server', { size: 'm5.xlarge', count: 1 }), N('d', 'database', { size: 'db.m5.large' })).checks[1].ok, false, 'workers outrun the database');
+  assert.equal(run(N('lb', 'lb'), N('s', 'server', { size: 'm5.large', count: 6 }), N('q', 'queue'), N('w', 'server', { size: 'm5.large', count: 1 }), N('d', 'database', { size: 'db.m5.xlarge' })).stars, 3, 'servers in front of the queue work too');
 });
