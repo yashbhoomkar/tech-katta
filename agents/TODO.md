@@ -234,6 +234,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Landing: "Start practising" goes to Problems; Problems in the landing nav
+- 2026-11-06, 17:26 IST — Vercel deployed again: #199–#214 live and checked (sweep clean, chaos 11/11, landing counts 20/9/16)
 - 2026-11-06 — Q20 Design rider assignment for food delivery, figures `dispatch` and `offer-states`
 - 2026-11-06 — Q19 Design a shared document editor, figures `doc-flow` and `transform`
 - 2026-11-06 — Q18 Design a distributed key-value store, figures `ring` and `quorum`
