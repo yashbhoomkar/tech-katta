@@ -1,0 +1,212 @@
+{
+  "section": "interview-questions",
+  "slug": "rider-dispatch",
+  "group": "medium",
+  "no": "QUESTION // 20",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design rider assignment for food delivery",
+  "dek": "At 8:30 pm Zotato has 3 lakh riders on the road and hundreds of new orders every second. Pick the right rider for each order, so the food is picked up just as it's ready, and never give one rider two orders by mistake.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Riders' phones send their location every few seconds. Keep only the latest location per rider, in memory, in a map split into small cells per city. Don't write every ping to a database.",
+        "For a new order, look up free riders in the cells around the restaurant, and score them by how soon they can get there compared with when the food will be ready. The nearest rider isn't always the best one.",
+        "Offer the order to one rider at a time, holding them for 20 seconds. The hold is a conditional change (only if still free), so two orders can never grab the same rider.",
+        "At the peak, decide every few seconds for all waiting orders together, rather than one at a time; it gives better pairs overall.",
+        "A location older than about 30 seconds means the rider is out of signal or offline; leave them out."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Track every active rider's location and status (free, offered, assigned, delivering).",
+        "For each new order, choose a rider and offer it; if they decline or don't answer, offer it to the next.",
+        "Aim for the rider to reach the restaurant around when the food is ready: not early (waiting), not late (cold food).",
+        "Out of scope here: routing and maps, rider pay, and live tracking for customers (which reads the same locations)."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "A first offer within a few seconds of the order being accepted by the restaurant"
+        ],
+        [
+          "Never double",
+          "A rider is never offered two orders at once"
+        ],
+        [
+          "Fresh",
+          "Locations used are at most a few seconds old"
+        ],
+        [
+          "Scale",
+          "3 lakh riders online at dinner, about 350 orders a second at the peak"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Location pings: 3 lakh riders × one every 4 seconds is 75,000 updates a second at dinner.",
+        "Latest locations: 3 lakh × about 100 bytes is 30 MB. It all fits in memory several times over; the problem is the update rate, not the size.",
+        "Orders: 1 crore a day, with about a quarter between 8 and 10 pm, is about 350 orders a second at the peak.",
+        "Each order looks at maybe 30 to 50 nearby free riders. 350 × 50 is under 20,000 rider checks a second: small for an in-memory map.",
+        "History: 75,000 pings × 100 bytes is 7.5 MB a second, about 27 GB an hour, kept in cheap storage for travel-time estimates and disputes."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Rider: `id`, `city`, `status`, `lat`, `lng`, `updated_at`, `offer_order_id`, `offer_until`.",
+        "Order: `id`, `restaurant`, `ready_at` (the kitchen's estimate), `status`, `rider_id`, `offers_tried`.",
+        "Cell: a small hexagon or square of the city, holding the ids of free riders inside it, kept in memory."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /riders/r_88/location   { \"lat\": 18.5204, \"lng\": 73.8567, \"at\": \"20:31:04\" }   → 204\n← (to the rider app)          { \"offer\": { \"order\": \"#91\", \"pickup\": \"Koregaon Park\", \"expires_in\": 20 } }\nPOST /offers/#91/accept       → 200 { \"assigned\": true }    or 409 { \"assigned\": false, \"reason\": \"expired\" }",
+      "say": "Riders send their location every few seconds. Offers are pushed to the rider app. Accepting succeeds only while the offer still stands."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "dispatch",
+      "cap": "Rider apps send locations to a location service that keeps only the latest one per rider, in an in-memory map of the city. For a new order, the dispatcher asks the map for free riders near the restaurant, scores them, and offers the order to the best."
+    },
+    {
+      "t": "p",
+      "x": "Split everything by city: Pune's riders never take Chennai's orders, so each city's map and dispatcher can live on their own machines, and a problem in one city stays in that city."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Where riders are"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "A DATABASE ROW PER RIDER, UPDATED ON EVERY PING",
+      "what": "UPDATE riders SET lat, lng on every ping, and query \"free riders within 2 km\" with a geo index for each order.",
+      "use": "Simple, and fine for a few thousand riders.",
+      "avoid": "75,000 updates a second to rows that a geo index must reshuffle each time, with the dispatcher reading the same rows. The database spends dinner time moving dots around.",
+      "ex": "At 8:30 pm the riders table falls behind, and the dispatcher offers orders to riders who moved 2 km since.",
+      "like": "Writing every rider's position on a whiteboard by hand, every 4 seconds."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "LATEST LOCATION IN MEMORY, BY CELL",
+      "what": "A location service per city keeps each rider's latest ping in memory and in the right cell of a grid (geohash or hexagons). Free riders near a point are the riders in its cell and the cells around it. Every ping also goes to a log for history.",
+      "use": "Updates are a memory write; nearby lookups read a few cells. One machine handles a big city.",
+      "avoid": "Memory is lost on a crash. Rebuild from the next pings, which arrive within seconds, and run a standby copy that also reads the log.",
+      "ex": "An order at Koregaon Park reads 7 cells and finds 42 free riders in under a millisecond.",
+      "like": "Riders standing in numbered squares on a map; to find someone near a spot, you look at that square and its neighbours."
+    },
+    {
+      "t": "h2",
+      "x": "Choosing the rider"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Nearest isn't best. A rider 3 minutes away for food ready in 15 minutes waits 12 minutes at the restaurant, while a rider 12 minutes away arrives just in time.",
+        "Score each candidate: travel time to the restaurant (from road distances, not straight lines) against the food's ready time, plus things like their current direction and how long they've been idle.",
+        "At the busiest times, collect the orders and free riders of the last few seconds and pair them all at once. One order's best rider might be the only good rider for another order; deciding together avoids that clash."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "One order at a time per rider"
+    },
+    {
+      "t": "fig",
+      "id": "offer-states",
+      "cap": "A rider goes free → offered (held for 20 seconds) → assigned → delivering → free. A decline or no answer in 20 seconds puts them back to free, and the order goes to the next rider."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Making the offer is a conditional change: set status to offered only if it's still free. If two dispatchers try at once, one wins and the other picks someone else.",
+        "The offer expires after 20 seconds. Accepting after that gets a polite \"already gone\"; the order has moved on.",
+        "Accepting is also conditional: only if the offer is still this rider's. A rider tapping twice changes nothing."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A rider's pings stop (a tunnel, a dead phone): after about 30 seconds they're left out of new offers, but keep any order they already have.",
+        "A city's location service dies: the standby takes over; within a few seconds every rider has pinged again and the map is whole.",
+        "No rider accepts after several tries: widen the search area, tell the restaurant, and update the customer's delivery time honestly."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: riders sending locations, finding nearby free riders, offering an order and handling a decline.",
+        "Senior: in-memory cells instead of database writes per ping, the ping numbers, scoring by ready time, the 20-second hold as a conditional change.",
+        "Lead: splitting by city, batch matching at the peak, standby and rebuild from pings, stale riders, and what the customer is told."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Give one rider two orders from the same restaurant?\" Batch them when both are ready within a few minutes and the drops are close; score the pair as one trip.",
+            "\"Live tracking for customers?\" Read the rider's latest location from the same map, a few times a minute; never from the database.",
+            "\"Rain, and half the riders go offline?\" Fewer candidates per order: widen the area, slow new orders with honest delivery times, and ask more riders to come online.",
+            "\"Faking location?\" Check that pings move at believable speeds and match the route; flag riders who jump.",
+            "\"How do you test it?\" Replay a recorded dinner of pings and orders against the dispatcher and compare waiting times at restaurants and doors."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Dispatch has a dinner rush every day. The lunch and dinner rush challenge practises sizing for two daily peaks.",
+      "to": "lab/first-rush",
+      "go": "Try the lunch and dinner rush challenge"
+    }
+  ]
+}

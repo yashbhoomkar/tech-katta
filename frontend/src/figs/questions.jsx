@@ -576,6 +576,31 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><titl
 {step(.4,<g><text x={0} y={128} className="fb">Server</text><text x={70} y={128} className="fl">Rohit's edit came after #41, which added 7 characters before it:</text><text x={70} y={146} className="fl" style={{fill:BLUE}}>replace 3 characters at 14 with "240" → #42</text></g>)}
 {step(.7,<g><text x={0} y={196} className="fb">Everyone</text><rect x={120} y={180} width={230} height={24} fill="#f8faff" stroke={BLUE}/><text x={130} y={197} className="fb">Paneer Tikka ₹240</text></g>)}</svg>}
 
+// Rider dispatch, FIG: the path. Rider apps send their location every few seconds to a location service,
+// which keeps only the latest one per rider in an in-memory map of the city. When an order is placed, the
+// dispatcher asks the map for free riders near the restaurant, scores them, and offers the order to the best.
+function DispatchFig({still,uid=""}){const M=`dp${uid}`,D="12s";
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dpt${uid}`}><title id={`dpt${uid}`}>Rider apps send their location every few seconds to a location service, which keeps only each rider's latest location in an in-memory map of the city. When an order is placed, the dispatcher asks the map for free riders near the restaurant, scores each by how soon they can reach it compared with when the food will be ready, and offers the order to the best one.</title><Mark m={M}/>
+<SBox x={0} y={50} w={110} t="Rider apps"/><SBox x={160} y={50} w={140} t="Location service"/><SBox x={350} y={50} w={170} t="City map (in memory)" blue/>
+<SBox x={0} y={150} w={110} t="New order"/><SBox x={160} y={150} w={140} t="Dispatcher" blue/><SBox x={350} y={150} w={170} t="Offer to best rider"/>
+<Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={302} y1={50} x2={346} y2={50} m={M}/><text x={134} y={36} textAnchor="middle" className="fl">every 4 s</text><text x={324} y={36} textAnchor="middle" className="fl">latest only</text>
+<Line x1={112} y1={150} x2={156} y2={150} m={M}/><Line x1={250} y1={138} x2={400} y2={64} m={M} dash/><text x={340} y={110} className="fl">free riders near the restaurant?</text>
+<Line x1={302} y1={150} x2={346} y2={150} m={M}/><text x={230} y={184} textAnchor="middle" className="fl">score: time to restaurant</text><text x={230} y={198} textAnchor="middle" className="fl">vs food ready time</text>
+<text x={530} y={146} className="fl">20 s</text><text x={530} y={160} className="fl">to accept</text>
+{!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={304} x2={344} y={50} t0={.1} t1={.16} dur={D}/><Glow x={350} y={38} w={170} h={24} t0={.16} t1={.26} dur={D}/><Dot x1={114} x2={154} y={150} t0={.34} t1={.4} dur={D}/><Dot x1={252} x2={398} y={136} y2={66} t0={.44} t1={.56} dur={D}/><Glow x={160} y={138} w={140} h={24} t0={.58} t1={.7} dur={D}/><Dot x1={304} x2={344} y={150} t0={.72} t1={.8} dur={D}/><Glow x={350} y={138} w={170} h={24} t0={.8} t1={.95} dur={D}/></g>}</svg>}
+
+// Rider dispatch, FIG: a rider's states. Free, then offered (held for this order for 20 seconds; nobody else
+// can offer them anything), then assigned if they accept, then delivering, then free again. A decline or no
+// answer in 20 seconds puts them back to free, and the order goes to the next rider.
+function OfferStatesFig({still,uid=""}){const M=`of${uid}`,D="12s";
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`oft${uid}`}><title id={`oft${uid}`}>A rider's states. Free, then offered: held for one order for 20 seconds, so no other order can be offered to them. If they accept, assigned, then delivering, then free again. If they decline or don't answer in 20 seconds, they go back to free and the order is offered to the next rider.</title><Mark m={M}/>
+<SBox x={0} y={70} w={100} t="free" blue/><SBox x={150} y={70} w={110} t="offered (20 s)"/><SBox x={310} y={70} w={100} t="assigned"/><SBox x={460} y={70} w={110} t="delivering"/>
+<Line x1={102} y1={70} x2={146} y2={70} m={M}/>{step(.25,<Line x1={262} y1={70} x2={306} y2={70} m={M}/>)}{step(.25,<text x={284} y={56} textAnchor="middle" className="fl">accepts</text>)}
+{step(.4,<Line x1={412} y1={70} x2={456} y2={70} m={M}/>)}{step(.55,<g><Line x1={515} y1={82} x2={515} y2={140} dash/><Line x1={515} y1={140} x2={50} y2={140} dash/><Line x1={50} y1={140} x2={50} y2={84} m={M} dash/><text x={300} y={156} textAnchor="middle" className="fl">delivered: free again</text></g>)}
+{step(.7,<g><Line x1={205} y1={58} x2={205} y2={30} dash c={RED}/><Line x1={205} y1={30} x2={60} y2={30} dash c={RED}/><Line x1={60} y1={30} x2={60} y2={56} m={M} dash c={RED}/><text x={215} y={26} className="fl" style={{fill:RED}}>declines or 20 s pass: free; order goes to the next rider</text></g>)}
+{step(.85,<text x={0} y={196} className="fl">the move to "offered" only happens if the rider is still free: one order at a time, never two</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -618,4 +643,6 @@ export const QUESTION_FIGS={
 "quorum":{C:QuorumFig,ar:640/230,title:()=>"TWO CONFIRM, TWO ANSWER, ONE OVERLAP"},
 "doc-flow":{C:DocFlowFig,ar:640/230,title:()=>"ONE SERVER ORDERS EACH DOCUMENT"},
 "transform":{C:TransformFig,ar:640/230,title:()=>"TWO EDITS, ONE RESULT"},
+"dispatch":{C:DispatchFig,ar:640/230,title:()=>"FROM PINGS TO AN OFFER"},
+"offer-states":{C:OfferStatesFig,ar:640/210,title:()=>"ONE ORDER AT A TIME"},
 };
