@@ -15,7 +15,7 @@
         "Rebuild the map every hour from search logs and menus, offline. Check the new map, then swap it in whole, so servers never serve half of one and half of another.",
         "The phone waits a moment after each keystroke and drops answers that are already out of date. That cuts requests by more than half.",
         "Short prefixes (\"b\", \"bi\") are the same for everyone in a city, so a CDN can answer them. Only longer prefixes reach your servers.",
-        "Popular in your city first, with a little of your own history mixed in. Trending searches from the last hour are added on top of the hourly map."
+        "Your own matching searches first, then what's popular in your city. Trending searches from the last hour are added on top of the hourly map."
       ]
     },
     {
@@ -44,7 +44,7 @@
       "rows": [
         [
           "Speed",
-          "Suggestions on screen within 100 ms of a pause in typing; under 10 ms on the server"
+          "Suggestions on screen within 100 ms of the request being sent; under 10 ms on the server"
         ],
         [
           "Freshness",
@@ -69,7 +69,7 @@
       "items": [
         "Requests: 1 crore people × 3 searches × about 4 requests per search (after waiting for pauses) is 12 crore a day, about 1,400 a second, and around 5,000 at dinner.",
         "What to suggest: 3 lakh restaurants, about 50,000 dish names and the top 10 lakh past searches, roughly 14 lakh terms.",
-        "Prefixes: terms are about 12 characters, but most prefixes are shared (\"bir\" serves every biryani). Expect around 50 lakh distinct prefixes per city's map.",
+        "Prefixes: terms are about 12 characters, but most prefixes are shared (\"bir\" serves every biryani). Expect around 50 lakh distinct prefixes for all of India; one city's map is a small part of that.",
         "Memory: 50 lakh prefixes × 8 suggestion ids × 8 bytes is about 320 MB, plus the prefixes and names: around 1 GB. Every suggest server can hold the whole thing.",
         "So the hard part isn't size or speed of one lookup. It's keeping the map fresh and the request count down."
       ]
@@ -81,7 +81,7 @@
     {
       "t": "list",
       "items": [
-        "Term: `id`, `text`, `kind` (dish, restaurant, query), `city`, `score` (recent searches and orders).",
+        "Term: `id`, `text`, `kind` (dish, restaurant, query), `score` per city (recent searches and orders).",
         "Prefix map: per city, prefix → the ids of its top 8 terms, built every hour, with a version number.",
         "Recent activity: per person, their last few searches and orders, kept on the phone and on the server."
       ]
@@ -119,7 +119,7 @@
       "kind": "SEARCH ON EVERY KEYSTROKE",
       "what": "Run a \"starts with\" query on the terms table for each keystroke, sorted by score, top 8.",
       "use": "Easy, always up to date.",
-      "avoid": "\"b\" matches lakhs of terms, and each one must be sorted. At 5,000 requests a second, the database spends its evening sorting the same short prefixes again and again.",
+      "avoid": "\"b\" matches about a lakh terms, and each one must be sorted. At 5,000 requests a second, the database spends its evening sorting the same short prefixes again and again.",
       "ex": "Typing \"b\" at 8 pm takes 300 ms to answer; by then the person has typed \"bir\" and the answer is useless.",
       "like": "Looking through the whole phone book every time someone says the first letter of a name."
     },
@@ -151,7 +151,7 @@
       "items": [
         "Wait about 150 ms after a keystroke before asking. Fast typists send one request for \"biry\", not four.",
         "Cancel the request for \"bi\" when \"bir\" is sent, and ignore any answer older than the latest one shown.",
-        "Short prefixes are the same for everyone in a city. Let the CDN and the phone cache them for a few minutes.",
+        "Short prefixes are the same for everyone in a city. Let the CDN and the phone cache them for a few minutes. Send short-prefix requests without login details, so every person's request matches the same cached copy.",
         "Keep the last few answers on the phone: the answer for \"bir\" often already contains what \"biry\" needs."
       ]
     },
@@ -213,7 +213,7 @@
             "\"Hindi or other scripts?\" Build maps for each script, and add transliterations (\"बिरयानी\" and \"biryani\" point to the same term).",
             "\"Remove a term right now?\" A small block list checked at read time, until the next build drops it.",
             "\"Why not search for every keystroke with a search engine?\" It works at small scale; at 5,000 a second, precomputing the common prefixes is much cheaper.",
-            "\"How big can one city's map get?\" Small cities fit easily; for the largest, split by first letter across servers if a single machine can't hold it.",
+            "\"How big can one city's map get?\" Even all cities together are a few GB, so one server holds them. If that ever changed, split by city across groups of servers.",
             "\"How do you test it?\" Replay a day of real keystrokes against a new build and compare clicks on suggestions before switching."
           ]
         }
