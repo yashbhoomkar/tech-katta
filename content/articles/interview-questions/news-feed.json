@@ -343,7 +343,7 @@
           {
             "kind": "redundant",
             "type": "server",
-            "label": "At least two server groups"
+            "label": "No server group that every request depends on (no single point of failure)"
           }
         ]
       },
