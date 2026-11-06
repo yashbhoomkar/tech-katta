@@ -127,6 +127,10 @@ for the owner to confirm):
 
 ## Review notes (newest first)
 
+- 2026-11-06 — Owner asked for Vercel Web Analytics: `@vercel/analytics` on the landing page and the
+  dashboard (hash routes reported as /dashboard/<section>/<article>), skipped for GPC/DNT and automated
+  browsers (so agents' Playwright runs don't count), privacy page updated. Goes live with the next
+  Vercel deploy. The Vercel dashboard (Analytics tab) shows visitors, pages, referrers, countries.
 - 2026-11-06 run 17 (end) — Vercel refused the production deploy of #189: daily deployment limit, retry
   in 24 hours. API and content deployed (VPS); Q07 renders without its two figures (unknown ids are
   skipped since #178), checked at 390/1280, no errors. Chain stopped (deploy failure we can't fix).
@@ -206,6 +210,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Vercel Web Analytics on the landing page and dashboard (owner's request).
 - 2026-11-06 — PR #189: Q07 News feed, with figures `feed-fanout` and `feed-hybrid` (figures wait for the next Vercel deploy).
 - 2026-11-06 — PR #188: Practice mode v2, the summary lists the checks you didn't tick.
 - 2026-11-06 — PR #187: Q06 Photo sharing, with figures `photo-upload` and `like-counter`.

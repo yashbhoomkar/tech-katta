@@ -7,6 +7,9 @@ import{API}from"./api.js";
 
 const KEY="tk-visitor",FLUSH_MS=5000,MAX_QUEUE=50;
 // automated browsers (navigator.webdriver: test scripts, crawlers that admit it) are not visitors
+// Vercel Web Analytics (anonymous page counts, no cookies) follows the same rule: nothing from browsers
+// that ask not to be tracked, or from automated ones (our own test runs).
+export const vercelGate=e=>off()?null:e;
 const off=()=>{try{return navigator.globalPrivacyControl===true||navigator.doNotTrack==="1"||navigator.webdriver===true}catch{return false}};
 let visitorId=null;
 export function visitor(){if(visitorId)return visitorId;let v=null;try{v=localStorage.getItem(KEY)}catch{}

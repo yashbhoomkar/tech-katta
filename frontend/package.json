@@ -10,6 +10,7 @@
     "test": "node --test src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/progress.test.js src/lab/importer.test.js src/lablite.test.js src/lab/merge.test.js src/analytics.test.js"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
