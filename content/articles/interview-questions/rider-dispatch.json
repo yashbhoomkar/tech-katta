@@ -52,7 +52,7 @@
         ],
         [
           "Fresh",
-          "Locations used are at most a few seconds old"
+          "Locations are usually a few seconds old; riders silent for 30 seconds are left out"
         ],
         [
           "Scale",
@@ -103,7 +103,7 @@
     },
     {
       "t": "p",
-      "x": "Split everything by city: Pune's riders never take Chennai's orders, so each city's map and dispatcher can live on their own machines, and a problem in one city stays in that city."
+      "x": "Split everything by city: Pune's riders never take Chennai's orders, so each city's map and dispatcher can live on their own machines, and a problem in one city stays in that city. Draw cities as service zones (Gurugram apart from Delhi), and give each rider to one zone at a time."
     },
     {
       "t": "h2",
@@ -129,7 +129,7 @@
       "kind": "LATEST LOCATION IN MEMORY, BY CELL",
       "what": "A location service per city keeps each rider's latest ping in memory and in the right cell of a grid (geohash or hexagons). Free riders near a point are the riders in its cell and the cells around it. Every ping also goes to a log for history.",
       "use": "Updates are a memory write; nearby lookups read a few cells. One machine handles a big city.",
-      "avoid": "Memory is lost on a crash. Rebuild from the next pings, which arrive within seconds, and run a standby copy that also reads the log.",
+      "avoid": "Memory is lost on a crash. Locations come back with the next pings, within seconds, and a standby copy reads the log. Rider status (free, offered, assigned) can't come back from pings, so it lives in a small durable store.",
       "ex": "An order at Koregaon Park reads 7 cells and finds 42 free riders in under a millisecond.",
       "like": "Riders standing in numbered squares on a map; to find someone near a spot, you look at that square and its neighbours."
     },
@@ -157,7 +157,7 @@
     {
       "t": "list",
       "items": [
-        "Making the offer is a conditional change: set status to offered only if it's still free. If two dispatchers try at once, one wins and the other picks someone else.",
+        "Making the offer is a conditional change in that status store, the one place every dispatcher checks: set status to offered only if it's still free. Status changes a few times per order, so this store stays quiet next to the pings. If two dispatchers try at once, one wins and the other picks someone else.",
         "The offer expires after 20 seconds. Accepting after that gets a polite \"already gone\"; the order has moved on.",
         "Accepting is also conditional: only if the offer is still this rider's. A rider tapping twice changes nothing."
       ]
@@ -170,7 +170,7 @@
       "t": "list",
       "items": [
         "A rider's pings stop (a tunnel, a dead phone): after about 30 seconds they're left out of new offers, but keep any order they already have.",
-        "A city's location service dies: the standby takes over; within a few seconds every rider has pinged again and the map is whole.",
+        "A city's location service dies: the standby takes over; within a few seconds every rider has pinged again and the map is whole. Who is offered or assigned is safe in the status store.",
         "No rider accepts after several tries: widen the search area, tell the restaurant, and update the customer's delivery time honestly."
       ]
     },
