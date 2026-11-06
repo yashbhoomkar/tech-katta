@@ -140,9 +140,9 @@
       "name": "Best",
       "kind": "HOLD WITH AN EXPIRY",
       "what": "In one short transaction, move every requested seat from available (or held but expired) to held, with `hold_until` 10 minutes ahead. If fewer rows changed than seats asked for, roll back. Payment changes held to sold, only if the hold is still yours and not expired.",
-      "use": "Exactly one buyer wins each seat, no lock outlives a millisecond, and seats from people who walk away come back by themselves.",
+      "use": "Exactly one buyer wins each seat, no lock lasts more than a few milliseconds, and seats from people who walk away come back by themselves.",
       "avoid": "Expired holds must be ignored everywhere, so every query checks `hold_until`, and a sweeper resets them so the counts stay right.",
-      "ex": "Three seats asked, three rows changed: held till 12:13:05. Two changed: roll back, show \"only 2 left together, try 2 or another block\".",
+      "ex": "Three seats asked, three rows changed: held till 12:13:05. Two changed: someone took one first; roll back and try the next 3 seats together in the block. Only when none are left, show \"only 2 left together\".",
       "like": "A coat-check ticket: the coat is yours while the ticket is valid, then it goes back on the rack."
     },
     {
@@ -157,7 +157,7 @@
     {
       "t": "list",
       "items": [
-        "Let customers choose a block and a count, and pick the seats for them. Thousands choosing \"the best seat\" by hand all collide; assigning from the block spreads them out.",
+        "Let customers choose a block and a count, and pick the seats for them. Thousands choosing \"the best seat\" by hand all collide; assigning from the block spreads them out. Pick candidate seats with `FOR UPDATE SKIP LOCKED`, so buyers who arrive together take different seats instead of failing each other.",
         "Shard nothing for one match: 1 lakh seats is a small table. Spread events across databases, and keep each event's seats together.",
         "Show seats left per block from a cache refreshed every second or so. It's always a little behind; the hold is the truth."
       ]
@@ -221,7 +221,7 @@
           "items": [
             "\"Payment arrives after the hold expired and the seats were resold.\" Refund at once and say so; the webhook must be safe to receive twice.",
             "\"The customer taps Pay twice, or the app retries.\" Each payment carries the order's idempotency key, so the provider charges once and the hold is confirmed once.",
-            "\"The waiting room service dies.\" Positions are in signed tokens, so a restarted service can rebuild the line from them; admitted tokens keep working.",
+            "\"The waiting room service dies.\" Positions are in signed tokens and the admitted-up-to number is saved, so a restarted service carries on as people poll; admitted tokens keep working.",
             "\"Two matches go on sale at the same minute.\" Separate lines and separate admit rates; each event's seats are in their own table or database.",
             "\"Why not just add servers?\" The crowd is 50 times the seats. More servers serve more people a \"sold out\" faster; they don't make more seats.",
             "\"How would you test it?\" Replay 1,000 holds for the same 10 seats at once and check exactly 10 are held, then let them expire and check the counts return."
