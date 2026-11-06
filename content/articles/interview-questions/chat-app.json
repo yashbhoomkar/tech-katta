@@ -99,7 +99,7 @@
     {
       "t": "fig",
       "id": "chat-flow",
-      "cap": "The chat service numbers the message, saves it, and asks the registry where each other member is connected. Their gateway sends it down the open connection; anyone offline gets a phone notification instead."
+      "cap": "The chat service numbers the message, saves it, asks the registry where each other member is connected, and hands it to their gateway, which sends it down the open connection. Anyone offline gets a phone notification instead."
     },
     {
       "t": "p",
@@ -140,9 +140,9 @@
     {
       "t": "list",
       "items": [
-        "The chat service gives each message the conversation's next number and saves it in one step. Send everything for a conversation to the same place, so two senders can't get the same number.",
-        "The first tick means \"saved\", and comes only after the save. If the phone gets no tick, it sends again with the same `client_id`; the server sees it already has that one and returns the same number.",
-        "Delivery to other members happens after the save. If a gateway is down at that moment, nothing is lost: the message is in storage, and the member will fetch it by number."
+        "The chat service bumps the conversation's `last_seq` and saves the message in one write to the store. A unique key on (conversation, number) turns any double into an error, even if two servers briefly handle the same conversation.",
+        "The first tick means \"saved\", and comes only after the save is on more than one machine. If the phone gets no tick, it sends again with the same `client_id`; the server sees it already has that one and returns the same number (a unique key on conversation + `client_id` makes this check safe).",
+        "Delivery to other members happens after the save. If a gateway is down at that moment, nothing is lost: the message is in storage, and the member will fetch it by number. Phones also watch the numbers: if Rohit's phone gets #47 while it has only #45, it asks for \"everything after 45\" straight away. And until a member's \"delivered up to\" reaches the new number, the server retries the push."
       ]
     },
     {
@@ -169,8 +169,8 @@
     {
       "t": "list",
       "items": [
-        "A gateway crashes: its phones reconnect to others after a random short wait, register again, and sync each conversation from their last number.",
-        "The registry entry is stale (the phone moved gateways): the delivery fails, the old entry expires, and the phone's sync on reconnect fills the gap.",
+        "A gateway crashes: its phones reconnect to others after a random short wait, register again, and send their last number for every conversation in one request, getting back only the ones with new messages.",
+        "The registry entry is stale (the phone moved gateways): the delivery fails, the phone's new registration replaces the old entry (or it expires), and the phone's sync on reconnect fills the gap.",
         "A storage machine is slow: sends wait for the save, because the first tick promises the message is safe. Show \"sending…\" rather than a false tick."
       ]
     },

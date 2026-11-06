@@ -88,9 +88,9 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 4 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
-| 5 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
-| 6 | content | Q11–Q36, one per run, after the above | ready | |
+| 1 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
+| 2 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
+| 3 | content | Q11–Q36, one per run, after the above | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
