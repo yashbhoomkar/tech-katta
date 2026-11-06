@@ -97,7 +97,7 @@
     {
       "t": "fig",
       "id": "sched-flow",
-      "cap": "Services add jobs with a run time. Schedulers look only at the current minute's jobs, claim each with a lease and put it on a queue. Executors run it and record the result: done, retry later, or the next run of a repeating job."
+      "cap": "Services add jobs with a run time. Schedulers look only at minutes that are due, claim each job with a lease and put it on a queue. Executors run it and record the result: done, retry later, or the next run of a repeating job."
     },
     {
       "t": "p",
@@ -125,7 +125,7 @@
       "t": "type",
       "name": "Better",
       "kind": "GROUPED BY MINUTE, CLAIMED WITH A LEASE",
-      "what": "Index jobs by the minute they're due. Each second, a scheduler looks at the current minute's waiting jobs and claims a batch in one update: status claimed, lease_until now + 30 s, only if still waiting. Split minutes across schedulers by job id so they don't compete.",
+      "what": "Index jobs by the minute they're due. Each second, a scheduler looks at every minute up to now and claims a batch in one update: status claimed, lease_until now + 30 s, only if the job is waiting or its lease has run out. Split each minute's jobs across schedulers by a hash of the job id, or just let them all claim with SKIP LOCKED.",
       "use": "Each look is small, and a job can only be claimed by one scheduler at a time.",
       "avoid": "Claims must be atomic (an update with a condition, or SKIP LOCKED in SQL). A lease too short expires while the job is still running.",
       "ex": "At 21:00:00, three schedulers each claim their third of the payout jobs and queue them in a few seconds.",
@@ -138,13 +138,14 @@
     {
       "t": "fig",
       "id": "lease",
-      "cap": "Worker A claims the 21:00 payout with a 30-second lease and dies 10 seconds later. When the lease ends, worker B claims it and runs it. If A was only paused, the job's id makes its late work harmless."
+      "cap": "Worker A claims the 21:00 payout with a 30-second lease and dies 10 seconds in, before its next heartbeat. When the lease ends, worker B claims it and runs it. If A was only paused, the job's id makes its late work harmless."
     },
     {
       "t": "list",
       "items": [
         "While a job runs, the executor extends its lease every few seconds. If it stops (crash, pause, lost network), the lease runs out and the job is claimed again.",
-        "So a job may start twice: once by a worker that only looked dead. Give every job's work an id (\"payout restaurant 214 for 6 Nov\"), and let whatever it writes to skip a repeat of that id.",
+        "The executor resets the lease when it takes the job off the queue; the scheduler's lease only needs to cover the wait in the queue.",
+      "So a job may start twice: once by a worker that only looked dead. Each claim gets a new number, and writes carrying an old number are refused (fencing). Give every job's work an id (\"payout restaurant 214 for 6 Nov\"), and let whatever it writes to skip a repeat of that id.",
         "Count attempts. After a few failures, mark the job failed and alert someone, instead of retrying for ever.",
         "Retries wait longer each time, with a bit of randomness, so a failing bank isn't hit by every retry at once."
       ]
