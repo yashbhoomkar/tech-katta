@@ -422,6 +422,32 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`pst${uid}`}><titl
 {step(.6,<Line x1={402} y1={40} x2={476} y2={40} m={M}/>)}
 {step(.75,<text x={0} y={214} className="fl">never show "failed" for an unknown payment, or the person pays again</text>)}</svg>}
 
+// Job scheduler, FIG: the path. Services add jobs with a run time. Schedulers look only at the jobs due in
+// the current minute, claim each with a lease, and put them on a queue. Executors run them, record the
+// result, retry failures later, and add the next run of a recurring job.
+function SchedFlowFig({still,uid=""}){const M=`sc${uid}`,D="12s";
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sct${uid}`}><title id={`sct${uid}`}>Services add jobs with a time to run. The jobs table is grouped by minute. Schedulers look only at the jobs due in the current minute, claim each one with a lease, and put it on a queue. Executors run the jobs, record the result, put failures back with a later time to retry, and add the next run of a recurring job.</title><Mark m={M}/>
+<SBox x={0} y={50} w={110} t="Services"/><SBox x={160} y={50} w={150} t="Jobs (by minute)" blue/><SBox x={160} y={150} w={150} t="Schedulers"/><SBox x={360} y={150} w={100} t="Queue"/><SBox x={510} y={150} w={130} t="Executors"/>
+<Line x1={112} y1={50} x2={156} y2={50} m={M}/><text x={134} y={36} textAnchor="middle" className="fl">run at 21:00</text>
+<Line x1={235} y1={136} x2={235} y2={64} m={M}/><text x={243} y={104} className="fl">claim due jobs, with a lease</text>
+<Line x1={312} y1={150} x2={356} y2={150} m={M}/><Line x1={462} y1={150} x2={506} y2={150} m={M}/>
+<Line x1={575} y1={136} x2={575} y2={60} dash/><Line x1={575} y1={60} x2={314} y2={56} m={M} dash/><text x={445} y={48} textAnchor="middle" className="fl">done · retry later · next run</text>
+<text x={0} y={220} className="fl">nobody scans the whole table: only the current minute's jobs are looked at</text>
+{!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.1} dur={D}/><Glow x={160} y={38} w={150} h={24} t0={.1} t1={.2} dur={D}/><Dot x1={235} x2={235} y={134} y2={66} t0={.24} t1={.32} dur={D}/><Dot x1={314} x2={354} y={150} t0={.36} t1={.44} dur={D}/><Dot x1={464} x2={504} y={150} t0={.46} t1={.54} dur={D}/><Glow x={510} y={138} w={130} h={24} t0={.54} t1={.68} dur={D}/><Dot x1={575} x2={316} y={60} y2={56} t0={.72} t1={.86} dur={D}/></g>}</svg>}
+
+// Job scheduler, FIG: a lease runs out. Worker A claims the 21:00 payout job with a 30-second lease and dies
+// at 21:00:10. Nobody touches the job until the lease ends at 21:00:30; then worker B claims it and runs it.
+// If A was only paused, the job id stops its late work from counting twice.
+function LeaseFig({still,uid=""}){const D="12s",X=110,W=500,T=60;const x=(s)=>X+s/T*W;
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><title id={`lst${uid}`}>A lease running out. Worker A claims the 9 pm payout job with a 30-second lease and dies 10 seconds later. Nobody else touches the job until the lease ends at 30 seconds. Then worker B claims it with a new lease and runs it to the end. If A was only paused and wakes up, the job's id makes its late work harmless.</title>
+{[0,10,20,30,40,50,60].map(s=><g key={s}><line x1={x(s)} y1={40} x2={x(s)} y2={180} stroke="#e6eaf0"/><text x={x(s)} y={198} textAnchor="middle" className="fl">{s===60?"21:01:00":`21:00:${String(s).padStart(2,"0")}`}</text></g>)}
+<text x={0} y={74} className="fb">Worker A</text><text x={0} y={144} className="fb">Worker B</text>
+<rect x={x(0)} y={60} width={x(30)-x(0)} height={22} fill="#f8faff" stroke={BLUE} strokeDasharray="4 3"/><text x={x(15)} y={54} textAnchor="middle" className="fl">A's lease, 30 s</text>
+<rect x={x(0)} y={64} width={x(10)-x(0)} height={14} fill={BLUE}/>{step(.2,<text x={x(10)+6} y={76} className="fb" style={{fill:RED}}>✕ dies</text>)}
+{step(.5,<g><rect x={x(30)} y={130} width={x(60)-x(30)} height={22} fill="#f8faff" stroke={BLUE} strokeDasharray="4 3"/><rect x={x(30)} y={134} width={x(48)-x(30)} height={14} fill={BLUE}/><text x={x(45)} y={124} textAnchor="middle" className="fl">B claims when the lease ends, runs it</text></g>)}
+{step(.75,<text x={x(48)+6} y={146} className="fb" style={{fill:BLUE}}>✓ done</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -452,4 +478,6 @@ export const QUESTION_FIGS={
 "prefix-map":{C:PrefixMapFig,ar:640/230,title:()=>"EVERY PREFIX, ANSWERED IN ADVANCE"},
 "pay-flow":{C:PayFlowFig,ar:640/210,title:()=>"WHO TALKS TO THE GATEWAY"},
 "pay-states":{C:PayStatesFig,ar:640/220,title:()=>"UNKNOWN IS NOT FAILED"},
+"sched-flow":{C:SchedFlowFig,ar:640/240,title:()=>"DUE THIS MINUTE, CLAIMED ONCE"},
+"lease":{C:LeaseFig,ar:640/220,title:()=>"WHEN A WORKER DIES MID-JOB"},
 };

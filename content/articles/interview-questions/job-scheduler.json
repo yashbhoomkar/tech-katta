@@ -1,0 +1,211 @@
+{
+  "section": "interview-questions",
+  "slug": "job-scheduler",
+  "group": "medium",
+  "no": "QUESTION // 14",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a job scheduler",
+  "dek": "\"Ask for a rating an hour after delivery.\" \"Pay every restaurant at 9 pm.\" \"Sync menus every 15 minutes.\" Zotato has crores of jobs that must run at a set time. Run each one close to on time, never lose one, and survive the moment 9 pm arrives.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Store every job with the time it should run. Group jobs by the minute they're due, so finding what to run now never means scanning the whole table.",
+        "A scheduler claims each due job with a lease (\"mine for 30 seconds\") and puts it on a queue. If the worker dies, the lease runs out and another picks the job up.",
+        "That means a job can occasionally run twice. Make every job safe to repeat, using the job's id, rather than chase \"exactly once\".",
+        "A recurring job is one job at a time: when it finishes, add its next run.",
+        "9 pm brings lakhs of jobs due in the same second. A queue spreads the burst, and jobs that don't need the exact second get a little random delay."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Schedule a job to run once at a time (a rating reminder at 21:42) or on a repeat (every day at 21:00, every 15 minutes).",
+        "Run it within a few seconds of its time; retry if it fails; never silently lose it.",
+        "Cancel or change a job before it runs; see what ran, when, and with what result.",
+        "Out of scope here: the work the jobs do (sending, paying), and chains of jobs that depend on each other."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "On time",
+          "Started within 5 seconds of its time, even at 9 pm"
+        ],
+        [
+          "Never lost",
+          "A job that was accepted runs, or is marked failed after its retries"
+        ],
+        [
+          "Repeat-safe",
+          "A job that runs twice does its work once"
+        ],
+        [
+          "Scale",
+          "About 1.2 crore jobs a day, lakhs of them due at 21:00"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Rating reminders: 1 crore orders a day, one reminder each. Add payouts, syncs and the rest: about 1.2 crore jobs a day, around 140 a second on average.",
+        "Evenings are busier: reminders follow dinner deliveries, so 9 to 11 pm runs at around 500 a second.",
+        "The spike: 3 lakh restaurants' 9 pm payouts are all due at 21:00:00. Start them in 5 seconds and that's 60,000 a second for those 5 seconds, far above normal.",
+        "Storage: 1.2 crore rows a day at about 500 bytes is 6 GB a day. Keep finished jobs for a few weeks, then archive them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Job: `id`, `kind`, `payload`, `run_at` (stored in UTC), `minute` (the minute it's due, for grouping), `repeat` (none, or a schedule like \"every day 21:00 IST\"), `status` (waiting, claimed, done, failed, cancelled), `lease_until`, `attempts`.",
+        "Run: `job_id`, `started_at`, `finished_at`, `result`, `worker`. One row per attempt, for seeing what happened."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST   /jobs        { \"id\": \"rate_91\", \"kind\": \"rating_reminder\", \"run_at\": \"2026-11-06T21:42+05:30\", \"payload\": { \"order\": \"#91\" } }  → 201\nPOST   /jobs        { \"id\": \"payouts\", \"kind\": \"daily_payouts\", \"repeat\": \"every day 21:00 Asia/Kolkata\" }  → 201\nDELETE /jobs/rate_91  → 204\nGET    /jobs/payouts/runs?last=7  → 200 { \"runs\": [ … ] }",
+      "say": "Add a one-off or repeating job, with your own id so adding it twice changes nothing. Cancel one. See its last runs."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "sched-flow",
+      "cap": "Services add jobs with a run time. Schedulers look only at the current minute's jobs, claim each with a lease and put it on a queue. Executors run it and record the result: done, retry later, or the next run of a repeating job."
+    },
+    {
+      "t": "p",
+      "x": "Schedulers only decide what's due and hand it over; executors do the work. A slow job (a payout that calls a bank) can't stop the scheduler from starting the next minute's jobs on time."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Finding what's due"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "SCAN EVERY SECOND",
+      "what": "Every second, query \"status = waiting and run_at <= now\" across all jobs.",
+      "use": "Works for a few thousand jobs.",
+      "avoid": "With crores of rows, every scan reads a lot, and two scheduler machines happily pick the same job.",
+      "ex": "At 21:00:00 both schedulers read the same 3 lakh payout jobs; restaurants get paid twice.",
+      "like": "Reading the whole diary every second to see if anything is due."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "GROUPED BY MINUTE, CLAIMED WITH A LEASE",
+      "what": "Index jobs by the minute they're due. Each second, a scheduler looks at the current minute's waiting jobs and claims a batch in one update: status claimed, lease_until now + 30 s, only if still waiting. Split minutes across schedulers by job id so they don't compete.",
+      "use": "Each look is small, and a job can only be claimed by one scheduler at a time.",
+      "avoid": "Claims must be atomic (an update with a condition, or SKIP LOCKED in SQL). A lease too short expires while the job is still running.",
+      "ex": "At 21:00:00, three schedulers each claim their third of the payout jobs and queue them in a few seconds.",
+      "like": "A diary with a page per minute: at 9 pm you open only the 9 pm page."
+    },
+    {
+      "t": "h2",
+      "x": "When a worker dies mid-job"
+    },
+    {
+      "t": "fig",
+      "id": "lease",
+      "cap": "Worker A claims the 21:00 payout with a 30-second lease and dies 10 seconds later. When the lease ends, worker B claims it and runs it. If A was only paused, the job's id makes its late work harmless."
+    },
+    {
+      "t": "list",
+      "items": [
+        "While a job runs, the executor extends its lease every few seconds. If it stops (crash, pause, lost network), the lease runs out and the job is claimed again.",
+        "So a job may start twice: once by a worker that only looked dead. Give every job's work an id (\"payout restaurant 214 for 6 Nov\"), and let whatever it writes to skip a repeat of that id.",
+        "Count attempts. After a few failures, mark the job failed and alert someone, instead of retrying for ever.",
+        "Retries wait longer each time, with a bit of randomness, so a failing bank isn't hit by every retry at once."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The 9 pm crowd"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Jobs due in the same second all land on the queue together; executors work through them as fast as they can. The queue is what absorbs the spike.",
+        "Jobs that only need \"around\" a time (menu syncs, reports) get a random delay of a few minutes when they're created, so they don't all line up on the hour.",
+        "Priorities: payouts and reminders shouldn't wait behind a big report. Use separate queues, as in the notifications question."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Repeats, downtime and time"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A repeating job has one waiting row at a time. When a run finishes (or is claimed, for jobs that must keep their rhythm), add the next one in the same transaction.",
+        "After an outage, some jobs are late. Decide per kind: payouts run once now; a 15-minute sync skips the runs it missed and does the next.",
+        "Store times in UTC and keep the job's time zone with it, so \"21:00 IST\" stays 21:00 in India even if a server's clock is set to UTC."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a jobs table with run times, a worker that runs due jobs, retries, a queue.",
+        "Senior: grouping by minute, atomic claims with leases, repeat-safe jobs, the 9 pm numbers, recurring jobs.",
+        "Lead: splitting the work across schedulers, missed runs after downtime, priorities, fencing a paused worker, retries with backoff and jitter."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Run a job at an exact millisecond?\" Not needed here; say what accuracy you promise (seconds) and why.",
+            "\"Lakhs of jobs for one restaurant's offers?\" Store one job that expands into many small ones when it runs, instead of lakhs of rows up front.",
+            "\"Cancel a job that's already running?\" Mark it cancelled; the executor checks between steps and stops cleanly.",
+            "\"Why not cron on one machine?\" One machine is one failure away from missing the 9 pm payouts, and can't spread lakhs of jobs.",
+            "\"How do you test it?\" Kill executors mid-job and pause schedulers, then check every job ran, none did its work twice, and the 9 pm jobs started within 5 seconds."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "9 pm is a spike at a known time, like a flash sale. The flash-sale challenge is practice for surviving one.",
+      "to": "lab/flash-sale",
+      "go": "Try the flash-sale challenge"
+    }
+  ]
+}
