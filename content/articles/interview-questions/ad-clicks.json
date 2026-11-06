@@ -13,7 +13,7 @@
       "items": [
         "Don't update a counter row per click. Stream events into a log, and count them in memory per ad per minute; write one row per ad per minute.",
         "Count each click in the minute it happened, not the minute it arrived. Keep each minute open a few extra minutes for late arrivals, then close it.",
-        "Every click has an id, so a resent click counts once. Repeat clicks by the same person on the same ad within a few minutes count once too.",
+        "Every click has an id, so a resent click counts once. The aggregator remembers ids for as long as a minute stays open; later resends are left to the recount. Repeat clicks by the same person on the same ad within a few minutes count once too.",
         "Two paths: a fast count for dashboards, and a nightly recount from the raw events for the bill. Where they differ, the recount wins.",
         "Very popular ads are hot keys: count them on several machines and add up the parts."
       ]
@@ -120,16 +120,16 @@
       "use": "Simple, and the numbers are always current.",
       "avoid": "At 15,000 views a second, a popular restaurant's row is updated hundreds of times a second and becomes a hot spot. And a retry after a timeout adds the same click twice.",
       "ex": "A biryani chain's sponsored listing at 8 pm: its row is locked so often that the whole stats table slows down.",
-      "like": "Ringing a bell and walking to the notice board to update a tally for every single customer."
+      "like": "Walking to the notice board to update a tally for every single customer."
     },
     {
       "t": "type",
       "name": "Better",
       "kind": "COUNT IN MEMORY, WRITE PER MINUTE",
-      "what": "Events go to a log, partitioned by ad. An aggregator reads its partitions, keeps counts per ad per minute in memory, drops repeats by event id, and writes one row per ad per minute when the minute closes.",
+      "what": "Events go to a log, partitioned by ad. An aggregator reads its partitions, keeps counts per ad per minute in memory, drops repeats by event id, and writes each ad's minute row as soon as the minute ends, and rewrites it if late clicks come in, until the minute closes.",
       "use": "One write per ad per minute instead of per event; repeats removed before counting.",
-      "avoid": "Counts in memory are lost if the aggregator crashes, so save progress with the log position (a checkpoint) and recount from there. Late events need rules (below).",
-      "ex": "The biryani chain's 1,840 views at 20:41 become one row, written once.",
+      "avoid": "Counts in memory are lost if the aggregator crashes, so save the log position together with the open counts and recent event ids (a checkpoint), and write rows as overwrites keyed by ad and minute, so a replay rewrites the same row instead of adding to it. Late events need rules (below).",
+      "ex": "The biryani chain's 1,840 views at 20:41 become one row, written a few times at most.",
       "like": "Keeping a tally on paper all afternoon and updating the notice board once an hour."
     },
     {
@@ -145,8 +145,8 @@
       "t": "list",
       "items": [
         "Group by when the click happened, not when it arrived. Otherwise a phone coming out of a lift moves clicks to the wrong minute.",
-        "Keep each minute open for a few minutes after it ends. The aggregator tracks how far behind the latest events are (a watermark) and closes minutes once it has passed them.",
-        "Phones' clocks can be wrong: if the phone's time is far from the server's, use the server's arrival time instead."
+        "Keep each minute open for a few minutes after it ends. The aggregator keeps a watermark: the latest click time it has seen, minus 5 minutes. When the watermark passes the end of a minute, that minute is closed.",
+        "Phones' clocks can be wrong: the app sends its own clock time with each batch, and the server corrects each event by the difference."
       ]
     },
     {
@@ -168,7 +168,7 @@
     {
       "t": "list",
       "items": [
-        "Partitioning by ad sends all of a very popular ad's events to one aggregator. For the biggest few ads, add a random suffix (ad_214#3) to spread them over several partitions, and add up the parts when writing the minute total.",
+        "Partitioning by ad sends all of a very popular ad's events to one aggregator. For the biggest few ads, add a suffix from the person's id (ad_214#3, user id mod 8), so one person's clicks stay on one partition, to spread them over several partitions, and add up the parts when writing the minute total.",
         "Apps can also send events in small batches every few seconds, which cuts requests without changing the counts."
       ]
     },
@@ -192,9 +192,9 @@
           "t": "list",
           "items": [
             "\"Hourly and daily numbers?\" Add up minute rows into hour and day rows as each closes; never recount raw events for a dashboard.",
-            "\"Unique viewers per ad?\" Exact counts of distinct people are expensive; an estimate (HyperLogLog) is a few KB per ad and close enough for a dashboard.",
+            "\"Unique viewers per ad?\" Exact counts of distinct people are expensive; an estimate (HyperLogLog) is a few KB per ad and close enough for a dashboard. Unlike counts, uniques can't be added up across minutes; merge the estimates instead.",
             "\"An advertiser disputes a bill?\" Recount their ad from the raw events with the rules of that day, and show the invalid clicks with reasons.",
-            "\"The aggregator falls an hour behind?\" Add aggregators; the log keeps the events, and the dashboard says how far behind it is.",
+            "\"The aggregator falls an hour behind?\" Add aggregators (up to one per partition); the log keeps the events, and the dashboard says how far behind it is.",
             "\"How do you test it?\" Replay a day of events with injected repeats, late clicks and bots, and check the fast counts and the recount agree within the expected difference."
           ]
         }

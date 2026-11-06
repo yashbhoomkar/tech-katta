@@ -502,9 +502,9 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ckt${uid}`}><titl
 <SBox x={0} y={60} w={100} t="App"/><SBox x={140} y={60} w={120} t="Click service"/><SBox x={300} y={60} w={100} t="Event log"/>
 <SBox x={440} y={30} w={130} t="Aggregator" blue/><SBox x={440} y={90} w={130} t="Minute totals"/><text x={505} y={124} textAnchor="middle" className="fl">dashboards, in a minute</text>
 <SBox x={300} y={170} w={100} t="Raw events"/><SBox x={440} y={170} w={130} t="Nightly recount"/><text x={505} y={204} textAnchor="middle" className="fl">the bill, next morning</text>
-<Line x1={102} y1={60} x2={136} y2={60} m={M}/><Line x1={262} y1={60} x2={296} y2={60} m={M}/><text x={200} y={44} textAnchor="middle" className="fl">click id</text>
+<Line x1={102} y1={60} x2={136} y2={60} m={M}/><Line x1={262} y1={60} x2={296} y2={60} m={M}/><text x={279} y={50} textAnchor="middle" className="fl">click id</text>
 <Line x1={402} y1={54} x2={436} y2={36} m={M}/><Line x1={505} y1={42} x2={505} y2={76} m={M}/><Line x1={350} y1={72} x2={350} y2={156} m={M}/><Line x1={402} y1={170} x2={436} y2={170} m={M}/>
-<text x={0} y={120} className="fb">Fast</text><text x={0} y={136} className="fl">for watching</text><text x={0} y={176} className="fb">Exact</text><text x={0} y={192} className="fl">for money</text>
+<text x={0} y={20} className="fb">Fast</text><text x={0} y={34} className="fl">for watching</text><text x={0} y={176} className="fb">Exact</text><text x={0} y={192} className="fl">for money</text>
 {!still&&<g aria-hidden="true"><Dot x1={104} x2={134} y={60} t0={.02} t1={.08} dur={D}/><Dot x1={264} x2={294} y={60} t0={.1} t1={.16} dur={D}/><Dot x1={404} x2={434} y={54} y2={36} t0={.2} t1={.26} dur={D}/><Glow x={440} y={18} w={130} h={24} t0={.26} t1={.38} dur={D}/><Dot x1={505} x2={505} y={44} y2={74} t0={.4} t1={.46} dur={D}/>
 <Dot x1={350} x2={350} y={74} y2={154} t0={.55} t1={.65} dur={D}/><Dot x1={404} x2={434} y={170} t0={.7} t1={.76} dur={D}/><Glow x={440} y={158} w={130} h={24} t0={.76} t1={.9} dur={D}/></g>}</svg>}
 
