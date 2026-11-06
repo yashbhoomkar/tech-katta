@@ -559,8 +559,8 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><titl
 <SBox x={430} y={70} w={210} t="Edit log: #41, #42, #43…"/><SBox x={430} y={150} w={210} t="Snapshots"/>
 <Line x1={122} y1={46} x2={186} y2={94} m={M}/><Line x1={122} y1={100} x2={186} y2={100} m={M}/><Line x1={122} y1={154} x2={186} y2={106} m={M}/>
 <Line x1={275} y1={88} x2={275} y2={44} dash/><text x={283} y={66} className="fl">who owns #214?</text>
-<Line x1={362} y1={96} x2={426} y2={74} m={M}/><Line x1={362} y1={108} x2={426} y2={146} m={M} dash/><text x={436} y={190} className="fl">every few hundred edits</text>
-<text x={0} y={220} className="fl">open connections: each edit reaches the others in well under a second</text>
+<Line x1={362} y1={96} x2={426} y2={74} m={M}/><Line x1={362} y1={108} x2={426} y2={146} m={M} dash/><text x={370} y={180} className="fl">every few hundred edits</text>
+<text x={0} y={220} className="fl">open connections: each edit reaches the others within half a second</text>
 {!still&&<g aria-hidden="true"><Dot x1={124} x2={184} y={48} y2={94} t0={.02} t1={.12} dur={D}/><Glow x={190} y={88} w={170} h={24} t0={.12} t1={.24} dur={D}/><Dot x1={364} x2={424} y={96} y2={74} t0={.26} t1={.34} dur={D}/><Dot x1={186} x2={124} y={102} y2={102} t0={.38} t1={.46} dur={D}/><Dot x1={186} x2={124} y={106} y2={154} t0={.38} t1={.48} dur={D}/></g>}</svg>}
 
 // Shared editor, FIG: two edits at once. The menu line reads "Tikka ₹220". Ananya adds "Paneer " at the start;
@@ -569,11 +569,11 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><titl
 // applies to 14 to 16. Everyone ends with "Paneer Tikka ₹240".
 function TransformFig({still,uid=""}){const D="12s";
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
-return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><title id={`tft${uid}`}>Two edits at once. The menu line reads "Tikka ₹220". Ananya inserts "Paneer " at the start. At the same moment Rohit changes 220 to 240, at characters 7 to 9. The server takes Ananya's edit first, as number 41. Rohit's edit was made on number 40, so the server shifts it right by the 7 characters Ananya added, to characters 14 to 16. Everyone ends with "Paneer Tikka ₹240".</title>
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><title id={`tft${uid}`}>Two edits at once. The menu line reads "Tikka ₹220". Ananya inserts "Paneer " at the start. At the same moment Rohit replaces the 3 characters at position 7, 220, with 240. The server takes Ananya's edit first, as number 41. Rohit's edit was made on number 40, so the server shifts it right by the 7 characters Ananya added, to position 14. Everyone ends with "Paneer Tikka ₹240".</title>
 <text x={0} y={24} className="fb">Version #40</text><rect x={120} y={8} width={170} height={24} fill="#fff" stroke={GREY}/><text x={130} y={25} className="fb">Tikka ₹220</text>
 {step(.1,<g><text x={0} y={66} className="fl">Ananya:</text><text x={70} y={66} className="fl" style={{fill:BLUE}}>insert "Paneer " at 0</text><text x={330} y={66} className="fl">→ #41</text></g>)}
-{step(.1,<g><text x={0} y={92} className="fl">Rohit:</text><text x={70} y={92} className="fl" style={{fill:BLUE}}>replace 7–9 with "240", made on #40</text></g>)}
-{step(.4,<g><text x={0} y={128} className="fb">Server</text><text x={70} y={128} className="fl">Rohit's edit came after #41, which added 7 characters before it:</text><text x={70} y={146} className="fl" style={{fill:BLUE}}>replace 14–16 with "240" → #42</text></g>)}
+{step(.1,<g><text x={0} y={92} className="fl">Rohit:</text><text x={70} y={92} className="fl" style={{fill:BLUE}}>replace 3 characters at 7 with "240", made on #40</text></g>)}
+{step(.4,<g><text x={0} y={128} className="fb">Server</text><text x={70} y={128} className="fl">Rohit's edit came after #41, which added 7 characters before it:</text><text x={70} y={146} className="fl" style={{fill:BLUE}}>replace 3 characters at 14 with "240" → #42</text></g>)}
 {step(.7,<g><text x={0} y={196} className="fb">Everyone</text><rect x={120} y={180} width={230} height={24} fill="#f8faff" stroke={BLUE}/><text x={130} y={197} className="fb">Paneer Tikka ₹240</text></g>)}</svg>}
 
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.

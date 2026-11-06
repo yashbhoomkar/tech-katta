@@ -28,7 +28,7 @@
     {
       "t": "list",
       "items": [
-        "Several people edit the same document (a menu, a notice) at once and see each other's changes within a second.",
+        "Several people edit the same document (a menu, a notice) at once and see each other's changes within half a second.",
         "No change is ever lost, and everyone ends up with exactly the same text.",
         "Show who else is in the document and where they're typing.",
         "Out of scope here: rich formatting and images (the same ideas apply), and comments."
@@ -71,7 +71,7 @@
         "Open at once: about 20,000 documents with 40,000 editors at the morning peak, when kitchens update the day's menus.",
         "Edits: phones send typing in small batches every 200 ms or so. At about 1 batch a second per active editor, that's around 40,000 edits a second at peak.",
         "Servers: if one server comfortably holds 2,000 open documents with their editors' connections, that's 10 servers, more with room to spare.",
-        "The log: about 100 bytes an edit, 40,000 a second during peak hours, is a few GB a day. Snapshots let old edits be archived."
+        "The log: about 100 bytes an edit, 40,000 a second during peak hours, is about 4 MB a second, roughly 15 GB per peak hour. Snapshots let old edits be archived."
       ]
     },
     {
@@ -89,7 +89,7 @@
     {
       "t": "code",
       "label": "Over the open connection",
-      "x": "← { \"open\": { \"doc\": \"menu_214\", \"seq\": 40, \"text\": \"Tikka ₹220…\" } }\n→ { \"edit\": { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": [7, 10], \"with\": \"240\" } ] } }\n← { \"ack\": { \"id\": \"e_77\", \"seq\": 42 } }\n← { \"edit\": { \"seq\": 41, \"by\": \"Ananya\", \"ops\": [ { \"insert\": 0, \"text\": \"Paneer \" } ] } }\n→ { \"cursor\": { \"at\": 21 } }",
+      "x": "← { \"open\": { \"doc\": \"menu_214\", \"seq\": 40, \"text\": \"Tikka ₹220…\" } }\n→ { \"edit\": { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": { \"at\": 7, \"len\": 3, \"with\": \"240\" } } ] } }\n← { \"edit\": { \"seq\": 41, \"by\": \"Ananya\", \"ops\": [ { \"insert\": { \"at\": 0, \"text\": \"Paneer \" } } ] } }\n← { \"ack\": { \"id\": \"e_77\", \"seq\": 42 } }\n→ { \"cursor\": { \"at\": 21 } }",
       "say": "Open a document and get its text and number. Send an edit with the version you made it on; get back its number. Receive others' edits in order. Share your cursor."
     },
     {
@@ -150,7 +150,7 @@
       "t": "list",
       "items": [
         "Show your edit on your screen at once, and keep it in a \"sent, not yet confirmed\" list.",
-        "When others' edits arrive, adjust your unconfirmed edits on top of them, the same way the server does, so your screen matches what the server will have.",
+        "When others' edits arrive, adjust each incoming edit past your unconfirmed ones before showing it, and your unconfirmed edits past it, so your screen matches what the server will have.",
         "When the server confirms your edit with its number, drop it from the list."
       ]
     },
@@ -163,7 +163,7 @@
       "items": [
         "The edit is saved to the log before it's confirmed; a server crash loses no confirmed edit.",
         "Every few hundred edits, save a snapshot. Opening a document is the latest snapshot plus the edits after it.",
-        "An editor whose connection drops reconnects with its last number and gets everything after it, then resends its unconfirmed edits with their ids (a repeat id is ignored)."
+        "An editor whose connection drops reconnects with its last number and gets everything after it, then resends its unconfirmed edits with their ids and the version each was made on. The server adjusts each one for the edits it missed; if it already has that id, it just sends back the number it gave it."
       ]
     },
     {
@@ -175,7 +175,7 @@
       "items": [
         "A doc server dies: the registry gives its documents to other servers, which load the snapshot and log. Editors reconnect and resend unconfirmed edits.",
         "Someone edits offline for an hour: their edits are adjusted against an hour of others' edits when they reconnect. For long offline work, CRDTs or a \"review changes\" step work better.",
-        "Two servers think they own a document (a pause during a handover): the log only accepts edits with the current owner's number (fencing), so one of them is refused."
+        "Two servers think they own a document (a pause during a handover): the log only accepts writes carrying the current owner's token, a number the registry raises at every handover (fencing), so one of them is refused."
       ]
     },
     {
