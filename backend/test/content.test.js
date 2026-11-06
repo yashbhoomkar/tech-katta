@@ -77,6 +77,9 @@ test('GET /v1/articles lists summaries without bodies, optionally by section', a
   assert.ok(summary);
   for (const key of ['section', 'slug', 'no', 'tag', 'date', 'title', 'dek']) assert.ok(summary[key], key);
   assert.equal(summary.body, undefined);
+  // `lab`: the challenge an article's Lab card opens (none for a card that opens the Lab itself)
+  assert.equal(all.articles.find(a => a.slug === 'url-shortener').lab, 'sms-link');
+  assert.equal(all.articles.find(a => a.slug === 'how-to-answer').lab, undefined);
   assert.equal((await (await get('/v1/articles?section=concepts')).json()).articles.length, allArticles.filter(a => a.section === 'concepts').length);
   assert.equal((await (await get('/v1/articles?section=components')).json()).articles.length, allArticles.filter(a => a.section === 'components').length);
   assert.equal((await get('/v1/articles?section=Bad!')).status, 400);
