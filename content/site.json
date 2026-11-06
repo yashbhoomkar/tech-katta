@@ -499,6 +499,25 @@
       }
     ]
   },
+  "problems": {
+    "label": "Problems",
+    "eyebrow": "PRACTISE",
+    "title": "Problems",
+    "desc": "Every question and Lab challenge in one place. Practise a question against the clock, earn stars in the Lab, and see what's left.",
+    "summary": "{q} of {qt} questions practised · {s} of {st} Lab stars",
+    "filterLabel": "Show",
+    "all": "All",
+    "todo": "Not done yet",
+    "questions": "Interview Questions",
+    "questionsDesc": "Answer it yourself in 45 minutes, then compare with the worked answer.",
+    "challenges": "Lab challenges",
+    "challengesDesc": "Build a design and run the traffic. Stars for staying up, not crashing and keeping to the budget.",
+    "practised": "✓ Practised",
+    "notYet": "Not yet",
+    "starsLabel": "{n} of {max} stars",
+    "allDone": "All done here. Try them again, or come back for new ones.",
+    "labError": "The Lab challenges couldn't load. Refresh to try again."
+  },
   "landingLab": {
     "eyebrow": "01 / TRY IT",
     "title": "Can your design survive IND vs PAK?",

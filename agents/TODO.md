@@ -84,7 +84,8 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q08 Dating app swipes (medium) | ready | needs new figures (frontend), so only while Vercel deploys |
+| 1 | build | Problems page follow-ups: show each question's Lab challenge next to it; a "next problem" link at the end of an article and a challenge | ready | after the Problems page is live and checked |
+| 1b | content | Q08 Dating app swipes (medium) | ready | needs new figures (frontend), so only while Vercel deploys |
 | 2 | content | Q09 Coding judge (medium) | ready | |
 | 3 | content | Q10 Chat app (medium) | ready | |
 | 4 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
@@ -139,8 +140,9 @@ for the owner to confirm):
 
 - 2026-11-06 — Ledger and docs brought up to date at the owner's request: 51 ledger records for
   #176–#195 (the ledger never filled itself; record SHAs after every merge, step 9), handover §1, §12
-  and §13 updated in the context repo. Owner asked about positioning as "LeetCode for system design":
-  answered, waiting for their decision on reordering the Queue (Problems page first).
+  and §13 updated in the context repo. Owner asked about positioning as "LeetCode for system design"
+  and then said "you decide": the Problems page went first. Don't use another company's brand in the
+  site's name or ads; on the site, say "practise system design problems, get scored".
 - 2026-11-06 — Lab challenges per question: Q02 got `monday-sync` (#194, the first queue challenge). The
   rest were dropped: Q03, Q04 and Q07 would repeat cache/flash-sale challenges their articles already
   link to, and a fair Q05 waiting room needs the engine to forbid splitting the database (see the idea
@@ -233,6 +235,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Problems page: every question and Lab challenge in one list with practised / stars, a "Not done yet" filter (owner: position the site as practice problems with scores; waits for Vercel to deploy)
 - 2026-11-06 — Lab: Monday sync challenge for Q02, the first about queues (#194)
 - 2026-11-06 — Landing page focus outline on links and buttons (#193; waits for Vercel to deploy)
 - 2026-11-06 — Vercel Web Analytics on the landing page and dashboard (owner's request).
