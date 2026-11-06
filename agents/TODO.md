@@ -70,9 +70,9 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Practice mode v2: the summary lists the checks you didn't tick, by step | done | shipped run 16 |
+| 1 | content | Q07 News feed (medium) | done | shipped run 17 with figures `feed-fanout`, `feed-hybrid` |
 | 2 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 3 | content | Q07–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 3 | content | Q08–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
@@ -80,7 +80,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
 00 How to answer ✅ · 01 URL shortener ✅ · Easy: 02 File storage and sync ✅ · 03 Restaurants near me ✅ ·
-04 10-minute grocery delivery ✅ · Medium: 05 Match ticket booking ✅ · 06 Photo sharing ✅ · 07 News feed ·
+04 10-minute grocery delivery ✅ · Medium: 05 Match ticket booking ✅ · 06 Photo sharing ✅ · 07 News feed ✅ ·
 08 Dating app swipes · 09 Coding judge · 10 Chat app · 11 Fitness tracker · 12 Distributed cache ·
 13 Rate limiter · 14 Online auction · 15 Video platform · 16 Job scheduler · 17 Live comments ·
 18 News aggregator · 19 Price tracker · 20 Notification system · Hard: 21 Top-K trending ·
@@ -119,10 +119,14 @@ for the owner to confirm):
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
   overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
   retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), #186
-  (card footers level), #187 (Q06 photo sharing), and this run's Practice v2 PR.
+  (card footers level), #187 (Q06 photo sharing), #188 (Practice v2 not-ticked list),
+  and this run's Q07 PR.
 
 ## Review notes (newest first)
 
+- 2026-11-06 run 17 — Production healthy; #188 checked live. Q07: Learner's must-haves were the
+  numbers that pick push over pull (4,600 fan-out writes/s vs 3,000 reads/s; one 50-lakh post),
+  your own post in your feed at once, and a (time, id) cursor for the merged feed. All in.
 - 2026-11-06 run 16 — Production healthy; #187 checked live. Practice v2 split: the not-ticked list in
   the summary shipped (frontend and site.json copy only); the `practice_done` event would add to the
   events allowlist under `backend/src/auth/`, which reads as the data model, so it waits for the owner.
@@ -194,7 +198,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-06 — Practice mode v2: the summary lists the checks you didn't tick.
+- 2026-11-06 — Q07 News feed, with figures `feed-fanout` and `feed-hybrid`.
+- 2026-11-06 — PR #188: Practice mode v2, the summary lists the checks you didn't tick.
 - 2026-11-06 — PR #187: Q06 Photo sharing, with figures `photo-upload` and `like-counter`.
 - 2026-11-06 — PR #186: library card footers line up at every width.
 - 2026-11-06 — PR #185: Q05 Match ticket booking, with figures `waiting-room` and `seat-states`.

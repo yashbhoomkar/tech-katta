@@ -1,0 +1,224 @@
+{
+  "section": "interview-questions",
+  "slug": "news-feed",
+  "group": "medium",
+  "no": "QUESTION // 07",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a news feed",
+  "dek": "Open Zotato Snaps and the home screen shows new posts from the diners and restaurants you follow, newest first. Build it so it opens instantly, even when a food blogger with 50 lakh followers posts at dinner time.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Two ways to build a feed: gather posts from everyone you follow when you open the app (pull), or drop each new post into every follower's feed when it's posted (push).",
+        "Pull is cheap to write and slow to read; push is fast to read and expensive to write. Feeds are read far more than posted to, so push is the default.",
+        "Push breaks for accounts with lakhs of followers: one post becomes lakhs of writes. Pull those few accounts at read time and merge them in.",
+        "Keep each person's feed as a short list of post ids (a few hundred) in memory; fetch the posts themselves from a cache when showing them.",
+        "Don't build feeds for people who haven't opened the app in weeks. Build theirs when they come back."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Show the home feed: posts from accounts I follow, newest first, page by page.",
+        "A new post appears in followers' feeds within a few seconds.",
+        "Follow and unfollow; deleted posts disappear from feeds.",
+        "Out of scope here: ranking by interest (we'll note where it plugs in), ads, and comments."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "The first page of the feed in under 200 ms"
+        ],
+        [
+          "Freshness",
+          "New posts show within a few seconds; a minute for very big accounts is fine"
+        ],
+        [
+          "Availability",
+          "The feed always opens, even if it's a little behind"
+        ],
+        [
+          "Scale",
+          "1 crore people open the app daily; 20 lakh posts a day"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reads: 1 crore people × 5 opens is 5 crore feed reads a day, about 600 a second and 3,000 at dinner.",
+        "Posts: 20 lakh a day is about 23 a second.",
+        "Fan-out: if a post goes to 200 followers on average, that's 40 crore feed inserts a day, about 4,600 a second. Fine for a cluster of Redis machines.",
+        "The outlier: a food blogger with 50 lakh followers. One post means 50 lakh inserts; at 50,000 a second that's 100 seconds before the last follower sees it, and it competes with everyone else's posts.",
+        "Feed size: 500 post ids × 8 bytes for 1 crore active people is about 40 GB. Fits in memory across a few machines."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Post: `id` (sortable by time), `author_id`, `text`, `photos`, `created_at`, `deleted`.",
+        "Follow: `follower_id`, `followee_id`, `created_at`. Stored both ways, so \"who do I follow\" and \"who follows me\" are each one lookup.",
+        "Feed: per person, a list of `post_id`s newest first, capped at about 500."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET  /feed?cursor=…           → 200 { \"posts\": [ { \"id\": \"p_9a\", \"author\": \"…\", \"photos\": [ … ] }, … ], \"cursor\": \"…\" }\nPOST /posts                   { \"text\": \"…\", \"photos\": [ \"p_7f\" ] }   → 201\nPUT  /follows/u_42            → 204\nDELETE /follows/u_42          → 204",
+      "say": "Get the feed a page at a time with a cursor. Create a post. Follow or unfollow an account."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "feed-fanout",
+      "cap": "Posting writes the post and puts a message on a queue. Fan-out workers look up the author's followers and add the post id to each one's feed list in Redis. Opening the app reads one list and fetches the posts from a cache."
+    },
+    {
+      "t": "p",
+      "x": "Posting stays fast because the fan-out happens after: the post is saved, the author sees it at once, and workers spread it to followers' lists over the next seconds. Reading is one lookup for a list of ids, then one batch fetch of the posts, most of them from a cache."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Pull, push, or both"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "PULL WHEN READING",
+      "what": "When someone opens the app, fetch the latest posts of everyone they follow and merge them by time.",
+      "use": "Posting is one write, and the feed is always exactly up to date.",
+      "avoid": "Following 200 accounts means 200 lookups and a merge on every open, 3,000 times a second at dinner. The feed is slow, and the database does it again on every refresh.",
+      "ex": "A diner following 300 accounts waits a second or more every time they open the app.",
+      "like": "Visiting every friend's house to ask what's new, every time you want news."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "PUSH WHEN POSTING",
+      "what": "When someone posts, add the post id to each follower's feed list. Reading is one list lookup.",
+      "use": "Feeds open instantly, and the work happens once per post instead of once per read.",
+      "avoid": "A post from an account with 50 lakh followers means 50 lakh writes, and most of those feeds belong to people who won't open the app today.",
+      "ex": "A food blogger posts a biryani review at 8 pm; the fan-out queue backs up and everyone's posts arrive a minute late.",
+      "like": "Each friend posting a letter to everyone they know. Fine for most people, a lot of stamps for a celebrity."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "PUSH, BUT PULL THE BIG ACCOUNTS",
+      "what": "Push posts from ordinary accounts. Mark accounts with more than about a lakh followers as big, skip fan-out for them, and pull their latest posts when a follower opens the feed, merging them into the list.",
+      "use": "Fan-out stays small and steady, and reading adds only a few extra lookups (people follow few big accounts).",
+      "avoid": "Two paths to keep correct, and the threshold needs tuning. Merging must keep the order right and drop duplicates.",
+      "ex": "Your feed list has posts from 180 friends; at read time it merges in the latest from the 4 big restaurants and 1 blogger you follow.",
+      "like": "Friends send you letters; for the newspaper, you pick it up yourself."
+    },
+    {
+      "t": "fig",
+      "id": "feed-hybrid",
+      "cap": "Opening the feed: the posts pushed into your list from ordinary accounts, plus the latest posts pulled from the few big accounts you follow, merged by time. Fan-out never has to write 50 lakh lists for one post."
+    },
+    {
+      "t": "h2",
+      "x": "Keeping lists small and right"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cap each list at about 500 ids. Nobody scrolls further, and older pages can fall back to pulling.",
+        "Skip fan-out for people who haven't opened the app in, say, 30 days. When they come back, build their list by pulling once.",
+        "Deleted posts and unfollowed accounts: filter them out when reading, and clean the lists in the background. Never make a delete wait for 50 lakh list updates.",
+        "A new follow: add that account's last few posts to your list right away, so the feed changes when you expect it to.",
+        "Your own post goes into your own list at once, before the fan-out runs. Otherwise you open your feed, don't see it, and post it again."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Pages and order"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Post ids that sort by time (time first, then a random part) make \"newest first\" a simple sort. The cursor is a position (time, then post id) of the last post seen, which works the same for pushed and pulled posts after merging.",
+        "New posts arriving while you scroll don't shift your page, because the cursor says where you were, not a page number.",
+        "Ranking by interest fits in later: take the first few hundred candidates from the list and score them. The list is still the source of candidates."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Fan-out workers behind: the queue holds the work; feeds are a few seconds or minutes late, never wrong.",
+        "A Redis machine lost: its users' lists are rebuilt by pulling, a little slower for a while.",
+        "Post cache down: fetch posts from the database in batches; slower, still works."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: pull versus push and why reads matter more, a feed list per user, a cache for posts, cursor pages.",
+        "Senior: the fan-out numbers, the celebrity problem and the hybrid, skipping inactive users, deletes filtered at read.",
+        "Lead: the threshold and two code paths, rebuild after loss, where ranking plugs in, and how fresh is fresh enough."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Someone follows 5,000 accounts.\" Their list fills faster and turns over sooner, which is fine; cap how many big accounts are pulled per read.",
+            "\"A big account drops below the threshold.\" Switch it back to push for new posts; old posts are already pulled or aged out.",
+            "\"Show 'X liked this'?\" That's a different kind of event fanned out the same way, with stricter limits so feeds aren't flooded.",
+            "\"How fresh is fresh?\" Seconds for ordinary accounts; for big accounts, the pull is exactly fresh, but cache it per account for a few seconds.",
+            "\"How do you test it?\" Seed a graph with ordinary and big accounts, post from each, and check order, duplicates and how long each feed took to update."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "A feed is read far more than it's written. The read-heavy challenge shows the same lesson: a cache in front keeps the database calm.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}
