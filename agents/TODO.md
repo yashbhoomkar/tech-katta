@@ -89,8 +89,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
-| 2 | content | Q11–Q36, one per run, after the above | ready | |
+| 1 | content | Q11–Q36, one per run, after the above | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
@@ -235,6 +234,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Concept 07 transactions across services (sagas, outbox, repeats), figures `saga` and `outbox`
+- 2026-11-06 — Concept 06 consensus and leader election (#203), figures `quorum-split` and `election`
 - 2026-11-06 — Landing page "What's inside": questions, Practice, the Lab, articles, with live counts from /v1/site; hero reworded
 - 2026-11-06 — Q10 Design a chat app, figures `chat-flow` and `chat-sync`
 - 2026-11-06 — Q09 Design a coding judge, figures `judge-flow` and `sandbox`

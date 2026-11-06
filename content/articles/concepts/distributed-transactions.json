@@ -1,0 +1,135 @@
+{
+  "section": "concepts",
+  "slug": "distributed-transactions",
+  "group": "coordination",
+  "no": "CONCEPT // 07",
+  "tag": "AGREEING",
+  "date": "6 Nov 2026",
+  "title": "Transactions across services: sagas, the outbox and doing things twice safely",
+  "dek": "One Zotato order touches payment, the restaurant and a rider, and each keeps its own database. No single transaction covers all three. Here's how an order still ends up either fully done or cleanly undone, never half.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Inside one database, a transaction makes several changes all-or-nothing. Across services with their own databases, there is no such switch.",
+        "Locking every service until all agree (two-phase commit) makes everyone wait for the slowest one, and outside providers won't take part. Between services it's rarely the answer.",
+        "A saga runs the steps one by one, each a normal local transaction, and gives each step an undo. If step 3 fails, undo step 2, then step 1.",
+        "Save a change and the message about it in the same local transaction (an outbox), and send the message from there. Never \"save, then send\" with nothing in between to catch a crash.",
+        "Messages can arrive twice. Every step must recognise a repeat, by an id, and do nothing the second time."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem"
+    },
+    {
+      "t": "p",
+      "x": "A customer orders biryani for ₹480. The order service saves the order, the payment service charges the card, the restaurant service asks the restaurant, and the delivery service finds a rider. Four services, four databases. Now the restaurant says no, because it has run out of rice. The card has been charged, and no food is coming."
+    },
+    {
+      "t": "p",
+      "x": "Inside one database you'd wrap all of this in a transaction and roll it back. Here each service has already committed its own part, and the payment provider is another company altogether."
+    },
+    {
+      "t": "analogy",
+      "x": "Booking a trip yourself: a flight, a hotel and a cab, from three companies. Nobody can lock all three while you decide. If the hotel turns out to be full, you cancel the flight you already booked."
+    },
+    {
+      "t": "h2",
+      "x": "Two ways to make it all-or-nothing"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "TWO-PHASE COMMIT",
+      "what": "A coordinator asks every service \"can you commit?\". Each one prepares and holds its locks. When all say yes, it tells them all to commit.",
+      "use": "Real all-or-nothing, and some databases support it among themselves.",
+      "avoid": "Everyone holds locks until the slowest answers. If the coordinator dies after the yeses, they stay stuck. And the payment gateway or the restaurant's tablet won't join your protocol.",
+      "ex": "A restaurant tablet on a weak network takes 20 seconds to answer; for those 20 seconds the customer's payment row and the rider pool stay locked.",
+      "like": "A group dinner where nobody may order until every guest has read the whole menu."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A SAGA",
+      "what": "Run the steps in order, each as its own local transaction, and give every step an undo (a compensating step). If a step fails, run the undos of the steps already done, newest first.",
+      "use": "No locks across services, works with outside providers, and every service stays independent.",
+      "avoid": "Between steps the world sees a half-finished order, so the design must allow that (\"placing your order…\"). Undos are new actions, not erasing history.",
+      "ex": "Restaurant says no: release the ₹480, mark the order cancelled, tell the customer. Two minutes later, nothing is left half done.",
+      "like": "The trip again: book each part, and if one fails, cancel the others one by one."
+    },
+    {
+      "t": "fig",
+      "id": "saga",
+      "cap": "The order is placed and ₹480 is held on the card; then the restaurant says no. The finished steps are undone with new steps, newest first: release the hold, then cancel the order and tell the customer. Nothing is left half done."
+    },
+    {
+      "t": "h2",
+      "x": "Designing the steps"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Put what's hard to undo last. Hold the money first (an authorisation) and take it (capture) only after the restaurant accepts. Releasing a hold is easier than a refund. With UPI the money usually leaves at once, so the undo there is a refund.",
+        "Some steps can't be undone: the food is cooked, the rider has picked it up. After that point, the saga only moves forward, and problems are handled as support cases, not rollbacks.",
+        "One place should own the flow. An order service that tells each step what to do and saves its progress (orchestration) is easier to follow than services reacting to each other's events (choreography), especially where money moves.",
+        "Save the saga's progress after every step. If the order service restarts, it reads where it was and carries on."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Sending messages without losing them"
+    },
+    {
+      "t": "p",
+      "x": "Each saga step ends by telling the next service to start. If the order service saves the order and then sends the message, a crash between the two leaves an order nobody will ever charge. If it sends first and then saves, a crash leaves a charge for an order that doesn't exist."
+    },
+    {
+      "t": "fig",
+      "id": "outbox",
+      "cap": "The order and the \"payment requested\" message are saved in one local transaction. A relay sends new outbox rows to the queue, and the payment service skips any message id it has already handled."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The outbox: a table in the same database. Save the change and the outgoing message in one local transaction, so both exist or neither does.",
+        "A relay reads new outbox rows and puts them on the queue, marking them sent. If it crashes after sending but before marking, it sends again.",
+        "So every receiver must handle repeats: keep the ids of messages it has handled, and skip one it has seen. Save the id in the same transaction as the work it did. For payments, pass an idempotency key to the provider so a repeat charges once."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What the customer sees"
+    },
+    {
+      "t": "list",
+      "items": [
+        "\"Placing your order…\" while the saga runs, usually a few seconds.",
+        "\"Order confirmed\" only after the restaurant has accepted and the payment is taken.",
+        "\"Restaurant couldn't take your order. We've released the ₹480 hold; your bank may take a few days to show it.\" The undo, said plainly, with no money missing."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When a flow touches several services, say early that there's no shared transaction, and that you'll use a saga with an undo for each step.",
+        "Order the steps so the hard-to-undo one comes last (hold, then capture).",
+        "Use the outbox for \"save and send\", and make every receiver handle repeats with an id.",
+        "Mention two-phase commit and why you're not using it between services: locks, a stuck coordinator, outside providers."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The Lab's lost-orders challenge is about the same promise: once you've told someone their order is saved, it must not vanish when a part crashes.",
+      "to": "lab/lost-orders",
+      "go": "Try the lost-orders challenge"
+    }
+  ]
+}
