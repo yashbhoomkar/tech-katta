@@ -89,7 +89,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q12–Q36, one per run (pick common questions not yet covered: rate limiter, ride matching, search autocomplete, payments, video streaming, …) | ready | |
+| 1 | content | Q13–Q36, one per run (pick common questions not yet covered: rate limiter, ride matching, payments, video streaming, …) | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
@@ -234,6 +234,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Q12 Design search autocomplete, figures `suggest-flow` and `prefix-map`
 - 2026-11-06 — Q11 Design a notification service, figures `notify-flow` and `lanes`
 - 2026-11-06 — Concept 07 transactions across services (sagas, outbox, repeats), figures `saga` and `outbox`
 - 2026-11-06 — Concept 06 consensus and leader election (#203), figures `quorum-split` and `election`

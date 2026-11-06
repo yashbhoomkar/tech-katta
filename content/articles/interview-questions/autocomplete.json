@@ -1,0 +1,229 @@
+{
+  "section": "interview-questions",
+  "slug": "autocomplete",
+  "group": "medium",
+  "no": "QUESTION // 12",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design search autocomplete",
+  "dek": "Type \"bir\" in the Zotato search box and \"biryani\" is already there before you finish. Suggest the best few dishes and restaurants after every keystroke, for crores of searches a day, in well under the time it takes to type the next letter.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Don't search while people type. Work out the top suggestions for every prefix ahead of time, and keep that map in memory: each keystroke is then a single lookup.",
+        "Rebuild the map every hour from search logs and menus, offline. Check the new map, then swap it in whole, so servers never serve half of one and half of another.",
+        "The phone waits a moment after each keystroke and drops answers that are already out of date. That cuts requests by more than half.",
+        "Short prefixes (\"b\", \"bi\") are the same for everyone in a city, so a CDN can answer them. Only longer prefixes reach your servers.",
+        "Popular in your city first, with a little of your own history mixed in. Trending searches from the last hour are added on top of the hourly map."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Show up to 8 suggestions (dishes, restaurants, past searches) after each keystroke.",
+        "Rank by what people in the same city search and order, with a nudge from the person's own history.",
+        "Cope with small typos and spellings (\"biriyani\", \"panner\").",
+        "Out of scope here: the full search results page after pressing enter, and ads in suggestions."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Suggestions on screen within 100 ms of a pause in typing; under 10 ms on the server"
+        ],
+        [
+          "Freshness",
+          "A new restaurant shows up within an hour; a sudden trend within minutes"
+        ],
+        [
+          "Availability",
+          "If suggestions fail, the search box still works"
+        ],
+        [
+          "Scale",
+          "1 crore people a day, 3 searches each, a few letters typed per search"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Requests: 1 crore people × 3 searches × about 4 requests per search (after waiting for pauses) is 12 crore a day, about 1,400 a second, and around 5,000 at dinner.",
+        "What to suggest: 3 lakh restaurants, about 50,000 dish names and the top 10 lakh past searches, roughly 14 lakh terms.",
+        "Prefixes: terms are about 12 characters, but most prefixes are shared (\"bir\" serves every biryani). Expect around 50 lakh distinct prefixes per city's map.",
+        "Memory: 50 lakh prefixes × 8 suggestion ids × 8 bytes is about 320 MB, plus the prefixes and names: around 1 GB. Every suggest server can hold the whole thing.",
+        "So the hard part isn't size or speed of one lookup. It's keeping the map fresh and the request count down."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Term: `id`, `text`, `kind` (dish, restaurant, query), `city`, `score` (recent searches and orders).",
+        "Prefix map: per city, prefix → the ids of its top 8 terms, built every hour, with a version number.",
+        "Recent activity: per person, their last few searches and orders, kept on the phone and on the server."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET /suggest?q=bir&city=pune      → 200 { \"v\": 4812, \"items\": [ { \"text\": \"biryani\", \"kind\": \"dish\" }, … ] }\n                                    Cache-Control: max-age=300 (for prefixes of 1–2 letters)",
+      "say": "Ask for suggestions for what's been typed so far, in a city. Short prefixes can be cached for a few minutes."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "suggest-flow",
+      "cap": "Reading: the phone waits for a pause, short prefixes come from a CDN, longer ones from suggest servers holding the prefix map in memory. Building: every hour, logs and menus become a new map, which is checked and swapped in."
+    },
+    {
+      "t": "p",
+      "x": "Reading and building never get in each other's way. Suggest servers only read a finished map; the builder only writes a new one. That keeps the read path simple enough to be fast and hard to break."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Answering in advance"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "SEARCH ON EVERY KEYSTROKE",
+      "what": "Run a \"starts with\" query on the terms table for each keystroke, sorted by score, top 8.",
+      "use": "Easy, always up to date.",
+      "avoid": "\"b\" matches lakhs of terms, and each one must be sorted. At 5,000 requests a second, the database spends its evening sorting the same short prefixes again and again.",
+      "ex": "Typing \"b\" at 8 pm takes 300 ms to answer; by then the person has typed \"bir\" and the answer is useless.",
+      "like": "Looking through the whole phone book every time someone says the first letter of a name."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A MAP OF PREFIXES, BUILT AHEAD",
+      "what": "Every hour, for every prefix of every term, work out the top 8 and store prefix → list. Serve it from memory on every suggest server.",
+      "use": "One lookup per keystroke, a few microseconds, and no database on the read path at all.",
+      "avoid": "It's as fresh as the last build. New things need a second, faster path (below), and the build itself must be checked before use.",
+      "ex": "\"bir\" maps straight to biryani, biryani near me, birthday cake.",
+      "like": "A shop assistant who already knows what most people asking for \"bir…\" want, and has it on the counter."
+    },
+    {
+      "t": "fig",
+      "id": "prefix-map",
+      "cap": "Each prefix already has its top suggestions worked out: \"bir\" gives biryani, biryani near me, birthday cake. A keystroke is one lookup, not a search."
+    },
+    {
+      "t": "p",
+      "x": "A trie (a tree of letters) is the classic way to build this map. The builder can use one, but the servers only need the finished prefix → list pairs, which a plain hash map holds well."
+    },
+    {
+      "t": "h2",
+      "x": "Fewer requests"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Wait about 150 ms after a keystroke before asking. Fast typists send one request for \"biry\", not four.",
+        "Cancel the request for \"bi\" when \"bir\" is sent, and ignore any answer older than the latest one shown.",
+        "Short prefixes are the same for everyone in a city. Let the CDN and the phone cache them for a few minutes.",
+        "Keep the last few answers on the phone: the answer for \"bir\" often already contains what \"biry\" needs."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Fresh enough"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The hourly build counts searches and orders over the last week per city, adds every restaurant and dish on the menus, and drops anything blocked (offensive words, closed restaurants).",
+        "Check the new map before using it: about the same size as the last, top results for common prefixes still sensible. Then swap it in whole, and keep the old one to go back to.",
+        "For sudden trends (a new dish everyone is ordering this evening), keep a small count of the last hour's searches and merge its top few into the answer at read time."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Typos and you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Add common misspellings and other spellings to the map as extra prefixes pointing to the right terms (\"biri\" → biryani). It's cheap and covers most real typos.",
+        "For prefixes of 4 letters or more with no good match, allow one wrong letter. Not for short prefixes, where almost everything is one letter away.",
+        "Personal touch: put the person's recent searches and orders that match the prefix first, then the city's list. This can be done on the phone, so the server's answer stays shared and cacheable."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A suggest server dies: the others hold the same map, so the load balancer sends requests to them.",
+        "A bad build: the check stops it; if one slips through, switch back to the previous version number.",
+        "Everything down: the search box works without suggestions. Suggestions help; they must never block search."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: suggestions by prefix, a trie or prefix map, top results by popularity, caching.",
+        "Senior: building offline and serving from memory, the request numbers and waiting for pauses, swapping a checked build, per-city ranking.",
+        "Lead: trends on top of hourly builds, typos and spellings, personal results on the phone so the shared answer stays cacheable, failure modes."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Hindi or other scripts?\" Build maps for each script, and add transliterations (\"बिरयानी\" and \"biryani\" point to the same term).",
+            "\"Remove a term right now?\" A small block list checked at read time, until the next build drops it.",
+            "\"Why not search for every keystroke with a search engine?\" It works at small scale; at 5,000 a second, precomputing the common prefixes is much cheaper.",
+            "\"How big can one city's map get?\" Small cities fit easily; for the largest, split by first letter across servers if a single machine can't hold it.",
+            "\"How do you test it?\" Replay a day of real keystrokes against a new build and compare clicks on suggestions before switching."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Autocomplete is read many times for each change, so it's served from memory with nothing slow behind it. The read-heavy challenge practises the same idea with a cache.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}
