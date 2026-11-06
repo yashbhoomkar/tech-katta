@@ -1,0 +1,213 @@
+{
+  "section": "interview-questions",
+  "slug": "video-streaming",
+  "group": "medium",
+  "no": "QUESTION // 21",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design video streaming",
+  "dek": "Zotato Recipes lets chefs upload short cooking videos, and 50 lakh people a day watch them on their phones, many on patchy 4G. Get a 10-minute upload ready to watch within minutes, start playback in a couple of seconds, and keep it playing in a lift.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Uploads go straight from the phone to storage, in resumable pieces. Your servers never carry the video bytes.",
+        "A transcoding pipeline turns the original into several sizes (240p to 1080p), each cut into short segments of about 4 seconds, plus a playlist that lists them.",
+        "Split the video into chunks and encode them in parallel: a 10-minute video is ready in a minute or two instead of ten.",
+        "The player picks a size for each segment from how fast the last ones arrived (adaptive bitrate). Bad network: a smaller size, and the video keeps playing.",
+        "Almost all the bytes are served by a CDN. Video traffic is huge; your origin should mostly see just the first request for each segment at each edge."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Chefs upload videos of 1 to 10 minutes from their phones; they're ready to watch within a few minutes.",
+        "Viewers start playback within about 2 seconds, and the video adapts to their network instead of stalling.",
+        "Show a thumbnail and the duration; count views.",
+        "Out of scope here: live streaming (see the IND vs PAK challenge), comments, and recommendations."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Start time",
+          "First frame within about 2 seconds on 4G"
+        ],
+        [
+          "Smooth",
+          "Stalls rare; quality drops before the picture does"
+        ],
+        [
+          "Ready",
+          "An upload watchable within a few minutes"
+        ],
+        [
+          "Scale",
+          "5,000 uploads and 50 lakh views a day, most of them at dinner time"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Uploads: 5,000 a day at about 300 MB each is 1.5 TB of originals a day.",
+        "Encoded sizes: all five sizes together are often smaller than a phone's original, say another 1 TB a day. Storage grows by about 2.5 TB a day; old originals can move to cheaper storage.",
+        "Viewing: 50 lakh views × about 3 minutes watched × about 1.5 Mbps is about 170 TB a day of video sent.",
+        "That's about 16 Gbps on average and around 45 Gbps at dinner. No ordinary set of servers should carry that; a CDN does.",
+        "Segments: a 5-minute video in 4-second segments is 75 segments per size, 375 files in all, each small enough to cache well."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Video: `id`, `chef_id`, `title`, `status` (uploading, processing, ready, failed, blocked), `duration`, `thumbnail`, `renditions` (the sizes available).",
+        "Rendition: `video_id`, `size` (240p…1080p), `bitrate`, `playlist_url`.",
+        "Upload: `id`, `video_id`, `parts_done`, so a dropped upload resumes where it stopped."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /videos                   { \"title\": \"Paneer tikka in 10 minutes\" }  → 201 { \"id\": \"v_31\", \"part_urls\": [ \"…signed…\", … ] }\nPUT  <part_urls[7]>             (the bytes of part 7)                       → 200\nPOST /videos/v_31/uploaded                                                 → 202 { \"status\": \"processing\" }\nGET  /videos/v_31               → 200 { \"status\": \"ready\", \"play\": \"https://cdn…/v_31/master.m3u8\" }",
+      "say": "Create a video and get a signed upload address for each part. Upload the parts (a dropped part is resent alone). Say it's done. Later, get the playlist address the player opens."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "video-pipe",
+      "cap": "The chef's app uploads the original straight to storage. A queue hands it to transcoders that encode every chunk in five sizes in parallel. The segments and playlist are served to viewers through a CDN."
+    },
+    {
+      "t": "p",
+      "x": "Three separate jobs: getting bytes in (storage does it), turning them into watchable pieces (the pipeline, in the background), and getting pieces out (the CDN). Your own API only handles small requests about videos, never the video itself."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Getting it ready fast"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ONE MACHINE ENCODES THE WHOLE VIDEO",
+      "what": "A worker takes the upload and encodes it into each size, one after another.",
+      "use": "Simple, and fine for short clips.",
+      "avoid": "A 10-minute video in five sizes takes the worker 10 minutes or more. At dinner, when chefs upload most, the queue grows and videos take an hour to appear.",
+      "ex": "A chef uploads a biryani recipe at 7 pm; it's watchable after the dinner rush is over.",
+      "like": "One cook making every dish of a thali alone, one after the other."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "SPLIT, ENCODE IN PARALLEL, JOIN",
+      "what": "Cut the original into chunks of about 30 seconds (a whole number of 4-second segments) at keyframes. Every size puts keyframes at the same fixed times, so segments line up across sizes and the player can switch at any segment boundary. Each chunk and size is its own small task on any free worker. When all are done, join them in order, write the playlists and mark the video ready.",
+      "use": "A 10-minute video becomes 20 chunks × 5 sizes = 100 small tasks; with enough workers it's ready in a minute or two.",
+      "avoid": "Many small tasks need tracking: a task can fail or run twice, so name each output by video, chunk and size, so a rerun just overwrites the same file.",
+      "ex": "The biryani video is split into 20 chunks at 7:00; by 7:02 every size is ready.",
+      "like": "A kitchen line where each cook makes one part of every thali at once."
+    },
+    {
+      "t": "h2",
+      "x": "Playing smoothly"
+    },
+    {
+      "t": "fig",
+      "id": "abr",
+      "cap": "The player picks a size for each 4-second segment from how fast the last ones downloaded. In a lift it drops to 240p for two segments and keeps playing, then climbs back to 720p."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The master playlist lists the sizes; each size's playlist lists its segments. The player downloads segments a few ahead of what's playing (its buffer).",
+        "Start with a small size so the first frame appears fast, then step up once the network proves quick enough.",
+        "If the buffer runs low, drop to a smaller size for the next segment. A blurry few seconds beat a spinning wheel.",
+        "Segments are standard (HLS or DASH), so phones, browsers and smart TVs all play them without special code."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The CDN carries the weight"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Segments never change once written, so the CDN can cache them for days. Name them with the video and size, plus a version if you ever re-encode, so nothing needs to be cleared.",
+        "Popular videos are served almost entirely from the edge. Old, rarely watched videos come from your storage, and that's fine: they're few.",
+        "When a video is suddenly shared widely, its first segments are what everyone asks for; those are cached at the edge within the first few views."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An upload drops at 80%: the app resumes from the last part that arrived, not from the start.",
+        "A transcoding task fails: it's retried; after a few failures the video is marked failed and the chef is asked to upload again. Never publish a video missing a size or a chunk.",
+        "A video breaks the rules: check it (automatically, then by a person if flagged) before it's marked ready, and take it down later by marking it blocked."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: upload to storage, transcode to a few sizes, serve through a CDN, a player that streams.",
+        "Senior: resumable direct uploads, segments and playlists, adaptive bitrate, the bandwidth numbers and why the CDN matters.",
+        "Lead: parallel chunked encoding with safe reruns, start-up time, caching immutable segments, checks before publishing."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Count views without slowing playback?\" The player sends a small event after a few seconds of watching; count them like the ad clicks question.",
+            "\"Save storage for old videos?\" Keep the sizes people watch; drop rarely used ones and the original after some months, or move them to colder storage.",
+            "\"Captions in Hindi and Tamil?\" Separate caption files listed in the playlist; the player picks one.",
+            "\"Stop people downloading the videos?\" Signed segment addresses that expire make casual copying harder; real protection needs encryption with keys (DRM), which most recipe videos don't need.",
+            "\"How do you test it?\" Play videos through a network simulator that drops to 2G and back, and measure start time, stalls and how often quality changes."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Video lives or dies by the CDN. The IND vs PAK challenge is the live version of the same idea.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try the IND vs PAK challenge"
+    }
+  ]
+}
