@@ -13,7 +13,7 @@
       "items": [
         "Some decisions must have exactly one answer across machines: who leads, whether a write was accepted, which job runner owns tonight's job. Machines can't tell a dead peer from a slow one, so they need a rule.",
         "The rule is a majority. With 5 machines, a decision needs 3. Any two groups of 3 share at least one machine, so two different answers can never both win.",
-        "A leader is chosen by vote for a numbered term. Each machine votes once per term; a majority makes a leader; a higher term always wins.",
+        "A leader is chosen by vote for a numbered term. Each machine votes once per term; a majority makes a leader; a machine that sees a higher term steps down.",
         "An old leader can wake from a pause still thinking it leads. Stop it by putting the term number on every write and rejecting writes from older terms.",
         "Don't write this yourself. Use etcd, ZooKeeper or Consul, or a database that has it built in, and know what it costs: every decision waits for a majority, and a side without one stops."
       ]
@@ -40,7 +40,7 @@
     {
       "t": "fig",
       "id": "quorum-split",
-      "cap": "Five machines, three in Mumbai and two in Hyderabad. The link breaks. The three are a majority and keep going; the two aren't, so they refuse writes and wait. Both sides can never decide at once."
+      "cap": "Five machines, three in Mumbai and two in Hyderabad. The link breaks. The three are a majority and keep going; the two aren't, so they refuse writes and wait. The two sides can never both decide."
     },
     {
       "t": "analogy",
@@ -52,7 +52,7 @@
     },
     {
       "t": "p",
-      "x": "A majority (a quorum) is more than half. The trick is that any two majorities of the same group overlap in at least one machine, and that machine remembers what it already agreed to. So if one majority decided \"A leads term 5\", no other majority can decide \"C leads term 5\"."
+      "x": "A majority (a quorum) is more than half. The trick is that any two majorities of the same group overlap in at least one machine, and that machine has saved to disk what it already agreed to. So if one majority decided \"A leads term 5\", no other majority can decide \"C leads term 5\"."
     },
     {
       "t": "table",
@@ -130,9 +130,9 @@
       "t": "type",
       "name": "Better",
       "kind": "FENCING BY TERM",
-      "what": "Every action carries the leader's term number. Whatever it writes to (the payouts table, the bank's API, storage) remembers the highest term it has seen and rejects anything older.",
+      "what": "Every action carries the leader's term number. Whatever it writes to (the payouts table, storage) remembers the highest term it has seen and rejects anything older.",
       "use": "The old leader can wake up and try whatever it likes: its writes say term 4, the store has seen term 5, and they're refused.",
-      "avoid": "Everything the leader writes to must check the number. A system that can't check it needs another guard, such as a unique id per payout.",
+      "avoid": "Everything the leader writes to must check the number. A bank's API won't, so send each payout with a unique id the bank uses to ignore repeats.",
       "ex": "Machine 1 sends \"pay batch 7, term 4\". The payouts table has seen term 5 and refuses it.",
       "like": "A new guard changes the lock code; the old guard's code no longer opens the door, however confident he is."
     },
@@ -176,7 +176,7 @@
     },
     {
       "t": "lab",
-      "x": "In the Lab, a database can fail over when it crashes. Crash things on purpose and watch which parts of your design keep going and which ones wait.",
+      "x": "In the Lab's cache-restart challenge, the cache crashes in the middle of dinner. Watch which parts of your design keep going and which ones struggle, the same question consensus answers for leaders.",
       "to": "lab/cache-restart",
       "go": "Try the cache-restart challenge"
     }
