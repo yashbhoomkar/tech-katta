@@ -19,6 +19,10 @@
       "/dashboard/#interview-questions"
     ],
     [
+      "Problems",
+      "/dashboard/#problems"
+    ],
+    [
       "Lab",
       "/dashboard/#lab"
     ]
@@ -27,12 +31,12 @@
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
     "description": "Worked interview questions, a 45-minute practice clock, and a Lab that scores your design. Short, plain, and built for Indian scale.",
-    "primary": "Dashboard",
+    "primary": "Start practising",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
-    "primaryHref": "/dashboard/",
+    "primaryHref": "/dashboard/#problems",
     "secondaryHref": "#ind-vs-pak"
   },
   "topics": {
