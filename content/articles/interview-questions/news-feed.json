@@ -71,7 +71,7 @@
         "Posts: 20 lakh a day is about 23 a second.",
         "Fan-out: if a post goes to 200 followers on average, that's 40 crore feed inserts a day, about 4,600 a second. Fine for a cluster of Redis machines.",
         "The outlier: a food blogger with 50 lakh followers. One post means 50 lakh inserts; at 50,000 a second that's 100 seconds before the last follower sees it, and it competes with everyone else's posts.",
-        "Feed size: 500 post ids × 8 bytes for 1 crore active people is about 40 GB. Fits in memory across a few machines."
+        "Feed size: 500 post ids × 8 bytes for 1 crore active people is about 40 GB of ids, a few times that in Redis. Fits in memory across a handful of machines."
       ]
     },
     {
@@ -206,7 +206,7 @@
           "t": "list",
           "items": [
             "\"Someone follows 5,000 accounts.\" Their list fills faster and turns over sooner, which is fine; cap how many big accounts are pulled per read.",
-            "\"A big account drops below the threshold.\" Switch it back to push for new posts; old posts are already pulled or aged out.",
+            "\"A big account drops below the threshold.\" Switch it back to push for new posts, and add its last few posts to followers' lists once, so they don't vanish from feeds.",
             "\"Show 'X liked this'?\" That's a different kind of event fanned out the same way, with stricter limits so feeds aren't flooded.",
             "\"How fresh is fresh?\" Seconds for ordinary accounts; for big accounts, the pull is exactly fresh, but cache it per account for a few seconds.",
             "\"How do you test it?\" Seed a graph with ordinary and big accounts, post from each, and check order, duplicates and how long each feed took to update."
