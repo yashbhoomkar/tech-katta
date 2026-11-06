@@ -21,6 +21,8 @@ return createPortal(<div className="pr" role="dialog" aria-modal="true" aria-lab
 {done?<div className="pr-body"><h2>{p.doneTitle}</h2><p className="pr-text">{p.doneText}</p>
 <table className="pr-sum"><thead><tr><th scope="col">{p.step}</th><th scope="col">{p.planned}</th><th scope="col">{p.used}</th></tr></thead>
 <tbody>{steps.map((x,k)=><tr key={x.name} className={spent[k]>x.minutes*60?"over":""}><td>{x.name}</td><td>{x.minutes} min</td><td>{mmss(spent[k])}</td></tr>)}</tbody></table>
+{(()=>{const left=steps.map((x,k)=>({name:x.name,items:x.checks.filter((_,j)=>!ticked[k+"-"+j])})).filter(x=>x.items.length);
+return left.length?<div className="pr-missed"><h3>{p.missed}</h3>{left.map(x=><div key={x.name}><b>{x.name}</b><ul>{x.items.map(c=><li key={c}>{c}</li>)}</ul></div>)}</div>:<p className="pr-text">{p.allTicked}</p>})()}
 <button type="button" className="pr-go" onClick={onClose}>{p.compare} →</button></div>
 :<div className="pr-body">
 <p className="pr-prompt">{a.dek}</p>
