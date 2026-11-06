@@ -448,6 +448,29 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><titl
 {step(.5,<g><rect x={x(30)} y={130} width={x(60)-x(30)} height={22} fill="#f8faff" stroke={BLUE} strokeDasharray="4 3"/><rect x={x(30)} y={134} width={x(48)-x(30)} height={14} fill={BLUE}/><text x={x(45)} y={124} textAnchor="middle" className="fl">B claims when the lease ends, runs it</text></g>)}
 {step(.75,<text x={x(48)+6} y={146} className="fb" style={{fill:BLUE}}>✓ done</text>)}</svg>}
 
+// Web crawler, FIG: the loop. The frontier hands out URLs; fetchers check robots.txt and download pages;
+// pages are saved and parsed; new links go through the seen filter, and only new ones join the frontier.
+function CrawlFlowFig({still,uid=""}){const M=`cw${uid}`,D="12s";
+return <svg viewBox="0 0 640 200" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>The crawl loop. The frontier hands out URLs to fetchers, which check each site's robots.txt and download the page. Pages are saved and parsed for links. Each new link goes through the seen filter; only links never seen before join the frontier, and the loop continues.</title><Mark m={M}/>
+<SBox x={0} y={60} w={120} t="Frontier" blue/><SBox x={170} y={60} w={130} t="Fetchers"/><SBox x={350} y={60} w={120} t="Page store"/><SBox x={520} y={60} w={120} t="Parser"/>
+<SBox x={350} y={170} w={170} t="Seen filter"/>
+<Line x1={122} y1={60} x2={166} y2={60} m={M}/><Line x1={302} y1={60} x2={346} y2={60} m={M}/><Line x1={472} y1={60} x2={516} y2={60} m={M}/>
+<text x={235} y={92} textAnchor="middle" className="fl">robots.txt first</text>
+<Line x1={580} y1={72} x2={580} y2={170} dash/><Line x1={580} y1={170} x2={524} y2={170} m={M} dash/><text x={588} y={124} className="fl">links</text>
+<Line x1={348} y1={170} x2={60} y2={170} dash/><Line x1={60} y1={170} x2={60} y2={74} m={M} dash/><text x={200} y={162} textAnchor="middle" className="fl">only links never seen</text>
+<text x={0} y={18} className="fl">seed: a list of known restaurant and food sites</text>
+{!still&&<g aria-hidden="true"><Dot x1={124} x2={164} y={60} t0={.02} t1={.1} dur={D}/><Glow x={170} y={48} w={130} h={24} t0={.1} t1={.22} dur={D}/><Dot x1={304} x2={344} y={60} t0={.24} t1={.3} dur={D}/><Dot x1={474} x2={514} y={60} t0={.34} t1={.4} dur={D}/><Dot x1={580} x2={580} y={74} y2={168} t0={.44} t1={.52} dur={D}/><Glow x={350} y={158} w={170} h={24} t0={.54} t1={.66} dur={D}/><Dot x1={346} x2={62} y={170} t0={.68} t1={.8} dur={D}/><Dot x1={60} x2={60} y={168} y2={76} t0={.8} t1={.88} dur={D}/></g>}</svg>}
+
+// Web crawler, FIG: politeness. The frontier keeps one queue per site and a "not before" time for each.
+// Fetchers take the next URL only from sites whose time has come, so one big site's 10 lakh URLs never
+// hammer it, and never block the small sites.
+function PoliteFig({still,uid=""}){const D="10s";
+const hosts=[["pune-foodie.example","10 lakh URLs","in 1 s"],["chennai-eats.example","4,200 URLs","now"],["dhaba-diaries.example","18 URLs","now"],["mumbai-menus.example","90,000 URLs","in 3 s"]];
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`plt${uid}`}><title id={`plt${uid}`}>Politeness. The frontier keeps one queue per site, each with a not-before time. Fetchers take the next URL only from sites whose time has come. A big food blog with 10 lakh URLs waits a second between pages, so it is never hammered, and small sites with a few URLs are not stuck behind it.</title>
+<text x={0} y={24} className="fb">Site</text><text x={210} y={24} className="fb">Waiting</text><text x={340} y={24} className="fb">Next fetch</text>
+{hosts.map(([h,n,t],i)=>{const y=60+i*36,ready=t==="now";const row=<g><rect x={0} y={y-16} width={200} height={26} fill={ready?"#f8faff":"#fff"} stroke={ready?BLUE:GREY}/><text x={10} y={y+2} className="fl">{h}</text><text x={210} y={y+2} className="fl">{n}</text><text x={340} y={y+2} className="fb" style={{fill:ready?BLUE:GREY}}>{t}</text>{ready&&<text x={410} y={y+2} className="fl" style={{fill:BLUE}}>→ a fetcher takes one</text>}</g>;return still?<g key={h}>{row}</g>:<Show key={h} t0={.05+i*.15} t1={.98} dur={D}>{row}</Show>})}
+<text x={0} y={216} className="fl">one queue per site, one page at a time each; the big site never blocks the small ones</text></svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -480,4 +503,6 @@ export const QUESTION_FIGS={
 "pay-states":{C:PayStatesFig,ar:640/220,title:()=>"UNKNOWN IS NOT FAILED"},
 "sched-flow":{C:SchedFlowFig,ar:640/240,title:()=>"DUE THIS MINUTE, CLAIMED ONCE"},
 "lease":{C:LeaseFig,ar:640/220,title:()=>"WHEN A WORKER DIES MID-JOB"},
+"crawl-flow":{C:CrawlFlowFig,ar:640/200,title:()=>"FETCH, PARSE, FILTER, REPEAT"},
+"polite":{C:PoliteFig,ar:640/230,title:()=>"ONE QUEUE PER SITE"},
 };

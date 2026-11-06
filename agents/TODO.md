@@ -89,7 +89,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q15–Q36, one per run (pick common questions not yet covered: ride matching, video streaming, distributed cache, web crawler, …) | ready | |
+| 1 | content | Q16–Q36, one per run (pick common questions not yet covered: ride matching, video streaming, distributed cache, a key-value store, leaderboards, …) | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
@@ -234,6 +234,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Q15 Design a web crawler, figures `crawl-flow` and `polite`
 - 2026-11-06 — Q14 Design a job scheduler, figures `sched-flow` and `lease`
 - 2026-11-06 — Q13 Design a payment system, figures `pay-flow` and `pay-states`
 - 2026-11-06 — Q12 Design search autocomplete, figures `suggest-flow` and `prefix-map`
