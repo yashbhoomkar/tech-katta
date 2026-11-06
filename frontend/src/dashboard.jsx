@@ -143,7 +143,7 @@ return <button type="button" className="r-btn share" onClick={go} aria-live="pol
 
 function Block({b,i,rd,still,fn}){const k=i;const cls=x=>x+(rd?rd(k):"");
 switch(b.t){
-case"h2":return <h2 className={cls("")}>{b.x}</h2>;
+case"h2":return <h2 id={`s-${k}`} className={cls("")}>{b.x}</h2>;
 case"p":return <p className={cls("")}>{inline(b.x)}</p>;
 case"list":return <ul className={cls("")}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>;
 case"tldr":return <aside className={cls("a-tldr")} aria-label="In 30 seconds"><b>IN 30 SECONDS</b><ul>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul></aside>;
@@ -163,13 +163,23 @@ const pr=c.practice&&a.section==="interview-questions"&&a.group!=="start";const[
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
 const fn={};a.body.reduce((n,b,i)=>b.t==="fig"?(fn[i]=n+1):n,0);
 const main=Math.max(1,Math.round(words(a)/220)),all=Math.max(main,Math.round((words(a)+extraWords(a))/220));
-return <article className="d-panel d-article" aria-labelledby="d-title">
+return <div className="d-read"><article className="d-panel d-article" aria-labelledby="d-title">
 <nav className="crumbs" aria-label="Breadcrumb"><a href={`#${a.section}`}>{label}</a><span aria-hidden="true">/</span><span>{a.no}</span></nav>
 <label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{a.date} · {main} MIN READ{all>main?` · ${all} WITH DETAILS`:""}</span><Share a={a}/></div>
 {pr&&<button type="button" className="pr-open" onClick={()=>setPractising(true)}>{practised?c.practice.again:c.practice.button}{practised&&<small>{c.practice.practised}</small>}</button>}
 {practising&&<Practice p={c.practice} a={a} onClose={()=>{setPractising(false);setPractised(!!readProgress().steps["practice:"+a.slug])}}/>}
 {a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
-<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>}
+<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article><Rail a={a}/></div>}
+// Wide screens: a column beside the article with its sections (the one you are reading is marked) and,
+// for an article with a Lab card, a shortcut to it. Hidden below 1240 px, where the article fills the width.
+function Rail({a}){const hs=a.body.map((b,i)=>b.t==="h2"?{id:`s-${i}`,x:b.x}:null).filter(Boolean);const lab=a.body.find(b=>b.t==="lab");const[on,setOn]=useState(null);
+useEffect(()=>{if(!hs.length||typeof IntersectionObserver==="undefined")return;const els=hs.map(h=>document.getElementById(h.id)).filter(Boolean);
+const pick=()=>{let cur=null;const line=innerHeight*.35;for(const el of els){if(el.getBoundingClientRect().top<=line)cur=el.id;else break}if(innerHeight+scrollY>=document.documentElement.scrollHeight-4)cur=els[els.length-1]?.id??cur;setOn(cur)};const io=new IntersectionObserver(pick,{rootMargin:"0px 0px -60% 0px"});els.forEach(el=>io.observe(el));addEventListener("scroll",pick,{passive:true});pick();
+return()=>{io.disconnect();removeEventListener("scroll",pick)}},[a.slug]);
+const go=(e,id)=>{const el=document.getElementById(id);if(!el)return;e.preventDefault();el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});setOn(id)};
+if(!hs.length&&!lab)return null;
+return <aside className="d-rail" aria-label="On this page">{hs.length>0&&<nav><b>ON THIS PAGE</b><ol>{hs.map(h=><li key={h.id}><a href={`#${a.section}/${a.slug}`} aria-current={on===h.id?"location":undefined} className={on===h.id?"on":""} onClick={e=>go(e,h.id)}>{h.x}</a></li>)}</ol></nav>}
+{lab&&<a className="rail-lab" href={`#${lab.to}`}><b>TRY IT IN THE LAB</b><span>{lab.go||"Open the Lab"} →</span></a>}</aside>}
 // After an Interview Question: the next one in the list (site.json "problems" copy), and the Problems page.
 function NextProblem({a}){const p=c.problems;if(!p?.next||a.section!=="interview-questions"||a.group==="start")return null;const qs=articles.filter(x=>x.section===a.section&&x.group!=="start");const n=qs[qs.findIndex(x=>x.slug===a.slug)+1];
 return <nav className="a-next" aria-label={p.next}>{n&&<a href={`#${n.section}/${n.slug}`}><small>{p.next}</small><b>{n.title} →</b></a>}<a className="a-all" href="#problems">{p.allProblems}</a></nav>}
