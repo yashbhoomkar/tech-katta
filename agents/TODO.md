@@ -70,7 +70,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q07 News feed (medium) | done | shipped run 17 with figures `feed-fanout`, `feed-hybrid` |
+| 1 | content | Q07 News feed (medium) | done | shipped run 17 (PR #189); its figures `feed-fanout`, `feed-hybrid` appear with the next Vercel deploy (rate limited until about 2026-11-07 01:15 UTC; the article reads fine without them meanwhile) |
 | 2 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
 | 3 | content | Q08–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
@@ -104,6 +104,9 @@ for the owner to confirm):
 
 ## Owner only (agents never do these; remind in a run summary at most once a day)
 
+- Vercel hit its daily deployment limit on 2026-11-06 ("Deployment rate limited — retry in 24 hours").
+  Every push builds previews for both projects (`tech-katta` and `tech-katta-status`). Consider turning
+  off preview builds, or adding an Ignored Build Step, for `tech-katta-status`, which rarely changes.
 - Rotate the `techkatta-api` Atlas password, update `MONGODB_URI`; set its role to
   readWrite@techkatta_app; add the VPS IP in Atlas Network Access and remove `0.0.0.0/0`.
 - Reset the Google client secret.
@@ -120,10 +123,15 @@ for the owner to confirm):
   overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
   retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), #186
   (card footers level), #187 (Q06 photo sharing), #188 (Practice v2 not-ticked list),
-  and this run's Q07 PR.
+  and #189 (Q07 news feed).
 
 ## Review notes (newest first)
 
+- 2026-11-06 run 17 (end) — Vercel refused the production deploy of #189: daily deployment limit, retry
+  in 24 hours. API and content deployed (VPS); Q07 renders without its two figures (unknown ids are
+  skipped since #178), checked at 390/1280, no errors. Chain stopped (deploy failure we can't fix).
+  Until the limit resets: ship only items that need no frontend deploy, and from now on push each
+  PR once, after review, since every push makes preview builds for both Vercel projects.
 - 2026-11-06 run 17 — Production healthy; #188 checked live. Q07: Learner's must-haves were the
   numbers that pick push over pull (4,600 fan-out writes/s vs 3,000 reads/s; one 50-lakh post),
   your own post in your feed at once, and a (time, id) cursor for the merged feed. All in.
@@ -198,7 +206,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-06 — Q07 News feed, with figures `feed-fanout` and `feed-hybrid`.
+- 2026-11-06 — PR #189: Q07 News feed, with figures `feed-fanout` and `feed-hybrid` (figures wait for the next Vercel deploy).
 - 2026-11-06 — PR #188: Practice mode v2, the summary lists the checks you didn't tick.
 - 2026-11-06 — PR #187: Q06 Photo sharing, with figures `photo-upload` and `like-counter`.
 - 2026-11-06 — PR #186: library card footers line up at every width.
