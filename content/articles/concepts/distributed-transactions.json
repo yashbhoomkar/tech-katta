@@ -73,7 +73,7 @@
     {
       "t": "list",
       "items": [
-        "Put what's hard to undo last. Hold the money first (an authorisation) and take it (capture) only after the restaurant accepts. Releasing a hold is easier than a refund.",
+        "Put what's hard to undo last. Hold the money first (an authorisation) and take it (capture) only after the restaurant accepts. Releasing a hold is easier than a refund. With UPI the money usually leaves at once, so the undo there is a refund.",
         "Some steps can't be undone: the food is cooked, the rider has picked it up. After that point, the saga only moves forward, and problems are handled as support cases, not rollbacks.",
         "One place should own the flow. An order service that tells each step what to do and saves its progress (orchestration) is easier to follow than services reacting to each other's events (choreography), especially where money moves.",
         "Save the saga's progress after every step. If the order service restarts, it reads where it was and carries on."
@@ -97,7 +97,7 @@
       "items": [
         "The outbox: a table in the same database. Save the change and the outgoing message in one local transaction, so both exist or neither does.",
         "A relay reads new outbox rows and puts them on the queue, marking them sent. If it crashes after sending but before marking, it sends again.",
-        "So every receiver must handle repeats: keep the ids of messages it has handled, and skip one it has seen. For payments, pass an idempotency key to the provider so a repeat charges once."
+        "So every receiver must handle repeats: keep the ids of messages it has handled, and skip one it has seen. Save the id in the same transaction as the work it did. For payments, pass an idempotency key to the provider so a repeat charges once."
       ]
     },
     {
@@ -109,7 +109,7 @@
       "items": [
         "\"Placing your order…\" while the saga runs, usually a few seconds.",
         "\"Order confirmed\" only after the restaurant has accepted and the payment is taken.",
-        "\"Restaurant couldn't take your order. Your ₹480 hold has been released.\" The undo, said plainly, with no money missing."
+        "\"Restaurant couldn't take your order. We've released the ₹480 hold; your bank may take a few days to show it.\" The undo, said plainly, with no money missing."
       ]
     },
     {

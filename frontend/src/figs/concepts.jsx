@@ -167,7 +167,7 @@ function SagaFig({still,uid=""}){const M=`sg${uid}`,D="12s";
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`sgt${uid}`}><title id={`sgt${uid}`}>A saga for one order. Step 1: the order is placed. Step 2: 480 rupees are held on the customer's card. Step 3: the restaurant says no. Each finished step is then undone by a new step: the hold on the 480 rupees is released, then the order is cancelled and the customer is told. Nothing is left half done.</title><Mark m={M}/>
 <text x={0} y={30} className="fb">Forward</text>
-<SBox x={0} y={70} w={150} t="1 · order placed" blue/>{step(.15,<SBox x={210} y={70} w={170} t="2 · ₹480 held on card" blue/>)}{step(.3,<SBox x={440} y={70} w={200} t="3 · restaurant: no" down/>)}
+<SBox x={0} y={70} w={150} t="1 · order placed" blue/>{step(.15,<SBox x={210} y={70} w={170} t="2 · ₹480 held on card" blue/>)}{step(.3,<SBox x={440} y={70} w={196} t="3 · restaurant: no" down/>)}
 {step(.15,<Line x1={152} y1={70} x2={206} y2={70} m={M}/>)}{step(.3,<Line x1={382} y1={70} x2={436} y2={70} m={M}/>)}
 {step(.45,<text x={0} y={140} className="fb" style={{fill:RED}}>Undo, newest first</text>)}
 {step(.5,<Line x1={540} y1={84} x2={390} y2={168} m={M} dash c={RED}/>)}{step(.55,<SBox x={210} y={180} w={170} t="release the ₹480"/>)}
@@ -183,11 +183,11 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`obt${uid}`}><titl
 <rect x={12} y={56} width={226} height={40} fill="#f8faff" stroke={BLUE}/><text x={22} y={73} className="fl">orders</text><text x={22} y={88} className="fl">#91 · placed</text>
 <rect x={12} y={106} width={226} height={40} fill="#f8faff" stroke={BLUE}/><text x={22} y={123} className="fl">outbox</text><text x={22} y={138} className="fl">m_5 · payment requested · #91</text>
 <text x={12} y={162} className="fl" style={{fill:BLUE}}>one local transaction: both or neither</text>
-<SBox x={300} y={126} w={90} t="Relay"/><SBox x={430} y={126} w={80} t="Queue"/><SBox x={540} y={126} w={100} t="Payment"/>
+<SBox x={300} y={126} w={90} t="Relay"/><SBox x={430} y={126} w={80} t="Queue"/><SBox x={540} y={126} w={96} t="Payment"/>
 <Line x1={240} y1={126} x2={296} y2={126} m={M}/><Line x1={392} y1={126} x2={426} y2={126} m={M}/><Line x1={512} y1={126} x2={536} y2={126} m={M}/>
-<text x={590} y={160} textAnchor="middle" className="fl">seen m_5?</text><text x={590} y={176} textAnchor="middle" className="fl">then skip</text>
+<text x={590} y={160} textAnchor="middle" className="fl">m_5 again?</text><text x={590} y={176} textAnchor="middle" className="fl">skip it</text>
 <text x={0} y={210} className="fl">without it: save, then crash before sending, and the payment is never asked for</text>
-{!still&&<g aria-hidden="true"><Glow x={12} y={56} w={226} h={90} t0={.05} t1={.25} dur={D}/><Dot x1={242} x2={294} y={126} t0={.3} t1={.4} dur={D}/><Dot x1={394} x2={424} y={126} t0={.45} t1={.52} dur={D}/><Dot x1={514} x2={534} y={126} t0={.56} t1={.62} dur={D}/><Glow x={540} y={114} w={100} h={24} t0={.62} t1={.8} dur={D}/></g>}</svg>}
+{!still&&<g aria-hidden="true"><Glow x={12} y={56} w={226} h={90} t0={.05} t1={.25} dur={D}/><Dot x1={242} x2={294} y={126} t0={.3} t1={.4} dur={D}/><Dot x1={394} x2={424} y={126} t0={.45} t1={.52} dur={D}/><Dot x1={514} x2={534} y={126} t0={.56} t1={.62} dur={D}/><Glow x={540} y={114} w={96} h={24} t0={.62} t1={.8} dur={D}/></g>}</svg>}
 
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
