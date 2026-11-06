@@ -133,15 +133,14 @@ for the owner to confirm):
 
 ## Context repo pending
 
-- Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
-  list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
-  overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
-  retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), #186
-  (card footers level), #187 (Q06 photo sharing), #188 (Practice v2 not-ticked list),
-  and #189 (Q07 news feed).
+(none — handover updated through #195 on 2026-11-06)
 
 ## Review notes (newest first)
 
+- 2026-11-06 — Ledger and docs brought up to date at the owner's request: 51 ledger records for
+  #176–#195 (the ledger never filled itself; record SHAs after every merge, step 9), handover §1, §12
+  and §13 updated in the context repo. Owner asked about positioning as "LeetCode for system design":
+  answered, waiting for their decision on reordering the Queue (Problems page first).
 - 2026-11-06 — Lab challenges per question: Q02 got `monday-sync` (#194, the first queue challenge). The
   rest were dropped: Q03, Q04 and Q07 would repeat cache/flash-sale challenges their articles already
   link to, and a fair Q05 waiting room needs the engine to forbid splitting the database (see the idea
@@ -210,7 +209,7 @@ for the owner to confirm):
   cell search plus delivery zones and open status; first render had two labels crossing lines, fixed.
 - 2026-11-05 — Run 4's live checks were cut short by a usage limit; #175 was verified live by bundle
   string and pre-merge browser checks only. Owner asked for a product and business plan (₹99/month,
-  ₹249/year): Queue reordered around it (see Business plan). Ledger now fills itself on merge.
+  ₹249/year): Queue reordered around it (see Business plan). (Correction 11-06: the ledger does not fill itself; #176–#195 were added by hand.)
 - 2026-11-05 run 4 — Production healthy (chaos 11/11, sweep clean, Q02 live and readable on phone).
   Skip link and outlines: a global `a/button:focus-visible` outline already existed in dashboard.css;
   component rules with `outline:none` were cancelling it. One scripted run showed `/dashboard/`
