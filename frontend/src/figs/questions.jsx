@@ -306,6 +306,35 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sbt${uid}`}><titl
 {tests.map(([t,r,bad],i)=>{const y=72+i*28,row=<g><text x={300} y={y} className="fl">{t}</text><text x={400} y={y} className="fb" style={{fill:bad===1?RED:bad===2?GREY:BLUE}}>{r}</text></g>;return still?<g key={t}>{row}</g>:<Show key={t} t0={.08+i*.13} t1={.98} dur={D}>{row}</Show>})}
 {still?<text x={300} y={218} className="fb" style={{fill:RED}}>Time limit exceeded on test 4</text>:<Show t0={.66} t1={.98} dur={D}><text x={300} y={218} className="fb" style={{fill:RED}}>Time limit exceeded on test 4</text></Show>}</svg>}
 
+// Chat app, FIG: a message's path. Ananya's phone holds a connection to gateway A. The chat service gives the
+// message the conversation's next number, saves it, and asks the registry where Rohit is connected:
+// gateway B, which pushes it down his open connection. If he's offline, a phone notification goes instead.
+function ChatFlowFig({still,uid=""}){const M=`cf${uid}`,D="12s";
+return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`cft${uid}`}><title id={`cft${uid}`}>A message's path. Ananya's phone keeps a connection open to gateway A. The chat service gives the message the conversation's next number, saves it, and asks the registry which gateway Rohit is connected to. Gateway B sends it down Rohit's open connection. If Rohit is offline, a phone notification goes instead.</title><Mark m={M}/>
+<SBox x={0} y={50} w={110} t="Ananya's phone"/><SBox x={160} y={50} w={110} t="Gateway A"/><SBox x={320} y={50} w={130} t="Chat service" blue/><SBox x={500} y={50} w={140} t="Messages"/>
+<SBox x={320} y={140} w={130} t="Registry"/><SBox x={160} y={230} w={110} t="Gateway B"/><SBox x={0} y={230} w={110} t="Rohit's phone"/><SBox x={500} y={230} w={140} t="Phone notification"/>
+<Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={272} y1={50} x2={316} y2={50} m={M}/><Line x1={452} y1={50} x2={496} y2={50} m={M}/><text x="474" y="78" textAnchor="middle" className="fl">#45 saved</text>
+<Line x1={385} y1={62} x2={385} y2={126} m={M}/><text x="392" y="100" className="fl">where is Rohit?</text>
+<Line x1={330} y1={152} x2={240} y2={216} m={M}/><text x="276" y="176" textAnchor="end" className="fl">gateway B</text>
+<Line x1={158} y1={230} x2={114} y2={230} m={M}/>
+<Line x1={440} y1={152} x2={540} y2={216} m={M} dash/><text x="500" y="176" className="fl">if offline</text>
+{!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={50} t0={.02} t1={.08} dur={D}/><Dot x1={274} x2={314} y={50} t0={.1} t1={.16} dur={D}/><Dot x1={454} x2={494} y={50} t0={.18} t1={.24} dur={D}/><Glow x={500} y={38} w={140} h={24} t0={.24} t1={.34} dur={D}/>
+<Dot x1={385} x2={385} y={64} y2={124} t0={.36} t1={.44} dur={D}/><Dot x1={328} x2={242} y={154} y2={214} t0={.46} t1={.56} dur={D}/><Dot x1={156} x2={116} y={230} t0={.58} t1={.64} dur={D}/><Glow x={0} y={218} w={110} h={24} t0={.64} t1={.76} dur={D}/>
+<Dot x1={442} x2={538} y={154} y2={214} t0={.8} t1={.9} dur={D}/></g>}</svg>}
+
+// Chat app, FIG: catching up. Every message in a conversation has the next number. Rohit's phone was
+// offline after #42; when it reconnects it says "I have up to 42" and gets 43, 44 and 45, in order.
+function ChatSyncFig({still,uid=""}){const D="10s",X=150,W=86;
+const msgs=[[41,"Ananya: 8 pm?"],[42,"Rohit: done"],[43,"Meera: me too"],[44,"Ananya: booked"],[45,"Meera: 4 of us"]];
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><title id={`cst${uid}`}>Catching up. Every message in a conversation gets the next number. Rohit's phone has messages up to number 42, then goes offline. When it reconnects, it says "I have up to 42", and the server sends 43, 44 and 45, in order.</title>
+<text x="0" y="28" className="fb">The conversation, in order</text>
+{msgs.map(([n,t],i)=><g key={n}><rect x={X*0+i*128} y={44} width={120} height={44} fill={n>42?"#f8faff":"#fff"} stroke={n>42?BLUE:GREY}/><text x={i*128+8} y={62} className="fb">#{n}</text><text x={i*128+8} y={80} className="fl">{t}</text></g>)}
+<text x="0" y="128" className="fb">Rohit's phone</text>
+<text x="0" y="150" className="fl">has up to #42, then offline</text>
+{still?<text x="0" y="180" className="fl" style={{fill:BLUE}}>back online: "I have up to 42" → gets #43, #44, #45</text>:<Show t0={.2} t1={.98} dur={D}><text x="0" y="180" className="fl" style={{fill:BLUE}}>back online: "I have up to 42" → gets #43, #44, #45</text></Show>}
+{!still&&<g aria-hidden="true">{[2,3,4].map((i,k)=><Dot key={i} x1={i*128+60} x2={300} y={92} y2={168} t0={.3+k*.15} t1={.42+k*.15} dur={D}/>)}</g>}
+<text x={W*0} y="210" className="fl" style={{fill:GREY}}>a resend carries the phone's own message id, so it's saved once</text></svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -328,4 +357,6 @@ export const QUESTION_FIGS={
 "pair-row":{C:PairRowFig,ar:640/240,title:()=>"ONE ROW PER PAIR"},
 "judge-flow":{C:JudgeFlowFig,ar:640/260,title:()=>"A SUBMISSION'S PATH"},
 "sandbox":{C:SandboxFig,ar:640/240,title:()=>"INSIDE ONE SANDBOX"},
+"chat-flow":{C:ChatFlowFig,ar:640/270,title:()=>"A MESSAGE'S PATH"},
+"chat-sync":{C:ChatSyncFig,ar:640/220,title:()=>"CATCHING UP BY NUMBER"},
 };

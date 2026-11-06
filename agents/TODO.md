@@ -88,7 +88,6 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q10 Chat app (medium) | ready | |
 | 4 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
 | 5 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
 | 6 | content | Q11–Q36, one per run, after the above | ready | |
@@ -236,6 +235,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Q10 Design a chat app, figures `chat-flow` and `chat-sync`
 - 2026-11-06 — Q09 Design a coding judge, figures `judge-flow` and `sandbox`
 - 2026-11-06 — Q08 Design dating app swipes, figures `swipe-flow` and `pair-row`
 - 2026-11-06 — Problems page shows each question's Lab challenge and stars; every question ends with "Next problem" and a link to Problems (article list gains `lab`; waits for Vercel)

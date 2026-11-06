@@ -1,0 +1,212 @@
+{
+  "section": "interview-questions",
+  "slug": "chat-app",
+  "group": "medium",
+  "no": "QUESTION // 10",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a chat app",
+  "dek": "Zotato Chat lets friends plan dinner together: one-to-one chats and small groups, messages that arrive in a blink, ticks that show they were delivered and read, and nothing lost when a phone drops off the network in a lift.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Phones keep a connection open to a gateway server, so messages can be pushed to them instantly. A registry remembers which gateway each person is on.",
+        "A message is saved before it's acknowledged. Then it's passed to the gateways of everyone in the conversation, or to a phone notification for anyone offline.",
+        "Every conversation numbers its messages: 41, 42, 43. That gives one order for everyone, and lets a phone that was offline ask for \"everything after 42\".",
+        "Phones attach their own id to each message they send, so a resend after a bad network is saved once, not twice.",
+        "Ticks are just more small messages: \"delivered up to 45\", \"read up to 45\"."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Send and receive text messages, one-to-one and in groups of up to a few hundred.",
+        "A message reaches an online person within a second; an offline person gets a notification and sees it when they open the app.",
+        "Delivered and read ticks; the same order for everyone in a conversation.",
+        "Out of scope here: photos and voice notes (see the photo-sharing question), calls, and end-to-end encryption, which we'll note where it changes things."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Under a second from send to the other phone, when both are online"
+        ],
+        [
+          "Durability",
+          "A message that got its first tick is never lost"
+        ],
+        [
+          "Order",
+          "Everyone in a conversation sees the same order"
+        ],
+        [
+          "Scale",
+          "1 crore people a day, 40 messages each, about 30 lakh online at the evening peak"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Messages: 1 crore × 40 is 40 crore a day, about 4,600 a second on average. Evenings run about three times that: plan for 15,000 a second.",
+        "Connections: 30 lakh phones online at the peak. If one gateway holds about a lakh open connections, that's 30 gateways; run 45 so one can fail without the rest filling up.",
+        "Storage: about 200 bytes a message is 80 GB a day, around 29 TB a year. Split by conversation from the start.",
+        "Registry: 30 lakh entries of \"person → gateway\" is a few hundred MB, comfortably in Redis."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Conversation: `id`, `members`, `last_seq` (the number of its newest message).",
+        "Message: `conversation_id`, `seq`, `sender_id`, `client_id` (the phone's own id for it), `text`, `sent_at`.",
+        "Receipt: per member and conversation, `delivered_up_to` and `read_up_to`.",
+        "Registry entry: person → gateway, with a short expiry that the gateway keeps renewing."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Over the open connection",
+      "x": "→ { \"send\": { \"conv\": \"c_7\", \"client_id\": \"m_ab12\", \"text\": \"8 pm?\" } }\n← { \"saved\": { \"client_id\": \"m_ab12\", \"seq\": 45 } }\n← { \"message\": { \"conv\": \"c_7\", \"seq\": 46, \"from\": \"u_42\", \"text\": \"done\" } }\n→ { \"read\": { \"conv\": \"c_7\", \"up_to\": 46 } }\n→ { \"sync\": { \"conv\": \"c_7\", \"after\": 42 } }",
+      "say": "Send a message and get back its number. Receive messages as they arrive. Say how far you've read. After reconnecting, ask for everything after the last number you have."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "chat-flow",
+      "cap": "The chat service numbers the message, saves it, and asks the registry where each other member is connected. Their gateway sends it down the open connection; anyone offline gets a phone notification instead."
+    },
+    {
+      "t": "p",
+      "x": "Gateways only hold connections: they don't decide anything, so any of them can take any phone. The chat service does the numbering and saving, and can be scaled separately from the number of connections."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Getting messages to the phone"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ASK EVERY FEW SECONDS",
+      "what": "The app asks the server \"anything new?\" every few seconds.",
+      "use": "Simple, works through any network.",
+      "avoid": "Messages arrive seconds late, and 30 lakh phones asking every 3 seconds is 10 lakh requests a second, almost all of them answered \"nothing new\". Batteries suffer too.",
+      "ex": "Ananya asks \"8 pm?\" and Rohit's reply shows up 3 seconds after he sent it.",
+      "like": "Walking to the letterbox every few minutes in case a letter came."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A CONNECTION THAT STAYS OPEN",
+      "what": "Each phone keeps one connection open to a gateway (a WebSocket). The server sends messages down it the moment they're saved. A registry maps each person to their gateway.",
+      "use": "Instant delivery, and no traffic when nothing is happening apart from a small heartbeat.",
+      "avoid": "Gateways hold state (open connections), so deploys and crashes drop lakhs of them at once. Phones must reconnect with a random delay, or they all come back in the same second.",
+      "ex": "Rohit's reply reaches Ananya's open connection a few hundred milliseconds after he taps Send.",
+      "like": "Keeping a phone line open with a friend, instead of calling every few minutes."
+    },
+    {
+      "t": "h2",
+      "x": "One order, and nothing lost"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The chat service gives each message the conversation's next number and saves it in one step. Send everything for a conversation to the same place, so two senders can't get the same number.",
+        "The first tick means \"saved\", and comes only after the save. If the phone gets no tick, it sends again with the same `client_id`; the server sees it already has that one and returns the same number.",
+        "Delivery to other members happens after the save. If a gateway is down at that moment, nothing is lost: the message is in storage, and the member will fetch it by number."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "chat-sync",
+      "cap": "Rohit's phone has messages up to #42, then drops off. When it reconnects it asks for everything after 42 and gets #43, #44 and #45, in order. A resend carries the phone's own message id, so it's saved once."
+    },
+    {
+      "t": "h2",
+      "x": "Groups"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A group message is saved once, then sent to each member's gateway. For a group of 200, that's 200 small deliveries, which is fine.",
+        "For very large groups (lakhs of members, like a broadcast channel), don't push to everyone: notify, and let phones fetch by number when they open it.",
+        "Ticks in groups: \"delivered\" when every member's phone has it, \"read\" when everyone has read it. Keep `delivered_up_to` and `read_up_to` per member and work it out from those."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A gateway crashes: its phones reconnect to others after a random short wait, register again, and sync each conversation from their last number.",
+        "The registry entry is stale (the phone moved gateways): the delivery fails, the old entry expires, and the phone's sync on reconnect fills the gap.",
+        "A storage machine is slow: sends wait for the save, because the first tick promises the message is safe. Show \"sending…\" rather than a false tick."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: open connections instead of asking repeatedly, save then deliver, notifications for offline people, a table of messages per conversation.",
+        "Senior: the registry, numbers per conversation, sync after reconnecting, resends saved once, ticks.",
+        "Lead: reconnect storms after a deploy, very large groups, splitting storage by conversation, where end-to-end encryption changes what the server can see."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"End-to-end encryption?\" The server stores and passes on messages it can't read. Numbering, ticks and sync still work; search and moderation on the server don't.",
+            "\"Show 'typing…'?\" Send it over the open connection without saving it. If it's lost, nobody minds.",
+            "\"Several devices for one person?\" Register each device; deliver to all of them; each syncs from its own last number.",
+            "\"Delete for everyone?\" A new message that says \"remove #45\", so phones that sync later get the delete in order.",
+            "\"How do you test it?\" Kill gateways in the middle of a busy group chat and check that every phone ends with the same messages, in the same order, with no duplicates."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Gateways are servers behind a load balancer, and the first lesson is the same as any server's: one isn't enough.",
+      "to": "lab/one-server",
+      "go": "Try the one-server challenge"
+    }
+  ]
+}
