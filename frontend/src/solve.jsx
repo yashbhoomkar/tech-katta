@@ -10,7 +10,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -32,6 +32,7 @@ const[st,set]=useState({}),[hide,setHide]=useState(false),[w,setW]=useState(save
 const[view,setView]=useState(tab==="a"?"solution":"description");
 const[narrow,setNarrow]=useState(()=>typeof matchMedia!=="undefined"&&matchMedia(narrowQ).matches);const pane=useRef(null);
 const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false);
+const[gen,setGen]=useState(0),[resetting,setResetting]=useState(false),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0);
 const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useState(null),[hints,setHints]=useState(()=>usedHints(slug)),[subs,setSubs]=useState(()=>readSubs(slug));
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
@@ -42,9 +43,20 @@ useEffect(()=>{setView(tab==="a"?"solution":"description")},[tab,slug]);
 useEffect(()=>{if(view==="solution")return readArticle("interview-questions",slug)},[view,slug]);
 useEffect(()=>{setCanvas(false);if(pane.current)pane.current.scrollTop=0},[view,slug]);
 useEffect(()=>{try{localStorage.setItem(W_KEY,String(w))}catch{}},[w]);
+// Reset: the Lab unmounts first (it saves the canvas as it goes), then this design is put back to the
+// problem's starting design, then a fresh Lab opens on it.
+useEffect(()=>{if(!resetting||!st.a?.practice)return;try{const raw=JSON.parse(localStorage.getItem(STORE_KEY));const d=raw?.designs?.["q-"+slug]||Object.values(raw?.designs||{}).find(x=>x&&x.problem===slug);
+if(d){d.nodes=structuredClone(st.a.practice.start.nodes);d.edges=structuredClone(st.a.practice.start.edges);d.credit={spent:0,hours:0};d.updated=Date.now();localStorage.setItem(STORE_KEY,JSON.stringify(raw))}}catch{}
+design.current=null;setRes(null);setGen(g=>g+1);setResetting(false)},[resetting]);// eslint-disable-line
+// A stopwatch, like an interview's clock: start, pause, carry on.
+useEffect(()=>{if(!clock.on)return;const t=setInterval(()=>tick(x=>x+1),1000);return()=>clearInterval(t)},[clock.on]);
+useEffect(()=>{setClock({on:false,acc:0,at:0})},[slug]);
 const saveAns=v=>{setAns(v);const all=read(ANSWERS);all[slug]={...v,updated:Date.now()};write(ANSWERS,all)};
 const openHint=()=>{const n=hints+1;setHints(n);const all=read(HINTS);all[slug]=n;write(HINTS,all)};
-const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1];
+const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1],prev=i>0?qs[i-1]:null;
+const secs=Math.floor((clock.acc+(clock.on?Date.now()-clock.at:0))/1000),mmss=`${String(Math.floor(secs/60)).padStart(2,"0")}:${String(secs%60).padStart(2,"0")}`;
+const toggleClock=()=>setClock(c=>c.on?{on:false,acc:c.acc+Date.now()-c.at,at:0}:{...c,on:true,at:Date.now()});
+const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setResetting(true)};
 const drag=e=>{e.preventDefault();const x0=e.clientX,w0=w;const mv=ev=>setW(Math.min(maxW(),Math.max(MIN,w0+ev.clientX-x0)));const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)};
 const key=e=>{const d=e.key==="ArrowLeft"?-24:e.key==="ArrowRight"?24:0;if(d){e.preventDefault();setW(v=>Math.min(maxW(),Math.max(MIN,v+d)))}};
 if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="d-desc">{s.missing} <a href="#problems">{s.back}</a></p>:<LoadError what="this problem" retry={load}/>}</section>;
@@ -82,8 +94,9 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 {!narrow&&!hide&&<div className="sv-split" role="separator" aria-orientation="vertical" aria-label={s.resize} aria-valuemin={MIN} aria-valuemax={maxW()} aria-valuenow={w} tabIndex={0} onPointerDown={drag} onKeyDown={key}/>}
 <div className="sv-lab">
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
-<span className="sv-gap"/>{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
-{showLab&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug} problem={{id:slug,name:a.title,start:P?.start}} onDesign={d=>{design.current=d}}/></Suspense>}
+<span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
+<span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset} disabled={resetting}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
+{showLab&&!resetting&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start}} onDesign={d=>{design.current=d}}/></Suspense>}
 {(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}

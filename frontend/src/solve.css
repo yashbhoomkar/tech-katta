@@ -52,3 +52,6 @@
 /* phones: Run and Submit stay at the bottom of the screen; the canvas and results show in the Canvas tab */
 @media(max-width:900px){.solve{padding-bottom:56px}.solve:not(.v-canvas) .sv-lab{display:block}.sv-console{position:static;max-height:none;box-shadow:none}.sv-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;height:56px;padding:0 12px;border-top:1px solid var(--line);border-bottom:0;background:#fff}.sv-run,.sv-submit{height:40px;flex:1}.sv-gap{display:none}.solve:not(.v-canvas) .sv-console{display:none}}
 .solve .lab-ch-btn{display:none}
+.sv-nav{display:flex;gap:2px;margin-left:4px}.sv-nav a,.sv-nav span{display:grid;place-items:center;width:28px;height:28px;font-size:18px;line-height:1;color:#3a4654;text-decoration:none;border:1px solid transparent}.sv-nav a:hover{border-color:var(--line);background:#fff;color:var(--blue)}.sv-nav span{color:#c9d0da}
+.sv-clock,.sv-reset{height:30px;padding:0 10px;border:1px solid var(--line);background:#fff;font:600 12px var(--mono);color:#3a4654;cursor:pointer}.sv-clock.on{color:var(--blue);border-color:var(--blue)}.sv-reset:hover,.sv-clock:hover{color:var(--blue)}
+@media(max-width:900px){.sv-nav,.sv-clock,.sv-reset{display:none}}
