@@ -37,6 +37,11 @@ strike items here at any time; agents follow the owner's edits.
 - Ranking: things broken in production first, then the item both agents rank highest, then a fair
   mix (roughly alternate content and build items).
 
+## Paused (owner, 2026-11-07 01:00 IST)
+
+The owner said: don't trigger the agents' cycles for now. Don't start or chain a cycle, and don't create a
+backup schedule, until the owner says so here or in a session.
+
 ## How cycles run now (owner approved, 2026-11-06)
 
 - **No debate every cycle.** Re-plan (both agents propose and critique) only every 5th cycle, or when a
@@ -64,7 +69,9 @@ strike items here at any time; agents follow the owner's edits.
    repo (both are public; only the SHA-256 hash in the code). Never force-push.
 3. Interview Questions: cover the same problem topics as well-known prep sites, but every word,
    number and example is our own (Zotato, Indian scale). Never copy or paraphrase another site's text
-   and never open or use premium/paid content.
+   and never open or use premium/paid content. **Every new question ships with its `practice` test suite**
+   (tests, rubric, hints, a reference that passes, wrong designs that fail; see `content/README.md`);
+   `cd frontend && npm test` checks the calibration and fails if a question has none.
 4. Deploys: **content items** (articles, figures, copy) merge on their own when CodeQL and
    "Test and build frontend" are green. **Build items** merge on their own only when green AND they
    don't touch sign-in, sessions, cookies, consent, admin, the data model, secrets, the deploy
@@ -136,6 +143,8 @@ unverified, not known missing.
 - #216: `4c78226232b3dbbd210a24d77b45b5567c7bc790`, `680fa62609ff0234dfd208e8003e13625ef63cf6`, merge `05be25dd2a22bc96152981fe604bfe5bd2361890`
 - #217: `cfcf4d0c9ccb9ce144419ee1fa2ea239c8886488`, `3442440f29c0b26e5dedf45be1ac99ef4684161c`, `2527493434df786bbbe168c7999d979b7f530dc6`, merge `b718f8616cc01af3b0c5a86be7786586fc944b20`
 - #218: `cc7986651024342e4e9bce8db59c6dfa31cfb6c8`, `1378cee746b4a050a954b4bb189ec0e282b1ca3b`, merge `863069bb65220b07f749a9a322dd67af4daa7300`
+- #219: `007e38d2d25e96505d4ac0d3bdeede1192d0d9f5`, `1ea2115146681a3e2d8e19fc340f145f42ff8775`, merge `af9d7b4d7ba3bdd017557e815514141489d28635`
+- #220: `b735e6760ea9ba91a9c4aae9acfd7429b8c48164`, `e8b7e8fd368f5a6554f2dca17badefe1dd6aa38a`, `053816a2dcce4e13f6862ac8feab39b6346caecd`, merge `c9563216957ed0235606416a920ef06cfea2aced` (frontend + backend)
 
 ## Context repo pending
 

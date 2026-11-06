@@ -41,7 +41,10 @@ const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.len
 export function buildBodies({ site, examples, articles, lab }) {
   const example = examples[site.example];
   const lists = new Map();
-  const full = new Map(articles.map((a) => [a.slug, { ...a, example }]));
+  // A problem's reference and wrong designs only calibrate its tests (frontend judge.test.js); they are
+  // not served, so the passing design isn't one request away.
+  const served = (a) => (a.practice ? { ...a, practice: (({ reference, wrong, ...rest }) => rest)(a.practice) } : a);
+  const full = new Map(articles.map((a) => [a.slug, { ...served(a), example }]));
   return {
     // How much there is, for the landing page ("10 Interview Questions"): counted from the release, never typed by hand.
     site: { ...site, example, counts: {
