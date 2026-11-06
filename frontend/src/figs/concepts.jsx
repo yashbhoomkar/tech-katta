@@ -133,6 +133,33 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`brkt${uid}`}><tit
 <Glow x={400} y={48} w={230} h={24} t0={.33} t1={.55} dur={D}/><Dot x1={480} x2={480} y={76} y2={184} t0={.55} t1={.63} dur={D}/>
 <Glow x={400} y={188} w={230} h={24} t0={.63} t1={.8} dur={D}/><Dot x1={394} x2={196} y={197} y2={139} t0={.8} t1={.9} dur={D}/><Glow x={0} y={118} w={190} h={24} t0={.9} t1={.99} dur={D}/></g>}</svg>}
 
+// Consensus, FIG: a network split. Five machines, three in Mumbai and two in Hyderabad. The link between
+// the cities breaks: the three still make a majority and keep accepting writes; the two can't, so they wait.
+function QuorumSplitFig({still,uid=""}){const D="10s";const X=[10,130,250,400,520];
+const city=(i)=>i<3?"Mumbai":"Hyderabad";
+const after=<g><line x1={370} y1={40} x2={370} y2={190} stroke={RED} strokeWidth="2" strokeDasharray="6 4"/><text x={370} y={30} textAnchor="middle" className="fl" style={{fill:RED}}>link down</text>
+<text x={130} y={170} textAnchor="middle" className="fb" style={{fill:BLUE}}>3 of 5: a majority</text><text x={130} y={188} textAnchor="middle" className="fl">elects a leader, keeps taking writes</text>
+<text x={505} y={170} textAnchor="middle" className="fb" style={{fill:RED}}>2 of 5: no majority</text><text x={505} y={188} textAnchor="middle" className="fl">refuses writes and waits</text></g>;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`qst${uid}`}><title id={`qst${uid}`}>Five machines that must agree: three in Mumbai and two in Hyderabad. The link between the cities breaks. The three in Mumbai are still a majority of five, so they elect a leader and keep accepting writes. The two in Hyderabad are not a majority, so they refuse writes and wait. The two sides can never both decide.</title>
+{X.map((x,i)=><g key={x}><SBox x={x} y={100} w={110} t={`Machine ${i+1}`} blue={i<3}/><text x={x+55} y={130} textAnchor="middle" className="fl">{city(i)}</text></g>)}
+{still?after:<Show t0={.25} t1={.98} dur={D}>{after}</Show>}
+{!still&&<g aria-hidden="true"><Glow x={10} y={88} w={350} h={24} t0={.4} t1={.98} dur={D}/></g>}</svg>}
+
+// Consensus, FIG: an election. A leads in term 4 and sends heartbeats. A stops. B's random wait runs out
+// first: it starts term 5, votes for itself and asks C, who hasn't voted in term 5 yet and says yes. Two of
+// three is a majority, so B leads term 5.
+function ElectionFig({still,uid=""}){const M=`el${uid}`,D="12s";
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`elt${uid}`}><title id={`elt${uid}`}>An election among three machines. A is the leader in term 4 and sends heartbeats. A stops. B's random wait runs out first, so B starts term 5, votes for itself and asks C for its vote. C has not voted in term 5 yet, so it says yes. Two votes out of three is a majority, and B leads term 5. If A comes back, it sees term 5 and steps down.</title><Mark m={M}/>
+<text x={0} y={60} className="fb">A</text><text x={0} y={130} className="fb">B</text><text x={0} y={200} className="fb">C</text>
+<SBox x={30} y={56} w={160} t="leader · term 4"/>{step(.15,<text x={210} y={60} className="fb" style={{fill:RED}}>✕ stops</text>)}
+<SBox x={30} y={126} w={160} t="follower"/><SBox x={30} y={196} w={160} t="follower"/>
+{step(.3,<text x={210} y={118} className="fl">no heartbeat for 210 ms</text>)}{step(.3,<text x={30} y={228} className="fl">waiting 280 ms…</text>)}
+{step(.45,<SBox x={210} y={138} w={190} t="term 5: I vote me. You?" blue/>)}
+{step(.55,<Line x1={305} y1={152} x2={305} y2={190} m={M}/>)}{step(.62,<text x={315} y={200} className="fl">C: yes, my first vote in term 5</text>)}
+{step(.75,<SBox x={450} y={126} w={180} t="leader · term 5" blue/>)}{step(.85,<text x={450} y={60} className="fl">if A comes back: sees term 5,</text>)}{step(.85,<text x={450} y={76} className="fl">steps down</text>)}
+{!still&&<g aria-hidden="true"><Dot x1={190} x2={190} y={70} y2={112} t0={.02} t1={.1} dur={D}/><Glow x={450} y={114} w={180} h={24} t0={.78} t1={.98} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const CONCEPT_FIGS={
@@ -144,4 +171,6 @@ export const CONCEPT_FIGS={
 "pacelc":{C:PacelcFig,ar:640/290,title:()=>"THE PRICE OF EACH COPY YOU WAIT FOR"},
 "slow-call":{C:SlowCallFig,ar:640/250,title:()=>"ONE SLOW CALL, EVERY WORKER STUCK"},
 "breaker":{C:BreakerFig,ar:640/250,title:()=>"A CIRCUIT BREAKER'S THREE STATES"},
+"quorum-split":{C:QuorumSplitFig,ar:640/220,title:()=>"THREE OF FIVE KEEP GOING"},
+"election":{C:ElectionFig,ar:640/240,title:()=>"A NEW LEADER IN 300 MS"},
 };
