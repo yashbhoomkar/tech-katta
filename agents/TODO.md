@@ -45,7 +45,8 @@ strike items here at any time; agents follow the owner's edits.
   check is the scripts (site sweep, chaos, the item's own check), not both agents.
 - **Push each PR once, after review** (fixes from review go in before the first push), so an item
   costs about 4 Vercel deployments. `tech-katta-status` skips builds unless `status-page/` changed.
-- **At most 8 cycles a day** (UTC). After the 8th, stop chaining; the backup schedule picks up the next day.
+- **No daily cap** (owner, 2026-11-06, 13:15 IST: "We need to rapidly build"). Chain cycles back to back; still stop when
+  only cosmetic or owner-gated items are left.
 - **Times for the owner in IST** (owner, 2026-11-06): every time told to the owner is in IST (UTC+5:30), never UTC.
 - **Don't wait for Vercel** (owner, 2026-11-06). If Vercel can't deploy (daily limit), keep building,
   testing locally and merging on green checks. When Vercel deploys again, the first cycle live-checks
@@ -88,9 +89,8 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
-| 2 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
-| 3 | content | Q11–Q36, one per run, after the above | ready | |
+| 1 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
+| 2 | content | Q11–Q36, one per run, after the above | ready | |
 | — | build | Lab: a way to model "one database that can't be split" (e.g. a challenge setting that allows one database only) | idea | would make a fair ticket-booking waiting-room challenge (Q05); without it, two big databases beat a queue for a short sale. Not worth it alone |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
@@ -235,6 +235,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Landing page "What's inside": questions, Practice, the Lab, articles, with live counts from /v1/site; hero reworded
 - 2026-11-06 — Q10 Design a chat app, figures `chat-flow` and `chat-sync`
 - 2026-11-06 — Q09 Design a coding judge, figures `judge-flow` and `sandbox`
 - 2026-11-06 — Q08 Design dating app swipes, figures `swipe-flow` and `pair-row`

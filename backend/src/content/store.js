@@ -42,7 +42,13 @@ export function buildBodies({ site, examples, articles, lab }) {
   const lists = new Map();
   const full = new Map(articles.map((a) => [a.slug, { ...a, example }]));
   return {
-    site: { ...site, example },
+    // How much there is, for the landing page ("10 Interview Questions"): counted from the release, never typed by hand.
+    site: { ...site, example, counts: {
+      questions: articles.filter((a) => a.section === 'interview-questions' && a.group !== 'start').length,
+      concepts: articles.filter((a) => a.section === 'concepts').length,
+      components: articles.filter((a) => a.section === 'components').length,
+      challenges: (lab?.challenges || []).length,
+    } },
     lab,
     list(section) {
       if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map(summary) });
