@@ -6,13 +6,13 @@
   "tag": "MEDIUM",
   "date": "6 Nov 2026",
   "title": "Design a payment system",
-  "dek": "A customer pays ₹480 for an order by UPI or card, through a payment gateway. Charge them exactly once, never tell them \"failed\" when the money actually went, and keep books that match the bank's to the rupee.",
+  "dek": "A customer pays ₹480 for an order by UPI or card, through a payment gateway. Charge them exactly once, never tell them \"failed\" when the money actually went, and keep books that match the bank's to the paisa.",
   "body": [
     {
       "t": "tldr",
       "items": [
         "You don't move the money yourself: a payment gateway talks to UPI and the card networks. Your job is to ask once, track the answer, and keep correct books.",
-        "One payment per order attempt, with the order as its idempotency key, on your API and on the gateway's. A double tap or a retry finds the same payment instead of making a second.",
+        "One payment per order attempt, with the order as its idempotency key on your API, and passed to the gateway as your reference. A double tap or a retry finds the same payment instead of making a second.",
         "A timeout doesn't mean failed. Mark it unknown, ask the gateway until it settles, and never invite the person to pay again while it's unknown.",
         "Record every money movement as entries in a ledger that are only ever added, never edited, and that always balance.",
         "Every day, match the gateway's settlement report against your ledger. Anything that doesn't match goes to a person, not a script."
@@ -82,7 +82,7 @@
       "t": "list",
       "items": [
         "Payment: `id`, `order_id`, `idempotency_key`, `amount` (in paise, an integer), `method`, `gateway`, `gateway_ref`, `status` (created, pending, succeeded, failed, unknown, refunded), `updated_at`.",
-        "Ledger entry: `id`, `payment_id`, `account` (customer, Zotato's gateway receivable, restaurant payable…), `debit` or `credit`, `amount`, `at`. Entries for one movement always sum to zero.",
+        "Ledger entry: `id`, `payment_id`, `account` (customer, Zotato's gateway receivable, restaurant payable…), `debit` or `credit`, `amount`, `at`. Entries for one movement always balance.",
         "Refund: `id`, `payment_id`, `amount`, `status`, `gateway_ref`.",
         "Webhook log: every message from the gateway, as received, with its signature check result."
       ]
@@ -125,14 +125,14 @@
       "what": "Grey out the button after the first tap and hope for the best.",
       "use": "Stops the simplest double tap.",
       "avoid": "It does nothing for a retry after a network error, a second phone, or the app being reopened. Each of those creates a new charge.",
-      "ex": "Ananya's 4G drops after she approves in her UPI app. The app retries, a second request reaches the gateway, and she's charged ₹960.",
+      "ex": "Ananya's 4G drops after she approves in her UPI app. The app retries, a second request shows up in her UPI app, she approves it thinking the first failed, and pays ₹960.",
       "like": "Telling a cashier \"I've already paid\" with no receipt."
     },
     {
       "t": "type",
       "name": "Better",
       "kind": "ONE PAYMENT PER ORDER ATTEMPT, BY KEY",
-      "what": "The idempotency key is the order (and attempt number). Creating a payment with a key that exists returns the existing payment. Pass the same key or reference to the gateway, which ignores repeats too.",
+      "what": "The idempotency key is the order (and attempt number). Creating a payment with a key that exists returns the existing payment. Send your order id to the gateway as its merchant reference (and an idempotency key where the gateway offers one), and look it up there before any retry.",
       "use": "Any number of retries, from any device, lead to one payment and at most one charge.",
       "avoid": "A real second attempt (the first failed) needs a new attempt number, and only after the first is known to have failed.",
       "ex": "The retry for order #91 finds pay_3, already pending, and simply shows its status.",
@@ -162,10 +162,10 @@
     {
       "t": "list",
       "items": [
-        "Never keep a balance you change in place. Record each movement as ledger entries that are only added: ₹480 out of the customer, ₹480 into what the gateway owes Zotato. A refund is new entries the other way, not an edit.",
-        "Entries for one movement always add up to zero. A daily check that the whole ledger sums to zero catches bugs early.",
+        "Never keep a balance you change in place. Record each movement as ledger entries that are only added: a ₹480 debit to \"gateway owes Zotato\" and a matching ₹480 credit to order #91's account. A refund is new entries the other way, not an edit.",
+        "Entries for one movement always balance: debits equal credits. A daily check that the whole ledger balances catches bugs early.",
         "Store amounts as whole paise, never as decimals, so ₹480.10 never turns into ₹480.0999.",
-        "Reconcile every day: the gateway's settlement report lists what it collected and paid out. Match it to the ledger, payment by payment. Mismatches go to a queue for a person."
+        "Reconcile every day: the gateway's settlement report lists what it collected, its fee and GST, and what it paid into Zotato's bank. Match it to the ledger, payment by payment. Mismatches go to a queue for a person."
       ]
     },
     {
@@ -177,7 +177,7 @@
       "items": [
         "Check the signature on every webhook, and look the payment up by its gateway reference, never trust the amount in the message alone.",
         "Webhooks come late, twice and out of order. Save each one, answer quickly, and process it from the saved copy; moving from succeeded back to pending is ignored.",
-        "Never see or store card numbers: the gateway's page or SDK collects them and gives you a token. That keeps most card-security rules off your servers.",
+        "Never see or store card numbers: the gateway's page or SDK collects them and a saved card is kept as a network token, as RBI's card-on-file rules require. That keeps most of PCI DSS off your servers.",
         "A second gateway: if one is failing, new payments go to the other. A payment always stays with the gateway it started on."
       ]
     },

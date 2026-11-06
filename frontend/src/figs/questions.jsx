@@ -5,7 +5,7 @@ import React from"react";import{Dot,Box,Glow,Show,Mark}from"./parts.jsx";
 
 const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
-const SBox=({x,y,w=110,t,blue})=><g><rect x={x} y={y-12} width={w} height="24" fill={blue?"#f8faff":"#fff"} stroke={blue?BLUE:GREY}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
+const SBox=({x,y,w=110,t,blue,down})=><g><rect x={x} y={y-12} width={w} height="24" fill={down?"#fff5f4":blue?"#f8faff":"#fff"} stroke={down?RED:blue?BLUE:GREY} strokeDasharray={down?"4 3":undefined}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
 
 // Method, FIG: a 45-minute interview as a bar. Requirements 5, entities 2, API 5, high-level design 15,
 // deep dives 13, questions at the end 5. A marker walks the clock and the current step lights up.
