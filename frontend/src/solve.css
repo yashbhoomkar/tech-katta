@@ -20,7 +20,7 @@
 .sv-lab{position:relative}.sv-bar{display:flex;align-items:center;gap:8px;height:41px;border-bottom:1px solid var(--line);background:var(--surface);padding-right:8px}.sv-gap{flex:1}
 .sv-run,.sv-submit{height:30px;padding:0 14px;border:1px solid var(--blue);font:600 12px var(--mono);cursor:pointer}.sv-run{background:#fff;color:var(--blue)}.sv-submit{background:var(--blue);color:#fff}.sv-run:hover{background:#f8faff}.sv-submit:hover{background:#1f46b8}.sv-run:disabled,.sv-submit:disabled{opacity:.5;cursor:wait}
 /* results under the canvas */
-.sv-console{position:absolute;left:0;right:0;bottom:0;max-height:52%;overflow:auto;background:#fff;border-top:2px solid #1c2733;box-shadow:0 -6px 18px rgba(28,39,51,.08);z-index:6;padding:0 0 12px}
+.sv-console{position:absolute;left:0;right:0;bottom:0;max-height:42%;overflow:auto;background:#fff;border-top:2px solid #1c2733;box-shadow:0 -6px 18px rgba(28,39,51,.08);z-index:6;padding:0 0 12px}
 .sv-running{margin:0;padding:18px 16px;font:600 12px var(--mono);color:var(--muted)}
 .sv-v{position:sticky;top:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}.sv-v b{display:block;font-size:18px;letter-spacing:-.01em}.sv-v.good b{color:#1a7f37}.sv-v.bad b{color:#b42318}.sv-v small{display:block;margin-top:2px;font:500 11px var(--mono);color:var(--muted)}
 .sv-v button{border:0;background:none;font-size:16px;cursor:pointer;color:var(--muted);padding:4px 6px}
@@ -57,3 +57,4 @@
 @media(max-width:900px){.sv-nav,.sv-clock,.sv-reset{display:none}}
 .sv-server{margin:0;padding:8px 16px;border-bottom:1px solid var(--line);font:500 12px var(--mono);color:#3a4654;background:#f8faff}.sv-server b{color:#1a7f37}
 .sv-solved{color:#1a7f37}
+.sv-vbtns{display:flex;gap:2px}.sv-console.min{padding-bottom:0}.sv-console.min .sv-v{border-bottom:0}
