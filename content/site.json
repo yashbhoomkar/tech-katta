@@ -534,7 +534,19 @@
       "back": "Problems",
       "hide": "◀ Hide the problem",
       "show": "▶ Show the problem",
-      "missing": "This problem is no longer available."
+      "missing": "This problem is no longer available.",
+      "cols": [
+        "Status",
+        "#",
+        "Problem",
+        "Difficulty",
+        "Lab"
+      ],
+      "designed": "Designed on the canvas",
+      "tabQ": "Description",
+      "tabA": "Worked answer",
+      "tabCanvas": "Canvas",
+      "resize": "Drag to resize the panes"
     }
   },
   "inside": {
