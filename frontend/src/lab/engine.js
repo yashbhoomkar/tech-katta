@@ -15,7 +15,7 @@
 // the calls made along the way; success is the share of user requests that eventually succeed.
 //
 // Phase 2 components:
-//   Load Balancer: spreads requests over what it points at; billed per hour plus per LCU (load).
+//   Load Balancer: spreads requests over what it points at, skipping crashed targets (health checks); billed per hour plus per LCU (load).
 //   Cache: sits in front of a database (Server → Cache → Database). Reads it holds (hitPct) are
 //     answered by the cache; misses and every write (writePct) go on to the database. All queries
 //     touch the cache (writes update it), so it needs capacity for the full query rate.
@@ -134,7 +134,10 @@ const qpr = (comp, config) => comp.queriesPerRequest ? (config?.queriesPerReques
 function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
   const res = Object.fromEntries(nodes.map((n) => [n.id, { offered: 0, served: 0, dropped: 0, capacity: down.has(n.id) ? 0 : capacity(cat[n.type], n.config), utilisation: 0, latencyMs: 0, pathMs: 0, success: 1, cost: 0, reached: false, down: down.has(n.id), delivered: 0, writes: 0, hit: 0 }]));
   const flow = (node) => cacheFlow(cat.cache, node.config, Object.hasOwn(warm, node.id) ? warm[node.id] : 1);
-  const groups = (id) => { const g = new Map(); for (const to of out.get(id)) { const t = byId.get(to).type; if (!g.has(t)) g.set(t, []); g.get(t).push(to); } return [...g.values()]; };
+  // Load balancers and API gateways health-check what they point at: a crashed target gets no traffic
+  // while a healthy one of the same kind is left (if all are down, the requests fail as before).
+  const checks = (id) => byId.get(id).type === 'lb' || byId.get(id).type === 'apigw';
+  const groups = (id) => { const g = new Map(); for (const to of out.get(id)) { const t = byId.get(to).type; if (!g.has(t)) g.set(t, []); g.get(t).push(to); } return [...g.values()].map((x) => { if (!checks(id)) return x; const up = x.filter((to) => !down.has(to)); return up.length ? up : x; }); };
   for (const n of nodes) if (n.type === 'client') { res[n.id].offered = (n.config?.rps || 0) * factor; res[n.id].reached = true; }
   for (const id of order) {
     const r = res[id], node = byId.get(id), comp = cat[node.type];

@@ -154,13 +154,13 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
-function Canvas({lab,start,embedded,problem}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
+function Canvas({lab,start,embedded,problem,onDesign}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
 
 const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.challenges||[]).find(c=>c.id===start);
 // Opened on a problem (#problems/<slug>): its own design, id "q-<slug>" on every device, starting with just
 // the Clients; the visitor builds the rest. A deleted one is made again under a new id.
 if(problem){const pid="q-"+problem.id;const mine=s.designs[pid]?pid:Object.values(s.designs).filter(d=>d.problem===problem.id).sort((a,b)=>b.updated-a.updated)[0]?.id;if(mine){s.current=mine;return s}
-const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]={id,name:problem.name,updated:fresh?1:Date.now(),nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[],credit:{spent:0,hours:0},problem:problem.id};s.current=id;persistNew(lab,s.designs[id],id);return s}
+const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]={id,name:problem.name,updated:fresh?1:Date.now(),...(problem.start?structuredClone({nodes:problem.start.nodes,edges:problem.start.edges}):{nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[]}),credit:{spent:0,hours:0},problem:problem.id};s.current=id;persistNew(lab,s.designs[id],id);return s}
 // Opened on a challenge (the landing page, #lab/<id>): open this browser's latest design for it, or make
 // one from its start, without creating the example design too (QA H7).
 if(sc){const mine=Object.values(s.designs).filter(d=>d.challenge===start).sort((a,b)=>b.updated-a.updated)[0];if(mine){s.current=mine.id;return s}/* A challenge's untouched starting design has the same id on every device and the oldest possible
@@ -184,6 +184,8 @@ const same=k=>JSON.stringify(base[k]??null)===JSON.stringify(next[k]??null);if(l
 const d={...base,...next,updated:Date.now()};
 latest.designs[id]=d;if(!embedded)latest.current=storeRef.current.current;save(latest);setStore(s=>({...s,designs:{...latest.designs,[id]:d}}))},[lab,embedded]);
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>writeDesign(id),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
+// The problem workspace judges the design on the canvas as it is now (solve.jsx Run / Submit).
+useEffect(()=>{onDesign?.(fromFlow(nodes,edges))},[nodes,edges]);// eslint-disable-line
 const lastCredit=useRef(0);useEffect(()=>{const now=Date.now();if(now-lastCredit.current<2000)return;lastCredit.current=now;writeDesign(loaded.current)},[credit]);// eslint-disable-line
 useEffect(()=>{if(!running)writeDesign(loaded.current)},[running]);// eslint-disable-line
 useEffect(()=>{const flush=()=>writeDesign(loaded.current);addEventListener("pagehide",flush);return()=>{removeEventListener("pagehide",flush);flush()}},[writeDesign]);
@@ -258,6 +260,6 @@ fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapT
 
 // Signed in, the account's designs are merged in before the Lab opens (at most 4 s), so a stale copy
 // in this browser is never what gets edited.
-export default function Lab({challenge,embedded,problem}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge,embedded,problem,onDesign}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the Lab" retry={go}/>;if(!st.lab)return <Loading label="Loading the Lab"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge} embedded={embedded} problem={problem}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}

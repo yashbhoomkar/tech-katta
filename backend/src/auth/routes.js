@@ -75,12 +75,13 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
     request.on('end', () => { if (over) return reject(new AuthError('too_large')); try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(new AuthError('bad_json')); } });
     request.on('error', reject);
   });
-  // Lab data as stored: only real challenge ids for stars/goals, only "tour:…" flags (keys become
+  // Lab data as stored: only real challenge ids for stars/goals, only "tour:…", "practice:<slug>" and
+  // "solved:<slug>" flags (keys become
   // MongoDB field names, so nothing else gets through).
   const storable = (data) => {
     const ids = new Set((labCatalogue().challenges || []).map((c) => c.id));
     const pick = (o, ok) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => ok(k)));
-    return { ...data, progress: { steps: pick(data.progress.steps, (k) => /^tour:[a-z-]{1,40}$/.test(k)), stars: pick(data.progress.stars, (k) => ids.has(k)), goals: pick(data.progress.goals, (k) => ids.has(k)) } };
+    return { ...data, progress: { steps: pick(data.progress.steps, (k) => /^tour:[a-z-]{1,40}$/.test(k) || /^(practice|solved):[a-z0-9][a-z0-9-]{0,63}$/.test(k)), stars: pick(data.progress.stars, (k) => ids.has(k)), goals: pick(data.progress.goals, (k) => ids.has(k)) } };
   };
 
   return async function handle(request, response, pathname) {

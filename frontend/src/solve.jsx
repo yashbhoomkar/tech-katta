@@ -1,53 +1,148 @@
-// The problem workspace, LeetCode-style, for every Interview Question (not the "Start here" page).
-// Left: tabs Description (the article's "1. Requirements" and "2. The numbers that matter") and Worked
-// answer (the whole article). Right: the Lab canvas with every component, opened on this question's own
-// design (Lab `problem`, id q-<slug>). The tabs are routes, so links, Back and the top tabs agree:
-//   #problems/<slug>             Description          #interview-questions/<slug>   Worked answer
-// The divider drags (or arrow keys) and the width is remembered. Below 900 px one pane shows at a time,
-// with a third tab, Canvas. Copy: site.json problems.solve.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import"./solve.css";
+// The problem workspace: LeetCode for system design. Every Interview Question (not "Start here") opens
+// here from Problems or Interview Questions.
+//   Left pane, tabs: Description (requirements, numbers, the example tests) · Your answer (functional and
+//   non-functional requirements, estimates, APIs; graded on Submit) · Hints (one at a time, 3 points
+//   each) · Solution (the article) · Submissions (this browser's history).
+//   Right: the Lab canvas on the question's own design (Lab `problem`, id q-<slug>), with Run (the
+//   example tests) and Submit (every test, plus the written steps, scored out of 100) above it and the
+//   results below. The judge is judge/judge.js; the tests and rubric are the article's `practice`.
+// Routes: #problems/<slug> opens on Description, #interview-questions/<slug> on Solution, so links,
+// Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
+// with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
+// goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
 return a?body.slice(a[0],z&&z[0]>a[0]?z[0]:undefined).filter(b=>b.t!=="fig"&&b.t!=="lab"):[]};
+
 
 const W_KEY="tk-solve-w",MIN=320;
 const savedW=()=>{let w=0;try{w=Number(localStorage.getItem(W_KEY))}catch{}return w>=MIN?w:460};
 // the canvas keeps at least 880 px (its toolbar and panels need it) beside the folded sidebar
 const maxW=()=>Math.max(MIN,Math.min(Math.round(innerWidth*.6),innerWidth-56-880));
 const narrowQ="(max-width:900px)";
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const pct=n=>(n>=99.99?n.toFixed(3):n>=99?n.toFixed(2):n.toFixed(1)).replace(/\.?0+$/,"")+"%";
+const when=t=>new Date(t).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const STEPS={requirements:"Requirements",estimates:"Estimates",api:"API",design:"Design",deep:"Deep dive"};
 
 export default function Solve({slug,tab,s,articles,Block,Article,prep,Lab}){
 const[st,set]=useState({}),[hide,setHide]=useState(false),[w,setW]=useState(savedW),[canvas,setCanvas]=useState(false);
-useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
+const[view,setView]=useState(tab==="a"?"solution":"description");
 const[narrow,setNarrow]=useState(()=>typeof matchMedia!=="undefined"&&matchMedia(narrowQ).matches);const pane=useRef(null);
+const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false);
+const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useState(null),[hints,setHints]=useState(()=>usedHints(slug)),[subs,setSubs]=useState(()=>readSubs(slug));
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
+useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
 const load=()=>{set({});getJSON(`/v1/articles/${slug}`).then(a=>set({a:prep(a)}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[slug]);
-useEffect(()=>{if(tab==="a")return readArticle("interview-questions",slug)},[tab,slug]);
-useEffect(()=>{setCanvas(false);if(pane.current)pane.current.scrollTop=0},[tab,slug]);
+useEffect(()=>{getJSON("/v1/lab").then(setLab,()=>{})},[]);
+useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
+useEffect(()=>{setView(tab==="a"?"solution":"description")},[tab,slug]);
+useEffect(()=>{if(view==="solution")return readArticle("interview-questions",slug)},[view,slug]);
+useEffect(()=>{setCanvas(false);if(pane.current)pane.current.scrollTop=0},[view,slug]);
 useEffect(()=>{try{localStorage.setItem(W_KEY,String(w))}catch{}},[w]);
+const saveAns=v=>{setAns(v);const all=read(ANSWERS);all[slug]={...v,updated:Date.now()};write(ANSWERS,all)};
+const openHint=()=>{const n=hints+1;setHints(n);const all=read(HINTS);all[slug]=n;write(HINTS,all)};
 const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1];
-// dragging the divider
 const drag=e=>{e.preventDefault();const x0=e.clientX,w0=w;const mv=ev=>setW(Math.min(maxW(),Math.max(MIN,w0+ev.clientX-x0)));const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)};
 const key=e=>{const d=e.key==="ArrowLeft"?-24:e.key==="ArrowRight"?24:0;if(d){e.preventDefault();setW(v=>Math.min(maxW(),Math.max(MIN,v+d)))}};
 if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="d-desc">{s.missing} <a href="#problems">{s.back}</a></p>:<LoadError what="this problem" retry={load}/>}</section>;
 if(!st.a)return <section className="d-panel"><Loading label={qs[i]?.title}/></section>;
-const a=st.a,body=statement(a.body),ch=a.body.find(b=>b.t==="lab"&&/^lab\/./.test(b.to));const showLab=!narrow||canvas;
-const tabs=[["q",s.tabQ,`#problems/${slug}`],["a",s.tabA,`#interview-questions/${slug}`]];
+const a=st.a,P=a.practice,body=statement(a.body),ch=a.body.find(b=>b.t==="lab"&&/^lab\/./.test(b.to));const showLab=!narrow||canvas;
+// Run: the example tests. Submit: every test, the written steps, a score, a saved submission.
+const go=kind=>{if(!P||!lab||busy)return;if(narrow)setCanvas(true);setBusy(true);setRes(null);
+setTimeout(()=>{const d=design.current||P.start;let out;try{const j=judge(d,lab,P,{sample:kind==="run"});out={kind,j};
+if(kind==="submit"){const g=gradeAnswer(ans,P.rubric),sc=score(g,j,hints);out.g=g;out.sc=sc;setGraded(g);
+const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints};
+const all=read(SUBS);all[slug]=[sub,...readSubs(slug)].slice(0,30);write(SUBS,all);setSubs(all[slug]);
+markStep("practice:"+slug);if(j.verdict==="accepted")markStep("solved:"+slug)}}
+catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false)},30)};
+const tabs=[["description","Description",`#problems/${slug}`],["answer","Your answer"],["hints",`Hints${P?` (${P.hints.length})`:""}`],["solution",s.tabA,`#interview-questions/${slug}`],["subs",`Submissions${subs.length?` (${subs.length})`:""}`]];
 return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-canvas":"")} style={{"--qw":w+"px"}}>
-<div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=><a key={id} role="tab" href={href} aria-selected={!canvas&&tab===id} className={!canvas&&tab===id?"on":""} onClick={()=>setCanvas(false)}>{t}</a>)}
+<div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</button>)}
 {narrow&&<button type="button" role="tab" aria-selected={canvas} className={canvas?"on":""} onClick={()=>setCanvas(true)}>{s.tabCanvas}</button>}</div>
-<section ref={pane} className="sv-q" aria-label={tab==="a"?s.tabA:s.tabQ} hidden={(hide&&!narrow)||(narrow&&canvas)}>
-{tab==="a"?<Article a={a} pane/>:<>
+<section ref={pane} className="sv-q" aria-label={tabs.find(t=>t[0]===view)?.[1]} hidden={(hide&&!narrow)||(narrow&&canvas)}>
+{view==="solution"?<Article a={a} pane/>
+:view==="answer"?<Answer P={P} ans={ans} save={saveAns} g={graded}/>
+:view==="hints"?<Hints P={P} used={hints} open={openHint}/>
+:view==="subs"?<Subs subs={subs}/>
+:<>
 <nav className="crumbs" aria-label="Breadcrumb"><a href="#problems">{s.back}</a><span aria-hidden="true">/</span><span>{a.no.replace(/^QUESTION\s*\/\/\s*/,"Q")}</span></nav>
 <label>{s.eyebrow} · {a.tag}</label><h1 id="sv-title">{a.title}</h1><p className="sv-dek">{a.dek}</p>
 <p className="sv-how">{s.how}</p>
 <div className="sv-body">{body.map((b,k)=><Block key={k} b={b} i={k}/>)}</div>
-<div className="sv-links"><a className="sv-answer" href={`#interview-questions/${slug}`}>{s.answer} →</a>
+{P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>
+{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p><ul>{t.checks.map(c=><li key={c.label}>{c.label}</li>)}</ul></div>)}
+<p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: spikes, failures and the bill.</p></section>}
+<div className="sv-links">
 {ch&&<a href={`#${ch.to}`}>{s.scored} →</a>}
 {next&&<a href={`#problems/${next.slug}`}><small>{s.next}</small> {next.title} →</a>}</div></>}
 </section>
 {!narrow&&!hide&&<div className="sv-split" role="separator" aria-orientation="vertical" aria-label={s.resize} aria-valuemin={MIN} aria-valuemax={maxW()} aria-valuenow={w} tabIndex={0} onPointerDown={drag} onKeyDown={key}/>}
-<div className="sv-lab">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
-{showLab&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug} problem={{id:slug,name:a.title}}/></Suspense>}</div>
+<div className="sv-lab">
+<div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
+<span className="sv-gap"/>{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
+{showLab&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug} problem={{id:slug,name:a.title,start:P?.start}} onDesign={d=>{design.current=d}}/></Suspense>}
+{(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
+</div>
 </div>}
+
+// ---- Results under the canvas ----
+function Console({busy,res,close,hint,answer}){
+if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
+const{kind,j,g,sc,crash}=res;
+if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
+const acc=j.verdict==="accepted",err=j.verdict==="error";
+return <section className="sv-console" aria-live="polite" aria-label="Test results">
+<header className={"sv-v "+(acc?"good":"bad")}><div><b>{err?"Can't run the tests":acc?(kind==="run"?"Example tests passed":"Accepted"):"Wrong design"}</b>
+<small>{err?j.first?.error:`${j.passed} / ${j.total} ${kind==="run"?"example ":""}tests passed`}{j.metrics&&!err?` · worst availability ${pct(j.metrics.availability)} · p99 ${fmt(j.metrics.p99)} ms · up to $${fmt(j.metrics.avgMonthly)}/month`:""}</small></div>
+<button type="button" onClick={close} aria-label="Close results">✕</button></header>
+{sc&&<div className="sv-score"><b>{sc.total}<small>/100</small></b><ul>
+<li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
+<li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
+{g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
+{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.error}</small></summary>
+<p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
+<ul className="sv-checks">{r.checks.map(c=><li key={c.label} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul></details></li>)}</ol>}
+{!acc&&!err&&<p className="sv-nudge">Stuck? <button type="button" className="sv-linkbtn" onClick={hint}>Open a hint</button> (3 points each).</p>}
+</section>}
+
+// ---- Your answer: the written steps of an interview, graded on Submit ----
+const NFR=[["availability","Availability target","%","99.9"],["p99","p99 latency target","ms","200"],["readsPerWrite","Reads for every write","×","100"]];
+function Answer({P,ans,save,g}){
+if(!P)return <p className="d-desc">This problem has no graded answer yet.</p>;
+const r=P.rubric,set=(k,v)=>save({...ans,[k]:v}),setIn=(k,id,v)=>save({...ans,[k]:{...(ans[k]||{}),[id]:v}});
+const api=Array.isArray(ans.api)&&ans.api.length?ans.api:[{method:"GET",path:""}];
+const setApi=(i,k,v)=>set("api",api.map((x,j)=>j===i?{...x,[k]:v}:x));
+const mark=x=>g?<i className={"sv-mk "+(x?"ok":"no")} aria-label={x?"correct":"not yet"}>{x?"✓":"✕"}</i>:null;
+const nf=id=>g?.nfr.find(x=>x.id===id);
+return <div className="sv-ans">
+<p className="sv-brief">Write it the way you would in the interview, then press Submit: the steps below are checked along with your design. {g?"Marks show your last submission.":""}</p>
+<section><h2>1. Functional requirements</h2><p className="sv-help">What the system must do, one per line.</p>
+<textarea rows={6} value={ans.fr||""} onChange={e=>set("fr",e.target.value)} aria-label="Functional requirements" placeholder={"Users can …\nAnyone who …"}/>
+{g&&<ul className="sv-grade">{g.fr.map(x=><li key={x.label} className={x.ok?"ok":"no"}>{mark(x.ok)}{x.label}</li>)}</ul>}</section>
+<section><h2>2. Non-functional requirements</h2><div className="sv-grid">
+{NFR.filter(([id])=>r.nfr?.[id]!==undefined).map(([id,label,unit,ph])=><label key={id} className="sv-field"><span>{label}</span><span className="sv-in"><input inputMode="decimal" value={ans.nfr?.[id]??""} onChange={e=>setIn("nfr",id,e.target.value)} placeholder={ph}/><em>{unit}</em>{nf(id)&&mark(nf(id).ok)}</span>{g&&nf(id)&&!nf(id).ok&&<small>Aim for {fmt(r.nfr[id][0])}–{fmt(r.nfr[id][1])} {unit}</small>}</label>)}
+{r.nfr?.consistency&&<label className="sv-field"><span>Consistency for reads</span><span className="sv-in"><select value={ans.nfr?.consistency||""} onChange={e=>setIn("nfr","consistency",e.target.value)}><option value="">Choose…</option><option value="strong">Strong: always the latest</option><option value="eventual">Eventual: a little stale is fine</option></select>{nf("consistency")&&mark(nf("consistency").ok)}</span>{g&&nf("consistency")&&!nf("consistency").ok&&<small>Think about what a reader can live with here.</small>}</label>}
+</div></section>
+<section><h2>3. Estimates</h2><p className="sv-help">Rough numbers are fine: within about 3× counts.</p><div className="sv-grid">
+{r.est.map(x=>{const e=g?.est.find(y=>y.id===x.id);return <label key={x.id} className="sv-field"><span>{x.label}</span><span className="sv-in"><input inputMode="decimal" value={ans.est?.[x.id]??""} onChange={e2=>setIn("est",x.id,e2.target.value)} placeholder="0"/><em>{x.unit}</em>{e&&mark(e.ok)}</span>{e&&!e.ok&&<small>About {fmt(x.answer)} {x.unit}{x.how?`: ${x.how}`:""}</small>}</label>})}
+</div></section>
+<section><h2>4. API</h2><p className="sv-help">The calls clients make: method and path.</p>
+<div className="sv-api">{api.map((x,i)=><div key={i} className="sv-row"><select value={x.method} onChange={e=>setApi(i,"method",e.target.value)} aria-label={`Method ${i+1}`}>{["GET","POST","PUT","PATCH","DELETE"].map(m=><option key={m}>{m}</option>)}</select><input value={x.path} onChange={e=>setApi(i,"path",e.target.value)} placeholder="/v1/…" aria-label={`Path ${i+1}`}/><button type="button" onClick={()=>set("api",api.filter((_,j)=>j!==i))} aria-label={`Remove call ${i+1}`}>✕</button></div>)}
+<button type="button" className="sv-add" onClick={()=>set("api",[...api,{method:"POST",path:""}])}>+ Add a call</button></div>
+{g&&<ul className="sv-grade">{g.api.map(x=><li key={x.label} className={x.ok?"ok":"no"}>{mark(x.ok)}{x.label} <code>{x.ok?x.got:x.method}</code></li>)}</ul>}</section>
+<section><h2>5. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test.</p></section>
+</div>}
+
+function Hints({P,used,open}){
+if(!P)return <p className="d-desc">No hints for this problem yet.</p>;
+return <div className="sv-hints"><p className="sv-brief">Each hint you open takes 3 points off your score (at most 15). They go from a nudge to nearly the answer.</p>
+<ol>{P.hints.map((h,i)=><li key={i} className={i<used?"open":""}><small>{STEPS[h.step]||h.step}</small>{i<used?<p>{h.x}</p>:i===used?<button type="button" onClick={open}>Show hint {i+1}</button>:<p className="sv-locked">Hint {i+1}</p>}</li>)}</ol></div>}
+
+function Subs({subs}){
+if(!subs.length)return <p className="sv-brief">No submissions yet. Build your design, then press Submit.</p>;
+return <table className="sv-subs"><thead><tr><th>When</th><th>Result</th><th>Tests</th><th>Score</th></tr></thead><tbody>
+{subs.map(x=><tr key={x.at}><td>{when(x.at)}</td><td className={x.verdict==="accepted"?"ok":"no"}>{x.verdict==="accepted"?"Accepted":x.verdict==="error"?"Can't run":"Wrong design"}</td><td>{x.passed}/{x.total}</td><td>{x.score}</td></tr>)}
+</tbody></table>}

@@ -1,13 +1,14 @@
 name: Frontend
 
 # Every PR and push to main that touches the frontend runs the Lab engine tests and the
-# production build, so a broken build is caught before Vercel ever sees it.
+# production build, so a broken build is caught before Vercel ever sees it. Content changes run it too:
+# the judge's calibration test checks every problem's tests against its reference and wrong designs.
 on:
   pull_request:
-    paths: ['frontend/**', '.github/workflows/frontend.yml']
+    paths: ['frontend/**', 'content/**', '.github/workflows/frontend.yml']
   push:
     branches: [main]
-    paths: ['frontend/**', '.github/workflows/frontend.yml']
+    paths: ['frontend/**', 'content/**', '.github/workflows/frontend.yml']
 
 permissions:
   contents: read

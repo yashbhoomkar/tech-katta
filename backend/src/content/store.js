@@ -34,7 +34,8 @@ const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[ke
 
 // A summary also names the Lab challenge the article's Lab card opens (`lab`), for lists such as Problems.
 const labOf = (a) => { const card = (a.body || []).find((b) => b && b.t === 'lab' && typeof b.to === 'string' && b.to.startsWith('lab/')); return card ? card.to.slice(4) : undefined; };
-const summary = (a) => pick({ ...a, lab: labOf(a) }, [...SUMMARY_FIELDS, 'lab']);
+// `tests`: how many judge tests the question has (its `practice`), for the Problems table.
+const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.length }, [...SUMMARY_FIELDS, 'lab', 'tests']);
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
 export function buildBodies({ site, examples, articles, lab }) {
