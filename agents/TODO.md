@@ -133,13 +133,13 @@ for the owner to confirm):
 
 ## Context repo pending
 
-(none — handover and ledger checked through #213 on 2026-11-06)
+(none — handover and ledger checked through #215 on 2026-11-06)
 
 ## Review notes (newest first)
 
-- 2026-11-06 17:00 IST — Ledger and docs checked at the owner's request: all 31 SHAs of #204–#213 were
-  already in `frontend_git_commits` (496 rows); handover §1, §12, §13 and the ledger doc updated in the
-  context repo. Vercel production is still at #198; #199–#213 figures wait for the next deploy.
+- 2026-11-06 17:40 IST — Ledger and docs checked at the owner's request: all 36 SHAs of #204–#215 were
+  already in `frontend_git_commits` (501 rows); handover §1, §12, §13 and the ledger doc updated in the
+  context repo. Vercel production is at #215 (`a7e4093`).
 - 2026-11-06 — Ledger and docs brought up to date at the owner's request: 51 ledger records for
   #176–#195 (the ledger never filled itself; record SHAs after every merge, step 9), handover §1, §12
   and §13 updated in the context repo. Owner asked about positioning as "LeetCode for system design"
