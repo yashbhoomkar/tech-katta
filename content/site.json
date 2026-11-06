@@ -572,7 +572,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 5 November 2026",
+    "updated": "Last updated 6 November 2026",
     "sections": [
       [
         "Signing in",
@@ -596,7 +596,7 @@
       ],
       [
         "What is not done with it",
-        "No selling your data, no tracking cookies, nothing sent to analytics companies. Your email is not used to email you."
+        "No selling your data, no tracking cookies. The only outside analytics is Vercel Web Analytics, run by the company that hosts the site: it counts page views without cookies and without anything that identifies you, and it is skipped when your browser asks not to be tracked. Your email is not used to email you."
       ],
       [
         "Deleting it",
