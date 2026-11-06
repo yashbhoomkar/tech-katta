@@ -6,6 +6,7 @@
     "concepts/cap-pacelc",
     "concepts/timeouts-retries",
     "concepts/consensus",
+    "concepts/distributed-transactions",
     "components/load-balancers",
     "components/cdns",
     "components/api-gateways",
