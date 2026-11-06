@@ -1,0 +1,212 @@
+{
+  "section": "interview-questions",
+  "slug": "key-value-store",
+  "group": "medium",
+  "no": "QUESTION // 18",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a distributed key-value store",
+  "dek": "Zotato keeps carts, sessions and app settings for 20 crore accounts: about a terabyte of small values, read lakhs of times a second. Build a store that spreads them over many machines, keeps three copies, and keeps working when a machine dies.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "The API is tiny: get, put and delete by key. All the work is in where keys live and how copies agree.",
+        "Place keys with consistent hashing: machines and keys are hashed onto a ring, and each key lives on the next few machines clockwise. Adding a machine moves only a small slice of keys.",
+        "Keep three copies. A write waits for two to confirm, a read asks two; since 2 + 2 > 3, every read reaches at least one copy with the latest write.",
+        "Copies can disagree for a while. Version every value, return the newest, and repair stale copies in the background.",
+        "On each machine, writes go to a log on disk first, then to memory, and are written out in sorted files later. Fast writes, and nothing lost in a crash."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "get(key), put(key, value), delete(key). Values are small, up to a few KB.",
+        "Keep working when a machine, or a whole zone, is down.",
+        "Grow by adding machines, without stopping or moving most of the data.",
+        "Out of scope here: queries by anything other than the key, and transactions across keys."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Reads and writes in a few milliseconds"
+        ],
+        [
+          "Durability",
+          "A confirmed write survives any one machine dying"
+        ],
+        [
+          "Availability",
+          "Keeps answering with one zone of three down"
+        ],
+        [
+          "Scale",
+          "20 crore accounts, about 1 TB, 2 lakh reads and 20,000 writes a second"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Data: 20 crore accounts × about 5 KB of carts, sessions and settings is 1 TB. With three copies, 3 TB.",
+        "If each machine holds about 250 GB comfortably, that's 12 machines; run 15 to 20 so each has room to grow and to take a dead neighbour's share.",
+        "Reads: 2 lakh a second across 15 machines is about 13,000 each, fine for keys that are mostly in memory.",
+        "Writes: 20,000 a second, each sent to three copies, is 60,000 copy-writes a second across the cluster, about 4,000 per machine."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Value: `key`, `value` (bytes), `version` (rising, with the writer's id to break ties), `deleted` (a marker, so a delete isn't undone by an old copy).",
+        "Ring: which machines own which slices of the hash range, shared by every node and client library."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET    /kv/cart:u_42          → 200 { \"value\": \"…\", \"version\": 8 }\nPUT    /kv/cart:u_42          { \"value\": \"…\", \"if_version\": 8 }   → 200 { \"version\": 9 }\nDELETE /kv/cart:u_42          → 204",
+      "say": "Read a key and its version. Write it, optionally only if it's still at the version you read. Delete it."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "ring",
+      "cap": "Machines and keys are hashed onto a ring. cart:u_42 lands between A and B, so it's stored on the next three machines clockwise: B, C and D. When E joins, it takes over only the slice next to it."
+    },
+    {
+      "t": "p",
+      "x": "Any machine can take a request: it works out the key's owners from the ring and talks to them. Clients can also do this themselves and go straight to an owner, saving a hop."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Where a key lives"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "HASH MOD THE NUMBER OF MACHINES",
+      "what": "Machine = hash(key) mod N.",
+      "use": "Even spread, one line of code.",
+      "avoid": "Go from 15 machines to 16 and almost every key's machine changes. Adding one machine means moving nearly the whole terabyte.",
+      "ex": "Adding a machine before Diwali sends 94% of carts to new homes, while customers are shopping.",
+      "like": "Renumbering every house in the street because one new house was built."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "CONSISTENT HASHING WITH VIRTUAL NODES",
+      "what": "Hash machines onto a ring of values, many times each (virtual nodes). A key belongs to the next points clockwise from its own hash.",
+      "use": "Adding a machine moves only about 1/N of the keys, taken a little from every machine; losing one spreads its load over everyone.",
+      "avoid": "Every node and client needs the same ring. Keep it in a small consensus-backed store (see the consensus article) and cache it.",
+      "ex": "Going from 15 to 16 machines moves about 6% of keys, a little from each of the 15.",
+      "like": "A new house gets a number between its neighbours; nobody else's address changes."
+    },
+    {
+      "t": "h2",
+      "x": "Three copies that agree enough"
+    },
+    {
+      "t": "fig",
+      "id": "quorum",
+      "cap": "A write waits for two of three copies; C was slow and missed it. A read asks two, B and C: B has version 8, so 8 is returned and C is repaired. With 2 + 2 > 3, every read overlaps the write."
+    },
+    {
+      "t": "list",
+      "items": [
+        "N copies, W to confirm a write, R to answer a read. With N = 3, W = 2, R = 2, reads see the latest confirmed write.",
+        "Choose by need: carts use W = 2, R = 2; a \"last seen\" timestamp could use W = 1, R = 1 for speed, accepting a stale read now and then.",
+        "Put the three copies in three different zones, so losing a zone loses one copy, not two.",
+        "Two writers at once: give each value a version and write with \"only if still version 8\". The loser re-reads and tries again, instead of silently overwriting."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When machines fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Machines tell each other who is up (gossip, or heartbeats to a coordinator). A machine that misses several is treated as down.",
+        "While a copy's owner is down, another machine takes its writes and hands them over when it's back.",
+        "Copies drift (a missed write, a disk error). A background job compares copies range by range, using hashes of each range so only differing ranges are sent, and fixes them.",
+        "A dead machine for good: its slices are copied from the surviving copies to new owners, from many machines at once."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "On one machine"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A write is appended to a log on disk (so a crash loses nothing), then put in an in-memory table.",
+        "When the in-memory table fills, it's written out as a sorted file. Reads check memory, then the newest files first; a small filter per file skips files that can't have the key.",
+        "Files are merged in the background (compaction), dropping old versions and deleted keys after a while. This shape is called an LSM tree."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: get/put by key, partitioning across machines, copies for safety, a cache-like in-memory read path.",
+        "Senior: consistent hashing and virtual nodes, N/W/R and what they buy, versions and conditional writes, zones.",
+        "Lead: failure detection and handing writes over, repairing drift, adding and removing machines live, the LSM write and read path."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"One key gets very hot?\" Cache it in front, or for counters split it into several keys and add them up (see the like counter in the photo-sharing question).",
+            "\"Why not just use a database?\" For this shape of data, a key-value store scales out more simply; a relational database is better when you need queries and transactions.",
+            "\"Deletes come back to life?\" That's why deletes are written as markers with a version and only cleaned up after every copy has seen them.",
+            "\"Strong consistency for some keys?\" Use a leader per slice chosen by consensus, and send those keys' reads and writes to it, at the cost of some speed.",
+            "\"How do you test it?\" Kill machines and cut network links during load, then check that every confirmed write can still be read, with the right version."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "A confirmed write must survive a crash. The lost-orders challenge is about exactly that promise.",
+      "to": "lab/lost-orders",
+      "go": "Try the lost-orders challenge"
+    }
+  ]
+}

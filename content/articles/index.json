@@ -33,6 +33,7 @@
     "interview-questions/job-scheduler",
     "interview-questions/web-crawler",
     "interview-questions/leaderboard",
-    "interview-questions/ad-clicks"
+    "interview-questions/ad-clicks",
+    "interview-questions/key-value-store"
   ]
 }

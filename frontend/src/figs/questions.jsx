@@ -521,6 +521,34 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`wnt${uid}`}><titl
 {step(.55,<text x={X+W+8} y={172} className="fl" style={{fill:BLUE}}>counted in 20:41, when it happened</text>)}
 {step(.75,<text x={0} y={204} className="fl">each minute stays open 5 more minutes; later clicks go to the nightly recount</text>)}</svg>}
 
+// Key-value store, FIG: the ring. Machines sit at points on a ring of hash values. A key is hashed to a
+// point and stored on the next three machines clockwise. Adding a machine takes over only the slice next to it.
+function RingFig({still,uid=""}){const D="12s",CX=180,CY=120,RAD=88;
+const nodes=[["A",20],["B",110],["C",200],["D",290]],pt=(deg,r=RAD)=>[CX+r*Math.cos((deg-90)*Math.PI/180),CY+r*Math.sin((deg-90)*Math.PI/180)];
+const key=70,[kx,ky]=pt(key);
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`rgt${uid}`}><title id={`rgt${uid}`}>The ring. Four machines, A, B, C and D, sit at points on a ring of hash values. The key "cart:u_42" hashes to a point between A and B, so it is stored on the next three machines clockwise: B, C and D. When a new machine E joins between A and B, it takes over only the slice of keys next to it; every other key stays where it was.</title>
+<circle cx={CX} cy={CY} r={RAD} fill="none" stroke={GREY}/>
+{nodes.map(([n,d])=>{const[x,y]=pt(d);const mine=n!=="A";return <g key={n}><circle cx={x} cy={y} r={14} fill={mine?"#f8faff":"#fff"} stroke={mine?BLUE:GREY}/><text x={x} y={y+4} textAnchor="middle" className="fb">{n}</text></g>})}
+<circle cx={kx} cy={ky} r={5} fill={RED}/><text x={kx+10} y={ky-8} className="fl" style={{fill:RED}}>cart:u_42</text>
+<text x={300} y={50} className="fb">cart:u_42 is stored on B, C and D</text><text x={300} y={68} className="fl">the next three machines clockwise from its point</text>
+{step(.4,<g>{(()=>{const[x,y]=pt(45);return <g><circle cx={x} cy={y} r={14} fill="#fff" stroke={BLUE} strokeDasharray="4 3"/><text x={x} y={y+4} textAnchor="middle" className="fb">E</text></g>})()}<text x={300} y={120} className="fb">E joins between A and B</text><text x={300} y={138} className="fl">it takes over only the slice next to it;</text><text x={300} y={154} className="fl">every other key stays where it is</text></g>)}
+<text x={300} y={200} className="fl">each machine also owns many small slices (virtual nodes),</text><text x={300} y={216} className="fl">so a new machine takes a little from everyone</text></svg>}
+
+// Key-value store, FIG: quorums. Three copies (N = 3). A write waits for two (W = 2); C was slow and missed
+// it. A read asks two (R = 2), C and B: B has version 8, C still has 7. The newer one wins, and C is fixed.
+// Because 2 + 2 > 3, every read set overlaps every write set.
+function QuorumFig({still,uid=""}){const M=`qr${uid}`,D="12s";
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`qrt${uid}`}><title id={`qrt${uid}`}>Quorums with three copies. A write of version 8 waits for two of the three copies; A and B confirm it, C is slow and still has version 7. A read asks two copies, B and C. B answers version 8 and C answers version 7, so the newer version 8 is returned and C is fixed in the background. Because two plus two is more than three, every read overlaps at least one copy that took the write.</title><Mark m={M}/>
+<SBox x={0} y={110} w={90} t="Client" blue/>
+<SBox x={230} y={50} w={150} t="A · v8"/><SBox x={230} y={110} w={150} t="B · v8"/><SBox x={230} y={170} w={150} t="C · v7 (slow)" down/>
+<text x={0} y={30} className="fb">N = 3 copies, W = 2, R = 2</text>
+{step(.05,<g><Line x1={92} y1={104} x2={226} y2={56} m={M}/><Line x1={92} y1={110} x2={226} y2={110} m={M}/><text x={100} y={140} className="fl">write v8: wait for 2</text></g>)}
+{step(.4,<g><Line x1={382} y1={110} x2={460} y2={110} m={M} dash/><Line x1={382} y1={170} x2={460} y2={126} m={M} dash/><SBox x={464} y={110} w={170} t="read 2: newest is v8" blue/></g>)}
+{step(.65,<g><text x={464} y={148} className="fl">C is sent v8</text><text x={464} y={164} className="fl">in the background</text></g>)}
+{step(.8,<text x={0} y={222} className="fl">2 + 2 &gt; 3: any 2 copies read include at least 1 that took the write</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -559,4 +587,6 @@ export const QUESTION_FIGS={
 "lb-rank":{C:LbRankFig,ar:640/240,title:()=>"YOUR RANK FROM A FEW COUNTS"},
 "click-flow":{C:ClickFlowFig,ar:640/230,title:()=>"FAST FOR WATCHING, EXACT FOR MONEY"},
 "windows":{C:WindowsFig,ar:640/220,title:()=>"COUNTED WHEN IT HAPPENED"},
+"ring":{C:RingFig,ar:640/240,title:()=>"WHERE A KEY LIVES"},
+"quorum":{C:QuorumFig,ar:640/230,title:()=>"TWO WRITES, TWO READS, ONE OVERLAP"},
 };
