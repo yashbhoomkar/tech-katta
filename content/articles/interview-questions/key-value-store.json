@@ -69,7 +69,7 @@
       "items": [
         "Data: 20 crore accounts × about 5 KB of carts, sessions and settings is 1 TB. With three copies, 3 TB.",
         "If each machine holds about 250 GB comfortably, that's 12 machines; run 15 to 20 so each has room to grow and to take a dead neighbour's share.",
-        "Reads: 2 lakh a second across 15 machines is about 13,000 each, fine for keys that are mostly in memory.",
+        "Reads: 2 lakh a second across 15 machines is 4 lakh copy-reads with R = 2, about 27,000 each, fine for keys that are mostly in memory.",
         "Writes: 20,000 a second, each sent to three copies, is 60,000 copy-writes a second across the cluster, about 4,000 per machine."
       ]
     },
@@ -80,7 +80,7 @@
     {
       "t": "list",
       "items": [
-        "Value: `key`, `value` (bytes), `version` (rising, with the writer's id to break ties), `deleted` (a marker, so a delete isn't undone by an old copy).",
+        "Value: `key`, `value` (bytes), `version` (rising, with the writer's id to break ties; the other write is lost, so carts may want to merge instead), `deleted` (a marker, so a delete isn't undone by an old copy).",
         "Ring: which machines own which slices of the hash range, shared by every node and client library."
       ]
     },
@@ -125,7 +125,7 @@
       "t": "type",
       "name": "Better",
       "kind": "CONSISTENT HASHING WITH VIRTUAL NODES",
-      "what": "Hash machines onto a ring of values, many times each (virtual nodes). A key belongs to the next points clockwise from its own hash.",
+      "what": "Hash machines onto a ring of values, many times each (virtual nodes). A key belongs to the next three different machines clockwise from its hash, skipping extra points of a machine already picked.",
       "use": "Adding a machine moves only about 1/N of the keys, taken a little from every machine; losing one spreads its load over everyone.",
       "avoid": "Every node and client needs the same ring. Keep it in a small consensus-backed store (see the consensus article) and cache it.",
       "ex": "Going from 15 to 16 machines moves about 6% of keys, a little from each of the 15.",
@@ -146,7 +146,7 @@
         "N copies, W to confirm a write, R to answer a read. With N = 3, W = 2, R = 2, reads see the latest confirmed write.",
         "Choose by need: carts use W = 2, R = 2; a \"last seen\" timestamp could use W = 1, R = 1 for speed, accepting a stale read now and then.",
         "Put the three copies in three different zones, so losing a zone loses one copy, not two.",
-        "Two writers at once: give each value a version and write with \"only if still version 8\". The loser re-reads and tries again, instead of silently overwriting."
+        "Two writers at once: give each value a version and write with \"only if still version 8\". This needs one decider per key (a leader per slice, see follow-ups); without it, two writers can each land on some copies."
       ]
     },
     {
@@ -157,8 +157,8 @@
       "t": "list",
       "items": [
         "Machines tell each other who is up (gossip, or heartbeats to a coordinator). A machine that misses several is treated as down.",
-        "While a copy's owner is down, another machine takes its writes and hands them over when it's back.",
-        "Copies drift (a missed write, a disk error). A background job compares copies range by range, using hashes of each range so only differing ranges are sent, and fixes them.",
+        "While a copy's owner is down, another machine takes its writes and hands them over when it's back. Until then, a read of two owners can miss that write, so 2 + 2 > 3 only holds if a write counts only owners' confirmations.",
+        "Copies drift (a missed write, a disk error). A background job compares copies range by range, using a tree of hashes of each range (a Merkle tree) so only differing ranges are sent, and fixes them.",
         "A dead machine for good: its slices are copied from the surviving copies to new owners, from many machines at once."
       ]
     },
@@ -169,7 +169,7 @@
     {
       "t": "list",
       "items": [
-        "A write is appended to a log on disk (so a crash loses nothing), then put in an in-memory table.",
+        "A write is appended to a log on disk (flushed before confirming, so a crash loses nothing), then put in an in-memory table.",
         "When the in-memory table fills, it's written out as a sorted file. Reads check memory, then the newest files first; a small filter per file skips files that can't have the key.",
         "Files are merged in the background (compaction), dropping old versions and deleted keys after a while. This shape is called an LSM tree."
       ]

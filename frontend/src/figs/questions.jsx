@@ -527,13 +527,13 @@ function RingFig({still,uid=""}){const D="12s",CX=180,CY=120,RAD=88;
 const nodes=[["A",20],["B",110],["C",200],["D",290]],pt=(deg,r=RAD)=>[CX+r*Math.cos((deg-90)*Math.PI/180),CY+r*Math.sin((deg-90)*Math.PI/180)];
 const key=70,[kx,ky]=pt(key);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
-return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`rgt${uid}`}><title id={`rgt${uid}`}>The ring. Four machines, A, B, C and D, sit at points on a ring of hash values. The key "cart:u_42" hashes to a point between A and B, so it is stored on the next three machines clockwise: B, C and D. When a new machine E joins between A and B, it takes over only the slice of keys next to it; every other key stays where it was.</title>
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`rgt${uid}`}><title id={`rgt${uid}`}>The ring. Four machines, A, B, C and D, sit at points on a ring of hash values. The key "cart:u_42" hashes to a point between A and B, so it is stored on the next three different machines clockwise: B, C and D. When a new machine E joins between A and B, it takes over only the slice of keys next to it; every other key stays where it was.</title>
 <circle cx={CX} cy={CY} r={RAD} fill="none" stroke={GREY}/>
 {nodes.map(([n,d])=>{const[x,y]=pt(d);const mine=n!=="A";return <g key={n}><circle cx={x} cy={y} r={14} fill={mine?"#f8faff":"#fff"} stroke={mine?BLUE:GREY}/><text x={x} y={y+4} textAnchor="middle" className="fb">{n}</text></g>})}
 <circle cx={kx} cy={ky} r={5} fill={RED}/><text x={kx+10} y={ky-8} className="fl" style={{fill:RED}}>cart:u_42</text>
 <text x={300} y={50} className="fb">cart:u_42 is stored on B, C and D</text><text x={300} y={68} className="fl">the next three machines clockwise from its point</text>
 {step(.4,<g>{(()=>{const[x,y]=pt(45);return <g><circle cx={x} cy={y} r={14} fill="#fff" stroke={BLUE} strokeDasharray="4 3"/><text x={x} y={y+4} textAnchor="middle" className="fb">E</text></g>})()}<text x={300} y={120} className="fb">E joins between A and B</text><text x={300} y={138} className="fl">it takes over only the slice next to it;</text><text x={300} y={154} className="fl">every other key stays where it is</text></g>)}
-<text x={300} y={200} className="fl">each machine also owns many small slices (virtual nodes),</text><text x={300} y={216} className="fl">so a new machine takes a little from everyone</text></svg>}
+<text x={300} y={200} className="fl">each machine also owns many small slices (vnodes),</text><text x={300} y={216} className="fl">so a new machine takes a little from everyone</text></svg>}
 
 // Key-value store, FIG: quorums. Three copies (N = 3). A write waits for two (W = 2); C was slow and missed
 // it. A read asks two (R = 2), C and B: B has version 8, C still has 7. The newer one wins, and C is fixed.
@@ -588,5 +588,5 @@ export const QUESTION_FIGS={
 "click-flow":{C:ClickFlowFig,ar:640/230,title:()=>"FAST FOR WATCHING, EXACT FOR MONEY"},
 "windows":{C:WindowsFig,ar:640/220,title:()=>"COUNTED WHEN IT HAPPENED"},
 "ring":{C:RingFig,ar:640/240,title:()=>"WHERE A KEY LIVES"},
-"quorum":{C:QuorumFig,ar:640/230,title:()=>"TWO WRITES, TWO READS, ONE OVERLAP"},
+"quorum":{C:QuorumFig,ar:640/230,title:()=>"TWO CONFIRM, TWO ANSWER, ONE OVERLAP"},
 };
