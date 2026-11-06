@@ -70,7 +70,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | build | Library card footers level | done | shipped run 14: a container query stacks every footer below ~300px of card width (it was uneven from ~205 to ~300px, including 1280px screens) |
+| 1 | content | Q06 Photo sharing (medium) | done | shipped run 15 (alternating with build) with figures `photo-upload`, `like-counter` |
 | 2 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
 | 3 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
 | 4 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
@@ -80,7 +80,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 Interview Questions plan (section `interview-questions`, groups start/easy/medium/hard/practice; one
 article per PR; shape as in `content/articles/interview-questions/url-shortener.json`):
 00 How to answer ✅ · 01 URL shortener ✅ · Easy: 02 File storage and sync ✅ · 03 Restaurants near me ✅ ·
-04 10-minute grocery delivery ✅ · Medium: 05 Match ticket booking ✅ · 06 Photo sharing · 07 News feed ·
+04 10-minute grocery delivery ✅ · Medium: 05 Match ticket booking ✅ · 06 Photo sharing ✅ · 07 News feed ·
 08 Dating app swipes · 09 Coding judge · 10 Chat app · 11 Fitness tracker · 12 Distributed cache ·
 13 Rate limiter · 14 Online auction · 15 Video platform · 16 Job scheduler · 17 Live comments ·
 18 News aggregator · 19 Price tracker · 20 Notification system · Hard: 21 Top-K trending ·
@@ -118,11 +118,14 @@ for the owner to confirm):
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
   overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
-  retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), and
-  this run's card footer PR.
+  retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), #186
+  (card footers level), and this run's Q06 PR.
 
 ## Review notes (newest first)
 
+- 2026-11-06 run 15 — Production healthy; #186 checked live (footers level at 768/1280). Q06 kept to
+  photos (the feed is Q07). Learner's must-have: the life of an upload (processing until every size
+  and the check are done), workers safe to run twice, location data stripped, never-reused URLs.
 - 2026-11-06 run 14 — Production healthy; #185 checked live (a /health poll came back empty once during
   the API restart, then five clean polls). Card footers: measured per card, not just the first one; the
   mismatch ran from ~205 to ~300px of card width, so 1280px screens had it too. Fixed with a container
@@ -188,7 +191,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-06 — Library card footers line up at every width.
+- 2026-11-06 — Q06 Photo sharing, with figures `photo-upload` and `like-counter`.
+- 2026-11-06 — PR #186: library card footers line up at every width.
 - 2026-11-06 — PR #185: Q05 Match ticket booking, with figures `waiting-room` and `seat-states`.
 - 2026-11-05 — PR #184: Practice mode v1 on Interview Questions.
 - 2026-11-05 — PR #183: Concept 05, timeouts, retries and circuit breakers, with figures `slow-call` and `breaker`.

@@ -1,0 +1,224 @@
+{
+  "section": "interview-questions",
+  "slug": "photo-sharing",
+  "group": "medium",
+  "no": "QUESTION // 06",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design photo sharing",
+  "dek": "Zotato Snaps lets diners post photos of what they ate. Each one shows on their profile and on the restaurant's page within seconds, loads fast on a 4G phone, and survives a dish going viral.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Photos are big and written once; their details (who, where, when) are small and read a lot. Bytes go to object storage behind a CDN, details go to a database.",
+        "Phones upload straight to object storage with a short-lived signed URL. A queue then hands each photo to workers that make the sizes the app shows.",
+        "Nobody downloads the original: the app asks for the size it needs, and the CDN serves almost all of them.",
+        "Store details by owner, and keep a second table by restaurant, because both pages list photos newest first.",
+        "A viral photo's like count is one hot row. Spread it over several rows, or count in memory and save every few seconds."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Post a photo with a caption, tagged with the restaurant and dish.",
+        "See a person's photos, and a restaurant's photos, newest first, page by page.",
+        "Like a photo and see how many people liked it.",
+        "Delete your own photo; it disappears everywhere.",
+        "Out of scope here: the home feed of people you follow (that's the News feed question, 07), comments, and video."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "A grid of photos loads in about a second on a 4G phone"
+        ],
+        [
+          "Freshness",
+          "A new photo shows on the restaurant's page within a few seconds"
+        ],
+        [
+          "Durability",
+          "A posted photo is never lost"
+        ],
+        [
+          "Scale",
+          "1 crore daily users, 20 lakh new photos a day"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Uploads: 20 lakh a day ÷ 86,400 s ≈ 23 a second, maybe 100 at the dinner peak. Small for the database.",
+        "Bytes in: about 3 MB per original is 6 TB a day, roughly 2 PB a year. Object storage, not a database.",
+        "Views: 1 crore people × 50 photos seen is 50 crore a day, about 6,000 a second and 25,000 at peak. At around 100 KB each that's 2.5 GB a second: a CDN's job.",
+        "Details: 20 lakh rows a day × about 500 bytes is 1 GB a day, about 365 GB a year. One large database for a while, sharded later.",
+        "Sizes: a 20 KB thumbnail, a 150 KB feed size and a 500 KB full screen add about 0.7 MB per photo, so storing them costs a quarter of the originals but saves every phone from downloading 3 MB."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Photo: `id`, `owner_id`, `restaurant_id`, `dish`, `caption`, `created_at`, `state` (processing, live, removed), `sizes` (keys in object storage).",
+        "Restaurant photo: `restaurant_id`, `created_at`, `photo_id` (the same photos, listed by restaurant).",
+        "Like: `photo_id`, `user_id`. Like count: `photo_id`, `n`."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /photos   { \"restaurant\": \"r_88\", \"dish\": \"Ghee roast dosa\", \"caption\": \"…\" }\n→ 201 { \"photo\": \"p_7f\", \"upload_url\": \"<signed PUT, 10 min>\" }\n\nPUT <upload_url>            (the image goes straight to object storage)\n\nGET /users/u_12/photos?cursor=…        → 200 { \"photos\": [ { \"id\": \"p_7f\", \"thumb\": \"https://img.zot…/p_7f/320.webp\", … } ], \"cursor\": \"…\" }\nGET /restaurants/r_88/photos?cursor=…  → same shape\nPUT /photos/p_7f/like   DELETE /photos/p_7f/like\nDELETE /photos/p_7f",
+      "say": "Posting a photo creates its record and returns a signed upload URL; the app puts the image straight into object storage. A person's photos and a restaurant's photos are both listed newest first with a cursor, each with links to its sizes on the image CDN. Liking is a put or a delete on the photo's like, and the owner can delete a photo."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "photo-upload",
+      "cap": "The app gets a signed URL and uploads the original straight to object storage. Storage drops a message on a queue; a worker makes three sizes, saves them, and marks the photo live. Phones then fetch the size they need through the CDN, which reads from storage only on a miss."
+    },
+    {
+      "t": "p",
+      "x": "The photo service never touches image bytes. It writes the record (state: processing), hands out the upload URL, and later flips the state to live when the resize worker reports back. Until then the owner sees their own photo with a \"processing\" badge, and nobody else sees it. A queue can deliver the same message twice, so the worker must be safe to run again: it writes each size to a fixed key, and marks the photo live only when every size exists and the content check has passed."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Serving images fast"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "SERVE THE ORIGINAL",
+      "what": "Store the uploaded file and send it to every viewer.",
+      "use": "Nothing to build: one file per photo.",
+      "avoid": "A grid of 12 photos is 36 MB on a phone. Slow, expensive data for the customer, and the servers send every byte.",
+      "ex": "A restaurant page with 12 dish photos takes 30 seconds on patchy 4G.",
+      "like": "Mailing someone a poster when they asked for a postcard."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "SIZES MADE ON UPLOAD",
+      "what": "A worker makes fixed sizes (320, 1080 and 2048 pixels wide) in a modern format, and the app asks for the one it needs.",
+      "use": "A grid of thumbnails is about 250 KB, and the sizes are made once, not on every view.",
+      "avoid": "Served from your own servers, 2.5 GB a second at peak still needs a lot of machines and bandwidth.",
+      "ex": "The restaurant grid uses 320-pixel thumbnails at about 20 KB each.",
+      "like": "A printer making postcards, posters and stamps once, then handing out the right one."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "SIZES BEHIND A CDN",
+      "what": "Put the sizes behind a CDN with a long cache time. Give every version of a photo its own address that is never reused (the photo id and a version in the path), so it can be cached for a year without ever going stale.",
+      "use": "Most views are answered from a server in the viewer's city; storage sees only misses.",
+      "avoid": "Deleting a photo must also remove it from the CDN (a purge), or it lingers in caches for a while.",
+      "ex": "A dosa photo shared in a Bengaluru food group is fetched once from storage and then served from the Bengaluru edge for everyone else.",
+      "like": "A kirana shop stocking the popular items instead of everyone going to the warehouse."
+    },
+    {
+      "t": "h2",
+      "x": "Listing photos by person and by restaurant"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Shard the photo table by owner, so a person's photos are in one place, sorted by `created_at`.",
+        "A restaurant's photos come from many owners, so keep a separate table keyed by `restaurant_id` with `created_at` and `photo_id`, written when a photo goes live.",
+        "Page with a cursor (the last `created_at` and `photo_id` seen), not page numbers: new photos arriving don't shift what comes next.",
+        "The two tables can disagree for a moment. Write the restaurant row from the same event that marks the photo live, and retry until it's there."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "A like count for a viral photo"
+    },
+    {
+      "t": "fig",
+      "id": "like-counter",
+      "cap": "One row taking every like for a viral photo becomes a queue of writers. Split the count over 8 rows: each like adds 1 to a random one, and reading the count adds the 8 up. Each row now takes an eighth of the writes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A photo shared in a big group can get 50,000 likes in a few minutes, a few hundred writes a second to one row. Each waits for the one before.",
+        "Keep who liked what in the likes table (one row per person, so a double tap doesn't count twice), and the number separately.",
+        "Split the number over a few rows and add them up when reading, or count likes in memory and save the total every few seconds. Show the count from a cache; nobody minds if it's a second behind."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Before a photo goes public"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The resize worker also checks the image: an automated scan for unsafe content, and a person reviews anything it flags.",
+        "Remove location data before making the sizes; people don't always know their phone adds it. Keep originals in a private bucket the CDN can't reach, since they still carry it.",
+        "A deleted photo is marked removed at once, its by-restaurant row deleted, purged from the CDN, and its files deleted after a few days, in case the delete was a mistake."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: object storage for images, a database for details, sizes for different screens, and a CDN.",
+        "Senior: direct upload with signed URLs, a queue and resize workers, the processing state, a second table by restaurant, cursor pages.",
+        "Lead: the hot like count, moderation and privacy (location data), deletion through the CDN, and what happens when resizing falls behind at dinner."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Resize workers fall behind at dinner.\" The queue absorbs it; the owner sees \"processing\" a little longer. Add workers based on queue length, and make the thumbnail first so the grid can show something.",
+            "\"Upload fails halfway on 4G.\" Large files go up in parts and resume; a photo that never finished stays in processing and is cleaned up after a day.",
+            "\"Same photo uploaded twice?\" Hash the bytes and warn the user; don't silently merge two people's posts.",
+            "\"A new screen size needs a 720-pixel version.\" Make it on first request at the CDN's origin and keep it, instead of reprocessing 2 PB of originals.",
+            "\"How do you shard when one restaurant has a million photos?\" Its rows are just more rows in the by-restaurant table; split that table by restaurant and time if one restaurant gets too big."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Serving photos is a CDN problem at heart. The IND vs PAK challenge shows how much a CDN takes off your servers when everyone wants the same thing at once.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try the IND vs PAK challenge"
+    }
+  ]
+}
