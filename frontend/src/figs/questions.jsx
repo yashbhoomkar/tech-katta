@@ -184,6 +184,35 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`sst${uid}`}><titl
 <Dot x1={399} x2={484} y={100} t0={.5} t1={.6} dur={D}/><Glow x={490} y={88} w={150} h={24} t0={.6} t1={.78} dur={D}/>
 <Show t0={.8} t1={.98} dur={D}><path d="M320 114 V170 H75 V118" fill="none" stroke={BLUE} strokeWidth="2"/></Show></g>}</svg>}
 
+// Photo sharing, FIG: an upload's life. 1 the app creates the record and gets a signed URL, 2 puts the
+// original straight into object storage, 3 storage queues the new file, 4 a worker makes the sizes and
+// checks the image, 5 marks the photo live; 6 phones fetch the size they need through the CDN.
+function PhotoUploadFig({still,uid=""}){const M=`pu${uid}`,D="14s";
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`put${uid}`}><title id={`put${uid}`}>An upload's life. First, the app asks the photo service to create the photo and gets a signed upload URL. Second, it puts the original straight into object storage. Third, storage puts a message on a queue. Fourth, a worker makes three sizes and checks the image. Fifth, it marks the photo live in the photo service. Sixth, phones fetch the size they need through the CDN, which reads from storage only on a miss.</title><Mark m={M}/>
+<SBox x={0} y={140} w={100} t="App"/><SBox x={160} y={50} w={140} t="Photo service" blue/><SBox x={160} y={230} w={140} t="Object storage"/>
+<SBox x={360} y={230} w={100} t="Queue"/><SBox x={510} y={230} w={130} t="Resize workers"/><SBox x={360} y={140} w={100} t="CDN"/>
+<Line x1={60} y1={128} x2={156} y2={56} m={M}/><text x="104" y="84" textAnchor="end" className="fl">1 POST /photos</text>
+<Line x1={60} y1={152} x2={156} y2={226} m={M}/><text x="104" y="206" textAnchor="end" className="fl">2 PUT original</text>
+<Line x1={302} y1={230} x2={356} y2={230} m={M}/><text x="329" y="220" textAnchor="middle" className="fl">3</text>
+<Line x1={462} y1={230} x2={506} y2={230} m={M}/><text x="484" y="220" textAnchor="middle" className="fl">4</text><text x="575" y="262" textAnchor="middle" className="fl">3 sizes, safety check</text>
+<path d="M575 218 V50 H304" fill="none" stroke={INK} markerEnd={`url(#${M})`}/><text x="440" y="42" textAnchor="middle" className="fl">5 all sizes ready: live</text>
+<Line x1={102} y1={140} x2={356} y2={140} m={M}/><text x="229" y="132" textAnchor="middle" className="fl">6 GET thumbnail</text>
+<Line x1={390} y1={152} x2={270} y2={218} m={M} c={GREY} dash/><text x="338" y="196" className="fl" style={{fill:GREY}}>on a miss</text>
+{!still&&<g aria-hidden="true"><Dot x1={62} x2={154} y={127} y2={57} t0={.02} t1={.1} dur={D}/><Dot x1={62} x2={154} y={153} y2={225} t0={.12} t1={.22} dur={D}/>
+<Dot x1={304} x2={354} y={230} t0={.24} t1={.3} dur={D}/><Dot x1={464} x2={504} y={230} t0={.32} t1={.38} dur={D}/><Glow x={510} y={218} w={130} h={24} t0={.38} t1={.5} dur={D}/>
+<Glow x={160} y={38} w={140} h={24} t0={.52} t1={.62} dur={D}/><Dot x1={104} x2={354} y={140} t0={.66} t1={.78} dur={D}/><Glow x={360} y={128} w={100} h={24} t0={.78} t1={.95} dur={D}/></g>}</svg>}
+
+// Photo sharing, FIG: a viral photo's like count. One row taking every like makes writers queue up;
+// the same count split over 8 rows takes an eighth of the writes per row, and a read adds the 8 up.
+function LikeCounterFig({still,uid=""}){const M=`lc${uid}`,D="8s",parts=[6027,6031,6019,6025,6030,6022,6034,6025],X=200,W=46,G=6;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lct${uid}`}><title id={`lct${uid}`}>A viral photo's like count. Kept in one row, every like waits for the one before, so writers queue up. Split over 8 rows, each like adds 1 to a random one, so each row takes an eighth of the writes, and reading the count adds the 8 rows up: 48,213.</title><Mark m={M}/>
+<text x="0" y="64" className="fb">One row</text><Line x1={110} y1={60} x2={196} y2={60} m={M}/><SBox x={200} y={60} w={180} t="likes: 48,213"/><text x="200" y="92" className="fl" style={{fill:RED}}>every like waits for the one before</text>
+<text x="0" y="174" className="fb">Split over 8</text><Line x1={110} y1={170} x2={196} y2={170} m={M}/>
+{parts.map((n,i)=><SBox key={i} x={X+i*(W+G)} y={170} w={W} t={n.toLocaleString("en-IN")} blue/>)}
+<text x={X+8*(W+G)-G} y="206" textAnchor="end" className="fl">read: add the 8 rows = 48,213</text>
+{!still&&<g aria-hidden="true">{[0,.1,.2,.3].map(t=><Dot key={t} x1={112} x2={194} y={60} t0={t} t1={t+.3} dur={D}/>)}<Glow x={200} y={48} w={180} h={24} t0={.3} t1={.9} dur={D}/>
+{[[0,3],[.12,6],[.24,1],[.36,5],[.48,0],[.6,7]].map(([t,k])=><g key={t}><Dot x1={112} x2={194} y={170} t0={t} t1={t+.08} dur={D}/><Glow x={X+k*(W+G)} y={158} w={W} h={24} t0={t+.08} t1={t+.14} dur={D}/></g>)}</g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -198,4 +227,6 @@ export const QUESTION_FIGS={
 "stock-hold":{C:StockHoldFig,ar:640/260,title:()=>"THE LAST PACKET, TWO BUYERS"},
 "waiting-room":{C:WaitingRoomFig,ar:640/250,title:()=>"50 LAKH PEOPLE, ONE LINE"},
 "seat-states":{C:SeatStatesFig,ar:640/220,title:()=>"A SEAT'S THREE STATES"},
+"photo-upload":{C:PhotoUploadFig,ar:640/280,title:()=>"AN UPLOAD'S LIFE"},
+"like-counter":{C:LikeCounterFig,ar:640/240,title:()=>"ONE HOT ROW, OR EIGHT"},
 };
