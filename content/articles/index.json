@@ -32,6 +32,7 @@
     "interview-questions/payments",
     "interview-questions/job-scheduler",
     "interview-questions/web-crawler",
-    "interview-questions/leaderboard"
+    "interview-questions/leaderboard",
+    "interview-questions/ad-clicks"
   ]
 }

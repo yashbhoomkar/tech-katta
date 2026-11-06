@@ -1,0 +1,210 @@
+{
+  "section": "interview-questions",
+  "slug": "ad-clicks",
+  "group": "medium",
+  "no": "QUESTION // 17",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design ad click counting",
+  "dek": "Restaurants on Zotato can pay to appear higher in the list. They want to watch views and clicks minute by minute, and they're billed per click. Count crores of events a day fast enough to watch, and exactly enough to bill.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Don't update a counter row per click. Stream events into a log, and count them in memory per ad per minute; write one row per ad per minute.",
+        "Count each click in the minute it happened, not the minute it arrived. Keep each minute open a few extra minutes for late arrivals, then close it.",
+        "Every click has an id, so a resent click counts once. The aggregator remembers ids for as long as a minute stays open; later resends are left to the recount. Repeat clicks by the same person on the same ad within a few minutes count once too.",
+        "Two paths: a fast count for dashboards, and a nightly recount from the raw events for the bill. Where they differ, the recount wins.",
+        "Very popular ads are hot keys: count them on several machines and add up the parts."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Record views (impressions) and clicks of sponsored listings, with the ad, the person, the time and the city.",
+        "Dashboards for advertisers: views and clicks per minute, hour and day, within about a minute of real time.",
+        "Bills: valid clicks per ad per day, exact, and the same however many times you count them.",
+        "Out of scope here: choosing which ad to show (the auction), and deep fraud detection (we'll note where it plugs in)."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Freshness",
+          "Dashboards within a minute of the click"
+        ],
+        [
+          "Exact bills",
+          "Every valid click counted once, invalid ones never"
+        ],
+        [
+          "Never lost",
+          "No accepted event is lost, even if a counter crashes"
+        ],
+        [
+          "Scale",
+          "30 crore views and 60 lakh clicks a day, most of them at lunch and dinner"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Views: 1 crore people a day × about 30 sponsored listings seen is 30 crore a day, about 3,500 a second on average, and around 15,000 at dinner.",
+        "Clicks: about 2% of views, so 60 lakh a day, around 70 a second and 300 at dinner. Few, but each one is money.",
+        "Raw events at about 200 bytes are 60 GB a day. Keep them for a few months for recounts and disputes.",
+        "Minute totals: 50,000 active ads × 1,440 minutes is 7.2 crore rows a day at most, far fewer in practice, since most ads aren't seen every minute."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Event: `id` (made by the app), `type` (view or click), `ad_id`, `user_id`, `city`, `happened_at` (the phone's time, checked against the server's), `received_at`.",
+        "Minute total: `ad_id`, `minute`, `views`, `clicks`. One row per ad per minute.",
+        "Daily bill line: `ad_id`, `day`, `valid_clicks`, from the nightly recount."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /events  [ { \"id\": \"e_8f\", \"type\": \"click\", \"ad\": \"ad_214\", \"at\": \"2026-11-06T20:41:07+05:30\" }, … ]  → 202\nGET  /ads/ad_214/stats?from=20:00&to=21:00&by=minute  → 200 { \"rows\": [ { \"minute\": \"20:41\", \"views\": 1840, \"clicks\": 37 }, … ] }",
+      "say": "The app sends events in small batches. Advertisers read their numbers by minute, hour or day."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "click-flow",
+      "cap": "Fast path: events go through a log to an aggregator that counts per ad per minute in memory and writes minute totals for dashboards. Exact path: the same events are kept raw, and a nightly recount produces the bill."
+    },
+    {
+      "t": "p",
+      "x": "The event log (Kafka or similar) is the spine. Everything downstream can fall behind, crash or be rebuilt, because the events are still in the log and in raw storage."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Counting fast"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ADD ONE TO A ROW PER CLICK",
+      "what": "On every view or click, run UPDATE ad_stats SET clicks = clicks + 1 WHERE ad_id = … AND minute = ….",
+      "use": "Simple, and the numbers are always current.",
+      "avoid": "At 15,000 views a second, a popular restaurant's row is updated hundreds of times a second and becomes a hot spot. And a retry after a timeout adds the same click twice.",
+      "ex": "A biryani chain's sponsored listing at 8 pm: its row is locked so often that the whole stats table slows down.",
+      "like": "Walking to the notice board to update a tally for every single customer."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "COUNT IN MEMORY, WRITE PER MINUTE",
+      "what": "Events go to a log, partitioned by ad. An aggregator reads its partitions, keeps counts per ad per minute in memory, drops repeats by event id, and writes each ad's minute row as soon as the minute ends, and rewrites it if late clicks come in, until the minute closes.",
+      "use": "One write per ad per minute instead of per event; repeats removed before counting.",
+      "avoid": "Counts in memory are lost if the aggregator crashes, so save the log position together with the open counts and recent event ids (a checkpoint), and write rows as overwrites keyed by ad and minute, so a replay rewrites the same row instead of adding to it. Late events need rules (below).",
+      "ex": "The biryani chain's 1,840 views at 20:41 become one row, written a few times at most.",
+      "like": "Keeping a tally on paper all afternoon and updating the notice board once an hour."
+    },
+    {
+      "t": "h2",
+      "x": "Late events and windows"
+    },
+    {
+      "t": "fig",
+      "id": "windows",
+      "cap": "A click made at 20:41 that arrives at 20:43, from a phone that was out of signal, is still counted in 20:41. Each minute stays open 5 more minutes; later clicks are left to the nightly recount."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Group by when the click happened, not when it arrived. Otherwise a phone coming out of a lift moves clicks to the wrong minute.",
+        "Keep each minute open for a few minutes after it ends. The aggregator keeps a watermark: the latest click time it has seen, minus 5 minutes. When the watermark passes the end of a minute, that minute is closed.",
+        "Phones' clocks can be wrong: the app sends its own clock time with each batch, and the server corrects each event by the difference."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Exact enough to bill"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A repeated event id counts once (a resend). A repeated click by the same person on the same ad within, say, 10 minutes also counts once (a double tap, or a curious person).",
+        "Obvious bots (hundreds of clicks a minute from one device, clicks with no view before them) are marked invalid, not deleted, so the advertiser can see why.",
+        "The nightly recount reads the raw events for the day, applies the same rules, and produces the bill. If the fast count and the recount differ, the recount wins, and the difference is a signal to look into."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Hot ads"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Partitioning by ad sends all of a very popular ad's events to one aggregator. For the biggest few ads, add a suffix from the person's id (ad_214#3, user id mod 8), so one person's clicks stay on one partition, to spread them over several partitions, and add up the parts when writing the minute total.",
+        "Apps can also send events in small batches every few seconds, which cuts requests without changing the counts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: an events log, counting per ad per minute, a table of minute totals for dashboards.",
+        "Senior: event time versus arrival time, windows and late events, repeats by id, checkpoints so a crash doesn't lose counts.",
+        "Lead: the fast path and the exact nightly recount, invalid clicks, hot ads split and added back, keeping raw events for disputes."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Hourly and daily numbers?\" Add up minute rows into hour and day rows as each closes; never recount raw events for a dashboard.",
+            "\"Unique viewers per ad?\" Exact counts of distinct people are expensive; an estimate (HyperLogLog) is a few KB per ad and close enough for a dashboard. Unlike counts, uniques can't be added up across minutes; merge the estimates instead.",
+            "\"An advertiser disputes a bill?\" Recount their ad from the raw events with the rules of that day, and show the invalid clicks with reasons.",
+            "\"The aggregator falls an hour behind?\" Add aggregators (up to one per partition); the log keeps the events, and the dashboard says how far behind it is.",
+            "\"How do you test it?\" Replay a day of events with injected repeats, late clicks and bots, and check the fast counts and the recount agree within the expected difference."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Ad views follow the lunch and dinner rush. The first-rush challenge practises sizing for a day with two peaks.",
+      "to": "lab/first-rush",
+      "go": "Try the lunch and dinner rush challenge"
+    }
+  ]
+}
