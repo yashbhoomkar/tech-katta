@@ -1,0 +1,239 @@
+{
+  "section": "interview-questions",
+  "slug": "ticket-booking",
+  "group": "medium",
+  "no": "QUESTION // 05",
+  "tag": "MEDIUM",
+  "date": "5 Nov 2026",
+  "title": "Design match ticket booking",
+  "dek": "Zotato Live opens sales for India vs Pakistan at noon: 1 lakh seats, 50 lakh people. Let them in without falling over, never sell a seat twice, and be fair to the people who aren't bots.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "The problem isn't the seats, it's the crowd: 50 lakh people for 1 lakh seats, all at 12:00. Put a waiting room in front and let people in at the rate the booking system can serve.",
+        "Everyone who joins before 12:00 gets a random place in the line, so refreshing at 11:59:59 doesn't help and bots gain nothing from speed.",
+        "A seat is available, held or sold. Holding takes all the seats in an order in one transaction, or none, and the hold expires after 10 minutes if nobody pays.",
+        "Show the seat map from a cache that's a second or two behind; trust only the hold.",
+        "Limit tickets per verified account and check at the door that a ticket is real and unused."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "See the stands and how many seats are left in each block.",
+        "Pick a block and how many seats (up to 4); get seats together, held while you pay.",
+        "Pay and get a ticket with a QR code; scan it at the gate.",
+        "Join a line when sales open and see your place in it.",
+        "Out of scope here: resale between fans, dynamic pricing, and season passes."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Correctness",
+          "A seat is sold once, never twice"
+        ],
+        [
+          "Fairness",
+          "Arriving a second early doesn't beat everyone else; bots don't win on speed"
+        ],
+        [
+          "Availability",
+          "The line keeps working even if booking slows down; nobody sees an error page at 12:00"
+        ],
+        [
+          "Scale",
+          "1 lakh seats, 50 lakh people in the first minutes"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Orders: 1 lakh seats at about 3 per order is roughly 30,000 orders. The whole sale is small.",
+        "Crowd: 50 lakh people refreshing every few seconds is over 10 lakh requests a second at 12:00. No booking system should see that.",
+        "Shopping: picking seats and paying takes about 3 minutes. To keep 20,000 people shopping at once, admit 20,000 every 3 minutes, about 110 a second.",
+        "So the seats are gone in about 5 minutes of admissions, and 49 lakh people need a fast, honest \"sold out\".",
+        "Writes: 30,000 orders × 3 seats over 5 minutes is about 300 seat updates a second. One database handles that; the risk is everyone fighting over the same rows, not the volume."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Event: `id`, `venue`, `sale_opens_at`, `limit_per_account`.",
+        "Seat: `event_id`, `seat_id` (block, row, number), `state` (available, held, sold), `order_id`, `hold_until`.",
+        "Order: `id`, `account_id`, `seats`, `state`, `amount`. Ticket: `order_id`, `seat_id`, a signed QR code, `scanned_at`.",
+        "Line token: `event_id`, `account_id`, `position`, `admitted_at`, signed by the server."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /events/e_indpak/line            → 200 { \"token\": \"…\", \"position\": 18342 }\nGET  /events/e_indpak/line/me         → 200 { \"position\": 412, \"wait_min\": 3 } or { \"admitted\": true }\n\nGET  /events/e_indpak/blocks          → 200 { \"blocks\": [ { \"id\": \"N2\", \"left\": 214, \"price\": 2500 }, … ] }\nPOST /events/e_indpak/holds   { \"block\": \"N2\", \"count\": 3 }    (needs an admitted token)\n→ 201 { \"order\": \"o_55\", \"seats\": [\"N2-14-7\", \"N2-14-8\", \"N2-14-9\"], \"hold_until\": \"12:13:05\" }\n→ 409 { \"left\": 1 }\n\nPOST /orders/o_55/paid    (from the payment provider)  → tickets issued",
+      "say": "Join the line for an event and get a signed token and a position; poll it until you're admitted. Admitted shoppers see how many seats are left per block, then ask to hold a number of seats in a block. The server picks seats together and holds them for 10 minutes, or answers 409 if there aren't enough. The payment provider confirms payment, and the tickets are issued."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "waiting-room",
+      "cap": "50 lakh people join the line before noon and get random places. The waiting room admits about 110 a second, only as fast as booking can serve, so about 20,000 shop at once. Each holds seats, pays, and gets a ticket; everyone else sees their place, then \"sold out\" when the seats are gone."
+    },
+    {
+      "t": "p",
+      "x": "The waiting room is the only part that meets the whole crowd, so make it cheap: a static page from a CDN, a signed token, and a small service that answers \"where am I in the line?\" from memory. Booking sits behind it and only ever sees admitted shoppers. If booking slows down, lower the admit rate; the line just moves slower."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Never selling a seat twice"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "READ, THEN WRITE",
+      "what": "Show the seat as free, let the customer pick it, then mark it sold when they pay.",
+      "use": "Simple, and fine for a small theatre on a quiet day.",
+      "avoid": "Hundreds of people see seat N2-14-7 free at the same moment, pick it, and pay. Everyone but one gets a refund and an angry message.",
+      "ex": "At 12:00:10, 300 people tap the same front-row seat behind the bowler's arm.",
+      "like": "Selling tickets from a chart nobody updates until the end of the day."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "LOCK THE ROW WHILE THEY PAY",
+      "what": "Lock the seat rows in the database from choosing until payment finishes.",
+      "use": "Nobody else can take the seats in the meantime.",
+      "avoid": "Payment takes a minute or more. Locks held that long block everyone else touching those rows, and a closed app leaves them locked until a timeout.",
+      "ex": "One customer goes to find a card; three others wait on the same block's rows.",
+      "like": "Keeping the till open while a customer runs to the ATM."
+    },
+    {
+      "t": "type",
+      "name": "Best",
+      "kind": "HOLD WITH AN EXPIRY",
+      "what": "In one short transaction, move every requested seat from available (or held but expired) to held, with `hold_until` 10 minutes ahead. If fewer rows changed than seats asked for, roll back. Payment changes held to sold, only if the hold is still yours and not expired.",
+      "use": "Exactly one buyer wins each seat, no lock outlives a millisecond, and seats from people who walk away come back by themselves.",
+      "avoid": "Expired holds must be ignored everywhere, so every query checks `hold_until`, and a sweeper resets them so the counts stay right.",
+      "ex": "Three seats asked, three rows changed: held till 12:13:05. Two changed: roll back, show \"only 2 left together, try 2 or another block\".",
+      "like": "A coat-check ticket: the coat is yours while the ticket is valid, then it goes back on the rack."
+    },
+    {
+      "t": "fig",
+      "id": "seat-states",
+      "cap": "A seat is available, held or sold. A hold moves it to held for 10 minutes; payment moves it to sold; no payment by the deadline puts it back. Every move is one conditional update, so two buyers can't both win."
+    },
+    {
+      "t": "h2",
+      "x": "Fewer fights over the same seats"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Let customers choose a block and a count, and pick the seats for them. Thousands choosing \"the best seat\" by hand all collide; assigning from the block spreads them out.",
+        "Shard nothing for one match: 1 lakh seats is a small table. Spread events across databases, and keep each event's seats together.",
+        "Show seats left per block from a cache refreshed every second or so. It's always a little behind; the hold is the truth."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "A fair line"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Open the line 30 minutes before sales. Everyone who joins by 12:00 gets a random position; people who join later go to the back in order. Being fast doesn't help, so bots refreshing at 11:59:59 gain nothing.",
+        "The token is signed and tied to the account, so it can't be forged or shared, and one account has one place.",
+        "Booking accepts only a signed admission token that expires after about 15 minutes. A call without one is refused, so nobody skips the line by calling the API directly.",
+        "Admit by what's left, not by the clock: when every seat is sold or held, stop admitting and tell everyone still in line it's sold out, with an option to wait for seats from holds that expire.",
+        "Show an honest position and a rough wait."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Bots and touts"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Verified phone number per account, and at most 4 tickets per account per match.",
+        "A challenge at line entry if the device or address looks automated; rate limits per account and per device.",
+        "Name on the ticket and ID checked at the gate for big matches, so bulk-bought tickets are hard to resell."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "At the gate"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The QR code is signed by the server, so a scanner can tell a real ticket from a made-up one without asking anyone.",
+        "Each gate keeps the list of tickets already scanned for its stands and syncs with the others every few seconds. A stadium's network is busy on match day, so gates must work through short outages.",
+        "A second scan of the same ticket is flagged; a person decides, not the scanner."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: seat states, holding before payment, and a way to stop two people buying one seat.",
+        "Senior: holds with expiry in one conditional update, the crowd numbers leading to a waiting room, a cached seat map, per-account limits.",
+        "Lead: fairness (random order before opening), setting the admit rate from booking's capacity, assigning seats to cut contention, and gates that work offline."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Payment arrives after the hold expired and the seats were resold.\" Refund at once and say so; the webhook must be safe to receive twice.",
+            "\"The customer taps Pay twice, or the app retries.\" Each payment carries the order's idempotency key, so the provider charges once and the hold is confirmed once.",
+            "\"The waiting room service dies.\" Positions are in signed tokens, so a restarted service can rebuild the line from them; admitted tokens keep working.",
+            "\"Two matches go on sale at the same minute.\" Separate lines and separate admit rates; each event's seats are in their own table or database.",
+            "\"Why not just add servers?\" The crowd is 50 times the seats. More servers serve more people a \"sold out\" faster; they don't make more seats.",
+            "\"How would you test it?\" Replay 1,000 holds for the same 10 seats at once and check exactly 10 are held, then let them expire and check the counts return."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The same match night from the other side: 3.5 crore people watching the stream. See how a CDN and enough servers keep up when everyone arrives at the toss.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try the IND vs PAK challenge"
+    }
+  ]
+}

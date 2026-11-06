@@ -157,6 +157,33 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`skt${uid}`}><titl
 <Dot x1={114} x2={234} y={75} y2={123} t0={.03} t1={.15} dur={D}/><Glow x={240} y={118} w={160} h={24} t0={.15} t1={.25} dur={D}/><Dot x1={404} x2={474} y={123} y2={75} t0={.25} t1={.35} dur={D}/><Glow x={480} y={58} w={150} h={24} t0={.35} t1={.5} dur={D}/>
 <Dot x1={114} x2={234} y={185} y2={137} t0={.45} t1={.57} dur={D}/><Glow x={240} y={118} w={160} h={24} t0={.57} t1={.67} dur={D}/><Dot x1={404} x2={474} y={137} y2={185} t0={.67} t1={.77} dur={D}/><Glow x={480} y={178} w={150} h={24} t0={.77} t1={.95} dur={D}/></g>}</svg>}
 
+// Ticket booking, FIG: the waiting room. 50 lakh people join the line (random places before noon); it admits
+// about 110 a second, as fast as booking can serve, so about 20,000 shop at once. Booking holds seats and
+// takes payment; everyone still in line sees their place, then "sold out".
+function WaitingRoomFig({still,uid=""}){const M=`wr${uid}`,D="10s";
+return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`wrt${uid}`}><title id={`wrt${uid}`}>50 lakh people join the line for tickets; everyone who joins before noon gets a random place. The waiting room admits about 110 people a second, as fast as booking can serve, so about 20,000 are shopping at once. Booking holds their seats in the seat database and takes payment. Everyone still in line sees their place, and then "sold out" once every seat is sold or held.</title><Mark m={M}/>
+<SBox x={0} y={110} w={120} t="50 lakh people"/><SBox x={170} y={110} w={150} t="Waiting room" blue/><text x="245" y="140" textAnchor="middle" className="fl">random places before 12:00</text>
+<SBox x={380} y={110} w={110} t="Booking"/><text x="435" y="140" textAnchor="middle" className="fl">~20,000 shopping</text>
+<SBox x={530} y={60} w={110} t="Seats"/><SBox x={530} y={160} w={110} t="Payment"/>
+<Line x1={122} y1={110} x2={166} y2={110} m={M}/><Line x1={322} y1={110} x2={376} y2={110} m={M}/><text x="349" y="100" textAnchor="middle" className="fl">110/s</text>
+<Line x1={492} y1={104} x2={526} y2={66} m={M}/><Line x1={492} y1={116} x2={526} y2={154} m={M}/>
+<Line x1={245} y1={124} x2={245} y2={186} m={M} c={GREY} dash/><text x="245" y="206" textAnchor="middle" className="fl">everyone else: your place, then</text><text x="245" y="222" textAnchor="middle" className="fl" style={{fill:RED}}>"sold out"</text>
+{!still&&<g aria-hidden="true">{[0,.12,.24,.36,.48,.6,.72].map(t=><Dot key={t} x1={124} x2={164} y={110} t0={t} t1={t+.08} dur={D}/>)}
+<Dot x1={324} x2={374} y={110} t0={.2} t1={.3} dur={D}/><Dot x1={494} x2={524} y={103} y2={67} t0={.32} t1={.4} dur={D}/><Dot x1={494} x2={524} y={117} y2={153} t0={.44} t1={.52} dur={D}/>
+<Dot x1={324} x2={374} y={110} t0={.6} t1={.7} dur={D}/></g>}</svg>}
+
+// Ticket booking, FIG: a seat's three states. Available → held (one conditional update, 10 minutes) → sold
+// when payment lands in time; held → available when 10 minutes pass with no payment.
+function SeatStatesFig({still,uid=""}){const M=`ss${uid}`,D="12s";
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`sst${uid}`}><title id={`sst${uid}`}>A seat is available, held or sold. A hold moves an available seat to held for 10 minutes. Payment in time moves it to sold. If 10 minutes pass with no payment, it goes back to available. Each move is one conditional update, so two buyers can't both win the same seat.</title><Mark m={M}/>
+<SBox x={0} y={100} w={150} t="Available"/><SBox x={245} y={100} w={150} t="Held, 10 min" blue/><SBox x={490} y={100} w={150} t="Sold"/>
+<Line x1={152} y1={100} x2={241} y2={100} m={M}/><text x="196" y="70" textAnchor="middle" className="fl">hold: only if</text><text x="196" y="84" textAnchor="middle" className="fl">still available</text>
+<Line x1={397} y1={100} x2={486} y2={100} m={M}/><text x="441" y="84" textAnchor="middle" className="fl">paid in time</text>
+<path d="M320 114 V170 H75 V118" fill="none" stroke={GREY} strokeDasharray="4 3" markerEnd={`url(#${M})`}/><text x="197" y="190" textAnchor="middle" className="fl">10 minutes pass, no payment: back on sale</text>
+{!still&&<g aria-hidden="true"><Glow x={0} y={88} w={150} h={24} t0={0} t1={.2} dur={D}/><Dot x1={154} x2={239} y={100} t0={.2} t1={.3} dur={D}/><Glow x={245} y={88} w={150} h={24} t0={.3} t1={.5} dur={D}/>
+<Dot x1={399} x2={484} y={100} t0={.5} t1={.6} dur={D}/><Glow x={490} y={88} w={150} h={24} t0={.6} t1={.78} dur={D}/>
+<Show t0={.8} t1={.98} dur={D}><path d="M320 114 V170 H75 V118" fill="none" stroke={BLUE} strokeWidth="2"/></Show></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -169,4 +196,6 @@ export const QUESTION_FIGS={
 "geo-cells":{C:GeoCellsFig,ar:640/280,title:()=>"WHY YOU SEARCH NINE CELLS"},
 "minutes-flow":{C:MinutesFig,ar:640/260,title:()=>"WHERE THE 10 MINUTES GO"},
 "stock-hold":{C:StockHoldFig,ar:640/260,title:()=>"THE LAST PACKET, TWO BUYERS"},
+"waiting-room":{C:WaitingRoomFig,ar:640/250,title:()=>"50 LAKH PEOPLE, ONE LINE"},
+"seat-states":{C:SeatStatesFig,ar:640/220,title:()=>"A SEAT'S THREE STATES"},
 };
