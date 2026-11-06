@@ -46,6 +46,9 @@ strike items here at any time; agents follow the owner's edits.
 - **Push each PR once, after review** (fixes from review go in before the first push), so an item
   costs about 4 Vercel deployments. `tech-katta-status` skips builds unless `status-page/` changed.
 - **At most 8 cycles a day** (UTC). After the 8th, stop chaining; the backup schedule picks up the next day.
+- **Don't wait for Vercel** (owner, 2026-11-06). If Vercel can't deploy (daily limit), keep building,
+  testing locally and merging on green checks. When Vercel deploys again, the first cycle live-checks
+  everything that went out together.
 - **Stop when nothing is worth doing.** If only cosmetic items or `waiting for owner` items are left,
   stop and say so; the backup schedule restarts the chain only if there's a `ready` item.
 - **Weekly look at real use** (every 7 days): Vercel Analytics plus our own events (visitors, articles
@@ -84,8 +87,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q08 Dating app swipes (medium) | ready | needs new figures (frontend), so only while Vercel deploys |
-| 2 | content | Q09 Coding judge (medium) | ready | |
+| 1 | content | Q09 Coding judge (medium) | ready | |
 | 3 | content | Q10 Chat app (medium) | ready | |
 | 4 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
 | 5 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
@@ -234,6 +236,7 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
+- 2026-11-06 — Q08 Design dating app swipes, figures `swipe-flow` and `pair-row`
 - 2026-11-06 — Problems page shows each question's Lab challenge and stars; every question ends with "Next problem" and a link to Problems (article list gains `lab`; waits for Vercel)
 - 2026-11-06 — Problems page: every question and Lab challenge in one list with practised / stars, a "Not done yet" filter (owner: position the site as practice problems with scores; waits for Vercel to deploy)
 - 2026-11-06 — Lab: Monday sync challenge for Q02, the first about queues (#194)

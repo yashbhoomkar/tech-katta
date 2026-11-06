@@ -1,0 +1,235 @@
+{
+  "section": "interview-questions",
+  "slug": "dating-swipes",
+  "group": "medium",
+  "no": "QUESTION // 08",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design dating app swipes",
+  "dek": "Zotato Date shows people nearby who'd like to go out for dinner, one card at a time. Swipe right for yes, left for no; when two people both say yes, it's a match and both phones buzz at once. Build it for 50 lakh people swiping every evening.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Two jobs: hand each person a stack of profiles to swipe (reading), and record every swipe and spot a match (writing). Build them separately.",
+        "Keep one row per pair of people, with a yes-or-no for each side. A swipe updates that row and reads the other side in the same step, so two people saying yes at the same moment still make exactly one match.",
+        "Don't search for candidates on every swipe. Build a deck of a few hundred profiles ahead of time, keep it in memory, and refill it in the background.",
+        "Never show someone the same profile twice: keep a compact 'seen' filter per person. If it's sometimes wrong, someone gets skipped, which is harmless.",
+        "Matches go on a queue and become pushes. Left swipes are never shown to anyone, and nobody's exact location ever leaves the server."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Show a stack of profiles near me that fit my preferences (age range, distance), one at a time.",
+        "Swipe left or right. When two people have both swiped right, create a match and tell both within a second or two.",
+        "Don't show a profile I've already swiped on.",
+        "Out of scope here: chat after the match, photo upload (see the photo-sharing question), and ranking by attractiveness or activity, which we'll note where it plugs in."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "The next card appears instantly; a swipe is acknowledged in under 100 ms"
+        ],
+        [
+          "Correctness",
+          "Two yeses always make exactly one match, never zero and never two"
+        ],
+        [
+          "Freshness",
+          "A new profile can show up in decks within minutes, not seconds"
+        ],
+        [
+          "Scale",
+          "50 lakh people a day, 100 swipes each, a big share of them between 8 and 11 pm"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Swipes: 50 lakh people × 100 is 50 crore a day. That averages about 5,800 a second. About 40% of it comes in the three evening hours, about 18,500 a second, so plan for 20,000.",
+        "Each swipe is small: two user ids, a yes or no and a time, about 24 bytes. 50 crore a day is about 12 GB a day, over 4 TB a year. Split it across machines by pair from the start.",
+        "Decks: 200 profile ids × 8 bytes is 1.6 KB a person. For 50 lakh daily users that's 8 GB, which fits in memory on a small Redis cluster.",
+        "Seen filter: remembering 10,000 profiles with a 1% error needs about 12 KB per person. Store it with the person and load it when building their deck.",
+        "Matches are few by comparison: if a third of swipes are right and one right swipe in fifty completes a match, that's about 33 lakh matches a day, around 120 a second at the busiest. The push queue is never busy."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Profile: `id`, `name`, `age`, `photos`, `area` (a map cell, never exact coordinates), `preferences`, `last_active`.",
+        "Pair: `low_id`, `high_id` (the two user ids, smaller first), `low_says`, `high_says` (yes, no or not yet), `matched_at`.",
+        "Deck: per person, a list of profile ids to show next, in memory.",
+        "Match: `pair`, `created_at`. One per pair, ever."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET  /deck?count=20          → 200 { \"profiles\": [ { \"id\": \"u_42\", \"name\": \"…\", \"km\": 3 }, … ] }\nPUT  /swipes/u_42            { \"says\": \"yes\" }   → 200 { \"match\": false }\n                                                → 200 { \"match\": true, \"with\": \"u_42\" }",
+      "say": "Get the next profiles a few at a time. Record a swipe on a person; the answer says whether it made a match."
+    },
+    {
+      "t": "p",
+      "x": "The swipe is a PUT on the person you swiped: sending it twice (a retry on a bad network) changes nothing the second time."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "swipe-flow",
+      "cap": "Swiping updates the pair's row; when both have said yes, a message goes on a queue and both phones get a push. Browsing reads the next profiles from a deck in Redis, which a deck builder refills from profiles near you, minus the ones you've seen."
+    },
+    {
+      "t": "p",
+      "x": "The two halves have different shapes. Swipes are many small writes that must be exactly right. Decks are reads that must be instant but can be a few minutes stale. Keeping them apart lets each be built for its job."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Spotting a match without missing one"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "WRITE, THEN CHECK",
+      "what": "Store each swipe as its own record (who, whom, yes or no). After saving a yes, look up whether the other person has said yes to you.",
+      "use": "Simple, and right almost all the time.",
+      "avoid": "Two people swipe right on each other in the same instant. Each saves, then checks before the other's save is visible, and each sees 'no'. The match is lost, and they never see each other again.",
+      "ex": "Ananya and Rohit are both on the app at 9 pm and swipe on each other within a few milliseconds. Neither gets a match.",
+      "like": "Two friends each texting 'shall we meet?' and each reading the other's silence as a no."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "ONE ROW PER PAIR",
+      "what": "Keep one row for each pair, keyed by the two ids with the smaller first. A swipe sets its own side and reads the other side in one atomic update. Whoever sets the second yes creates the match.",
+      "use": "Both swipes go to the same row, so one of them always lands second and sees the other. Exactly one match, without locks across machines.",
+      "avoid": "Rows exist only for pairs where someone swiped, but that's still crores of rows. Split them across database machines by the pair key.",
+      "ex": "Ananya's update finds Rohit's side empty and stops. Rohit's update, a moment later on the same row, finds her yes and creates the match.",
+      "like": "One shared sheet per pair of friends. Each ticks their own box and looks at the other box while holding the pen."
+    },
+    {
+      "t": "fig",
+      "id": "pair-row",
+      "cap": "Ananya and Rohit swipe right at the same moment. Both updates go to the same row and read the other side in the same step: hers sees 'no' and stops, his sees 'yes' and creates the match. Exactly one of them makes it."
+    },
+    {
+      "t": "p",
+      "x": "Most databases can do this. In SQL, one `UPDATE … RETURNING` on the row. In Redis, a short script that sets one field and reads the other. Either way, the update and the read happen together."
+    },
+    {
+      "t": "h2",
+      "x": "Decks that are ready before you are"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Finding candidates means 'people near this point, of these ages, who'd like someone like me'. That's a geo query (see the restaurants-near-me question): look up your map cell and its neighbours.",
+        "Do it in the background, not on each swipe. Build a deck of about 200, filter out anyone in your seen filter, rank them, and keep the list in Redis.",
+        "When fewer than 50 are left, queue a refill. The phone fetches 20 at a time, so it always has the next card ready.",
+        "Anyone who hasn't opened the app in a while gets their deck built when they come back, not every evening.",
+        "Ranking (who is active, who is likely to swipe back) plugs in at deck-building time. The deck is still the list the phone reads."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Not showing someone twice"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keeping every past swipe in memory for every person is too much. A Bloom filter answers 'have I seen this id?' in about 12 KB for 10,000 profiles.",
+        "It never says 'no' for someone you've seen. It sometimes says 'yes' for someone you haven't, and that person is skipped this time. A missed card is harmless; a repeated one annoys.",
+        "The full swipe history stays in the pair rows. If a filter is lost, rebuild it from them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Privacy"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Nobody learns about a left swipe, or that they were swiped at all, unless it's a match.",
+        "Store areas, not coordinates, and show rounded distances (\"about 3 km\"). Otherwise someone could work out where a person lives by measuring from a few places.",
+        "Blocking someone removes them from each other's decks and stops a match, even an old one, from showing."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Swipe service slow or down: the phone keeps swipes and sends them later. They're PUTs on the pair, so a resend is safe.",
+        "Deck cache lost: rebuild decks for people as they open the app. The first cards are a little slower for a while.",
+        "Push service down: matches are already saved, and the queue holds the pushes. People see the match the next time they open the app."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: the two paths (decks and swipes), a table of swipes, a match check, a cache of profiles to show.",
+        "Senior: the race that loses a match and the one-row-per-pair fix, precomputed decks, the seen filter, the evening numbers.",
+        "Lead: splitting pair rows, rebuilding filters and decks after loss, privacy (no exact locations, nothing about left swipes), where ranking plugs in."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Someone very popular gets lakhs of right swipes.\" Each yes is a different pair row, so there's no single hot row. Their decks don't change either.",
+            "\"Can someone undo a swipe?\" Allow it for a few seconds before it's sent, on the phone. Once a match exists, undoing means unmatching, which is a different action.",
+            "\"Show 'people who liked you'?\" Read pair rows where the other side said yes and you haven't answered. That needs an index on the pair rows by person.",
+            "\"Travel to another city?\" Build the deck from the new area. The seen filter still applies.",
+            "\"How do you test the match logic?\" Fire both swipes of many pairs at once, in both orders, and check that every pair with two yeses has exactly one match."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Swipes pile up in the evening, like dinner orders. The dinner-rush challenge is practice for sizing servers for a daily peak.",
+      "to": "lab/first-rush",
+      "go": "Try the dinner-rush challenge"
+    }
+  ]
+}
