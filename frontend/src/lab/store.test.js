@@ -69,6 +69,12 @@ test("a design keeps its challenge only while the catalogue has that challenge",
   assert.equal(cleanDesign({nodes:[],edges:[],challenge:{}},lab,"x").challenge,undefined);
 });
 
+test("a design keeps the problem it was opened for, if it looks like an article slug",()=>{
+  assert.equal(cleanDesign({nodes:[],edges:[],problem:"url-shortener"},lab,"x").problem,"url-shortener");
+  assert.equal(cleanDesign({nodes:[],edges:[],problem:"../x"},lab,"x").problem,undefined);
+  assert.equal(cleanDesign({nodes:[],edges:[],problem:{}},lab,"x").problem,undefined);
+});
+
 test("huge or absurd saved designs are cut down (QA M5, L7)",()=>{
   const out=cleanDesign({nodes:Array.from({length:500},(_,i)=>({id:"n"+i,type:"server",x:1e308,y:-5})),edges:[]},lab,"x");
   assert.equal(out.nodes.length,200);

@@ -1,0 +1,17 @@
+.solve{display:grid;grid-template-columns:var(--qw,460px) 6px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:calc(100vh - var(--head));background:#fff}
+.solve.hide{grid-template-columns:minmax(0,1fr)}.solve.hide .sv-tabs{display:none}
+.sv-tabs{grid-column:1;grid-row:1;display:flex;border-bottom:1px solid var(--line);background:var(--surface)}.sv-tabs a,.sv-tabs button{display:flex;align-items:center;min-height:40px;padding:0 16px;border:0;border-right:1px solid var(--line);background:none;font:600 12px var(--mono);letter-spacing:.04em;color:#3a4654;text-decoration:none;cursor:pointer}
+.sv-tabs a:hover,.sv-tabs button:hover{color:var(--blue)}.sv-tabs .on{background:#fff;color:var(--blue);box-shadow:inset 0 -2px 0 var(--blue)}
+.sv-q{grid-column:1;grid-row:2;overflow:auto;padding:22px 24px 40px}.sv-q>label{display:block;font:600 10px var(--mono);letter-spacing:.08em;color:var(--blue)}.sv-q h1{font-size:24px;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.2}
+.sv-split{grid-column:2;grid-row:1/3;cursor:col-resize;background:var(--line);border-left:2px solid #fff;border-right:2px solid #fff;touch-action:none}.sv-split:hover,.sv-split:focus-visible{background:var(--blue)}
+.sv-lab{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;min-width:0;overflow:hidden}.solve.hide .sv-lab{grid-column:1}
+.sv-dek{color:var(--muted);margin:0;font-size:15px;line-height:1.5}.sv-how{margin:16px 0 0;padding:10px 12px;border-left:3px solid var(--blue);background:#f8faff;font-size:14px;line-height:1.5}
+.sv-body h2{font-size:17px;margin:26px 0 0;padding-top:12px;border-top:1px solid var(--line);letter-spacing:-.01em}.sv-body ul{padding-left:18px;font-size:14.5px;line-height:1.55}.sv-body p{font-size:14.5px;line-height:1.55}.sv-body .a-table{margin-top:14px;font-size:13px}.sv-body .a-table table{min-width:0}
+.sv-links{display:grid;gap:8px;margin-top:26px}.sv-links a{display:block;border:1px solid var(--line);padding:10px 12px;text-decoration:none;color:var(--blue);font-weight:600;font-size:14px;line-height:1.35}.sv-links a:hover{background:var(--surface)}.sv-links small{display:block;font:500 10px var(--mono);color:var(--muted);letter-spacing:.06em}.sv-links .sv-answer{background:#f8faff;border-color:var(--blue)}
+.sv-toggle{align-self:flex-start;height:40px;padding:0 12px;border:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);background:var(--surface);font:600 11px var(--mono);letter-spacing:.06em;color:#3a4654;cursor:pointer}.sv-toggle:hover{color:var(--blue)}
+.solve .lab-wrap{height:calc(100vh - var(--head) - 40px)}
+/* the worked answer inside the pane: the article without its frame */
+.sv-q .d-read{display:block;max-width:none;margin:0}.sv-q .d-article{border:0;padding:0;max-width:none;background:none}.sv-q .d-article h1{font-size:26px}.sv-q .a-table table{min-width:0}
+@media(max-width:900px){.solve{display:block;height:auto}.sv-tabs{position:sticky;top:var(--head);z-index:5}.sv-q{padding:20px 16px 28px}.solve:not(.v-canvas) .sv-lab{display:none}.solve .lab-wrap{height:auto}}
+.d-body.d-lab{padding:0;background:#fff;min-height:0}
+.solve .lab-top{flex-wrap:wrap}.solve .lab-name{flex:1 1 220px}

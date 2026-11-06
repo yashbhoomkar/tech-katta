@@ -40,7 +40,9 @@ export function cleanDesign(d,lab,id){
   const cr=obj(d.credit)?d.credit:{};
   // a design started from a Lab challenge remembers which one (only if the catalogue still has it)
   const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
-  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,
+  // a design opened from Problems remembers the question (its article slug)
+  const problem=typeof d.problem==="string"&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.problem)?{problem:d.problem}:{};
+  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,
     credit:{spent:fin(cr.spent)&&cr.spent>0?Math.min(cr.spent,lab.budget):0,hours:fin(cr.hours)&&cr.hours>0?cr.hours:0}};
 }
 

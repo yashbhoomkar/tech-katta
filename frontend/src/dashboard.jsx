@@ -1,4 +1,4 @@
-import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";import Problems from"./problems.jsx";
+import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";import Problems,{Questions}from"./problems.jsx";
 import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import LibraryCards from"./library.jsx";import Practice from"./practice.jsx";import{Analytics}from"@vercel/analytics/react";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle,vercelGate}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
@@ -7,7 +7,7 @@ const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
 // Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"?slug:undefined}};
+const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"||sec==="problems"&&c.problems?.solve?slug:undefined}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 // Read time of the main text; "more" sections and type details are extra.
 const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
@@ -157,7 +157,7 @@ case"table":return <div className={cls("a-table")} role="region" aria-label={b.l
 case"more":return <details className="a-more a-deeper"><summary><small>GO DEEPER</small>{b.label}</summary>{b.body.map((x,j)=><Block key={j} b={x} i={`${k}.${j}`} still={still}/>)}</details>;
 default:return null}}
 
-function Article({a}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
+function Article({a,pane}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
 // Interview Questions (not the method page) get a Practice button: answer it yourself against the clock first.
 const pr=c.practice&&a.section==="interview-questions"&&a.group!=="start";const[practising,setPractising]=useState(false);const[practised,setPractised]=useState(()=>!!readProgress().steps["practice:"+a.slug]);
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
@@ -167,9 +167,10 @@ return <div className="d-read"><article className="d-panel d-article" aria-label
 <nav className="crumbs" aria-label="Breadcrumb"><a href={`#${a.section}`}>{label}</a><span aria-hidden="true">/</span><span>{a.no}</span></nav>
 <label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{a.date} · {main} MIN READ{all>main?` · ${all} WITH DETAILS`:""}</span><Share a={a}/></div>
 {pr&&<button type="button" className="pr-open" onClick={()=>setPractising(true)}>{practised?c.practice.again:c.practice.button}{practised&&<small>{c.practice.practised}</small>}</button>}
+{pr&&!pane&&c.problems?.solve&&<a className="pr-solve" href={`#problems/${a.slug}`}>{c.problems.solve.button} →</a>}
 {practising&&<Practice p={c.practice} a={a} onClose={()=>{setPractising(false);setPractised(!!readProgress().steps["practice:"+a.slug])}}/>}
 {a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
-<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article><Rail a={a}/></div>}
+<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>{!pane&&<Rail a={a}/>}</div>}
 // Wide screens: a column beside the article with its sections (the one you are reading is marked) and,
 // for an article with a Lab card, a shortcut to it. Hidden below 1240 px, where the article fills the width.
 function Rail({a}){const hs=a.body.map((b,i)=>b.t==="h2"?{id:`s-${i}`,x:b.x}:null).filter(Boolean);const lab=a.body.find(b=>b.t==="lab");const[on,setOn]=useState(null);
@@ -177,8 +178,9 @@ useEffect(()=>{if(!hs.length||typeof IntersectionObserver==="undefined")return;c
 const pick=()=>{let cur=null;const line=innerHeight*.35;for(const el of els){if(el.getBoundingClientRect().top<=line)cur=el.id;else break}if(innerHeight+scrollY>=document.documentElement.scrollHeight-4)cur=els[els.length-1]?.id??cur;setOn(cur)};const io=new IntersectionObserver(pick,{rootMargin:"0px 0px -60% 0px"});els.forEach(el=>io.observe(el));addEventListener("scroll",pick,{passive:true});pick();
 return()=>{io.disconnect();removeEventListener("scroll",pick)}},[a.slug]);
 const go=(e,id)=>{const el=document.getElementById(id);if(!el)return;e.preventDefault();el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});setOn(id)};
-if(!hs.length&&!lab)return null;
+const solve=c.problems?.solve&&a.section==="interview-questions"&&a.group!=="start";if(!hs.length&&!lab&&!solve)return null;
 return <aside className="d-rail" aria-label="On this page">{hs.length>0&&<nav><b>ON THIS PAGE</b><ol>{hs.map(h=><li key={h.id}><a href={`#${a.section}/${a.slug}`} aria-current={on===h.id?"location":undefined} className={on===h.id?"on":""} onClick={e=>go(e,h.id)}>{h.x}</a></li>)}</ol></nav>}
+{solve&&<a className="rail-lab rail-solve" href={`#problems/${a.slug}`}><b>{c.problems.solve.eyebrow}</b><span>{c.problems.solve.button} →</span></a>}
 {lab&&<a className="rail-lab" href={`#${lab.to}`}><b>TRY IT IN THE LAB</b><span>{lab.go||"Open the Lab"} →</span></a>}</aside>}
 // After an Interview Question: the next one in the list (site.json "problems" copy), and the Problems page.
 function NextProblem({a}){const p=c.problems;if(!p?.next||a.section!=="interview-questions"||a.group==="start")return null;const qs=articles.filter(x=>x.section===a.section&&x.group!=="start");const n=qs[qs.findIndex(x=>x.slug===a.slug)+1];
@@ -203,7 +205,8 @@ return <section className="d-panel d-start" aria-labelledby="d-title"><label>{c.
 // Privacy and Terms pages (site.json "privacy", "terms").
 function Policy({p}){return <section className="d-panel" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.updated}</p>
 {p.sections.map(([h,x])=><div className="priv" key={h}><h2>{h}</h2><p>{x}</p></div>)}</section>}
-function Section({id}){if(id==="did-you-know"&&c.fact)return <Fact/>;if(id==="problems"&&c.problems)return <Problems p={c.problems} articles={articles}/>;const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
+function Section({id}){if(id==="did-you-know"&&c.fact)return <Fact/>;if(id==="problems"&&c.problems)return <Problems p={c.problems} articles={articles} groups={d.groups?.["interview-questions"]}/>;const[,label,card]=d.sections.find(s=>s[0]===id);const t=c.topics.cards.find(x=>x.id===card);
+if(id==="interview-questions"&&c.problems?.solve)return <Questions p={c.problems} articles={articles} label={label} desc={t?t.desc:""} eyebrow={t?t.no:""} groups={d.groups?.[id]}/>;
 return <section className="d-panel" aria-labelledby="d-title"><label>{t?t.no:c.notes.eyebrow}</label><h1 id="d-title">{label}</h1><p className="d-desc">{t?t.desc:c.notes.desc}</p>
 {id==="quick-notes"?<><ol className="d-notes">{c.notes.items.map(([n,title,tag,status])=><li key={n}><span className="d-no">{n}</span><b>{title}</b><span className="d-tag">{tag}</span><em className={status==="DRAFT"?"draft":""}>{status}</em></li>)}</ol><Numbers n={c.numbers}/></>
 :<List id={id}/>}</section>}
@@ -217,7 +220,7 @@ function List({id}){const list=articles.filter(a=>a.section===id);return list.le
 :<div className="d-empty"><span>0 PAGES</span><p>{d.empty}</p></div>}
 
 // The System Design Lab (React Flow + simulation) loads only when its tab is opened.
-const Lab=lazy(()=>import("./lab/Lab.jsx"));
+const Lab=lazy(()=>import("./lab/Lab.jsx"));const Solve=lazy(()=>import("./solve.jsx"));
 
 // Every tab needs a signed-in visitor (owner, 11-05); the start page, Privacy and Terms stay open.
 // gate: false (show the page), "wait" (still checking the session) or the locked page's title.
@@ -230,7 +233,10 @@ function Dashboard(){const[route,setRoute]=useState(fromHash);const gate=useGate
 const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
 // The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
 // other pages is untouched), and the toggle works per mode.
-const inLab=active==="lab"&&!route.art;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
+// Every Interview Question opens in the problem workspace (solve.jsx): on its description from Problems,
+// on its worked answer from Interview Questions. Needs site.json problems.solve.
+const ws=!c.problems?.solve?null:active==="problems"&&route.sub?route.sub:route.art&&route.art.section==="interview-questions"&&route.art.group!=="start"?route.art.slug:null;
+const solving=!!ws;const inLab=(active==="lab"&&!route.art)||solving;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
 // Back/Forward return to where you were on that page; following a link starts at the top (QA M8).
 useEffect(()=>{const pos=new Map();let clicked=false,key=location.hash;const onScroll=()=>pos.set(key,scrollY);const onClick=e=>{const a=e.target.closest?.("a[href^='#']");if(a)clicked=true};
 addEventListener("scroll",onScroll,{passive:true});document.addEventListener("click",onClick,true);
@@ -252,7 +258,7 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}><a class
 {c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}{c.terms&&<a className="side-priv" href="#terms">{c.account?.termsLink||c.terms.title}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
 <div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>setTour(active==="lab"?"lab":"dashboard")}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
-<main tabIndex={-1} className={"d-body"+(active==="lab"&&!route.art&&!gate?" d-lab":"")}>{gate==="wait"?<Loading/>:gate?<PageLock t={c.account} lock={c.account.pageLock} title={gate} section={active} slug={route.art?.slug||route.sub||""}/>:route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
+<main tabIndex={-1} className={"d-body"+(inLab&&!gate?" d-lab":"")}>{gate==="wait"?<Loading/>:gate?<PageLock t={c.account} lock={c.account.pageLock} title={gate} section={active} slug={route.art?.slug||route.sub||""}/>:solving?<Suspense fallback={<Loading/>}><Solve slug={ws} tab={active==="problems"?"q":"a"} s={c.problems.solve} articles={articles} Block={Block} Article={Article} prep={knownFigs} Lab={Lab}/></Suspense>:route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
 // Storage can be blocked (private modes, site settings): every read and write is optional (QA M1).
