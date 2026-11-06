@@ -70,7 +70,7 @@
         "100 crore pages in a month of about 26 lakh seconds is around 390 pages a second, day and night.",
         "At about 100 KB a page, that's about 39 MB a second of downloads, roughly 310 Mbps, and 100 TB a month before compression. Compressed, closer to 25 TB.",
         "Politeness: at one page a second per site, 390 pages a second needs at least 390 sites being crawled at any moment. With 50 lakh sites, there are plenty.",
-        "The seen filter: 100 crore URLs. Stored as 8-byte hashes, that's 8 GB, which fits on one machine or a small cluster; a Bloom filter would be smaller still."
+        "The seen filter: 100 crore URLs fetched, and several times more links seen. Stored as 8-byte hashes, that's 8 GB, which fits on one machine or a small cluster; a Bloom filter would be smaller still."
       ]
     },
     {
@@ -142,7 +142,7 @@
       "items": [
         "Fetch each site's robots.txt before its first page, cache it for a day, and skip anything it disallows.",
         "Send a clear user agent with a page explaining the crawler and how to contact Zotato.",
-        "Slow down when a site answers slowly or with errors; stop for a while when it says \"too many requests\"."
+        "Slow down when a site answers slowly or with errors; stop for a while when it says \"too many requests\" (and wait as long as its Retry-After asks)."
       ]
     },
     {
@@ -152,9 +152,9 @@
     {
       "t": "list",
       "items": [
-        "Normalise each URL before checking it: lower-case the host, drop the #fragment and tracking parameters, sort the query. Otherwise one page appears under ten URLs.",
+        "Normalise each URL before checking it: lower-case the host, drop the #fragment and known tracking parameters (utm_source and the like), and sort the query (a rare site cares about the order; leave those as they are). Otherwise one page appears under ten URLs.",
         "Check it against the seen filter. A Bloom filter is compact and fast; its rare false \"seen\" answer means a page is skipped this round, which is acceptable.",
-        "Pages with different URLs but the same content (print versions, mirrors) are spotted by a hash of the main text; keep one copy."
+        "Pages with different URLs but the same content (print versions, mirrors) are spotted by a hash of the main text; keep one copy. Near-copies (a changed date or ad) need a similarity hash such as SimHash."
       ]
     },
     {
@@ -177,7 +177,7 @@
       "t": "list",
       "items": [
         "Each URL gets a next_fetch time. If the page changed since last time, fetch it sooner next time; if not, wait longer, within limits (a day to three months).",
-        "Ask with If-Modified-Since or an ETag where the site supports it: an unchanged page costs a tiny reply instead of a full download."
+        "Ask with If-Modified-Since, or If-None-Match with the page's ETag, where the site supports it: an unchanged page comes back as a short 304 instead of a full download."
       ]
     },
     {

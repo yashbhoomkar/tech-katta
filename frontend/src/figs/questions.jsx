@@ -451,7 +451,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><titl
 // Web crawler, FIG: the loop. The frontier hands out URLs; fetchers check robots.txt and download pages;
 // pages are saved and parsed; new links go through the seen filter, and only new ones join the frontier.
 function CrawlFlowFig({still,uid=""}){const M=`cw${uid}`,D="12s";
-return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>The crawl loop. The frontier hands out URLs to fetchers, which check each site's robots.txt and download the page. Pages are saved and parsed for links. Each new link goes through the seen filter; only links never seen before join the frontier, and the loop continues.</title><Mark m={M}/>
+return <svg viewBox="0 0 640 200" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>The crawl loop. The frontier hands out URLs to fetchers, which check each site's robots.txt and download the page. Pages are saved and parsed for links. Each new link goes through the seen filter; only links never seen before join the frontier, and the loop continues.</title><Mark m={M}/>
 <SBox x={0} y={60} w={120} t="Frontier" blue/><SBox x={170} y={60} w={130} t="Fetchers"/><SBox x={350} y={60} w={120} t="Page store"/><SBox x={520} y={60} w={120} t="Parser"/>
 <SBox x={350} y={170} w={170} t="Seen filter"/>
 <Line x1={122} y1={60} x2={166} y2={60} m={M}/><Line x1={302} y1={60} x2={346} y2={60} m={M}/><Line x1={472} y1={60} x2={516} y2={60} m={M}/>
@@ -503,6 +503,6 @@ export const QUESTION_FIGS={
 "pay-states":{C:PayStatesFig,ar:640/220,title:()=>"UNKNOWN IS NOT FAILED"},
 "sched-flow":{C:SchedFlowFig,ar:640/240,title:()=>"DUE THIS MINUTE, CLAIMED ONCE"},
 "lease":{C:LeaseFig,ar:640/220,title:()=>"WHEN A WORKER DIES MID-JOB"},
-"crawl-flow":{C:CrawlFlowFig,ar:640/230,title:()=>"FETCH, PARSE, FILTER, REPEAT"},
+"crawl-flow":{C:CrawlFlowFig,ar:640/200,title:()=>"FETCH, PARSE, FILTER, REPEAT"},
 "polite":{C:PoliteFig,ar:640/230,title:()=>"ONE QUEUE PER SITE"},
 };
