@@ -72,7 +72,7 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 |---|---|---|---|---|
 | 1 | build | Practice mode v2: the summary lists the checks you didn't tick, by step | done | shipped run 16 |
 | 2 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 3 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 3 | content | Q07–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
