@@ -28,6 +28,7 @@
     "interview-questions/coding-judge",
     "interview-questions/chat-app",
     "interview-questions/notifications",
-    "interview-questions/autocomplete"
+    "interview-questions/autocomplete",
+    "interview-questions/payments"
   ]
 }
