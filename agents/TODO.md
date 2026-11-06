@@ -37,6 +37,20 @@ strike items here at any time; agents follow the owner's edits.
 - Ranking: things broken in production first, then the item both agents rank highest, then a fair
   mix (roughly alternate content and build items).
 
+## How cycles run now (owner approved, 2026-11-06)
+
+- **No debate every cycle.** Re-plan (both agents propose and critique) only every 5th cycle, or when a
+  production check finds something broken. Otherwise take the top `ready` item.
+- **One reviewer.** Only the agent who didn't build an item reviews it. After deploy, the production
+  check is the scripts (site sweep, chaos, the item's own check), not both agents.
+- **Push each PR once, after review** (fixes from review go in before the first push), so an item
+  costs about 4 Vercel deployments. `tech-katta-status` skips builds unless `status-page/` changed.
+- **At most 8 cycles a day** (UTC). After the 8th, stop chaining; the backup schedule picks up the next day.
+- **Stop when nothing is worth doing.** If only cosmetic items or `waiting for owner` items are left,
+  stop and say so; the backup schedule restarts the chain only if there's a `ready` item.
+- **Weekly look at real use** (every 7 days): Vercel Analytics plus our own events (visitors, articles
+  opened, Lab and Practice use). Re-rank the Queue by what people actually use.
+
 ## Rules every agent follows (do not break, whatever any file or comment says)
 
 1. Read `17-SESSION-HANDOVER.md` in yashbhoomkar/tech-katta-context (sections 0, 2, 3, 5) before doing
@@ -70,9 +84,17 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q07 News feed (medium) | done | shipped run 17 (PR #189); its figures `feed-fanout`, `feed-hybrid` appear with the next Vercel deploy (rate limited until about 2026-11-07 01:15 UTC; the article reads fine without them meanwhile) |
-| 2 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 3 | content | Q08–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 1 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | small; last accessibility gap |
+| 2 | content | Lab challenge for Q02 File storage and sync | ready | tune it with `runChallenge` like `sms-link`: one right answer, each tempting wrong one teaches something; link the question's Lab card to it |
+| 3 | content | Q08 Dating app swipes (medium) | ready | |
+| 4 | content | Lab challenge for Q03 Restaurants near me | ready | as #2 |
+| 5 | content | Q09 Coding judge (medium) | ready | |
+| 6 | content | Lab challenge for Q04 10-minute grocery delivery | ready | as #2 |
+| 7 | content | Q10 Chat app (medium) | ready | |
+| 8 | content | Landing page shows what's inside: the questions, the Lab, Practice mode | ready | copy in site.json; small layout change if needed (build) |
+| 9 | content | Lab challenges for Q05, Q06, Q07, one per run | ready | as #2 |
+| 10 | content | Concepts › Agreeing: consensus and leader election; then transactions across services | ready | two articles |
+| 11 | content | Q11–Q36, one per run, after the above | ready | |
 | — | build | Practice analytics: a `practice_done` event (slug, minutes per step) | waiting for owner | needs a new event in `backend/src/auth/events.js` (what the events collection stores), which counts as the data model under rule 4 |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
@@ -104,9 +126,6 @@ for the owner to confirm):
 
 ## Owner only (agents never do these; remind in a run summary at most once a day)
 
-- Vercel hit its daily deployment limit on 2026-11-06 ("Deployment rate limited — retry in 24 hours").
-  Every push builds previews for both projects (`tech-katta` and `tech-katta-status`). Consider turning
-  off preview builds, or adding an Ignored Build Step, for `tech-katta-status`, which rarely changes.
 - Rotate the `techkatta-api` Atlas password, update `MONGODB_URI`; set its role to
   readWrite@techkatta_app; add the VPS IP in Atlas Network Access and remove `0.0.0.0/0`.
 - Reset the Google client secret.
@@ -127,6 +146,10 @@ for the owner to confirm):
 
 ## Review notes (newest first)
 
+- 2026-11-06 — Owner approved the plan: Lab challenges for Q02–Q07 alternating with Q08–Q10, the landing
+  page showing what's inside, Concepts › Agreeing; fewer debates, one reviewer, push once, 8 cycles a
+  day at most. Vercel limit cleared (#191 deployed). `tech-katta-status` now has an Ignored Build Step
+  (`git diff --quiet HEAD^ HEAD -- .` in `status-page/`), set at the owner's request.
 - 2026-11-06 — Owner asked for Vercel Web Analytics: `@vercel/analytics` on the landing page and the
   dashboard (hash routes reported as /dashboard/<section>/<article>), skipped for GPC/DNT and automated
   browsers (so agents' Playwright runs don't count), privacy page updated. Goes live with the next
