@@ -1,0 +1,223 @@
+{
+  "section": "interview-questions",
+  "slug": "menu-search",
+  "group": "medium",
+  "no": "QUESTION // 22",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design menu search",
+  "dek": "Someone in Pune types \"panir butter masala\" and expects the right dish from restaurants that are open and deliver to them, in a blink. Search 3 crore dishes across India by their words, cope with Hinglish spellings, and show a price change within a minute.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Don't scan dishes for the words. Build an inverted index: for each word, the list of dishes that contain it. A search reads a few short lists and combines them.",
+        "Clean the query first: fix spellings, map Hinglish and synonyms (\"panir\", \"panner\" → paneer; \"makhani\" ↔ butter), and use the same rules when indexing.",
+        "Split the index by city, and within a big city into a few shards. A search asks every shard of its city at once and merges their best results.",
+        "Rank by how well the words match, then adjust for what matters here: open now, delivers to you, distance, how popular the dish is, what you've ordered before.",
+        "Menu changes reach the index within a minute. Things that change constantly, like \"sold out\", are kept in a small fast layer checked at search time instead of re-indexing."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Search dishes and restaurants by words, in English and Hinglish, with typos.",
+        "Filters: veg only, price range, open now, delivers to me.",
+        "Results ranked so the dish you meant is near the top; the first page in well under 200 ms.",
+        "Out of scope here: suggestions while typing (see the autocomplete question) and ads in results."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "Results in under 200 ms, even at dinner"
+        ],
+        [
+          "Fresh",
+          "A price or menu change searchable within a minute; sold out within seconds"
+        ],
+        [
+          "Relevance",
+          "The dish people meant is in the first few results"
+        ],
+        [
+          "Scale",
+          "3 crore dishes, about 1,000 searches a second at dinner"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Dishes: 3 lakh restaurants × about 100 dishes is 3 crore dishes. At about 300 bytes of text each, 9 GB of text; the index is of a similar size.",
+        "Searches: 1 crore people × 2 searches a day is 2 crore a day, about 230 a second on average and around 1,000 at dinner.",
+        "Changes: prices, new dishes, items going out of stock: say 50 lakh changes a day, about 60 a second, with spikes when restaurants open.",
+        "Per city: a big city like Pune has maybe 15,000 restaurants and 15 lakh dishes; a few shards with copies handle its searches easily."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Dish document (in the index): `dish_id`, `restaurant_id`, `city`, `name`, `description`, `words` (after cleaning), `veg`, `price`, `popularity`.",
+        "Restaurant info used at search time: `open_now`, `delivery_area`, `location`, `rating`.",
+        "Fast layer: per dish, `sold_out` and per restaurant `busy`, updated in seconds."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET /search?q=panir+butter+masala&city=pune&veg=1&max_price=300&lat=18.53&lng=73.89&page=1\n→ 200 { \"results\": [ { \"dish\": \"Paneer Butter Masala\", \"restaurant\": \"…\", \"price\": 240, \"eta\": 28 }, … ], \"corrected\": \"paneer butter masala\" }",
+      "say": "Search a city with words, filters and where you are. The answer says how the query was corrected."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "search-flow",
+      "cap": "The query service fixes spelling and adds synonyms, asks every shard of the city's index at once, merges their best 20 and re-ranks for this person. Menu changes reach the shards through an indexer within a minute."
+    },
+    {
+      "t": "p",
+      "x": "The menus database stays the truth; the index is a copy built for searching and can always be rebuilt from it. Searches never touch the menus database."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Finding dishes by their words"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "LIKE '%PANEER%' IN SQL",
+      "what": "Search the dishes table with WHERE name LIKE '%paneer%' AND name LIKE '%butter%'.",
+      "use": "Works on a test database with a few thousand dishes.",
+      "avoid": "A pattern with a leading % can't use an index, so every search reads every dish in the city. It also can't fix \"panir\" or rank the best match first.",
+      "ex": "At 8 pm, 1,000 searches a second each read 15 lakh Pune dishes; the menus database is buried.",
+      "like": "Reading every page of every menu in the city to find the word paneer."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "AN INVERTED INDEX",
+      "what": "When a dish is added, split its text into cleaned words and add the dish to each word's list. A search looks up its words' lists and combines them: dishes in all lists first, then dishes in most.",
+      "use": "Each search reads a few short lists, not every dish; the lists also tell how well a dish matches, for ranking.",
+      "avoid": "Very common words (\"chicken\", \"masala\") have long lists; read them in ranked order and stop once the top results are clear. Search engines like Elasticsearch or OpenSearch do this for you.",
+      "ex": "\"paneer butter masala\" reads three lists and puts Paneer Butter Masala first, Paneer Masala Dosa second.",
+      "like": "The index at the back of a book: look up a word, get the pages."
+    },
+    {
+      "t": "fig",
+      "id": "inverted",
+      "cap": "Each word points to the dishes that contain it. \"paneer butter masala\" combines three short lists: d12 has all three words and ranks first, d40 has two, d55 one."
+    },
+    {
+      "t": "h2",
+      "x": "Hinglish, typos and synonyms"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Clean words the same way at index time and at search time: lower case, remove punctuation, reduce plurals (\"momos\" → momo).",
+        "A list of spellings and synonyms built from real searches: panir, panner → paneer; makhani ↔ butter; biriyani → biryani; dahi ↔ curd.",
+        "For words not in the list, allow one wrong letter in words of five letters or more, and show \"showing results for paneer\" so the person knows."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Ranking"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Text match first: dishes with all the words, with rarer words counting more (\"makhani\" matters more than \"masala\").",
+        "Then what makes a result useful here: open now and delivers to you (filter out the rest), distance or delivery time, how often this dish is ordered, the restaurant's rating.",
+        "Personal touch last, on the merged top results only: dishes and restaurants this person has ordered before move up."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Fresh enough"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Menu changes are written to the menus database and to a change log. The indexer reads the log and updates the index in small batches every second or so; changes are searchable within a minute.",
+        "\"Sold out\" and \"restaurant busy\" change many times an evening. Keep them in a small in-memory layer that the query service checks for the top results, instead of re-indexing dishes all evening.",
+        "Rebuild a city's index from the menus database every night into a new copy, then switch to it, so small errors don't pile up."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A shard is down: its copy answers. If both are down, return results from the other shards with a note, rather than nothing.",
+        "The indexer falls behind: searches still work with slightly old menus; the fast layer still hides sold-out dishes.",
+        "Search is down entirely: the app falls back to browsing restaurants near you."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: an inverted index (or a search engine), filters, why LIKE '%…%' doesn't scale.",
+        "Senior: query cleaning and synonyms, sharding by city, merging shard results, ranking signals, updates within a minute.",
+        "Lead: the fast layer for sold out, nightly rebuilds and switching, partial results when shards fail, measuring relevance."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Search in Hindi or Marathi script?\" Index the script and its transliteration, so \"पनीर\" and \"paneer\" find the same dishes.",
+            "\"How do you know ranking is good?\" Track what people click and order after searching; a change that helps should raise orders from the first results.",
+            "\"Searching across cities?\" Rare for delivery; if needed, ask each city's shards and merge, like within a city.",
+            "\"Why not search the menus database with its own full-text search?\" Fine to start; a separate index scales and ranks better without loading the database that takes orders.",
+            "\"How do you test it?\" A set of real queries with the dishes people chose, checked after every ranking or synonym change."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Search is read far more than it's written, so it's served from its own index, never the database. The read-heavy challenge practises the same idea.",
+      "to": "lab/read-heavy",
+      "go": "Try the read-heavy challenge"
+    }
+  ]
+}

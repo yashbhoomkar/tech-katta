@@ -37,6 +37,7 @@
     "interview-questions/key-value-store",
     "interview-questions/shared-editor",
     "interview-questions/rider-dispatch",
-    "interview-questions/video-streaming"
+    "interview-questions/video-streaming",
+    "interview-questions/menu-search"
   ]
 }
