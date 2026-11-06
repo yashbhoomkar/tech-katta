@@ -5,7 +5,7 @@ import React from"react";import{Dot,Box,Glow,Show,Mark}from"./parts.jsx";
 
 const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
-const SBox=({x,y,w=110,t,blue})=><g><rect x={x} y={y-12} width={w} height="24" fill={blue?"#f8faff":"#fff"} stroke={blue?BLUE:GREY}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
+const SBox=({x,y,w=110,t,blue,down})=><g><rect x={x} y={y-12} width={w} height="24" fill={down?"#fff5f4":blue?"#f8faff":"#fff"} stroke={down?RED:blue?BLUE:GREY} strokeDasharray={down?"4 3":undefined}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
 
 // Method, FIG: a 45-minute interview as a bar. Requirements 5, entities 2, API 5, high-level design 15,
 // deep dives 13, questions at the end 5. A marker walks the clock and the current step lights up.
@@ -391,6 +391,37 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`pmt${uid}`}><titl
 {rows.map(([k,v],i)=>{const y=60+i*40,row=<g><rect x={0} y={y-16} width={80} height={28} fill="#f8faff" stroke={BLUE}/><text x={12} y={y+3} className="fb">"{k}"</text>{v.map((t,j)=><g key={t}><rect x={110+j*176} y={y-16} width={168} height={28} fill="#fff" stroke={GREY}/><text x={118+j*176} y={y+3} className="fl">{j+1}. {t}</text></g>)}</g>;return still?<g key={k}>{row}</g>:<Show key={k} t0={.05+i*.18} t1={.98} dur={D}>{row}</Show>})}
 <text x={0} y={222} className="fl">one lookup per keystroke; nothing is searched while you type</text></svg>}
 
+// Payments, FIG: the path. The order service asks the payment service for a payment for order #91. It
+// creates one with the order as its idempotency key and hands the app over to the payment gateway (UPI or
+// card). The gateway tells us the result by a signed webhook; the payment service records it in the ledger
+// and tells the order service. The app asks the payment service, never the gateway, whether it's paid.
+function PayFlowFig({still,uid=""}){const M=`pf${uid}`,D="12s";
+return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`pft${uid}`}><title id={`pft${uid}`}>The order service asks the payment service for a payment for order 91. The payment service creates one, using the order as its idempotency key, and hands the app over to the payment gateway for UPI or card. The gateway sends the result back by a signed webhook. The payment service records it in the ledger and tells the order service. The app asks the payment service, not the gateway, whether it has paid.</title><Mark m={M}/>
+<SBox x={0} y={50} w={110} t="App"/><SBox x={160} y={50} w={130} t="Order service"/><SBox x={340} y={50} w={140} t="Payment service" blue/><SBox x={530} y={50} w={110} t="Gateway"/>
+<SBox x={340} y={160} w={140} t="Ledger"/><text x={410} y={196} textAnchor="middle" className="fl">entries only added</text>
+<Line x1={112} y1={50} x2={156} y2={50} m={M}/><Line x1={292} y1={50} x2={336} y2={50} m={M}/><text x={314} y={36} textAnchor="middle" className="fl">pay #91</text>
+<Line x1={482} y1={44} x2={526} y2={44} m={M}/><Line x1={526} y1={58} x2={482} y2={58} m={M} dash/><text x={505} y={84} textAnchor="middle" className="fl">signed webhook</text>
+<Line x1={410} y1={62} x2={410} y2={146} m={M}/><text x={418} y={110} className="fl">record</text>
+<Line x1={55} y1={62} x2={55} y2={100} dash/><Line x1={55} y1={100} x2={400} y2={100} dash/><Line x1={400} y1={100} x2={400} y2={66} m={M} dash/><text x={60} y={118} className="fl">"paid yet?" asks us, not the gateway</text>
+<text x={585} y={112} textAnchor="middle" className="fl" style={{fill:GREY}}>the app opens</text><text x={585} y={128} textAnchor="middle" className="fl" style={{fill:GREY}}>UPI or a card page</text>
+{!still&&<g aria-hidden="true"><Dot x1={294} x2={334} y={50} t0={.02} t1={.1} dur={D}/><Dot x1={484} x2={524} y={44} t0={.14} t1={.22} dur={D}/><Dot x1={524} x2={484} y={58} t0={.4} t1={.48} dur={D}/><Dot x1={410} x2={410} y={64} y2={144} t0={.5} t1={.6} dur={D}/><Glow x={340} y={148} w={140} h={24} t0={.6} t1={.72} dur={D}/><Dot x1={338} x2={294} y={50} t0={.74} t1={.82} dur={D}/></g>}</svg>}
+
+// Payments, FIG: a payment's states. Created, then pending while the person is in their UPI app. It ends
+// succeeded or failed. If the gateway doesn't answer in time it's unknown, never "failed": we ask the
+// gateway until it settles. A success can later be refunded.
+function PayStatesFig({still,uid=""}){const M=`ps${uid}`,D="12s";
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`pst${uid}`}><title id={`pst${uid}`}>A payment's states. It starts created, then becomes pending while the person approves it in their UPI app. It ends succeeded or failed. If the gateway doesn't answer in time, the payment is unknown, never failed: the payment service keeps asking the gateway until it is succeeded or failed. A succeeded payment can later be refunded.</title><Mark m={M}/>
+<SBox x={0} y={110} w={90} t="created"/><SBox x={130} y={110} w={90} t="pending"/>
+{step(.15,<SBox x={290} y={40} w={110} t="succeeded" blue/>)}{step(.15,<SBox x={290} y={110} w={110} t="failed"/>)}{step(.35,<SBox x={290} y={180} w={110} t="unknown" down/>)}
+{step(.6,<SBox x={480} y={40} w={110} t="refunded"/>)}
+<Line x1={92} y1={110} x2={126} y2={110} m={M}/>
+{step(.15,<g><Line x1={222} y1={104} x2={286} y2={46} m={M}/><Line x1={222} y1={110} x2={286} y2={110} m={M}/></g>)}
+{step(.35,<g><Line x1={222} y1={116} x2={286} y2={176} m={M} dash/><text x={236} y={160} textAnchor="end" className="fl">no answer</text></g>)}
+{step(.45,<g><Line x1={402} y1={176} x2={440} y2={140} dash c={RED}/><Line x1={440} y1={140} x2={440} y2={50} dash c={RED}/><Line x1={440} y1={50} x2={404} y2={50} m={M} dash c={RED}/><Line x1={440} y1={120} x2={404} y2={116} m={M} dash c={RED}/><text x={450} y={150} className="fl" style={{fill:RED}}>ask the gateway</text><text x={450} y={166} className="fl" style={{fill:RED}}>until it settles</text></g>)}
+{step(.6,<Line x1={402} y1={40} x2={476} y2={40} m={M}/>)}
+{step(.75,<text x={0} y={214} className="fl">never show "failed" for an unknown payment, or the person pays again</text>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -419,4 +450,6 @@ export const QUESTION_FIGS={
 "lanes":{C:LanesFig,ar:640/220,title:()=>"THE OTP DOESN'T WAIT"},
 "suggest-flow":{C:SuggestFlowFig,ar:640/250,title:()=>"SERVED FROM MEMORY, BUILT EVERY HOUR"},
 "prefix-map":{C:PrefixMapFig,ar:640/230,title:()=>"EVERY PREFIX, ANSWERED IN ADVANCE"},
+"pay-flow":{C:PayFlowFig,ar:640/210,title:()=>"WHO TALKS TO THE GATEWAY"},
+"pay-states":{C:PayStatesFig,ar:640/220,title:()=>"UNKNOWN IS NOT FAILED"},
 };
