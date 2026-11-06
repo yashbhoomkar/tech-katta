@@ -34,6 +34,7 @@
     "interview-questions/web-crawler",
     "interview-questions/leaderboard",
     "interview-questions/ad-clicks",
-    "interview-questions/key-value-store"
+    "interview-questions/key-value-store",
+    "interview-questions/shared-editor"
   ]
 }

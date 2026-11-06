@@ -549,6 +549,33 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`qrt${uid}`}><titl
 {step(.65,<g><text x={464} y={148} className="fl">C is sent v8</text><text x={464} y={164} className="fl">in the background</text></g>)}
 {step(.8,<text x={0} y={222} className="fl">2 + 2 &gt; 3: any 2 copies read include at least 1 that took the write</text>)}</svg>}
 
+// Shared editor, FIG: the path. Everyone editing menu #214 is connected to the one doc server that owns it
+// (a registry says which). The server puts each edit in order, appends it to the doc's log with the next
+// number, and sends it to the other editors. Every few hundred edits it saves a snapshot.
+function DocFlowFig({still,uid=""}){const M=`dc${uid}`,D="12s";
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><title id={`dct${uid}`}>Everyone editing menu 214 is connected to the one doc server that owns it; a registry says which server that is. The server puts each edit in order, appends it to the document's log with the next number, and sends it to the other editors. Every few hundred edits it saves a snapshot of the whole document.</title><Mark m={M}/>
+<SBox x={0} y={40} w={120} t="Ananya (laptop)"/><SBox x={0} y={100} w={120} t="Rohit (phone)"/><SBox x={0} y={160} w={120} t="Meera (tablet)"/>
+<SBox x={190} y={100} w={170} t="Doc server: menu #214" blue/><SBox x={190} y={30} w={170} t="Registry"/>
+<SBox x={430} y={70} w={210} t="Edit log: #41, #42, #43…"/><SBox x={430} y={150} w={210} t="Snapshots"/>
+<Line x1={122} y1={46} x2={186} y2={94} m={M}/><Line x1={122} y1={100} x2={186} y2={100} m={M}/><Line x1={122} y1={154} x2={186} y2={106} m={M}/>
+<Line x1={275} y1={88} x2={275} y2={44} dash/><text x={283} y={66} className="fl">who owns #214?</text>
+<Line x1={362} y1={96} x2={426} y2={74} m={M}/><Line x1={362} y1={108} x2={426} y2={146} m={M} dash/><text x={436} y={190} className="fl">every few hundred edits</text>
+<text x={0} y={220} className="fl">open connections: each edit reaches the others in well under a second</text>
+{!still&&<g aria-hidden="true"><Dot x1={124} x2={184} y={48} y2={94} t0={.02} t1={.12} dur={D}/><Glow x={190} y={88} w={170} h={24} t0={.12} t1={.24} dur={D}/><Dot x1={364} x2={424} y={96} y2={74} t0={.26} t1={.34} dur={D}/><Dot x1={186} x2={124} y={102} y2={102} t0={.38} t1={.46} dur={D}/><Dot x1={186} x2={124} y={106} y2={154} t0={.38} t1={.48} dur={D}/></g>}</svg>}
+
+// Shared editor, FIG: two edits at once. The menu line reads "Tikka ₹220". Ananya adds "Paneer " at the start;
+// Rohit, at the same moment, changes 220 to 240 (characters 7 to 9). The server takes Ananya's first (#41).
+// Rohit's edit was made against #40, so the server moves it right by the 7 characters Ananya added: it now
+// applies to 14 to 16. Everyone ends with "Paneer Tikka ₹240".
+function TransformFig({still,uid=""}){const D="12s";
+const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
+return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><title id={`tft${uid}`}>Two edits at once. The menu line reads "Tikka ₹220". Ananya inserts "Paneer " at the start. At the same moment Rohit changes 220 to 240, at characters 7 to 9. The server takes Ananya's edit first, as number 41. Rohit's edit was made on number 40, so the server shifts it right by the 7 characters Ananya added, to characters 14 to 16. Everyone ends with "Paneer Tikka ₹240".</title>
+<text x={0} y={24} className="fb">Version #40</text><rect x={120} y={8} width={170} height={24} fill="#fff" stroke={GREY}/><text x={130} y={25} className="fb">Tikka ₹220</text>
+{step(.1,<g><text x={0} y={66} className="fl">Ananya:</text><text x={70} y={66} className="fl" style={{fill:BLUE}}>insert "Paneer " at 0</text><text x={330} y={66} className="fl">→ #41</text></g>)}
+{step(.1,<g><text x={0} y={92} className="fl">Rohit:</text><text x={70} y={92} className="fl" style={{fill:BLUE}}>replace 7–9 with "240", made on #40</text></g>)}
+{step(.4,<g><text x={0} y={128} className="fb">Server</text><text x={70} y={128} className="fl">Rohit's edit came after #41, which added 7 characters before it:</text><text x={70} y={146} className="fl" style={{fill:BLUE}}>replace 14–16 with "240" → #42</text></g>)}
+{step(.7,<g><text x={0} y={196} className="fb">Everyone</text><rect x={120} y={180} width={230} height={24} fill="#f8faff" stroke={BLUE}/><text x={130} y={197} className="fb">Paneer Tikka ₹240</text></g>)}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -589,4 +616,6 @@ export const QUESTION_FIGS={
 "windows":{C:WindowsFig,ar:640/220,title:()=>"COUNTED WHEN IT HAPPENED"},
 "ring":{C:RingFig,ar:640/240,title:()=>"WHERE A KEY LIVES"},
 "quorum":{C:QuorumFig,ar:640/230,title:()=>"TWO CONFIRM, TWO ANSWER, ONE OVERLAP"},
+"doc-flow":{C:DocFlowFig,ar:640/230,title:()=>"ONE SERVER ORDERS EACH DOCUMENT"},
+"transform":{C:TransformFig,ar:640/230,title:()=>"TWO EDITS, ONE RESULT"},
 };
