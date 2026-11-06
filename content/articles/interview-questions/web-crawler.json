@@ -1,0 +1,218 @@
+{
+  "section": "interview-questions",
+  "slug": "web-crawler",
+  "group": "medium",
+  "no": "QUESTION // 15",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a web crawler",
+  "dek": "Zotato wants its food search to know what India's restaurant sites and food blogs say: menus, timings, reviews. That means fetching about 100 crore public pages a month, without ever hammering a small restaurant's website or fetching the same page twice.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A crawler is a loop: take a URL, fetch the page, save it, pull out its links, and add the new ones to the list of URLs to fetch (the frontier).",
+        "Be polite: one queue per site, one page at a time per site, a pause between pages, and robots.txt always respected. Speed comes from crawling many sites at once, never one site hard.",
+        "Never fetch the same URL twice in a round: check every new link against a filter of URLs already seen. Spot pages that are copies of each other by their content.",
+        "The web has traps (endless calendars, URLs that grow forever). Cap pages per site, URL length and depth.",
+        "Recrawl by how often a page changes: a restaurant's menu page every few days, an old blog post every few months."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start from a seed list of known restaurant and food sites and follow links, staying within food-related sites.",
+        "Fetch about 100 crore pages a month, and keep each page's latest copy for the search team.",
+        "Respect each site's robots.txt and never send it more than about one request a second.",
+        "Out of scope here: building the search index itself, and running pages' JavaScript (we'll note where it fits)."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Politeness",
+          "At most one request a second to any site, and robots.txt followed"
+        ],
+        [
+          "Coverage",
+          "Every known food site visited at least once a month"
+        ],
+        [
+          "Freshness",
+          "Pages that change often (menus) refetched within days"
+        ],
+        [
+          "Scale",
+          "100 crore pages a month across about 50 lakh sites"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "100 crore pages in a month of about 26 lakh seconds is around 390 pages a second, day and night.",
+        "At about 100 KB a page, that's about 39 MB a second of downloads, roughly 310 Mbps, and 100 TB a month before compression. Compressed, closer to 25 TB.",
+        "Politeness: at one page a second per site, 390 pages a second needs at least 390 sites being crawled at any moment. With 50 lakh sites, there are plenty.",
+        "The seen filter: 100 crore URLs. Stored as 8-byte hashes, that's 8 GB, which fits on one machine or a small cluster; a Bloom filter would be smaller still."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "URL record: `url`, `host`, `last_fetched`, `next_fetch`, `content_hash`, `status` (ok, not found, blocked by robots, error).",
+        "Host record: `host`, `robots_rules` (with when they were fetched), `not_before` (the earliest time to fetch from it again), `pages_this_month`.",
+        "Page: the fetched HTML, compressed, in object storage, keyed by URL and fetch time."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Internal API",
+      "x": "frontier.add(urls[])          # only URLs not in the seen filter are added\nfrontier.next(fetcher_id)     → { \"url\": \"https://chennai-eats.example/idli-guide\", \"host\": \"chennai-eats.example\" }\nfrontier.done(url, result)    # sets the host's not_before and the URL's next_fetch",
+      "say": "Add links (only new ones go in). Ask for the next URL that's polite to fetch now. Report the result, which decides when that site and that page come round again."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "crawl-flow",
+      "cap": "The frontier hands URLs to fetchers, which check robots.txt and download pages. Pages are saved and parsed; each new link goes through the seen filter, and only links never seen before join the frontier."
+    },
+    {
+      "t": "p",
+      "x": "Fetchers are many and simple: they only download. Parsing and filtering happen in separate workers, so a slow parser never slows downloads. The frontier is the brain: it decides what is fetched next, and when."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Being polite"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ONE BIG QUEUE OF URLS",
+      "what": "Put every URL on one queue; fetchers take the next one.",
+      "use": "Simple, and fast at first.",
+      "avoid": "Links on a page mostly point to the same site. A big blog's 10 lakh URLs end up side by side, and 50 fetchers hit that one site at once. Its owner blocks you, or their small server falls over.",
+      "ex": "A dhaba's site on a ₹200-a-month host gets 50 requests a second from Zotato's crawler and goes down at lunchtime.",
+      "like": "Fifty delivery riders all ringing the same doorbell."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "ONE QUEUE PER SITE",
+      "what": "The frontier keeps a queue for each site and a \"not before\" time. A fetcher asks for work and gets a URL only from a site whose time has come; after the fetch, that site's time moves on by a second (or the crawl delay its robots.txt asks for).",
+      "use": "No site gets more than its share, and small sites aren't stuck behind big ones.",
+      "avoid": "Many sites, few fetchers: the frontier must quickly find sites that are ready. Keep sites in a priority queue ordered by their not-before time.",
+      "ex": "pune-foodie.example waits a second between pages while chennai-eats.example and dhaba-diaries.example are fetched in the meantime.",
+      "like": "One counter per family at a wedding buffet: everyone eats, and no family empties the biryani."
+    },
+    {
+      "t": "fig",
+      "id": "polite",
+      "cap": "One queue per site, each with a not-before time. Fetchers take URLs only from sites whose time has come, so the blog with 10 lakh URLs waits between pages and the small sites aren't stuck behind it."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Fetch each site's robots.txt before its first page, cache it for a day, and skip anything it disallows.",
+        "Send a clear user agent with a page explaining the crawler and how to contact Zotato.",
+        "Slow down when a site answers slowly or with errors; stop for a while when it says \"too many requests\"."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Never twice"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Normalise each URL before checking it: lower-case the host, drop the #fragment and tracking parameters, sort the query. Otherwise one page appears under ten URLs.",
+        "Check it against the seen filter. A Bloom filter is compact and fast; its rare false \"seen\" answer means a page is skipped this round, which is acceptable.",
+        "Pages with different URLs but the same content (print versions, mirrors) are spotted by a hash of the main text; keep one copy."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Traps and limits"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Calendars with a \"next month\" link for ever, filters that multiply URLs, session ids in links: cap pages per site per month, URL length, and how many links deep from the seed.",
+        "Stay on topic: follow links to new sites only if they look food-related, so the crawl doesn't wander across the whole web.",
+        "Pages built by JavaScript need a headless browser, which is many times more expensive. Send only the sites that need it to a separate, slower pool."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Fresh enough"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each URL gets a next_fetch time. If the page changed since last time, fetch it sooner next time; if not, wait longer, within limits (a day to three months).",
+        "Ask with If-Modified-Since or an ETag where the site supports it: an unchanged page costs a tiny reply instead of a full download."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: the fetch, parse, add-links loop; a queue of URLs; a set of seen URLs; robots.txt.",
+        "Senior: per-site queues and not-before times, the bandwidth and politeness numbers, URL normalising, content duplicates, traps.",
+        "Lead: the frontier's design at scale, recrawl by change rate, JavaScript sites in their own pool, staying on topic, being a good citizen of the web."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"A fetcher dies mid-page?\" The frontier hands URLs out with a lease, like the job scheduler question; unfinished ones go back after it runs out.",
+            "\"DNS becomes slow?\" Cache DNS answers per site; at 390 pages a second, asking DNS for every page adds up.",
+            "\"A site owner complains?\" Honour robots.txt changes within a day, and keep a manual block list checked by the frontier.",
+            "\"Split the frontier across machines?\" By a hash of the host, so each site's queue and not-before time live on one machine.",
+            "\"How do you test it?\" A fake web of sites with traps, slow servers and robots rules; check the crawler stays polite, finishes, and doesn't loop."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The frontier is a queue that workers drain at a steady, polite rate. The Monday sync challenge practises sizing workers behind a queue.",
+      "to": "lab/monday-sync",
+      "go": "Try the Monday sync challenge"
+    }
+  ]
+}
