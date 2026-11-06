@@ -396,3 +396,19 @@ test('the figure ids the content may use are exactly the ones the frontend draws
   const ids = [...dash.matchAll(/(?:^|\},)"?([a-z-]+)"?:\{C:/g), ...comp.matchAll(/^"([a-z-]+)":\{C:/gm), ...conc.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]);
   assert.deepEqual(ids.sort(), [...FIGS].sort());
 });
+
+test('validation checks the Problems "solve" copy the problem page reads', () => {
+  const bad = structuredClone(site);
+  delete bad.problems.solve.answer;
+  const problems = validateContent({ site: bad, examples, articles: allArticles });
+  assert.ok(problems.some((p) => p.includes('problems.solve.answer')));
+});
+
+test('the account sync keeps the problem a saved design was opened for', async () => {
+  const { mergeLab } = await import('../../frontend/src/lab/merge.js');
+  const lab = JSON.parse(await readFile(path.join(repoContent, 'lab.json'), 'utf8'));
+  const d = { id: 'q-url-shortener', name: 'Design a URL shortener', updated: 5, nodes: [], edges: [], problem: 'url-shortener' };
+  const out = mergeLab({ designs: [d] }, { designs: [{ ...d, id: 'q-bad', problem: 'Not a slug!' }] }, lab);
+  assert.equal(out.designs.find((x) => x.id === 'q-url-shortener').problem, 'url-shortener');
+  assert.equal(out.designs.find((x) => x.id === 'q-bad').problem, undefined);
+});

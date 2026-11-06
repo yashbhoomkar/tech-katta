@@ -1,5 +1,6 @@
 // Problems: every Interview Question and Lab challenge in one list, with what this visitor has done
-// (a question practised against the clock, stars earned in a challenge). Copy in site.json "problems";
+// (a question practised against the clock, stars earned in a challenge). A question opens as a problem
+// to design (#problems/<slug>, solve.jsx) when site.json has problems.solve; its worked answer is a link under it. Copy in site.json "problems";
 // progress from progress.js, kept up to date by its "tk-progress" event; challenges from GET /v1/lab.
 import React,{useEffect,useState}from"react";import{getJSON}from"./api.js";import{readProgress}from"./progress.js";import"./problems.css";
 
@@ -19,7 +20,8 @@ return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebr
 <div className="pb-bar"><p className="pb-sum" aria-live="polite">{lab||err?sum:"…"}</p>
 <div className="pb-filter" role="group" aria-label={p.filterLabel}>{[[false,p.all],[true,p.todo]].map(([v,t])=><button key={t} type="button" aria-pressed={todo===v} className={todo===v?"on":""} onClick={()=>setTodo(v)}>{t}</button>)}</div></div>
 <section className="pb-group" aria-labelledby="pb-q"><h2 id="pb-q">{p.questions}</h2><p>{p.questionsDesc}</p>
-{showQ.length?<ol>{showQ.map(({a,done})=>{const ch=a.lab&&lab?.challenges.find(x=>x.id===a.lab);return <li key={a.slug}><a href={`#interview-questions/${a.slug}`}><span className="pb-meta"><small>{a.no.replace(/^QUESTION\s*\/\/\s*/,"Q")}</small><em className={"pb-tag "+a.group}>{a.tag}</em></span><b>{a.title}</b><span className={"pb-state"+(done?" done":"")}>{done?p.practised:p.notYet}</span></a>
+{showQ.length?<ol>{showQ.map(({a,done})=>{const ch=a.lab&&lab?.challenges.find(x=>x.id===a.lab);return <li key={a.slug}><a href={p.solve?`#problems/${a.slug}`:`#interview-questions/${a.slug}`}><span className="pb-meta"><small>{a.no.replace(/^QUESTION\s*\/\/\s*/,"Q")}</small><em className={"pb-tag "+a.group}>{a.tag}</em></span><b>{a.title}</b><span className={"pb-state"+(done?" done":"")}>{done?p.practised:p.notYet}</span></a>
+{p.solve&&<a className="pb-lab pb-answer" href={`#interview-questions/${a.slug}`}><span>{p.solve.answer}</span><span aria-hidden="true">→</span></a>}
 {ch&&p.lab&&<a className="pb-lab" href={`#lab/${ch.id}`}><span>{p.lab}: {ch.title}</span><Stars n={prog.stars[ch.id]||0} max={ch.stars.length} label={fill(p.starsLabel,{n:prog.stars[ch.id]||0,max:ch.stars.length})}/></a>}</li>})}</ol>:<p className="pb-none">{p.allDone}</p>}</section>
 <section className="pb-group" aria-labelledby="pb-c"><h2 id="pb-c">{p.challenges}</h2><p>{p.challengesDesc}</p>
 {err?<p className="pb-none">{p.labError}</p>:!lab?<p className="pb-none">…</p>:showC.length?<ol>{showC.map(({ch,n,max})=><li key={ch.id}><a href={`#lab/${ch.id}`}><span className="pb-meta"><small>{levels[ch.level]||ch.level}</small></span><b>{ch.title}</b><Stars n={n} max={max} label={fill(p.starsLabel,{n,max})}/></a></li>)}</ol>:<p className="pb-none">{p.allDone}</p>}</section>

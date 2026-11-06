@@ -507,13 +507,13 @@
     "label": "Problems",
     "eyebrow": "PRACTISE",
     "title": "Problems",
-    "desc": "Every question and Lab challenge in one place. Practise a question against the clock, earn stars in the Lab, and see what's left.",
+    "desc": "Every question and Lab challenge in one place. Design a question on the canvas, practise it against the clock, earn stars in the Lab, and see what's left.",
     "summary": "{q} of {qt} questions practised · {s} of {st} Lab stars",
     "filterLabel": "Show",
     "all": "All",
     "todo": "Not done yet",
     "questions": "Interview Questions",
-    "questionsDesc": "Answer it yourself in 45 minutes, then compare with the worked answer.",
+    "questionsDesc": "Design each one on the canvas, then compare with the worked answer. Or practise it against the 45-minute clock.",
     "challenges": "Lab challenges",
     "challengesDesc": "Build a design and run the traffic. Stars for staying up, not crashing and keeping to the budget.",
     "practised": "✓ Practised",
@@ -523,7 +523,19 @@
     "labError": "The Lab challenges couldn't load. Refresh to try again.",
     "lab": "Lab",
     "next": "Next problem",
-    "allProblems": "All problems and your progress →"
+    "allProblems": "All problems and your progress →",
+    "solve": {
+      "eyebrow": "PROBLEM",
+      "button": "Solve it on the canvas",
+      "how": "Design it on the canvas: add parts from the left, join them with arrows, then Run to send the traffic and see what breaks. Your design is saved as you go.",
+      "answer": "Read the worked answer",
+      "scored": "Scored challenge in the Lab",
+      "next": "NEXT PROBLEM",
+      "back": "Problems",
+      "hide": "◀ Hide the problem",
+      "show": "▶ Show the problem",
+      "missing": "This problem is no longer available."
+    }
   },
   "inside": {
     "eyebrow": "WHAT'S INSIDE",
