@@ -1,0 +1,215 @@
+{
+  "section": "interview-questions",
+  "slug": "notifications",
+  "group": "medium",
+  "no": "QUESTION // 11",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a notification service",
+  "dek": "Zotato sends login OTPs, \"your order is on the way\" updates and a Diwali offer to 5 crore people, by push, SMS and email. Build one service that sends them all, where an OTP is never stuck behind a promotion and nobody gets the same message twice.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Other services don't talk to SMS or push providers themselves. They send one event (who, which template, how urgent) to a notification service, which does the rest.",
+        "Keep separate lanes by priority: urgent (OTPs), normal (order updates), bulk (promotions). Workers always empty the urgent lane first, so a promotion to crores never delays an OTP.",
+        "Check preferences before sending: opted out, quiet hours, how many promotions this week, which devices and language.",
+        "Every event carries an id, so a retried request sends once. Newer order updates replace older ones that haven't gone out yet.",
+        "Providers fail. Retry with backoff, switch SMS to a second provider, drop push tokens the provider says are dead, and record what happened to every message."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Send by push, SMS and email, from one API, using templates in several languages.",
+        "Three kinds of message: OTPs (seconds matter), order updates (within a few seconds), promotions (within the hour is fine).",
+        "Respect each person's choices: opt-outs, quiet hours, a cap on promotions.",
+        "Know what happened to each message: sent, delivered, failed, and why.",
+        "Out of scope here: choosing who gets a campaign (the marketing team's tool), and in-app inboxes."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Speed",
+          "OTPs out in under 2 seconds, order updates in under 5, even during a promotion"
+        ],
+        [
+          "No duplicates",
+          "A retried request never sends the same message twice"
+        ],
+        [
+          "Reliability",
+          "One provider down doesn't stop OTPs"
+        ],
+        [
+          "Scale",
+          "6 crore order updates and 20 lakh OTPs a day, plus promotions to 5 crore people at once"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Order updates: 1 crore orders a day × about 6 updates each is 6 crore a day, about 700 a second on average and 2,000 at dinner.",
+        "OTPs: 20 lakh a day is about 23 a second. Tiny, but each one has a person waiting.",
+        "A Diwali promotion to 5 crore people. Sent over an hour, that's about 14,000 a second, seven times the dinner peak of order updates, all of it waiting in the bulk lane.",
+        "SMS costs money per message and providers limit how fast you may send; push is free but needs a valid token per device. Both shape the design."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Event: `id` (from the caller), `user_id`, `template`, `data`, `priority`, `collapse_key` (optional, e.g. the order id).",
+        "Preferences: per person, channels allowed, quiet hours, language, promotion cap.",
+        "Device: `user_id`, `push_token`, `platform`, `last_seen`.",
+        "Delivery: `event_id`, `channel`, `provider`, `status`, `attempts`, `error`."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /notify   { \"id\": \"ev_7\", \"user\": \"u_42\", \"template\": \"order_on_the_way\",\n                \"data\": { \"order\": \"#91\", \"rider\": \"Imran\" }, \"priority\": \"normal\", \"collapse_key\": \"order_91\" }\n               → 202 { \"id\": \"ev_7\" }\nGET  /notify/ev_7  → 200 { \"push\": \"delivered\", \"sms\": \"skipped (push delivered)\" }",
+      "say": "Send one event and get its id back at once; the service picks channels and sends. Ask later what happened to it."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "notify-flow",
+      "cap": "Services send events to the notification API. It checks preferences and devices, then puts each message in the lane for its priority. Channel workers take urgent first and send through push, SMS and email providers."
+    },
+    {
+      "t": "p",
+      "x": "The API answers as soon as the event is checked and queued. Everything slow (providers, retries) happens behind the lanes, so a slow SMS provider never slows the order service that asked for the message."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Lanes, so the OTP doesn't wait"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "ONE QUEUE FOR EVERYTHING",
+      "what": "Every message goes on one queue, and workers send them in order.",
+      "use": "Simple, and fine until the first big promotion.",
+      "avoid": "At 9 pm marketing queues 5 crore Diwali messages. An OTP queued a second later waits behind all of them, and the customer can't log in for an hour.",
+      "ex": "Ananya taps \"Send OTP\" three times during the Diwali blast. Three OTPs arrive 50 minutes later, all expired.",
+      "like": "A single billing counter where the person buying for a wedding is in front of you holding one bottle of water."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A LANE PER PRIORITY",
+      "what": "Separate queues for urgent, normal and bulk, each with its own workers or a strict rule that workers take urgent first. The bulk lane is drained at a set rate so it can't swamp providers.",
+      "use": "OTPs and order updates go out in seconds whatever marketing is doing.",
+      "avoid": "The bulk lane can wait a long time; that's acceptable for promotions, and the rate is a setting, not an accident.",
+      "ex": "The Diwali blast drains over an hour; Ananya's OTP goes into the empty urgent lane and arrives in 2 seconds.",
+      "like": "An express counter for a few items, open no matter how long the main queue is."
+    },
+    {
+      "t": "fig",
+      "id": "lanes",
+      "cap": "The bulk lane holds 5 crore promotions, drained over about an hour. An OTP arrives in the middle of it, goes into the empty urgent lane and is sent in about 2 seconds."
+    },
+    {
+      "t": "h2",
+      "x": "Never twice, and never out of date"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The caller gives each event an id. If the order service retries after a timeout, the API sees the id, finds it already queued, and does nothing new.",
+        "Channel workers keep the same rule: a delivery is recorded per event and channel before the provider call is retried, so a retry after a crash doesn't send twice from our side. Push providers also take a collapse key and show only the newest message for it.",
+        "Order updates replace each other: if \"rider assigned\" is still waiting when \"on the way\" arrives with the same collapse key, send only \"on the way\". Nobody needs both."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Respecting people"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Check opt-outs and quiet hours before queuing, not in the worker: nothing should wait in a lane only to be dropped.",
+        "Promotions don't go out late at night, and promotional SMS must follow India's rules for registered templates and do-not-disturb preferences.",
+        "Cap promotions per person per week, so one person isn't hit by five campaigns in a day.",
+        "Pick channels in order: push first (free, instant); SMS only for what must reach someone without the app, like OTPs."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An SMS provider is slow or down: after a few failures, switch OTPs to a second provider. Keep two from the start.",
+        "A provider rejects a push token as no longer valid: delete it, so the next message isn't wasted on it.",
+        "Temporary errors: retry with growing waits and a little randomness. After a few tries, park the message for a look instead of retrying for ever.",
+        "The notification service itself is down: callers keep their events (an outbox on their side) and send them when it's back. OTPs are re-requested by the person anyway."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: one API in front of the providers, a queue, templates, preferences, retries.",
+        "Senior: priority lanes and the promotion numbers, ids against duplicates, collapse keys, quiet hours and opt-outs before queuing.",
+        "Lead: provider failover, rate limits from providers, delivery tracking and dead tokens, the rules for promotional SMS in India."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Send at the best time for each person?\" Store a send-after time with each bulk message; the bulk worker skips messages that aren't due.",
+            "\"How do you know a push was read?\" The app reports opens; providers only report delivery to the device, sometimes not even that.",
+            "\"A template has a mistake and 10 lakh are queued?\" A switch to pause a campaign's messages in the bulk lane, checked by workers before sending.",
+            "\"Several devices?\" Send push to each active device; collapse keys stop the same update stacking up on each.",
+            "\"How do you test it?\" Fake providers that fail, slow down and return bad tokens, then check that OTPs still meet their target during a promotion."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "A promotion blast is a burst a queue can hold, if what's behind it drains at a steady rate. The Monday sync challenge is the same idea.",
+      "to": "lab/monday-sync",
+      "go": "Try the Monday sync challenge"
+    }
+  ]
+}
