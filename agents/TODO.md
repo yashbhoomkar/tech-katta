@@ -70,11 +70,10 @@ Status: `ready` · `in progress` · `done` · `blocked` · `waiting for owner`. 
 
 | # | Lane | Item | Status | Notes |
 |---|---|---|---|---|
-| 1 | content | Q05 Match ticket booking (medium) | done | shipped run 13 (moved up to alternate with build) with figures `waiting-room`, `seat-states` |
-| 2 | build | Library card footers level at 768–1100 px (one wraps, two don't) | ready | Learner, run 10; cosmetic: stack label above link at those widths |
-| 3 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
-| 4 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
-| 5 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
+| 1 | build | Library card footers level | done | shipped run 14: a container query stacks every footer below ~300px of card width (it was uneven from ~205 to ~300px, including 1280px screens) |
+| 2 | build | Practice mode v2: a `practice_done` analytics event (slug, minutes per step) | ready | needs a new event in `backend/src/auth/events.js`; small, but check it's not counted as a data-model change. Also (Learner): list the unticked checks in the summary, as what to look for in the answer |
+| 3 | build | Landing page: global `a/button:focus-visible` outline (styles.css relies on browser default) | ready | Learner note, run 4 |
+| 4 | content | Q06–Q36, one per run, in plan order; alternate with the items above | ready | |
 | — | build | Public previews: title, dek and "In 30 seconds" readable without sign-in, so search engines can index articles | waiting for owner | changes the sign-in gate |
 | — | build | Paid plan: paywall, Razorpay (UPI Autopay monthly, one-time yearly), receipts, refund policy | waiting for owner | needs the owner's go-ahead on rule 5, a payment account and GST advice. Builder: gate paid content on the API (never only in the browser), hosted checkout, verified and idempotent webhooks, a short cache of "has paid" plus a chaos test so outages don't lock out payers |
 
@@ -119,10 +118,15 @@ for the owner to confirm):
 - Handover §12 rows: #175 (skip link and visible focus outlines), #176 (business plan in the to-do
   list), #177 (Q03 restaurants near me), #178 (unknown figure ids skipped), #179 (dashboard
   overflow), #180 (Lab challenge sms-link), #181 (Q04 grocery delivery), #182 (card text 11px), #183 (Concept 05 timeouts,
-  retries, circuit breakers), #184 (Practice mode v1), and this run's Q05 PR.
+  retries, circuit breakers), #184 (Practice mode v1), #185 (Q05 ticket booking), and
+  this run's card footer PR.
 
 ## Review notes (newest first)
 
+- 2026-11-06 run 14 — Production healthy; #185 checked live (a /health poll came back empty once during
+  the API restart, then five clean polls). Card footers: measured per card, not just the first one; the
+  mismatch ran from ~205 to ~300px of card width, so 1280px screens had it too. Fixed with a container
+  query on the card.
 - 2026-11-06 run 13 — Production healthy (release 5dfae32); #184 checked live (Tab stays in the
   practice dialog, page behind inert). Q05 moved ahead of two build items to keep alternating. The
   worker restarted mid-run (the draft survived on disk). Learner: booking must accept only a signed
@@ -184,7 +188,8 @@ for the owner to confirm):
 
 ## Done log (newest first)
 
-- 2026-11-06 — Q05 Match ticket booking, with figures `waiting-room` and `seat-states`.
+- 2026-11-06 — Library card footers line up at every width.
+- 2026-11-06 — PR #185: Q05 Match ticket booking, with figures `waiting-room` and `seat-states`.
 - 2026-11-05 — PR #184: Practice mode v1 on Interview Questions.
 - 2026-11-05 — PR #183: Concept 05, timeouts, retries and circuit breakers, with figures `slow-call` and `breaker`.
 - 2026-11-05 — PR #182: library cards, meta and footer text up to 11px.
