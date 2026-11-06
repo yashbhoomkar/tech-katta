@@ -1,0 +1,217 @@
+{
+  "section": "interview-questions",
+  "slug": "coding-judge",
+  "group": "medium",
+  "no": "QUESTION // 09",
+  "tag": "MEDIUM",
+  "date": "6 Nov 2026",
+  "title": "Design a coding judge",
+  "dek": "Zotato hires engineers through a 3-hour online contest. A lakh candidates write code in the browser, press Submit, and expect a verdict in seconds: accepted, wrong answer, or too slow. Run strangers' code safely, keep it fair, and survive the rush in the last 15 minutes.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Submitted code is untrusted. Run it only inside a sandbox with no network, and with limits on memory, CPU time and processes, never on the servers that run your site.",
+        "Don't run code while the candidate's request waits. Save it, put its id on a queue, answer at once, and let judge workers take it from there.",
+        "The rush is known in advance: the last 15 minutes bring a quarter of all submissions. Start the extra workers before it, because new machines take minutes to boot.",
+        "A worker can die mid-run. The queue hands the job out again, and saving the verdict by submission id makes the rerun harmless.",
+        "Fairness means the same limits on the same kind of machine for everyone, with time measured as CPU time, not wall-clock time."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Candidates submit code for a problem, in one of a few languages.",
+        "Each submission is compiled and run against the problem's hidden tests; the verdict comes back in a few seconds, normally.",
+        "A live leaderboard: problems solved, then total time.",
+        "Out of scope here: the code editor itself, plagiarism checks (we'll note where they plug in), and writing the problems."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Safety",
+          "No submission can reach the network, other submissions, or our servers"
+        ],
+        [
+          "Speed",
+          "A verdict within 10 seconds, even in the last 15 minutes"
+        ],
+        [
+          "Fairness",
+          "The same code gets the same verdict, whenever and wherever it runs"
+        ],
+        [
+          "Scale",
+          "1 lakh candidates, about 8 lakh submissions in 3 hours"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Submissions: 8 lakh in 3 hours is about 74 a second on average.",
+        "The rush: a quarter of them, 2 lakh, arrive in the last 15 minutes. That's about 220 a second.",
+        "Work per submission: compiling plus 20 tests of about 0.1 s each is about 3 seconds of CPU.",
+        "So the rush needs about 220 × 3 = 660 cores busy at once, about 85 machines with 8 cores each. The average needs about 30.",
+        "Storage is small: 8 lakh submissions × 10 KB of code is 8 GB. Test files are a few MB per problem; every worker keeps a copy."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Problem: `id`, `title`, `statement`, `limits` (time, memory), tests in object storage.",
+        "Submission: `id`, `candidate_id`, `problem_id`, `language`, `code` (in object storage), `created_at`, `status` (queued, running, done), `verdict`, `failed_test`, `cpu_ms`.",
+        "Standing: per candidate, problems solved and total time; kept in Redis for the live leaderboard."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "POST /submissions              { \"problem\": \"p_3\", \"language\": \"python\", \"code\": \"…\" }\n                               → 202 { \"id\": \"s_91\" }\nGET  /submissions/s_91         → 200 { \"status\": \"done\", \"verdict\": \"accepted\", \"cpu_ms\": 840 }\nGET  /leaderboard?from=0       → 200 { \"rows\": [ … ] }",
+      "say": "Send code and get an id back at once. Ask for its verdict, or get it pushed. Read the leaderboard a page at a time."
+    },
+    {
+      "t": "p",
+      "x": "202 means \"accepted for judging\", not \"accepted as correct\". The screen shows \"judging…\" until the verdict arrives, over a held-open connection or by asking every second or two."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "judge-flow",
+      "cap": "The API saves the code and puts the submission's id on a queue, then answers straight away. Judge workers take ids, run the code in a sandbox against the tests, and save the verdict. The leaderboard updates and the candidate's screen shows the result."
+    },
+    {
+      "t": "p",
+      "x": "The API stays light: it never runs anyone's code. All the heavy, risky work happens on judge machines that hold nothing else, so a bad submission can at worst waste one sandbox's time."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Running strangers' code safely"
+    },
+    {
+      "t": "type",
+      "name": "First try",
+      "kind": "RUN IT ON THE API SERVER",
+      "what": "Write the code to a file and run it as a child process with a timeout.",
+      "use": "Works on day one.",
+      "avoid": "Someone's code reads your secrets, calls the internet, fills the disk, or starts processes until the machine falls over. And it's running next to your API.",
+      "ex": "A candidate submits a program that lists files and prints environment variables. It prints the database password.",
+      "like": "Letting an exam candidate sit in the staff room to write their paper."
+    },
+    {
+      "t": "type",
+      "name": "Better",
+      "kind": "A SANDBOX PER RUN",
+      "what": "Run each submission in a fresh, isolated container or small virtual machine on separate judge machines: no network, a read-only copy of the files, and hard limits on memory, CPU time, processes and output size.",
+      "use": "A bad submission can only hurt its own sandbox, which is thrown away after the run.",
+      "avoid": "Starting a sandbox takes time. Keep a pool of warm ones ready and reset them between runs, never reuse one dirty.",
+      "ex": "A fork bomb hits the 64-process limit; a program printing forever hits the output limit; both get a verdict, and the machine is fine.",
+      "like": "An exam hall: each candidate gets a clean desk, a fixed time, and nothing to take in or out."
+    },
+    {
+      "t": "fig",
+      "id": "sandbox",
+      "cap": "Inside one sandbox: no network, capped memory, CPU time and processes, read-only files. The tests run one after another; the first that fails (here test 4, over the time limit) decides the verdict, and the rest are skipped."
+    },
+    {
+      "t": "h2",
+      "x": "Surviving the last 15 minutes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The queue absorbs the burst: candidates get their id at once, and verdicts arrive as workers free up.",
+        "But a queue only spreads the wait. At 220 a second with workers for 74, the line grows by about 150 a second, and verdicts at the end of the contest arrive minutes late, which is unfair.",
+        "The end of the contest is on the schedule, so add machines 30 minutes before it, not when the queue grows. New machines take a few minutes to boot.",
+        "Give contest submissions priority over practice runs: two queues, and workers always drain the contest one first."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping it fair"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Measure CPU time, not wall-clock time, so a busy neighbour on the same machine doesn't slow anyone's verdict.",
+        "Use one machine type for judging, and the same compiler versions everywhere. Publish the limits with the problem.",
+        "Penalty time comes from when the submission arrived at the API, not when a worker got to it. Waiting in the queue costs a candidate nothing."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When parts fail"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A judge machine dies mid-run: the queue gives the job to another worker after a timeout. The verdict is saved under the submission id, so a second run only overwrites the same row.",
+        "A submission crashes the sandbox itself: it gets a \"runtime error\" verdict after a retry, not an endless loop of retries. Cap retries and park it for a look.",
+        "Leaderboard store lost: rebuild it from the saved verdicts. They are the record; the leaderboard is just a fast copy."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a queue between submitting and judging, workers that run tests, verdicts saved and shown, a sandbox of some kind.",
+        "Senior: the sandbox limits and why, the end-of-contest numbers and scaling ahead of time, retries without double verdicts, fairness.",
+        "Lead: separate judge machines and warm sandbox pools, priority between contest and practice, rebuilding the leaderboard, where plagiarism checks plug in."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"Show partial results as tests pass?\" The worker posts progress (test 7 of 20) to the submission row, and the screen reads it.",
+            "\"Freeze the leaderboard in the last hour?\" Keep updating the real one, but show everyone a copy taken an hour before the end. Unfreeze when the contest ends.",
+            "\"Plagiarism?\" After the contest, compare accepted solutions per problem in a batch job. It doesn't need to be fast.",
+            "\"A new language?\" A new sandbox image with its compiler and limits. Time limits may need a multiplier for slower languages.",
+            "\"How do you test the judge?\" Keep a set of known submissions with known verdicts, including nasty ones (fork bombs, huge output, infinite loops), and run them before every change."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The contest's last 15 minutes are a burst a queue can hold, if the workers behind it keep up. The Monday sync challenge is the same lesson.",
+      "to": "lab/monday-sync",
+      "go": "Try the Monday sync challenge"
+    }
+  ]
+}
