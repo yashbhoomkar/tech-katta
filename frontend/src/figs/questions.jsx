@@ -239,6 +239,44 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fht${uid}`}><titl
 <text x="350" y="32" className="fb">Your feed</text>
 {merged.map(([t,b],i)=>{const box=<SBox x={350} y={55+i*30} w={W+20} t={t} blue={!!b}/>;return still?<g key={t}>{box}</g>:<Show key={t} t0={.1+i*.12} t1={.98} dur={D}>{box}</Show>})}</svg>}
 
+// Dating app, FIG: the two paths. Swiping: the phone sends each swipe to the swipe service, which updates
+// the pair's row; when both have said yes, a message goes on a queue and both phones get a push. Browsing:
+// the deck service hands out the next profiles from a deck kept in Redis, which a deck builder refills
+// from the profiles near you, skipping anyone you've already seen.
+function SwipeFlowFig({still,uid=""}){const M=`sf${uid}`,D="12s";
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sft${uid}`}><title id={`sft${uid}`}>Swiping: the phone sends each swipe to the swipe service, which updates one row for the pair of people. When both have said yes, a message goes on a queue and both phones get a push. Browsing: the phone asks the deck service for the next profiles, which come from a deck kept in Redis. A deck builder refills the deck from profiles near you, skipping anyone you have already seen.</title><Mark m={M}/>
+<text x="0" y="24" className="fb">Swiping</text>
+<SBox x={0} y={60} w={90} t="Phone"/><SBox x={140} y={60} w={130} t="Swipe service" blue/><SBox x={320} y={60} w={120} t="Pair rows"/><SBox x={500} y={60} w={140} t="Queue"/><SBox x={500} y={130} w={140} t="Push to both"/>
+<Line x1={92} y1={60} x2={136} y2={60} m={M}/><Line x1={272} y1={60} x2={316} y2={60} m={M}/><Line x1={442} y1={60} x2={496} y2={60} m={M}/><text x="470" y="88" textAnchor="middle" className="fl">both said yes</text>
+<Line x1={570} y1={72} x2={570} y2={116} m={M}/>
+<text x="0" y="184" className="fb">Browsing</text>
+<SBox x={0} y={220} w={90} t="Phone"/><SBox x={140} y={220} w={130} t="Deck service" blue/><SBox x={320} y={220} w={120} t="Deck (Redis)"/><SBox x={500} y={220} w={140} t="Deck builder"/><SBox x={500} y={280} w={140} t="Profiles near you"/>
+<Line x1={92} y1={220} x2={136} y2={220} m={M}/><Line x1={272} y1={220} x2={316} y2={220} m={M}/><text x="114" y="248" textAnchor="middle" className="fl">next 20</text>
+<Line x1={496} y1={220} x2={444} y2={220} m={M}/><text x="470" y="206" textAnchor="middle" className="fl">refill</text>
+<Line x1={570} y1={266} x2={570} y2={234} m={M}/><text x="490" y="284" textAnchor="end" className="fl">minus the ones you've seen</text>
+{!still&&<g aria-hidden="true"><Dot x1={94} x2={134} y={60} t0={.02} t1={.08} dur={D}/><Dot x1={274} x2={314} y={60} t0={.1} t1={.16} dur={D}/><Glow x={320} y={48} w={120} h={24} t0={.16} t1={.26} dur={D}/>
+<Dot x1={444} x2={494} y={60} t0={.26} t1={.32} dur={D}/><Dot x1={570} x2={570} y={74} y2={114} t0={.34} t1={.42} dur={D}/><Glow x={500} y={118} w={140} h={24} t0={.42} t1={.52} dur={D}/>
+<Dot x1={94} x2={134} y={220} t0={.56} t1={.62} dur={D}/><Dot x1={274} x2={314} y={220} t0={.64} t1={.7} dur={D}/><Glow x={320} y={208} w={120} h={24} t0={.7} t1={.78} dur={D}/>
+<Dot x1={570} x2={570} y={264} y2={236} t0={.8} t1={.86} dur={D}/><Dot x1={494} x2={446} y={220} t0={.88} t1={.94} dur={D}/></g>}</svg>}
+
+// Dating app, FIG: the pair row. Ananya and Rohit swipe right on each other at the same moment. Both swipes
+// update the same row in one step each and read the other side's flag back. Ananya's lands first and sees
+// "no", so nothing happens; Rohit's sees "yes" and creates the match. Exactly one of them creates it.
+function PairRowFig({still,uid=""}){const D="10s",L=200,W=240,V=400;
+const val=(y,t0,before,after)=>still?<text x={V} y={y} className="fb" style={{fill:BLUE}}>{after}</text>:<><Show t0={.001} t1={t0} dur={D}><text x={V} y={y} className="fb" style={{fill:GREY}}>{before}</text></Show><Show t0={t0} t1={.98} dur={D}><text x={V} y={y} className="fb" style={{fill:BLUE}}>{after}</text></Show></>;
+const note=(x,y,t0,t,anchor)=>still?<text x={x} y={y} textAnchor={anchor} className="fl">{t}</text>:<Show t0={t0} t1={.98} dur={D}><text x={x} y={y} textAnchor={anchor} className="fl">{t}</text></Show>;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><title id={`prt${uid}`}>Ananya and Rohit swipe right on each other at the same moment. Both swipes update the same row, one row per pair of people, and each update reads the other side's answer back in the same step. Ananya's update lands first and sees that Rohit hasn't said yes, so nothing happens. Rohit's update sees that Ananya has, so it marks the pair matched and both get the news. Exactly one of the two creates the match.</title>
+<SBox x={0} y={60} w={110} t="Ananya swipes →"/><SBox x={530} y={60} w={110} t="← Rohit swipes"/>
+<rect x={L} y={30} width={W} height={140} fill="#fff" stroke={GREY}/><text x={L+10} y={50} className="fl">one row: pair a_17 · r_42</text>
+<line x1={L} y1={62} x2={L+W} y2={62} stroke={GREY}/>
+<text x={L+10} y={90} className="fl">Ananya likes Rohit</text>{val(90,.2,"—","yes")}
+<text x={L+10} y={120} className="fl">Rohit likes Ananya</text>{val(120,.5,"—","yes")}
+<text x={L+10} y={150} className="fl">matched</text>{val(150,.6,"no","yes")}
+{note(55,96,.22,"Rohit: not yet","middle")}{note(55,112,.22,"→ nothing to do","middle")}
+{note(585,96,.52,"Ananya: yes","middle")}{note(585,112,.52,"→ create the match","middle")}
+{note(320,200,.65,"It's a match: one message, a push to both phones","middle")}
+{!still&&<g aria-hidden="true"><Dot x1={112} x2={196} y={60} y2={86} t0={.05} t1={.18} dur={D}/><Dot x1={528} x2={444} y={60} y2={116} t0={.35} t1={.48} dur={D}/><Glow x={L} y={30} w={W} h={140} t0={.6} t1={.98} dur={D}/></g>}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -257,4 +295,6 @@ export const QUESTION_FIGS={
 "like-counter":{C:LikeCounterFig,ar:640/240,title:()=>"ONE HOT ROW, OR EIGHT"},
 "feed-fanout":{C:FeedFanoutFig,ar:640/280,title:()=>"PUSH: ONE POST, MANY LISTS"},
 "feed-hybrid":{C:FeedHybridFig,ar:640/240,title:()=>"PUSHED, PULLED, MERGED"},
+"swipe-flow":{C:SwipeFlowFig,ar:640/300,title:()=>"A SWIPE, AND THE NEXT TWENTY"},
+"pair-row":{C:PairRowFig,ar:640/240,title:()=>"ONE ROW PER PAIR"},
 };
