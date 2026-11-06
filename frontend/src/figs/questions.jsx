@@ -167,7 +167,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`wrt${uid}`}><titl
 <SBox x={530} y={60} w={110} t="Seats"/><SBox x={530} y={160} w={110} t="Payment"/>
 <Line x1={122} y1={110} x2={166} y2={110} m={M}/><Line x1={322} y1={110} x2={376} y2={110} m={M}/><text x="349" y="100" textAnchor="middle" className="fl">110/s</text>
 <Line x1={492} y1={104} x2={526} y2={66} m={M}/><Line x1={492} y1={116} x2={526} y2={154} m={M}/>
-<Line x1={245} y1={124} x2={245} y2={186} m={M} c={GREY} dash/><text x="245" y="206" textAnchor="middle" className="fl">everyone else: your place, then</text><text x="245" y="222" textAnchor="middle" className="fl" style={{fill:RED}}>"sold out"</text>
+<Line x1={245} y1={150} x2={245} y2={186} m={M} c={GREY} dash/><text x="245" y="206" textAnchor="middle" className="fl">everyone else: your place, then</text><text x="245" y="222" textAnchor="middle" className="fl" style={{fill:RED}}>"sold out"</text>
 {!still&&<g aria-hidden="true">{[0,.12,.24,.36,.48,.6,.72].map(t=><Dot key={t} x1={124} x2={164} y={110} t0={t} t1={t+.08} dur={D}/>)}
 <Dot x1={324} x2={374} y={110} t0={.2} t1={.3} dur={D}/><Dot x1={494} x2={524} y={103} y2={67} t0={.32} t1={.4} dur={D}/><Dot x1={494} x2={524} y={117} y2={153} t0={.44} t1={.52} dur={D}/>
 <Dot x1={324} x2={374} y={110} t0={.6} t1={.7} dur={D}/></g>}</svg>}
