@@ -131,16 +131,16 @@
       "t": "type",
       "name": "Better",
       "kind": "A SANDBOX PER RUN",
-      "what": "Run each submission in a fresh, isolated container or small virtual machine on separate judge machines: no network, a read-only copy of the files, and hard limits on memory, CPU time, processes and output size.",
+      "what": "Run each submission in a fresh, isolated container or small virtual machine on separate judge machines: no network, a read-only copy of the code and the test input only, and hard limits on memory, CPU time, processes and output size. Expected outputs stay outside; the worker compares the output after the run. Candidates see the test number, never its data.",
       "use": "A bad submission can only hurt its own sandbox, which is thrown away after the run.",
-      "avoid": "Starting a sandbox takes time. Keep a pool of warm ones ready and reset them between runs, never reuse one dirty.",
+      "avoid": "Starting a sandbox takes time. Keep a pool of fresh, warm ones; each is used once, then thrown away or fully wiped.",
       "ex": "A fork bomb hits the 64-process limit; a program printing forever hits the output limit; both get a verdict, and the machine is fine.",
       "like": "An exam hall: each candidate gets a clean desk, a fixed time, and nothing to take in or out."
     },
     {
       "t": "fig",
       "id": "sandbox",
-      "cap": "Inside one sandbox: no network, capped memory, CPU time and processes, read-only files. The tests run one after another; the first that fails (here test 4, over the time limit) decides the verdict, and the rest are skipped."
+      "cap": "Inside one sandbox: no network, capped memory, CPU time, processes and output, read-only code and test input. The tests run one after another; the first that fails (here test 4, over the time limit) decides the verdict, and the rest are skipped."
     },
     {
       "t": "h2",
@@ -150,7 +150,7 @@
       "t": "list",
       "items": [
         "The queue absorbs the burst: candidates get their id at once, and verdicts arrive as workers free up.",
-        "But a queue only spreads the wait. At 220 a second with workers for 74, the line grows by about 150 a second, and verdicts at the end of the contest arrive minutes late, which is unfair.",
+        "But a queue only spreads the wait. At 220 a second with workers for 74, the line grows by about 150 a second, and by the end about 1.3 lakh are waiting. At 74 a second that's half an hour of late verdicts, which is unfair.",
         "The end of the contest is on the schedule, so add machines 30 minutes before it, not when the queue grows. New machines take a few minutes to boot.",
         "Give contest submissions priority over practice runs: two queues, and workers always drain the contest one first."
       ]
@@ -162,7 +162,7 @@
     {
       "t": "list",
       "items": [
-        "Measure CPU time, not wall-clock time, so a busy neighbour on the same machine doesn't slow anyone's verdict.",
+        "Measure CPU time, not wall-clock time, so a busy neighbour on the same machine doesn't push anyone over the time limit. Also cap wall-clock time (say 3× the CPU limit), so a program that sleeps or waits on input still gets stopped.",
         "Use one machine type for judging, and the same compiler versions everywhere. Publish the limits with the problem.",
         "Penalty time comes from when the submission arrived at the API, not when a worker got to it. Waiting in the queue costs a candidate nothing."
       ]
@@ -174,7 +174,7 @@
     {
       "t": "list",
       "items": [
-        "A judge machine dies mid-run: the queue gives the job to another worker after a timeout. The verdict is saved under the submission id, so a second run only overwrites the same row.",
+        "A judge machine dies mid-run: the queue gives the job to another worker after a timeout. The verdict is saved under the submission id, so a second run only overwrites the same row. The leaderboard counts a problem once per candidate, from the first accepted submission, so a rerun can't add it twice.",
         "A submission crashes the sandbox itself: it gets a \"runtime error\" verdict after a retry, not an endless loop of retries. Cap retries and park it for a look.",
         "Leaderboard store lost: rebuild it from the saved verdicts. They are the record; the leaderboard is just a fast copy."
       ]
@@ -199,9 +199,9 @@
           "t": "list",
           "items": [
             "\"Show partial results as tests pass?\" The worker posts progress (test 7 of 20) to the submission row, and the screen reads it.",
-            "\"Freeze the leaderboard in the last hour?\" Keep updating the real one, but show everyone a copy taken an hour before the end. Unfreeze when the contest ends.",
+            "\"Freeze the leaderboard in the last hour?\" Keep updating the real one, but show everyone a copy taken an hour before the end. Candidates still see their own verdicts. Unfreeze when the contest ends.",
             "\"Plagiarism?\" After the contest, compare accepted solutions per problem in a batch job. It doesn't need to be fast.",
-            "\"A new language?\" A new sandbox image with its compiler and limits. Time limits may need a multiplier for slower languages.",
+            "\"A new language?\" A new sandbox image with its compiler, and its own process and memory limits (Java needs more threads). Time limits may need a multiplier for slower languages.",
             "\"How do you test the judge?\" Keep a set of known submissions with known verdicts, including nasty ones (fork bombs, huge output, infinite loops), and run them before every change."
           ]
         }
