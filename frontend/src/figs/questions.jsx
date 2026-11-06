@@ -213,6 +213,32 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lct${uid}`}><titl
 {!still&&<g aria-hidden="true">{[0,.1,.2,.3].map(t=><Dot key={t} x1={112} x2={194} y={60} t0={t} t1={t+.3} dur={D}/>)}<Glow x={200} y={48} w={180} h={24} t0={.3} t1={.9} dur={D}/>
 {[[0,3],[.12,6],[.24,1],[.36,5],[.48,0],[.6,7]].map(([t,k])=><g key={t}><Dot x1={112} x2={194} y={170} t0={t} t1={t+.08} dur={D}/><Glow x={X+k*(W+G)} y={158} w={W} h={24} t0={t+.08} t1={t+.14} dur={D}/></g>)}</g>}</svg>}
 
+// News feed, FIG: push. Posting saves the post and queues it; fan-out workers add the id to each follower's
+// list in Redis. Opening the feed reads one list (1) and fetches the posts from a cache (2).
+function FeedFanoutFig({still,uid=""}){const M=`ff${uid}`,D="12s";
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`fft${uid}`}><title id={`fft${uid}`}>Posting saves the post and puts a message on a queue. Fan-out workers look up the author's followers and add the post id to each follower's feed list in Redis. Opening the feed reads one list of post ids and fetches the posts themselves from a cache.</title><Mark m={M}/>
+<SBox x={0} y={60} w={100} t="Author"/><SBox x={150} y={60} w={130} t="Post service" blue/><SBox x={330} y={60} w={90} t="Queue"/><SBox x={470} y={60} w={170} t="Fan-out workers"/>
+<SBox x={470} y={170} w={170} t="Feed lists (Redis)"/><SBox x={0} y={210} w={100} t="Reader"/><SBox x={150} y={210} w={130} t="Feed service" blue/><SBox x={330} y={250} w={110} t="Post cache"/>
+<Line x1={102} y1={60} x2={146} y2={60} m={M}/><Line x1={282} y1={60} x2={326} y2={60} m={M}/><Line x1={422} y1={60} x2={466} y2={60} m={M}/><text x="304" y="88" textAnchor="middle" className="fl">post saved; fan-out later</text>
+<Line x1={555} y1={72} x2={555} y2={156} m={M}/><text x="549" y="118" textAnchor="end" className="fl">add the id to each follower's list</text>
+<Line x1={102} y1={210} x2={146} y2={210} m={M}/><Line x1={282} y1={204} x2={466} y2={176} m={M}/><text x="380" y="210" className="fl">1 one list of ids</text>
+<Line x1={282} y1={218} x2={326} y2={246} m={M}/><text x="250" y="262" textAnchor="end" className="fl">2 the posts</text>
+{!still&&<g aria-hidden="true"><Dot x1={104} x2={144} y={60} t0={.02} t1={.08} dur={D}/><Dot x1={284} x2={324} y={60} t0={.1} t1={.16} dur={D}/><Dot x1={424} x2={464} y={60} t0={.18} t1={.24} dur={D}/>
+<Dot x1={555} x2={555} y={74} y2={154} t0={.26} t1={.36} dur={D}/><Glow x={470} y={158} w={170} h={24} t0={.36} t1={.46} dur={D}/>
+<Dot x1={104} x2={144} y={210} t0={.55} t1={.61} dur={D}/><Dot x1={284} x2={464} y={203} y2={177} t0={.63} t1={.73} dur={D}/><Dot x1={284} x2={324} y={219} y2={245} t0={.76} t1={.84} dur={D}/><Glow x={150} y={198} w={130} h={24} t0={.86} t1={.98} dur={D}/></g>}</svg>}
+
+// News feed, FIG: the hybrid. Posts from ordinary accounts are pushed into your list; the few big
+// accounts you follow are pulled when you open the feed; the two are merged by time.
+function FeedHybridFig({still,uid=""}){const M=`fh${uid}`,D="10s",W=190;
+const pushed=[["Ananya · 8:02 pm",55],["Rohit · 7:59 pm",80],["Meera · 7:51 pm",105]],pulled=[["Food blogger · 8:04 pm",175],["Biryani chain · 7:58 pm",200]];
+const merged=[["Food blogger · 8:04 pm",1],["Ananya · 8:02 pm",0],["Rohit · 7:59 pm",0],["Biryani chain · 7:58 pm",1],["Meera · 7:51 pm",0]];
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fht${uid}`}><title id={`fht${uid}`}>Opening the feed. Posts from ordinary accounts, Ananya, Rohit and Meera, were pushed into your list when they posted. Posts from the two big accounts you follow, a food blogger and a biryani chain, are pulled when you open the feed. The two are merged by time: the blogger at 8:04, Ananya at 8:02, Rohit at 7:59, the biryani chain at 7:58 and Meera at 7:51.</title><Mark m={M}/>
+<text x="0" y="32" className="fb">Pushed into your list</text>{pushed.map(([t,y])=><SBox key={t} x={0} y={y} w={W} t={t}/>)}
+<text x="0" y="152" className="fb" style={{fill:BLUE}}>Pulled when you open</text>{pulled.map(([t,y])=><SBox key={t} x={0} y={y} w={W} t={t} blue/>)}
+<Line x1={W+4} y1={80} x2={346} y2={100} m={M}/><Line x1={W+4} y1={188} x2={346} y2={130} m={M}/><text x="270" y="128" textAnchor="middle" className="fl">merge by time</text>
+<text x="350" y="32" className="fb">Your feed</text>
+{merged.map(([t,b],i)=>{const box=<SBox x={350} y={55+i*30} w={W+20} t={t} blue={!!b}/>;return still?<g key={t}>{box}</g>:<Show key={t} t0={.1+i*.12} t1={.98} dur={D}>{box}</Show>})}</svg>}
+
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
@@ -229,4 +255,6 @@ export const QUESTION_FIGS={
 "seat-states":{C:SeatStatesFig,ar:640/220,title:()=>"A SEAT'S THREE STATES"},
 "photo-upload":{C:PhotoUploadFig,ar:640/280,title:()=>"AN UPLOAD'S LIFE"},
 "like-counter":{C:LikeCounterFig,ar:640/240,title:()=>"ONE HOT ROW, OR EIGHT"},
+"feed-fanout":{C:FeedFanoutFig,ar:640/280,title:()=>"PUSH: ONE POST, MANY LISTS"},
+"feed-hybrid":{C:FeedHybridFig,ar:640/240,title:()=>"PUSHED, PULLED, MERGED"},
 };
