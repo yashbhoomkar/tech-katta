@@ -35,6 +35,7 @@
     "interview-questions/leaderboard",
     "interview-questions/ad-clicks",
     "interview-questions/key-value-store",
-    "interview-questions/shared-editor"
+    "interview-questions/shared-editor",
+    "interview-questions/rider-dispatch"
   ]
 }
