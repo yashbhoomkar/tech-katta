@@ -1,3 +1,4 @@
+import { cleanSchema, schemaIssues } from '../../../frontend/src/lab/schema.js';
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
 const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy', 'lab']);
@@ -250,6 +251,8 @@ function checkChallenges(lab, problems) {
 
 // A design (the Lab example, or a saved one): unique node ids, known types, numeric positions,
 // settings inside the catalogue's ranges, and edges that follow the canvas's connection rules.
+// JSON with object keys in a fixed order, so two equal values compare equal whatever order they were written in.
+const canon = (v) => JSON.stringify(v, (_, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 export function validateDesign(design, lab, at, problems = []) {
   if (!design || !isText(design.name) || !Array.isArray(design.nodes) || !Array.isArray(design.edges)) { problems.push(`${at}: needs name, nodes and edges`); return problems; }
   const byType = Object.fromEntries(list(lab.components).filter(Boolean).map((c) => [c.type, c]));
@@ -283,6 +286,11 @@ export function validateDesign(design, lab, at, problems = []) {
     if (Array.isArray(sizeList) && cfg.size !== undefined && !sizeList.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}${eng ? ` for ${eng.label}` : ''}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
     if (c.type === 'database') { inRange('replicas', c.replicas); inRange('writePct', c.writePct); }
+    if (c.type === 'database' && cfg.schema !== undefined) {
+      // a schema in content must already be clean, and have nothing its engine can't do
+      if (canon(cleanSchema(cfg.schema)) !== canon(cfg.schema)) problems.push(`${where}: schema is malformed (names, types, keys or indexes)`);
+      else for (const x of schemaIssues(eng, cfg.schema)) if (x.level === 'error') problems.push(`${where}: schema: ${x.text}`);
+    }
     if (cfg.role !== undefined && !(Array.isArray(c.roles) && c.roles.some((r) => r && r.id === cfg.role))) problems.push(`${where}: unknown role ${cfg.role}`);
   }
   const seen = new Set();

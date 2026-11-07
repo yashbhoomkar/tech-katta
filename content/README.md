@@ -123,6 +123,15 @@ counts as a standby for the `multiAz` check and a test can't crash it. A design'
 `config.engine`; without it the `defaultEngine` is used, so older designs are unchanged. The import text
 accepts an engine's names ("DynamoDB", "Mongo r6g.xlarge", "Database s3").
 
+**Database schemas** (`config.schema` on a design's database, written by the Lab's schema editor and
+cleaned by `frontend/src/lab/schema.js`): `{tables: [{name, fields: [{name, type}], key: [field],
+sortKey?, indexes?: [{fields, kind: btree | unique | geo | text}], ttl?}]}`. Types: string, text, int,
+float, bool, time, geo, json, list, blob. Each engine's `schema` entry in `lab.json` says what it calls
+a table and a key, whether it has a sort key or TTL, which index kinds it allows (DynamoDB: one or two
+fields, no geo or text; Cassandra and S3: none) and whether every field is searchable (OpenSearch).
+`schemaIssues` lists what an engine can't do (errors) and choices that usually hurt (warnings); a schema
+in content must be clean and have no errors.
+
 **Read replicas** (`database.replicas {label, min, max, default}` whole numbers from 0, max at most 10,
 and `database.writePct`, a percent; both optional): a design's database sets `config.replicas` and
 `config.writePct` (the share of the queries reaching it that are writes). Writes all go to the

@@ -2,6 +2,7 @@
 // format, a half-written value or a hand-edited one must never crash the Lab. readStore() keeps
 // every design it can repair against the current catalogue and drops what it cannot.
 // Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges,credit}}}.
+import{cleanSchema}from"./schema.js";
 export const STORE_KEY="tk-lab-v1";
 export const STORE_VERSION=1;
 // A design has at most this many components: more is never a real design and makes the canvas crawl.
@@ -32,7 +33,7 @@ export function cleanDesign(d,lab,id){
     if(Array.isArray(c.engines)&&c.engines.some(e=>e.id===src.engine))config.engine=src.engine;
     {const e=Array.isArray(c.engines)?c.engines.find(x=>x.id===(config.engine??c.defaultEngine)):null,sizes=e&&Array.isArray(e.sizes)?e.sizes:c.sizes;if(Array.isArray(sizes)&&sizes.some(s=>s.id===src.size))config.size=src.size}
     if(Array.isArray(c.roles)&&c.roles.some(r=>r.id===src.role))config.role=src.role;
-    if(c.type==="database"){if(typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
+    if(c.type==="database"){if(typeof src.multiAz==="boolean")config.multiAz=src.multiAz;{const sc=cleanSchema(src.schema);if(sc)config.schema=sc}
       if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas));if(c.writePct&&clamp(src.writePct,c.writePct)!==undefined)config.writePct=clamp(src.writePct,c.writePct)}
     seen.add(n.id);const name=cleanName(n.name);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,...(name?{name}:{}),config});
   }
