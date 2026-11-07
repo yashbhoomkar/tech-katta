@@ -253,6 +253,17 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "geo",
+            "label": "Drivers' live positions are held where \"nearest to this point\" is quick to answer"
+          },
+          {
+            "kind": "role",
+            "role": "matcher",
+            "behind": "queue",
+            "label": "Riders are paired with drivers away from the location updates"
           }
         ]
       },
@@ -493,6 +504,41 @@
           "method": "POST",
           "path": "^/(api/)?(v\\d+/)?offers/[^/]+/accept"
         }
+      ],
+      "decisions": [
+        {
+          "id": "pings",
+          "q": "Drivers send their location every 4 seconds. Where does it go?",
+          "options": [
+            "A new row in the main database every time",
+            "Nowhere",
+            "An in-memory geo index that keeps only the latest position; the trail goes to cheap storage"
+          ],
+          "answer": 2,
+          "why": "Lakhs of pings a second would bury the main database. Matching only needs where each driver is now."
+        },
+        {
+          "id": "offer",
+          "q": "How do you find a driver for a rider?",
+          "options": [
+            "Message every driver in the city",
+            "The driver who joined first",
+            "Look at the nearest few free drivers by map cell and offer the trip to one at a time, with a timeout"
+          ],
+          "answer": 2,
+          "why": "A few nearby candidates keep the search small; one offer at a time avoids two drivers accepting the same trip."
+        },
+        {
+          "id": "double",
+          "q": "Two riders must never get the same driver. How?",
+          "options": [
+            "It is fine if it happens",
+            "Mark the driver as offered in one atomic step; the second rider gets the next driver",
+            "The driver chooses on a call"
+          ],
+          "answer": 1,
+          "why": "An atomic \"offer only if free\" means exactly one rider can claim each driver."
+        }
       ]
     },
     "hints": [
@@ -591,7 +637,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 17,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "matcher"
           }
         },
         {
@@ -602,7 +649,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 17,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "matcher"
           }
         },
         {
@@ -614,7 +662,8 @@
             "size": "cache.m5.large",
             "hitPct": 95,
             "writePct": 5,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "geo"
           }
         },
         {
@@ -626,7 +675,8 @@
             "size": "cache.m5.large",
             "hitPct": 95,
             "writePct": 5,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "geo"
           }
         },
         {
@@ -638,7 +688,8 @@
             "size": "cache.m5.large",
             "hitPct": 95,
             "writePct": 5,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "geo"
           }
         },
         {
@@ -843,7 +894,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -854,7 +906,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1015,7 +1068,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1026,7 +1080,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1038,7 +1093,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1050,7 +1106,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1062,7 +1119,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1250,7 +1308,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1261,7 +1320,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 17,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1273,7 +1333,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1285,7 +1346,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1297,7 +1359,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1488,7 +1551,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1500,7 +1564,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1512,7 +1577,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1723,7 +1789,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1734,7 +1801,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "matcher"
             }
           },
           {
@@ -1746,7 +1814,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1758,7 +1827,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -1770,7 +1840,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "geo"
             }
           },
           {
@@ -2174,6 +2245,258 @@
           {
             "from": "cache9",
             "to": "db4"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 75000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb1",
+            "type": "lb",
+            "x": 240,
+            "y": -75,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 75,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 32,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 32,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue1",
+            "type": "queue",
+            "x": 720,
+            "y": -75,
+            "config": {}
+          },
+          {
+            "id": "queue2",
+            "type": "queue",
+            "x": 720,
+            "y": 75,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache3",
+            "type": "cache",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb1"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb1",
+            "to": "app1"
+          },
+          {
+            "from": "lb2",
+            "to": "app1"
+          },
+          {
+            "from": "lb1",
+            "to": "app2"
+          },
+          {
+            "from": "lb2",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue1"
+          },
+          {
+            "from": "app2",
+            "to": "queue1"
+          },
+          {
+            "from": "app1",
+            "to": "queue2"
+          },
+          {
+            "from": "app2",
+            "to": "queue2"
+          },
+          {
+            "from": "queue1",
+            "to": "work1"
+          },
+          {
+            "from": "queue2",
+            "to": "work1"
+          },
+          {
+            "from": "queue1",
+            "to": "work2"
+          },
+          {
+            "from": "queue2",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "cache1"
+          },
+          {
+            "from": "work1",
+            "to": "cache2"
+          },
+          {
+            "from": "work1",
+            "to": "cache3"
+          },
+          {
+            "from": "work2",
+            "to": "cache1"
+          },
+          {
+            "from": "work2",
+            "to": "cache2"
+          },
+          {
+            "from": "work2",
+            "to": "cache3"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          },
+          {
+            "from": "cache3",
+            "to": "db1"
+          },
+          {
+            "from": "cache3",
+            "to": "db2"
           }
         ]
       }

@@ -39,6 +39,8 @@ function options(comp,rest){
   if(comp.type==="database"){take(/\smulti[- ]?az(?=\s)/,()=>{config.multiAz=true});
     if(comp.replicas){take(/\s(\d+)\s?(?:read\s)?replicas?(?=\s)|\sreplicas?\s(\d+)(?=\s)/,(_,a,b)=>{config.replicas=Math.min(comp.replicas.max,+(a||b))});
       take(/\s(\d+)\s?%\s?writes?(?=\s)|\swrites?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.writePct=+(a||b)})}}
+  // a role by id: "as geo", "as websocket"
+  if(comp.roles)take(new RegExp(`\\sas\\s(${comp.roles.map(r=>r.id).join("|")})(?=\\s)`),(_,id)=>{config.role=id});
   // sizes by id, with or without the "db." / "cache." prefix
   if(comp.sizes)for(const tok of s.trim().split(" ").filter(Boolean)){const z=comp.sizes.find(x=>x.id===tok||x.id==="db."+tok||x.id==="cache."+tok);if(z){config.size=z.id;s=s.replace(" "+tok+" "," ")}}
   for(const tok of s.trim().split(" ").filter(Boolean))unknown.push(tok);

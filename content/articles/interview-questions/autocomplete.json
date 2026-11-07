@@ -270,6 +270,11 @@
             "kind": "p99",
             "max": 150,
             "label": "p99 under 150 ms"
+          },
+          {
+            "kind": "role",
+            "role": "prefix",
+            "label": "Every keystroke gets suggestions that are ready for its prefix, not searched for"
           }
         ]
       },
@@ -487,6 +492,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(suggest|autocomplete|suggestions|typeahead)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "lookup",
+          "q": "Someone types \"piz\". How do you find suggestions?",
+          "options": [
+            "Search all past queries LIKE 'piz%' on each keystroke",
+            "Look the prefix up in a table of top suggestions kept for every prefix",
+            "Send each keystroke to a full-text search engine"
+          ],
+          "answer": 1,
+          "why": "Suggestions must come back in tens of milliseconds for every keystroke. A ready list per prefix is one lookup; scanning queries or full-text search per keystroke is far too slow at this rate."
+        },
+        {
+          "id": "refresh",
+          "q": "How often are the top suggestions rebuilt?",
+          "options": [
+            "Every few minutes to an hour, in the background, from recent search logs",
+            "Instantly on every search",
+            "Once a year"
+          ],
+          "answer": 0,
+          "why": "Popular searches change over minutes and hours, not milliseconds. Rebuilding in the background keeps the read path a plain lookup."
+        },
+        {
+          "id": "client",
+          "q": "What cuts the load most before it reaches you?",
+          "options": [
+            "A bigger database",
+            "Wait about 100 ms after the last keystroke, and cache answers in the app",
+            "Send every keystroke twice to be safe"
+          ],
+          "answer": 1,
+          "why": "Most keystrokes are followed by another within 100 ms; skipping those and remembering recent answers on the phone removes a large share of requests."
+        }
       ]
     },
     "hints": [
@@ -565,7 +605,8 @@
             "size": "cache.m5.large",
             "hitPct": 98,
             "writePct": 0,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "prefix"
           }
         },
         {
@@ -577,7 +618,8 @@
             "size": "cache.m5.large",
             "hitPct": 98,
             "writePct": 0,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "prefix"
           }
         },
         {
@@ -751,7 +793,8 @@
               "size": "cache.m5.large",
               "hitPct": 98,
               "writePct": 0,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "prefix"
             }
           },
           {
@@ -763,7 +806,8 @@
               "size": "cache.m5.large",
               "hitPct": 98,
               "writePct": 0,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "prefix"
             }
           },
           {
@@ -857,7 +901,8 @@
               "size": "cache.m5.large",
               "hitPct": 98,
               "writePct": 0,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "prefix"
             }
           },
           {
@@ -869,7 +914,8 @@
               "size": "cache.m5.large",
               "hitPct": 98,
               "writePct": 0,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "prefix"
             }
           },
           {
@@ -963,6 +1009,127 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 98,
+              "writePct": 0,
+              "onDown": "database",
+              "role": "prefix"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 98,
+              "writePct": 0,
+              "onDown": "database",
+              "role": "prefix"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.t3.medium",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 5000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
               "queriesPerRequest": 1
             }
           },

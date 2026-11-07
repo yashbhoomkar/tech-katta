@@ -249,6 +249,22 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "log",
+            "label": "Clicks wait in a store that keeps them in order and can replay them"
+          },
+          {
+            "kind": "role",
+            "role": "aggregator",
+            "behind": "queue",
+            "label": "Clicks are counted as they stream in, per ad and time window"
+          },
+          {
+            "kind": "role",
+            "role": "timeseries",
+            "label": "Counts are kept per time bucket, ready to sum for any range"
           }
         ]
       },
@@ -477,6 +493,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?ads/[^/]+/(stats|metrics|report)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "exact",
+          "q": "Advertisers pay per click. A counting server crashes halfway. What keeps the counts right?",
+          "options": [
+            "Counts are kept in the server's memory only",
+            "Advertisers count on their side",
+            "Clicks stay in a replayable log, and each click is counted by its id so a replay never counts it twice"
+          ],
+          "answer": 2,
+          "why": "Replay recovers what the crashed server hadn't saved; counting by click id makes replaying safe."
+        },
+        {
+          "id": "buckets",
+          "q": "Reports by minute, hour and day: how?",
+          "options": [
+            "Count each click into per-minute buckets; add buckets up for hours and days",
+            "Recount all raw clicks for each report",
+            "Keep daily totals only"
+          ],
+          "answer": 0,
+          "why": "Small buckets are cheap to update and any range is a sum of a few of them; raw recounts get slower every day."
+        },
+        {
+          "id": "fraud",
+          "q": "Bots click ads too. What do you do?",
+          "options": [
+            "Nothing",
+            "Block every click from phones",
+            "Mark suspicious clicks (same address, too fast, no page view) and leave them out before billing"
+          ],
+          "answer": 2,
+          "why": "Advertisers only pay for real clicks; filtering before billing keeps the bill honest without losing real clicks."
+        }
       ]
     },
     "hints": [
@@ -551,7 +602,9 @@
           "type": "queue",
           "x": 720,
           "y": 0,
-          "config": {}
+          "config": {
+            "role": "log"
+          }
         },
         {
           "id": "work1",
@@ -561,7 +614,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 4,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "aggregator"
           }
         },
         {
@@ -572,7 +626,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 4,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "aggregator"
           }
         },
         {
@@ -582,7 +637,8 @@
           "y": -150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "timeseries"
           }
         },
         {
@@ -592,7 +648,8 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "timeseries"
           }
         },
         {
@@ -602,7 +659,8 @@
           "y": 150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "timeseries"
           }
         }
       ],
@@ -700,7 +758,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "log"
+            }
           },
           {
             "id": "work1",
@@ -710,7 +770,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 4,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -721,7 +782,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 4,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -731,7 +793,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -741,7 +804,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -751,7 +815,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           }
         ],
@@ -851,7 +916,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "log"
+            }
           },
           {
             "id": "work1",
@@ -861,7 +928,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 4,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -872,7 +940,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 4,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -882,7 +951,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "timeseries"
             }
           },
           {
@@ -892,7 +962,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "timeseries"
             }
           },
           {
@@ -902,7 +973,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "timeseries"
             }
           }
         ],
@@ -1012,7 +1084,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -1022,7 +1095,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -1032,7 +1106,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           }
         ],
@@ -1135,7 +1210,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "log"
+            }
           },
           {
             "id": "work1",
@@ -1145,7 +1222,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -1156,7 +1234,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -1166,7 +1245,8 @@
             "y": -2550,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -1176,7 +1256,8 @@
             "y": -2400,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -1186,7 +1267,8 @@
             "y": -2250,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "timeseries"
             }
           },
           {
@@ -1826,6 +1908,166 @@
           {
             "from": "work2",
             "to": "db35"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 15000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
           }
         ]
       }

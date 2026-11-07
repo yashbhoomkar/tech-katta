@@ -251,6 +251,16 @@
             "kind": "p99",
             "max": 200,
             "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "role",
+            "role": "websocket",
+            "label": "Messages reach online users over connections that stay open"
+          },
+          {
+            "kind": "role",
+            "role": "wide",
+            "label": "Messages are kept in a store built for very many writes, split by conversation and in time order"
           }
         ]
       },
@@ -482,6 +492,52 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(conversations/[^/]+/)?messages"
         }
+      ],
+      "decisions": [
+        {
+          "id": "push",
+          "q": "How does a message reach a friend who is online?",
+          "options": [
+            "Pushed the moment it arrives, over a connection that stays open (WebSocket)",
+            "Their app asks every few seconds (polling)",
+            "By email"
+          ],
+          "answer": 0,
+          "why": "Polling either delays messages or floods the servers with empty requests. An open connection delivers in milliseconds and costs nothing while quiet."
+        },
+        {
+          "id": "order",
+          "q": "Messages in a chat must show in the same order for everyone. How?",
+          "options": [
+            "Sort by each phone's clock",
+            "Any order is fine",
+            "A sequence number per conversation, given by the server"
+          ],
+          "answer": 2,
+          "why": "Phone clocks disagree. A per-conversation number from the server gives one order that every device agrees on."
+        },
+        {
+          "id": "offline",
+          "q": "The friend is offline. What happens to the message?",
+          "options": [
+            "It is dropped",
+            "The server keeps retrying the connection forever",
+            "It is stored; delivered when they reconnect, with a push notification meanwhile"
+          ],
+          "answer": 2,
+          "why": "Store and forward: the message is safe in storage, and a push notification tells them to open the app."
+        },
+        {
+          "id": "split",
+          "q": "How are messages split across machines?",
+          "options": [
+            "By conversation id, sorted by time inside each conversation",
+            "By message length",
+            "One table on one machine"
+          ],
+          "answer": 0,
+          "why": "Opening a chat reads one conversation's latest messages: keeping each conversation together and in time order makes that one quick read."
+        }
       ]
     },
     "hints": [
@@ -537,7 +593,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 7,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "websocket"
           }
         },
         {
@@ -548,7 +605,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 7,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "websocket"
           }
         },
         {
@@ -587,7 +645,8 @@
           "y": -375,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         },
         {
@@ -597,7 +656,8 @@
           "y": -225,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         },
         {
@@ -607,7 +667,8 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         },
         {
@@ -617,7 +678,8 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         },
         {
@@ -627,7 +689,8 @@
           "y": 225,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         },
         {
@@ -637,7 +700,8 @@
           "y": 375,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "wide"
           }
         }
       ],
@@ -751,7 +815,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 7,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -790,7 +855,8 @@
             "y": -375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -800,7 +866,8 @@
             "y": -225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -810,7 +877,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -820,7 +888,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -830,7 +899,8 @@
             "y": 225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -840,7 +910,8 @@
             "y": 375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           }
         ],
@@ -945,7 +1016,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 7,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -956,7 +1028,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 7,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -995,7 +1068,8 @@
             "y": -375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           },
           {
@@ -1005,7 +1079,8 @@
             "y": -225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           },
           {
@@ -1015,7 +1090,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           },
           {
@@ -1025,7 +1101,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           },
           {
@@ -1035,7 +1112,8 @@
             "y": 225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           },
           {
@@ -1045,7 +1123,8 @@
             "y": 375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "wide"
             }
           }
         ],
@@ -1158,7 +1237,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 7,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -1169,7 +1249,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 7,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -1179,7 +1260,8 @@
             "y": -300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1189,7 +1271,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1199,7 +1282,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1209,7 +1293,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1219,7 +1304,8 @@
             "y": 300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           }
         ],
@@ -1308,7 +1394,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -1319,7 +1406,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "websocket"
             }
           },
           {
@@ -1358,7 +1446,8 @@
             "y": -5175,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1368,7 +1457,8 @@
             "y": -5025,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1378,7 +1468,8 @@
             "y": -4875,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1388,7 +1479,8 @@
             "y": -4725,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1398,7 +1490,8 @@
             "y": -4575,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -1408,7 +1501,8 @@
             "y": -4425,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "wide"
             }
           },
           {
@@ -2640,6 +2734,220 @@
           {
             "from": "work2",
             "to": "db70"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 15000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -375,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": 225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": 375,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
           }
         ]
       }

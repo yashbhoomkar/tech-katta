@@ -86,3 +86,8 @@ test("read replicas are kept within the catalogue's range; nonsense is dropped",
   assert.deepEqual(d.nodes[0].config,{replicas:5,writePct:30});
   assert.deepEqual(d.nodes[1].config,{writePct:0});
 });
+
+test("a component's role is kept only when its type has that role",()=>{
+  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{role:"geo"}},{id:"b",type:"database",config:{role:"websocket"}},{id:"c",type:"server",config:{role:"websocket"}}],edges:[]},lab,"x");
+  assert.equal(d.nodes[0].config.role,"geo");assert.equal(d.nodes[1].config.role,undefined);assert.equal(d.nodes[2].config.role,"websocket");
+});

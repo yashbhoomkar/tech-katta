@@ -256,6 +256,12 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "sandbox",
+            "behind": "queue",
+            "label": "Submitted code runs in sealed boxes, taking work from a queue"
           }
         ]
       },
@@ -490,6 +496,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?leaderboard"
         }
+      ],
+      "decisions": [
+        {
+          "id": "where",
+          "q": "Where does a submission's code run?",
+          "options": [
+            "On the API servers",
+            "On the user's laptop",
+            "In sandboxed runners with limits on CPU, memory, time and network"
+          ],
+          "answer": 2,
+          "why": "The code could be anything: an endless loop, a fork bomb, a network attack. It must run sealed off and limited, away from everything else."
+        },
+        {
+          "id": "rush",
+          "q": "A contest starts and 50,000 people submit in a minute. Then?",
+          "options": [
+            "Run each one as the request arrives",
+            "Refuse submissions",
+            "Queue them; runners take them at their own pace while the page shows \"judging…\""
+          ],
+          "answer": 2,
+          "why": "Runners have a fixed capacity; the queue turns a spike into a short wait instead of crashed runners."
+        },
+        {
+          "id": "tests",
+          "q": "Where are the hidden test cases?",
+          "options": [
+            "Sent to the browser",
+            "In the problem statement",
+            "Only on the runners' side"
+          ],
+          "answer": 2,
+          "why": "Anything sent to the browser can be read, so hidden tests stay with the runners."
+        }
       ]
     },
     "hints": [
@@ -574,7 +615,8 @@
           "config": {
             "size": "m5.large",
             "count": 3,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "sandbox"
           }
         },
         {
@@ -585,7 +627,8 @@
           "config": {
             "size": "m5.large",
             "count": 3,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "sandbox"
           }
         },
         {
@@ -687,7 +730,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -698,7 +742,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -802,7 +847,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -813,7 +859,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -1003,7 +1050,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -1014,7 +1062,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "sandbox"
             }
           },
           {
@@ -1352,6 +1401,130 @@
           {
             "from": "work2",
             "to": "db17"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 2500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
           }
         ]
       }

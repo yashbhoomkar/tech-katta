@@ -266,6 +266,11 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "objects",
+            "label": "Photo bytes are kept in storage built for big files, not in the rows of a table"
           }
         ]
       },
@@ -495,6 +500,41 @@
           "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?photos/[^/]+/like"
         }
+      ],
+      "decisions": [
+        {
+          "id": "upload",
+          "q": "How does a phone upload a photo?",
+          "options": [
+            "Stream the bytes through your app servers",
+            "Email it to the service",
+            "Ask the API for a signed upload link, then send the bytes straight to object storage"
+          ],
+          "answer": 2,
+          "why": "Big uploads through app servers tie them up for seconds each. A signed link lets storage take the bytes while the API handles only the small metadata."
+        },
+        {
+          "id": "sizes",
+          "q": "Phones on slow networks need small images. When are smaller sizes made?",
+          "options": [
+            "Resized on every view",
+            "The phone shrinks what it downloads",
+            "A few sizes, once, in the background after upload"
+          ],
+          "answer": 2,
+          "why": "Resizing once is cheap; resizing on every view repeats the work millions of times, and shrinking on the phone wastes its data."
+        },
+        {
+          "id": "serve",
+          "q": "Who serves photos to viewers?",
+          "options": [
+            "App servers read storage on each view",
+            "The database",
+            "A CDN in front of the storage"
+          ],
+          "answer": 2,
+          "why": "Popular photos are viewed again and again from all over; a CDN answers from servers near the viewer."
+        }
       ]
     },
     "hints": [
@@ -604,7 +644,8 @@
           "y": 0,
           "config": {
             "size": "db.m5.large",
-            "multiAz": true
+            "multiAz": true,
+            "role": "objects"
           }
         }
       ],
@@ -712,7 +753,8 @@
             "y": 0,
             "config": {
               "size": "db.t3.medium",
-              "multiAz": true
+              "multiAz": true,
+              "role": "objects"
             }
           }
         ],
@@ -816,7 +858,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.large",
-              "multiAz": true
+              "multiAz": true,
+              "role": "objects"
             }
           }
         ],
@@ -935,7 +978,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.large",
-              "multiAz": false
+              "multiAz": false,
+              "role": "objects"
             }
           }
         ],
@@ -1032,6 +1076,139 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 2,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true,
+              "role": "objects"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 95
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
               "queriesPerRequest": 2
             }
           },

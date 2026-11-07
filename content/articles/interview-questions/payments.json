@@ -260,6 +260,11 @@
             "kind": "p99",
             "max": 500,
             "label": "p99 under 500 ms"
+          },
+          {
+            "kind": "role",
+            "role": "ledger",
+            "label": "Every money movement is recorded in an append-only record that balances"
           }
         ]
       },
@@ -524,6 +529,41 @@
           "method": "POST",
           "path": "^/(api/)?(v\\d+/)?(payments/[^/]+/)?refunds?"
         }
+      ],
+      "decisions": [
+        {
+          "id": "idem",
+          "q": "The app retries \"Pay ₹500\" after a timeout. How do you not charge twice?",
+          "options": [
+            "Hope it doesn't happen",
+            "An idempotency key per payment: a repeat returns the first result",
+            "Charge, then refund duplicates by hand"
+          ],
+          "answer": 1,
+          "why": "Timeouts don't say whether the payment went through, so clients must retry; the key makes the retry return the original result."
+        },
+        {
+          "id": "ledger",
+          "q": "How is money recorded?",
+          "options": [
+            "Double entry: each movement is a debit and a credit, only ever added, never edited",
+            "A balance column updated in place",
+            "A spreadsheet"
+          ],
+          "answer": 0,
+          "why": "An append-only ledger keeps the full history; balances are sums that can always be checked and explained."
+        },
+        {
+          "id": "recon",
+          "q": "Your records and the bank's disagree at the end of the day. What do you do?",
+          "options": [
+            "Reconcile: compare with the bank's report daily and fix differences with new entries",
+            "Trust your own records",
+            "Delete the differences"
+          ],
+          "answer": 0,
+          "why": "Banks and networks have the final word on money that moved. Daily reconciliation finds the gaps, and corrections are new entries, so history stays intact."
+        }
       ]
     },
     "hints": [
@@ -600,7 +640,8 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "ledger"
           }
         },
         {
@@ -610,7 +651,8 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "ledger"
           }
         }
       ],
@@ -686,7 +728,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           },
           {
@@ -696,7 +739,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           }
         ],
@@ -770,7 +814,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "ledger"
             }
           },
           {
@@ -780,7 +825,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "ledger"
             }
           }
         ],
@@ -866,7 +912,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           },
           {
@@ -876,7 +923,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           }
         ],
@@ -988,7 +1036,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           },
           {
@@ -998,7 +1047,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "ledger"
             }
           }
         ],
@@ -1045,6 +1095,103 @@
           },
           {
             "from": "cache2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
             "to": "db2"
           }
         ]

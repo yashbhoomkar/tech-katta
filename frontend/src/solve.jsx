@@ -115,8 +115,8 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <span className="sv-vbtns"><button type="button" onClick={()=>setMin(m=>!m)} aria-expanded={!min} aria-label={min?"Show the results":"Make the results smaller"}>{min?"▴":"▾"}</button><button type="button" onClick={close} aria-label="Close results">✕</button></span></header>
 {!min&&<>{sc&&<div className="sv-score"><b>{sc.total}<small>/100</small></b><ul>
 <li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
-<li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
-{g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
+<li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
+{g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
 {!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
@@ -149,7 +149,11 @@ return <div className="sv-ans">
 <div className="sv-api">{api.map((x,i)=><div key={i} className="sv-row"><select value={x.method} onChange={e=>setApi(i,"method",e.target.value)} aria-label={`Method ${i+1}`}>{["GET","POST","PUT","PATCH","DELETE"].map(m=><option key={m}>{m}</option>)}</select><input value={x.path} onChange={e=>setApi(i,"path",e.target.value)} placeholder="/v1/…" aria-label={`Path ${i+1}`}/><button type="button" onClick={()=>set("api",api.filter((_,j)=>j!==i))} aria-label={`Remove call ${i+1}`}>✕</button></div>)}
 <button type="button" className="sv-add" onClick={()=>set("api",[...api,{method:"POST",path:""}])}>+ Add a call</button></div>
 {g&&<ul className="sv-grade">{g.api.map(x=><li key={x.label} className={x.ok?"ok":"no"}>{mark(x.ok)}{x.label} <code>{x.ok?x.got:x.method}</code></li>)}</ul>}</section>
-<section><h2>5. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test.</p></section>
+{r.decisions?.length>0&&<section><h2>5. Key decisions</h2><p className="sv-help">The choices this design turns on. Pick one answer for each; Submit explains the right one.</p>
+{r.decisions.map((x,qi)=>{const d=g?.dec?.find(y=>y.id===x.id),pick=ans.decisions?.[x.id];return <fieldset key={x.id} className="sv-dec"><legend>{d&&mark(d.ok)}{qi+1}. {x.q}</legend>
+{x.options.map((o,i)=><label key={i} className={d?(i===x.answer?"right":i===d.chosen?"wrong":""):""}><input type="radio" name={"dec-"+x.id} checked={pick===i} onChange={()=>setIn("decisions",x.id,i)}/><span>{o}</span></label>)}
+{d&&<p className="sv-why">{d.ok?"Right: ":"The better choice: "+x.options[x.answer]+". "}{x.why}</p>}</fieldset>})}</section>}
+<section><h2>{r.decisions?.length?6:5}. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test. Give each part its job under "What it does" in its settings.</p></section>
 </div>}
 
 function Hints({P,used,open}){

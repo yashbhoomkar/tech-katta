@@ -52,7 +52,8 @@ practice: {
   tests: [{id, name, desc, sample?, hours, startHour, traffic: {rps, pattern}, chaos?: [{minute, type}],
            checks: [{kind, label, …}]}],    at least one sample (shown, run by Run); Submit runs all
   rubric: {fr: [{label, keys}], nfr: {availability, p99, readsPerWrite: [min, max], consistency},
-           est: [{id, label, unit, answer, tol?, how?}], api: [{label, method, path (regex)}]},
+           est: [{id, label, unit, answer, tol?, how?}], api: [{label, method, path (regex)}],
+           decisions: [{id, q, options (2–6), answer (index of the right option), why}]},
   hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
   reference: {nodes, edges},      must pass every test
   wrong: [{name, why, fails, nodes, edges}]   each must fail the test `fails` names
@@ -61,12 +62,18 @@ practice: {
 
 Check kinds: `availability {min, from?, to?}`, `p99 {max}` (ms), `cost {max}` (dollars a month),
 `noCrash {type?}`, `noLostWrites`, `requires {types}`, `redundant {type}` (no single component of that
-type every request needs), `multiAz`, `has {type}`. `cd frontend && npm test` runs the calibration: the
+type every request needs), `multiAz`, `has {type}`, `role {role, any?, behind?, min?}` (a component
+given that job, e.g. `geo`, is on every request's path; `any`: on at least one; `behind`: reached only
+after a component of that type, e.g. `queue`; `min`: at least that many). Roles are listed per component
+type in `lab.json` (`roles: [{id, label, desc}]`); a design sets `config.role`. They don't change the
+simulation: they say what a part is for, so a well-sized but generic design fails a problem it doesn't
+solve. `tools/practice/roles.mjs` holds each problem's roles, role checks and key decisions. `cd frontend && npm test` runs the calibration: the
 reference passes everything, each wrong design fails its test, the starting design is not accepted, and
 the rubric accepts its own answers. Content changes run the frontend CI for this reason.
 
-Scoring (out of 100): functional requirements 12 (keywords), non-functional 8 (ranges), estimates 15
-(within `tol`×, default 3), API 15 (method + path regex), design tests 50 (share passed); each hint
+Scoring (out of 100): functional requirements 10 (keywords), non-functional 5 (ranges), estimates 10
+(within `tol`×, default 3), API 10 (method + path regex), key decisions 15 (exact), design tests 50
+(share passed); each hint
 opened −3, at most −15. Known limit: two queues feeding the same workers each hand them their full
 capacity, so suites keep to one queue per worker pool.
 

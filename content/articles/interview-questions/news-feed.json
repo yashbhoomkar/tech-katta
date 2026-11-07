@@ -265,6 +265,11 @@
             "kind": "p99",
             "max": 200,
             "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "role",
+            "role": "feed",
+            "label": "Opening the app reads a feed that was put together before the user asked"
           }
         ]
       },
@@ -498,6 +503,41 @@
           "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?follow"
         }
+      ],
+      "decisions": [
+        {
+          "id": "fanout",
+          "q": "Someone posts. When are their followers' feeds updated?",
+          "options": [
+            "Only when each follower opens the app (merge everyone they follow then)",
+            "Push to followers' feeds at post time for most people; for accounts with millions of followers, merge their posts in when a feed is read",
+            "Push to every follower at post time, whoever posts"
+          ],
+          "answer": 1,
+          "why": "Pushing makes reads one lookup, but a celebrity post would mean millions of writes at once. Pulling just those few accounts at read time keeps both sides cheap."
+        },
+        {
+          "id": "items",
+          "q": "What is stored in a feed list?",
+          "options": [
+            "Full copies of each post with text and images",
+            "Screenshots of posts",
+            "Post ids only; the posts are fetched (and cached) separately"
+          ],
+          "answer": 2,
+          "why": "Ids keep each feed small; an edited or deleted post changes in one place instead of in every follower's copy."
+        },
+        {
+          "id": "paging",
+          "q": "How does the app page through the feed?",
+          "options": [
+            "Page numbers (?page=7)",
+            "Send the whole feed at once",
+            "A cursor: \"posts older than this id\""
+          ],
+          "answer": 2,
+          "why": "New posts arrive at the top all the time, so page numbers shift and show repeats or skip posts. A cursor always continues from the last post seen."
+        }
       ]
     },
     "hints": [
@@ -576,7 +616,8 @@
             "size": "cache.m5.large",
             "hitPct": 95,
             "writePct": 10,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "feed"
           }
         },
         {
@@ -588,7 +629,8 @@
             "size": "cache.m5.large",
             "hitPct": 95,
             "writePct": 10,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "feed"
           }
         },
         {
@@ -762,7 +804,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 10,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "feed"
             }
           },
           {
@@ -774,7 +817,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 10,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "feed"
             }
           },
           {
@@ -868,7 +912,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 10,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "feed"
             }
           },
           {
@@ -880,7 +925,8 @@
               "size": "cache.m5.large",
               "hitPct": 95,
               "writePct": 10,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "feed"
             }
           },
           {
@@ -974,6 +1020,127 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database",
+              "role": "feed"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database",
+              "role": "feed"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
               "queriesPerRequest": 3
             }
           },

@@ -257,6 +257,17 @@
             "kind": "p99",
             "max": 500,
             "label": "p99 under 500 ms"
+          },
+          {
+            "kind": "role",
+            "role": "frontier",
+            "label": "Links wait in line per website, so no site is hit too often"
+          },
+          {
+            "kind": "role",
+            "role": "fetcher",
+            "behind": "queue",
+            "label": "Pages are downloaded by parts that take links from that line"
           }
         ]
       },
@@ -497,6 +508,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(frontier|urls|queue)/next"
         }
+      ],
+      "decisions": [
+        {
+          "id": "polite",
+          "q": "How do you avoid overloading one website?",
+          "options": [
+            "Fetch as fast as possible",
+            "Only crawl at night",
+            "One line of links per site with a gap between fetches, and respect robots.txt"
+          ],
+          "answer": 2,
+          "why": "A crawler that hammers a site gets blocked, and it is rude. Per-site lines with delays spread the load."
+        },
+        {
+          "id": "seen",
+          "q": "How do you avoid fetching the same page twice?",
+          "options": [
+            "Remember a fingerprint of every link seen (a Bloom filter or a set)",
+            "Don't worry about it",
+            "Crawl only home pages"
+          ],
+          "answer": 0,
+          "why": "The web links to the same pages over and over; checking a compact set of seen links saves most of the work."
+        },
+        {
+          "id": "io",
+          "q": "Fetching is mostly waiting on the network. So each fetcher machine…",
+          "options": [
+            "Fetches one page at a time",
+            "Keeps many connections open at once (asynchronous I/O)",
+            "Runs inside the database"
+          ],
+          "answer": 1,
+          "why": "While one page is on its way, hundreds of others can be too; one at a time leaves the machine idle."
+        }
       ]
     },
     "hints": [
@@ -571,7 +617,9 @@
           "type": "queue",
           "x": 720,
           "y": 0,
-          "config": {}
+          "config": {
+            "role": "frontier"
+          }
         },
         {
           "id": "work1",
@@ -581,7 +629,8 @@
           "config": {
             "size": "m5.large",
             "count": 2,
-            "queriesPerRequest": 3
+            "queriesPerRequest": 3,
+            "role": "fetcher"
           }
         },
         {
@@ -592,7 +641,8 @@
           "config": {
             "size": "m5.large",
             "count": 2,
-            "queriesPerRequest": 3
+            "queriesPerRequest": 3,
+            "role": "fetcher"
           }
         },
         {
@@ -684,7 +734,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "frontier"
+            }
           },
           {
             "id": "work1",
@@ -694,7 +746,8 @@
             "config": {
               "size": "m5.large",
               "count": 2,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -705,7 +758,8 @@
             "config": {
               "size": "m5.large",
               "count": 2,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -799,7 +853,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "frontier"
+            }
           },
           {
             "id": "work1",
@@ -809,7 +865,8 @@
             "config": {
               "size": "m5.large",
               "count": 2,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -820,7 +877,8 @@
             "config": {
               "size": "m5.large",
               "count": 2,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -1000,7 +1058,9 @@
             "type": "queue",
             "x": 720,
             "y": 0,
-            "config": {}
+            "config": {
+              "role": "frontier"
+            }
           },
           {
             "id": "work1",
@@ -1010,7 +1070,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -1021,7 +1082,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "fetcher"
             }
           },
           {
@@ -1503,6 +1565,130 @@
           {
             "from": "work2",
             "to": "db25"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1200,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
           }
         ]
       }

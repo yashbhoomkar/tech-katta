@@ -527,7 +527,7 @@
     "solve": {
       "eyebrow": "PROBLEM",
       "button": "Solve it on the canvas",
-      "how": "Design it on the canvas: add parts from the left and join them with arrows. Run checks your design against the example tests; Submit runs every test and checks your written answer, for a score out of 100.",
+      "how": "Design it on the canvas: add parts from the left, join them with arrows, and give each part its job under \"What it does\" in its settings (a geo index, a WebSocket gateway…). Run checks your design against the example tests; Submit runs every test and checks your written answer and key decisions, for a score out of 100.",
       "answer": "Read the worked answer",
       "scored": "Scored challenge in the Lab",
       "next": "NEXT PROBLEM",

@@ -145,7 +145,9 @@ const choice = (ids) => (c) => c && typeof c === 'object' && isText(c.label) && 
 const CHOICES = { writePolicy: ['through', 'back'], onDown: ['database', 'fail'] };
 // Read replicas on Database: a whole-number range that may start at 0, and the share of writes.
 const replicas = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every((v) => Number.isInteger(v) && v >= 0) && r.min <= r.default && r.default <= r.max && r.max <= 10;
-const OPTIONAL_FIELDS = { database: { replicas, writePct: percent }, client: { patterns }, server: { autoscaling }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown) } };
+// Roles: the jobs a component can be given ({id, label, desc}, ids lowercase letters, unique).
+const roles = (list) => Array.isArray(list) && list.length > 0 && list.every((r) => r && /^[a-z]{2,20}$/.test(r.id || '') && isText(r.label) && isText(r.desc)) && new Set(list.map((r) => r.id)).size === list.length;
+const OPTIONAL_FIELDS = { database: { replicas, writePct: percent, roles }, client: { patterns }, server: { autoscaling, roles }, queue: { roles }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown), roles } };
 // Every catalogue needs the original four; the others are optional so content can add them later.
 const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
@@ -153,6 +155,7 @@ export function validateLab(lab, problems = []) {
   if (!lab) { problems.push(`${at}: missing`); return problems; }
   for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote', 'smallScreen']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
   if (lab.requiresNote !== undefined && !isText(lab.requiresNote)) problems.push(`${at}: requiresNote must be text`);
+  if (lab.roleNote !== undefined && !isText(lab.roleNote)) problems.push(`${at}: roleNote must be text`);
   if (!(Number.isInteger(lab.retries) && lab.retries >= 0 && lab.retries <= 3)) problems.push(`${at}: retries must be a whole number from 0 to 3`);
   if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
   const types = new Set();
@@ -254,6 +257,7 @@ export function validateDesign(design, lab, at, problems = []) {
     if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
     if (c.type === 'database') { inRange('replicas', c.replicas); inRange('writePct', c.writePct); }
+    if (cfg.role !== undefined && !(Array.isArray(c.roles) && c.roles.some((r) => r && r.id === cfg.role))) problems.push(`${where}: unknown role ${cfg.role}`);
   }
   const seen = new Set();
   for (const e of design.edges) {
@@ -310,7 +314,7 @@ export function validateContent({ site, examples, articles, lab }) {
 // shown before Submit), the rubric for the written steps, hints, and the designs that calibrate the
 // tests (the reference must pass every test, each wrong design must fail the test it names; checked by
 // frontend/src/judge/judge.test.js).
-const CHECK_KINDS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has']);
+const CHECK_KINDS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has', 'role']);
 const HINT_STEPS = new Set(['requirements', 'estimates', 'api', 'design', 'deep']);
 const ID = /^[a-z0-9][a-z0-9-]{0,40}$/;
 export function validatePractice(p, lab, at, problems) {
@@ -354,6 +358,12 @@ export function validatePractice(p, lab, at, problems) {
       if ((c.kind === 'p99' || c.kind === 'cost') && !(isNumber(c.max) && c.max > 0)) problems.push(`${w}: ${c.kind} max must be above 0`);
       if (['redundant', 'has'].includes(c.kind) && !byType[c.type]) problems.push(`${w}: ${c.kind} needs a component type`);
       if (c.kind === 'noCrash' && c.type !== undefined && !byType[c.type]) problems.push(`${w}: noCrash type ${c.type} is not a component`);
+      if (c.kind === 'role') {
+        if (!Object.values(byType).some((x) => Array.isArray(x.roles) && x.roles.some((r) => r && r.id === c.role))) problems.push(`${w}: role ${c.role} is not a role of any component`);
+        if (c.behind !== undefined && !byType[c.behind]) problems.push(`${w}: role behind ${c.behind} is not a component type`);
+        if (c.min !== undefined && !(Number.isInteger(c.min) && c.min >= 1)) problems.push(`${w}: role min must be a whole number from 1`);
+        if (c.any !== undefined && typeof c.any !== 'boolean') problems.push(`${w}: role any must be true or false`);
+      }
       if (c.kind === 'requires' && !(Array.isArray(c.types) && c.types.length && c.types.every((x) => byType[x]))) problems.push(`${w}: requires must list component types`);
     }
   }
@@ -369,6 +379,7 @@ export function validatePractice(p, lab, at, problems) {
       else if (!range(v)) problems.push(`${at}: rubric.nfr.${k} must be [min, max]`);
     }
     if (!list(r.est).length || !r.est.every((x) => x && ID.test(x.id || '') && isText(x.label) && isText(x.unit) && isNumber(x.answer) && x.answer > 0 && (x.tol === undefined || (isNumber(x.tol) && x.tol > 1)) && (x.how === undefined || isText(x.how)))) problems.push(`${at}: rubric.est needs [{id, label, unit, answer, tol?, how?}]`);
+    if (!list(r.decisions).length || !r.decisions.every((x) => x && ID.test(x.id || '') && isText(x.q) && Array.isArray(x.options) && x.options.length >= 2 && x.options.length <= 6 && x.options.every(isText) && Number.isInteger(x.answer) && x.answer >= 0 && x.answer < x.options.length && isText(x.why)) || new Set(r.decisions.map((x) => x.id)).size !== r.decisions.length) problems.push(`${at}: rubric.decisions needs [{id, q, options (2–6), answer (index), why}] with unique ids`);
     if (!list(r.api).length || !r.api.every((x) => x && isText(x.label) && typeof x.method === 'string' && x.method.split('|').every((m) => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(m)) && isText(x.path) && (() => { try { new RegExp(x.path); return true; } catch { return false; } })())) problems.push(`${at}: rubric.api needs [{label, method, path (a regular expression)}]`);
   }
   if (!list(p.hints).length || !p.hints.every((h) => h && HINT_STEPS.has(h.step) && isText(h.x))) problems.push(`${at}: hints need [{step, x}] with step one of ${[...HINT_STEPS].join(', ')}`);

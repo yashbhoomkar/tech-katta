@@ -57,7 +57,9 @@ const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 export function cleanAnswer(a) {
   const o = a && typeof a === 'object' ? a : {};
   const map = (m, keys) => Object.fromEntries(Object.entries(m && typeof m === 'object' ? m : {}).filter(([k]) => /^[a-zA-Z0-9-]{1,40}$/.test(k)).slice(0, keys).map(([k, v]) => [k, str(v, 40)]));
-  return { fr: str(o.fr, 4000), nfr: map(o.nfr, 10), est: map(o.est, 10), api: (Array.isArray(o.api) ? o.api : []).slice(0, 30).map((x) => ({ method: str(x?.method, 8), path: str(x?.path, 200) })) };
+  // key decisions: {id: index of the chosen option}
+  const decisions = Object.fromEntries(Object.entries(o.decisions && typeof o.decisions === 'object' ? o.decisions : {}).filter(([k, v]) => /^[a-zA-Z0-9-]{1,40}$/.test(k) && Number.isInteger(v) && v >= 0 && v < 10).slice(0, 12));
+  return { fr: str(o.fr, 4000), nfr: map(o.nfr, 10), est: map(o.est, 10), decisions, api: (Array.isArray(o.api) ? o.api : []).slice(0, 30).map((x) => ({ method: str(x?.method, 8), path: str(x?.path, 200) })) };
 }
 
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
