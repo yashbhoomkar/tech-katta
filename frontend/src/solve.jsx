@@ -10,7 +10,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -64,8 +64,11 @@ if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="
 if(!st.a)return <section className="d-panel"><Loading label={qs[i]?.title}/></section>;
 const a=st.a,P=a.practice,body=statement(a.body),ch=a.body.find(b=>b.t==="lab"&&/^lab\/./.test(b.to));const showLab=!narrow||canvas;
 // Run: the example tests. Submit: every test, the written steps, a score, a saved submission.
+// The design to judge: what the canvas holds now, or (before the canvas has loaded, e.g. on a phone that
+// hasn't opened the Canvas tab) the design saved for this problem; only without either, the start.
+const savedDesign=()=>{try{const st=readStore(localStorage.getItem(STORE_KEY),lab),x=st.designs["q-"+slug]||Object.values(st.designs).find(v=>v.problem===slug);return x?{nodes:x.nodes,edges:x.edges}:null}catch{return null}};
 const go=kind=>{if(!P||!lab||busy)return;if(narrow)setCanvas(true);setBusy(true);setRes(null);
-setTimeout(()=>{const d=design.current||P.start;let out;try{const j=judge(d,lab,P,{sample:kind==="run"});out={kind,j};
+setTimeout(()=>{const d=design.current||savedDesign()||P.start;let out;try{const j=judge(d,lab,P,{sample:kind==="run"});out={kind,j};
 if(kind==="submit"){const g=gradeAnswer(ans,P.rubric),sc=score(g,j,hints);out.g=g;out.sc=sc;setGraded(g);
 const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints};
 const all=read(SUBS);all[slug]=[sub,...readSubs(slug)].slice(0,30);write(SUBS,all);setSubs(all[slug]);

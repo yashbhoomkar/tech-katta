@@ -73,3 +73,6 @@
 .sv-trace li button{background:none;border:0;padding:2px 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .sv-hop{border:1px solid var(--line);background:#fafbfc;min-width:0}.sv-hop>b{display:block;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}.sv-hop p{margin:8px}.sv-whyline{color:#b42318;font-size:13px}
 @media (max-width:700px){.sv-trace{grid-template-columns:1fr}}
+/* the player never scrolls sideways; long paths wrap */
+.sv-player{overflow-x:hidden}.sv-player .sv-v>div{min-width:0}.sv-player .sv-v b{overflow-wrap:anywhere;word-break:break-word}
+@media (max-width:700px){.sv-player .sv-v b{font-size:15px}.sv-trace{max-height:none}.sv-trace ol li:not(.on){display:none}.sv-trace ol{list-style:none;padding:0}.sv-trace ol li.on button{font-weight:600}}

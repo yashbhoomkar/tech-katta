@@ -175,7 +175,7 @@ function dialect(step, t, e, match) {
   const vals = (o) => Object.entries(o || {}).map(([k, v]) => [uf(k), v]);
   if (id === 'postgres' || id === 'mysql' || id === 'cassandra' || id === 'timeseries') {
     if (step.op === 'put') { const v = vals(step.values); return `INSERT INTO ${t.name} (${v.map((x) => x[0]).join(', ')}) VALUES (${v.map((x) => q(x[1])).join(', ')})${id === 'cassandra' && t.ttl ? ' USING TTL 2592000' : ''};`; }
-    if (step.op === 'update') return `UPDATE ${t.name} SET ${[...vals(step.set).map(([k, v]) => `${k} = ${q(v)}`), ...vals(step.add).map(([k, v]) => `${k} = ${k} + ${v}`)].join(', ')} WHERE ${sqlWhere}${Object.entries(step.cond || {}).map(([k, c]) => ` AND ${uf(k)} ${c.eq !== undefined ? `= ${q(c.eq)}` : `>= ${c.gte}`}`).join('')};`;
+    if (step.op === 'update') return `UPDATE ${t.name} SET ${[...vals(step.set).map(([k, v]) => `${k} = ${q(v)}`), ...vals(step.add).map(([k, v]) => `${k} = ${k} + ${v}`)].join(', ')} WHERE ${sqlWhere}${Object.entries(step.cond || {}).map(([k, c], i) => ` ${id === 'cassandra' ? (i ? 'AND' : 'IF') : 'AND'} ${uf(k)} ${c.eq !== undefined ? `= ${q(c.eq)}` : `>= ${c.gte}`}`).join('')};`;
     if (step.op === 'sum') return `SELECT sum(${uf(step.field)}) FROM ${t.name} WHERE ${sqlWhere};`;
     return `SELECT ${cols.join(', ') || '*'} FROM ${t.name}${sqlWhere ? ` WHERE ${sqlWhere}` : ''}${order}${lim};`;
   }
@@ -230,8 +230,8 @@ function plan(step, ctx) {
     }
   }
   if (best && best.ok && best.async && !test.async) return { ...best, ok: false, why: `${g.byId.get(best.store) ? displayName(g.cat.database, g.byId.get(best.store)) : 'the database'} is only reachable through a queue, but this call must answer with the result now` };
-  if (best && !best.ok && step.op === 'update' && step.cond && !['postgres', 'mysql', 'mongodb', 'dynamodb', 'cassandra', 'graph'].includes(best.e?.id)) return { ...best, why: `${best.e.label} can't do a conditional update` };
-  if (best && best.ok && step.op === 'update' && step.cond && !['postgres', 'mysql', 'mongodb', 'dynamodb', 'graph'].includes(best.e?.id)) return { ...best, ok: false, why: `${best.e.label} can't take stock only if enough is left in one step: two buyers could both get the last one` };
+  // a change only if the row is still as expected (stock left, seat free): one atomic step, or two callers both win
+  if (best && best.ok && step.op === 'update' && step.cond && !['postgres', 'mysql', 'mongodb', 'dynamodb', 'cassandra', 'graph'].includes(best.e?.id)) return { ...best, ok: false, why: `${best.e.label} can't change a row only if it is still as expected in one step, so two callers could both get the same item` };
   if (best && best.ok && step.op === 'update' && best.e?.id === 's3') return { ...best, ok: false, why: `S3 can't change part of an object: a counter or status needs a database` };
   if (best) return best;
   if (partial?.blob) return { ok: false, store: partial.s.id, path: partial.s.path, table: partial.t.name, why: partial.e?.id === 's3' ? `${partial.t.name} has no file field for the bytes` : `file bytes would go into ${partial.e?.label || 'a database'} rows: keep files in object storage (S3) and their key in the database` };

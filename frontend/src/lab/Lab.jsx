@@ -176,8 +176,12 @@ function Canvas({lab,start,embedded,problem,onDesign,trace}){const cat=useMemo((
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
 const box=ns.reduce((b,n)=>{const w=n.measured?.width||176,h=n.measured?.height||80;return{x0:Math.min(b.x0,n.position.x),y0:Math.min(b.y0,n.position.y),x1:Math.max(b.x1,n.position.x+w),y1:Math.max(b.y1,n.position.y+h)}},{x0:Infinity,y0:Infinity,x1:-Infinity,y1:-Infinity});
-const el=document.querySelector(".lab-watch .react-flow"),W=el?.clientWidth||800,H=el?.clientHeight||500,visH=H*0.52,zoom=Math.max(0.45,Math.min(1.1,(W-80)/(box.x1-box.x0+80),(visH-40)/(box.y1-box.y0+60)));
-followRf.setCenter((box.x0+box.x1)/2,(box.y0+box.y1)/2+(H/2-visH/2)/zoom,{zoom,duration:450})};
+// the part of the canvas actually on screen: below the top of the window, above the results panel
+const el=document.querySelector(".lab-watch .react-flow");if(!el)return;const fr=el.getBoundingClientRect(),pl=document.querySelector(".sv-player")?.getBoundingClientRect();
+const top=Math.max(fr.top,0),bottom=Math.min(fr.bottom,pl&&pl.top>top+60?pl.top:fr.bottom,innerHeight),visH=Math.max(80,bottom-top),W=fr.width;
+const zoom=Math.max(0.35,Math.min(1.1,(W-40)/(box.x1-box.x0+60),(visH-30)/(box.y1-box.y0+50)));
+// setCenter puts a point at the middle of the canvas; shift it so the hop lands in the middle of the visible part
+followRf.setCenter((box.x0+box.x1)/2,(box.y0+box.y1)/2+(fr.height/2-((top+bottom)/2-fr.top))/zoom,{zoom,duration:450})};
 // wait for the canvas to widen (the side panels hide while watching) before centring
 const t=setTimeout(go,trace.n===0?120:0);return()=>clearTimeout(t)},[trace?.n,trace?.at]);// eslint-disable-line
 const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
