@@ -397,6 +397,42 @@
             "label": "Costs at most $15,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-send",
+        "name": "Send an OTP",
+        "sample": true,
+        "async": true,
+        "desc": "An OTP by SMS for u1; the delivery workers send it.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/notifications",
+          "body": {
+            "user_id": "u1",
+            "channel": "sms",
+            "body": "OTP 4821"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "notifications",
+            "values": {
+              "notification_id": "n1",
+              "user_id": "u1",
+              "channel": "sms",
+              "body": "OTP 4821",
+              "status": "queued"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "notification_id": "$s1.notification_id"
+          }
+        }
       }
     ],
     "rubric": {
@@ -637,7 +673,51 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "notifications",
+                  "fields": [
+                    {
+                      "name": "notification_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "channel",
+                      "type": "string"
+                    },
+                    {
+                      "name": "body",
+                      "type": "text"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "notification_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -647,7 +727,51 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "notifications",
+                  "fields": [
+                    {
+                      "name": "notification_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "channel",
+                      "type": "string"
+                    },
+                    {
+                      "name": "body",
+                      "type": "text"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "notification_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1922,7 +2046,235 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Notifications without a channel",
+        "why": "Nothing records whether a message goes by SMS, push or email.",
+        "fails": "api-send",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 2000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "queriesPerRequest": 2,
+              "role": "sender"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "queriesPerRequest": 2,
+              "role": "sender"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "notification_id",
+        "user_id",
+        "channel",
+        "body",
+        "status",
+        "sent_at"
+      ],
+      "aliases": {
+        "body": [
+          "text",
+          "message",
+          "content"
+        ],
+        "channel": [
+          "type",
+          "via",
+          "medium"
+        ]
+      },
+      "entities": {
+        "notifications": {
+          "rows": 10000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

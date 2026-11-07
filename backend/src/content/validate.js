@@ -157,7 +157,8 @@ const engine = (e, known) => e && typeof e === 'object' && /^[a-z0-9]{2,20}$/.te
   && (e.capacity === 'request' ? positive(e.limitQps) && nonNegative(e.readPerMillion) && nonNegative(e.writePerMillion) && e.crash === false && e.replicas === false
     : (e.sizes === undefined || (sizesOf('qps')(e.sizes) && e.sizes.some((s) => s.id === e.defaultSize))))
   && Array.isArray(e.features) && e.features.every((f) => known.has(f))
-  && (e.aliases === undefined || (Array.isArray(e.aliases) && e.aliases.every(isText)));
+  && (e.aliases === undefined || (Array.isArray(e.aliases) && e.aliases.every(isText)))
+  && (e.roles === undefined || (Array.isArray(e.roles) && e.roles.every((r) => /^[a-z]{2,20}$/.test(r))));
 // Roles: the jobs a component can be given ({id, label, desc}, ids lowercase letters, unique).
 const roles = (list) => Array.isArray(list) && list.length > 0 && list.every((r) => r && /^[a-z]{2,20}$/.test(r.id || '') && isText(r.label) && isText(r.desc)) && new Set(list.map((r) => r.id)).size === list.length;
 const OPTIONAL_FIELDS = { database: { replicas, writePct: percent, roles }, client: { patterns }, server: { autoscaling, roles }, queue: { roles }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown), roles } };
@@ -351,6 +352,32 @@ export function validateContent({ site, examples, articles, lab }) {
 const CHECK_KINDS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has', 'role']);
 const HINT_STEPS = new Set(['requirements', 'estimates', 'api', 'design', 'deep']);
 const ID = /^[a-z0-9][a-z0-9-]{0,40}$/;
+// A request test (judge/requests.js): a request, the data steps, and the response template.
+const STEP_OPS = new Set(['get', 'query', 'put', 'update', 'tx', 'blob', 'sum']);
+const obj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+function validateStep(s, entities, w, problems, ids, inTx = false) {
+  if (!s || !ID.test(s.id || '') || !STEP_OPS.has(s.op)) { problems.push(`${w}: a step needs an id and an op (${[...STEP_OPS].join(', ')})`); return; }
+  if (ids.has(s.id)) problems.push(`${w}: duplicate step ${s.id}`); ids.add(s.id);
+  if (s.op === 'tx') { if (inTx || !Array.isArray(s.steps) || !s.steps.length) problems.push(`${w}: step ${s.id}: a transaction lists put or update steps`); else for (const x of s.steps) { if (!['put', 'update'].includes(x?.op)) problems.push(`${w}: step ${s.id}: a transaction holds only put and update steps`); validateStep(x, entities, w, problems, ids, true); } return; }
+  if (!entities || !Object.hasOwn(entities, s.entity)) problems.push(`${w}: step ${s.id}: entity ${s.entity} is not in data.entities`);
+  const need = { get: ['by', 'fields'], query: ['fields'], put: ['values'], update: ['by'], blob: ['key', 'field', 'mode'], sum: ['field'] }[s.op];
+  for (const k of need) if (s[k] === undefined) problems.push(`${w}: step ${s.id}: ${s.op} needs ${k}`);
+  for (const k of ['by', 'where', 'values', 'set', 'add', 'key', 'cond']) if (s[k] !== undefined && !obj(s[k])) problems.push(`${w}: step ${s.id}: ${k} must be an object`);
+  if (s.fields !== undefined && !(Array.isArray(s.fields) && s.fields.every(isText))) problems.push(`${w}: step ${s.id}: fields must list names`);
+  if (s.near !== undefined && !(obj(s.near) && isText(s.near.field) && Array.isArray(s.near.at) && s.near.at.length === 2 && s.near.at.every(isNumber) && isNumber(s.near.km) && s.near.km > 0)) problems.push(`${w}: step ${s.id}: near needs field, at [lat, lng] and km`);
+  for (const k of ['text', 'range', 'order']) if (s[k] !== undefined && !(obj(s[k]) && isText(s[k].field))) problems.push(`${w}: step ${s.id}: ${k} needs a field`);
+  if (s.mode !== undefined && !['put', 'get'].includes(s.mode)) problems.push(`${w}: step ${s.id}: mode is put or get`);
+  if (s.limit !== undefined && !(Number.isInteger(s.limit) && s.limit > 0)) problems.push(`${w}: step ${s.id}: limit must be a whole number`);
+}
+function validateRequestTest(t, entities, w, problems, p) {
+  const r = t.request;
+  if (!obj(r) || !['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method) || typeof r.path !== 'string' || !r.path.startsWith('/') || (r.body !== undefined && !obj(r.body))) problems.push(`${w}: request needs a method, a path starting with / and an optional JSON body`);
+  if (!entities) problems.push(`${w}: a request test needs the problem's data`);
+  if (!Array.isArray(t.steps) || !t.steps.length) problems.push(`${w}: steps must be a non-empty list`);
+  const ids = new Set(); for (const s of list(t.steps)) validateStep(s, entities, w, problems, ids);
+  if (!obj(t.respond) || !(Number.isInteger(t.respond.status) && t.respond.status >= 100 && t.respond.status < 600) || t.respond.body === undefined) problems.push(`${w}: respond needs a status and a body`);
+  if (t.async !== undefined && typeof t.async !== 'boolean') problems.push(`${w}: async must be true or false`);
+}
 export function validatePractice(p, lab, at, problems) {
   if (!p || typeof p !== 'object' || Array.isArray(p)) { problems.push(`${at}: needs an object`); return; }
   const byType = Object.fromEntries(list(lab?.components).map((c) => [c && c.type, c]));
@@ -368,6 +395,14 @@ export function validatePractice(p, lab, at, problems) {
   }
   validateDesign(p.start && { name: 'start', ...p.start }, lab, `${at} start`, problems);
   validateDesign(p.reference && { name: 'reference', ...p.reference }, lab, `${at} reference`, problems);
+  // sample data and field names for request tests
+  const d = p.data, entities = d && typeof d.entities === 'object' && d.entities ? d.entities : null;
+  if (d !== undefined) {
+    if (!entities || !Object.keys(entities).length) problems.push(`${at}: data.entities must name the problem's data`);
+    else for (const [k, e] of Object.entries(entities)) if (!/^[a-z][a-z0-9_]{0,30}$/.test(k) || !e || !(isNumber(e.rows) && e.rows > 0) || !Array.isArray(e.sample) || !e.sample.every((r) => r && typeof r === 'object' && !Array.isArray(r))) problems.push(`${at}: data.entities.${k} needs rows (a number) and sample (a list of rows)`);
+    if (!Array.isArray(d.fields) || !d.fields.every(isText)) problems.push(`${at}: data.fields must list the field names`);
+    if (d.aliases !== undefined && !(typeof d.aliases === 'object' && Object.values(d.aliases).every((a) => Array.isArray(a) && a.every(isText)))) problems.push(`${at}: data.aliases must map fields to lists of names`);
+  }
   const tests = list(p.tests), ids = new Set();
   if (!tests.length) problems.push(`${at}: tests must be a non-empty list`);
   if (!tests.some((t) => t && t.sample === true)) problems.push(`${at}: at least one test needs sample: true`);
@@ -377,6 +412,7 @@ export function validatePractice(p, lab, at, problems) {
     if (ids.has(t.id)) problems.push(`${w}: duplicate id`); ids.add(t.id);
     for (const k of ['name', 'desc']) if (!isText(t[k])) problems.push(`${w}: needs ${k}`);
     if (t.sample !== undefined && typeof t.sample !== 'boolean') problems.push(`${w}: sample must be true or false`);
+    if (t.request !== undefined) { validateRequestTest(t, entities, w, problems, p); continue; }
     if (!(isNumber(t.hours) && t.hours > 0 && t.hours <= 48)) problems.push(`${w}: hours must be above 0 and at most 48`);
     if (!(isNumber(t.startHour) && t.startHour >= 0 && t.startHour < 24)) problems.push(`${w}: startHour must be from 0 to under 24`);
     const rps = byType.client?.rps;

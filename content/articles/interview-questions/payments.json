@@ -425,6 +425,112 @@
             "label": "Costs at most $6,500 a month"
           }
         ]
+      },
+      {
+        "id": "api-pay",
+        "name": "Pay ₹500",
+        "sample": true,
+        "desc": "Money leaves the customer, reaches the shop, and the payment is recorded, all or nothing.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/payments",
+          "body": {
+            "idempotency_key": "k-91",
+            "from": "a_cust",
+            "to": "a_shop",
+            "amount": 500
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "tx",
+            "steps": [
+              {
+                "id": "a",
+                "op": "update",
+                "entity": "accounts",
+                "by": {
+                  "account_id": "a_cust"
+                },
+                "add": {
+                  "balance": -500
+                },
+                "cond": {
+                  "balance": {
+                    "gte": 500
+                  }
+                }
+              },
+              {
+                "id": "b",
+                "op": "update",
+                "entity": "accounts",
+                "by": {
+                  "account_id": "a_shop"
+                },
+                "add": {
+                  "balance": 500
+                }
+              },
+              {
+                "id": "c",
+                "op": "put",
+                "entity": "payments",
+                "values": {
+                  "payment_id": "pay_2",
+                  "idempotency_key": "k-91",
+                  "amount": 500,
+                  "status": "succeeded"
+                }
+              }
+            ]
+          }
+        ],
+        "respond": {
+          "status": 201,
+          "body": {
+            "payment_id": "pay_2",
+            "status": "succeeded"
+          }
+        }
+      },
+      {
+        "id": "api-retry",
+        "name": "The app retries",
+        "sample": true,
+        "desc": "A timeout makes the app send k-77 again: it gets the first result, not a second charge.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/payments",
+          "body": {
+            "idempotency_key": "k-77",
+            "from": "a_cust",
+            "to": "a_shop",
+            "amount": 500
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "payments",
+            "by": {
+              "idempotency_key": "k-77"
+            },
+            "fields": [
+              "payment_id",
+              "status"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "payment_id": "$s1.payment_id",
+            "status": "$s1.status"
+          }
+        }
       }
     ],
     "rubric": {
@@ -641,7 +747,59 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "ledger"
+            "role": "ledger",
+            "schema": {
+              "tables": [
+                {
+                  "name": "accounts",
+                  "fields": [
+                    {
+                      "name": "account_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "balance",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "account_id"
+                  ]
+                },
+                {
+                  "name": "payments",
+                  "fields": [
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "idempotency_key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "int"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "payment_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "idempotency_key"
+                      ],
+                      "kind": "unique"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -652,7 +810,59 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "ledger"
+            "role": "ledger",
+            "schema": {
+              "tables": [
+                {
+                  "name": "accounts",
+                  "fields": [
+                    {
+                      "name": "account_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "balance",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "account_id"
+                  ]
+                },
+                {
+                  "name": "payments",
+                  "fields": [
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "idempotency_key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "int"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "payment_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "idempotency_key"
+                      ],
+                      "kind": "unique"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1195,7 +1405,243 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Retries not found quickly",
+        "why": "Payments have no index on the idempotency key: checking a retry means searching 1,000 crore payments.",
+        "fails": "api-retry",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 4
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "ledger",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "accounts",
+                    "fields": [
+                      {
+                        "name": "account_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "balance",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "account_id"
+                    ]
+                  },
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "ledger",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "accounts",
+                    "fields": [
+                      {
+                        "name": "account_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "balance",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "account_id"
+                    ]
+                  },
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "db1"
+          },
+          {
+            "from": "app1",
+            "to": "db2"
+          },
+          {
+            "from": "app2",
+            "to": "db1"
+          },
+          {
+            "from": "app2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "payment_id",
+        "idempotency_key",
+        "account_id",
+        "balance",
+        "amount",
+        "status"
+      ],
+      "aliases": {
+        "idempotency_key": [
+          "idem_key",
+          "request_id",
+          "dedupe_key",
+          "idempotency"
+        ],
+        "amount": [
+          "value",
+          "paise",
+          "rupees"
+        ]
+      },
+      "entities": {
+        "accounts": {
+          "rows": 100000000,
+          "sample": [
+            {
+              "account_id": "a_cust",
+              "balance": 5000
+            },
+            {
+              "account_id": "a_shop",
+              "balance": 0
+            }
+          ]
+        },
+        "payments": {
+          "rows": 10000000000,
+          "sample": [
+            {
+              "payment_id": "pay_1",
+              "idempotency_key": "k-77",
+              "amount": 500,
+              "status": "succeeded"
+            }
+          ]
+        }
+      }
+    }
   }
 }

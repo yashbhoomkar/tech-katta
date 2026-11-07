@@ -405,6 +405,38 @@
             "label": "Costs at most $5,500 a month"
           }
         ]
+      },
+      {
+        "id": "api-seed",
+        "name": "Add a site to crawl",
+        "sample": true,
+        "async": true,
+        "desc": "A new seed URL joins the crawl.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/seeds",
+          "body": {
+            "url": "https://katta.cc/"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "pages",
+            "values": {
+              "url": "https://katta.cc/",
+              "host": "katta.cc",
+              "status": "queued"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "queued": true
+          }
+        }
       }
     ],
     "rubric": {
@@ -652,7 +684,47 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "pages",
+                  "fields": [
+                    {
+                      "name": "url",
+                      "type": "string"
+                    },
+                    {
+                      "name": "host",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "fetched_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "content_hash",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "url"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "host"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1691,7 +1763,184 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "Pages without their site",
+        "why": "Pages are stored without their host, so the crawler can't keep each site's pace.",
+        "fails": "api-seed",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1200,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "role": "frontier"
+            }
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 2,
+              "queriesPerRequest": 3,
+              "role": "fetcher"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 2,
+              "queriesPerRequest": 3,
+              "role": "fetcher"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "url",
+        "host",
+        "status",
+        "fetched_at",
+        "content_hash"
+      ],
+      "aliases": {
+        "url": [
+          "link",
+          "page_url"
+        ],
+        "host": [
+          "domain",
+          "site"
+        ]
+      },
+      "entities": {
+        "pages": {
+          "rows": 10000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

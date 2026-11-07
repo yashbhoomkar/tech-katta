@@ -408,6 +408,47 @@
             "label": "Costs at most $60,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-edit",
+        "name": "Type in a document",
+        "sample": true,
+        "async": true,
+        "desc": "u1's edit becomes version 42 of document d1.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/docs/d1/ops",
+          "body": {
+            "version": 42,
+            "op": {
+              "insert": "hi",
+              "at": 10
+            }
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "ops",
+            "values": {
+              "doc_id": "d1",
+              "version": 42,
+              "op": {
+                "insert": "hi",
+                "at": 10
+              },
+              "author_id": "u1",
+              "at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "version": "$s1.version"
+          }
+        }
       }
     ],
     "rubric": {
@@ -656,7 +697,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -667,7 +741,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -678,7 +785,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -689,7 +829,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -700,7 +873,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -711,7 +917,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -722,7 +961,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "oplog"
+            "role": "oplog",
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -2450,7 +2722,530 @@
             "to": "db7"
           }
         ]
+      },
+      {
+        "name": "Edits keyed by a random id",
+        "why": "Each edit is keyed by an id the client doesn't send, and nothing keeps edits of a document in order.",
+        "fails": "api-edit",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 40000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 18,
+              "queriesPerRequest": 1,
+              "role": "websocket"
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 18,
+              "queriesPerRequest": 1,
+              "role": "websocket"
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1,
+              "role": "sync"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1,
+              "role": "sync"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": 300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db7",
+            "type": "database",
+            "x": 1200,
+            "y": 450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "oplog",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "op_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "op_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work1",
+            "to": "db7"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db7"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "doc_id",
+        "version",
+        "op",
+        "author_id",
+        "at"
+      ],
+      "aliases": {
+        "op": [
+          "operation",
+          "change",
+          "edit",
+          "delta"
+        ],
+        "version": [
+          "seq",
+          "rev",
+          "revision"
+        ]
+      },
+      "entities": {
+        "ops": {
+          "rows": 100000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

@@ -581,7 +581,8 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 2
-          }
+          },
+          "roles": ["kv"]
         },
         {
           "id": "mongodb",
@@ -659,7 +660,8 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          }
+          },
+          "roles": ["wide"]
         },
         {
           "id": "opensearch",
@@ -705,7 +707,8 @@
             "keyRequired": false,
             "maxIndexFields": 1,
             "allIndexed": true
-          }
+          },
+          "roles": ["search"]
         },
         {
           "id": "s3",
@@ -732,7 +735,8 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          }
+          },
+          "roles": ["objects"]
         },
         {
           "id": "timeseries",
@@ -777,7 +781,8 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          }
+          },
+          "roles": ["timeseries"]
         },
         {
           "id": "graph",

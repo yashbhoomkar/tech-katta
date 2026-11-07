@@ -10,7 +10,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -38,6 +38,7 @@ useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narr
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
 const load=()=>{set({});getJSON(`/v1/articles/${slug}`).then(a=>set({a:prep(a)}),e=>set({err:e.status===404?"missing":"failed"}))};useEffect(load,[slug]);
 useEffect(()=>{getJSON("/v1/lab").then(setLab,()=>{})},[]);
+const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]);
 useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
 useEffect(()=>{setView(tab==="a"?"solution":"description")},[tab,slug]);
 useEffect(()=>{if(view==="solution")return readArticle("interview-questions",slug)},[view,slug]);
@@ -87,8 +88,8 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <p className="sv-how">{s.how}</p>
 <div className="sv-body">{body.map((b,k)=><Block key={k} b={b} i={k}/>)}</div>
 {P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>
-{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p><ul>{t.checks.map(c=><li key={c.label}>{c.label}</li>)}</ul></div>)}
-<p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: spikes, failures and the bill.</p></section>}
+{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p>{t.request?<div className="sv-io"><Json label="Request" v={reqOf(t)}/><Json label="Expected response" v={expected(P,t)}/></div>:<ul>{t.checks.map(c=><li key={c.label}>{c.label}</li>)}</ul>}</div>)}
+<p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: {P.tests.some(t=>t.request&&!t.sample)?"more API calls, ":""}spikes, failures and the bill.</p></section>}
 <div className="sv-links">
 {ch&&<a href={`#${ch.to}`}>{s.scored} →</a>}
 {next&&<a href={`#problems/${next.slug}`}><small>{s.next}</small> {next.title} →</a>}</div></>}
@@ -98,13 +99,25 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
 <span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
 <span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset} disabled={resetting}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
-{showLab&&!resetting&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start}} onDesign={d=>{design.current=d}}/></Suspense>}
-{(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
+{showLab&&!resetting&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.data?.fields}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null}/></Suspense>}
+{watch?<Player w={watch} set={setWatch}/>:(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}
 
+// ---- Request tests: JSON in and out, and the request travelling through the design ----
+const reqOf=t=>({method:t.request.method,path:t.request.path,...(t.request.body?{body:t.request.body}:{})});
+function Json({label,v,bad}){return <figure className={"sv-json"+(bad?" bad":"")}><figcaption>{label}</figcaption><pre>{typeof v==="string"?v:JSON.stringify(v,null,2)}</pre></figure>}
+function Player({w,set}){const{hops,i,play,r}=w,h=hops[i],last=i===hops.length-1;
+useEffect(()=>{if(!play)return;if(last){set(x=>({...x,play:false}));return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,x.hops.length-1)}),1300);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
+useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null);else if(e.key==="ArrowRight")set(x=>({...x,play:false,i:Math.min(x.i+1,x.hops.length-1)}));else if(e.key==="ArrowLeft")set(x=>({...x,play:false,i:Math.max(x.i-1,0)}))};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
+return <section className="sv-console sv-player" aria-label="The request travelling through your design">
+<header className={"sv-v "+(r.ok?"good":"bad")}><div><b>{r.test.request.method} {r.test.request.path}</b><small>Step {i+1} of {hops.length} · {r.ok?"the design answers as expected":"the design doesn't answer as expected"}</small></div>
+<span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.max(0,x.i-1)}))} disabled={i===0} aria-label="Previous step">‹</button><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.min(x.hops.length-1,x.i+1)}))} disabled={last} aria-label="Next step">›</button><button type="button" onClick={()=>set(null)} aria-label="Close">✕</button></span></header>
+<div className="sv-trace"><ol>{hops.map((x,k)=><li key={k} className={k===i?"on":k<i?"done":""}><button type="button" onClick={()=>set(y=>({...y,play:false,i:k}))}>{x.title}</button></li>)}</ol>
+<div className="sv-hop" aria-live="polite"><b>{h.title}</b>{h.json!=null?<pre>{typeof h.json==="string"?h.json:JSON.stringify(h.json,null,2)}</pre>:<p className="sv-tdesc">{last?"":"Passing it along…"}</p>}{last&&!r.ok&&r.why?.[0]&&<p className="sv-whyline">{r.why[0]}</p>}</div></div></section>}
+
 // ---- Results under the canvas ----
-function Console({busy,res,close,hint,answer}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+function Console({busy,res,close,hint,answer,watch}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
 const{kind,j,g,sc,crash}=res;
 if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
@@ -118,8 +131,9 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
-{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.error}</small></summary>
+{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.test.request&&r.output?`${r.test.request.method} ${r.test.request.path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
+{r.test.request&&<><div className="sv-io"><Json label="Request" v={reqOf(r.test)}/><Json label="Expected" v={r.expect}/>{r.output&&<Json label="Your design's response" v={r.output} bad={!r.ok}/>}</div>{r.trace?.length>1&&<button type="button" className="sv-watch" onClick={()=>watch(r)}>▶ Watch the request travel</button>}</>}
 <ul className="sv-checks">{r.checks.map(c=><li key={c.label} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul></details></li>)}</ol>}
 {!acc&&!err&&<p className="sv-nudge">Stuck? <button type="button" className="sv-linkbtn" onClick={hint}>Open a hint</button> (3 points each).</p>}</>}
 </section>}

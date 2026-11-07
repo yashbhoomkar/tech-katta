@@ -401,6 +401,82 @@
             "label": "Costs at most $90,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-ping",
+        "name": "A driver moves",
+        "sample": true,
+        "async": true,
+        "desc": "Driver d1 sends a new position.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/drivers/d1/location",
+          "body": {
+            "location": [
+              12.971,
+              77.594
+            ]
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "drivers",
+            "by": {
+              "driver_id": "d1"
+            },
+            "set": {
+              "location": [
+                12.971,
+                77.594
+              ],
+              "updated_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "ok": true
+          }
+        }
+      },
+      {
+        "id": "api-trip",
+        "name": "A rider asks for a cab",
+        "async": true,
+        "desc": "The trip is recorded; finding a driver follows.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/trips",
+          "body": {
+            "rider_id": "r1",
+            "pickup": [
+              12.97,
+              77.59
+            ]
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "trips",
+            "values": {
+              "trip_id": "t1",
+              "rider_id": "r1",
+              "status": "searching"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "trip_id": "$s1.trip_id"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -699,7 +775,67 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "drivers",
+                  "fields": [
+                    {
+                      "name": "driver_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "driver_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "location"
+                      ],
+                      "kind": "geo"
+                    }
+                  ]
+                },
+                {
+                  "name": "trips",
+                  "fields": [
+                    {
+                      "name": "trip_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "driver_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "trip_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -709,7 +845,67 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "drivers",
+                  "fields": [
+                    {
+                      "name": "driver_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "driver_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "location"
+                      ],
+                      "kind": "geo"
+                    }
+                  ]
+                },
+                {
+                  "name": "trips",
+                  "fields": [
+                    {
+                      "name": "trip_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "driver_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "trip_id"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -2499,7 +2695,393 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Drivers without a position",
+        "why": "Drivers are stored without their location, so nobody can find the nearest one.",
+        "fails": "api-ping",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 75000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb1",
+            "type": "lb",
+            "x": 240,
+            "y": -75,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 75,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 32,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 32,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue1",
+            "type": "queue",
+            "x": 720,
+            "y": -75,
+            "config": {}
+          },
+          {
+            "id": "queue2",
+            "type": "queue",
+            "x": 720,
+            "y": 75,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1,
+              "role": "matcher"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1,
+              "role": "matcher"
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "geo"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "geo"
+            }
+          },
+          {
+            "id": "cache3",
+            "type": "cache",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "geo"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "drivers",
+                    "fields": [
+                      {
+                        "name": "driver_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "driver_id"
+                    ]
+                  },
+                  {
+                    "name": "trips",
+                    "fields": [
+                      {
+                        "name": "trip_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "driver_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "trip_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "drivers",
+                    "fields": [
+                      {
+                        "name": "driver_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "driver_id"
+                    ]
+                  },
+                  {
+                    "name": "trips",
+                    "fields": [
+                      {
+                        "name": "trip_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "driver_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "trip_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb1"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb1",
+            "to": "app1"
+          },
+          {
+            "from": "lb2",
+            "to": "app1"
+          },
+          {
+            "from": "lb1",
+            "to": "app2"
+          },
+          {
+            "from": "lb2",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue1"
+          },
+          {
+            "from": "app2",
+            "to": "queue1"
+          },
+          {
+            "from": "app1",
+            "to": "queue2"
+          },
+          {
+            "from": "app2",
+            "to": "queue2"
+          },
+          {
+            "from": "queue1",
+            "to": "work1"
+          },
+          {
+            "from": "queue2",
+            "to": "work1"
+          },
+          {
+            "from": "queue1",
+            "to": "work2"
+          },
+          {
+            "from": "queue2",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "cache1"
+          },
+          {
+            "from": "work1",
+            "to": "cache2"
+          },
+          {
+            "from": "work1",
+            "to": "cache3"
+          },
+          {
+            "from": "work2",
+            "to": "cache1"
+          },
+          {
+            "from": "work2",
+            "to": "cache2"
+          },
+          {
+            "from": "work2",
+            "to": "cache3"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          },
+          {
+            "from": "cache3",
+            "to": "db1"
+          },
+          {
+            "from": "cache3",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "driver_id",
+        "location",
+        "status",
+        "updated_at",
+        "trip_id",
+        "rider_id"
+      ],
+      "aliases": {
+        "location": [
+          "loc",
+          "position",
+          "coords",
+          "lat_lng"
+        ],
+        "status": [
+          "state"
+        ]
+      },
+      "entities": {
+        "drivers": {
+          "rows": 500000,
+          "sample": [
+            {
+              "driver_id": "d1",
+              "location": [
+                12.97,
+                77.59
+              ],
+              "status": "free",
+              "updated_at": "2026-11-07T10:00:00Z"
+            }
+          ]
+        },
+        "trips": {
+          "rows": 1000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

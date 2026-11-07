@@ -39,9 +39,9 @@ const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
 const level=u=>u>1+1e-9?"over":u>=0.7?"warn":"ok";
 
-function CompNode({id,data,selected}){const{cat,result,running,run}=useContext(Ctx);const comp=cat[data.kind];const r=result.nodes[id];
+function CompNode({id,data,selected}){const{cat,result,running,run,trace}=useContext(Ctx);const comp=cat[data.kind];const r=result.nodes[id];
 const back=run.down[id];const st=back!==undefined?"down":running&&r&&data.kind!=="client"?level(r.utilisation):"";
-return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
+return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")+(trace?.at===id?" ln-trace":"")}>
 {data.kind!=="client"&&<Handle type="target" position={Position.Left}/>}
 <div className="ln-head"><Glyph kind={data.kind}/><small>{comp.group.toUpperCase()}</small></div>
 <b>{displayName(comp,{name:data.name,config:data.config})}</b><span className="ln-sum">{data.name?(roleOf(comp,data.config)?.label||comp.name)+" · ":roleOf(comp,data.config)?comp.name+" · ":""}{summary(comp,run.scale?.[id]?{...data.config,live:run.scale[id].n}:data.config)}{run.scale?.[id]?.pending.length?` · +${run.scale[id].pending.reduce((a,p)=>a+p.n,0)} booting`:""}</span>
@@ -53,8 +53,9 @@ return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 {data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const nodeTypes={comp:CompNode};
 // Arrows: click (or tap) one to select it; a selected arrow shows ✕ to remove it (Delete works too).
-function Arrow({id,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected}){const rf=useReactFlow();const[path,lx,ly]=getSmoothStepPath({sourceX,sourceY,sourcePosition,targetX,targetY,targetPosition});
-return <><BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24}/>{selected&&<EdgeLabelRenderer><button type="button" className="lab-edge-x nodrag nopan" style={{transform:`translate(-50%,-50%) translate(${lx}px,${ly}px)`}} onClick={()=>rf.deleteElements({edges:[{id}]})} aria-label="Remove this arrow" title="Remove this arrow">✕</button></EdgeLabelRenderer>}</>}
+function Arrow({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected}){const rf=useReactFlow();const{trace}=useContext(Ctx);const[path,lx,ly]=getSmoothStepPath({sourceX,sourceY,sourcePosition,targetX,targetY,targetPosition});
+const fwd=trace&&trace.from===source&&trace.at===target,back=trace&&trace.from===target&&trace.at===source;
+return <><BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24} style={fwd||back?{stroke:"#1d4ed8",strokeWidth:2.5}:undefined}/>{(fwd||back)&&<circle r="6" className="lab-dot" key={trace.n}><animateMotion dur="0.9s" repeatCount="indefinite" path={path} keyPoints={back?"1;0":"0;1"} keyTimes="0;1" calcMode="linear"/></circle>}{selected&&<EdgeLabelRenderer><button type="button" className="lab-edge-x nodrag nopan" style={{transform:`translate(-50%,-50%) translate(${lx}px,${ly}px)`}} onClick={()=>rf.deleteElements({edges:[{id}]})} aria-label="Remove this arrow" title="Remove this arrow">✕</button></EdgeLabelRenderer>}</>}
 const edgeTypes={arrow:Arrow};
 
 // Palette items are dragged with pointer events (mouse, trackpad, touch, pen) rather than HTML5
@@ -170,7 +171,16 @@ return <div className="lab-menu" role="dialog" aria-label="Your designs"><div cl
 <button type="button" className="lab-x" aria-label={`Duplicate ${d.name} with fresh credit`} title="Duplicate with fresh credit" onClick={()=>duplicate(d.id)}>⧉</button><button type="button" className="lab-x" aria-label={`Delete ${d.name}`} onClick={()=>{if(confirm(`Delete "${d.name}"?`))remove(d.id)}}>✕</button></li>)}</ul>
 <button type="button" className="lab-btn ghost lab-close" onClick={close}>Close</button></div>}
 
-function Canvas({lab,start,embedded,problem,onDesign}){const cat=useMemo(()=>catalogue(lab),[lab]);const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
+function Canvas({lab,start,embedded,problem,onDesign,trace}){const cat=useMemo(()=>catalogue(lab),[lab]);
+// a request being watched: the view follows it from component to component, centred in the part of the
+// canvas above the results (which cover its lower part)
+const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
+const box=ns.reduce((b,n)=>{const w=n.measured?.width||176,h=n.measured?.height||80;return{x0:Math.min(b.x0,n.position.x),y0:Math.min(b.y0,n.position.y),x1:Math.max(b.x1,n.position.x+w),y1:Math.max(b.y1,n.position.y+h)}},{x0:Infinity,y0:Infinity,x1:-Infinity,y1:-Infinity});
+const el=document.querySelector(".lab-watch .react-flow"),W=el?.clientWidth||800,H=el?.clientHeight||500,visH=H*0.52,zoom=Math.max(0.45,Math.min(1.1,(W-80)/(box.x1-box.x0+80),(visH-40)/(box.y1-box.y0+60)));
+followRf.setCenter((box.x0+box.x1)/2,(box.y0+box.y1)/2+(H/2-visH/2)/zoom,{zoom,duration:450})};
+// wait for the canvas to widen (the side panels hide while watching) before centring
+const t=setTimeout(go,trace.n===0?120:0);return()=>clearTimeout(t)},[trace?.n,trace?.at]);// eslint-disable-line
+const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,challenge:start||""}),[]);// eslint-disable-line
 
 const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.challenges||[]).find(c=>c.id===start);
 // Opened on a problem (#problems/<slug>): its own design, id "q-<slug>" on every device, starting with just
@@ -250,7 +260,7 @@ const current=designs[storeRef.current.current]?storeRef.current.current:Object.
 const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
 const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>{const dead=run.down[e.source]!==undefined||run.down[e.target]!==undefined;return{...e,animated:running&&!dead,className:dead?"dead":running?"live":""}}),[edges,running,downKey]);// eslint-disable-line
-return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
+return <Ctx.Provider value={{cat,result,running,run,trace}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top"><h1 className="sr">{lab.title}</h1><input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded?<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.open} →</a>:<><button type="button" className="lab-btn ghost lab-designs-btn" onClick={()=>{setMenu(m=>!m);setChMenu(false)}} aria-expanded={menu}>Designs ▾</button>
 {lab.challenges&&<button type="button" className="lab-btn ghost lab-ch-btn" onClick={()=>{setChMenu(m=>!m);setMenu(false)}} aria-expanded={chMenu}>Challenges <span className="lab-star-count">★ {Object.entries(progress.stars).filter(([k])=>lab.challenges.some(c=>c.id===k)).reduce((a,[,v])=>a+v,0)}/{lab.challenges.reduce((a,c)=>a+c.stars.length,0)}</span></button>}
@@ -277,6 +287,6 @@ fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapT
 
 // Signed in, the account's designs are merged in before the Lab opens (at most 4 s), so a stale copy
 // in this browser is never what gets edited.
-export default function Lab({challenge,embedded,problem,onDesign}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge,embedded,problem,onDesign,trace}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the Lab" retry={go}/>;if(!st.lab)return <Loading label="Loading the Lab"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas trace={trace} lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}

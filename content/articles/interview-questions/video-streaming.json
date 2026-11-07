@@ -397,6 +397,68 @@
             "label": "Costs at most $35,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-segment",
+        "name": "Play the next segment",
+        "sample": true,
+        "desc": "The player asks for segment 42 of video v1 in 720p.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/videos/v1/720p/0042.ts"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "get",
+            "entity": "segments",
+            "key": {
+              "video_id": "v1",
+              "quality": "720p",
+              "segment": "0042"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "segment": "0042",
+            "found": "$s1.ok"
+          }
+        }
+      },
+      {
+        "id": "api-segment-low",
+        "name": "Drop to 360p",
+        "desc": "The network slows; the player asks for the same segment in 360p.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/videos/v1/360p/0042.ts"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "get",
+            "entity": "segments",
+            "key": {
+              "video_id": "v1",
+              "quality": "360p",
+              "segment": "0042"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "segment": "0042",
+            "found": "$s1.ok"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -637,9 +699,38 @@
           "x": 1200,
           "y": 0,
           "config": {
-            "size": "db.t3.medium",
-            "multiAz": true,
-            "role": "objects"
+            "role": "objects",
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "segments",
+                  "fields": [
+                    {
+                      "name": "video_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "segment",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "video_id",
+                    "quality",
+                    "segment"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1214,7 +1305,208 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "Segments in the database",
+        "why": "Video segments are stored as database rows: huge rows, slow reads and a database bill instead of cheap storage.",
+        "fails": "api-segment",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 98
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "video_id",
+        "quality",
+        "segment",
+        "bytes"
+      ],
+      "aliases": {
+        "segment": [
+          "seq",
+          "chunk",
+          "part",
+          "segment_no"
+        ],
+        "bytes": [
+          "file",
+          "data",
+          "content"
+        ]
+      },
+      "entities": {
+        "segments": {
+          "rows": 50000000000,
+          "sample": [
+            {
+              "video_id": "v1",
+              "quality": "720p",
+              "segment": "0042",
+              "bytes": "<bytes>"
+            },
+            {
+              "video_id": "v1",
+              "quality": "360p",
+              "segment": "0042",
+              "bytes": "<bytes>"
+            }
+          ]
+        }
+      }
+    }
   }
 }
