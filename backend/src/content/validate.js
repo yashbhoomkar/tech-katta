@@ -240,6 +240,7 @@ export function validateDesign(design, lab, at, problems = []) {
     const c = byType[n.type];
     if (!c) { problems.push(`${where} has unknown type ${n.type}`); continue; }
     if (!isNumber(n.x) || !isNumber(n.y)) problems.push(`${where} needs numeric x and y`);
+    if (n.name !== undefined && !(isText(n.name) && n.name.length <= 40)) problems.push(`${where}: name must be text of at most 40 characters`);
     const cfg = n.config ?? {};
     if (typeof cfg !== 'object' || Array.isArray(cfg)) { problems.push(`${where}: config must be an object`); continue; }
     const inRange = (key, r) => { if (cfg[key] !== undefined && !(isNumber(cfg[key]) && r && cfg[key] >= r.min && cfg[key] <= r.max)) problems.push(`${where}: ${key} must be from ${r?.min} to ${r?.max}`); };

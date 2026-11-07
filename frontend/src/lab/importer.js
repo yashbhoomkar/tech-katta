@@ -60,11 +60,11 @@ export function parseText(text,lab){
       const low=norm(item);const hit=names.find(([a])=>low===a||low.startsWith(a+" ")||low.startsWith(a+":"));
       if(!hit){errors.push({line:n,message:`"${item.trim()}" is not a component I know. Try one of: ${lab.components.map(c=>c.name).join(", ")}.`});ids.push(null);continue}
       const[alias,comp]=hit;let rest=item.trim().slice(alias.length);let label="";
-      const m=rest.match(/^\s*:\s*([\w.-]+)/);if(m){label=m[1].toLowerCase();rest=rest.slice(m[0].length)}
+      const m=rest.match(/^\s*:\s*([\w.-]+)/);let typed="";if(m){typed=m[1];label=m[1].toLowerCase();rest=rest.slice(m[0].length)}
       const key=comp.type+(label?":"+label:"");const{config,unknown}=options(comp,rest);
       if(unknown.length)warnings.push({line:n,message:`Ignored "${unknown.join(" ")}" on ${comp.name}${label?":"+label:""}.`});
       // ids keep labels apart: "a.b" and "a-b" stay two components (labels can't contain ~)
-      if(!nodes.has(key)){if(nodes.size>=MAX_NODES){errors.push({line:n,message:`A design can have at most ${MAX_NODES} components.`});ids.push(null);continue}nodes.set(key,{id:key.replace(/\./g,"~").replace(/[^a-z0-9:_~-]/g,"-"),type:comp.type,label,config:{}})}
+      if(!nodes.has(key)){if(nodes.size>=MAX_NODES){errors.push({line:n,message:`A design can have at most ${MAX_NODES} components.`});ids.push(null);continue}nodes.set(key,{id:key.replace(/\./g,"~").replace(/[^a-z0-9:_~-]/g,"-"),type:comp.type,label,...(typed?{name:typed}:{}),config:{}})}
       Object.assign(nodes.get(key).config,config);ids.push(key);
     }
     for(let i=0;i+1<ids.length;i++){const a=ids[i],b=ids[i+1];if(!a||!b)continue;const A=nodes.get(a),Bn=nodes.get(b);
@@ -75,7 +75,7 @@ export function parseText(text,lab){
   });
   const list=[...nodes.values()];
   if(!list.length&&!errors.length)errors.push({line:0,message:"Type at least one line, for example: Clients 1000 -> Server x2 -> Database"});
-  return{design:layout({nodes:list.map(({id,type,config})=>({id,type,config})),edges},lab),errors,warnings};
+  return{design:layout({nodes:list.map(({id,type,name,config})=>({id,type,...(name?{name}:{}),config})),edges},lab),errors,warnings};
 }
 
 // Left to right by depth from the Clients (longest path), stacked in each column, then repaired.

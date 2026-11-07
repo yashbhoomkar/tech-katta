@@ -91,3 +91,9 @@ test("a component's role is kept only when its type has that role",()=>{
   const d=cleanDesign({nodes:[{id:"a",type:"database",config:{role:"geo"}},{id:"b",type:"database",config:{role:"websocket"}},{id:"c",type:"server",config:{role:"websocket"}}],edges:[]},lab,"x");
   assert.equal(d.nodes[0].config.role,"geo");assert.equal(d.nodes[1].config.role,undefined);assert.equal(d.nodes[2].config.role,"websocket");
 });
+
+test("a component's own name is kept short and printable; blank means none",()=>{
+  const long="x".repeat(60);
+  const d=cleanDesign({nodes:[{id:"a",type:"server",name:"  Orders\n API  "},{id:"b",type:"server",name:long},{id:"c",type:"server",name:"   "},{id:"d",type:"server",name:42}],edges:[]},lab,"x");
+  assert.equal(d.nodes[0].name,"Orders API");assert.equal(d.nodes[1].name.length,40);assert.equal(d.nodes[2].name,undefined);assert.equal(d.nodes[3].name,undefined);
+});

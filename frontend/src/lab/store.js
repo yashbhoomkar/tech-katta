@@ -10,6 +10,8 @@ const obj=v=>v!==null&&typeof v==="object"&&!Array.isArray(v);
 const fin=v=>typeof v==="number"&&Number.isFinite(v);
 const text=v=>typeof v==="string"&&v.trim()!=="";
 const has=(o,k)=>typeof k==="string"&&Object.prototype.hasOwnProperty.call(o,k);
+// A component's own name: printable text, spaces collapsed, at most 40 characters; empty means none.
+export const cleanName=v=>typeof v==="string"?v.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g," ").replace(/\s+/g," ").trim().slice(0,40):"";
 const clamp=(v,r)=>fin(v)&&r?Math.min(r.max,Math.max(r.min,v)):undefined;
 
 // One design checked against the catalogue (lab.components). Returns a clean copy, or null.
@@ -31,7 +33,7 @@ export function cleanDesign(d,lab,id){
     if(Array.isArray(c.roles)&&c.roles.some(r=>r.id===src.role))config.role=src.role;
     if(c.type==="database"){if(typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
       if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas));if(c.writePct&&clamp(src.writePct,c.writePct)!==undefined)config.writePct=clamp(src.writePct,c.writePct)}
-    seen.add(n.id);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,config});
+    seen.add(n.id);const name=cleanName(n.name);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,...(name?{name}:{}),config});
   }
   const kind=Object.fromEntries(nodes.map(n=>[n.id,n.type])),edges=[],links=new Set();
   for(const e of Array.isArray(d.edges)?d.edges:[]){

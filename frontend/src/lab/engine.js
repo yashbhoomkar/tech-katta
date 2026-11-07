@@ -140,6 +140,9 @@ export function cacheFlow(comp, config, warm = 1) {
   return { w, readMiss: (1 - w) * (1 - h), hit: h, back: choice(comp, config, 'writePolicy') === 'back', fallThrough: choice(comp, config, 'onDown') === 'database' };
 }
 // Read replicas of a database (0 without the catalogue field) and the share of its queries that are writes.
+// What a component is called: the name the user gave it, else its role ("Geo index"), else its kind.
+export const MAX_NAME = 40;
+export const displayName = (comp, node) => node?.name || roleOf(comp, node?.config)?.label || comp?.name || node?.type || '?';
 // The role a component has been given ({id, label, desc}), or null.
 export const roleOf = (comp, config) => (config?.role && comp?.roles?.find((r) => r.id === config.role)) || null;
 export const replicasOf = (comp, config) => (comp?.replicas ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
