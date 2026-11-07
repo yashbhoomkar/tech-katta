@@ -191,14 +191,16 @@ export function judge(design, lab, problem, { sample = false } = {}) {
 
 // ---- The written steps -------------------------------------------------------------------------
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9/{}:._ -]+/g, ' ');
-// rubric.fr: [{label, keys: [phrase]}] (any phrase present counts; phrases are lowercase)
+// rubric.fr: [{label, keys: [phrase]}] (any phrase that starts a word counts, so "tie" matches "ties" but not
+// "cities"; phrases are lowercase)
+const startsWord = (text, k) => { for (let i = text.indexOf(k); i >= 0; i = text.indexOf(k, i + 1)) if (i === 0 || !/[a-z0-9]/.test(text[i - 1])) return true; return false; };
 // rubric.nfr: {availability: [min, max], p99: [min, max], consistency: "strong" | "eventual", readsPerWrite: [min, max]}
 // rubric.est: [{id, label, unit, answer, tol}] (within answer ÷ tol … answer × tol)
 // rubric.api: [{label, method, path}] (method may be "PUT|POST"; path is a regular expression for the visitor's path)
 // rubric.decisions: [{id, q, options: [text], answer: index of the right option, why}] (answer.decisions: {id: index})
 export function gradeAnswer(answer = {}, rubric = {}) {
   const text = norm(answer.fr);
-  const fr = (rubric.fr || []).map((r) => ({ label: r.label, ok: r.keys.some((k) => text.includes(k)) }));
+  const fr = (rubric.fr || []).map((r) => ({ label: r.label, ok: r.keys.some((k) => startsWord(text, norm(k))) }));
   const nfr = Object.entries(rubric.nfr || {}).map(([k, want]) => {
     const v = answer.nfr?.[k];
     if (Array.isArray(want)) { const n = Number(v); return { id: k, want, value: v ?? '', ok: v !== '' && v != null && Number.isFinite(n) && n >= want[0] && n <= want[1] }; }

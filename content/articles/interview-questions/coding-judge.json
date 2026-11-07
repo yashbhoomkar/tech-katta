@@ -446,7 +446,15 @@
           "keys": [
             "submit",
             "submission",
-            "language"
+            "language",
+            "upload code",
+            "write code",
+            "send their solution",
+            "send code",
+            "send the code",
+            "solution in",
+            "python",
+            "java"
           ]
         },
         {
@@ -456,7 +464,12 @@
             "hidden test",
             "test case",
             "run the code",
-            "accepted"
+            "run their code",
+            "accepted",
+            "wrong answer",
+            "judge",
+            "evaluat",
+            "against tests"
           ]
         },
         {
@@ -464,7 +477,8 @@
           "keys": [
             "leaderboard",
             "ranking",
-            "standing"
+            "standing",
+            "scoreboard"
           ]
         },
         {
@@ -472,8 +486,10 @@
           "keys": [
             "sandbox",
             "isolat",
+            "untrusted",
             "secure",
-            "safe"
+            "safely",
+            "container"
           ]
         }
       ],

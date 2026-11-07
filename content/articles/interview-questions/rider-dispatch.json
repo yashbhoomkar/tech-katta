@@ -480,9 +480,10 @@
           "label": "Track each rider's location and status",
           "keys": [
             "location",
-            "track",
-            "status",
-            "ping"
+            "gps",
+            "ping",
+            "where each rider",
+            "track"
           ]
         },
         {
@@ -490,7 +491,9 @@
           "keys": [
             "offer",
             "assign",
-            "choose",
+            "choose a rider",
+            "pick a rider",
+            "allocat",
             "match"
           ]
         },
@@ -498,9 +501,12 @@
           "label": "If declined or no answer, offer the next rider",
           "keys": [
             "decline",
+            "reject",
             "next rider",
             "timeout",
+            "time out",
             "no answer",
+            "no response",
             "reassign"
           ]
         },
@@ -508,17 +514,23 @@
           "label": "Arrive when the food is ready",
           "keys": [
             "ready",
-            "food",
-            "on time",
-            "arrive"
+            "prep time",
+            "preparation time",
+            "cooking time",
+            "food is ready",
+            "just in time"
           ]
         },
         {
           "label": "Never offer a rider two orders at once",
           "keys": [
             "two orders",
-            "double",
-            "once",
+            "double assign",
+            "double-assign",
+            "double booking",
+            "never assign twice",
+            "only one order",
+            "one order at a time",
             "lock"
           ]
         }

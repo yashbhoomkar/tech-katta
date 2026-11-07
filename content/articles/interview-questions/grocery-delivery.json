@@ -533,15 +533,23 @@
             "stock",
             "inventory",
             "in store",
-            "available"
+            "availab",
+            "what the store has",
+            "nearest store",
+            "dark store"
           ]
         },
         {
           "label": "Place an order and pay",
           "keys": [
-            "order",
+            "place an order",
+            "place order",
             "checkout",
-            "pay"
+            "check out",
+            "pay",
+            "buy",
+            "purchase",
+            "cart"
           ]
         },
         {
@@ -549,7 +557,9 @@
           "keys": [
             "hold",
             "reserve",
-            "lock"
+            "reservation",
+            "lock the stock",
+            "keep the items"
           ]
         },
         {
@@ -557,15 +567,21 @@
           "keys": [
             "picker",
             "rider",
-            "pack"
+            "pack",
+            "delivery partner",
+            "dispatch"
           ]
         },
         {
           "label": "Track the order live",
           "keys": [
             "track",
-            "status",
-            "live"
+            "live status",
+            "order status",
+            "where my order",
+            "eta",
+            "location of the rider",
+            "real time"
           ]
         }
       ],

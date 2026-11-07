@@ -452,7 +452,12 @@
           "keys": [
             "view",
             "impression",
-            "click"
+            "click",
+            "event",
+            "ad is shown",
+            "ad shown",
+            "tapped",
+            "tap"
           ]
         },
         {
@@ -460,17 +465,27 @@
           "keys": [
             "dashboard",
             "per minute",
-            "report"
+            "every minute",
+            "minute by minute",
+            "hourly",
+            "report",
+            "analytics",
+            "stats"
           ]
         },
         {
           "label": "Exact bills: each valid click counted once",
           "keys": [
             "bill",
+            "invoice",
+            "charge",
             "exact",
-            "once",
+            "count once",
+            "counted once",
             "dedup",
-            "duplicate"
+            "de-dup",
+            "duplicate",
+            "idempoten"
           ]
         },
         {
@@ -478,7 +493,10 @@
           "keys": [
             "invalid",
             "fraud",
-            "bot"
+            "bot",
+            "spam",
+            "fake click",
+            "click farm"
           ]
         }
       ],

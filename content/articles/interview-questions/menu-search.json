@@ -487,7 +487,11 @@
         {
           "label": "Search dishes and restaurants by words",
           "keys": [
-            "search"
+            "search",
+            "find dish",
+            "find restaurant",
+            "look up dish",
+            "query"
           ]
         },
         {
@@ -495,9 +499,16 @@
           "keys": [
             "typo",
             "spelling",
+            "misspel",
             "hinglish",
             "synonym",
-            "fuzzy"
+            "fuzzy",
+            "transliterat",
+            "should still find",
+            "close spelling",
+            "sounds like",
+            "phonetic",
+            "spelled"
           ]
         },
         {
@@ -506,7 +517,9 @@
             "filter",
             "veg",
             "price",
-            "open now"
+            "open now",
+            "delivers to me",
+            "deliverable"
           ]
         },
         {
@@ -514,16 +527,23 @@
           "keys": [
             "rank",
             "relevan",
-            "top"
+            "best match",
+            "most relevant",
+            "ordered by",
+            "sorted by"
           ]
         },
         {
           "label": "Menu and price changes searchable within a minute",
           "keys": [
             "fresh",
-            "update",
+            "price change",
+            "menu change",
             "within a minute",
-            "sold out"
+            "sold out",
+            "updated quickly",
+            "reindex",
+            "re-index"
           ]
         }
       ],

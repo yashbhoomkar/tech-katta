@@ -442,40 +442,55 @@
           "keys": [
             "push",
             "sms",
-            "email"
+            "email",
+            "channel"
           ]
         },
         {
           "label": "Templates in several languages",
           "keys": [
             "template",
-            "language"
+            "language",
+            "locali",
+            "translat"
           ]
         },
         {
           "label": "Priorities: OTPs first, promotions can wait",
           "keys": [
             "priority",
+            "priorit",
             "otp",
-            "urgent"
+            "urgent",
+            "promotions can wait",
+            "marketing can wait"
           ]
         },
         {
           "label": "Respect opt-outs, quiet hours and caps",
           "keys": [
-            "opt",
-            "quiet",
+            "opt-out",
+            "opt out",
+            "opted out",
+            "unsubscrib",
+            "quiet hour",
+            "do not disturb",
+            "dnd",
             "preference",
-            "cap"
+            "frequency cap",
+            "cap on"
           ]
         },
         {
           "label": "Track status: sent, delivered, failed",
           "keys": [
-            "status",
-            "deliver",
+            "delivery status",
+            "message status",
+            "delivered",
+            "delivery report",
             "track",
-            "failed"
+            "failed",
+            "bounce"
           ]
         }
       ],

@@ -513,15 +513,23 @@
           "label": "List restaurants near my location that deliver to me",
           "keys": [
             "near",
-            "location",
             "nearby",
-            "deliver"
+            "location",
+            "deliver",
+            "within",
+            "radius",
+            "distance"
           ]
         },
         {
           "label": "Only restaurants open right now",
           "keys": [
-            "open"
+            "open now",
+            "open right now",
+            "currently open",
+            "only open",
+            "closed",
+            "open restaurants"
           ]
         },
         {
@@ -537,18 +545,30 @@
         {
           "label": "Page through results",
           "keys": [
-            "page",
             "paginat",
             "scroll",
-            "cursor"
+            "cursor",
+            "next page",
+            "load more",
+            "page through",
+            "pages of",
+            "next results",
+            "more results"
           ]
         },
         {
           "label": "Restaurants update their status",
           "keys": [
-            "status",
+            "set status",
+            "update status",
+            "update their status",
+            "set their status",
+            "availability",
             "busy",
-            "closed"
+            "go offline",
+            "mark closed",
+            "closed",
+            "toggle"
           ]
         }
       ],

@@ -493,15 +493,21 @@
             "deck",
             "stack",
             "nearby",
-            "preference"
+            "near me",
+            "preference",
+            "candidates",
+            "people near"
           ]
         },
         {
           "label": "Swipe left or right",
           "keys": [
             "swipe",
-            "like",
-            "pass"
+            "like or pass",
+            "right or left",
+            "left or right",
+            "yes or no",
+            "like and pass"
           ]
         },
         {
@@ -516,7 +522,10 @@
             "already",
             "seen",
             "again",
-            "repeat"
+            "repeat",
+            "twice",
+            "same profile",
+            "same person"
           ]
         }
       ],

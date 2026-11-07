@@ -440,9 +440,13 @@
         {
           "label": "Send and receive messages, one-to-one and in groups",
           "keys": [
-            "group",
+            "send",
+            "receive",
             "message",
-            "send"
+            "group",
+            "one-to-one",
+            "1:1",
+            "direct chat"
           ]
         },
         {
@@ -450,7 +454,10 @@
           "keys": [
             "offline",
             "notification",
-            "push"
+            "push",
+            "later when",
+            "when they come online",
+            "reconnect"
           ]
         },
         {
@@ -459,14 +466,20 @@
             "tick",
             "read receipt",
             "delivered",
-            "seen"
+            "read status",
+            "seen",
+            "receipt"
           ]
         },
         {
           "label": "Same order for everyone in a conversation",
           "keys": [
-            "order",
-            "sequence"
+            "same order",
+            "in order",
+            "ordering",
+            "order of message",
+            "sequence",
+            "ordered"
           ]
         }
       ],

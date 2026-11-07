@@ -448,42 +448,61 @@
             "repeat",
             "recurring",
             "cron",
-            "once"
+            "one-off",
+            "one off",
+            "every day",
+            "periodic"
           ]
         },
         {
           "label": "Run it on time and retry on failure",
           "keys": [
             "retry",
+            "retries",
             "on time",
-            "run at"
+            "run at",
+            "at the right time",
+            "within a few seconds",
+            "fire"
           ]
         },
         {
           "label": "Never lose a job",
           "keys": [
+            "never lose",
+            "never lost",
             "lose",
             "lost",
             "never miss",
-            "durab"
+            "durab",
+            "persist",
+            "guaranteed"
           ]
         },
         {
           "label": "Cancel or change a job",
           "keys": [
             "cancel",
-            "change",
-            "update",
-            "delete"
+            "change a job",
+            "update a job",
+            "edit a job",
+            "delete a job",
+            "reschedule",
+            "modify"
           ]
         },
         {
           "label": "See what ran and the result",
           "keys": [
             "history",
-            "result",
-            "runs",
-            "status"
+            "job result",
+            "run result",
+            "results of each",
+            "past runs",
+            "what ran",
+            "run log",
+            "logs",
+            "job status"
           ]
         }
       ],

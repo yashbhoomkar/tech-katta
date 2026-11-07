@@ -466,8 +466,21 @@
         {
           "label": "get, put and delete by key",
           "keys": [
-            "get",
-            "put"
+            "get(",
+            "get ",
+            "put(",
+            "put ",
+            "delete",
+            "read and write by key",
+            "lookup by key",
+            "by key",
+            "key-value",
+            "key value",
+            "read, write",
+            "read and write",
+            "remove a value",
+            "value by its key",
+            "by its key"
           ]
         },
         {
@@ -475,19 +488,28 @@
           "keys": [
             "down",
             "failure",
+            "fails",
             "fault",
             "replica",
-            "copies"
+            "copies",
+            "available",
+            "survive",
+            "zone"
           ]
         },
         {
           "label": "Grow by adding machines without moving most data",
           "keys": [
             "add machine",
+            "adding machine",
+            "add node",
+            "adding node",
             "consistent hash",
             "scale out",
+            "scale horizontally",
             "rebalanc",
-            "grow"
+            "grow",
+            "partition"
           ]
         },
         {
@@ -496,7 +518,8 @@
             "version",
             "conflict",
             "vector",
-            "last write"
+            "last write",
+            "concurrent write"
           ]
         }
       ],
