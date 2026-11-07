@@ -370,7 +370,6 @@
     "skip": "Skip",
     "done": "Done",
     "close": "Close",
-    "version": 2,
     "dashboard": [
       {
         "target": ".tabs",
