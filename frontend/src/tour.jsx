@@ -4,8 +4,7 @@
 //          settings appear); the step waits up to 2 s for its target.
 //   cta:   {label, href} on the last step: a link that closes the tour and goes there.
 // A step whose target is missing or hidden (e.g. on a phone) is skipped, forwards or backwards. Esc
-// or Skip closes it; Back/Next and ←/→ move; focus stays on the card. Starts once on a first visit
-// (the caller decides) and from the Tour button.
+// or Skip closes it; Back/Next and ←/→ move; focus stays on the card. Opens only from the Tour button.
 import React,{useEffect,useLayoutEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import"./tour.css";
 const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=="hidden"};
 const find=sel=>{try{return[...document.querySelectorAll(sel)].find(visible)||null}catch{return null}};

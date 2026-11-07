@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";import Problems,{Questions}from"./problems.jsx";
-import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import LibraryCards from"./library.jsx";import{Analytics}from"@vercel/analytics/react";import{readProgress,markStep}from"./progress.js";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle,vercelGate}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
+import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import LibraryCards from"./library.jsx";import{Analytics}from"@vercel/analytics/react";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle,vercelGate}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={problems:"M3.5 5.5l1.5 1.5 2.5-2.5M10 6h6.5M3.5 10.5l1.5 1.5 2.5-2.5M10 11h6.5M3.5 15.5h4M10 16h6.5","did-you-know":"M10 2.5a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM7.5 16h5M8.5 18h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
@@ -242,15 +242,10 @@ const restore=()=>{const want=clicked?0:pos.get(location.hash)||0;clicked=false;
 addEventListener("hashchange",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore)}},[]);
 useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
 useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
-// Guided tour, one per kind of page: the dashboard, a problem's workspace, the Lab. Each runs once on the
-// first visit (not for automated browsers) and from the Tour button. A new tour version (site.json
-// tour.version) shows once more to people who saw the old one.
+// Guided tour, one per kind of page: the dashboard, a problem's workspace, the Lab. It opens only when
+// the Tour button is pressed (owner's decision, 2026-11-07): never by itself.
 const tourKind=solving?(c.tour?.problem?"problem":null):active==="lab"&&!route.art?"lab":"dashboard";
-const tourKey=k=>"tour:"+k+((c.tour?.version||1)>1?"@"+c.tour.version:"");
-const[tour,setTour]=useState(null);const closeTour=()=>{markStep(tourKey(tour));setTour(null)};
-useEffect(()=>{if(!c.tour||navigator.webdriver||!tourKind||readProgress().steps[tourKey(tourKind)])return;
-const ready=tourKind==="lab"?".lab-pal":tourKind==="problem"?(matchMedia("(max-width:900px)").matches?".sv-tabs":".sv-lab .react-flow__node"):".tabs";
-let n=0;const iv=setInterval(()=>{const el=document.querySelector(ready);if(el||++n>60){clearInterval(iv);if(el)setTimeout(()=>setTour(tourKind),400)}},150);return()=>clearInterval(iv)},[tourKind,ws]);// eslint-disable-line
+const[tour,setTour]=useState(null);const closeTour=()=>setTour(null);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
 const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
