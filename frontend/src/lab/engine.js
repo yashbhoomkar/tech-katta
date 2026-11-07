@@ -38,6 +38,14 @@
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
 //     more than they can handle, so a queue protects them from spikes; users never wait on them.
 //
+// Database engines (optional catalogue fields `engines`, `defaultEngine`, `features` on Database; design
+//   `engine`): what the database is. "instance" engines (PostgreSQL, MySQL, MongoDB, OpenSearch,
+//   InfluxDB, Neptune) have sizes, are billed per hour, can crash from overload and may take a Multi-AZ
+//   standby; "request" engines (DynamoDB, Cassandra/Keyspaces, S3) have a fixed throughput limit, are
+//   billed per million reads and writes (using the database's writes %), are spread over three zones by
+//   AWS (`multiAz: "builtin"`) and throttle instead of crashing. An engine without its own sizes or
+//   latency uses the component's. Without `engines` a database is the component's single engine.
+//
 // Roles (optional catalogue field `roles` on Server, Database, Cache and Queue; design `role`): the
 //   job a component does in the design (Geo index, WebSocket gateway, Sorted set…). A role is a name
 //   the judge can look for on the request path; it does not change any number here.
@@ -68,7 +76,18 @@ export const SECONDS_PER_MONTH = HOURS_PER_MONTH * 3600;
 const SATURATED = 20; // latency multiplier once a component is past capacity
 
 export const catalogue = (lab) => Object.fromEntries(lab.components.map((c) => [c.type, c]));
-export const sizeOf = (comp, config) => comp.sizes?.find((s) => s.id === config?.size) || comp.sizes?.find((s) => s.id === comp.defaultSize);
+// A database's engine ({id, label, capacity, …}), or null when the catalogue has no engines.
+export const engineOf = (comp, config) => (comp?.engines ? comp.engines.find((e) => e.id === config?.engine) || comp.engines.find((e) => e.id === comp.defaultEngine) || comp.engines[0] : null);
+// The sizes a component can have (a database's engine may bring its own), and its default.
+export const sizesOf = (comp, config) => { const e = engineOf(comp, config); return e?.sizes ? [e.sizes, e.defaultSize] : [comp.sizes, comp.defaultSize]; };
+export const sizeOf = (comp, config) => { const [list, def] = sizesOf(comp, config); return list?.find((s) => s.id === config?.size) || list?.find((s) => s.id === def); };
+// Per request (DynamoDB, S3…) or per instance.
+export const perRequest = (comp, config) => engineOf(comp, config)?.capacity === 'request';
+// Base latency, and the crash policy (null: it never crashes; per-request engines throttle instead).
+export const latencyOf = (comp, config) => engineOf(comp, config)?.latencyMs ?? comp.latencyMs;
+export const crashOf = (comp, config) => (engineOf(comp, config)?.crash === false ? null : comp.crash || null);
+// A standby in another zone: the Multi-AZ option, or an engine AWS already spreads over zones.
+export const standby = (comp, config) => { const e = engineOf(comp, config); return e?.multiAz === 'builtin' || (e?.multiAz !== 'none' && !!config?.multiAz); };
 
 // Traffic multiplier for a Clients config at a simulated minute (1 = its rps setting).
 export function trafficAt(comp, config, minute = 0) {
@@ -91,7 +110,7 @@ export function defaultConfig(comp) {
   if (comp.type === 'cache') return { size: comp.defaultSize, hitPct: comp.hitPct.default, writePct: comp.writePct.default };
   if (comp.type === 'cdn') return { hitPct: comp.hitPct.default };
   if (comp.type === 'server') return { size: comp.defaultSize, count: comp.count.default, ...(comp.queriesPerRequest ? { queriesPerRequest: comp.queriesPerRequest.default } : {}) };
-  if (comp.type === 'database') return { size: comp.defaultSize, multiAz: comp.multiAz.default, ...(comp.replicas ? { replicas: comp.replicas.default, writePct: comp.writePct.default } : {}) };
+  if (comp.type === 'database') { const e = engineOf(comp, {}); return { ...(e ? { engine: e.id } : {}), size: sizesOf(comp, {})[1], multiAz: comp.multiAz.default, ...(comp.replicas ? { replicas: comp.replicas.default, writePct: comp.writePct.default } : {}) }; }
   return {};
 }
 
@@ -100,7 +119,7 @@ export function capacity(comp, config = {}) {
   if (comp.type === 'apigw' || comp.type === 'lb' || comp.type === 'queue' || comp.type === 'cdn') return comp.limitRps;
   if (comp.type === 'cache') return sizeOf(comp, config).ops;
   if (comp.type === 'server') return sizeOf(comp, config).rps * (config.count || 1);
-  if (comp.type === 'database') { const q = sizeOf(comp, config).qps, n = replicasOf(comp, config), w = dbWrites(comp, config); return n ? q / (w + (1 - w) / (1 + n)) : q; }
+  if (comp.type === 'database') { if (perRequest(comp, config)) return engineOf(comp, config).limitQps; const q = sizeOf(comp, config).qps, n = replicasOf(comp, config), w = dbWrites(comp, config); return n ? q / (w + (1 - w) / (1 + n)) : q; }
   return Infinity;
 }
 
@@ -111,7 +130,11 @@ export function monthlyCost(comp, config = {}, servedRps = 0) {
   if (comp.type === 'lb') return (comp.hourly + Math.max(1, servedRps / comp.rpsPerLcu) * comp.lcuHourly) * HOURS_PER_MONTH;
   if (comp.type === 'cache') return sizeOf(comp, config).hourly * HOURS_PER_MONTH;
   if (comp.type === 'server') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * (config.count || 1);
-  if (comp.type === 'database') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * ((config.multiAz ? comp.multiAz.priceFactor : 1) + replicasOf(comp, config));
+  if (comp.type === 'database') {
+    const e = engineOf(comp, config);
+    if (e?.capacity === 'request') { const w = comp.writePct ? pct(comp, config, 'writePct') / 100 : 0.2; return (servedRps * SECONDS_PER_MONTH / 1e6) * (w * e.writePerMillion + (1 - w) * e.readPerMillion); }
+    return sizeOf(comp, config).hourly * HOURS_PER_MONTH * ((config.multiAz && e?.multiAz !== 'none' && e?.multiAz !== 'builtin' ? comp.multiAz.priceFactor : 1) + replicasOf(comp, config));
+  }
   return 0;
 }
 
@@ -124,7 +147,9 @@ export function summary(comp, config = {}) {
   if (comp.type === 'queue') return 'async · workers pull';
   if (comp.type === 'cache') return `${sizeOf(comp, config).id} · ${pct(comp, config, 'hitPct')}% hits · ${pct(comp, config, 'writePct')}% writes`;
   if (comp.type === 'server') { const auto = autoscaled(comp, config), [lo, hi] = scaleRange(comp, config); return `${auto ? config.live ?? lo : config.count || 1} × ${sizeOf(comp, config).id}${auto ? ` · up to ${hi}` : ''}${comp.queriesPerRequest ? ` · ${qpr(comp, config)} q/req` : ''}`; }
-  if (comp.type === 'database') { const n = replicasOf(comp, config); return `${sizeOf(comp, config).id}${config.multiAz ? ' · Multi-AZ' : ''}${n ? ` · ${n} read replica${n > 1 ? 's' : ''}` : ''}`; }
+  if (comp.type === 'database') { const e = engineOf(comp, config), n = replicasOf(comp, config), lead = e && e.id !== comp.defaultEngine ? `${e.label} · ` : '';
+    if (e?.capacity === 'request') return `${e.label} · on demand`;
+    return `${lead}${sizeOf(comp, config).id}${config.multiAz && e?.multiAz !== 'builtin' ? ' · Multi-AZ' : ''}${n ? ` · ${n} read replica${n > 1 ? 's' : ''}` : ''}`; }
   return '';
 }
 
@@ -145,7 +170,7 @@ export const MAX_NAME = 40;
 export const displayName = (comp, node) => node?.name || roleOf(comp, node?.config)?.label || comp?.name || node?.type || '?';
 // The role a component has been given ({id, label, desc}), or null.
 export const roleOf = (comp, config) => (config?.role && comp?.roles?.find((r) => r.id === config.role)) || null;
-export const replicasOf = (comp, config) => (comp?.replicas ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
+export const replicasOf = (comp, config) => (comp?.replicas && engineOf(comp, config)?.replicas !== false ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
 const dbWrites = (comp, config) => (comp?.writePct ? pct(comp, config, 'writePct') / 100 : 1);
 const qpr = (comp, config) => comp.queriesPerRequest ? (config?.queriesPerRequest ?? comp.queriesPerRequest.default) : 1;
 
@@ -167,7 +192,8 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
     r.served = Math.min(asks, r.capacity);
     r.dropped = r.offered - r.served;
     r.utilisation = r.capacity === Infinity ? 0 : r.capacity === 0 ? (asks > 0 ? Infinity : 0) : asks / r.capacity;
-    r.latencyMs = r.down && !reps ? 0 : comp.latencyMs ? (r.utilisation < 1 ? comp.latencyMs / (1 - Math.min(r.utilisation, 0.95)) : comp.latencyMs * SATURATED) : 0;
+    const base = latencyOf(comp, node.config);
+    r.latencyMs = r.down && !reps ? 0 : base ? (r.utilisation < 1 ? base / (1 - Math.min(r.utilisation, 0.95)) : base * SATURATED) : 0;
     // What this component passes on: a queue hands workers only what they can take (all of it
     // while there is a backlog to work through); everything else passes on what it served.
     let sent = r.served;
@@ -309,7 +335,7 @@ export const runOptions = (run, minute, lab) => ({ warm: lab ? warmth(run, lab) 
 // crash policy: down for downMinutes (a Multi-AZ database fails over), a cache comes back cold, a
 // write-back cache loses what it had not flushed. Components that never crash are left alone.
 export function crashNow(design, lab, run, id) {
-  const cat = catalogue(lab), n = design.nodes.find((x) => x.id === id), crash = n && cat[n.type]?.crash;
+  const cat = catalogue(lab), n = design.nodes.find((x) => x.id === id), crash = n && cat[n.type] && crashOf(cat[n.type], n.config);
   if (!crash || Object.hasOwn(run.down, id)) return run;
   const st = { ...run, down: dict(run.down), over: dict(run.over), backlog: dict(run.backlog), cold: dict(run.cold), events: [...run.events] };
   if (n.type === 'cache') {
@@ -372,7 +398,7 @@ export function advance(design, lab, run, minutes) {
       if ((st.backlog[n.id] || 0) > 0 && g < 0) dt = Math.min(dt, st.backlog[n.id] / -g / 60);
     }
     for (const n of nodes) {
-      const crash = cat[n.type].crash; if (!crash) continue;
+      const crash = crashOf(cat[n.type], n.config); if (!crash) continue;
       if (st.down[n.id] !== undefined) { dt = Math.min(dt, Math.max(0, st.down[n.id] - st.t)); continue; }
       if (r.nodes[n.id].utilisation > crash.above) { hot.push(n.id); dt = Math.min(dt, Math.max(0, crash.minutes - (st.over[n.id] || 0))); }
       else st.over[n.id] = 0;
@@ -395,7 +421,7 @@ export function advance(design, lab, run, minutes) {
       if (s.n !== before) st.events.push({ t: st.t, id: n.id, kind: s.n > before ? 'scaledOut' : 'scaledIn', n: s.n });
     }
     for (const n of nodes) {
-      const crash = cat[n.type].crash; if (!crash) continue;
+      const crash = crashOf(cat[n.type], n.config); if (!crash) continue;
       if (st.down[n.id] !== undefined && st.down[n.id] <= st.t + 1e-9) {
         delete st.down[n.id]; st.over[n.id] = 0;
         // a cache comes back empty and has to warm up again

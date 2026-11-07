@@ -89,3 +89,11 @@ test('a ":label" names the component with the case typed', () => {
   assert.deepEqual(r.errors, []);
   assert.equal(r.design.nodes.find((n) => n.type === 'server').name, 'OrdersAPI');
 });
+
+test('engine names make a Database with that engine; sizes may drop their prefix', () => {
+  const r = parseText('Clients 100 -> Server -> DynamoDB\nServer -> Mongo r6g.xlarge multi-az\nServer -> Database s3\nServer -> Postgres:orders m5.large', lab);
+  assert.deepEqual(r.errors, []); assert.deepEqual(r.warnings, []);
+  const dbs = r.design.nodes.filter((n) => n.type === 'database').map((n) => n.config);
+  assert.deepEqual(dbs.map((c) => c.engine), ['dynamodb', 'mongodb', 's3', 'postgres']);
+  assert.equal(dbs[1].size, 'docdb.r6g.xlarge'); assert.equal(dbs[1].multiAz, true); assert.equal(dbs[3].size, 'db.m5.large');
+});

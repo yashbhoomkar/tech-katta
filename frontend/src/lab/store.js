@@ -29,7 +29,8 @@ export function cleanDesign(d,lab,id){
     if(c.type==="cdn"){if(clamp(src.hitPct,c.hitPct)!==undefined)config.hitPct=clamp(src.hitPct,c.hitPct);if(typeof src.live==="boolean")config.live=src.live}
     if(c.type==="cache"){for(const k of["hitPct","writePct"])if(clamp(src[k],c[k])!==undefined)config[k]=clamp(src[k],c[k]);
       for(const k of["writePolicy","onDown"])if(c[k]&&Array.isArray(c[k].options)&&c[k].options.some(o=>o.id===src[k]))config[k]=src[k]}
-    if(Array.isArray(c.sizes)&&c.sizes.some(s=>s.id===src.size))config.size=src.size;
+    if(Array.isArray(c.engines)&&c.engines.some(e=>e.id===src.engine))config.engine=src.engine;
+    {const e=Array.isArray(c.engines)?c.engines.find(x=>x.id===(config.engine??c.defaultEngine)):null,sizes=e&&Array.isArray(e.sizes)?e.sizes:c.sizes;if(Array.isArray(sizes)&&sizes.some(s=>s.id===src.size))config.size=src.size}
     if(Array.isArray(c.roles)&&c.roles.some(r=>r.id===src.role))config.role=src.role;
     if(c.type==="database"){if(typeof src.multiAz==="boolean")config.multiAz=src.multiAz;
       if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas));if(c.writePct&&clamp(src.writePct,c.writePct)!==undefined)config.writePct=clamp(src.writePct,c.writePct)}

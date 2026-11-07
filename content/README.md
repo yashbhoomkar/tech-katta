@@ -102,7 +102,7 @@ Each component has `type, name, group, desc` plus the numbers its type needs (ch
 | `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash`, optional `autoscaling` | each request makes `queriesPerRequest` queries to a cache or database |
 | `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
 | `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash`, optional `warmupMinutes, flushSeconds, writePolicy, onDown` | Server → Cache → Database: only misses and writes reach the database |
-| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash`, optional `replicas, writePct` | receives only |
+| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash`, optional `replicas, writePct, engines, defaultEngine, features` | receives only |
 
 `client`, `apigw`, `server` and `database` are required; the others are optional.
 
@@ -112,6 +112,16 @@ at the same hour make a jump), multipliers 0–1 with at least one 1: the Client
 multiplier`, linear between points, repeating every simulated day. The first pattern is the default.
 `label` is the menu entry, `desc` the line under it, `short` what the canvas shows on the Clients box.
 A design's Clients pick one with `config.pattern`.
+
+**Database engines** (`database.engines`, optional; with `defaultEngine` and `features: [{id, label}]`):
+`[{id, label, family, aws, desc, capacity: "instance" | "request", multiAz: "option" | "builtin" | "none",
+replicas, crash, features: [feature id], aliases?, latencyMs?}]`. An `instance` engine has `sizes` +
+`defaultSize` (or uses the component's), is billed per hour and may crash. A `request` engine has
+`limitQps`, `readPerMillion`, `writePerMillion` (billed with the database's writes %), `crash: false`
+(it throttles) and `replicas: false`. `multiAz: "builtin"` means AWS already spreads it over zones: it
+counts as a standby for the `multiAz` check and a test can't crash it. A design's database sets
+`config.engine`; without it the `defaultEngine` is used, so older designs are unchanged. The import text
+accepts an engine's names ("DynamoDB", "Mongo r6g.xlarge", "Database s3").
 
 **Read replicas** (`database.replicas {label, min, max, default}` whole numbers from 0, max at most 10,
 and `database.writePct`, a percent; both optional): a design's database sets `config.replicas` and
