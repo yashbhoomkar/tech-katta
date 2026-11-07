@@ -327,3 +327,26 @@ test("a load balancer skips a crashed server group while another is up (health c
   assert.equal(r.nodes.a.offered,0);assert.ok(r.total.successPct>99.9,`success ${r.total.successPct}`);
   const both=simulate(d,lab,{down:new Set(["a","b"])});assert.ok(both.total.successPct<1);
 });
+
+test('read replicas take reads: more capacity, each billed like the primary, reads survive the primary', () => {
+  const cat = catalogue(lab);
+  const db = (cfg) => ({ nodes: [{ id: 'c', type: 'client', config: { rps: 1000 } }, { id: 'g', type: 'apigw', config: {} }, { id: 's', type: 'server', config: { size: 'm5.large', count: 10, queriesPerRequest: 4 } }, { id: 'db', type: 'database', config: { size: 'db.m5.large', ...cfg } }], edges: [{ from: 'c', to: 'g' }, { from: 'g', to: 's' }, { from: 's', to: 'db' }] });
+  // 4,000 queries/s on a 2,500 qps database: it turns some away
+  const one = simulate(db({}), lab);
+  assert.ok(one.nodes.db.utilisation > 1);
+  // 20% writes, 2 replicas: 2500 / (0.2 + 0.8 / 3) ≈ 5,357 queries/s
+  const three = simulate(db({ replicas: 2, writePct: 20 }), lab);
+  assert.ok(Math.abs(three.nodes.db.capacity - 2500 / (0.2 + 0.8 / 3)) < 1e-6);
+  assert.ok(three.total.successPct > 99.9);
+  assert.equal(monthlyCost(cat.database, { size: 'db.m5.large', replicas: 2 }), 3 * monthlyCost(cat.database, { size: 'db.m5.large' }));
+  assert.equal(monthlyCost(cat.database, { size: 'db.m5.large', replicas: 1, multiAz: true }), 3 * monthlyCost(cat.database, { size: 'db.m5.large' }));
+  // with the primary down only the reads succeed (80% of queries; each request makes 4 of them)
+  const down = simulate(db({ replicas: 2, writePct: 20 }), lab, { down: new Set(['db']) });
+  assert.ok(down.nodes.db.readOnly);
+  assert.ok(Math.abs(down.nodes.db.success - 0.8) < 1e-9);
+  assert.ok(down.total.successPct > 0);
+  const none = simulate(db({}), lab, { down: new Set(['db']) });
+  assert.equal(none.total.successPct, 0);
+  // writes only: replicas add nothing
+  assert.equal(simulate(db({ replicas: 3, writePct: 100 }), lab).nodes.db.capacity, 2500);
+});

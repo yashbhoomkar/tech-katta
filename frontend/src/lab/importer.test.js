@@ -67,3 +67,10 @@ test('limits and names: size caps, labels kept apart, file names kept (QA M5, L4
   assert.match(parseJSON(' '.repeat(1e6 + 1), lab).errors[0].message, /over 1 MB/);
   assert.match(parseJSON(JSON.stringify({ nodes: Array.from({ length: 300 }, (_, i) => ({ id: 'n' + i, type: 'server' })), edges: [] }), lab).errors[0].message, /at most 200/);
 });
+
+test('a database line can set read replicas and the share of writes', () => {
+  const r = parseText('Clients 1000 -> API Gateway -> Server x4 -> Database m5.large 2 replicas 10% writes', lab);
+  assert.deepEqual(r.errors, []);
+  const db = r.design.nodes.find((n) => n.type === 'database');
+  assert.deepEqual(db.config, { size: 'db.m5.large', replicas: 2, writePct: 10 });
+});
