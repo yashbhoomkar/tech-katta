@@ -255,6 +255,11 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "objects",
+            "label": "Video segments come from storage built for big files"
           }
         ]
       },
@@ -489,6 +494,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?videos/[^/]+"
         }
+      ],
+      "decisions": [
+        {
+          "id": "segments",
+          "q": "Why cut videos into short segments (HLS or DASH)?",
+          "options": [
+            "Players switch quality between segments as the network changes, and CDNs cache each segment",
+            "They take less disk space",
+            "Uploads are faster"
+          ],
+          "answer": 0,
+          "why": "Short segments let the player pick the next one at a quality that fits the connection right now, and each one is a small file a CDN can cache."
+        },
+        {
+          "id": "transcode",
+          "q": "When are the different qualities made?",
+          "options": [
+            "Once after upload, by transcoders taking work from a queue",
+            "On the fly for every viewer",
+            "Never: send the original file"
+          ],
+          "answer": 0,
+          "why": "Transcoding is slow and heavy. Doing it once per video, in the background, means every viewer gets ready-made files."
+        },
+        {
+          "id": "resume",
+          "q": "A phone loses its network halfway through uploading a 2 GB video. Then?",
+          "options": [
+            "Start again from zero",
+            "The upload resumes from the last chunk it sent",
+            "Fail the upload"
+          ],
+          "answer": 1,
+          "why": "Resumable uploads in chunks mean a dropped connection costs one chunk, not the whole file."
+        }
       ]
     },
     "hints": [
@@ -598,7 +638,8 @@
           "y": 0,
           "config": {
             "size": "db.t3.medium",
-            "multiAz": true
+            "multiAz": true,
+            "role": "objects"
           }
         }
       ],
@@ -719,7 +760,8 @@
             "y": 0,
             "config": {
               "size": "db.t3.medium",
-              "multiAz": true
+              "multiAz": true,
+              "role": "objects"
             }
           }
         ],
@@ -838,7 +880,8 @@
             "y": 0,
             "config": {
               "size": "db.t3.medium",
-              "multiAz": false
+              "multiAz": false,
+              "role": "objects"
             }
           }
         ],
@@ -980,7 +1023,8 @@
             "y": 0,
             "config": {
               "size": "db.t3.medium",
-              "multiAz": true
+              "multiAz": true,
+              "role": "objects"
             }
           }
         ],
@@ -1027,6 +1071,138 @@
           },
           {
             "from": "app3",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 25000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 98
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.t3.medium",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
             "to": "cache2"
           },
           {

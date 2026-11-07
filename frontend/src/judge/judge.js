@@ -15,6 +15,10 @@
 //         | {kind: "redundant", type}                no single component of that type that every request needs
 //         | {kind: "multiAz"}                        every database keeps a standby (Multi-AZ)
 //         | {kind: "has", type}                      the design has at least one of that type
+//         | {kind: "role", role, any?, behind?, min?} a component doing this job (its role, e.g. "geo") is on
+//                                                    every request's path (any: on at least one path);
+//                                                    behind: only reached after a component of that type;
+//                                                    min: at least that many of them
 //
 // Problem-wide `fixed` settings (queries per request, cache hit and write %, CDN hit %) apply to every
 // test, so a test can't be passed by turning the load down. p99 is estimated per 5-minute step: each
@@ -24,18 +28,20 @@
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
-import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf } from '../lab/engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 
 export const STEP = 5; // simulated minutes per step
 const P99 = Math.log(100);
-export const CHECKS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has']);
+export const CHECKS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has', 'role']);
 
 // "Server", or "Server 2" when the design has more than one.
 export function names(design, lab) {
   const cat = catalogue(lab), seen = {}, out = {};
-  for (const n of design.nodes) { const t = n.type; seen[t] = (seen[t] || 0) + 1; out[n.id] = { type: t, i: seen[t] }; }
-  for (const n of design.nodes) { const x = out[n.id]; out[n.id] = (cat[x.type]?.name || x.type) + (seen[x.type] > 1 ? ' ' + x.i : ''); }
+  // a component with a role goes by its role ("Geo index"), numbered among those with the same name
+  const label = (n) => roleOf(cat[n.type], n.config)?.label || cat[n.type]?.name || n.type;
+  for (const n of design.nodes) { const t = label(n); seen[t] = (seen[t] || 0) + 1; out[n.id] = { name: t, i: seen[t] }; }
+  for (const n of design.nodes) { const x = out[n.id]; out[n.id] = x.name + (seen[x.name] > 1 ? ' ' + x.i : ''); }
   return out;
 }
 const clock = (m) => { const h = Math.floor(m / 60) % 24, mm = Math.floor(m % 60); return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; };
@@ -61,9 +67,23 @@ export function singlePoints(d, type) {
   return d.nodes.filter((n) => n.type === type && clients.some((c) => reach(c, null) > 0 && reach(c, n.id) === 0)).map((n) => n.id);
 }
 
+// Where a role is: on every path from the Clients to an end (missing: the first path without it),
+// reachable at all, reachable without passing a component of type `behind`, and how many there are.
+export function roleOnPath(d, role, behind) {
+  const out = new Map(d.nodes.map((n) => [n.id, []]));
+  for (const e of d.edges) if (out.has(e.from) && out.has(e.to)) out.get(e.from).push(e.to);
+  const has = new Set(d.nodes.filter((n) => n.config?.role === role).map((n) => n.id)), type = new Map(d.nodes.map((n) => [n.id, n.type]));
+  const clients = d.nodes.filter((n) => n.type === 'client').map((n) => n.id);
+  const reach = (stop) => { const seen = new Set(clients), todo = [...clients]; while (todo.length) { const x = todo.pop(); for (const y of out.get(x)) if (!seen.has(y) && !(stop && type.get(y) === stop)) { seen.add(y); todo.push(y); } } return seen; };
+  const all = reach(null), reached = [...has].filter((id) => all.has(id));
+  const marked = { ...d, nodes: d.nodes.map((n) => (has.has(n.id) ? { ...n, type: '@role' } : n)) };
+  return { every: !!clients.length && missingOnPath(marked, ['@role']) === null, any: reached.length > 0, count: reached.length, early: behind ? [...has].filter((id) => reach(behind).has(id)).length : 0 };
+}
+
 // Checks on the shape of the design (no simulation needed).
 function rule(c, d) {
   const of = (t) => d.nodes.filter((n) => n.type === t);
+  if (c.kind === 'role') { const r = roleOnPath(d, c.role, c.behind); const placed = c.any ? r.any : r.every; return { ok: placed && r.count >= (c.min || 1) && !r.early, value: r.count, placed, early: r.early }; }
   if (c.kind === 'requires') { const miss = missingOnPath(d, c.types); return { ok: !miss, value: miss }; }
   if (c.kind === 'redundant') { const spof = singlePoints(d, c.type); return { ok: of(c.type).length > 0 && !spof.length, value: spof[0] || null, count: of(c.type).length }; }
   if (c.kind === 'multiAz') { const dbs = of('database'); const single = dbs.filter((n) => !n.config?.multiAz).length; return { ok: dbs.length > 0 && single === 0, value: single }; }
@@ -134,6 +154,13 @@ export function runTest(design, lab, problem, test) {
     else if (c.kind === 'redundant') why.push(c.count ? `The ${nm[c.value]} is a single point of failure: if it goes down, requests have no other way through. Put a second group beside it.` : `The design has no ${cat[c.type]?.name || c.type}.`);
     else if (c.kind === 'multiAz') why.push(c.value ? 'A database has no standby in another zone (Multi-AZ is off).' : 'There is no database.');
     else if (c.kind === 'has') why.push(`The design has no ${cat[c.type]?.name || c.type}.`);
+    else if (c.kind === 'role') {
+      const rl = Object.values(cat).flatMap((x) => x.roles || []).find((x) => x.id === c.role)?.label || c.role;
+      if (!c.value) why.push(`Nothing in the design does this job yet. Each component's job is set under "What it does" in its settings: which part does this problem need?`);
+      else if (!c.placed) why.push(`Some requests never pass through the ${rl}: it has to be on ${c.any ? 'the path' : 'every path'} the requests take.`);
+      else if (c.early) why.push(`Requests reach the ${rl} without going through a ${cat[c.behind]?.name || c.behind} first.`);
+      else why.push(`There ${c.value === 1 ? 'is 1' : `are ${c.value}`} ${rl}; this needs at least ${c.min}.`);
+    }
   }
   return { id: test.id, ok: checks.every((c) => c.ok), checks, why, metrics: { availability, p99: worst.p99, avgMonthly, crashes: overload.length, lost: run.lost || 0, unprocessed: left } };
 }
@@ -157,6 +184,7 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9/{}:._ -]+/g,
 // rubric.nfr: {availability: [min, max], p99: [min, max], consistency: "strong" | "eventual", readsPerWrite: [min, max]}
 // rubric.est: [{id, label, unit, answer, tol}] (within answer ÷ tol … answer × tol)
 // rubric.api: [{label, method, path}] (method may be "PUT|POST"; path is a regular expression for the visitor's path)
+// rubric.decisions: [{id, q, options: [text], answer: index of the right option, why}] (answer.decisions: {id: index})
 export function gradeAnswer(answer = {}, rubric = {}) {
   const text = norm(answer.fr);
   const fr = (rubric.fr || []).map((r) => ({ label: r.label, ok: r.keys.some((k) => text.includes(k)) }));
@@ -173,16 +201,17 @@ export function gradeAnswer(answer = {}, rubric = {}) {
   const rows = (answer.api || []).filter((a) => a && a.path);
   // a rubric method may list alternatives ("PUT|POST"): following someone can fairly be either
   const api = (rubric.api || []).map((r) => { const re = new RegExp(r.path, 'i'), ms = r.method.split('|'); const hit = rows.find((a) => ms.includes(a.method) && re.test(String(a.path).trim())); return { label: r.label, method: r.method, ok: !!hit, got: hit ? `${hit.method} ${hit.path}` : null }; });
+  const dec = (rubric.decisions || []).map((r) => { const v = answer.decisions?.[r.id]; const n = v === '' || v == null ? null : Number(v); return { id: r.id, q: r.q, chosen: Number.isInteger(n) ? n : null, answer: r.answer, ok: n === r.answer, why: r.why }; });
   const share = (xs) => (xs.length ? xs.filter((x) => x.ok).length / xs.length : 0);
-  return { fr, nfr, est, api, parts: { fr: share(fr), nfr: share(nfr), est: share(est), api: share(api) } };
+  return { fr, nfr, est, api, dec, parts: { fr: share(fr), nfr: share(nfr), est: share(est), api: share(api), dec: share(dec) } };
 }
 
-// Out of 100: requirements 20 (functional 12, non-functional 8), estimates 15, API 15, design 50
-// (share of all tests passed). Each hint opened takes 3 off, at most 15.
-export const WEIGHTS = { fr: 12, nfr: 8, est: 15, api: 15, design: 50 };
+// Out of 100: requirements 15 (functional 10, non-functional 5), estimates 10, API 10, key decisions
+// 15, design 50 (share of all tests passed). Each hint opened takes 3 off, at most 15.
+export const WEIGHTS = { fr: 10, nfr: 5, est: 10, api: 10, dec: 15, design: 50 };
 export function score(graded, judged, hints = 0) {
-  const p = graded?.parts || { fr: 0, nfr: 0, est: 0, api: 0 };
-  const parts = { fr: p.fr * WEIGHTS.fr, nfr: p.nfr * WEIGHTS.nfr, est: p.est * WEIGHTS.est, api: p.api * WEIGHTS.api, design: judged && judged.total ? WEIGHTS.design * judged.passed / judged.total : 0 };
+  const p = graded?.parts || { fr: 0, nfr: 0, est: 0, api: 0, dec: 0 };
+  const parts = { fr: p.fr * WEIGHTS.fr, nfr: p.nfr * WEIGHTS.nfr, est: p.est * WEIGHTS.est, api: p.api * WEIGHTS.api, dec: (p.dec || 0) * WEIGHTS.dec, design: judged && judged.total ? WEIGHTS.design * judged.passed / judged.total : 0 };
   const penalty = Math.min(15, 3 * hints);
   const raw = Object.values(parts).reduce((a, b) => a + b, 0);
   return { total: Math.max(0, Math.round(raw - penalty)), parts, penalty };

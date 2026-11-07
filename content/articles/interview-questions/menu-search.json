@@ -264,6 +264,11 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "search",
+            "label": "Every search goes to something that finds dishes by the words in them, with filters"
           }
         ]
       },
@@ -490,6 +495,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(search|dishes|menu)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "index",
+          "q": "Searching \"paneer roll\" across lakhs of menus: how?",
+          "options": [
+            "SQL LIKE '%paneer%' on the menu table",
+            "An inverted index (each word → the dishes that have it) in a search engine",
+            "Loop over every menu in the app server"
+          ],
+          "answer": 1,
+          "why": "LIKE with a leading % can't use an index and reads every row. An inverted index goes straight from each word to its dishes and can rank them."
+        },
+        {
+          "id": "fresh",
+          "q": "A restaurant changes a price. How does search learn it?",
+          "options": [
+            "The whole index is rebuilt every night only",
+            "The change is published as an event and the index updates within seconds",
+            "Search reads the main database on every query"
+          ],
+          "answer": 1,
+          "why": "Events keep the index a few seconds behind the menu without making searches hit the main database."
+        },
+        {
+          "id": "typos",
+          "q": "\"panir\" should still find paneer. How?",
+          "options": [
+            "Ask people to spell it right",
+            "Fuzzy matching and synonyms when words are indexed and searched",
+            "Store every misspelling as a separate dish"
+          ],
+          "answer": 1,
+          "why": "Search engines compare words within an edit distance and map synonyms, so common misspellings and local names still match."
+        }
       ]
     },
     "hints": [
@@ -590,7 +630,8 @@
           "y": 0,
           "config": {
             "size": "db.m5.xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "search"
           }
         }
       ],
@@ -685,7 +726,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.large",
-              "multiAz": true
+              "multiAz": true,
+              "role": "search"
             }
           }
         ],
@@ -776,7 +818,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "search"
             }
           }
         ],
@@ -882,7 +925,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "search"
             }
           }
         ],
@@ -1011,7 +1055,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "search"
             }
           }
         ],
@@ -1054,6 +1099,125 @@
           },
           {
             "from": "app3",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 80,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 80,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.m5.xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
             "to": "cache2"
           },
           {

@@ -292,6 +292,11 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "holds",
+            "label": "Items in a basket being paid for are held so nobody else can take them, and the hold lapses by itself"
           }
         ]
       },
@@ -527,6 +532,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?orders/[^/]+"
         }
+      ],
+      "decisions": [
+        {
+          "id": "last",
+          "q": "Two people pay for the last packet of milk at the same moment. How do you not sell it twice?",
+          "options": [
+            "Check the stock, then subtract, as two separate steps",
+            "One atomic step: take it only if stock is above zero (or hold it first)",
+            "Sell both and refund one later"
+          ],
+          "answer": 1,
+          "why": "Between a separate check and subtract, the other order can slip in. A conditional update or a hold does both in one step, so only one can win."
+        },
+        {
+          "id": "abandon",
+          "q": "Someone leaves halfway through paying. What happens to their held items?",
+          "options": [
+            "The hold expires after a few minutes and the stock comes back",
+            "They stay held until staff clear them",
+            "They are sold anyway"
+          ],
+          "answer": 0,
+          "why": "Holds with an expiry free stock by themselves, so abandoned baskets never block other shoppers for long."
+        },
+        {
+          "id": "store",
+          "q": "Which store packs an order?",
+          "options": [
+            "Any store in the city",
+            "The biggest warehouse",
+            "The nearest dark store that has every item, found from the delivery location"
+          ],
+          "answer": 2,
+          "why": "Ten-minute delivery only works from a store a few kilometres away, and only if it has everything in the basket."
+        }
       ]
     },
     "hints": [
@@ -605,7 +645,8 @@
             "size": "cache.m5.large",
             "hitPct": 85,
             "writePct": 5,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "holds"
           }
         },
         {
@@ -617,7 +658,8 @@
             "size": "cache.m5.large",
             "hitPct": 85,
             "writePct": 5,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "holds"
           }
         },
         {
@@ -809,7 +851,8 @@
               "size": "cache.m5.large",
               "hitPct": 85,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "holds"
             }
           },
           {
@@ -821,7 +864,8 @@
               "size": "cache.m5.large",
               "hitPct": 85,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "holds"
             }
           },
           {
@@ -933,7 +977,8 @@
               "size": "cache.m5.large",
               "hitPct": 85,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "holds"
             }
           },
           {
@@ -945,7 +990,8 @@
               "size": "cache.m5.large",
               "hitPct": 85,
               "writePct": 5,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "holds"
             }
           },
           {
@@ -1057,6 +1103,145 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 85,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "holds"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 85,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "holds"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 10000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
               "queriesPerRequest": 2
             }
           },

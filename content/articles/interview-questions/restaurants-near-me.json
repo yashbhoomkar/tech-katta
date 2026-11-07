@@ -295,6 +295,11 @@
             "kind": "p99",
             "max": 200,
             "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "role",
+            "role": "geo",
+            "label": "Every home-screen lookup goes through something that can find restaurants near a point"
           }
         ]
       },
@@ -526,6 +531,41 @@
           "method": "PUT|PATCH|POST",
           "path": "^/(api/)?(v\\d+/)?restaurants/[^/]+/status"
         }
+      ],
+      "decisions": [
+        {
+          "id": "near",
+          "q": "How do you find restaurants within 5 km quickly?",
+          "options": [
+            "Work out the distance to every restaurant on each request",
+            "Index them by map cell (geohash or quadtree) and look in the user's cell and its neighbours",
+            "Ask a maps company on every request"
+          ],
+          "answer": 1,
+          "why": "Cells turn \"near this point\" into a few index lookups. Measuring the distance to every restaurant on every request does not scale to lakhs of them."
+        },
+        {
+          "id": "status",
+          "q": "Open-now and delivery status change all day. Where does that live?",
+          "options": [
+            "Inside the geo index, rebuilt nightly",
+            "Hard-coded in the app",
+            "Kept separately and updated as it changes; applied as a filter after the geo lookup"
+          ],
+          "answer": 2,
+          "why": "Locations rarely change but status changes often. Keeping status apart means the geo index stays stable and status is always current."
+        },
+        {
+          "id": "cache",
+          "q": "Many people in the same area ask the same thing. What helps most?",
+          "options": [
+            "Cache results per map cell for a minute or two",
+            "A bigger database",
+            "Make people wait"
+          ],
+          "answer": 0,
+          "why": "Everyone in one cell gets the same list, so a short cache per cell answers most home screens."
+        }
       ]
     },
     "hints": [
@@ -630,7 +670,8 @@
           "y": 0,
           "config": {
             "size": "db.m5.large",
-            "multiAz": true
+            "multiAz": true,
+            "role": "geo"
           }
         }
       ],
@@ -725,7 +766,8 @@
             "y": 0,
             "config": {
               "size": "db.t3.medium",
-              "multiAz": true
+              "multiAz": true,
+              "role": "geo"
             }
           }
         ],
@@ -816,7 +858,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.large",
-              "multiAz": true
+              "multiAz": true,
+              "role": "geo"
             }
           }
         ],
@@ -922,7 +965,8 @@
             "y": 0,
             "config": {
               "size": "db.m5.large",
-              "multiAz": false
+              "multiAz": false,
+              "role": "geo"
             }
           }
         ],
@@ -1006,6 +1050,126 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true,
+              "role": "geo"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 6000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
               "queriesPerRequest": 1
             }
           },

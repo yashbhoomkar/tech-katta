@@ -74,3 +74,12 @@ test('a database line can set read replicas and the share of writes', () => {
   const db = r.design.nodes.find((n) => n.type === 'database');
   assert.deepEqual(db.config, { size: 'db.m5.large', replicas: 2, writePct: 10 });
 });
+
+test('"as <role>" gives a component its job; an unknown role is reported, not guessed', () => {
+  const r = parseText('Clients 1000 -> Load Balancer -> Server x2 as websocket -> Database as geo', lab);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.design.nodes.find((n) => n.type === 'server').config.role, 'websocket');
+  assert.equal(r.design.nodes.find((n) => n.type === 'database').config.role, 'geo');
+  const bad = parseText('Clients 1000 -> Server as rocket -> Database', lab);
+  assert.equal(bad.design?.nodes.find((n) => n.type === 'server')?.config.role, undefined);
+});

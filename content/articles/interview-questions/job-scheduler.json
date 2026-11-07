@@ -251,6 +251,17 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "jobs",
+            "label": "Jobs are kept in order of the time they are due"
+          },
+          {
+            "kind": "role",
+            "role": "scheduler",
+            "behind": "queue",
+            "label": "Due jobs are handed out from a queue to the part that runs them"
           }
         ]
       },
@@ -495,6 +506,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?jobs/[^/]+(/runs)?"
         }
+      ],
+      "decisions": [
+        {
+          "id": "due",
+          "q": "How do you find the jobs due now?",
+          "options": [
+            "Scan every job every second",
+            "Keep jobs indexed by due time and read the next few",
+            "One timer thread per job"
+          ],
+          "answer": 1,
+          "why": "An index by due time makes \"what's next\" a short read however many jobs there are."
+        },
+        {
+          "id": "lease",
+          "q": "A worker dies halfway through a job. What happens?",
+          "options": [
+            "Workers claim jobs with a lease; if a job isn't finished in time, another worker takes it",
+            "The job is lost",
+            "Every job always runs on two workers"
+          ],
+          "answer": 0,
+          "why": "A lease means a crashed worker's job comes back by itself, without running every job twice."
+        },
+        {
+          "id": "idem",
+          "q": "For retries to be safe, a job should be…",
+          "options": [
+            "Fast",
+            "Short",
+            "Idempotent: running it twice has the same effect as once"
+          ],
+          "answer": 2,
+          "why": "With leases and retries, a job can run more than once; making it idempotent makes that harmless."
+        }
       ]
     },
     "hints": [
@@ -579,7 +625,8 @@
           "config": {
             "size": "m5.large",
             "count": 4,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "scheduler"
           }
         },
         {
@@ -590,7 +637,8 @@
           "config": {
             "size": "m5.large",
             "count": 4,
-            "queriesPerRequest": 2
+            "queriesPerRequest": 2,
+            "role": "scheduler"
           }
         },
         {
@@ -600,7 +648,8 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "jobs"
           }
         },
         {
@@ -610,7 +659,8 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "jobs"
           }
         }
       ],
@@ -710,7 +760,8 @@
             "config": {
               "size": "m5.large",
               "count": 4,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -721,7 +772,8 @@
             "config": {
               "size": "m5.large",
               "count": 4,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -731,7 +783,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           },
           {
@@ -741,7 +794,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           }
         ],
@@ -843,7 +897,8 @@
             "config": {
               "size": "m5.large",
               "count": 4,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -854,7 +909,8 @@
             "config": {
               "size": "m5.large",
               "count": 4,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -864,7 +920,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "jobs"
             }
           },
           {
@@ -874,7 +931,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "jobs"
             }
           }
         ],
@@ -976,7 +1034,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           },
           {
@@ -986,7 +1045,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           }
         ],
@@ -1080,7 +1140,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -1091,7 +1152,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 2
+              "queriesPerRequest": 2,
+              "role": "scheduler"
             }
           },
           {
@@ -1101,7 +1163,8 @@
             "y": -1200,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           },
           {
@@ -1111,7 +1174,8 @@
             "y": -1050,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "jobs"
             }
           },
           {
@@ -1429,6 +1493,148 @@
           {
             "from": "work2",
             "to": "db17"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
           }
         ]
       }

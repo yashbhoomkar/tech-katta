@@ -279,6 +279,12 @@
             "kind": "p99",
             "max": 500,
             "label": "p99 under 500 ms"
+          },
+          {
+            "kind": "role",
+            "role": "reservation",
+            "behind": "queue",
+            "label": "Seats are held and confirmed by a part that takes bookings from a line"
           }
         ]
       },
@@ -524,6 +530,41 @@
           "method": "POST",
           "path": "^/(api/)?(v\\d+/)?(orders|bookings|holds)/[^/]+/(pay|confirm|checkout)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "line",
+          "q": "Lakhs of people arrive at 10:00 for 40,000 seats. What do they hit?",
+          "options": [
+            "A waiting room that lets people in at the rate booking can handle",
+            "The booking service, all at once",
+            "Whoever refreshes fastest wins"
+          ],
+          "answer": 0,
+          "why": "The booking service can only confirm so many seats a second. A waiting room is fair and keeps it from falling over."
+        },
+        {
+          "id": "hold",
+          "q": "How is a seat kept while someone pays?",
+          "options": [
+            "Not held: the first payment wins",
+            "Held until the show",
+            "Marked as held with an expiry in one atomic step, and released if not paid in time"
+          ],
+          "answer": 2,
+          "why": "Holding atomically means two people can't pick the same seat, and the expiry returns seats from abandoned payments."
+        },
+        {
+          "id": "once",
+          "q": "What finally stops the same seat being sold twice?",
+          "options": [
+            "A unique rule on (show, seat) or an update that only succeeds if the seat is still free",
+            "Customer support fixes it later",
+            "Nothing: it is rare"
+          ],
+          "answer": 0,
+          "why": "The database itself refuses the second sale, so no bug or race elsewhere can double-sell a seat."
+        }
       ]
     },
     "hints": [
@@ -621,7 +662,8 @@
           "config": {
             "size": "m5.large",
             "count": 3,
-            "queriesPerRequest": 3
+            "queriesPerRequest": 3,
+            "role": "reservation"
           }
         },
         {
@@ -632,7 +674,8 @@
           "config": {
             "size": "m5.large",
             "count": 3,
-            "queriesPerRequest": 3
+            "queriesPerRequest": 3,
+            "role": "reservation"
           }
         },
         {
@@ -765,7 +808,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -776,7 +820,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -911,7 +956,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -922,7 +968,8 @@
             "config": {
               "size": "m5.large",
               "count": 3,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -1174,7 +1221,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -1185,7 +1233,8 @@
             "config": {
               "size": "m5.large",
               "count": 50,
-              "queriesPerRequest": 3
+              "queriesPerRequest": 3,
+              "role": "reservation"
             }
           },
           {
@@ -1671,6 +1720,161 @@
           {
             "from": "work2",
             "to": "db25"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 200000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
           }
         ]
       }

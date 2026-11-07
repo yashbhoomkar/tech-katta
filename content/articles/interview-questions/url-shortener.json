@@ -299,6 +299,11 @@
             "kind": "p99",
             "max": 200,
             "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "role",
+            "role": "kv",
+            "label": "Every redirect looks the short code up in a store built for lookups by key"
           }
         ]
       },
@@ -540,6 +545,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(links/|r/)?(\\{[a-z_]+\\}|:[a-z_]+|<[a-z_]+>|[a-z0-9_]+)$"
         }
+      ],
+      "decisions": [
+        {
+          "id": "codes",
+          "q": "How do you make short codes that never collide?",
+          "options": [
+            "A counter handed out in blocks to each server, written in base 62",
+            "Hash the long URL and keep the first 7 characters",
+            "Pick 7 random characters and hope",
+            "Use the database row id as it is"
+          ],
+          "answer": 0,
+          "why": "Blocks of a counter give every server unique numbers without asking anyone per request, and base 62 keeps them short. A hash can collide and needs a check and retry; a raw id is long and shows how many links exist."
+        },
+        {
+          "id": "redirect",
+          "q": "Which redirect does the short link send?",
+          "options": [
+            "302 (temporary): every click comes back to us, so we can count it and change or expire the link",
+            "301 (permanent): browsers remember it and stop asking us"
+          ],
+          "answer": 0,
+          "why": "A 301 saves traffic, but browsers stop asking, so click counts, edits and expiry stop working. Shorteners that count clicks use 302."
+        },
+        {
+          "id": "reads",
+          "q": "Where are most redirects answered?",
+          "options": [
+            "The database, with an index on the code",
+            "The load balancer",
+            "A cache in front of the store: a few popular links get most clicks"
+          ],
+          "answer": 2,
+          "why": "Clicks follow a steep curve: a small set of links gets most of them, so a cache answers most redirects and the store sees only the misses."
+        }
       ]
     },
     "hints": [
@@ -644,7 +684,8 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "kv"
           }
         }
       ],
@@ -738,7 +779,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "kv"
             }
           }
         ],
@@ -824,7 +866,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "kv"
             }
           }
         ],
@@ -925,7 +968,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "kv"
             }
           }
         ],
@@ -1038,7 +1082,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "kv"
             }
           }
         ],
@@ -1141,6 +1186,126 @@
             "y": 75,
             "config": {
               "size": "cache.r5.large",
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db"
+          },
+          {
+            "from": "cache2",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 35000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
               "onDown": "database"
             }
           },

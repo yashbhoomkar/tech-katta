@@ -242,6 +242,17 @@
             "kind": "p99",
             "max": 300,
             "label": "p99 under 300 ms"
+          },
+          {
+            "kind": "role",
+            "role": "sortedset",
+            "label": "Ranks are read from something that keeps players ordered by score"
+          },
+          {
+            "kind": "role",
+            "role": "aggregator",
+            "behind": "queue",
+            "label": "Score updates are applied at a steady pace, not on the request"
           }
         ]
       },
@@ -472,6 +483,41 @@
           "method": "GET",
           "path": "^/(api/)?(v\\d+/)?(matches/[^/]+/)?(me|rank)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "rank",
+          "q": "The top 10, and my rank among 1 crore players, instantly. How?",
+          "options": [
+            "A sorted set in memory: top players and any rank in log time",
+            "ORDER BY score in the database each time",
+            "Recompute the ranking every night"
+          ],
+          "answer": 0,
+          "why": "Sorting a crore rows per request is far too slow, and nightly ranks are stale. A sorted set keeps the order as scores change."
+        },
+        {
+          "id": "burst",
+          "q": "A match ends and a million scores arrive at once. Then?",
+          "options": [
+            "Queue them; workers apply them at a steady pace",
+            "Write each straight into the sorted set from the API",
+            "Reject them"
+          ],
+          "answer": 0,
+          "why": "The queue absorbs the burst; ranks are a few seconds behind for a moment, and nothing falls over."
+        },
+        {
+          "id": "restart",
+          "q": "The in-memory store restarts. What about the rankings?",
+          "options": [
+            "Lost for good",
+            "Players enter their scores again",
+            "Rebuilt from the scores kept in the database"
+          ],
+          "answer": 2,
+          "why": "Memory is fast but not the record. The database keeps every score, so the sorted set can be rebuilt."
+        }
       ]
     },
     "hints": [
@@ -556,7 +602,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 9,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "aggregator"
           }
         },
         {
@@ -567,7 +614,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 9,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "aggregator"
           }
         },
         {
@@ -579,7 +627,8 @@
             "size": "cache.m5.large",
             "hitPct": 90,
             "writePct": 40,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "sortedset"
           }
         },
         {
@@ -591,7 +640,8 @@
             "size": "cache.m5.large",
             "hitPct": 90,
             "writePct": 40,
-            "onDown": "database"
+            "onDown": "database",
+            "role": "sortedset"
           }
         },
         {
@@ -745,7 +795,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -756,7 +807,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -768,7 +820,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -780,7 +833,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -936,7 +990,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -947,7 +1002,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -959,7 +1015,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -971,7 +1028,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -1129,7 +1187,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -1141,7 +1200,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -1332,7 +1392,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -1343,7 +1404,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "aggregator"
             }
           },
           {
@@ -1355,7 +1417,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -1367,7 +1430,8 @@
               "size": "cache.m5.large",
               "hitPct": 90,
               "writePct": 40,
-              "onDown": "database"
+              "onDown": "database",
+              "role": "sortedset"
             }
           },
           {
@@ -2299,6 +2363,206 @@
           {
             "from": "cache9",
             "to": "db16"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 40000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 40,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 40,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1440,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "cache1"
+          },
+          {
+            "from": "work1",
+            "to": "cache2"
+          },
+          {
+            "from": "work2",
+            "to": "cache1"
+          },
+          {
+            "from": "work2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache1",
+            "to": "db3"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db3"
           }
         ]
       }

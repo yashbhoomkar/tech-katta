@@ -473,9 +473,9 @@ test('a problem submitted while signed in is judged again on the server and coun
   assert.equal(r.status, 200);
   let j = await r.json();
   assert.equal(j.verdict, 'failed'); assert.equal(j.score, 0); assert.equal(j.submissions, 1); assert.equal(j.accepted, 0);
-  r = await submit({ slug: 'url-shortener', design: a.practice.reference, answer: { fr: 'shorten, redirect, custom alias, expiry, count clicks' }, hints: 1 });
+  r = await submit({ slug: 'url-shortener', design: a.practice.reference, answer: { fr: 'shorten, redirect, custom alias, expiry, count clicks', decisions: { ...Object.fromEntries(a.practice.rubric.decisions.map((x) => [x.id, x.answer])), junk: 'x', bad: 99 } }, hints: 1 });
   j = await r.json();
-  assert.equal(j.verdict, 'accepted'); assert.equal(j.passed, j.total); assert.equal(j.score, 12 + 50 - 3); assert.equal(j.accepted, 1); assert.equal(j.cheaperThan, null);
+  assert.equal(j.verdict, 'accepted'); assert.equal(j.passed, j.total); assert.equal(j.score, 10 + 15 + 50 - 3); // functional requirements, key decisions, design, one hint assert.equal(j.accepted, 1); assert.equal(j.cheaperThan, null);
   // a pricier accepted design: the reference is now cheaper than 100% of the others
   const pricey = structuredClone(a.practice.reference); pricey.nodes.find((n) => n.id === 'app1').config.count = 20;
   j = await (await submit({ slug: 'url-shortener', design: pricey, answer: {} })).json();

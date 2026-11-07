@@ -255,6 +255,22 @@
             "kind": "p99",
             "max": 200,
             "label": "p99 under 200 ms"
+          },
+          {
+            "kind": "role",
+            "role": "websocket",
+            "label": "Everyone in a document gets others' edits over connections that stay open"
+          },
+          {
+            "kind": "role",
+            "role": "sync",
+            "behind": "queue",
+            "label": "Edits are merged in order by a part that takes them from a queue"
+          },
+          {
+            "kind": "role",
+            "role": "oplog",
+            "label": "Edits are stored in order so the document can be replayed"
           }
         ]
       },
@@ -495,6 +511,41 @@
           "method": "POST|PATCH",
           "path": "^/(api/)?(v\\d+/)?(docs|documents)/[^/]+/(edits|ops|operations)"
         }
+      ],
+      "decisions": [
+        {
+          "id": "merge",
+          "q": "Two people type in the same paragraph at once. What happens?",
+          "options": [
+            "Lock the paragraph for one person",
+            "Operational transforms or CRDTs merge both edits the same way on every device",
+            "The last save wins"
+          ],
+          "answer": 1,
+          "why": "Locks get in the way of writing together and \"last save wins\" loses work. OT and CRDTs make every copy end up the same with both edits kept."
+        },
+        {
+          "id": "store",
+          "q": "How is a document stored?",
+          "options": [
+            "Every edit is added to a log, with a snapshot now and then",
+            "The whole document on every keystroke",
+            "Only when someone presses Save"
+          ],
+          "answer": 0,
+          "why": "Small edits are cheap to add and keep history; snapshots mean nobody replays a year of edits to open the document."
+        },
+        {
+          "id": "live",
+          "q": "How do other people's cursors and edits appear?",
+          "options": [
+            "Pushed over open connections to everyone in the document",
+            "Each app asks every 10 seconds",
+            "By email"
+          ],
+          "answer": 0,
+          "why": "Writing together only feels live if edits arrive within a fraction of a second."
+        }
       ]
     },
     "hints": [
@@ -550,7 +601,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 18,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "websocket"
           }
         },
         {
@@ -561,7 +613,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 18,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "websocket"
           }
         },
         {
@@ -579,7 +632,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 9,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "sync"
           }
         },
         {
@@ -590,7 +644,8 @@
           "config": {
             "size": "c5.2xlarge",
             "count": 9,
-            "queriesPerRequest": 1
+            "queriesPerRequest": 1,
+            "role": "sync"
           }
         },
         {
@@ -600,7 +655,8 @@
           "y": -450,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -610,7 +666,8 @@
           "y": -300,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -620,7 +677,8 @@
           "y": -150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -630,7 +688,8 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -640,7 +699,8 @@
           "y": 150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -650,7 +710,8 @@
           "y": 300,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         },
         {
@@ -660,7 +721,8 @@
           "y": 450,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "role": "oplog"
           }
         }
       ],
@@ -782,7 +844,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 18,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -800,7 +863,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -811,7 +875,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -821,7 +886,8 @@
             "y": -450,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -831,7 +897,8 @@
             "y": -300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -841,7 +908,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -851,7 +919,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -861,7 +930,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -871,7 +941,8 @@
             "y": 300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -881,7 +952,8 @@
             "y": 450,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           }
         ],
@@ -994,7 +1066,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 18,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1005,7 +1078,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 18,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1023,7 +1097,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -1034,7 +1109,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 9,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -1044,7 +1120,8 @@
             "y": -450,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1054,7 +1131,8 @@
             "y": -300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1064,7 +1142,8 @@
             "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1074,7 +1153,8 @@
             "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1084,7 +1164,8 @@
             "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1094,7 +1175,8 @@
             "y": 300,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           },
           {
@@ -1104,7 +1186,8 @@
             "y": 450,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": false
+              "multiAz": false,
+              "role": "oplog"
             }
           }
         ],
@@ -1225,7 +1308,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 18,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1236,7 +1320,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 18,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1246,7 +1331,8 @@
             "y": -375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1256,7 +1342,8 @@
             "y": -225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1266,7 +1353,8 @@
             "y": -75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1276,7 +1364,8 @@
             "y": 75,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1286,7 +1375,8 @@
             "y": 225,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1296,7 +1386,8 @@
             "y": 375,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           }
         ],
@@ -1393,7 +1484,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1404,7 +1496,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "websocket"
             }
           },
           {
@@ -1433,7 +1526,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -1444,7 +1538,8 @@
             "config": {
               "size": "c5.2xlarge",
               "count": 50,
-              "queriesPerRequest": 1
+              "queriesPerRequest": 1,
+              "role": "sync"
             }
           },
           {
@@ -1454,7 +1549,8 @@
             "y": -2550,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1464,7 +1560,8 @@
             "y": -2400,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1474,7 +1571,8 @@
             "y": -2250,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1484,7 +1582,8 @@
             "y": -2100,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1494,7 +1593,8 @@
             "y": -1950,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1504,7 +1604,8 @@
             "y": -1800,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -1514,7 +1615,8 @@
             "y": -1650,
             "config": {
               "size": "db.r5.2xlarge",
-              "multiAz": true
+              "multiAz": true,
+              "role": "oplog"
             }
           },
           {
@@ -2114,6 +2216,238 @@
           {
             "from": "work2",
             "to": "db35"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "normal",
+        "general": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 40000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 18,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 18,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": 300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          },
+          {
+            "id": "db7",
+            "type": "database",
+            "x": 1200,
+            "y": 450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work1",
+            "to": "db7"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db7"
           }
         ]
       }

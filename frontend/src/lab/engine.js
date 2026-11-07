@@ -38,6 +38,10 @@
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
 //     more than they can handle, so a queue protects them from spikes; users never wait on them.
 //
+// Roles (optional catalogue field `roles` on Server, Database, Cache and Queue; design `role`): the
+//   job a component does in the design (Geo index, WebSocket gateway, Sorted set…). A role is a name
+//   the judge can look for on the request path; it does not change any number here.
+//
 // Read replicas (optional catalogue fields `replicas` and `writePct` on Database; design `replicas`
 //   0–5, `writePct` the share of the queries reaching it that are writes): every replica is a copy of
 //   the same size. Writes all go to the primary; reads are spread evenly over the primary and the
@@ -136,6 +140,8 @@ export function cacheFlow(comp, config, warm = 1) {
   return { w, readMiss: (1 - w) * (1 - h), hit: h, back: choice(comp, config, 'writePolicy') === 'back', fallThrough: choice(comp, config, 'onDown') === 'database' };
 }
 // Read replicas of a database (0 without the catalogue field) and the share of its queries that are writes.
+// The role a component has been given ({id, label, desc}), or null.
+export const roleOf = (comp, config) => (config?.role && comp?.roles?.find((r) => r.id === config.role)) || null;
 export const replicasOf = (comp, config) => (comp?.replicas ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
 const dbWrites = (comp, config) => (comp?.writePct ? pct(comp, config, 'writePct') / 100 : 1);
 const qpr = (comp, config) => comp.queriesPerRequest ? (config?.queriesPerRequest ?? comp.queriesPerRequest.default) : 1;
