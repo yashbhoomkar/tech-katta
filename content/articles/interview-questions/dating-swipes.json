@@ -422,6 +422,41 @@
             "label": "Costs at most $45,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-swipe",
+        "name": "Swipe right",
+        "sample": true,
+        "async": true,
+        "desc": "u1 likes u2. Matching can run a moment later.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/swipes",
+          "body": {
+            "swiper_id": "u1",
+            "target_id": "u2",
+            "liked": true
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "swipes",
+            "values": {
+              "swiper_id": "u1",
+              "target_id": "u2",
+              "liked": true,
+              "swiped_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "recorded": true
+          }
+        }
       }
     ],
     "rubric": {
@@ -660,7 +695,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -671,7 +735,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -682,7 +775,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -693,7 +815,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -704,7 +855,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -715,7 +895,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -726,7 +935,36 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "swipes",
+                  "fields": [
+                    {
+                      "name": "swiper_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "target_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "liked",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "swiped_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "swiper_id",
+                    "target_id"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -3058,7 +3296,483 @@
             "to": "db7"
           }
         ]
+      },
+      {
+        "name": "Swipes without who was swiped",
+        "why": "A swipe is stored without the person it was about, so a match can never be found.",
+        "fails": "api-swipe",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 20000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "queriesPerRequest": 2,
+              "role": "matcher"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 5,
+              "queriesPerRequest": 2,
+              "role": "matcher"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": 300,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db7",
+            "type": "database",
+            "x": 1200,
+            "y": 450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "swipes",
+                    "fields": [
+                      {
+                        "name": "swipe_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "swiper_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "liked",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "swiped_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "swipe_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work1",
+            "to": "db7"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db7"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "swiper_id",
+        "target_id",
+        "liked",
+        "swiped_at"
+      ],
+      "aliases": {
+        "swiper_id": [
+          "user_id",
+          "from_id",
+          "from_user"
+        ],
+        "target_id": [
+          "other_id",
+          "to_id",
+          "profile_id",
+          "to_user"
+        ],
+        "liked": [
+          "like",
+          "right",
+          "is_like"
+        ]
+      },
+      "entities": {
+        "swipes": {
+          "rows": 100000000000,
+          "sample": [
+            {
+              "swiper_id": "u2",
+              "target_id": "u1",
+              "liked": true,
+              "swiped_at": "2026-11-07T09:00:00Z"
+            }
+          ]
+        }
+      }
+    }
   }
 }

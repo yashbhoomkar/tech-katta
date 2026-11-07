@@ -402,6 +402,42 @@
             "label": "Costs at most $25,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-click",
+        "name": "Count a click",
+        "sample": true,
+        "async": true,
+        "desc": "A click on ad9 at 10:01 adds one to that minute's count.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/clicks",
+          "body": {
+            "click_id": "k1",
+            "ad_id": "ad9",
+            "at": "2026-11-07T10:01:12Z"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "click_counts",
+            "by": {
+              "ad_id": "ad9",
+              "minute": "2026-11-07T10:01"
+            },
+            "add": {
+              "clicks": 1
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "counted": true
+          }
+        }
       }
     ],
     "rubric": {
@@ -638,7 +674,32 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "timeseries"
+            "role": "timeseries",
+            "schema": {
+              "tables": [
+                {
+                  "name": "click_counts",
+                  "fields": [
+                    {
+                      "name": "ad_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "minute",
+                      "type": "string"
+                    },
+                    {
+                      "name": "clicks",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "ad_id",
+                    "minute"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -649,7 +710,32 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "timeseries"
+            "role": "timeseries",
+            "schema": {
+              "tables": [
+                {
+                  "name": "click_counts",
+                  "fields": [
+                    {
+                      "name": "ad_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "minute",
+                      "type": "string"
+                    },
+                    {
+                      "name": "clicks",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "ad_id",
+                    "minute"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -660,7 +746,32 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "timeseries"
+            "role": "timeseries",
+            "schema": {
+              "tables": [
+                {
+                  "name": "click_counts",
+                  "fields": [
+                    {
+                      "name": "ad_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "minute",
+                      "type": "string"
+                    },
+                    {
+                      "name": "clicks",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "ad_id",
+                    "minute"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -2070,7 +2181,291 @@
             "to": "db3"
           }
         ]
+      },
+      {
+        "name": "One row per click",
+        "why": "Clicks are stored one row each, keyed by click: adding to a minute's count means searching 100 crore rows.",
+        "fails": "api-click",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 15000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "role": "log"
+            }
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1,
+              "role": "aggregator"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1,
+              "role": "aggregator"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "timeseries",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "click_counts",
+                    "fields": [
+                      {
+                        "name": "click_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ad_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "minute",
+                        "type": "string"
+                      },
+                      {
+                        "name": "clicks",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "click_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "timeseries",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "click_counts",
+                    "fields": [
+                      {
+                        "name": "click_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ad_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "minute",
+                        "type": "string"
+                      },
+                      {
+                        "name": "clicks",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "click_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "timeseries",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "click_counts",
+                    "fields": [
+                      {
+                        "name": "click_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ad_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "minute",
+                        "type": "string"
+                      },
+                      {
+                        "name": "clicks",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "click_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "ad_id",
+        "minute",
+        "clicks"
+      ],
+      "aliases": {
+        "minute": [
+          "bucket",
+          "window",
+          "time",
+          "ts",
+          "minute_bucket"
+        ],
+        "clicks": [
+          "count",
+          "total",
+          "click_count"
+        ]
+      },
+      "entities": {
+        "click_counts": {
+          "rows": 1000000000,
+          "sample": [
+            {
+              "ad_id": "ad9",
+              "minute": "2026-11-07T10:01",
+              "clicks": 30
+            }
+          ]
+        }
+      }
+    }
   }
 }

@@ -399,6 +399,44 @@
             "label": "Costs at most $8,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-submit",
+        "name": "Submit a solution",
+        "sample": true,
+        "async": true,
+        "desc": "u1 submits Python code for \"two-sum\"; judging follows.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "body": {
+            "problem_id": "two-sum",
+            "language": "python",
+            "code": "print(1)"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "submissions",
+            "values": {
+              "submission_id": "sub1",
+              "problem_id": "two-sum",
+              "user_id": "u1",
+              "language": "python",
+              "code": "print(1)",
+              "status": "queued"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "submission_id": "$s1.submission_id",
+            "status": "$s1.status"
+          }
+        }
       }
     ],
     "rubric": {
@@ -638,7 +676,51 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "submissions",
+                  "fields": [
+                    {
+                      "name": "submission_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "problem_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "language",
+                      "type": "string"
+                    },
+                    {
+                      "name": "code",
+                      "type": "text"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "submission_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1527,7 +1609,188 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "Submissions without the code",
+        "why": "The submitted code isn't stored, so the runners have nothing to run.",
+        "fails": "api-submit",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 2500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 2,
+              "role": "sandbox"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 2,
+              "role": "sandbox"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "submission_id",
+        "problem_id",
+        "user_id",
+        "language",
+        "code",
+        "status"
+      ],
+      "aliases": {
+        "code": [
+          "source",
+          "program",
+          "solution",
+          "source_code"
+        ],
+        "language": [
+          "lang"
+        ]
+      },
+      "entities": {
+        "submissions": {
+          "rows": 1000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

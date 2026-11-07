@@ -427,6 +427,49 @@
             "label": "Costs at most $30,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-hold",
+        "name": "Hold seat N-12",
+        "sample": true,
+        "async": true,
+        "desc": "u1 holds a free seat for 10 minutes; only one person can get it.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/shows/ipl-final/holds",
+          "body": {
+            "seat_id": "N-12",
+            "user_id": "u1"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "seats",
+            "by": {
+              "show_id": "ipl-final",
+              "seat_id": "N-12"
+            },
+            "set": {
+              "status": "held",
+              "held_by": "u1",
+              "hold_until": "2026-11-07T10:10:00Z"
+            },
+            "cond": {
+              "status": {
+                "eq": "free"
+              }
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "seat_id": "N-12",
+            "held": true
+          }
+        }
       }
     ],
     "rubric": {
@@ -685,7 +728,40 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "seats",
+                  "fields": [
+                    {
+                      "name": "show_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "seat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "held_by",
+                      "type": "string"
+                    },
+                    {
+                      "name": "hold_until",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "show_id",
+                    "seat_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -695,7 +771,40 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "seats",
+                  "fields": [
+                    {
+                      "name": "show_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "seat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "held_by",
+                      "type": "string"
+                    },
+                    {
+                      "name": "hold_until",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "show_id",
+                    "seat_id"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1877,7 +1986,248 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Seats without who holds them",
+        "why": "A held seat doesn't record who holds it or until when, so it can never be given back.",
+        "fails": "api-hold",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 200000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 960,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3,
+              "role": "reservation"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3,
+              "role": "reservation"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "seats",
+                    "fields": [
+                      {
+                        "name": "show_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seat_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "show_id",
+                      "seat_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "seats",
+                    "fields": [
+                      {
+                        "name": "show_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seat_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "show_id",
+                      "seat_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "show_id",
+        "seat_id",
+        "status",
+        "held_by",
+        "hold_until"
+      ],
+      "aliases": {
+        "status": [
+          "state",
+          "seat_status"
+        ],
+        "held_by": [
+          "user_id",
+          "holder",
+          "held_for"
+        ]
+      },
+      "entities": {
+        "seats": {
+          "rows": 10000000,
+          "sample": [
+            {
+              "show_id": "ipl-final",
+              "seat_id": "N-12",
+              "status": "free",
+              "held_by": null,
+              "hold_until": null
+            }
+          ]
+        }
+      }
+    }
   }
 }

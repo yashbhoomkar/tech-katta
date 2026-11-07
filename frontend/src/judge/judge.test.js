@@ -20,6 +20,11 @@ for(const a of problems){
     const t=a.practice.tests.find(x=>x.id===w.fails);const r=runTest(w,lab,a.practice,t);
     assert.equal(r.ok,false,`${w.name} passed ${w.fails}`);
   });
+  test(`${a.slug}: has request tests (one shown), and a wrong design fails one`,()=>{
+    const rq=a.practice.tests.filter(t=>t.request);
+    assert.ok(rq.length>0&&rq.some(t=>t.sample),"request tests with a sample");
+    assert.ok(a.practice.wrong.some(w=>rq.some(t=>t.id===w.fails)),"a wrong design that fails a request test");
+  });
   test(`${a.slug}: the starting design is not accepted`,()=>{assert.notEqual(judge(a.practice.start,lab,a.practice).verdict,"accepted")});
   test(`${a.slug}: the reference's own answers grade fully`,()=>{
     const r=a.practice.rubric;const g=gradeAnswer({fr:r.fr.map(x=>x.keys[0]).join(". "),nfr:Object.fromEntries(Object.entries(r.nfr||{}).map(([k,v])=>[k,Array.isArray(v)?String(v[0]):v])),est:Object.fromEntries(r.est.map(x=>[x.id,String(x.answer)])),api:[],decisions:Object.fromEntries(r.decisions.map(x=>[x.id,x.answer]))},r);

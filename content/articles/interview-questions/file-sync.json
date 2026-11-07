@@ -468,6 +468,72 @@
             "label": "Costs at most $9,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-chunk",
+        "name": "Upload a changed chunk",
+        "sample": true,
+        "async": true,
+        "desc": "Only the changed 4 MB chunk of a file is sent.",
+        "request": {
+          "method": "PUT",
+          "path": "/v1/chunks/9f2c"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "put",
+            "entity": "chunks",
+            "key": {
+              "chunk_hash": "9f2c"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "stored": true
+          }
+        }
+      },
+      {
+        "id": "api-commit",
+        "name": "Commit the new version",
+        "async": true,
+        "desc": "The file's new version is recorded.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/files/f1/versions",
+          "body": {
+            "version": 3,
+            "chunks": [
+              "9f2c"
+            ]
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "files",
+            "values": {
+              "file_id": "f1",
+              "version": 3,
+              "path": "/notes.txt",
+              "owner_id": "u1",
+              "updated_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "version": "$s1.version"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -716,7 +782,40 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "files",
+                  "fields": [
+                    {
+                      "name": "file_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "path",
+                      "type": "string"
+                    },
+                    {
+                      "name": "owner_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "file_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -725,9 +824,28 @@
           "x": 1200,
           "y": 75,
           "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "objects"
+            "role": "objects",
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "chunks",
+                  "fields": [
+                    {
+                      "name": "chunk_hash",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "chunk_hash"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1844,7 +1962,236 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Chunks in the database",
+        "why": "File chunks are stored as database rows instead of in object storage.",
+        "fails": "api-chunk",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1500,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 2,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3,
+              "role": "sync"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "queriesPerRequest": 3,
+              "role": "sync"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "files",
+                    "fields": [
+                      {
+                        "name": "file_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "path",
+                        "type": "string"
+                      },
+                      {
+                        "name": "owner_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "updated_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "file_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "role": "objects",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "chunks",
+                    "fields": [
+                      {
+                        "name": "chunk_hash",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "chunk_hash"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "file_id",
+        "version",
+        "path",
+        "owner_id",
+        "updated_at",
+        "chunk_hash",
+        "bytes"
+      ],
+      "aliases": {
+        "chunk_hash": [
+          "hash",
+          "chunk_id",
+          "sha"
+        ],
+        "bytes": [
+          "data",
+          "content",
+          "file"
+        ]
+      },
+      "entities": {
+        "files": {
+          "rows": 10000000000,
+          "sample": []
+        },
+        "chunks": {
+          "rows": 100000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

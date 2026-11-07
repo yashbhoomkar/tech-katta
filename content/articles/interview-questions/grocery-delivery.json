@@ -429,6 +429,96 @@
             "label": "Costs at most $15,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-stock",
+        "name": "Is milk in stock?",
+        "sample": true,
+        "desc": "The app shows how much milk the nearest store has.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/stores/s1/stock/milk"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "stock",
+            "by": {
+              "store_id": "s1",
+              "item_id": "milk"
+            },
+            "fields": [
+              "qty"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "item_id": "milk",
+            "qty": "$s1.qty"
+          }
+        }
+      },
+      {
+        "id": "api-hold",
+        "name": "Hold two milks while paying",
+        "sample": true,
+        "desc": "Taking stock and recording the hold must happen together, and only if enough is left.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/holds",
+          "body": {
+            "store_id": "s1",
+            "item_id": "milk",
+            "qty": 2
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "tx",
+            "steps": [
+              {
+                "id": "a",
+                "op": "update",
+                "entity": "stock",
+                "by": {
+                  "store_id": "s1",
+                  "item_id": "milk"
+                },
+                "add": {
+                  "qty": -2
+                },
+                "cond": {
+                  "qty": {
+                    "gte": 2
+                  }
+                }
+              },
+              {
+                "id": "b",
+                "op": "put",
+                "entity": "holds",
+                "values": {
+                  "hold_id": "h1",
+                  "store_id": "s1",
+                  "item_id": "milk",
+                  "qty": 2,
+                  "expires_at": "2026-11-07T10:10:00Z"
+                }
+              }
+            ]
+          }
+        ],
+        "respond": {
+          "status": 201,
+          "body": {
+            "hold_id": "h1",
+            "held": "$s1.ok"
+          }
+        }
       }
     ],
     "rubric": {
@@ -669,7 +759,60 @@
           "y": -75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "stock",
+                  "fields": [
+                    {
+                      "name": "store_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "item_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "qty",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "store_id",
+                    "item_id"
+                  ]
+                },
+                {
+                  "name": "holds",
+                  "fields": [
+                    {
+                      "name": "hold_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "store_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "item_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "qty",
+                      "type": "int"
+                    },
+                    {
+                      "name": "expires_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "hold_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -679,7 +822,60 @@
           "y": 75,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "stock",
+                  "fields": [
+                    {
+                      "name": "store_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "item_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "qty",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "store_id",
+                    "item_id"
+                  ]
+                },
+                {
+                  "name": "holds",
+                  "fields": [
+                    {
+                      "name": "hold_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "store_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "item_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "qty",
+                      "type": "int"
+                    },
+                    {
+                      "name": "expires_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "hold_id"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1336,7 +1532,241 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Stock and holds in different databases",
+        "why": "Stock lives in one database and holds in another, so taking stock and recording the hold can't be one transaction: a crash between them loses milk or holds nothing.",
+        "fails": "api-hold",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 10000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 85,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "holds"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 85,
+              "writePct": 5,
+              "onDown": "database",
+              "role": "holds"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "stock",
+                    "fields": [
+                      {
+                        "name": "store_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "item_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "qty",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "store_id",
+                      "item_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "holds",
+                    "fields": [
+                      {
+                        "name": "hold_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "store_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "item_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "qty",
+                        "type": "int"
+                      },
+                      {
+                        "name": "expires_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "hold_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "store_id",
+        "item_id",
+        "qty",
+        "hold_id",
+        "expires_at"
+      ],
+      "aliases": {
+        "qty": [
+          "quantity",
+          "stock",
+          "count",
+          "available"
+        ]
+      },
+      "entities": {
+        "stock": {
+          "rows": 5000000,
+          "sample": [
+            {
+              "store_id": "s1",
+              "item_id": "milk",
+              "qty": 12
+            },
+            {
+              "store_id": "s1",
+              "item_id": "bread",
+              "qty": 0
+            }
+          ]
+        },
+        "holds": {
+          "rows": 1000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

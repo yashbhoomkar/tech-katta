@@ -391,6 +391,74 @@
             "label": "Costs at most $35,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-put",
+        "name": "Put a value",
+        "sample": true,
+        "desc": "A client stores a value under a key.",
+        "request": {
+          "method": "PUT",
+          "path": "/v1/kv/cart:9",
+          "body": {
+            "value": {
+              "items": 2
+            }
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "items",
+            "values": {
+              "key": "cart:9",
+              "value": {
+                "items": 2
+              },
+              "version": 1,
+              "updated_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "key": "cart:9",
+            "version": "$s1.version"
+          }
+        }
+      },
+      {
+        "id": "api-get",
+        "name": "Get a value",
+        "sample": true,
+        "desc": "A client reads the value stored under a key.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/kv/user:42"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "items",
+            "by": {
+              "key": "user:42"
+            },
+            "fields": [
+              "value",
+              "version"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "value": "$s1.value",
+            "version": "$s1.version"
+          }
+        }
       }
     ],
     "rubric": {
@@ -657,7 +725,35 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "kv"
+            "role": "kv",
+            "schema": {
+              "tables": [
+                {
+                  "name": "items",
+                  "fields": [
+                    {
+                      "name": "key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "value",
+                      "type": "json"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "key"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -668,7 +764,35 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "kv"
+            "role": "kv",
+            "schema": {
+              "tables": [
+                {
+                  "name": "items",
+                  "fields": [
+                    {
+                      "name": "key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "value",
+                      "type": "json"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "key"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -679,7 +803,35 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "kv"
+            "role": "kv",
+            "schema": {
+              "tables": [
+                {
+                  "name": "items",
+                  "fields": [
+                    {
+                      "name": "key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "value",
+                      "type": "json"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "key"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -690,7 +842,35 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "kv"
+            "role": "kv",
+            "schema": {
+              "tables": [
+                {
+                  "name": "items",
+                  "fields": [
+                    {
+                      "name": "key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "value",
+                      "type": "json"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "key"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1999,7 +2179,422 @@
             "to": "db4"
           }
         ]
+      },
+      {
+        "name": "Values found by scanning",
+        "why": "Items are keyed by a running id, so reading a key means searching 1,000 crore items.",
+        "fails": "api-get",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 60000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb1",
+            "type": "lb",
+            "x": 240,
+            "y": -75,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 75,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 27,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 27,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -225,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache3",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache4",
+            "type": "cache",
+            "x": 720,
+            "y": 225,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 10,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": -225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "items",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "value",
+                        "type": "json"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "items",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "value",
+                        "type": "json"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "items",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "value",
+                        "type": "json"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 960,
+            "y": 225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "items",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "value",
+                        "type": "json"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb1"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb1",
+            "to": "app1"
+          },
+          {
+            "from": "lb2",
+            "to": "app1"
+          },
+          {
+            "from": "lb1",
+            "to": "app2"
+          },
+          {
+            "from": "lb2",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app1",
+            "to": "cache3"
+          },
+          {
+            "from": "app1",
+            "to": "cache4"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache3"
+          },
+          {
+            "from": "app2",
+            "to": "cache4"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache1",
+            "to": "db3"
+          },
+          {
+            "from": "cache1",
+            "to": "db4"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db3"
+          },
+          {
+            "from": "cache2",
+            "to": "db4"
+          },
+          {
+            "from": "cache3",
+            "to": "db1"
+          },
+          {
+            "from": "cache3",
+            "to": "db2"
+          },
+          {
+            "from": "cache3",
+            "to": "db3"
+          },
+          {
+            "from": "cache3",
+            "to": "db4"
+          },
+          {
+            "from": "cache4",
+            "to": "db1"
+          },
+          {
+            "from": "cache4",
+            "to": "db2"
+          },
+          {
+            "from": "cache4",
+            "to": "db3"
+          },
+          {
+            "from": "cache4",
+            "to": "db4"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "key",
+        "value",
+        "version",
+        "updated_at"
+      ],
+      "aliases": {
+        "key": [
+          "k",
+          "item_key",
+          "kv_key"
+        ],
+        "value": [
+          "val",
+          "data",
+          "blob_value"
+        ]
+      },
+      "entities": {
+        "items": {
+          "rows": 10000000000,
+          "sample": [
+            {
+              "key": "user:42",
+              "value": {
+                "name": "Asha"
+              },
+              "version": 3,
+              "updated_at": "2026-11-06T10:00:00Z"
+            }
+          ]
+        }
+      }
+    }
   }
 }

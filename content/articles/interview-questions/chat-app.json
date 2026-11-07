@@ -398,6 +398,41 @@
             "label": "Costs at most $35,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-send",
+        "name": "Send a message",
+        "sample": true,
+        "async": true,
+        "desc": "u1 sends \"hi\" in chat c1. Delivery and storage can happen just after the reply.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/chats/c1/messages",
+          "body": {
+            "sender_id": "u1",
+            "text": "hi"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "messages",
+            "values": {
+              "chat_id": "c1",
+              "message_id": "m1",
+              "sender_id": "u1",
+              "text": "hi",
+              "sent_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "message_id": "$s1.message_id"
+          }
+        }
       }
     ],
     "rubric": {
@@ -646,7 +681,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -657,7 +725,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -668,7 +769,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -679,7 +813,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -690,7 +857,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -701,7 +901,40 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "wide"
+            "role": "wide",
+            "schema": {
+              "tables": [
+                {
+                  "name": "messages",
+                  "fields": [
+                    {
+                      "name": "chat_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "message_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sender_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "chat_id",
+                    "message_id"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -2950,7 +3183,424 @@
             "to": "db6"
           }
         ]
+      },
+      {
+        "name": "Messages without their chat",
+        "why": "Messages are stored without the chat they belong to, so a chat's history can't be found.",
+        "fails": "api-send",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 15000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 2,
+              "role": "websocket"
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 7,
+              "queriesPerRequest": 2,
+              "role": "websocket"
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -375,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": -225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db4",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db5",
+            "type": "database",
+            "x": 1200,
+            "y": 225,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db6",
+            "type": "database",
+            "x": 1200,
+            "y": 375,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "messages",
+                    "fields": [
+                      {
+                        "name": "message_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sender_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "message_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work1",
+            "to": "db3"
+          },
+          {
+            "from": "work1",
+            "to": "db4"
+          },
+          {
+            "from": "work1",
+            "to": "db5"
+          },
+          {
+            "from": "work1",
+            "to": "db6"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db3"
+          },
+          {
+            "from": "work2",
+            "to": "db4"
+          },
+          {
+            "from": "work2",
+            "to": "db5"
+          },
+          {
+            "from": "work2",
+            "to": "db6"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "chat_id",
+        "message_id",
+        "sender_id",
+        "text",
+        "sent_at"
+      ],
+      "aliases": {
+        "chat_id": [
+          "conversation_id",
+          "room_id",
+          "thread_id"
+        ],
+        "text": [
+          "body",
+          "content",
+          "message"
+        ]
+      },
+      "entities": {
+        "messages": {
+          "rows": 500000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

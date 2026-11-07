@@ -62,3 +62,14 @@
 .sv-dec{border:1px solid var(--line);margin:12px 0 0;padding:10px 12px 12px;min-width:0}.sv-dec legend{font-size:14.5px;font-weight:600;line-height:1.4;padding:0 4px}.sv-dec legend i{margin-right:6px}
 .sv-dec label{display:flex;gap:8px;align-items:flex-start;padding:6px 4px;font-size:14px;line-height:1.4;cursor:pointer}.sv-dec input{margin-top:3px;flex:0 0 auto}
 .sv-dec label.right{background:#eefaf2}.sv-dec label.wrong{background:#fdf0f0}.sv-why{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--blue);background:#f8faff;font-size:13.5px;line-height:1.5}
+/* Request tests: JSON in and out, and the player that follows a request through the design */
+.sv-io{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0}
+.sv-json{margin:0;border:1px solid var(--line);background:#fafbfc;min-width:0}.sv-json figcaption{font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:#5a6672;padding:6px 8px;border-bottom:1px solid var(--line)}
+.sv-json pre,.sv-hop pre{margin:0;padding:8px;font:12px/1.45 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}.sv-json.bad{border-color:#e3a3a3;background:#fff7f7}
+.sv-watch{margin:2px 0 6px;border:1px solid var(--blue);background:#fff;color:var(--blue);font-family:inherit;font-weight:600;font-size:13px;padding:6px 10px;cursor:pointer}.sv-watch:hover{background:#eef3ff}
+.sv-player .sv-vbtns button:disabled{opacity:.35;cursor:default}
+.sv-trace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;padding:10px 12px;max-height:calc(42vh - 56px);overflow:auto}
+.sv-trace ol{margin:0;padding-left:20px;font-size:13px;line-height:1.35}.sv-trace li{margin:2px 0;color:#5a6672}.sv-trace li.done{color:#1c2733}.sv-trace li.on{color:var(--blue);font-weight:600}
+.sv-trace li button{background:none;border:0;padding:2px 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sv-hop{border:1px solid var(--line);background:#fafbfc;min-width:0}.sv-hop>b{display:block;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}.sv-hop p{margin:8px}.sv-whyline{color:#b42318;font-size:13px}
+@media (max-width:700px){.sv-trace{grid-template-columns:1fr}}

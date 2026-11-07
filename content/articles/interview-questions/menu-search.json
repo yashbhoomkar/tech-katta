@@ -401,6 +401,85 @@
             "label": "Costs at most $2,500 a month"
           }
         ]
+      },
+      {
+        "id": "api-search",
+        "name": "Search \"paneer roll\" in Mumbai",
+        "sample": true,
+        "desc": "Dishes in Mumbai with both words, cheapest first.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/search?q=paneer+roll&city=mumbai"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "dishes",
+            "where": {
+              "city": "mumbai"
+            },
+            "text": {
+              "field": "name",
+              "q": "paneer roll"
+            },
+            "order": {
+              "field": "price"
+            },
+            "limit": 10,
+            "fields": [
+              "dish_id",
+              "name",
+              "price"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "results": "$s1"
+          }
+        }
+      },
+      {
+        "id": "api-search-veg",
+        "name": "Veg rolls only",
+        "desc": "The same search with the veg filter.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/search?q=roll&city=mumbai&veg=true"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "dishes",
+            "where": {
+              "city": "mumbai",
+              "veg": true
+            },
+            "text": {
+              "field": "name",
+              "q": "roll"
+            },
+            "order": {
+              "field": "price"
+            },
+            "limit": 10,
+            "fields": [
+              "dish_id",
+              "name",
+              "price"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "results": "$s1"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -631,7 +710,58 @@
           "config": {
             "size": "db.m5.xlarge",
             "multiAz": true,
-            "role": "search"
+            "role": "search",
+            "schema": {
+              "tables": [
+                {
+                  "name": "dishes",
+                  "fields": [
+                    {
+                      "name": "dish_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "name",
+                      "type": "text"
+                    },
+                    {
+                      "name": "city",
+                      "type": "string"
+                    },
+                    {
+                      "name": "price",
+                      "type": "int"
+                    },
+                    {
+                      "name": "veg",
+                      "type": "bool"
+                    }
+                  ],
+                  "key": [
+                    "dish_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "name"
+                      ],
+                      "kind": "text"
+                    },
+                    {
+                      "fields": [
+                        "city",
+                        "price"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1229,7 +1359,232 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "No word index",
+        "why": "Dish names have no text index: finding \"paneer roll\" means reading all 2 crore dishes.",
+        "fails": "api-search",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 1000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 1,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 80,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 80,
+              "writePct": 5,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "role": "search",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "city",
+                          "price"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "dish_id",
+        "restaurant_id",
+        "name",
+        "city",
+        "price",
+        "veg"
+      ],
+      "aliases": {
+        "name": [
+          "dish",
+          "title",
+          "dish_name"
+        ],
+        "veg": [
+          "is_veg",
+          "vegetarian"
+        ]
+      },
+      "entities": {
+        "dishes": {
+          "rows": 20000000,
+          "sample": [
+            {
+              "dish_id": "d1",
+              "restaurant_id": "r1",
+              "name": "Paneer Tikka Roll",
+              "city": "mumbai",
+              "price": 180,
+              "veg": true
+            },
+            {
+              "dish_id": "d2",
+              "restaurant_id": "r2",
+              "name": "Chicken Roll",
+              "city": "mumbai",
+              "price": 200,
+              "veg": false
+            },
+            {
+              "dish_id": "d3",
+              "restaurant_id": "r3",
+              "name": "Paneer Butter Masala",
+              "city": "pune",
+              "price": 260,
+              "veg": true
+            },
+            {
+              "dish_id": "d4",
+              "restaurant_id": "r4",
+              "name": "Paneer Roll Combo",
+              "city": "mumbai",
+              "price": 220,
+              "veg": true
+            }
+          ]
+        }
+      }
+    }
   }
 }

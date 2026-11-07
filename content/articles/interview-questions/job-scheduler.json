@@ -399,6 +399,44 @@
             "label": "Costs at most $15,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-schedule",
+        "name": "Schedule a job",
+        "sample": true,
+        "async": true,
+        "desc": "A daily report for 9 am tomorrow.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/jobs",
+          "body": {
+            "run_at": "2026-11-08T09:00:00Z",
+            "payload": {
+              "report": "daily"
+            }
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "jobs",
+            "values": {
+              "job_id": "j1",
+              "run_at": "2026-11-08T09:00:00Z",
+              "status": "scheduled",
+              "payload": {
+                "report": "daily"
+              }
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "job_id": "$s1.job_id"
+          }
+        }
       }
     ],
     "rubric": {
@@ -649,7 +687,47 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "jobs"
+            "role": "jobs",
+            "schema": {
+              "tables": [
+                {
+                  "name": "jobs",
+                  "fields": [
+                    {
+                      "name": "job_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "run_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payload",
+                      "type": "json"
+                    },
+                    {
+                      "name": "lease_until",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "job_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "run_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -660,7 +738,47 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "jobs"
+            "role": "jobs",
+            "schema": {
+              "tables": [
+                {
+                  "name": "jobs",
+                  "fields": [
+                    {
+                      "name": "job_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "run_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payload",
+                      "type": "json"
+                    },
+                    {
+                      "name": "lease_until",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "job_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "run_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1637,7 +1755,229 @@
             "to": "db2"
           }
         ]
+      },
+      {
+        "name": "Jobs without a due time",
+        "why": "Jobs are stored without when they should run.",
+        "fails": "api-schedule",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 2
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "queriesPerRequest": 2,
+              "role": "scheduler"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "queriesPerRequest": 2,
+              "role": "scheduler"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "jobs",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "jobs",
+                    "fields": [
+                      {
+                        "name": "job_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payload",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "job_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "jobs",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "jobs",
+                    "fields": [
+                      {
+                        "name": "job_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payload",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "job_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "db1"
+          },
+          {
+            "from": "work1",
+            "to": "db2"
+          },
+          {
+            "from": "work2",
+            "to": "db1"
+          },
+          {
+            "from": "work2",
+            "to": "db2"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "job_id",
+        "run_at",
+        "status",
+        "payload",
+        "lease_until"
+      ],
+      "aliases": {
+        "run_at": [
+          "due_at",
+          "next_run",
+          "scheduled_at",
+          "when"
+        ],
+        "payload": [
+          "data",
+          "args",
+          "body"
+        ]
+      },
+      "entities": {
+        "jobs": {
+          "rows": 1000000000,
+          "sample": []
+        }
+      }
+    }
   }
 }

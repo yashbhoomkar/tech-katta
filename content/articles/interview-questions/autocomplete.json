@@ -407,6 +407,66 @@
             "label": "Costs at most $4,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-suggest",
+        "name": "Suggestions for \"piz\"",
+        "sample": true,
+        "desc": "The app asks for suggestions as someone types \"piz\".",
+        "request": {
+          "method": "GET",
+          "path": "/v1/suggest?q=piz"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "prefixes",
+            "by": {
+              "prefix": "piz"
+            },
+            "fields": [
+              "suggestions"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "q": "piz",
+            "suggestions": "$s1.suggestions"
+          }
+        }
+      },
+      {
+        "id": "api-suggest-2",
+        "name": "Suggestions for \"bir\"",
+        "desc": "Another prefix, another ready list.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/suggest?q=bir"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "prefixes",
+            "by": {
+              "prefix": "bir"
+            },
+            "fields": [
+              "suggestions"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "q": "bir",
+            "suggestions": "$s1.suggestions"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -629,7 +689,31 @@
           "y": 0,
           "config": {
             "size": "db.t3.medium",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "prefixes",
+                  "fields": [
+                    {
+                      "name": "prefix",
+                      "type": "string"
+                    },
+                    {
+                      "name": "suggestions",
+                      "type": "list"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "prefix"
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1206,7 +1290,191 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "Searches the query log",
+        "why": "Only the raw log of searches is stored; nothing holds the ready suggestions for a prefix.",
+        "fails": "api-suggest",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 5000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 98,
+              "writePct": 0,
+              "onDown": "database",
+              "role": "prefix"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 98,
+              "writePct": 0,
+              "onDown": "database",
+              "role": "prefix"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.t3.medium",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "searches",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "query",
+                        "type": "string"
+                      },
+                      {
+                        "name": "searched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "prefix",
+        "suggestions",
+        "updated_at"
+      ],
+      "aliases": {
+        "suggestions": [
+          "top",
+          "completions",
+          "results",
+          "top_queries"
+        ]
+      },
+      "entities": {
+        "prefixes": {
+          "rows": 50000000,
+          "sample": [
+            {
+              "prefix": "piz",
+              "suggestions": [
+                "pizza",
+                "pizza hut",
+                "pizza near me"
+              ],
+              "updated_at": "2026-11-07T10:00:00Z"
+            },
+            {
+              "prefix": "bir",
+              "suggestions": [
+                "biryani",
+                "biryani near me"
+              ],
+              "updated_at": "2026-11-07T10:00:00Z"
+            }
+          ]
+        }
+      }
+    }
   }
 }

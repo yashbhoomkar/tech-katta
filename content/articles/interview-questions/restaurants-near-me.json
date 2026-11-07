@@ -432,6 +432,79 @@
             "label": "Costs at most $4,500 a month"
           }
         ]
+      },
+      {
+        "id": "api-nearby",
+        "name": "Open restaurants near me",
+        "sample": true,
+        "desc": "Open restaurants within 5 km of a point in Mumbai, nearest first.",
+        "request": {
+          "method": "GET",
+          "path": "/v1/restaurants?lat=19.0765&lng=72.878&open=true"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "restaurants",
+            "where": {
+              "open": true
+            },
+            "near": {
+              "field": "location",
+              "at": [
+                19.0765,
+                72.878
+              ],
+              "km": 5
+            },
+            "limit": 10,
+            "fields": [
+              "restaurant_id",
+              "name",
+              "rating"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "restaurants": "$s1"
+          }
+        }
+      },
+      {
+        "id": "api-status",
+        "name": "A restaurant opens",
+        "desc": "Late Night Rolls marks itself open.",
+        "request": {
+          "method": "PATCH",
+          "path": "/v1/restaurants/r3/status",
+          "body": {
+            "open": true
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "restaurants",
+            "by": {
+              "restaurant_id": "r3"
+            },
+            "set": {
+              "open": true
+            }
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "restaurant_id": "r3",
+            "open": true
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -671,7 +744,51 @@
           "config": {
             "size": "db.m5.large",
             "multiAz": true,
-            "role": "geo"
+            "role": "geo",
+            "schema": {
+              "tables": [
+                {
+                  "name": "restaurants",
+                  "fields": [
+                    {
+                      "name": "restaurant_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "open",
+                      "type": "bool"
+                    },
+                    {
+                      "name": "rating",
+                      "type": "float"
+                    },
+                    {
+                      "name": "cuisine",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "restaurant_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "location"
+                      ],
+                      "kind": "geo"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1246,7 +1363,233 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "No geo index",
+        "why": "Locations are stored but not indexed: \"near this point\" would measure all 3 lakh restaurants on every home screen.",
+        "fails": "api-nearby",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 6000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.m5.large",
+              "multiAz": true,
+              "role": "geo",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "restaurants",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "location",
+                        "type": "geo"
+                      },
+                      {
+                        "name": "open",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "rating",
+                        "type": "float"
+                      },
+                      {
+                        "name": "cuisine",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "restaurant_id",
+        "name",
+        "location",
+        "open",
+        "rating",
+        "cuisine"
+      ],
+      "aliases": {
+        "location": [
+          "loc",
+          "geo",
+          "point",
+          "coords",
+          "lat_lng"
+        ],
+        "open": [
+          "is_open",
+          "open_now"
+        ]
+      },
+      "entities": {
+        "restaurants": {
+          "rows": 300000,
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "location": [
+                19.076,
+                72.8777
+              ],
+              "open": true,
+              "rating": 4.4
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Bombay Biryani",
+              "location": [
+                19.082,
+                72.882
+              ],
+              "open": true,
+              "rating": 4.1
+            },
+            {
+              "restaurant_id": "r3",
+              "name": "Late Night Rolls",
+              "location": [
+                19.07,
+                72.87
+              ],
+              "open": false,
+              "rating": 4.6
+            },
+            {
+              "restaurant_id": "r4",
+              "name": "Pune Misal",
+              "location": [
+                18.5204,
+                73.8567
+              ],
+              "open": true,
+              "rating": 4.8
+            }
+          ]
+        }
+      }
+    }
   }
 }

@@ -402,6 +402,75 @@
             "label": "Costs at most $6,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-feed",
+        "name": "Open the home feed",
+        "sample": true,
+        "desc": "The newest two posts in u1's feed (a feed holds up to 20,000 entries).",
+        "request": {
+          "method": "GET",
+          "path": "/v1/feed?user=u1&limit=2"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "feed_items",
+            "where": {
+              "user_id": "u1"
+            },
+            "order": {
+              "field": "created_at",
+              "desc": true
+            },
+            "limit": 2,
+            "fields": [
+              "post_id",
+              "created_at"
+            ],
+            "matches": 20000
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "items": "$s1"
+          }
+        }
+      },
+      {
+        "id": "api-post",
+        "name": "Write a post",
+        "desc": "A user posts; spreading it to followers' feeds can follow.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/posts",
+          "body": {
+            "author_id": "a1",
+            "text": "Weekend trek"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "posts",
+            "values": {
+              "post_id": "p10",
+              "author_id": "a1",
+              "text": "Weekend trek",
+              "created_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 201,
+          "body": {
+            "post_id": "$s1.post_id"
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -640,7 +709,74 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "feed_items",
+                  "fields": [
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "post_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "user_id",
+                    "post_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                },
+                {
+                  "name": "posts",
+                  "fields": [
+                    {
+                      "name": "post_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "post_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "author_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1217,7 +1353,244 @@
             "to": "db1"
           }
         ]
+      },
+      {
+        "name": "Feed without its order",
+        "why": "Feed entries are found by user but not kept in time order: 20,000 entries would be sorted on every open.",
+        "fails": "api-feed",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 3000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 3
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database",
+              "role": "feed"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 95,
+              "writePct": 10,
+              "onDown": "database",
+              "role": "feed"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "user_id",
+        "post_id",
+        "author_id",
+        "text",
+        "created_at"
+      ],
+      "aliases": {
+        "text": [
+          "body",
+          "content",
+          "caption"
+        ],
+        "user_id": [
+          "follower_id",
+          "reader_id",
+          "owner_id"
+        ]
+      },
+      "entities": {
+        "feed_items": {
+          "rows": 20000000000,
+          "sample": [
+            {
+              "user_id": "u1",
+              "post_id": "p3",
+              "created_at": "2026-11-07T09:00:00Z"
+            },
+            {
+              "user_id": "u1",
+              "post_id": "p1",
+              "created_at": "2026-11-06T20:00:00Z"
+            },
+            {
+              "user_id": "u1",
+              "post_id": "p2",
+              "created_at": "2026-11-07T08:00:00Z"
+            },
+            {
+              "user_id": "u2",
+              "post_id": "p9",
+              "created_at": "2026-11-07T09:30:00Z"
+            }
+          ]
+        },
+        "posts": {
+          "rows": 5000000000,
+          "sample": [
+            {
+              "post_id": "p1",
+              "author_id": "a1",
+              "text": "Monsoon chai",
+              "created_at": "2026-11-06T20:00:00Z"
+            }
+          ]
+        }
+      }
+    }
   }
 }

@@ -96,3 +96,6 @@
 .sch-issues{list-style:none;margin:8px 0 0;padding:0;font-size:13px;line-height:1.45}.sch-issues .error{color:#b42318}.sch-issues .warn{color:#8a5a00}.sch-err{color:#b42318;font-size:12.5px;margin:2px 0}
 .sch-foot{display:flex;gap:8px;justify-content:space-between;margin-top:8px}
 @media (max-width:640px){.lab-score-back:has(.sch){padding:0}.sch{max-height:100vh;height:100%;border:0}.sch-f th:nth-child(3){font-size:0}.sch-f th:nth-child(3)::after{content:"Key";font-size:12px}}
+/* A request being watched: the component it is at, and the dot on the arrow it travels */
+.ln.ln-trace{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.25);transition:box-shadow .2s}.lab-dot{fill:#1d4ed8;stroke:#fff;stroke-width:2}
+.lab.lab-watch{grid-template-columns:minmax(0,1fr)}.lab-watch .lab-pal,.lab-watch .lab-ins{display:none}

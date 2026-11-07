@@ -390,6 +390,40 @@
             "label": "Costs at most $50,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-score",
+        "name": "Add points after a match",
+        "sample": true,
+        "async": true,
+        "desc": "p1 wins 50 points; the board can catch up a moment later.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/scores",
+          "body": {
+            "player_id": "p1",
+            "points": 50
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "scores",
+            "by": {
+              "player_id": "p1"
+            },
+            "add": {
+              "score": 50
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "accepted": true
+          }
+        }
       }
     ],
     "rubric": {
@@ -651,7 +685,39 @@
           "y": -150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "scores",
+                  "fields": [
+                    {
+                      "name": "player_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "score",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "player_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "score"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -661,7 +727,39 @@
           "y": 0,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "scores",
+                  "fields": [
+                    {
+                      "name": "player_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "score",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "player_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "score"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -671,7 +769,39 @@
           "y": 150,
           "config": {
             "size": "db.r5.2xlarge",
-            "multiAz": true
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "scores",
+                  "fields": [
+                    {
+                      "name": "player_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "score",
+                      "type": "int"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "player_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "score"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -2565,7 +2695,314 @@
             "to": "db3"
           }
         ]
+      },
+      {
+        "name": "Scores without players",
+        "why": "Scores are stored by match, with no row per player to add to.",
+        "fails": "api-score",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 40000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 17,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "queue",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "work1",
+            "type": "server",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1,
+              "role": "aggregator"
+            }
+          },
+          {
+            "id": "work2",
+            "type": "server",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "queriesPerRequest": 1,
+              "role": "aggregator"
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 1200,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 40,
+              "onDown": "database",
+              "role": "sortedset"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 1200,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 40,
+              "onDown": "database",
+              "role": "sortedset"
+            }
+          },
+          {
+            "id": "db1",
+            "type": "database",
+            "x": 1440,
+            "y": -150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "matches",
+                    "fields": [
+                      {
+                        "name": "match_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "winner",
+                        "type": "string"
+                      },
+                      {
+                        "name": "points",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "match_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db2",
+            "type": "database",
+            "x": 1440,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "matches",
+                    "fields": [
+                      {
+                        "name": "match_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "winner",
+                        "type": "string"
+                      },
+                      {
+                        "name": "points",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "match_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db3",
+            "type": "database",
+            "x": 1440,
+            "y": 150,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "matches",
+                    "fields": [
+                      {
+                        "name": "match_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "winner",
+                        "type": "string"
+                      },
+                      {
+                        "name": "points",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "match_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "queue"
+          },
+          {
+            "from": "app2",
+            "to": "queue"
+          },
+          {
+            "from": "queue",
+            "to": "work1"
+          },
+          {
+            "from": "queue",
+            "to": "work2"
+          },
+          {
+            "from": "work1",
+            "to": "cache1"
+          },
+          {
+            "from": "work1",
+            "to": "cache2"
+          },
+          {
+            "from": "work2",
+            "to": "cache1"
+          },
+          {
+            "from": "work2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db1"
+          },
+          {
+            "from": "cache1",
+            "to": "db2"
+          },
+          {
+            "from": "cache1",
+            "to": "db3"
+          },
+          {
+            "from": "cache2",
+            "to": "db1"
+          },
+          {
+            "from": "cache2",
+            "to": "db2"
+          },
+          {
+            "from": "cache2",
+            "to": "db3"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "player_id",
+        "score",
+        "updated_at"
+      ],
+      "aliases": {
+        "player_id": [
+          "user_id",
+          "player",
+          "gamer_id"
+        ],
+        "score": [
+          "points",
+          "total",
+          "rating"
+        ]
+      },
+      "entities": {
+        "scores": {
+          "rows": 100000000,
+          "sample": [
+            {
+              "player_id": "p1",
+              "score": 900,
+              "updated_at": "2026-11-07T09:00:00Z"
+            }
+          ]
+        }
+      }
+    }
   }
 }

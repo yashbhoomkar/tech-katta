@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test src/lab/schema.test.js src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/progress.test.js src/lab/importer.test.js src/lablite.test.js src/lab/merge.test.js src/analytics.test.js src/judge/judge.test.js"
+    "test": "node --test src/judge/requests.test.js src/lab/schema.test.js src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/progress.test.js src/lab/importer.test.js src/lablite.test.js src/lab/merge.test.js src/analytics.test.js src/judge/judge.test.js"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

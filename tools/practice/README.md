@@ -11,6 +11,7 @@ node run.mjs batch3.mjs write           # write them into content/ when all pass
 node run.mjs batch3.mjs write menu-search   # one problem
 node q01.mjs write                      # the hand-written URL shortener suite
 node roles.mjs write                    # each problem's parts (roles), role checks and key decisions
+node requests.mjs write                 # request tests, sample data, reference schemas and a failing schema
 cd ../../frontend && npm test           # the same calibration, as CI runs it
 ```
 
@@ -33,3 +34,7 @@ same workers each hand them their full capacity, so keep one queue per worker po
 adds role checks to the `normal` test, adds a "Right sizes, general parts" wrong design (the reference
 with no roles, which must fail `normal`), and writes `rubric.decisions` with the right option moved to a
 position chosen from the problem and question ids. Re-running it replaces what it wrote before.
+
+`requests.mjs` runs last: it writes `data`, the request tests (after the traffic tests), schemas (and engine
+changes such as S3 for files) on the reference's databases, and a wrong design whose schema fails a request
+test. Re-running it replaces what it wrote before.

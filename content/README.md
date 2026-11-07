@@ -54,11 +54,31 @@ practice: {
   rubric: {fr: [{label, keys}], nfr: {availability, p99, readsPerWrite: [min, max], consistency},
            est: [{id, label, unit, answer, tol?, how?}], api: [{label, method, path (regex)}],
            decisions: [{id, q, options (2–6), answer (index of the right option), why}]},
+  data: {entities: {name: {rows, sample: [row]}}, fields: [name], aliases?: {field: [other names]}},
+                                  sample data and field names for request tests (fields also feed the
+                                  schema editor's suggestions)
   hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
   reference: {nodes, edges},      must pass every test
   wrong: [{name, why, fails, nodes, edges}]   each must fail the test `fails` names
 }
 ```
+
+**Request tests** (a test with `request` instead of traffic; `frontend/src/judge/requests.js`):
+`{id, name, desc, sample?, async?, request: {method, path, body?}, steps: [step], respond: {status, body}}`.
+Steps: `get {entity, by, fields}`, `query {entity, where?, near?: {field, at: [lat, lng], km}, text?: {field,
+q}, range?, order?: {field, desc?}, limit?, fields, matches?}`, `put {entity, values}`, `update {entity, by,
+set?, add?, cond?: {field: {gte} | {eq}}}`, `tx {steps: [put | update]}`, `blob {entity, key, field, mode:
+put | get}`, `sum {entity, where?, range?, field}`. `respond.body` is a template: `"$s1.field"`, `"$s1"`,
+`"{$s1.code}"` inside text. The expected response is the steps run on `data` samples. The design's response
+is the same steps run through the design: from the Clients through CDN, API gateway and load balancers to
+a server, then to the databases it reaches (through caches and servers: synchronous; past a queue: only
+writes, and only when `async` is true, answering 202). A table qualifies when its fields cover the step's
+(names matched ignoring case, `_` and camelCase, plus `aliases`); its engine and schema must give an access
+path: the key, a sort key, an index (geo for `near`, text for `text`), OpenSearch's searchable fields, or a
+scan of a small table (≤ 50,000 rows) on an engine that can scan; more than 10,000 matching rows can't be
+sorted in memory (`matches`); `tx` needs one store with transactions; `blob` needs S3 with a file field.
+Each hop is recorded for the workspace's ▶ Watch. `tools/practice/requests.mjs` writes every problem's
+data, request tests, reference schemas (and engine changes) and a wrong design that fails one.
 
 Check kinds: `availability {min, from?, to?}`, `p99 {max}` (ms), `cost {max}` (dollars a month),
 `noCrash {type?}`, `noLostWrites`, `requires {types}`, `redundant {type}` (no single component of that

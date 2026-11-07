@@ -444,6 +444,99 @@
             "label": "Costs at most $15,000 a month"
           }
         ]
+      },
+      {
+        "id": "api-create",
+        "name": "Shorten a link",
+        "sample": true,
+        "desc": "A user shortens a long link and gets its code back.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/links",
+          "body": {
+            "long_url": "https://zotato.in/cart/9",
+            "user_id": "u7"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "links",
+            "values": {
+              "code": "Zx81k",
+              "long_url": "https://zotato.in/cart/9",
+              "user_id": "u7",
+              "created_at": "2026-11-07T10:00:00Z"
+            }
+          }
+        ],
+        "respond": {
+          "status": 201,
+          "body": {
+            "code": "$s1.code",
+            "short_url": "https://zot.to/{$s1.code}"
+          }
+        }
+      },
+      {
+        "id": "api-redirect",
+        "name": "Open a short link",
+        "sample": true,
+        "desc": "Someone opens zot.to/ab12x and is sent to the long link.",
+        "request": {
+          "method": "GET",
+          "path": "/ab12x"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "links",
+            "by": {
+              "code": "ab12x"
+            },
+            "fields": [
+              "long_url"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 302,
+          "body": {
+            "location": "$s1.long_url"
+          }
+        }
+      },
+      {
+        "id": "api-click",
+        "name": "Count the click",
+        "async": true,
+        "desc": "Each open adds one to the link's clicks; this can happen a moment later.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/links/q9Lp/clicks"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "update",
+            "entity": "links",
+            "by": {
+              "code": "q9Lp"
+            },
+            "add": {
+              "clicks": 1
+            }
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "counted": true
+          }
+        },
+        "sample": false
       }
     ],
     "rubric": {
@@ -685,7 +778,51 @@
           "config": {
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "role": "kv"
+            "role": "kv",
+            "schema": {
+              "tables": [
+                {
+                  "name": "links",
+                  "fields": [
+                    {
+                      "name": "code",
+                      "type": "string"
+                    },
+                    {
+                      "name": "long_url",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "expires_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "clicks",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "code"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
           }
         }
       ],
@@ -1358,7 +1495,213 @@
             "to": "db"
           }
         ]
+      },
+      {
+        "name": "Links keyed by a number",
+        "why": "The links table is keyed by a running id, with nothing to find a link by its code: every redirect would read all 500 crore rows.",
+        "fails": "api-redirect",
+        "schemaWrong": true,
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 35000,
+              "pattern": "steady"
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app1",
+            "type": "server",
+            "x": 480,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "cache.m5.large",
+              "hitPct": 90,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "kv",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "links",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "type": "int"
+                      },
+                      {
+                        "name": "code",
+                        "type": "string"
+                      },
+                      {
+                        "name": "long_url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "clicks",
+                        "type": "int"
+                      }
+                    ],
+                    "key": [
+                      "id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app1"
+          },
+          {
+            "from": "lb",
+            "to": "app2"
+          },
+          {
+            "from": "app1",
+            "to": "cache1"
+          },
+          {
+            "from": "app1",
+            "to": "cache2"
+          },
+          {
+            "from": "app2",
+            "to": "cache1"
+          },
+          {
+            "from": "app2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "db"
+          },
+          {
+            "from": "cache2",
+            "to": "db"
+          }
+        ]
       }
-    ]
+    ],
+    "data": {
+      "fields": [
+        "code",
+        "long_url",
+        "user_id",
+        "created_at",
+        "expires_at",
+        "clicks"
+      ],
+      "aliases": {
+        "long_url": [
+          "url",
+          "target_url",
+          "destination",
+          "original_url"
+        ],
+        "code": [
+          "short_code",
+          "slug",
+          "short_id"
+        ],
+        "clicks": [
+          "click_count",
+          "visits"
+        ]
+      },
+      "entities": {
+        "links": {
+          "rows": 5000000000,
+          "sample": [
+            {
+              "code": "ab12x",
+              "long_url": "https://zotato.in/menu/123",
+              "user_id": "u7",
+              "created_at": "2026-11-01T08:00:00Z",
+              "expires_at": null,
+              "clicks": 41
+            },
+            {
+              "code": "q9Lp",
+              "long_url": "https://katta.cc/a",
+              "user_id": "u2",
+              "created_at": "2026-11-02T08:00:00Z",
+              "expires_at": null,
+              "clicks": 3
+            }
+          ]
+        }
+      }
+    }
   }
 }

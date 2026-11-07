@@ -26,11 +26,15 @@
 // component's wait is long-tailed (queueing), so p99 ≈ base + 4.6 × (mean − base), where base is the
 // same path with no load and 4.6 = ln(100), the p99 of an exponential wait.
 //
+// Request tests (test.request) instead send one API call through the design and compare the response
+// with the expected one (judge/requests.js).
+//
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
-import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName, standby } from '../lab/engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName, standby, engineOf } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
+import { runRequest } from './requests.js';
 
 export const STEP = 5; // simulated minutes per step
 const P99 = Math.log(100);
@@ -70,10 +74,11 @@ export function singlePoints(d, type) {
 
 // Where a role is: on every path from the Clients to an end (missing: the first path without it),
 // reachable at all, reachable without passing a component of type `behind`, and how many there are.
-export function roleOnPath(d, role, behind) {
+export function roleOnPath(d, role, behind, cat = null) {
   const out = new Map(d.nodes.map((n) => [n.id, []]));
   for (const e of d.edges) if (out.has(e.from) && out.has(e.to)) out.get(e.from).push(e.to);
-  const has = new Set(d.nodes.filter((n) => n.config?.role === role).map((n) => n.id)), type = new Map(d.nodes.map((n) => [n.id, n.type]));
+  // a component does a job when it is given that role, or when its engine is that kind of store (S3 is object storage)
+  const has = new Set(d.nodes.filter((n) => n.config?.role === role || (cat && n.type === 'database' && (engineOf(cat.database, n.config)?.roles || []).includes(role))).map((n) => n.id)), type = new Map(d.nodes.map((n) => [n.id, n.type]));
   const clients = d.nodes.filter((n) => n.type === 'client').map((n) => n.id);
   const reach = (stop) => { const seen = new Set(clients), todo = [...clients]; while (todo.length) { const x = todo.pop(); for (const y of out.get(x)) if (!seen.has(y) && !(stop && type.get(y) === stop)) { seen.add(y); todo.push(y); } } return seen; };
   const all = reach(null), reached = [...has].filter((id) => all.has(id));
@@ -84,7 +89,7 @@ export function roleOnPath(d, role, behind) {
 // Checks on the shape of the design (no simulation needed).
 function rule(c, d, cat) {
   const of = (t) => d.nodes.filter((n) => n.type === t);
-  if (c.kind === 'role') { const r = roleOnPath(d, c.role, c.behind); const placed = c.any ? r.any : r.every; return { ok: placed && r.count >= (c.min || 1) && !r.early, value: r.count, placed, early: r.early }; }
+  if (c.kind === 'role') { const r = roleOnPath(d, c.role, c.behind, cat); const placed = c.any ? r.any : r.every; return { ok: placed && r.count >= (c.min || 1) && !r.early, value: r.count, placed, early: r.early }; }
   if (c.kind === 'requires') { const miss = missingOnPath(d, c.types); return { ok: !miss, value: miss }; }
   if (c.kind === 'redundant') { const spof = singlePoints(d, c.type); return { ok: of(c.type).length > 0 && !spof.length, value: spof[0] || null, count: of(c.type).length }; }
   if (c.kind === 'multiAz') { const dbs = of('database'); const single = dbs.filter((n) => !standby(cat.database, n.config)).length; return { ok: dbs.length > 0 && single === 0, value: single }; }
@@ -94,6 +99,8 @@ function rule(c, d, cat) {
 
 // Plays one test. `problem` gives the fixed settings; `test` the scenario and its checks.
 export function runTest(design, lab, problem, test) {
+  // a request test: the request through the design, the response compared (judge/requests.js)
+  if (test.request) return runRequest(design, lab, problem, test);
   const cat = catalogue(lab), nm = names(design, lab);
   const ch = { traffic: test.traffic, fixed: problem.fixed || {} };
   const d = applyChallenge(design, ch);
@@ -171,7 +178,7 @@ export function judge(design, lab, problem, { sample = false } = {}) {
   const tests = problem.tests.filter((t) => !sample || t.sample);
   const results = tests.map((t) => ({ test: t, ...runTest(design, lab, problem, t) }));
   const passed = results.filter((r) => r.ok).length, first = results.find((r) => !r.ok);
-  const all = results.filter((r) => !r.error);
+  const all = results.filter((r) => !r.error && r.metrics);
   return {
     verdict: results.some((r) => r.error) ? 'error' : passed === results.length ? 'accepted' : 'failed',
     passed, total: results.length, results, first: first || null,
