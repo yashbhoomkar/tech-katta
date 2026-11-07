@@ -81,8 +81,6 @@ const SITE = {
   'privacy?': { eyebrow: 'text', title: 'text', updated: 'text', sections: [{ tuple: ['text', 'text'] }] },
   'terms?': { eyebrow: 'text', title: 'text', updated: 'text', sections: [{ tuple: ['text', 'text'] }] },
   'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', dashboard: [{ target: 'text', title: 'text', text: 'text' }], lab: [{ target: 'text', title: 'text', text: 'text' }] },
-  // Practice mode on Interview Questions: the copy, and the steps with their minutes and checklists.
-  'practice?': { ...Object.fromEntries(['button', 'again', 'practised', 'title', 'close', 'left', 'overAll', 'paused', 'stepsLabel', 'stepLeft', 'over', 'pause', 'resume', 'next', 'finish', 'doneTitle', 'doneText', 'step', 'planned', 'used', 'compare', 'missed', 'allTicked'].map((k) => [k, 'text'])), steps: [{ name: 'text', minutes: 'number', checks: ['text'] }] },
   'inside?': { eyebrow: 'text', title: 'text', desc: 'text', items: [{ kind: 'text', title: 'text', text: 'text', link: 'text', href: 'text' }], cta: 'text', ctaHref: 'text' },
   'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
   'fact?': { eyebrow: 'text', title: 'text', desc: 'text', points: [{ tuple: ['text', 'text'] }], source: 'text', link: 'text', linkHref: 'text' },
