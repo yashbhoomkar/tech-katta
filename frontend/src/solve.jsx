@@ -2,7 +2,8 @@
 // here from Problems or Interview Questions.
 //   Left pane, tabs: Description (requirements, numbers, the example tests) · Your answer (functional and
 //   non-functional requirements, estimates, APIs; graded on Submit) · Hints (one at a time, 3 points
-//   each) · Solution (the article) · Submissions (this browser's history).
+//   each) · Solution (the solution design, with Copy to my canvas, then the article) · Submissions (this
+//   browser's history).
 //   Right: the Lab canvas on the question's own design (Lab `problem`, id q-<slug>), with Run (the
 //   example tests) and Submit (every test, plus the written steps, scored out of 100) above it and the
 //   results below. The judge is judge/judge.js; the tests and rubric are the article's `practice`.
@@ -10,7 +11,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore}from"./lab/store.js";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,sameDesign,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,SOLUTIONS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore,cleanDesign}from"./lab/store.js";import SolutionDesign from"./SolutionDesign.jsx";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -32,7 +33,7 @@ const[st,set]=useState({}),[hide,setHide]=useState(false),[w,setW]=useState(save
 const[view,setView]=useState(tab==="a"?"solution":"description");
 const[narrow,setNarrow]=useState(()=>typeof matchMedia!=="undefined"&&matchMedia(narrowQ).matches);const pane=useRef(null);
 const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false);
-const[gen,setGen]=useState(0),[resetting,setResetting]=useState(false),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0);
+const[gen,setGen]=useState(0),[pending,setPending]=useState(null),[sol,setSol]=useState(null),[undo,setUndo]=useState(null),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0);
 const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useState(null),[hints,setHints]=useState(()=>usedHints(slug)),[subs,setSubs]=useState(()=>readSubs(slug));
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
@@ -42,13 +43,15 @@ const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]
 useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
 useEffect(()=>{setView(tab==="a"?"solution":"description")},[tab,slug]);
 useEffect(()=>{if(view==="solution")return readArticle("interview-questions",slug)},[view,slug]);
+// The solution design: fetched when the Solution tab opens, or when it was copied here before (to tell a
+// copied design from the visitor's own on Submit).
+useEffect(()=>{setSol(null);setUndo(null);setPending(null)},[slug]);
+useEffect(()=>{if(sol?.slug===slug||!(view==="solution"||read(SOLUTIONS)[slug]))return;let on=true;getJSON(`/v1/articles/${slug}/solution`).then(v=>{if(on)setSol(v)},()=>{});return()=>{on=false}},[view,slug,sol]);
 useEffect(()=>{setCanvas(false);if(pane.current)pane.current.scrollTop=0},[view,slug]);
 useEffect(()=>{try{localStorage.setItem(W_KEY,String(w))}catch{}},[w]);
-// Reset: the Lab unmounts first (it saves the canvas as it goes), then this design is put back to the
-// problem's starting design, then a fresh Lab opens on it.
-useEffect(()=>{if(!resetting||!st.a?.practice)return;try{const raw=JSON.parse(localStorage.getItem(STORE_KEY));const d=raw?.designs?.["q-"+slug]||Object.values(raw?.designs||{}).find(x=>x&&x.problem===slug);
-if(d){d.nodes=structuredClone(st.a.practice.start.nodes);d.edges=structuredClone(st.a.practice.start.edges);d.credit={spent:0,hours:0};d.updated=Date.now();localStorage.setItem(STORE_KEY,JSON.stringify(raw))}}catch{}
-design.current=null;setRes(null);setGen(g=>g+1);setResetting(false)},[resetting]);// eslint-disable-line
+// Reset, Copy to my canvas and Undo put another design on the canvas: a fresh Lab opens and loads it
+// into this problem's design (Lab problem.load); until that Lab has opened, Run and Submit judge it.
+const put=(d,credit)=>{design.current=null;setRes(null);setWatch(null);setPending({nodes:structuredClone(d.nodes),edges:structuredClone(d.edges),...(credit?{credit}:{})});setGen(g=>g+1)};
 // A stopwatch, like an interview's clock: start, pause, carry on.
 useEffect(()=>{if(!clock.on)return;const t=setInterval(()=>tick(x=>x+1),1000);return()=>clearInterval(t)},[clock.on]);
 useEffect(()=>{setClock({on:false,acc:0,at:0})},[slug]);
@@ -57,7 +60,10 @@ const openHint=()=>{const n=hints+1;setHints(n);const all=read(HINTS);all[slug]=
 const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1],prev=i>0?qs[i-1]:null;
 const secs=Math.floor((clock.acc+(clock.on?Date.now()-clock.at:0))/1000),mmss=`${String(Math.floor(secs/60)).padStart(2,"0")}:${String(secs%60).padStart(2,"0")}`;
 const toggleClock=()=>setClock(c=>c.on?{on:false,acc:c.acc+Date.now()-c.at,at:0}:{...c,on:true,at:Date.now()});
-const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setResetting(true)};
+const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setUndo(null);put(P.start,{spent:0,hours:0})};
+const mine=()=>{const d=pending||design.current||savedDesign()||P.start;return{nodes:d.nodes,edges:d.edges}};
+const copySolution=()=>{if(!sol)return;setUndo(mine());put(sol);const all=read(SOLUTIONS);all[slug]=Date.now();write(SOLUTIONS,all);if(narrow)setCanvas(true)};
+const undoCopy=()=>{if(!undo)return;put(undo);setUndo(null)};
 const drag=e=>{e.preventDefault();const x0=e.clientX,w0=w;const mv=ev=>setW(Math.min(maxW(),Math.max(MIN,w0+ev.clientX-x0)));const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)};
 const key=e=>{const d=e.key==="ArrowLeft"?-24:e.key==="ArrowRight"?24:0;if(d){e.preventDefault();setW(v=>Math.min(maxW(),Math.max(MIN,v+d)))}};
 if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="d-desc">{s.missing} <a href="#problems">{s.back}</a></p>:<LoadError what="this problem" retry={load}/>}</section>;
@@ -68,11 +74,13 @@ const a=st.a,P=a.practice,body=statement(a.body),ch=a.body.find(b=>b.t==="lab"&&
 // hasn't opened the Canvas tab) the design saved for this problem; only without either, the start.
 const savedDesign=()=>{try{const st=readStore(localStorage.getItem(STORE_KEY),lab),x=st.designs["q-"+slug]||Object.values(st.designs).find(v=>v.problem===slug);return x?{nodes:x.nodes,edges:x.edges}:null}catch{return null}};
 const go=kind=>{if(!P||!lab||busy)return;if(narrow)setCanvas(true);setBusy(true);setRes(null);
-setTimeout(()=>{const d=design.current||savedDesign()||P.start;let out;try{const j=judge(d,lab,P,{sample:kind==="run"});out={kind,j};
+setTimeout(()=>{const d=pending||design.current||savedDesign()||P.start;let out;try{const j=judge(d,lab,P,{sample:kind==="run"});out={kind,j};
 if(kind==="submit"){const g=gradeAnswer(ans,P.rubric),sc=score(g,j,hints);out.g=g;out.sc=sc;setGraded(g);
-const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints};
+// the solution's design copied and submitted unchanged: kept, but not counted as solved or as a best score
+const copied=!!(sol&&read(SOLUTIONS)[slug]&&sameDesign(cleanDesign(d,lab,"mine"),cleanDesign(sol,lab,"solution")));out.copied=copied;
+const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints,...(copied?{copied:true}:{})};
 const all=read(SUBS);all[slug]=[sub,...readSubs(slug)].slice(0,30);write(SUBS,all);setSubs(all[slug]);
-markStep("practice:"+slug);if(j.verdict==="accepted")markStep("solved:"+slug);
+markStep("practice:"+slug);if(j.verdict==="accepted"&&!copied)markStep("solved:"+slug);
 // signed in: the API judges it again and says how it compares with everyone else's
 out.server="pending";submitProblem({slug,design:d,answer:ans,hints}).then(v=>setRes(r=>r&&r.j===j?{...r,server:v||"off"}:r))}}
 catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false)},30)};
@@ -81,7 +89,7 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</button>)}
 {narrow&&<button type="button" role="tab" aria-selected={canvas} className={canvas?"on":""} onClick={()=>setCanvas(true)}>{s.tabCanvas}</button>}</div>
 <section ref={pane} className="sv-q" aria-label={tabs.find(t=>t[0]===view)?.[1]} hidden={(hide&&!narrow)||(narrow&&canvas)}>
-{view==="solution"?<Article a={a} pane/>
+{view==="solution"?<>{P&&<SolutionDesign sol={sol?.slug===slug?sol:null} lab={lab} copy={copySolution} copied={!!undo} undo={undo?undoCopy:null} busy={busy}/>}<Article a={a} pane/></>
 :view==="answer"?<Answer P={P} ans={ans} save={saveAns} g={graded}/>
 :view==="hints"?<Hints P={P} used={hints} open={openHint}/>
 :view==="subs"?<Subs subs={subs}/>
@@ -101,8 +109,8 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-lab">
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
 <span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
-<span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset} disabled={resetting}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
-{showLab&&!resetting&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.data?.fields}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null}/></Suspense>}
+<span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
+{showLab&&<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.data?.fields,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null}/></Suspense>}
 {watch?<Player w={watch} set={setWatch}/>:(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}
@@ -133,6 +141,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
+{res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
 {!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.test.request&&r.output?`${r.test.request.method} ${r.test.request.path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
@@ -181,5 +190,5 @@ return <div className="sv-hints"><p className="sv-brief">Each hint you open take
 function Subs({subs}){
 if(!subs.length)return <p className="sv-brief">No submissions yet. Build your design, then press Submit.</p>;
 return <table className="sv-subs"><thead><tr><th>When</th><th>Result</th><th>Tests</th><th>Score</th></tr></thead><tbody>
-{subs.map(x=><tr key={x.at}><td>{when(x.at)}</td><td className={x.verdict==="accepted"?"ok":"no"}>{x.verdict==="accepted"?"Accepted":x.verdict==="error"?"Can't run":"Wrong design"}</td><td>{x.passed}/{x.total}</td><td>{x.score}</td></tr>)}
+{subs.map(x=><tr key={x.at}><td>{when(x.at)}</td><td className={x.verdict==="accepted"?"ok":"no"}>{x.verdict==="accepted"?"Accepted":x.verdict==="error"?"Can't run":"Wrong design"}{x.copied&&<small className="sv-cp"> · copied solution</small>}</td><td>{x.passed}/{x.total}</td><td>{x.score}</td></tr>)}
 </tbody></table>}

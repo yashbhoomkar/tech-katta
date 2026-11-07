@@ -436,6 +436,21 @@ test('a problem is served without its reference and wrong designs', async () => 
   assert.equal(a.practice.wrong, undefined);
 });
 
+test('GET /v1/articles/:slug/solution serves the solution design only: never the wrong designs', async () => {
+  const response = await get('/v1/articles/url-shortener/solution');
+  assert.equal(response.status, 200);
+  assert.ok(response.headers.get('etag'));
+  const s = await response.json();
+  const src = JSON.parse((await import('node:fs')).readFileSync(new URL('../../content/articles/interview-questions/url-shortener.json', import.meta.url)));
+  assert.deepEqual(s, { slug: 'url-shortener', nodes: src.practice.reference.nodes, edges: src.practice.reference.edges });
+  assert.ok(!JSON.stringify(s).includes('wrong'));
+  // only problems have one; bad slugs and deeper paths are 404
+  for (const path of ['/v1/articles/api-types/solution', '/v1/articles/nope/solution', '/v1/articles/UPPER/solution', '/v1/articles/a/b/solution', '/v1/articles/url-shortener/solution/x', '/v1/articles/solution']) {
+    const r = await get(path);
+    assert.equal(r.status, 404, path);
+  }
+});
+
 test('a design in content may give its database an engine and a schema, which must be valid for it', async () => {
   const { validateDesign } = await import('../src/content/validate.js');
   const lab = JSON.parse((await import('node:fs')).readFileSync(new URL('../../content/lab.json', import.meta.url)));

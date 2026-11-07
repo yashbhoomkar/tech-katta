@@ -183,16 +183,18 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     async addSubmission(doc) {
       await init();
       await submissions.insertOne(doc);
-      const accepted = await submissions.countDocuments({ slug: doc.slug, verdict: 'accepted' });
-      const pricier = doc.verdict === 'accepted' && Number.isFinite(doc.cost) ? await submissions.countDocuments({ slug: doc.slug, verdict: 'accepted', cost: { $gt: doc.cost } }) : null;
-      const total = await submissions.countDocuments({ slug: doc.slug });
+      // copied solutions (doc.copied) are kept but not counted: the stats are about people's own designs
+      const own = { slug: doc.slug, copied: { $ne: true } };
+      const accepted = await submissions.countDocuments({ ...own, verdict: 'accepted' });
+      const pricier = !doc.copied && doc.verdict === 'accepted' && Number.isFinite(doc.cost) ? await submissions.countDocuments({ ...own, verdict: 'accepted', cost: { $gt: doc.cost } }) : null;
+      const total = await submissions.countDocuments(own);
       return { submissions: total, accepted, cheaperThan: pricier === null || accepted <= 1 ? null : Math.round(100 * pricier / (accepted - 1)) };
     },
     // Per problem: submissions, accepted ones, and people who solved it. Kept for a minute.
     async problemStats() {
       if (statsCache && clock() - statsCache.at < 60_000) return statsCache.value;
       await init();
-      const rows = await submissions.aggregate([{ $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, solvers: { $addToSet: { $cond: [{ $eq: ['$verdict', 'accepted'] }, '$userId', '$$REMOVE'] } } } }]).toArray();
+      const rows = await submissions.aggregate([{ $match: { copied: { $ne: true } } }, { $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, solvers: { $addToSet: { $cond: [{ $eq: ['$verdict', 'accepted'] }, '$userId', '$$REMOVE'] } } } }]).toArray();
       const value = Object.fromEntries(rows.map((r) => [r._id, { submissions: r.submissions, accepted: r.accepted, solvers: r.solvers.length }]));
       statsCache = { at: clock(), value };
       return value;

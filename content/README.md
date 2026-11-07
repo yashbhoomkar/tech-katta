@@ -58,7 +58,9 @@ practice: {
                                   sample data and field names for request tests (fields also feed the
                                   schema editor's suggestions)
   hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
-  reference: {nodes, edges},      must pass every test
+  reference: {nodes, edges},      must pass every test; shown on the Solution tab (GET /v1/articles/<slug>/
+                                  solution) with Copy to my canvas, so lay it out neatly (left to right,
+                                  ~240 apart); submitted unchanged it isn't counted as solved
   wrong: [{name, why, fails, nodes, edges}]   each must fail the test `fails` names
 }
 ```
