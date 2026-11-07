@@ -119,10 +119,12 @@ The owner will sell Tech Katta at ₹99 a month or ₹249 a year per account. De
 for the owner to confirm):
 - **Free:** Concepts, Components, Q00–Q02 and one question per difficulty after that, the first three
   Lab challenges. Free needs sign-in (as now), so every reader is a lead.
-- **Paid:** every Interview Question, every Lab challenge (one per question), Practice mode, recorded
+- **Paid:** every Interview Question, every Lab challenge (one per question), recorded
   narration, progress across devices.
+- Practice mode (the timed checklist) was removed on 2026-11-07 at the owner's request: the problem
+  workspace (Run, Submit, Your answer, Solution) replaces it.
 - **Build order:** depth first (one Interview Question per content run until all 37 are done, each
-  with a Lab challenge), then Practice mode, then public previews for search, then the paywall.
+  with a Lab challenge), then public previews for search, then the paywall.
   Payments stay owner-only (rule 5) until the owner changes that rule.
 - **Measured by:** sign-ups, `lab_open` and `article_open` per user, return visits in 7 days. On
   2026-11-05 there was 1 account and 36 page views in total, so getting readers is the bottleneck.
