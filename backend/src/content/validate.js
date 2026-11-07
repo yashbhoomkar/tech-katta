@@ -381,6 +381,7 @@ export function validatePractice(p, lab, at, problems) {
   const byType = Object.fromEntries(list(lab?.components).map((c) => [c && c.type, c]));
   const patterns = new Set(list(byType.client?.patterns).map((x) => x && x.id));
   if (!isText(p.brief)) problems.push(`${at}: needs brief`);
+  if (p.referenceNote !== undefined && !isText(p.referenceNote)) problems.push(`${at}: referenceNote must be text (shown under the solution design)`);
   const f = p.fixed;
   if (f !== undefined) {
     if (!f || typeof f !== 'object') problems.push(`${at}: fixed needs an object`);

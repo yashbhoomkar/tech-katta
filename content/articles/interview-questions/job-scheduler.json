@@ -295,13 +295,13 @@
       },
       {
         "id": "spike",
-        "name": "Everything due at once",
-        "desc": "At 8 pm every restaurant's daily payout and reminder batch comes due: 15,000 jobs a second for 15 minutes.",
+        "name": "Everything due at 9 pm",
+        "desc": "At 9 pm 3 lakh restaurants' payouts and the evening's reminder batches all come due. The Lab counts in 5-minute steps, so the article's 5-second wall of 60,000 a second shows here as 15,000 jobs a second for 15 minutes.",
         "hours": 3,
-        "startHour": 19,
+        "startHour": 20,
         "traffic": {
           "rps": 15000,
-          "pattern": "sale"
+          "pattern": "rush9"
         },
         "checks": [
           {
@@ -547,37 +547,37 @@
       ],
       "decisions": [
         {
-          "id": "due",
+          "id": "due-2",
           "q": "How do you find the jobs due now?",
           "options": [
-            "Scan every job every second",
+            "Read every job each second and pick out the due ones",
             "Keep jobs indexed by due time and read the next few",
-            "One timer thread per job"
+            "Give every job its own timer thread in a server"
           ],
           "answer": 1,
-          "why": "An index by due time makes \"what's next\" a short read however many jobs there are."
+          "why": "An index by due time makes \"what's next\" a short read however many jobs there are. Reading everything each second gets slower as jobs pile up, and crores of timer threads don't fit in memory or survive a restart."
         },
         {
-          "id": "lease",
+          "id": "lease-2",
           "q": "A worker dies halfway through a job. What happens?",
           "options": [
-            "Workers claim jobs with a lease; if a job isn't finished in time, another worker takes it",
-            "The job is lost",
-            "Every job always runs on two workers"
-          ],
-          "answer": 0,
-          "why": "A lease means a crashed worker's job comes back by itself, without running every job twice."
-        },
-        {
-          "id": "idem",
-          "q": "For retries to be safe, a job should be…",
-          "options": [
-            "Fast",
-            "Short",
-            "Idempotent: running it twice has the same effect as once"
+            "The job is marked failed, and its owner schedules it again",
+            "Every job runs on two workers at once, and one result is kept",
+            "Workers claim jobs with a lease; unfinished jobs come back"
           ],
           "answer": 2,
-          "why": "With leases and retries, a job can run more than once; making it idempotent makes that harmless."
+          "why": "A lease means a crashed worker's job comes back by itself, without anyone noticing and without running every job twice."
+        },
+        {
+          "id": "idem-2",
+          "q": "For retries to be safe, a job should be…",
+          "options": [
+            "Idempotent: running it twice has the same effect as once",
+            "Fast enough to finish before its lease runs out",
+            "Run inside one database transaction, from its start to its end"
+          ],
+          "answer": 0,
+          "why": "With leases and retries, a job can run more than once. Making it idempotent makes that harmless; speed and transactions don't stop a second run from paying twice."
         }
       ]
     },
@@ -596,7 +596,7 @@
       },
       {
         "step": "design",
-        "x": "Due jobs go into a Queue; workers claim them with a lease and run them. The queue absorbs the 8 pm wall."
+        "x": "Due jobs go into a Queue; workers claim them with a lease and run them. The queue absorbs the 9 pm wall."
       },
       {
         "step": "design",

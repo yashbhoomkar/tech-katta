@@ -199,7 +199,7 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends answers and leaderboard reads. Each request is one query against the sorted sets, which a cache keeps (90% of reads); 40% of queries are score updates. Scoring can follow a moment after the answer. Your Clients' own rate is ignored.",
+    "brief": "Each test sends answers and leaderboard reads. Each request is one query against the sorted sets, which a cache keeps (90% of reads); 40% of queries are score updates. Scoring can follow a moment after the answer. Your Clients' own rate is ignored. The tests send a slice of the quiz traffic (up to 70,000 answers and reads a second, against the full 2.5 lakh), so the Lab's numbers stay small; at full size it is the same design with more shards.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,
@@ -393,16 +393,16 @@
       },
       {
         "id": "api-score",
-        "name": "Add points after a match",
+        "name": "A right answer scores",
         "sample": true,
         "async": true,
-        "desc": "p1 wins 50 points; the board can catch up a moment later.",
+        "desc": "p1 answers question 12 correctly and earns 50 points. The answer is accepted at once; workers add the points to the board a moment later.",
         "request": {
           "method": "POST",
-          "path": "/v1/scores",
+          "path": "/v1/matches/m7/questions/q12/answer",
           "body": {
             "player_id": "p1",
-            "points": 50
+            "choice": "B"
           }
         },
         "steps": [
@@ -520,37 +520,37 @@
       ],
       "decisions": [
         {
-          "id": "rank",
-          "q": "The top 10, and my rank among 1 crore players, instantly. How?",
+          "id": "rank-2",
+          "q": "The top 100, and my rank among 50 lakh players, in under 100 ms. How?",
           "options": [
-            "A sorted set in memory: top players and any rank in log time",
-            "ORDER BY score in the database each time",
-            "Recompute the ranking every night"
+            "ORDER BY score in the database for each request",
+            "A sorted set in memory, ordered by score",
+            "A ranking recomputed every minute by a batch job"
           ],
-          "answer": 0,
-          "why": "Sorting a crore rows per request is far too slow, and nightly ranks are stale. A sorted set keeps the order as scores change."
+          "answer": 1,
+          "why": "Sorting 50 lakh rows per request is far too slow, and a ranking from a minute ago misses the question that just closed. A sorted set keeps the order as scores change and answers any rank quickly."
         },
         {
-          "id": "burst",
-          "q": "A match ends and a million scores arrive at once. Then?",
+          "id": "burst-2",
+          "q": "A question closes and 30 lakh right answers score at once. Then?",
           "options": [
-            "Queue them; workers apply them at a steady pace",
-            "Write each straight into the sorted set from the API",
-            "Reject them"
-          ],
-          "answer": 0,
-          "why": "The queue absorbs the burst; ranks are a few seconds behind for a moment, and nothing falls over."
-        },
-        {
-          "id": "restart",
-          "q": "The in-memory store restarts. What about the rankings?",
-          "options": [
-            "Lost for good",
-            "Players enter their scores again",
-            "Rebuilt from the scores kept in the database"
+            "Each answer request updates the sorted set before it returns",
+            "Turn away answers that arrive after the first few seconds",
+            "Queue the answers; workers add the points at a steady pace"
           ],
           "answer": 2,
-          "why": "Memory is fast but not the record. The database keeps every score, so the sorted set can be rebuilt."
+          "why": "The queue absorbs the burst; ranks are a few seconds behind for a moment, and nothing falls over. Updating inside every request makes the burst hit the sorted sets all at once; dropping late answers is unfair."
+        },
+        {
+          "id": "restart-2",
+          "q": "The in-memory store restarts. What about the rankings?",
+          "options": [
+            "Rebuilt from the scores kept in the database",
+            "Rebuilt from the players' phones, which keep their own score",
+            "Started again from zero for the rest of the match"
+          ],
+          "answer": 0,
+          "why": "Memory is fast but not the record. The database keeps every score, so the sorted set can be rebuilt; phones can be tampered with, and starting from zero is unfair to everyone."
         }
       ]
     },

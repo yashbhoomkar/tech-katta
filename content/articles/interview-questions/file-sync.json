@@ -32,7 +32,7 @@
         "Edit a file on one device and every other signed-in device gets the new version on its own, usually within seconds.",
         "Work offline: edits made on a train with no signal sync when the phone is back online.",
         "Share a file or folder with other people, as viewer or editor.",
-        "Out of scope here: two people typing in the same document at once (that's Collaborative docs, question 24), search inside files, and previews."
+        "Out of scope here: two people typing in the same document at once (that's Shared document editor, question 19), search inside files, and previews."
       ]
     },
     {
@@ -639,37 +639,37 @@
       ],
       "decisions": [
         {
-          "id": "chunks",
+          "id": "chunks-2",
           "q": "A 1 GB file changes by one line. What gets uploaded?",
           "options": [
-            "The whole file",
-            "Nothing",
-            "Only the changed chunks (files are split into chunks named by a hash of their bytes)"
+            "The whole file again, compressed before it is sent",
+            "Only the changed chunks; files are split into hashed chunks",
+            "A text diff of the change, applied to the server's copy of the file"
           ],
-          "answer": 2,
-          "why": "Chunking means a small edit sends a few megabytes, and identical chunks are stored once across all users."
+          "answer": 1,
+          "why": "Chunking means a small edit sends a few megabytes, and identical chunks are stored once across all users. Compression still sends the whole file, and text diffs don't work for PDFs, photos or video."
         },
         {
-          "id": "conflict",
+          "id": "conflict-2",
           "q": "The same file was edited offline on two laptops. Then?",
           "options": [
-            "Keep both: save a \"conflicted copy\" and tell the user",
-            "The last one to sync quietly wins",
-            "Refuse to sync"
+            "The last one to sync wins; the other edit is replaced",
+            "The first one to sync wins; the second is rejected",
+            "Keep both: save a \"conflicted copy\" and tell the user"
           ],
-          "answer": 0,
-          "why": "Silently picking one throws away someone's work; a conflicted copy keeps both for the person to sort out."
+          "answer": 2,
+          "why": "Picking either one silently throws away someone's work. A conflicted copy keeps both for the person to sort out."
         },
         {
-          "id": "notify",
+          "id": "notify-2",
           "q": "How do your other devices find out about a change?",
           "options": [
-            "A notification (push or long poll), then they fetch changes since their last cursor",
-            "They list every file every minute",
-            "They don't"
+            "A push or long-poll signal, then fetch changes since their cursor",
+            "Each device lists all of its files every minute and compares the lists",
+            "Each device downloads the whole folder again every hour"
           ],
           "answer": 0,
-          "why": "Listing everything constantly is heavy. A small \"something changed\" signal and a cursor fetch only what is new."
+          "why": "Listing or downloading everything again and again is heavy and slow. A small \"something changed\" signal and a cursor fetch only what is new."
         }
       ]
     },

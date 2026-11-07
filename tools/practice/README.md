@@ -4,6 +4,10 @@ Every Interview Question has a `practice` object (format in `content/README.md`)
 against a visitor's design, a rubric for the written steps, hints, and the designs that calibrate the
 tests. These scripts write and calibrate them; the JSON in `content/` is the source of truth.
 
+**Don't run these with `write` again.** They wrote the first versions; the content audit of 2026-11-07 then
+fixed the JSON by hand (key decisions, API tests, schemas, solution designs). Re-running a `write` would
+put the old versions back. Change `content/` directly and check it with `cd frontend && npm test`.
+
 ```bash
 cd tools/practice
 node run.mjs batch3.mjs                 # build and calibrate every spec in a batch, write nothing

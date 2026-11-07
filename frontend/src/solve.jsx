@@ -89,7 +89,7 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</button>)}
 {narrow&&<button type="button" role="tab" aria-selected={canvas} className={canvas?"on":""} onClick={()=>setCanvas(true)}>{s.tabCanvas}</button>}</div>
 <section ref={pane} className="sv-q" aria-label={tabs.find(t=>t[0]===view)?.[1]} hidden={(hide&&!narrow)||(narrow&&canvas)}>
-{view==="solution"?<>{P&&<SolutionDesign sol={sol?.slug===slug?sol:null} lab={lab} copy={copySolution} copied={!!undo} undo={undo?undoCopy:null} busy={busy}/>}<Article a={a} pane/></>
+{view==="solution"?<>{P&&<SolutionDesign sol={sol?.slug===slug?sol:null} note={P.referenceNote} lab={lab} copy={copySolution} copied={!!undo} undo={undo?undoCopy:null} busy={busy}/>}<Article a={a} pane/></>
 :view==="answer"?<Answer P={P} ans={ans} save={saveAns} g={graded}/>
 :view==="hints"?<Hints P={P} used={hints} open={openHint}/>
 :view==="subs"?<Subs subs={subs}/>

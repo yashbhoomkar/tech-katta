@@ -89,3 +89,12 @@ test("sameDesign: the solution copied unchanged is the same design; moved or ren
     assert.ok(!sameDesign(ref,cleanDesign(a.practice.start,lab,"s")),a.slug+" start");}
   assert.ok(!sameDesign(null,null));
 });
+
+test("key decisions don't give the answer away: it isn't by far the longest option, and right answers sit in every position",()=>{
+  const at=[0,0,0];let n=0;
+  for(const a of problems)for(const d of a.practice.rubric.decisions||[]){n++;at[Math.min(d.answer,2)]++;
+    const L=d.options.map(o=>o.length),r=L[d.answer],others=Math.max(...L.filter((_,i)=>i!==d.answer));
+    assert.ok(r<=others*1.15,`${a.slug} ${d.id}: the right answer (${r} characters) is much longer than every other option (${others})`);
+    assert.ok(d.options.every(o=>o.length>=10),`${a.slug} ${d.id}: an option too short to be a real choice`);}
+  for(const k of at)assert.ok(k>=n/6,`right answers bunch up in one position: ${at}`);
+});

@@ -210,7 +210,7 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends gets and puts: one storage operation each, 10% of them writes. Hot keys stay in memory (90% of reads). Your Clients' own rate is ignored.",
+    "brief": "Each test sends gets and puts: one storage operation each, 10% of them writes. Hot keys stay in memory (90% of reads). Your Clients' own rate is ignored. The tests send a slice of the full load (60,000 a second at the evening peak, against the article's 2.2 lakh), so the Lab's numbers stay small; the full cluster is the same design with more nodes.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,
@@ -560,38 +560,38 @@
       ],
       "decisions": [
         {
-          "id": "placement",
+          "id": "place-2",
           "q": "How do you decide which machine holds a key?",
           "options": [
-            "The key modulo the number of machines",
-            "One database that lists every key's machine",
+            "The key's hash modulo the number of machines",
             "Consistent hashing: a ring of virtual nodes",
-            "A random machine, then ask all of them"
+            "One central table that lists every key's machine",
+            "A random machine, then ask all of them on reads"
           ],
-          "answer": 2,
-          "why": "With \"modulo N\", adding one machine moves almost every key. On a ring only the keys next to the new machine move. A central list of keys is a bottleneck and a single point of failure."
+          "answer": 1,
+          "why": "With modulo N, adding one machine moves almost every key; on a ring only the keys next to the new machine move. A central table is a bottleneck and a single point of failure, and asking every machine doesn't scale."
         },
         {
-          "id": "quorum",
-          "q": "Each key is kept on 3 machines. How many copies must answer a write and a read so the read sees the write?",
+          "id": "quorum-2",
+          "q": "Each key is kept on 3 machines. How many must answer a write and a read so the read sees the write?",
           "options": [
             "1 for writes and 1 for reads",
-            "2 for writes and 2 for reads (W + R > N)",
-            "All 3 for writes, 1 for reads"
+            "3 for writes and 1 for reads",
+            "2 for writes and 2 for reads"
           ],
-          "answer": 1,
-          "why": "When W + R is more than N, every read overlaps at least one copy that has the latest write. W = 2, R = 2 keeps working with one machine down; W = 3 fails writes whenever any copy is down."
+          "answer": 2,
+          "why": "When W + R is more than N, every read overlaps at least one copy that has the latest write. W = 2, R = 2 keeps working with one machine down; W = 3 fails writes whenever any copy is down, and 1 + 1 can read a stale copy."
         },
         {
-          "id": "conflict",
+          "id": "conflict-2",
           "q": "Two clients wrote the same key on both sides of a network split. What then?",
           "options": [
-            "Keep the one with the later server clock and drop the other",
-            "Keep both versions (version vectors) and let the reader or the app merge them",
-            "Refuse every write during any split"
+            "Keep both versions; the reader merges them",
+            "Keep the write with the later server clock",
+            "Refuse every write until the split is over"
           ],
-          "answer": 1,
-          "why": "Clocks on different machines disagree, so \"last write wins\" can throw away the newer write without anyone knowing. Version vectors show the two writes were concurrent and keep both."
+          "answer": 0,
+          "why": "Clocks on different machines disagree, so \"last write wins\" can throw away the newer write without anyone knowing. Version vectors show the two writes were concurrent and keep both; refusing writes gives up availability."
         }
       ]
     },

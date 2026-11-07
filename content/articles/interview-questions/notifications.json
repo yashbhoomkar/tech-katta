@@ -267,7 +267,7 @@
         "id": "peak",
         "name": "The dinner peak",
         "sample": true,
-        "desc": "2,000 a second at 8:30 pm.",
+        "desc": "2,000 a second for an hour from 8 pm, the dinner peak.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
@@ -534,37 +534,37 @@
       ],
       "decisions": [
         {
-          "id": "provider",
+          "id": "provider-2",
           "q": "The SMS provider is down for 10 minutes. What happens?",
           "options": [
-            "Those notifications fail",
-            "Retry with growing gaps, then switch to a second provider; messages wait in the queue meanwhile",
-            "Quietly send them by email instead"
+            "The send fails, and the calling service has to retry it later",
+            "Retry with growing gaps, then switch to a second provider",
+            "Send the same message by email instead, straight away"
           ],
           "answer": 1,
-          "why": "Outside providers do fail. The queue holds the messages, retries space out, and a second provider keeps OTPs flowing."
+          "why": "Outside providers do fail. The queue holds the messages, retries space out, and a second provider keeps OTPs flowing. Pushing retries onto every caller spreads the problem; an email OTP arrives where nobody is looking."
         },
         {
-          "id": "dupes",
+          "id": "dupes-2",
           "q": "A retry might send the same OTP twice. How do you stop that?",
           "options": [
-            "It doesn't matter",
-            "Each notification has an id; senders skip ids already sent",
-            "Never retry"
+            "Never retry a send that might have gone through",
+            "Wait a minute before every retry, so the first can finish",
+            "Each notification has an id; senders skip ids already sent"
           ],
-          "answer": 1,
-          "why": "Retries are needed, so sending has to be safe to repeat: an id makes the second attempt a no-op."
+          "answer": 2,
+          "why": "Retries are needed, so sending must be safe to repeat: an id makes the second attempt a no-op. Never retrying loses messages, and waiting only makes duplicates rarer, not impossible."
         },
         {
-          "id": "priority",
-          "q": "A sale message to 1 crore people and login OTPs go out together. Which first?",
+          "id": "priority-2",
+          "q": "A Diwali promotion to 5 crore people and login OTPs go out together. Which first?",
           "options": [
-            "Separate queues: OTPs and order updates ahead of marketing",
+            "Separate queues: OTPs and order updates first",
             "One queue, first come first served",
-            "Marketing first"
+            "One queue, with OTPs sent by a second worker pool"
           ],
           "answer": 0,
-          "why": "An OTP that arrives after the sale blast is useless. Separate queues keep urgent messages moving whatever the backlog."
+          "why": "An OTP stuck behind 5 crore promotions is useless. Separate queues keep urgent messages moving whatever the backlog; a second worker pool on one queue still has to wait behind the promotion."
         }
       ]
     },

@@ -428,70 +428,38 @@
       },
       {
         "id": "api-pay",
-        "name": "Pay ₹500",
+        "name": "Pay ₹480 for order #91",
         "sample": true,
-        "desc": "Money leaves the customer, reaches the shop, and the payment is recorded, all or nothing.",
+        "desc": "The app asks to pay for order #91 by UPI. The payment is created once, keyed by the order, with the amount taken from the order (48,000 paise), never from the app.",
         "request": {
           "method": "POST",
           "path": "/v1/payments",
           "body": {
-            "idempotency_key": "k-91",
-            "from": "a_cust",
-            "to": "a_shop",
-            "amount": 500
+            "order_id": "o91",
+            "method": "upi",
+            "idempotency_key": "o91"
           }
         },
         "steps": [
           {
             "id": "s1",
-            "op": "tx",
-            "steps": [
-              {
-                "id": "a",
-                "op": "update",
-                "entity": "accounts",
-                "by": {
-                  "account_id": "a_cust"
-                },
-                "add": {
-                  "balance": -500
-                },
-                "cond": {
-                  "balance": {
-                    "gte": 500
-                  }
-                }
-              },
-              {
-                "id": "b",
-                "op": "update",
-                "entity": "accounts",
-                "by": {
-                  "account_id": "a_shop"
-                },
-                "add": {
-                  "balance": 500
-                }
-              },
-              {
-                "id": "c",
-                "op": "put",
-                "entity": "payments",
-                "values": {
-                  "payment_id": "pay_2",
-                  "idempotency_key": "k-91",
-                  "amount": 500,
-                  "status": "succeeded"
-                }
-              }
-            ]
+            "op": "put",
+            "entity": "payments",
+            "values": {
+              "payment_id": "pay_2",
+              "order_id": "o91",
+              "idempotency_key": "o91",
+              "amount": 48000,
+              "status": "pending"
+            }
           }
         ],
         "respond": {
           "status": 201,
           "body": {
             "payment_id": "pay_2",
-            "status": "succeeded"
+            "status": "pending",
+            "amount": 48000
           }
         }
       },
@@ -499,15 +467,14 @@
         "id": "api-retry",
         "name": "The app retries",
         "sample": true,
-        "desc": "A timeout makes the app send k-77 again: it gets the first result, not a second charge.",
+        "desc": "A timeout makes the app send order #77's payment again: it finds the first payment by its key and returns it, instead of charging a second time.",
         "request": {
           "method": "POST",
           "path": "/v1/payments",
           "body": {
-            "idempotency_key": "k-77",
-            "from": "a_cust",
-            "to": "a_shop",
-            "amount": 500
+            "order_id": "o77",
+            "method": "upi",
+            "idempotency_key": "o77"
           }
         },
         "steps": [
@@ -516,7 +483,7 @@
             "op": "get",
             "entity": "payments",
             "by": {
-              "idempotency_key": "k-77"
+              "idempotency_key": "o77"
             },
             "fields": [
               "payment_id",
@@ -529,6 +496,75 @@
           "body": {
             "payment_id": "$s1.payment_id",
             "status": "$s1.status"
+          }
+        }
+      },
+      {
+        "id": "api-paid",
+        "name": "The gateway says it's paid",
+        "desc": "The gateway's signed webhook says pay_3 (₹320) succeeded. In one transaction the payment is marked paid and two ledger entries are added that balance; nothing is edited in place.",
+        "request": {
+          "method": "POST",
+          "path": "/v1/webhooks/gateway",
+          "body": {
+            "payment_id": "pay_3",
+            "status": "succeeded"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "tx",
+            "steps": [
+              {
+                "id": "a",
+                "op": "update",
+                "entity": "payments",
+                "by": {
+                  "payment_id": "pay_3"
+                },
+                "set": {
+                  "status": "succeeded"
+                },
+                "cond": {
+                  "status": {
+                    "eq": "pending"
+                  }
+                }
+              },
+              {
+                "id": "b",
+                "op": "put",
+                "entity": "ledger_entries",
+                "values": {
+                  "entry_id": "le_1",
+                  "payment_id": "pay_3",
+                  "account": "gateway_receivable",
+                  "debit": 32000,
+                  "credit": 0,
+                  "at": "2026-11-07T20:41:00Z"
+                }
+              },
+              {
+                "id": "c",
+                "op": "put",
+                "entity": "ledger_entries",
+                "values": {
+                  "entry_id": "le_2",
+                  "payment_id": "pay_3",
+                  "account": "order:o90",
+                  "debit": 0,
+                  "credit": 32000,
+                  "at": "2026-11-07T20:41:00Z"
+                }
+              }
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "recorded": "$s1.ok"
           }
         }
       }
@@ -638,37 +674,37 @@
       ],
       "decisions": [
         {
-          "id": "idem",
-          "q": "The app retries \"Pay ₹500\" after a timeout. How do you not charge twice?",
+          "id": "idem-2",
+          "q": "The app retries \"Pay ₹480\" after a timeout. How do you not charge twice?",
           "options": [
-            "Hope it doesn't happen",
-            "An idempotency key per payment: a repeat returns the first result",
-            "Charge, then refund duplicates by hand"
+            "Check whether the customer paid this amount in the last minute",
+            "An idempotency key per order: a repeat returns the first payment",
+            "Let it charge, then refund the duplicate in the nightly check"
           ],
           "answer": 1,
-          "why": "Timeouts don't say whether the payment went through, so clients must retry; the key makes the retry return the original result."
+          "why": "Timeouts don't say whether the payment went through, so clients must retry; the key makes the retry return the original result. Matching on amount and time blocks real second orders, and refunding later still charges the customer twice."
         },
         {
-          "id": "ledger",
+          "id": "ledger-2",
           "q": "How is money recorded?",
           "options": [
-            "Double entry: each movement is a debit and a credit, only ever added, never edited",
-            "A balance column updated in place",
-            "A spreadsheet"
+            "A balance column per account, updated in place",
+            "A status column on the payment row, updated as it changes",
+            "Double entry: a debit and a credit, only ever added"
           ],
-          "answer": 0,
-          "why": "An append-only ledger keeps the full history; balances are sums that can always be checked and explained."
+          "answer": 2,
+          "why": "An append-only ledger keeps the full history, and its entries always balance, so totals can be checked and explained. A balance changed in place loses how it got there."
         },
         {
-          "id": "recon",
-          "q": "Your records and the bank's disagree at the end of the day. What do you do?",
+          "id": "recon-2",
+          "q": "Your records and the gateway's report disagree at the end of the day. What do you do?",
           "options": [
-            "Reconcile: compare with the bank's report daily and fix differences with new entries",
-            "Trust your own records",
-            "Delete the differences"
+            "Reconcile: match the report and add correcting entries",
+            "Trust your own records: they were written first",
+            "Overwrite your own records with the gateway's numbers"
           ],
           "answer": 0,
-          "why": "Banks and networks have the final word on money that moved. Daily reconciliation finds the gaps, and corrections are new entries, so history stays intact."
+          "why": "The gateway has the final word on money that moved, but blindly overwriting hides your own bugs. Daily reconciliation finds each gap, and corrections are new entries, so history stays intact."
         }
       ]
     },
@@ -751,26 +787,14 @@
             "schema": {
               "tables": [
                 {
-                  "name": "accounts",
-                  "fields": [
-                    {
-                      "name": "account_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "balance",
-                      "type": "int"
-                    }
-                  ],
-                  "key": [
-                    "account_id"
-                  ]
-                },
-                {
                   "name": "payments",
                   "fields": [
                     {
                       "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "order_id",
                       "type": "string"
                     },
                     {
@@ -795,6 +819,46 @@
                         "idempotency_key"
                       ],
                       "kind": "unique"
+                    }
+                  ]
+                },
+                {
+                  "name": "ledger_entries",
+                  "fields": [
+                    {
+                      "name": "entry_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "account",
+                      "type": "string"
+                    },
+                    {
+                      "name": "debit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "credit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "entry_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "payment_id"
+                      ],
+                      "kind": "btree"
                     }
                   ]
                 }
@@ -814,26 +878,14 @@
             "schema": {
               "tables": [
                 {
-                  "name": "accounts",
-                  "fields": [
-                    {
-                      "name": "account_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "balance",
-                      "type": "int"
-                    }
-                  ],
-                  "key": [
-                    "account_id"
-                  ]
-                },
-                {
                   "name": "payments",
                   "fields": [
                     {
                       "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "order_id",
                       "type": "string"
                     },
                     {
@@ -858,6 +910,46 @@
                         "idempotency_key"
                       ],
                       "kind": "unique"
+                    }
+                  ]
+                },
+                {
+                  "name": "ledger_entries",
+                  "fields": [
+                    {
+                      "name": "entry_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "account",
+                      "type": "string"
+                    },
+                    {
+                      "name": "debit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "credit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "entry_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "payment_id"
+                      ],
+                      "kind": "btree"
                     }
                   ]
                 }
@@ -1408,7 +1500,7 @@
       },
       {
         "name": "Retries not found quickly",
-        "why": "Payments have no index on the idempotency key: checking a retry means searching 1,000 crore payments.",
+        "why": "Payments are only found by their id, so a retry can't find the first payment by its key without reading every row: it would charge again or time out.",
         "fails": "api-retry",
         "schemaWrong": true,
         "nodes": [
@@ -1463,26 +1555,14 @@
               "schema": {
                 "tables": [
                   {
-                    "name": "accounts",
-                    "fields": [
-                      {
-                        "name": "account_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "balance",
-                        "type": "int"
-                      }
-                    ],
-                    "key": [
-                      "account_id"
-                    ]
-                  },
-                  {
                     "name": "payments",
                     "fields": [
                       {
                         "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
                         "type": "string"
                       },
                       {
@@ -1500,6 +1580,46 @@
                     ],
                     "key": [
                       "payment_id"
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "payment_id"
+                        ],
+                        "kind": "btree"
+                      }
                     ]
                   }
                 ]
@@ -1518,26 +1638,14 @@
               "schema": {
                 "tables": [
                   {
-                    "name": "accounts",
-                    "fields": [
-                      {
-                        "name": "account_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "balance",
-                        "type": "int"
-                      }
-                    ],
-                    "key": [
-                      "account_id"
-                    ]
-                  },
-                  {
                     "name": "payments",
                     "fields": [
                       {
                         "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
                         "type": "string"
                       },
                       {
@@ -1555,6 +1663,46 @@
                     ],
                     "key": [
                       "payment_id"
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "payment_id"
+                        ],
+                        "kind": "btree"
+                      }
                     ]
                   }
                 ]
@@ -1597,11 +1745,15 @@
     "data": {
       "fields": [
         "payment_id",
+        "order_id",
         "idempotency_key",
-        "account_id",
-        "balance",
         "amount",
-        "status"
+        "status",
+        "entry_id",
+        "account",
+        "debit",
+        "credit",
+        "at"
       ],
       "aliases": {
         "idempotency_key": [
@@ -1613,33 +1765,48 @@
         "amount": [
           "value",
           "paise",
-          "rupees"
+          "amount_paise"
+        ],
+        "entry_id": [
+          "id",
+          "ledger_id"
+        ],
+        "account": [
+          "account_id",
+          "ledger_account"
+        ],
+        "debit": [
+          "dr",
+          "debit_paise"
+        ],
+        "credit": [
+          "cr",
+          "credit_paise"
         ]
       },
       "entities": {
-        "accounts": {
-          "rows": 100000000,
-          "sample": [
-            {
-              "account_id": "a_cust",
-              "balance": 5000
-            },
-            {
-              "account_id": "a_shop",
-              "balance": 0
-            }
-          ]
-        },
         "payments": {
           "rows": 10000000000,
           "sample": [
             {
               "payment_id": "pay_1",
-              "idempotency_key": "k-77",
-              "amount": 500,
+              "order_id": "o77",
+              "idempotency_key": "o77",
+              "amount": 48000,
               "status": "succeeded"
+            },
+            {
+              "payment_id": "pay_3",
+              "order_id": "o90",
+              "idempotency_key": "o90",
+              "amount": 32000,
+              "status": "pending"
             }
           ]
+        },
+        "ledger_entries": {
+          "rows": 30000000000,
+          "sample": []
         }
       }
     }

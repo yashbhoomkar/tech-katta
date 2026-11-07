@@ -440,14 +440,9 @@
         {
           "label": "Send and receive messages, one-to-one and in groups",
           "keys": [
-            "send",
-            "message"
-          ]
-        },
-        {
-          "label": "Groups",
-          "keys": [
-            "group"
+            "group",
+            "message",
+            "send"
           ]
         },
         {
@@ -520,58 +515,58 @@
         {
           "label": "Send a message",
           "method": "POST",
-          "path": "^/(api/)?(v\\d+/)?(conversations/[^/]+/)?messages"
+          "path": "^/(api/)?(v\\d+/)?((conversations|chats|threads|rooms)/[^/]+/)?messages"
         },
         {
           "label": "Fetch messages after a sequence number",
           "method": "GET",
-          "path": "^/(api/)?(v\\d+/)?(conversations/[^/]+/)?messages"
+          "path": "^/(api/)?(v\\d+/)?((conversations|chats|threads|rooms)/[^/]+/)?messages"
         }
       ],
       "decisions": [
         {
-          "id": "push",
+          "id": "push-2",
           "q": "How does a message reach a friend who is online?",
           "options": [
-            "Pushed the moment it arrives, over a connection that stays open (WebSocket)",
-            "Their app asks every few seconds (polling)",
-            "By email"
+            "It's pushed the moment it arrives, over a connection kept open",
+            "Their app asks the server for new messages every few seconds",
+            "Their app holds a request open until a message arrives, then reopens it"
           ],
           "answer": 0,
-          "why": "Polling either delays messages or floods the servers with empty requests. An open connection delivers in milliseconds and costs nothing while quiet."
+          "why": "Polling either delays messages or floods the servers with empty requests. Long polling works but reconnects after every message. An open WebSocket delivers in milliseconds and costs almost nothing while quiet."
         },
         {
-          "id": "order",
+          "id": "order-2",
           "q": "Messages in a chat must show in the same order for everyone. How?",
           "options": [
-            "Sort by each phone's clock",
-            "Any order is fine",
-            "A sequence number per conversation, given by the server"
+            "Sort them by the time on the sender's phone",
+            "A sequence number per conversation, given by the server",
+            "Sort them by the time each one reaches the database server"
           ],
-          "answer": 2,
-          "why": "Phone clocks disagree. A per-conversation number from the server gives one order that every device agrees on."
+          "answer": 1,
+          "why": "Phone clocks disagree, and arrival times differ between database machines. A per-conversation number from the server gives one order that every device agrees on."
         },
         {
-          "id": "offline",
+          "id": "offline-2",
           "q": "The friend is offline. What happens to the message?",
           "options": [
-            "It is dropped",
-            "The server keeps retrying the connection forever",
-            "It is stored; delivered when they reconnect, with a push notification meanwhile"
+            "The server keeps retrying their connection until it gets through",
+            "It's held on the sender's phone until the friend comes online again",
+            "It's stored, then delivered when they reconnect, with a push meanwhile"
           ],
           "answer": 2,
-          "why": "Store and forward: the message is safe in storage, and a push notification tells them to open the app."
+          "why": "Store and forward: the message is safe on the server, and a push notification tells them to open the app. Endless retries waste servers, and keeping it on the sender's phone fails if that phone goes offline."
         },
         {
-          "id": "split",
+          "id": "split-2",
           "q": "How are messages split across machines?",
           "options": [
             "By conversation id, sorted by time inside each conversation",
-            "By message length",
-            "One table on one machine"
+            "By sender id, so each person's sent messages stay together on one machine",
+            "By message id, spread evenly over all the machines"
           ],
           "answer": 0,
-          "why": "Opening a chat reads one conversation's latest messages: keeping each conversation together and in time order makes that one quick read."
+          "why": "Opening a chat reads one conversation's latest messages. Keeping each conversation together and in time order makes that one quick read; splitting by sender or message id scatters a chat over many machines."
         }
       ]
     },

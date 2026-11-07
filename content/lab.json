@@ -53,6 +53,20 @@
           "short": "Monday 10 am",
           "desc": "Quiet at night, the full rate for half an hour from 10 am, then about a sixth of it through the working day.",
           "points": [[0, 0.02], [9.5, 0.05], [10, 1], [10.5, 1], [11, 0.15], [18, 0.15], [19, 0.05], [24, 0.02]]
+        },
+        {
+          "id": "rush9",
+          "label": "Rush at 9 pm",
+          "short": "9 pm rush",
+          "desc": "The full rate for 15 minutes from 9 pm, a fifth of it the rest of the day.",
+          "points": [[0, 0.2], [21, 0.2], [21, 1], [21.25, 1], [21.25, 0.2], [24, 0.2]]
+        },
+        {
+          "id": "noon",
+          "label": "Sale opens at noon",
+          "short": "noon sale",
+          "desc": "The full rate for 15 minutes from 12:00, a fifth of it the rest of the day.",
+          "points": [[0, 0.2], [12, 0.2], [12, 1], [12.25, 1], [12.25, 0.2], [24, 0.2]]
         }
       ],
       "like": "The crowd at the door: everyone who wants something from you, all at once.",

@@ -2,7 +2,8 @@
 // read-only the way the Lab draws it (components where the Lab puts them, arrows between them), with
 // what each part does and the tables each database holds, and a button that copies it onto the canvas
 // (solve.jsx puts it there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
-// submission of the copied design unchanged isn't counted as solved (judge.js sameDesign).
+// submission of the copied design unchanged isn't counted as solved (judge.js sameDesign). `note`
+// (practice.referenceNote) says where the Lab's version differs from the worked answer's full-size one.
 import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,roleOf,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
 
 const KIND={btree:"index",unique:"unique index",geo:"geo index",text:"text index"};
@@ -16,7 +17,7 @@ if(Math.abs(a.x-b.x)<NW&&b.y>a.y)return `M${a.x+NW/2},${a.y+NH} L${b.x+NW/2},${b
 if(Math.abs(a.x-b.x)<NW&&b.y<a.y)return `M${a.x+NW/2},${a.y} L${b.x+NW/2},${b.y+NH}`;
 const lo=Math.max(a.y,b.y)+NH+30;return `M${a.x+NW/2},${a.y+NH} C${a.x+NW/2},${lo} ${b.x+NW/2},${lo} ${b.x+NW/2},${b.y+NH}`}
 
-export default function SolutionDesign({sol,lab,copy,copied,undo,busy}){
+export default function SolutionDesign({sol,lab,copy,copied,undo,busy,note}){
 const cat=useMemo(()=>lab?catalogue(lab):{},[lab]);
 // a design wider than the pane scrolls in its box (say so), and opens full size in a dialog
 const box=useRef(null),dlg=useRef(null),[wide,setWide]=useState(false);
@@ -38,7 +39,7 @@ const draw=(min,id)=><svg viewBox={`${x0} ${y0} ${W} ${H}`} style={{width:"100%"
 </svg>;
 return <section className="sd" aria-labelledby="sd-h">
 <header className="sd-head"><div><label>SOLUTION DESIGN</label><h2 id="sd-h">A design that passes every test</h2>
-<p>It's one way to solve it, not the only one: any design that passes the tests is accepted. Copy it onto your canvas to run it, watch the API calls travel through it, and change it.</p></div></header>
+<p>It's one way to solve it, not the only one: any design that passes the tests is accepted. Copy it onto your canvas to run it, watch the API calls travel through it, and change it.</p>{note&&<p className="sd-note">{note}</p>}</div></header>
 <div className="sd-acts">{copied?<p className="sd-done" role="status">✓ Copied to your canvas.{undo&&<> <button type="button" className="sv-linkbtn" onClick={undo} disabled={busy}>Undo: put my design back</button></>}</p>
 :<button type="button" className="sd-copy" onClick={copy} disabled={busy||!lab}>Copy to my canvas</button>}
 <small>{copied?"A copied design that you submit unchanged isn't counted as solved.":"It replaces the design on your canvas; you can undo it."}</small></div>

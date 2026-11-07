@@ -236,7 +236,7 @@
         "id": "normal",
         "name": "A normal afternoon",
         "sample": true,
-        "desc": "25,000 location pings and offers a second.",
+        "desc": "25,000 location pings and offers a second in the afternoon.",
         "hours": 1,
         "startHour": 15,
         "traffic": {
@@ -257,13 +257,13 @@
           {
             "kind": "role",
             "role": "geo",
-            "label": "Drivers' live positions are held where \"nearest to this point\" is quick to answer"
+            "label": "Riders' latest positions are held where \"nearest to this point\" is quick to answer"
           },
           {
             "kind": "role",
             "role": "matcher",
             "behind": "queue",
-            "label": "Riders are paired with drivers away from the location updates"
+            "label": "Orders are matched to riders by workers, away from the location pings"
           }
         ]
       },
@@ -271,7 +271,7 @@
         "id": "peak",
         "name": "Dinner",
         "sample": true,
-        "desc": "75,000 a second at 8:30 pm: 3 lakh riders pinging every 4 seconds.",
+        "desc": "75,000 a second for an hour from 8 pm: 3 lakh riders pinging every 4 seconds.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
@@ -298,7 +298,7 @@
       {
         "id": "spike",
         "name": "Rain at 8 pm",
-        "desc": "It starts raining in Mumbai: everyone orders in and riders ping more often: 1.1 lakh a second for 15 minutes.",
+        "desc": "It starts raining in Mumbai: everyone orders in and riders ping more often: 1.1 lakh a second for 15 minutes from 8 pm.",
         "hours": 3,
         "startHour": 19,
         "traffic": {
@@ -404,34 +404,32 @@
       },
       {
         "id": "api-ping",
-        "name": "A driver moves",
+        "name": "A rider moves",
         "sample": true,
         "async": true,
-        "desc": "Driver d1 sends a new position.",
+        "desc": "Rider r1 sends a new position from the rider app. Only the latest position is kept; the trail goes to cheap storage later.",
         "request": {
           "method": "POST",
-          "path": "/v1/drivers/d1/location",
+          "path": "/v1/riders/r1/location",
           "body": {
-            "location": [
-              12.971,
-              77.594
-            ]
+            "lat": 18.5204,
+            "lng": 73.8567
           }
         },
         "steps": [
           {
             "id": "s1",
             "op": "update",
-            "entity": "drivers",
+            "entity": "riders",
             "by": {
-              "driver_id": "d1"
+              "rider_id": "r1"
             },
             "set": {
               "location": [
-                12.971,
-                77.594
+                18.5204,
+                73.8567
               ],
-              "updated_at": "2026-11-07T10:00:00Z"
+              "updated_at": "2026-11-07T20:31:04Z"
             }
           }
         ],
@@ -443,37 +441,34 @@
         }
       },
       {
-        "id": "api-trip",
-        "name": "A rider asks for a cab",
+        "id": "api-order",
+        "name": "An order needs a rider",
         "async": true,
-        "desc": "The trip is recorded; finding a driver follows.",
+        "desc": "The restaurant accepts order #91. It is recorded as waiting for a rider; choosing one and sending the offer follows a moment later.",
         "request": {
           "method": "POST",
-          "path": "/v1/trips",
+          "path": "/v1/orders/o91/dispatch",
           "body": {
-            "rider_id": "r1",
-            "pickup": [
-              12.97,
-              77.59
-            ]
+            "restaurant_id": "rest_7"
           }
         },
         "steps": [
           {
             "id": "s1",
             "op": "put",
-            "entity": "trips",
+            "entity": "orders",
             "values": {
-              "trip_id": "t1",
-              "rider_id": "r1",
-              "status": "searching"
+              "order_id": "o91",
+              "restaurant_id": "rest_7",
+              "status": "finding_rider"
             }
           }
         ],
         "respond": {
           "status": 202,
           "body": {
-            "trip_id": "$s1.trip_id"
+            "order_id": "$s1.order_id",
+            "status": "$s1.status"
           }
         },
         "sample": false
@@ -583,37 +578,37 @@
       ],
       "decisions": [
         {
-          "id": "pings",
-          "q": "Drivers send their location every 4 seconds. Where does it go?",
+          "id": "pings-2",
+          "q": "Riders send their location every 4 seconds. Where does it go?",
           "options": [
-            "A new row in the main database every time",
-            "Nowhere",
-            "An in-memory geo index that keeps only the latest position; the trail goes to cheap storage"
-          ],
-          "answer": 2,
-          "why": "Lakhs of pings a second would bury the main database. Matching only needs where each driver is now."
-        },
-        {
-          "id": "offer",
-          "q": "How do you find a driver for a rider?",
-          "options": [
-            "Message every driver in the city",
-            "The driver who joined first",
-            "Look at the nearest few free drivers by map cell and offer the trip to one at a time, with a timeout"
-          ],
-          "answer": 2,
-          "why": "A few nearby candidates keep the search small; one offer at a time avoids two drivers accepting the same trip."
-        },
-        {
-          "id": "double",
-          "q": "Two riders must never get the same driver. How?",
-          "options": [
-            "It is fine if it happens",
-            "Mark the driver as offered in one atomic step; the second rider gets the next driver",
-            "The driver chooses on a call"
+            "A new row in the main database for every single ping that arrives",
+            "An in-memory geo index with only the latest position",
+            "Kept on the rider's phone until an order needs it"
           ],
           "answer": 1,
-          "why": "An atomic \"offer only if free\" means exactly one rider can claim each driver."
+          "why": "75,000 pings a second would bury the main database, and asking phones on demand is slow. Matching only needs where each rider is now; the trail goes to cheap storage for later."
+        },
+        {
+          "id": "offer-2",
+          "q": "How do you choose a rider for a new order?",
+          "options": [
+            "Offer it to every free rider nearby; the first to accept wins",
+            "Give it to the free rider who has waited longest in the city",
+            "Look at the nearest few free riders and offer to one at a time"
+          ],
+          "answer": 2,
+          "why": "A few nearby candidates keep the search small, and one offer at a time, with a timeout, avoids several riders racing for the same order. The longest-waiting rider may be across the city."
+        },
+        {
+          "id": "double-2",
+          "q": "A rider must never get two orders at once. How?",
+          "options": [
+            "Mark the rider as offered in one atomic step",
+            "Check the rider is free, then assign the order",
+            "Let the rider app decline an order if they're busy"
+          ],
+          "answer": 0,
+          "why": "Between a separate check and assign, a second order can claim the same rider. An atomic \"offer only if free\" means exactly one order can claim each rider; relying on the app to decline still sends two offers."
         }
       ]
     },
@@ -779,10 +774,10 @@
             "schema": {
               "tables": [
                 {
-                  "name": "drivers",
+                  "name": "riders",
                   "fields": [
                     {
-                      "name": "driver_id",
+                      "name": "rider_id",
                       "type": "string"
                     },
                     {
@@ -799,7 +794,7 @@
                     }
                   ],
                   "key": [
-                    "driver_id"
+                    "rider_id"
                   ],
                   "indexes": [
                     {
@@ -811,18 +806,18 @@
                   ]
                 },
                 {
-                  "name": "trips",
+                  "name": "orders",
                   "fields": [
                     {
-                      "name": "trip_id",
+                      "name": "order_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
                       "type": "string"
                     },
                     {
                       "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "driver_id",
                       "type": "string"
                     },
                     {
@@ -831,7 +826,7 @@
                     }
                   ],
                   "key": [
-                    "trip_id"
+                    "order_id"
                   ]
                 }
               ]
@@ -849,10 +844,10 @@
             "schema": {
               "tables": [
                 {
-                  "name": "drivers",
+                  "name": "riders",
                   "fields": [
                     {
-                      "name": "driver_id",
+                      "name": "rider_id",
                       "type": "string"
                     },
                     {
@@ -869,7 +864,7 @@
                     }
                   ],
                   "key": [
-                    "driver_id"
+                    "rider_id"
                   ],
                   "indexes": [
                     {
@@ -881,18 +876,18 @@
                   ]
                 },
                 {
-                  "name": "trips",
+                  "name": "orders",
                   "fields": [
                     {
-                      "name": "trip_id",
+                      "name": "order_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
                       "type": "string"
                     },
                     {
                       "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "driver_id",
                       "type": "string"
                     },
                     {
@@ -901,7 +896,7 @@
                     }
                   ],
                   "key": [
-                    "trip_id"
+                    "order_id"
                   ]
                 }
               ]
@@ -2697,8 +2692,8 @@
         ]
       },
       {
-        "name": "Drivers without a position",
-        "why": "Drivers are stored without their location, so nobody can find the nearest one.",
+        "name": "Riders without a position",
+        "why": "The riders table has no position, so a location ping has nowhere to go and no one can find the nearest free rider.",
         "fails": "api-ping",
         "schemaWrong": true,
         "nodes": [
@@ -2836,26 +2831,34 @@
               "schema": {
                 "tables": [
                   {
-                    "name": "drivers",
+                    "name": "riders",
                     "fields": [
                       {
-                        "name": "driver_id",
+                        "name": "rider_id",
                         "type": "string"
                       },
                       {
                         "name": "status",
                         "type": "string"
+                      },
+                      {
+                        "name": "updated_at",
+                        "type": "time"
                       }
                     ],
                     "key": [
-                      "driver_id"
+                      "rider_id"
                     ]
                   },
                   {
-                    "name": "trips",
+                    "name": "orders",
                     "fields": [
                       {
-                        "name": "trip_id",
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
                         "type": "string"
                       },
                       {
@@ -2863,16 +2866,12 @@
                         "type": "string"
                       },
                       {
-                        "name": "driver_id",
-                        "type": "string"
-                      },
-                      {
                         "name": "status",
                         "type": "string"
                       }
                     ],
                     "key": [
-                      "trip_id"
+                      "order_id"
                     ]
                   }
                 ]
@@ -2890,26 +2889,34 @@
               "schema": {
                 "tables": [
                   {
-                    "name": "drivers",
+                    "name": "riders",
                     "fields": [
                       {
-                        "name": "driver_id",
+                        "name": "rider_id",
                         "type": "string"
                       },
                       {
                         "name": "status",
                         "type": "string"
+                      },
+                      {
+                        "name": "updated_at",
+                        "type": "time"
                       }
                     ],
                     "key": [
-                      "driver_id"
+                      "rider_id"
                     ]
                   },
                   {
-                    "name": "trips",
+                    "name": "orders",
                     "fields": [
                       {
-                        "name": "trip_id",
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
                         "type": "string"
                       },
                       {
@@ -2917,16 +2924,12 @@
                         "type": "string"
                       },
                       {
-                        "name": "driver_id",
-                        "type": "string"
-                      },
-                      {
                         "name": "status",
                         "type": "string"
                       }
                     ],
                     "key": [
-                      "trip_id"
+                      "order_id"
                     ]
                   }
                 ]
@@ -3044,12 +3047,12 @@
     ],
     "data": {
       "fields": [
-        "driver_id",
+        "rider_id",
         "location",
         "status",
         "updated_at",
-        "trip_id",
-        "rider_id"
+        "order_id",
+        "restaurant_id"
       ],
       "aliases": {
         "location": [
@@ -3060,24 +3063,28 @@
         ],
         "status": [
           "state"
+        ],
+        "rider_id": [
+          "partner_id",
+          "delivery_partner_id"
         ]
       },
       "entities": {
-        "drivers": {
+        "riders": {
           "rows": 500000,
           "sample": [
             {
-              "driver_id": "d1",
+              "rider_id": "r1",
               "location": [
-                12.97,
-                77.59
+                18.52,
+                73.85
               ],
               "status": "free",
-              "updated_at": "2026-11-07T10:00:00Z"
+              "updated_at": "2026-11-07T20:30:00Z"
             }
           ]
         },
-        "trips": {
+        "orders": {
           "rows": 1000000000,
           "sample": []
         }

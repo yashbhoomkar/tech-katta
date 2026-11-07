@@ -555,37 +555,37 @@
       ],
       "decisions": [
         {
-          "id": "lookup",
+          "id": "lookup-2",
           "q": "Someone types \"piz\". How do you find suggestions?",
           "options": [
-            "Search all past queries LIKE 'piz%' on each keystroke",
-            "Look the prefix up in a table of top suggestions kept for every prefix",
+            "Look the prefix up in a table of top suggestions per prefix",
+            "Search all past queries with LIKE 'piz%' on every keystroke typed",
             "Send each keystroke to a full-text search engine"
           ],
-          "answer": 1,
-          "why": "Suggestions must come back in tens of milliseconds for every keystroke. A ready list per prefix is one lookup; scanning queries or full-text search per keystroke is far too slow at this rate."
+          "answer": 0,
+          "why": "Suggestions must come back in tens of milliseconds for every keystroke. A ready list per prefix is one lookup; scanning queries or running a full search per keystroke is far too slow at this rate."
         },
         {
-          "id": "refresh",
+          "id": "refresh-2",
           "q": "How often are the top suggestions rebuilt?",
           "options": [
-            "Every few minutes to an hour, in the background, from recent search logs",
-            "Instantly on every search",
-            "Once a year"
-          ],
-          "answer": 0,
-          "why": "Popular searches change over minutes and hours, not milliseconds. Rebuilding in the background keeps the read path a plain lookup."
-        },
-        {
-          "id": "client",
-          "q": "What cuts the load most before it reaches you?",
-          "options": [
-            "A bigger database",
-            "Wait about 100 ms after the last keystroke, and cache answers in the app",
-            "Send every keystroke twice to be safe"
+            "Instantly, by updating counts on every search that is made",
+            "Every few minutes to an hour, in the background, from logs",
+            "Once a day at night, when traffic is at its lowest"
           ],
           "answer": 1,
-          "why": "Most keystrokes are followed by another within 100 ms; skipping those and remembering recent answers on the phone removes a large share of requests."
+          "why": "Popular searches change over minutes and hours, not milliseconds, so a background rebuild keeps the read path a plain lookup. Updating counts on every search puts writes on the hot path; once a day misses a trend for hours."
+        },
+        {
+          "id": "client-2",
+          "q": "What cuts the load most before it reaches your servers?",
+          "options": [
+            "A larger database instance, with more memory, behind the servers",
+            "Sending only every second keystroke from the app",
+            "Wait ~100 ms after the last keystroke; cache on the phone"
+          ],
+          "answer": 2,
+          "why": "Most keystrokes are followed by another within 100 ms; waiting for a pause skips those, and remembering recent answers on the phone removes many more. A bigger database doesn't reduce requests, and skipping alternate keystrokes shows wrong suggestions."
         }
       ]
     },
