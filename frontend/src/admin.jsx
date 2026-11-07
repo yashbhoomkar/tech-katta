@@ -17,16 +17,16 @@ function Tile({label,value,sub}){return <div className="a-tile"><span>{label}</s
 
 // Visitors per day: one hue, bars from a shared baseline, a value on hover/tap and on the latest bar.
 function Daily({data}){const days=useMemo(()=>{const out=[],seen=new Map(data.daily.map(d=>[d.day,d]));const end=new Date(data.to),start=new Date(data.from);
-for(let t=new Date(start);t<=end;t.setDate(t.getDate()+1)){const k=t.toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});if(!out.length||out[out.length-1].day!==k)out.push(seen.get(k)||{day:k,visitors:0,views:0})}return out},[data]);
+for(let t=new Date(start);t<=end;t.setDate(t.getDate()+1)){const k=t.toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});if(!out.length||out[out.length-1].day!==k)out.push(seen.get(k)||{day:k,visitors:0,users:0,views:0})}return out},[data]);
 const[hover,setHover]=useState(null);const max=Math.max(1,...days.map(d=>d.visitors));const W=600,H=160,gap=days.length>40?1:2,bw=Math.max(2,(W-gap*(days.length-1))/days.length);
 const h=hover??days.length-1,cur=days[h];
-return <figure className="a-card a-chart"><figcaption><b>Visitors per day</b><span>{cur?`${day(cur.day+"T12:00:00+05:30")}: ${fmt(cur.visitors)} visitors · ${fmt(cur.views)} page views`:""}</span></figcaption>
+return <figure className="a-card a-chart"><figcaption><b>Visitors per day</b><span>{cur?`${day(cur.day+"T12:00:00+05:30")}: ${fmt(cur.visitors)} visitors · ${fmt(cur.users||0)} signed in · ${fmt(cur.views)} page views`:""}</span></figcaption>
 <div className="a-plot"><span className="a-max">{fmt(max)}</span><svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`Visitors per day, ${days.length} days`} onMouseLeave={()=>setHover(null)}>
 {[.5,1].map(f=><line key={f} x1="0" x2={W} y1={H-(H-8)*f} y2={H-(H-8)*f} className="a-grid" vectorEffect="non-scaling-stroke"/>)}<line x1="0" x2={W} y1={H-.5} y2={H-.5} className="a-axis" vectorEffect="non-scaling-stroke"/>
 {days.map((d,i)=>{const x=i*(bw+gap),bh=d.visitors?Math.max(2,d.visitors/max*(H-8)):0;return <g key={d.day} onMouseEnter={()=>setHover(i)} onClick={()=>setHover(i)}>
 <rect x={x} y="0" width={bw+gap} height={H} fill="transparent"/>{bh>0&&<rect x={x} y={H-bh} width={bw} height={bh} rx={Math.min(2,bw/2)} className={"a-bar"+(i===h?" on":"")}/>}</g>})}
 </svg><div className="a-ticks"><span>{day(days[0]?.day+"T12:00:00+05:30")}</span><span>{day(days[days.length-1]?.day+"T12:00:00+05:30")}</span></div></div>
-<details className="a-table-view"><summary>Show as a table</summary><Table cols={["Day","Visitors","Page views"]} rows={days.map(d=>[d.day,fmt(d.visitors),fmt(d.views)])}/></details></figure>}
+<details className="a-table-view"><summary>Show as a table</summary><Table cols={["Day","Visitors","Signed in","Page views"]} rows={days.map(d=>[d.day,fmt(d.visitors),fmt(d.users||0),fmt(d.views)])}/></details></figure>}
 
 // Home page → locked Lab → signed in → scored: distinct visitors at each step.
 function Funnel({steps}){const top=steps[0]?.visitors||0;return <section className="a-card"><h2>From the home page to a score</h2><ol className="a-funnel">
@@ -37,10 +37,15 @@ function Table({cols,rows,empty="Nothing yet in this range."}){if(!rows.length)r
 return <div className="a-scroll"><table><thead><tr>{cols.map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={i}>{r.map((v,j)=><td key={j}>{v}</td>)}</tr>)}</tbody></table></div>}
 const Card=({title,children,note})=><section className="a-card"><h2>{title}</h2>{children}{note&&<p className="a-note">{note}</p>}</section>;
 
-function Report({d}){const t=d.totals,a=d.accounts,phones=d.devices.find(x=>x.device==="phone")?.visitors||0;
+// Signed-in users a day, averaged over the last 7 days of the range (a day with no events counts as 0).
+// The owner ends the free period once this reaches 50 (11-07).
+const GOAL=50;
+function dailyUsers(d){const by=new Map(d.daily.map(x=>[x.day,x.users||0])),end=new Date(d.to);let sum=0;
+for(let i=0;i<7;i++){const t=new Date(end.getTime()-i*86400000);sum+=by.get(t.toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"}))||0}return Math.round(sum/7)}
+function Report({d}){const t=d.totals,a=d.accounts,phones=d.devices.find(x=>x.device==="phone")?.visitors||0,du=dailyUsers(d);
 return <>
 <div className="a-tiles"><Tile label="Visitors" value={fmt(t.visitors)} sub={`${pct(phones,t.visitors)} on phones`}/><Tile label="Page views" value={fmt(d.byName.page_view||0)}/>
-<Tile label="Signed-in visitors" value={fmt(t.users)}/><Tile label="New accounts" value={fmt(a.newInRange)} sub={`${fmt(a.total)} in all`}/>
+<Tile label="Signed-in users a day" value={fmt(du)} sub={du>=GOAL?`goal of ${GOAL} reached (7-day average)`:`7-day average · goal ${GOAL}`}/><Tile label="Signed-in visitors" value={fmt(t.users)}/><Tile label="New accounts" value={fmt(a.newInRange)} sub={`${fmt(a.total)} in all`}/>
 <Tile label="Sign-ins" value={fmt(d.byName.sign_in||0)}/><Tile label="Ads opt-ins" value={fmt(a.adsOptIn)} sub="all time"/></div>
 <Daily data={d}/>
 <div className="a-two"><Funnel steps={d.funnel}/>

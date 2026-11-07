@@ -16,8 +16,9 @@ export async function adminSummary({ events, users, submissions }, { days = 7, n
     { $facet: {
       totals: [{ $group: { _id: null, events: count, visitors: { $addToSet: '$visitor' }, users: { $addToSet: '$userId' } } },
         { $project: { _id: 0, events: 1, visitors: { $size: '$visitors' }, users: { $size: { $filter: { input: '$users', cond: { $ne: ['$$this', null] } } } } } }],
-      daily: [{ $group: { _id: { $dateToString: { date: '$at', format: '%Y-%m-%d', timezone: TZ } }, visitors: { $addToSet: '$visitor' }, views: { $sum: { $cond: [{ $eq: ['$name', 'page_view'] }, 1, 0] } } } },
-        { $project: { _id: 0, day: '$_id', visitors: { $size: '$visitors' }, views: 1 } }, { $sort: { day: 1 } }],
+      // per day: visitors (any browser), signed-in users (accounts that did something that day) and page views
+      daily: [{ $group: { _id: { $dateToString: { date: '$at', format: '%Y-%m-%d', timezone: TZ } }, visitors: { $addToSet: '$visitor' }, users: { $addToSet: '$userId' }, views: { $sum: { $cond: [{ $eq: ['$name', 'page_view'] }, 1, 0] } } } },
+        { $project: { _id: 0, day: '$_id', visitors: { $size: '$visitors' }, users: { $size: { $filter: { input: '$users', cond: { $ne: ['$$this', null] } } } }, views: 1 } }, { $sort: { day: 1 } }],
       byName: [{ $group: { _id: '$name', n: count } }, { $sort: { n: -1 } }],
       devices: [{ $group: { _id: { device: '$device', visitor: '$visitor' } } }, { $group: { _id: '$_id.device', visitors: count } }, { $sort: { visitors: -1 } }],
       pages: [{ $match: { name: 'page_view' } }, { $group: { _id: { section: '$props.section', slug: '$props.slug' }, views: count, visitors: { $addToSet: '$visitor' } } },
