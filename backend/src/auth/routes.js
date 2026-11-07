@@ -14,13 +14,14 @@
 //                                      ANALYTICS_ORIGIN, the dashboard at analytics.katta.cc)
 //   GET    /v1/admin/audience.csv     Meta Custom Audience file of the accounts that opted in (admin)
 //   POST   /v1/me/submissions {slug, design, answer, hints} → the problem judged again here, stored (result
-//                             only) → {verdict, passed, total, score, submissions, accepted, cheaperThan}
+//                             only) → {verdict, passed, total, score, copied?, submissions, accepted, cheaperThan}
+//                             (copied: the Solution tab's design unchanged; kept out of the stats)
 //   GET    /v1/problems/stats per problem: submissions, accepted, solvers (public, cached a minute)
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
 import { cleanDesign } from '../../../frontend/src/lab/store.js';
-import { judge, gradeAnswer, score } from '../../../frontend/src/judge/judge.js';
+import { judge, gradeAnswer, score, sameDesign } from '../../../frontend/src/judge/judge.js';
 import { AuthError, SESSION_DAYS, errorKind } from './index.js';
 import { cleanBatch } from './events.js';
 import { audienceCsv } from './audience.js';
@@ -180,9 +181,11 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const hints = Number.isInteger(b.hints) && b.hints >= 0 && b.hints <= 50 ? b.hints : 0;
         // judged again here, the same way the page did: the stored result can't be made up in a browser
         const j = judge(design, lab, practice), g = gradeAnswer(cleanAnswer(b.answer), practice.rubric), sc = score(g, j, hints);
-        const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints };
+        // the Solution tab's design, copied unchanged: stored, but it isn't counted in anyone's stats
+        const copied = sameDesign(design, practice.reference && cleanDesign(practice.reference, lab, 'reference'));
+        const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(copied ? { copied: true } : {}) };
         const stats = await accounts.addSubmission(doc);
-        return send(request, response, 200, { verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, ...stats });
+        return send(request, response, 200, { verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, ...(copied ? { copied: true } : {}), ...stats });
       }
       if (pathname === '/v1/me/lab' && method === 'GET') return send(request, response, 200, storable(mergeLab(await accounts.getLab(me.id), {}, labCatalogue())));
       if (pathname === '/v1/me/lab' && method === 'POST') {

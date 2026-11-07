@@ -131,8 +131,14 @@ function handleContent(request, response, pathname, searchParams) {
     if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
     return sendContent(request, response, bodies.list(section));
   }
-  const slug = pathname.slice('/v1/articles/'.length);
+  // a problem's solution design (its reference), for the Solution tab: /v1/articles/<slug>/solution
+  const rest = pathname.slice('/v1/articles/'.length), solution = rest.endsWith('/solution');
+  const slug = solution ? rest.slice(0, -'/solution'.length) : rest;
   if (!SLUG.test(slug)) return sendContentError(request, response, 404, 'not_found');
+  if (solution) {
+    const design = bodies.solution(slug);
+    return design ? sendContent(request, response, design) : sendContentError(request, response, 404, 'not_found');
+  }
   const article = bodies.article(slug);
   if (!article) return sendContentError(request, response, 404, 'not_found');
   return sendContent(request, response, article);

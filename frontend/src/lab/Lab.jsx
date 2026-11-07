@@ -189,8 +189,12 @@ const rf=useReactFlow();useEffect(()=>track("lab_open",{embedded:!!embedded,chal
 const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.challenges||[]).find(c=>c.id===start);
 // Opened on a problem (#problems/<slug>): its own design, id "q-<slug>" on every device, starting with just
 // the Clients; the visitor builds the rest. A deleted one is made again under a new id.
-if(problem){const pid="q-"+problem.id;const mine=s.designs[pid]?pid:Object.values(s.designs).filter(d=>d.problem===problem.id).sort((a,b)=>b.updated-a.updated)[0]?.id;if(mine){s.current=mine;return s}
-const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]={id,name:problem.name,updated:fresh?1:Date.now(),...(problem.start?structuredClone({nodes:problem.start.nodes,edges:problem.start.edges}):{nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[]}),credit:{spent:0,hours:0},problem:problem.id};s.current=id;persistNew(lab,s.designs[id],id);return s}
+// problem.load (Reset, Copy the solution, Undo in solve.jsx): put that design on the canvas in place of
+// this one; credit is kept unless load.credit says otherwise.
+if(problem){const pid="q-"+problem.id;const mine=s.designs[pid]?pid:Object.values(s.designs).filter(d=>d.problem===problem.id).sort((a,b)=>b.updated-a.updated)[0]?.id;
+const L=problem.load,put=d=>L?{...d,...structuredClone({nodes:L.nodes,edges:L.edges}),...(L.credit?{credit:{...L.credit}}:{}),updated:Date.now()}:d;
+if(mine){s.current=mine;if(L){s.designs[mine]=put(s.designs[mine]);persistNew(lab,s.designs[mine],mine)}return s}
+const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]=put({id,name:problem.name,updated:fresh?1:Date.now(),...(problem.start?structuredClone({nodes:problem.start.nodes,edges:problem.start.edges}):{nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[]}),credit:{spent:0,hours:0},problem:problem.id});s.current=id;persistNew(lab,s.designs[id],id);return s}
 // Opened on a challenge (the landing page, #lab/<id>): open this browser's latest design for it, or make
 // one from its start, without creating the example design too (QA H7).
 if(sc){const mine=Object.values(s.designs).filter(d=>d.challenge===start).sort((a,b)=>b.updated-a.updated)[0];if(mine){s.current=mine.id;return s}/* A challenge's untouched starting design has the same id on every device and the oldest possible
@@ -216,6 +220,7 @@ latest.designs[id]=d;if(!embedded)latest.current=storeRef.current.current;save(l
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>writeDesign(id),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
 // The problem workspace judges the design on the canvas as it is now (solve.jsx Run / Submit).
 useEffect(()=>{onDesign?.(fromFlow(nodes,edges))},[nodes,edges]);// eslint-disable-line
+useEffect(()=>{if(problem?.load)problem.onLoaded?.()},[]);// eslint-disable-line
 const lastCredit=useRef(0);useEffect(()=>{const now=Date.now();if(now-lastCredit.current<2000)return;lastCredit.current=now;writeDesign(loaded.current)},[credit]);// eslint-disable-line
 useEffect(()=>{if(!running)writeDesign(loaded.current)},[running]);// eslint-disable-line
 useEffect(()=>{const flush=()=>writeDesign(loaded.current);addEventListener("pagehide",flush);return()=>{removeEventListener("pagehide",flush);flush()}},[writeDesign]);

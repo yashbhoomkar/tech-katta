@@ -1,7 +1,7 @@
 // Judge tests, and the calibration of every problem in content/: the reference design passes every
 // test, each wrong design fails the test it names, and the starting design passes no non-sample test.
 import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";import path from "node:path";import{fileURLToPath}from"node:url";
-import{judge,runTest,gradeAnswer,score,WEIGHTS,roleOnPath,names}from"./judge.js";
+import{judge,runTest,gradeAnswer,score,WEIGHTS,roleOnPath,names,sameDesign}from"./judge.js";import{cleanDesign}from"../lab/store.js";
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),"..","..","..","content");
 const lab=JSON.parse(fs.readFileSync(path.join(root,"lab.json"),"utf8"));
 const index=JSON.parse(fs.readFileSync(path.join(root,"articles","index.json"),"utf8")).articles;
@@ -76,4 +76,16 @@ test("roleOnPath: on every path, only behind a queue, and how many",()=>{
 test("names: a component the user named is called by that name in messages",()=>{
   const n=names({nodes:[{id:"a",type:"server",name:"Orders API"},{id:"b",type:"server"},{id:"c",type:"server"},{id:"d",type:"database",config:{role:"geo"}}],edges:[]},lab);
   assert.deepEqual([n.a,n.b,n.c,n.d],["Orders API","Server 1","Server 2","Geo index"]);
+});
+
+test("sameDesign: the solution copied unchanged is the same design; moved or renamed still is; any real change isn't",()=>{
+  for(const a of problems){const ref=cleanDesign(a.practice.reference,lab,"r");
+    const moved={...ref,nodes:ref.nodes.map(n=>({...n,x:n.x+40,y:n.y-20,name:"Mine"}))};
+    assert.ok(sameDesign(ref,cleanDesign(structuredClone(a.practice.reference),lab,"c")),a.slug);
+    assert.ok(sameDesign(ref,moved),a.slug+" moved");
+    const srv=ref.nodes.find(n=>n.type==="server");const changed={...ref,nodes:ref.nodes.map(n=>n===srv?{...n,config:{...n.config,count:(n.config.count||1)+1}}:n)};
+    assert.ok(!sameDesign(ref,changed),a.slug+" changed");
+    assert.ok(!sameDesign(ref,{...ref,edges:ref.edges.slice(1)}),a.slug+" an arrow less");
+    assert.ok(!sameDesign(ref,cleanDesign(a.practice.start,lab,"s")),a.slug+" start");}
+  assert.ok(!sameDesign(null,null));
 });

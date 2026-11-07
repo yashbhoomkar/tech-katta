@@ -7,9 +7,10 @@ const visitors = [{ $group: { _id: '$visitor' } }, { $count: 'n' }];
 
 export async function adminSummary({ events, users, submissions }, { days = 7, now = Date.now() } = {}) {
   const from = new Date(now - days * 86_400_000);
-  // Problems submitted (judged on the server) in the range: per problem, submissions, accepted, people, scores.
-  const problems = submissions ? await submissions.aggregate([{ $match: { at: { $gte: from } } }, { $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, people: { $addToSet: '$userId' }, score: { $avg: '$score' }, best: { $max: '$score' } } },
-    { $project: { _id: 0, slug: '$_id', submissions: 1, accepted: 1, people: { $size: '$people' }, score: { $round: ['$score', 0] }, best: 1 } }, { $sort: { submissions: -1 } }]).toArray() : [];
+  // Problems submitted (judged on the server) in the range: per problem, submissions, accepted, copied
+  // (the Solution tab's design unchanged), people, scores.
+  const problems = submissions ? await submissions.aggregate([{ $match: { at: { $gte: from } } }, { $group: { _id: '$slug', submissions: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] } }, copied: { $sum: { $cond: [{ $eq: ['$copied', true] }, 1, 0] } }, people: { $addToSet: '$userId' }, score: { $avg: '$score' }, best: { $max: '$score' } } },
+    { $project: { _id: 0, slug: '$_id', submissions: 1, accepted: 1, copied: 1, people: { $size: '$people' }, score: { $round: ['$score', 0] }, best: 1 } }, { $sort: { submissions: -1 } }]).toArray() : [];
   const [f] = await events.aggregate([
     { $match: { at: { $gte: from } } },
     { $facet: {

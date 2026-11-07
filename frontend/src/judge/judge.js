@@ -32,6 +32,9 @@
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
+// sameDesign() says whether a design is the problem's own solution, as copied from the Solution tab
+// (same components, settings and arrows; where they sit and what they are called don't count), so a
+// copied solution isn't counted as solved.
 import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName, standby, engineOf } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 import { runRequest } from './requests.js';
@@ -216,6 +219,15 @@ export function gradeAnswer(answer = {}, rubric = {}) {
 
 // Out of 100: requirements 15 (functional 10, non-functional 5), estimates 10, API 10, key decisions
 // 15, design 50 (share of all tests passed). Each hint opened takes 3 off, at most 15.
+// A design's shape: its components (id, type, settings) and arrows, in a fixed order.
+const shape = (d) => {
+  const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
+  const nodes = (d?.nodes || []).map((n) => ({ id: n.id, type: n.type, config: canon(n.config || {}) })).sort((a, b) => (a.id < b.id ? -1 : 1));
+  const edges = (d?.edges || []).map((e) => `${e.from}>${e.to}`).sort();
+  return JSON.stringify({ nodes, edges });
+};
+export const sameDesign = (a, b) => !!(a && b && a.nodes?.length && b.nodes?.length) && shape(a) === shape(b);
+
 export const WEIGHTS = { fr: 10, nfr: 5, est: 10, api: 10, dec: 15, design: 50 };
 export function score(graded, judged, hints = 0) {
   const p = graded?.parts || { fr: 0, nfr: 0, est: 0, api: 0, dec: 0 };
