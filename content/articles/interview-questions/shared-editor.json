@@ -457,29 +457,49 @@
           "label": "Several people edit the same document at once",
           "keys": [
             "same document",
-            "several",
-            "together",
+            "same doc",
+            "several people",
+            "multiple people",
+            "multiple users",
+            "edit together",
+            "work together",
             "concurrent",
             "simultaneous",
-            "at once"
+            "collaborat",
+            "at the same time"
           ]
         },
         {
           "label": "See each other's changes within half a second",
           "keys": [
-            "see",
-            "changes",
             "real time",
+            "real-time",
             "realtime",
-            "live"
+            "live update",
+            "live cursor",
+            "changes live",
+            "edits live",
+            "half a second",
+            "instantly",
+            "see each other",
+            "others' changes",
+            "other people's changes"
           ]
         },
         {
           "label": "No edit is ever lost",
           "keys": [
+            "never lost",
+            "never lose",
+            "no edit is lost",
             "lost",
             "lose",
-            "never lost"
+            "durab",
+            "never disappears",
+            "never disappear",
+            "acknowledged",
+            "not lost",
+            "saved for good"
           ]
         },
         {
@@ -488,7 +508,9 @@
             "same text",
             "converge",
             "identical",
-            "consistent"
+            "consistent",
+            "same result",
+            "same final"
           ]
         },
         {
@@ -496,7 +518,9 @@
           "keys": [
             "cursor",
             "presence",
-            "who else"
+            "who else",
+            "who is editing",
+            "who's editing"
           ]
         }
       ],

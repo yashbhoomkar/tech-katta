@@ -545,7 +545,17 @@
           "label": "Create a short link from a long URL",
           "keys": [
             "short",
-            "shorten"
+            "shorten",
+            "tiny url",
+            "tinyurl",
+            "make a link",
+            "create a link",
+            "create link",
+            "generate a code",
+            "long url into",
+            "tiny one",
+            "short code",
+            "short link"
           ]
         },
         {
@@ -557,7 +567,8 @@
             "sent to",
             "takes you",
             "goes to",
-            "open"
+            "send them to",
+            "forward"
           ]
         },
         {
@@ -566,7 +577,8 @@
             "alias",
             "custom",
             "vanity",
-            "choose"
+            "choose the",
+            "pick the"
           ]
         },
         {
@@ -574,7 +586,9 @@
           "keys": [
             "expir",
             "ttl",
-            "valid until"
+            "valid until",
+            "valid till",
+            "end date"
           ]
         },
         {
@@ -582,7 +596,9 @@
           "keys": [
             "click",
             "count",
-            "analytic"
+            "analytic",
+            "track visits",
+            "stats"
           ]
         }
       ],

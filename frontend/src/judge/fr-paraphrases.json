@@ -1,0 +1,147 @@
+{
+ "ad-clicks": [
+  "log every time an ad is shown or tapped",
+  "advertisers watch their stats per hour and day",
+  "advertisers are charged exactly once per valid tap",
+  "remove fake clicks from scripts"
+ ],
+ "autocomplete": [
+  "show the top 8 completions while the person types",
+  "order them by what's trending locally",
+  "my previous searches show up first",
+  "handle misspelled words like biriyani"
+ ],
+ "chat-app": [
+  "users text each other one on one or in a group chat",
+  "if the friend's phone is off they get it when they're back, with a push",
+  "show when a message was delivered and when it was read",
+  "everyone sees messages in the same sequence"
+ ],
+ "coding-judge": [
+  "candidates send their solution in Python, Java or C++",
+  "the code is judged against hidden test cases and gets accepted or wrong answer",
+  "a live scoreboard of who solved most",
+  "run untrusted code in an isolated container"
+ ],
+ "dating-swipes": [
+  "show me people near me who fit my age range",
+  "users say yes or no to each card",
+  "when both like each other it's a match and both get notified",
+  "don't show the same person twice"
+ ],
+ "file-sync": [
+  "store my files and get them back on any device",
+  "changes on my laptop show up on my phone",
+  "edit without internet and catch up later",
+  "give a friend access to a folder",
+  "keep both copies when two devices edit the same file"
+ ],
+ "grocery-delivery": [
+  "show what the nearest dark store has right now",
+  "add to cart, check out and pay",
+  "keep the items for me while I pay",
+  "the store packs it and a delivery partner takes it",
+  "show where my order is and an ETA"
+ ],
+ "job-scheduler": [
+  "run a job once at a time, or every day at 9 pm",
+  "start jobs at their time and retry failed ones",
+  "an accepted job is guaranteed to run",
+  "users can reschedule or cancel jobs",
+  "see past runs and their logs"
+ ],
+ "key-value-store": [
+  "read, write and remove a value by its key",
+  "keep working if a node or a whole zone dies",
+  "scale horizontally by adding nodes",
+  "resolve concurrent writes with vector clocks"
+ ],
+ "leaderboard": [
+  "players reply within 20 seconds and earn points",
+  "show the best players",
+  "each player sees their position",
+  "equal scores go to whoever reached it earlier"
+ ],
+ "menu-search": [
+  "find dishes and restaurants by name",
+  "panir should still find paneer",
+  "only vegetarian dishes under 300 rupees",
+  "the most relevant dish comes first",
+  "price changes show up in search within a minute"
+ ],
+ "news-feed": [
+  "my timeline of posts from accounts I follow",
+  "a new post shows up for followers within seconds",
+  "follow and unfollow accounts",
+  "infinite scroll through older posts",
+  "removed posts vanish from feeds"
+ ],
+ "notifications": [
+  "send through push, text messages and email",
+  "messages from templates in Hindi and English",
+  "OTPs go before promotions",
+  "don't message people who unsubscribed or at night",
+  "know if each message was delivered or failed"
+ ],
+ "payments": [
+  "customers pay by UPI or card at checkout",
+  "a retry never charges the customer again",
+  "money goes back if the order is cancelled",
+  "keep accounting records that match the bank",
+  "if the bank doesn't respond, show 'checking' instead of failed"
+ ],
+ "photo-sharing": [
+  "share a picture of a dish with a caption",
+  "see all photos of a restaurant, latest first",
+  "people can like photos and see how many likes",
+  "remove my picture"
+ ],
+ "restaurants-near-me": [
+  "restaurants that can deliver to where I am",
+  "hide closed kitchens",
+  "order by rating and show vegetarian only",
+  "load more as I scroll",
+  "kitchens can mark themselves busy"
+ ],
+ "rider-dispatch": [
+  "know where every rider is from GPS pings",
+  "pick a rider for each order and send them the offer",
+  "if they say no or don't respond, try the next rider",
+  "time the pickup so the rider arrives when the food is ready",
+  "a rider never gets two orders by mistake"
+ ],
+ "shared-editor": [
+  "multiple users edit one menu at the same time",
+  "everyone sees others' edits instantly",
+  "an edit that was acknowledged never disappears",
+  "all copies end up identical",
+  "show who is editing and where"
+ ],
+ "ticket-booking": [
+  "see which blocks still have seats",
+  "keep my seats for a few minutes while I pay",
+  "pay and get a QR ticket",
+  "a fair waiting room when sales open",
+  "never sell one seat to two people"
+ ],
+ "url-shortener": [
+  "turn a long URL into a tiny one",
+  "visiting the code forwards to the original page",
+  "users can pick their own custom name",
+  "links stop working after an end date",
+  "count how many times each link was opened"
+ ],
+ "video-streaming": [
+  "chefs upload recipes from their phones and it resumes if the network drops",
+  "convert each video into 240p to 1080p",
+  "playback starts fast and drops quality instead of buffering",
+  "show a thumbnail, how long it is and the view count"
+ ],
+ "web-crawler": [
+  "start from known food sites and follow their links",
+  "keep the latest copy of each page",
+  "obey robots.txt and at most one request a second per site",
+  "never download the same URL twice",
+  "revisit menu pages that change often"
+ ]
+}

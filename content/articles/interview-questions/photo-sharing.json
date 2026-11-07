@@ -482,8 +482,13 @@
         {
           "label": "Post a photo with a caption, restaurant and dish",
           "keys": [
-            "post",
-            "upload"
+            "post a photo",
+            "post photo",
+            "upload",
+            "share a photo",
+            "share photo",
+            "add a photo",
+            "caption"
           ]
         },
         {
@@ -492,8 +497,17 @@
             "newest",
             "profile",
             "restaurant's photos",
+            "restaurant page",
             "grid",
-            "page"
+            "gallery",
+            "list photos",
+            "person's photos",
+            "all photos of",
+            "photos of a restaurant",
+            "photos of a person",
+            "latest first",
+            "recent first",
+            "their photos"
           ]
         },
         {
@@ -506,7 +520,8 @@
           "label": "Delete my photo everywhere",
           "keys": [
             "delete",
-            "remove"
+            "remove",
+            "take down"
           ]
         }
       ],

@@ -543,7 +543,10 @@
           "label": "Upload and download files",
           "keys": [
             "upload",
-            "download"
+            "download",
+            "store files",
+            "store my files",
+            "save files"
           ]
         },
         {
@@ -551,7 +554,16 @@
           "keys": [
             "sync",
             "other device",
-            "devices"
+            "all devices",
+            "every device",
+            "devices",
+            "across device",
+            "propagat",
+            "show up on",
+            "other phone",
+            "my phone",
+            "laptop",
+            "every machine"
           ]
         },
         {
@@ -560,7 +572,9 @@
             "offline",
             "no signal",
             "no network",
-            "catch up"
+            "no internet",
+            "catch up",
+            "without internet"
           ]
         },
         {
@@ -568,7 +582,13 @@
           "keys": [
             "share",
             "sharing",
-            "collaborat"
+            "collaborat",
+            "viewer",
+            "editor access",
+            "give access",
+            "give a friend access",
+            "access to a folder",
+            "permission"
           ]
         },
         {
@@ -576,7 +596,9 @@
           "keys": [
             "version",
             "conflict",
-            "history"
+            "history",
+            "both copies",
+            "conflicted"
           ]
         }
       ],

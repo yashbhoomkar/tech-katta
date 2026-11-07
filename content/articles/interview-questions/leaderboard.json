@@ -433,15 +433,24 @@
           "keys": [
             "answer",
             "score",
-            "points"
+            "points",
+            "quiz",
+            "question"
           ]
         },
         {
           "label": "Show the top 100",
           "keys": [
             "top 100",
-            "top",
-            "leaderboard"
+            "top players",
+            "top ten",
+            "top 10",
+            "leaderboard",
+            "highest score",
+            "best players",
+            "top scorers",
+            "rank list",
+            "ranking"
           ]
         },
         {
@@ -449,14 +458,20 @@
           "keys": [
             "my rank",
             "own rank",
-            "rank"
+            "rank",
+            "position",
+            "where i stand",
+            "percentile"
           ]
         },
         {
           "label": "Ties broken by who got there first",
           "keys": [
             "tie",
-            "first"
+            "first to reach",
+            "earlier",
+            "who got there first",
+            "same score"
           ]
         }
       ],

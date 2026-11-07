@@ -576,7 +576,9 @@
           "keys": [
             "upi",
             "card",
-            "pay"
+            "pay for",
+            "checkout",
+            "payment"
           ]
         },
         {
@@ -585,13 +587,27 @@
             "twice",
             "double",
             "idempoten",
-            "duplicate"
+            "duplicate",
+            "exactly once",
+            "only once",
+            "never charges",
+            "never charge",
+            "charged again",
+            "charges the customer again",
+            "charge again",
+            "retry is safe",
+            "safe to retry"
           ]
         },
         {
           "label": "Refunds, full or part",
           "keys": [
-            "refund"
+            "refund",
+            "money goes back",
+            "money back",
+            "return the money",
+            "give back",
+            "reverse"
           ]
         },
         {
@@ -600,7 +616,9 @@
             "ledger",
             "reconcil",
             "books",
-            "entries"
+            "accounting",
+            "double entry",
+            "double-entry"
           ]
         },
         {
@@ -610,7 +628,9 @@
             "pending",
             "timeout",
             "time out",
-            "checking"
+            "timed out",
+            "checking",
+            "no response"
           ]
         }
       ],

@@ -98,3 +98,21 @@ test("key decisions don't give the answer away: it isn't by far the longest opti
     assert.ok(d.options.every(o=>o.length>=10),`${a.slug} ${d.id}: an option too short to be a real choice`);}
   for(const k of at)assert.ok(k>=n/6,`right answers bunch up in one position: ${at}`);
 });
+
+// The written requirements: each one is earned by its own label and by a second, plain phrasing of it
+// (fr-paraphrases.json, in rubric order); a vague answer that names no requirement earns at most one;
+// and a keyword has to start a word ("tie" isn't found in "cities").
+const para=JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),"fr-paraphrases.json"),"utf8"));
+const vague="Users can open the app and see their data, with live status, on time, at once, in order. It should be fast, reliable and scale. Support cities across India. Output the results to the user and store them together.";
+for(const a of problems)test(`${a.slug}: each requirement is earned by its label and a paraphrase, not by a vague answer`,()=>{
+  const fr=a.practice.rubric.fr,p=para[a.slug];
+  assert.ok(p&&p.length===fr.length,`fr-paraphrases.json needs ${fr.length} phrasings for ${a.slug}`);
+  fr.forEach((r,i)=>{for(const t of [r.label,p[i]]){const g=gradeAnswer({fr:t},a.practice.rubric);assert.ok(g.fr[i].ok,`"${t}" should earn "${r.label}"`)}});
+  const v=gradeAnswer({fr:vague},a.practice.rubric).fr.filter(x=>x.ok);
+  assert.ok(v.length<=1,`a vague answer earns ${v.map(x=>x.label).join(", ")}`);
+});
+test("a requirement keyword has to start a word",()=>{
+  const rubric={fr:[{label:"Ties",keys:["tie"]}]};
+  assert.equal(gradeAnswer({fr:"Support cities"},rubric).fr[0].ok,false);
+  assert.equal(gradeAnswer({fr:"Break ties by time"},rubric).fr[0].ok,true);
+});

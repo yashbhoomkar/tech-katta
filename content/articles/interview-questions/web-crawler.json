@@ -446,17 +446,28 @@
           "keys": [
             "seed",
             "follow link",
+            "follow the link",
             "links",
-            "crawl"
+            "crawl",
+            "outlinks"
           ]
         },
         {
           "label": "Store each page's latest copy",
           "keys": [
-            "store",
-            "copy",
-            "save",
-            "page"
+            "store the page",
+            "store pages",
+            "store each page",
+            "store a copy",
+            "store the html",
+            "store the content",
+            "save the page",
+            "save pages",
+            "save each page",
+            "latest copy",
+            "keep a copy",
+            "keep the page",
+            "page store"
           ]
         },
         {
@@ -466,7 +477,9 @@
             "polite",
             "rate limit",
             "per site",
-            "per host"
+            "per host",
+            "one request a second",
+            "crawl delay"
           ]
         },
         {
@@ -475,16 +488,23 @@
             "seen",
             "duplicate",
             "dedup",
-            "already"
+            "de-dup",
+            "already fetched",
+            "already crawled",
+            "twice",
+            "same url"
           ]
         },
         {
           "label": "Refetch pages that change often",
           "keys": [
             "refetch",
+            "re-fetch",
             "recrawl",
             "re-crawl",
-            "fresh"
+            "fresh",
+            "change often",
+            "revisit"
           ]
         }
       ],

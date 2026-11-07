@@ -477,15 +477,25 @@
             "suggest",
             "keystroke",
             "prefix",
-            "as you type"
+            "as you type",
+            "as they type",
+            "while typing",
+            "type ahead",
+            "typeahead",
+            "autocomplete",
+            "auto-complete",
+            "complet"
           ]
         },
         {
           "label": "Ranked by popularity in my city",
           "keys": [
-            "rank",
             "popular",
-            "city"
+            "rank",
+            "trending",
+            "most searched",
+            "city",
+            "local"
           ]
         },
         {
@@ -493,7 +503,12 @@
           "keys": [
             "history",
             "personal",
-            "past search"
+            "past search",
+            "previous search",
+            "recent search",
+            "my searches",
+            "my orders",
+            "past order"
           ]
         },
         {
@@ -501,7 +516,9 @@
           "keys": [
             "typo",
             "spelling",
-            "fuzzy"
+            "misspel",
+            "fuzzy",
+            "mistake"
           ]
         }
       ],

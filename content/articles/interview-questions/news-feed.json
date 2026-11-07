@@ -479,7 +479,10 @@
           "label": "Home feed: posts from people I follow, newest first",
           "keys": [
             "feed",
-            "follow"
+            "timeline",
+            "home screen",
+            "posts from people i follow",
+            "people i follow"
           ]
         },
         {
@@ -487,8 +490,11 @@
           "keys": [
             "new post",
             "appear",
+            "within seconds",
             "seconds",
-            "fresh"
+            "fresh",
+            "quickly",
+            "near real time"
           ]
         },
         {
@@ -501,17 +507,21 @@
         {
           "label": "Page through the feed",
           "keys": [
-            "page",
             "paginat",
             "cursor",
-            "scroll"
+            "scroll",
+            "load more",
+            "next page",
+            "page through"
           ]
         },
         {
           "label": "Deleted posts disappear",
           "keys": [
             "delete",
-            "remove"
+            "remove",
+            "taken down",
+            "disappear"
           ]
         }
       ],

@@ -467,7 +467,8 @@
         {
           "label": "Upload videos from a phone (resumable)",
           "keys": [
-            "upload"
+            "upload",
+            "resumable"
           ]
         },
         {
@@ -478,7 +479,10 @@
             "sizes",
             "resolution",
             "renditions",
-            "bitrate"
+            "bitrate",
+            "240p",
+            "720p",
+            "quality"
           ]
         },
         {
@@ -488,13 +492,17 @@
             "abr",
             "stall",
             "playback",
-            "buffer"
+            "buffer",
+            "start fast",
+            "starts fast",
+            "smooth"
           ]
         },
         {
           "label": "Thumbnail, duration and view counts",
           "keys": [
             "thumbnail",
+            "duration",
             "view count",
             "views"
           ]

@@ -477,42 +477,57 @@
         {
           "label": "See the stands and seats left",
           "keys": [
+            "seat map",
+            "seats left",
+            "available seats",
             "seat",
-            "stand",
-            "block"
+            "stand"
           ]
         },
         {
           "label": "Hold seats together while paying",
           "keys": [
             "hold",
-            "reserve"
+            "reserve",
+            "reservation",
+            "block the seats",
+            "keep my seats",
+            "keep the seats",
+            "keep seats",
+            "for a few minutes",
+            "lock the seats",
+            "lock seats"
           ]
         },
         {
           "label": "Pay and get a ticket (QR)",
           "keys": [
-            "pay",
             "ticket",
-            "qr"
+            "qr",
+            "pay"
           ]
         },
         {
           "label": "A fair line (waiting room) when sales open",
           "keys": [
             "queue",
-            "line",
             "waiting room",
-            "wait"
+            "line",
+            "fair",
+            "lottery"
           ]
         },
         {
           "label": "A seat is sold only once",
           "keys": [
-            "once",
+            "sold once",
+            "only once",
             "double",
             "oversell",
-            "twice"
+            "over-sell",
+            "twice",
+            "double booking",
+            "never sell"
           ]
         }
       ],
