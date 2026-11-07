@@ -58,6 +58,8 @@ practice: {
                                   sample data and field names for request tests (fields also feed the
                                   schema editor's suggestions)
   hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
+  referenceNote?: text,           shown under the solution design: where the Lab's version differs from the
+                                  worked answer's full-size one (e.g. capacity counted in requests, not CPU)
   reference: {nodes, edges},      must pass every test; shown on the Solution tab (GET /v1/articles/<slug>/
                                   solution) with Copy to my canvas, so lay it out neatly (left to right,
                                   ~240 apart); submitted unchanged it isn't counted as solved

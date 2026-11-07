@@ -111,3 +111,4 @@
 .sd-dlg-bar{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);background:#fff;font:600 12px var(--mono)}
 .sd-dlg-bar button{width:32px;height:32px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px}
 .sd-fig-big{border:0;margin:0}
+.sd-note{margin-top:8px!important;padding:8px 10px;border-left:3px solid var(--blue);background:#f4f7ff;color:#36424f!important;font-size:13px!important}

@@ -555,37 +555,37 @@
       ],
       "decisions": [
         {
-          "id": "merge",
+          "id": "merge-2",
           "q": "Two people type in the same paragraph at once. What happens?",
           "options": [
-            "Lock the paragraph for one person",
-            "Operational transforms or CRDTs merge both edits the same way on every device",
-            "The last save wins"
+            "The paragraph is locked for whoever started typing first",
+            "OT or CRDTs merge both edits the same way on every copy",
+            "Each save replaces the paragraph; the last save wins"
           ],
           "answer": 1,
-          "why": "Locks get in the way of writing together and \"last save wins\" loses work. OT and CRDTs make every copy end up the same with both edits kept."
+          "why": "Locks get in the way of writing together, and \"last save wins\" loses work. Operational transforms or CRDTs make every copy end up the same with both edits kept."
         },
         {
-          "id": "store",
+          "id": "store-2",
           "q": "How is a document stored?",
           "options": [
-            "Every edit is added to a log, with a snapshot now and then",
-            "The whole document on every keystroke",
-            "Only when someone presses Save"
+            "The whole document saved again after every change made",
+            "The document saved only when someone presses Save",
+            "Every edit added to a log, with a snapshot now and then"
           ],
-          "answer": 0,
-          "why": "Small edits are cheap to add and keep history; snapshots mean nobody replays a year of edits to open the document."
+          "answer": 2,
+          "why": "Small edits are cheap to add and keep history; snapshots mean nobody replays a year of edits to open the document. Saving the whole document per keystroke is heavy, and waiting for Save loses unsaved work."
         },
         {
-          "id": "live",
+          "id": "live-2",
           "q": "How do other people's cursors and edits appear?",
           "options": [
             "Pushed over open connections to everyone in the document",
-            "Each app asks every 10 seconds",
-            "By email"
+            "Each app asks the server for any new changes every 10 seconds",
+            "Each app asks for changes whenever its user types"
           ],
           "answer": 0,
-          "why": "Writing together only feels live if edits arrive within a fraction of a second."
+          "why": "Writing together only feels live if edits arrive within a fraction of a second, even while you aren't typing. Polling is either slow or wasteful."
         }
       ]
     },

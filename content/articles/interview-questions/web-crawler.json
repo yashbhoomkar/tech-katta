@@ -533,47 +533,47 @@
         {
           "label": "Add URLs to the frontier",
           "method": "POST",
-          "path": "^/(api/)?(v\\d+/)?(frontier|urls|queue)(/add)?/?$"
+          "path": "^/(api/)?(v\\d+/)?(frontier|urls|queue|seeds)(/add)?/?$"
         },
         {
           "label": "Get the next URL to fetch",
           "method": "GET",
-          "path": "^/(api/)?(v\\d+/)?(frontier|urls|queue)/next"
+          "path": "^/(api/)?(v\\d+/)?(frontier|urls|queue|seeds)/next"
         }
       ],
       "decisions": [
         {
-          "id": "polite",
+          "id": "polite-2",
           "q": "How do you avoid overloading one website?",
           "options": [
-            "Fetch as fast as possible",
-            "Only crawl at night",
-            "One line of links per site with a gap between fetches, and respect robots.txt"
-          ],
-          "answer": 2,
-          "why": "A crawler that hammers a site gets blocked, and it is rude. Per-site lines with delays spread the load."
-        },
-        {
-          "id": "seen",
-          "q": "How do you avoid fetching the same page twice?",
-          "options": [
-            "Remember a fingerprint of every link seen (a Bloom filter or a set)",
-            "Don't worry about it",
-            "Crawl only home pages"
-          ],
-          "answer": 0,
-          "why": "The web links to the same pages over and over; checking a compact set of seen links saves most of the work."
-        },
-        {
-          "id": "io",
-          "q": "Fetching is mostly waiting on the network. So each fetcher machine…",
-          "options": [
-            "Fetches one page at a time",
-            "Keeps many connections open at once (asynchronous I/O)",
-            "Runs inside the database"
+            "A global limit on pages a second across all sites",
+            "One line of links per site, with a gap between fetches",
+            "Crawl each site only at night, when its own traffic is quiet"
           ],
           "answer": 1,
-          "why": "While one page is on its way, hundreds of others can be too; one at a time leaves the machine idle."
+          "why": "A global limit can still send every request to one site. Per-site lines with delays spread the load and respect robots.txt; crawling only at night halves the crawl and nights differ by time zone."
+        },
+        {
+          "id": "seen-2",
+          "q": "How do you avoid fetching the same page twice?",
+          "options": [
+            "Check the page store for the URL before every fetch",
+            "Only follow links that point to a site's home page",
+            "A fingerprint of every link seen, in a Bloom filter"
+          ],
+          "answer": 2,
+          "why": "The web links to the same pages over and over; checking a compact in-memory set of seen links saves most of the work. A page-store lookup per link is a slow database read, and home pages alone miss the menus."
+        },
+        {
+          "id": "io-2",
+          "q": "Fetching is mostly waiting on the network. So each fetcher machine…",
+          "options": [
+            "Keeps many connections open at once (async I/O)",
+            "Fetches one page at a time, as fast as it can",
+            "Runs a thread for every page, thousands at a time"
+          ],
+          "answer": 0,
+          "why": "While one page is on its way, hundreds of others can be too. One at a time leaves the machine idle, and thousands of threads waste memory on stacks."
         }
       ]
     },

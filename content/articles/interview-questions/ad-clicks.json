@@ -411,11 +411,16 @@
         "desc": "A click on ad9 at 10:01 adds one to that minute's count.",
         "request": {
           "method": "POST",
-          "path": "/v1/clicks",
+          "path": "/v1/events",
           "body": {
-            "click_id": "k1",
-            "ad_id": "ad9",
-            "at": "2026-11-07T10:01:12Z"
+            "events": [
+              {
+                "id": "k1",
+                "type": "click",
+                "ad": "ad9",
+                "at": "2026-11-07T10:01:12Z"
+              }
+            ]
           }
         },
         "steps": [
@@ -532,37 +537,37 @@
       ],
       "decisions": [
         {
-          "id": "exact",
+          "id": "exact-2",
           "q": "Advertisers pay per click. A counting server crashes halfway. What keeps the counts right?",
           "options": [
-            "Counts are kept in the server's memory only",
-            "Advertisers count on their side",
-            "Clicks stay in a replayable log, and each click is counted by its id so a replay never counts it twice"
-          ],
-          "answer": 2,
-          "why": "Replay recovers what the crashed server hadn't saved; counting by click id makes replaying safe."
-        },
-        {
-          "id": "buckets",
-          "q": "Reports by minute, hour and day: how?",
-          "options": [
-            "Count each click into per-minute buckets; add buckets up for hours and days",
-            "Recount all raw clicks for each report",
-            "Keep daily totals only"
+            "Clicks stay in a replayable log, and are counted once each by click id",
+            "Each counter writes its running totals to the database every second",
+            "The app resends every click until a counter confirms it has been counted"
           ],
           "answer": 0,
-          "why": "Small buckets are cheap to update and any range is a sum of a few of them; raw recounts get slower every day."
+          "why": "Replaying the log recovers what the crashed counter hadn't saved, and counting by click id makes the replay safe. Saving totals every second still loses up to a second and double-counts after a restart; blind resends count twice."
         },
         {
-          "id": "fraud",
+          "id": "buckets-2",
+          "q": "Reports by minute, hour and day: how?",
+          "options": [
+            "Recount the raw clicks for the asked range whenever a report is opened",
+            "Count clicks into per-minute buckets; add buckets up for longer ranges",
+            "Keep one running total per ad per day, updated on every click"
+          ],
+          "answer": 1,
+          "why": "Small buckets are cheap to update and any range is a sum of a few of them. Recounting raw clicks gets slower every day, and daily totals can't show the last hour."
+        },
+        {
+          "id": "fraud-2",
           "q": "Bots click ads too. What do you do?",
           "options": [
-            "Nothing",
-            "Block every click from phones",
-            "Mark suspicious clicks (same address, too fast, no page view) and leave them out before billing"
+            "Count everything now and refund advertisers who complain later",
+            "Block any device that clicks more than once a day on any ad",
+            "Mark suspicious clicks (too fast, no view) and leave them out"
           ],
           "answer": 2,
-          "why": "Advertisers only pay for real clicks; filtering before billing keeps the bill honest without losing real clicks."
+          "why": "Advertisers should only pay for real clicks. Marking suspicious ones before billing keeps the bill honest; refunds on complaint are unfair to quiet advertisers, and a blunt daily block throws away real repeat customers."
         }
       ]
     },

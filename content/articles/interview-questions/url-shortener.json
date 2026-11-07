@@ -229,7 +229,7 @@
     }
   ],
   "practice": {
-    "brief": "The tests send redirects and new links in the mix the article works out: about 99 redirects for every new link. Every redirect makes one lookup; a cache in front of the database answers 9 in 10 of them. Your Clients' own rate is ignored: each test sends its own traffic.",
+    "brief": "The tests send redirects and new links in the mix the article works out: about 99 redirects for every new link. Every redirect makes one lookup; a cache in front of the database answers 9 in 10 of them. Your Clients' own rate is ignored: each test sends its own traffic. The tests send one region's share of the traffic: 35,000 redirects a second at the evening peak, a tenth of the 3.5 lakh the article works out for all of India, so the Lab's numbers stay small. At full size the design is the same, with more of everything.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,
@@ -641,37 +641,37 @@
       ],
       "decisions": [
         {
-          "id": "codes",
+          "id": "codes-2",
           "q": "How do you make short codes that never collide?",
           "options": [
-            "A counter handed out in blocks to each server, written in base 62",
-            "Hash the long URL and keep the first 7 characters",
-            "Pick 7 random characters and hope",
-            "Use the database row id as it is"
+            "Hash the long URL and keep the first 7 characters of it",
+            "Pick 7 random characters and retry when the code exists",
+            "A counter handed out in blocks to each server, in base 62",
+            "Use the database row id as the code, exactly as it is"
           ],
-          "answer": 0,
-          "why": "Blocks of a counter give every server unique numbers without asking anyone per request, and base 62 keeps them short. A hash can collide and needs a check and retry; a raw id is long and shows how many links exist."
+          "answer": 2,
+          "why": "Blocks of a counter give every server unique numbers without asking anyone per request, and base 62 keeps them short. A hash or random code can collide and needs a check and retry on every create; a raw id is long and shows how many links exist."
         },
         {
-          "id": "redirect",
+          "id": "redirect-2",
           "q": "Which redirect does the short link send?",
           "options": [
-            "302 (temporary): every click comes back to us, so we can count it and change or expire the link",
-            "301 (permanent): browsers remember it and stop asking us"
+            "301 (permanent): browsers remember it and skip asking us the next time",
+            "302 (temporary): every click comes back to us, so we can count it"
           ],
-          "answer": 0,
+          "answer": 1,
           "why": "A 301 saves traffic, but browsers stop asking, so click counts, edits and expiry stop working. Shorteners that count clicks use 302."
         },
         {
-          "id": "reads",
+          "id": "reads-2",
           "q": "Where are most redirects answered?",
           "options": [
-            "The database, with an index on the code",
-            "The load balancer",
-            "A cache in front of the store: a few popular links get most clicks"
+            "A cache in front of the store, for the popular links",
+            "The database, with an index on the short code",
+            "Read replicas of the database, one in each Indian region"
           ],
-          "answer": 2,
-          "why": "Clicks follow a steep curve: a small set of links gets most of them, so a cache answers most redirects and the store sees only the misses."
+          "answer": 0,
+          "why": "Clicks follow a steep curve: a small set of links gets most of them, so a cache answers most redirects in memory and the store sees only the misses. An index or replicas still make every redirect a database read."
         }
       ]
     },

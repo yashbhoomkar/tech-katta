@@ -549,7 +549,7 @@
           "unit": "/s",
           "answer": 1000,
           "tol": 3,
-          "how": "from the article's scale"
+          "how": "1 crore people × 2 searches a day ÷ 86,400 ≈ 230 a second; around 4× at dinner"
         },
         {
           "id": "dishes",
@@ -563,9 +563,9 @@
           "id": "index",
           "label": "Index size",
           "unit": "GB",
-          "answer": 30,
+          "answer": 10,
           "tol": 4,
-          "how": "3 crore dishes × about 1 KB of postings and fields"
+          "how": "3 crore dishes × about 300 bytes of text ≈ 9 GB; the index is about the same"
         }
       ],
       "api": [
@@ -577,37 +577,37 @@
       ],
       "decisions": [
         {
-          "id": "index",
+          "id": "index-2",
           "q": "Searching \"paneer roll\" across lakhs of menus: how?",
           "options": [
-            "SQL LIKE '%paneer%' on the menu table",
-            "An inverted index (each word → the dishes that have it) in a search engine",
-            "Loop over every menu in the app server"
+            "SQL LIKE '%paneer%roll%' on the menu table",
+            "An inverted index from each word to the dishes that have it",
+            "A full scan of the city's menus held in the server's memory"
           ],
           "answer": 1,
-          "why": "LIKE with a leading % can't use an index and reads every row. An inverted index goes straight from each word to its dishes and can rank them."
+          "why": "LIKE with a leading % can't use an index and reads every row; scanning memory gets slower with every menu. An inverted index goes straight from each word to its dishes and can rank them."
         },
         {
-          "id": "fresh",
+          "id": "fresh-2",
           "q": "A restaurant changes a price. How does search learn it?",
           "options": [
-            "The whole index is rebuilt every night only",
-            "The change is published as an event and the index updates within seconds",
-            "Search reads the main database on every query"
+            "The whole index is rebuilt from scratch every night",
+            "Search reads the main database on every query",
+            "An event updates the index within seconds"
           ],
-          "answer": 1,
-          "why": "Events keep the index a few seconds behind the menu without making searches hit the main database."
+          "answer": 2,
+          "why": "Events keep the index a few seconds behind the menu without making searches hit the main database; a nightly rebuild shows yesterday's prices all day."
         },
         {
-          "id": "typos",
+          "id": "typos-2",
           "q": "\"panir\" should still find paneer. How?",
           "options": [
-            "Ask people to spell it right",
             "Fuzzy matching and synonyms when words are indexed and searched",
-            "Store every misspelling as a separate dish"
+            "Store the common misspellings of every dish as extra dish names",
+            "Ask \"did you mean paneer?\" and search again if they tap it"
           ],
-          "answer": 1,
-          "why": "Search engines compare words within an edit distance and map synonyms, so common misspellings and local names still match."
+          "answer": 0,
+          "why": "Search engines compare words within an edit distance and map synonyms, so misspellings and local names match on the first try. Listing misspellings by hand never ends, and a second round-trip is slower."
         }
       ]
     },

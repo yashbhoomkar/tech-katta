@@ -259,7 +259,8 @@
           {
             "kind": "role",
             "role": "objects",
-            "label": "Video segments come from storage built for big files"
+            "label": "Video segments come from storage built for big files",
+            "any": true
           }
         ]
       },
@@ -559,37 +560,37 @@
       ],
       "decisions": [
         {
-          "id": "segments",
+          "id": "segments-2",
           "q": "Why cut videos into short segments (HLS or DASH)?",
           "options": [
-            "Players switch quality between segments as the network changes, and CDNs cache each segment",
-            "They take less disk space",
-            "Uploads are faster"
-          ],
-          "answer": 0,
-          "why": "Short segments let the player pick the next one at a quality that fits the connection right now, and each one is a small file a CDN can cache."
-        },
-        {
-          "id": "transcode",
-          "q": "When are the different qualities made?",
-          "options": [
-            "Once after upload, by transcoders taking work from a queue",
-            "On the fly for every viewer",
-            "Never: send the original file"
-          ],
-          "answer": 0,
-          "why": "Transcoding is slow and heavy. Doing it once per video, in the background, means every viewer gets ready-made files."
-        },
-        {
-          "id": "resume",
-          "q": "A phone loses its network halfway through uploading a 2 GB video. Then?",
-          "options": [
-            "Start again from zero",
-            "The upload resumes from the last chunk it sent",
-            "Fail the upload"
+            "Short files take less disk space than one long file does",
+            "Players switch quality per segment; CDNs cache each",
+            "Segments upload faster than one long file"
           ],
           "answer": 1,
-          "why": "Resumable uploads in chunks mean a dropped connection costs one chunk, not the whole file."
+          "why": "Short segments let the player pick the next one at a quality that fits the connection right now, and each one is a small file a CDN can cache. They don't save disk, and uploads are chunked separately anyway."
+        },
+        {
+          "id": "transcode-2",
+          "q": "When are the different qualities made?",
+          "options": [
+            "On the fly, adapted to each viewer's network as they watch",
+            "On the chef's phone before the upload, in every size",
+            "Once after upload, by transcoders taking work from a queue"
+          ],
+          "answer": 2,
+          "why": "Transcoding is slow and heavy. Doing it once per video, in the background, means every viewer gets ready-made files; doing it per viewer repeats the work lakhs of times, and phones are slow and drain their battery."
+        },
+        {
+          "id": "resume-2",
+          "q": "A phone loses its network halfway through uploading a 2 GB video. Then?",
+          "options": [
+            "The upload resumes from the last part it sent",
+            "The upload starts again from the beginning",
+            "The video is kept at whatever length arrived"
+          ],
+          "answer": 0,
+          "why": "Resumable uploads in parts mean a dropped connection costs one part, not the whole file."
         }
       ]
     },
@@ -732,6 +733,61 @@
               ]
             }
           }
+        },
+        {
+          "id": "db2",
+          "type": "database",
+          "name": "Video details",
+          "x": 1200,
+          "y": 130,
+          "config": {
+            "size": "db.m5.large",
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "videos",
+                  "fields": [
+                    {
+                      "name": "video_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "chef_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "title",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "duration_s",
+                      "type": "int"
+                    },
+                    {
+                      "name": "views",
+                      "type": "int"
+                    }
+                  ],
+                  "key": [
+                    "video_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "chef_id"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
         }
       ],
       "edges": [
@@ -774,6 +830,14 @@
         {
           "from": "cache2",
           "to": "db1"
+        },
+        {
+          "from": "cache1",
+          "to": "db2"
+        },
+        {
+          "from": "cache2",
+          "to": "db2"
         }
       ]
     },

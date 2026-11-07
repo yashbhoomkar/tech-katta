@@ -307,7 +307,7 @@
         "id": "peak",
         "name": "The dinner peak",
         "sample": true,
-        "desc": "6,000 loads a second at 8:30 pm. Results must come back fast.",
+        "desc": "6,000 loads a second for an hour from 8 pm, the busiest of the evening. Results must come back fast.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
@@ -607,37 +607,37 @@
       ],
       "decisions": [
         {
-          "id": "near",
+          "id": "near-2",
           "q": "How do you find restaurants within 5 km quickly?",
           "options": [
             "Work out the distance to every restaurant on each request",
-            "Index them by map cell (geohash or quadtree) and look in the user's cell and its neighbours",
-            "Ask a maps company on every request"
+            "Index them by map cell; look in the user's cell and its neighbours",
+            "Filter by the user's city, then sort that whole city by its distance"
           ],
           "answer": 1,
-          "why": "Cells turn \"near this point\" into a few index lookups. Measuring the distance to every restaurant on every request does not scale to lakhs of them."
+          "why": "Cells turn \"near this point\" into a few index lookups. Measuring the distance to every restaurant, or to every one in a big city, on every request does not scale at thousands a second."
         },
         {
-          "id": "status",
-          "q": "Open-now and delivery status change all day. Where does that live?",
+          "id": "status-2",
+          "q": "Open-now and busy status change all evening. Where does that live?",
           "options": [
-            "Inside the geo index, rebuilt nightly",
-            "Hard-coded in the app",
-            "Kept separately and updated as it changes; applied as a filter after the geo lookup"
+            "Inside the geo index, which is rebuilt from scratch every few minutes",
+            "In the app, which asks each restaurant for its status",
+            "Kept apart, updated as it changes, applied after the lookup"
           ],
           "answer": 2,
-          "why": "Locations rarely change but status changes often. Keeping status apart means the geo index stays stable and status is always current."
+          "why": "Locations rarely change but status changes often. Keeping status apart means the geo index stays stable and status is always current; rebuilding the index for every status change is wasteful."
         },
         {
-          "id": "cache",
+          "id": "cache-2",
           "q": "Many people in the same area ask the same thing. What helps most?",
           "options": [
             "Cache results per map cell for a minute or two",
-            "A bigger database",
-            "Make people wait"
+            "A larger database instance with more memory",
+            "Cache each user's own results for an hour"
           ],
           "answer": 0,
-          "why": "Everyone in one cell gets the same list, so a short cache per cell answers most home screens."
+          "why": "Everyone in one cell gets the same list, so a short cache per cell answers most home screens. A per-user cache rarely hits and goes stale as kitchens close."
         }
       ]
     },

@@ -537,37 +537,37 @@
       ],
       "decisions": [
         {
-          "id": "where",
+          "id": "where-2",
           "q": "Where does a submission's code run?",
           "options": [
-            "On the API servers",
-            "On the user's laptop",
-            "In sandboxed runners with limits on CPU, memory, time and network"
+            "On the API servers, in a separate process per submission",
+            "In sandboxed runners limited in CPU, memory, time and network",
+            "In the candidate's browser, with only the verdict sent back"
           ],
-          "answer": 2,
-          "why": "The code could be anything: an endless loop, a fork bomb, a network attack. It must run sealed off and limited, away from everything else."
+          "answer": 1,
+          "why": "The code could be anything: an endless loop, a fork bomb, a network attack. It must run sealed off and limited, away from everything else. A process on the API servers can still harm them, and anything run in the browser can be faked."
         },
         {
-          "id": "rush",
-          "q": "A contest starts and 50,000 people submit in a minute. Then?",
+          "id": "rush-2",
+          "q": "In the last minutes, thousands submit at once. Then?",
           "options": [
-            "Run each one as the request arrives",
-            "Refuse submissions",
-            "Queue them; runners take them at their own pace while the page shows \"judging…\""
+            "Start a runner for each submission the moment it arrives",
+            "Turn away new submissions until the runners catch up",
+            "Queue them; runners take them at their own pace meanwhile"
           ],
           "answer": 2,
-          "why": "Runners have a fixed capacity; the queue turns a spike into a short wait instead of crashed runners."
+          "why": "Runners have a fixed capacity; the queue turns a spike into a short wait instead of crashed runners. Starting one per submission overloads the machines, and refusing submissions in the final minutes is unfair."
         },
         {
-          "id": "tests",
-          "q": "Where are the hidden test cases?",
+          "id": "hidden-2",
+          "q": "Where are the hidden test cases kept?",
           "options": [
-            "Sent to the browser",
-            "In the problem statement",
-            "Only on the runners' side"
+            "Only on the runners' side, never sent anywhere else",
+            "In the browser, encrypted, and checked there",
+            "In the problem statement, shown as worked examples"
           ],
-          "answer": 2,
-          "why": "Anything sent to the browser can be read, so hidden tests stay with the runners."
+          "answer": 0,
+          "why": "Anything sent to the browser can be read, encrypted or not, so hidden tests stay with the runners and only the verdict goes back."
         }
       ]
     },
@@ -1791,6 +1791,7 @@
           "sample": []
         }
       }
-    }
+    },
+    "referenceNote": "In the Lab a judge worker's capacity is counted in test runs a second, so this pool looks small. Real judging is CPU time: about 3 seconds per submission, so the last 15 minutes need around 85 eight-core machines, as the worked answer below works out."
   }
 }

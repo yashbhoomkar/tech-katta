@@ -575,37 +575,37 @@
       ],
       "decisions": [
         {
-          "id": "fanout",
+          "id": "fanout-2",
           "q": "Someone posts. When are their followers' feeds updated?",
           "options": [
-            "Only when each follower opens the app (merge everyone they follow then)",
-            "Push to followers' feeds at post time for most people; for accounts with millions of followers, merge their posts in when a feed is read",
-            "Push to every follower at post time, whoever posts"
+            "At read time: merge everyone you follow when you open the app",
+            "At post time for most; big accounts merged in at read time",
+            "At post time, written into every follower's feed"
           ],
           "answer": 1,
-          "why": "Pushing makes reads one lookup, but a celebrity post would mean millions of writes at once. Pulling just those few accounts at read time keeps both sides cheap."
+          "why": "Pushing at post time makes a feed one lookup, but a celebrity post would mean lakhs of writes at once. Pulling just those few big accounts at read time keeps both sides cheap; merging everyone at read time makes every open slow."
         },
         {
-          "id": "items",
+          "id": "store-2",
           "q": "What is stored in a feed list?",
           "options": [
-            "Full copies of each post with text and images",
-            "Screenshots of posts",
-            "Post ids only; the posts are fetched (and cached) separately"
+            "Full copies of each post, with its text and photo links",
+            "Each followed account's id, to look up their latest posts",
+            "Post ids only; posts are fetched and cached separately"
           ],
           "answer": 2,
-          "why": "Ids keep each feed small; an edited or deleted post changes in one place instead of in every follower's copy."
+          "why": "Ids keep each feed small, and an edited or deleted post changes in one place instead of in every follower's copy. A list of accounts isn't a feed: building it on every open is the slow read path."
         },
         {
-          "id": "paging",
+          "id": "page-2",
           "q": "How does the app page through the feed?",
           "options": [
-            "Page numbers (?page=7)",
-            "Send the whole feed at once",
-            "A cursor: \"posts older than this id\""
+            "A cursor: posts older than this one",
+            "Page numbers, like ?page=7",
+            "An offset: the number of posts already seen"
           ],
-          "answer": 2,
-          "why": "New posts arrive at the top all the time, so page numbers shift and show repeats or skip posts. A cursor always continues from the last post seen."
+          "answer": 0,
+          "why": "New posts arrive at the top all the time, so page numbers and offsets shift, showing repeats or skipping posts. A cursor always continues from the last post seen."
         }
       ]
     },

@@ -292,9 +292,9 @@
         "id": "peak",
         "name": "The line forms",
         "sample": true,
-        "desc": "200,000 requests a second at 8 pm: people in the line refreshing their place.",
+        "desc": "2 lakh requests a second for an hour from 11 am: people in the line refreshing their place before sales open.",
         "hours": 1,
-        "startHour": 20,
+        "startHour": 11,
         "traffic": {
           "rps": 200000,
           "pattern": "steady"
@@ -323,13 +323,13 @@
       },
       {
         "id": "spike",
-        "name": "Sales open at 8 pm",
-        "desc": "For 15 minutes 10 lakh requests a second: everyone joins the line and refreshes. Only a few thousand a second can actually book.",
+        "name": "Sales open at noon",
+        "desc": "For 15 minutes from 12:00, 10 lakh requests a second: everyone joins the line and refreshes. Only a few thousand a second can actually book.",
         "hours": 3,
-        "startHour": 19,
+        "startHour": 11,
         "traffic": {
           "rps": 1000000,
-          "pattern": "sale"
+          "pattern": "noon"
         },
         "checks": [
           {
@@ -430,15 +430,15 @@
       },
       {
         "id": "api-hold",
-        "name": "Hold seat N-12",
+        "name": "Hold seat N2-14-7",
         "sample": true,
         "async": true,
-        "desc": "u1 holds a free seat for 10 minutes; only one person can get it.",
+        "desc": "u1, admitted from the line, holds a free seat for 10 minutes; only one person can get it.",
         "request": {
           "method": "POST",
-          "path": "/v1/shows/ipl-final/holds",
+          "path": "/v1/events/indpak/holds",
           "body": {
-            "seat_id": "N-12",
+            "seat_id": "N2-14-7",
             "user_id": "u1"
           }
         },
@@ -448,8 +448,8 @@
             "op": "update",
             "entity": "seats",
             "by": {
-              "show_id": "ipl-final",
-              "seat_id": "N-12"
+              "show_id": "indpak",
+              "seat_id": "N2-14-7"
             },
             "set": {
               "status": "held",
@@ -571,42 +571,42 @@
         {
           "label": "Pay / confirm an order",
           "method": "POST",
-          "path": "^/(api/)?(v\\d+/)?(orders|bookings|holds)/[^/]+/(pay|confirm|checkout)"
+          "path": "^/(api/)?(v\\d+/)?(events/[^/]+/)?(orders|bookings|holds)/[^/]+/(pay|paid|payment|confirm|checkout)"
         }
       ],
       "decisions": [
         {
-          "id": "line",
-          "q": "Lakhs of people arrive at 10:00 for 40,000 seats. What do they hit?",
+          "id": "line-2",
+          "q": "50 lakh people arrive at 12:00 for 1 lakh seats. What do they hit?",
           "options": [
-            "A waiting room that lets people in at the rate booking can handle",
-            "The booking service, all at once",
-            "Whoever refreshes fastest wins"
+            "The booking service itself, with extra servers added for the day",
+            "A waiting room that admits people at the rate booking can take",
+            "A rate limit that turns away anyone over the limit"
           ],
-          "answer": 0,
-          "why": "The booking service can only confirm so many seats a second. A waiting room is fair and keeps it from falling over."
+          "answer": 1,
+          "why": "Booking can only confirm so many seats a second, whatever the servers. A waiting room is fair and keeps it from falling over; a rate limit turns people away at random, and bots retry fastest."
         },
         {
-          "id": "hold",
+          "id": "hold-2",
           "q": "How is a seat kept while someone pays?",
           "options": [
-            "Not held: the first payment wins",
-            "Held until the show",
-            "Marked as held with an expiry in one atomic step, and released if not paid in time"
+            "Not held: whoever finishes paying first gets it",
+            "Held until the person closes the app, or until the sale is over",
+            "Held with an expiry in one atomic step, released if unpaid"
           ],
           "answer": 2,
-          "why": "Holding atomically means two people can't pick the same seat, and the expiry returns seats from abandoned payments."
+          "why": "Holding atomically means two people can't pick the same seat, and the expiry returns seats from abandoned payments. Not holding means paying for a seat that's gone; holding without expiry locks seats forever."
         },
         {
-          "id": "once",
+          "id": "once-2",
           "q": "What finally stops the same seat being sold twice?",
           "options": [
-            "A unique rule on (show, seat) or an update that only succeeds if the seat is still free",
-            "Customer support fixes it later",
-            "Nothing: it is rare"
+            "The database: a unique (show, seat) rule or a conditional update",
+            "The app greys out a seat as soon as anyone selects it",
+            "A check that the seat is still free just before the payment starts"
           ],
           "answer": 0,
-          "why": "The database itself refuses the second sale, so no bug or race elsewhere can double-sell a seat."
+          "why": "The database itself refuses the second sale, so no bug or race elsewhere can double-sell a seat. A greyed-out seat and a check before payment can both be beaten by two people at the same instant."
         }
       ]
     },
@@ -2219,8 +2219,8 @@
           "rows": 10000000,
           "sample": [
             {
-              "show_id": "ipl-final",
-              "seat_id": "N-12",
+              "show_id": "indpak",
+              "seat_id": "N2-14-7",
               "status": "free",
               "held_by": null,
               "hold_until": null

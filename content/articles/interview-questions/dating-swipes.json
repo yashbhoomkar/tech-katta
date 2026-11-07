@@ -233,7 +233,7 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends swipes. Each one is stored and checked for a match: 2 queries. A swipe must be acknowledged fast, but the match check can run a moment later. Your Clients' own rate is ignored.",
+    "brief": "Each test sends swipes. A swipe updates its pair's row and reads the other side in one step: 2 queries. The swipe answers at once with whether it made a match; telling both phones about a match can follow a moment later. Your Clients' own rate is ignored.",
     "fixed": {
       "queriesPerRequest": 2
     },
@@ -277,14 +277,16 @@
           },
           {
             "kind": "role",
-            "role": "matcher",
+            "role": "sender",
             "behind": "queue",
-            "label": "Matches are found away from the swipe itself, after the swipe is safely stored"
+            "label": "Match alerts are sent by workers taking them from a queue, not inside the swipe",
+            "any": true
           },
           {
             "kind": "role",
             "role": "wide",
-            "label": "Swipes are kept in a store built for very many writes"
+            "label": "Pair rows are kept in a store built for very many writes",
+            "any": true
           }
         ]
       },
@@ -292,7 +294,7 @@
         "id": "peak",
         "name": "The evening peak",
         "sample": true,
-        "desc": "20,000 swipes a second at 9 pm. A swipe must be acknowledged at once.",
+        "desc": "20,000 swipes a second at 9 pm. A swipe must answer at once, match or not.",
         "hours": 1,
         "startHour": 21,
         "traffic": {
@@ -319,7 +321,7 @@
       {
         "id": "spike",
         "name": "Valentine's evening",
-        "desc": "At 8 pm on 14 February: 40,000 swipes a second for 15 minutes.",
+        "desc": "At 8 pm on 14 February: 40,000 swipes a second for 15 minutes. Every swipe still answers at once.",
         "hours": 3,
         "startHour": 19,
         "traffic": {
@@ -339,7 +341,7 @@
           {
             "kind": "has",
             "type": "queue",
-            "label": "A queue takes the swipe burst"
+            "label": "A queue holds the burst of match alerts"
           }
         ]
       },
@@ -425,36 +427,59 @@
       },
       {
         "id": "api-swipe",
-        "name": "Swipe right",
+        "name": "Swipe right on someone who already liked you",
         "sample": true,
-        "async": true,
-        "desc": "u1 likes u2. Matching can run a moment later.",
+        "desc": "u1 says yes to u2, who said yes to u1 earlier. The swipe sets u1's side of their pair row and reads u2's side in the same transaction, so the reply says it's a match.",
         "request": {
-          "method": "POST",
-          "path": "/v1/swipes",
+          "method": "PUT",
+          "path": "/v1/swipes/u2",
           "body": {
-            "swiper_id": "u1",
-            "target_id": "u2",
-            "liked": true
+            "from": "u1",
+            "says": "yes"
           }
         },
         "steps": [
           {
             "id": "s1",
-            "op": "put",
-            "entity": "swipes",
-            "values": {
-              "swiper_id": "u1",
-              "target_id": "u2",
-              "liked": true,
-              "swiped_at": "2026-11-07T10:00:00Z"
-            }
+            "op": "tx",
+            "steps": [
+              {
+                "id": "a",
+                "op": "update",
+                "entity": "pairs",
+                "by": {
+                  "low_id": "u1",
+                  "high_id": "u2"
+                },
+                "set": {
+                  "low_says": "yes"
+                }
+              },
+              {
+                "id": "b",
+                "op": "update",
+                "entity": "pairs",
+                "by": {
+                  "low_id": "u1",
+                  "high_id": "u2"
+                },
+                "set": {
+                  "matched_at": "2026-11-07T21:04:00Z"
+                },
+                "cond": {
+                  "high_says": {
+                    "eq": "yes"
+                  }
+                }
+              }
+            ]
           }
         ],
         "respond": {
-          "status": 202,
+          "status": 200,
           "body": {
-            "recorded": true
+            "match": "$s1.ok",
+            "with": "u2"
           }
         }
       }
@@ -544,7 +569,7 @@
         },
         {
           "label": "Swipe",
-          "method": "POST",
+          "method": "PUT|POST",
           "path": "^/(api/)?(v\\d+/)?swipes?"
         },
         {
@@ -555,37 +580,37 @@
       ],
       "decisions": [
         {
-          "id": "match",
-          "q": "Two people like each other. How do you spot the match?",
+          "id": "match-2",
+          "q": "Two people say yes to each other at the same moment. How do you make exactly one match?",
           "options": [
-            "Scan all swipes every night",
-            "Ask people to tell you",
-            "On each right swipe, check whether the other person already liked you"
-          ],
-          "answer": 2,
-          "why": "A match can only happen at the moment of the second like, so checking then is one lookup and the match shows up at once."
-        },
-        {
-          "id": "async",
-          "q": "Swipes are almost all of the writes. What should a swipe not do?",
-          "options": [
-            "Be stored at all",
-            "Wait for slow work: store it, then match in the background",
-            "Lock the whole user table"
+            "Store each swipe as its own row, then check whether the other said yes",
+            "One row per pair: a swipe sets its side and reads the other in one step",
+            "Scan new yeses every few minutes and create matches from them"
           ],
           "answer": 1,
-          "why": "People swipe fast. Storing the swipe and answering at once keeps the app snappy; matching and notifications can run a moment later."
+          "why": "With a row per swipe, two swipes in the same instant can each check before the other is saved, and the match is lost. One row per pair, updated atomically, means one of them always lands second and sees the other: exactly one match. A scan every few minutes is slow."
         },
         {
-          "id": "deck",
-          "q": "How do you choose who to show next?",
+          "id": "async-2",
+          "q": "What does the swipe call do before it answers?",
           "options": [
-            "Search all users on every swipe",
-            "Show everyone in the order they signed up",
-            "Keep a ready stack of nearby candidates per user, refilled in the background"
+            "Put the swipe on a queue and answer \"got it\"; match later",
+            "Update the pair row, then wait until both phones are told",
+            "Update the pair row and answer whether it made a match"
           ],
           "answer": 2,
-          "why": "Each swipe should only take the next card. Building the stack ahead of time keeps search work off the swipe path."
+          "why": "The pair update is one quick step, so the swipe can answer with the match at once. Queuing the swipe delays the match the user should see; waiting for the push to both phones makes every swipe slow. The alerts go through a queue after the answer."
+        },
+        {
+          "id": "deck-2",
+          "q": "How do you choose who to show next?",
+          "options": [
+            "A ready stack of nearby candidates per person, refilled later",
+            "Search nearby users who fit my preferences on every swipe",
+            "Show profiles in the order people signed up, filtered by distance"
+          ],
+          "answer": 0,
+          "why": "Each swipe should only take the next card. Building the stack ahead of time keeps search work off the swipe path; searching per swipe is slow at 20,000 swipes a second, and sign-up order isn't what people want."
         }
       ]
     },
@@ -600,19 +625,19 @@
       },
       {
         "step": "api",
-        "x": "Get a deck, post a swipe (returns at once), list matches."
+        "x": "Get a deck; a swipe on a person (PUT, so a resend is safe) answers with whether it made a match; list matches."
       },
       {
         "step": "design",
-        "x": "20,000 swipes a second is 40,000 queries: more than one database. Several databases (shards, split by the pair of people) share it."
+        "x": "20,000 swipes a second is 40,000 queries: more than one database. Split the pair rows across several, by the pair of ids, so both swipes of a pair land on the same row."
       },
       {
         "step": "design",
-        "x": "The user only needs \"got it\". Put a Queue between the API servers and the workers that store swipes and check for matches."
+        "x": "The swipe itself must answer at once with match or not. Telling both phones can wait: put a Queue between the swipe servers and the workers that send match alerts."
       },
       {
         "step": "design",
-        "x": "On Valentine's evening the queue absorbs the doubling; workers catch up after."
+        "x": "On Valentine's evening swipes double: size the swipe servers and pair databases for it before 8 pm; the alert queue absorbs the burst of matches."
       }
     ],
     "reference": {
@@ -672,7 +697,7 @@
             "size": "c5.2xlarge",
             "count": 5,
             "queriesPerRequest": 2,
-            "role": "matcher"
+            "role": "sender"
           }
         },
         {
@@ -684,7 +709,7 @@
             "size": "c5.2xlarge",
             "count": 5,
             "queriesPerRequest": 2,
-            "role": "matcher"
+            "role": "sender"
           }
         },
         {
@@ -699,28 +724,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -739,28 +768,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -779,28 +812,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -819,28 +856,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -859,28 +900,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -899,28 +944,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -939,28 +988,32 @@
             "schema": {
               "tables": [
                 {
-                  "name": "swipes",
+                  "name": "pairs",
                   "fields": [
                     {
-                      "name": "swiper_id",
+                      "name": "low_id",
                       "type": "string"
                     },
                     {
-                      "name": "target_id",
+                      "name": "high_id",
                       "type": "string"
                     },
                     {
-                      "name": "liked",
-                      "type": "bool"
+                      "name": "low_says",
+                      "type": "string"
                     },
                     {
-                      "name": "swiped_at",
+                      "name": "high_says",
+                      "type": "string"
+                    },
+                    {
+                      "name": "matched_at",
                       "type": "time"
                     }
                   ],
                   "key": [
-                    "swiper_id",
-                    "target_id"
+                    "low_id",
+                    "high_id"
                   ]
                 }
               ]
@@ -998,59 +1051,59 @@
           "to": "work2"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db1"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db2"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db3"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db4"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db5"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db6"
         },
         {
-          "from": "work1",
+          "from": "app1",
           "to": "db7"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db1"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db2"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db3"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db4"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db5"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db6"
         },
         {
-          "from": "work2",
+          "from": "app2",
           "to": "db7"
         }
       ]
@@ -1105,7 +1158,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -1117,7 +1170,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -1337,7 +1390,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -1349,7 +1402,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -1518,8 +1571,8 @@
         ]
       },
       {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
+        "name": "No queue for match alerts",
+        "why": "Swipes are fine, but match alerts are sent inside the swipe with nothing to hold them, so the Valentine's burst of matches has nowhere to wait.",
         "fails": "spike",
         "nodes": [
           {
@@ -1564,67 +1617,309 @@
           {
             "id": "db1",
             "type": "database",
-            "x": 720,
-            "y": -375,
+            "x": 1200,
+            "y": -450,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           },
           {
             "id": "db2",
             "type": "database",
-            "x": 720,
-            "y": -225,
+            "x": 1200,
+            "y": -300,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           },
           {
             "id": "db3",
             "type": "database",
-            "x": 720,
-            "y": -75,
+            "x": 1200,
+            "y": -150,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           },
           {
             "id": "db4",
             "type": "database",
-            "x": 720,
-            "y": 75,
+            "x": 1200,
+            "y": 0,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           },
           {
             "id": "db5",
             "type": "database",
-            "x": 720,
-            "y": 225,
+            "x": 1200,
+            "y": 150,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           },
           {
             "id": "db6",
             "type": "database",
-            "x": 720,
-            "y": 375,
+            "x": 1200,
+            "y": 300,
             "config": {
               "size": "db.r5.2xlarge",
               "multiAz": true,
-              "role": "wide"
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "db7",
+            "type": "database",
+            "x": 1200,
+            "y": 450,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "role": "wide",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pairs",
+                    "fields": [
+                      {
+                        "name": "low_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "low_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "high_says",
+                        "type": "string"
+                      },
+                      {
+                        "name": "matched_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "low_id",
+                      "high_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1666,6 +1961,10 @@
             "to": "db6"
           },
           {
+            "from": "app1",
+            "to": "db7"
+          },
+          {
             "from": "app2",
             "to": "db1"
           },
@@ -1688,6 +1987,10 @@
           {
             "from": "app2",
             "to": "db6"
+          },
+          {
+            "from": "app2",
+            "to": "db7"
           }
         ]
       },
@@ -1751,7 +2054,7 @@
               "size": "c5.2xlarge",
               "count": 50,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -1763,7 +2066,7 @@
               "size": "c5.2xlarge",
               "count": 50,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -3298,8 +3601,8 @@
         ]
       },
       {
-        "name": "Swipes without who was swiped",
-        "why": "A swipe is stored without the person it was about, so a match can never be found.",
+        "name": "One row per swipe, not per pair",
+        "why": "Each swipe is its own row, so the swipe can't set its side and read the other in one step; two people saying yes at the same moment can miss their match.",
         "fails": "api-swipe",
         "schemaWrong": true,
         "nodes": [
@@ -3358,7 +3661,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -3370,7 +3673,7 @@
               "size": "c5.2xlarge",
               "count": 5,
               "queriesPerRequest": 2,
-              "role": "matcher"
+              "role": "sender"
             }
           },
           {
@@ -3388,11 +3691,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3405,7 +3708,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3427,11 +3731,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3444,7 +3748,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3466,11 +3771,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3483,7 +3788,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3505,11 +3811,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3522,7 +3828,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3544,11 +3851,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3561,7 +3868,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3583,11 +3891,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3600,7 +3908,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3622,11 +3931,11 @@
                     "name": "swipes",
                     "fields": [
                       {
-                        "name": "swipe_id",
+                        "name": "swiper_id",
                         "type": "string"
                       },
                       {
-                        "name": "swiper_id",
+                        "name": "target_id",
                         "type": "string"
                       },
                       {
@@ -3639,7 +3948,8 @@
                       }
                     ],
                     "key": [
-                      "swipe_id"
+                      "swiper_id",
+                      "target_id"
                     ]
                   }
                 ]
@@ -3677,59 +3987,59 @@
             "to": "work2"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db1"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db2"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db3"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db4"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db5"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db6"
           },
           {
-            "from": "work1",
+            "from": "app1",
             "to": "db7"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db1"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db2"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db3"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db4"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db5"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db6"
           },
           {
-            "from": "work2",
+            "from": "app2",
             "to": "db7"
           }
         ]
@@ -3737,38 +4047,44 @@
     ],
     "data": {
       "fields": [
-        "swiper_id",
-        "target_id",
-        "liked",
-        "swiped_at"
+        "low_id",
+        "high_id",
+        "low_says",
+        "high_says",
+        "matched_at"
       ],
       "aliases": {
-        "swiper_id": [
-          "user_id",
-          "from_id",
-          "from_user"
+        "low_id": [
+          "user_a",
+          "a_id",
+          "first_id"
         ],
-        "target_id": [
-          "other_id",
-          "to_id",
-          "profile_id",
-          "to_user"
+        "high_id": [
+          "user_b",
+          "b_id",
+          "second_id"
         ],
-        "liked": [
-          "like",
-          "right",
-          "is_like"
+        "low_says": [
+          "a_says",
+          "a_liked",
+          "low_liked"
+        ],
+        "high_says": [
+          "b_says",
+          "b_liked",
+          "high_liked"
         ]
       },
       "entities": {
-        "swipes": {
-          "rows": 100000000000,
+        "pairs": {
+          "rows": 10000000000,
           "sample": [
             {
-              "swiper_id": "u2",
-              "target_id": "u1",
-              "liked": true,
-              "swiped_at": "2026-11-07T09:00:00Z"
+              "low_id": "u1",
+              "high_id": "u2",
+              "low_says": null,
+              "high_says": "yes",
+              "matched_at": null
             }
           ]
         }

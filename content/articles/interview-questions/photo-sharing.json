@@ -270,7 +270,8 @@
           {
             "kind": "role",
             "role": "objects",
-            "label": "Photo bytes are kept in storage built for big files, not in the rows of a table"
+            "label": "Photo bytes are kept in storage built for big files, not in the rows of a table",
+            "any": true
           }
         ]
       },
@@ -410,31 +411,39 @@
         ]
       },
       {
-        "id": "api-upload",
-        "name": "Upload a photo",
+        "id": "api-post",
+        "name": "Post a photo",
         "sample": true,
-        "desc": "The phone sends the photo's bytes.",
+        "desc": "A diner posts a dosa photo at Thindi Mane. The API records the photo's details and hands back a signed upload link; the image itself goes straight to object storage, never through your servers.",
         "request": {
-          "method": "PUT",
-          "path": "/v1/photos/p77"
+          "method": "POST",
+          "path": "/v1/photos",
+          "body": {
+            "restaurant_id": "r_88",
+            "dish": "Ghee roast dosa",
+            "caption": "Worth the wait"
+          }
         },
         "steps": [
           {
             "id": "s1",
-            "op": "blob",
-            "mode": "put",
+            "op": "put",
             "entity": "photos",
-            "key": {
-              "photo_id": "p77"
-            },
-            "field": "bytes"
+            "values": {
+              "photo_id": "p77",
+              "user_id": "u1",
+              "restaurant_id": "r_88",
+              "dish": "Ghee roast dosa",
+              "caption": "Worth the wait",
+              "created_at": "2026-11-07T20:05:00Z"
+            }
           }
         ],
         "respond": {
           "status": 201,
           "body": {
-            "photo_id": "p77",
-            "stored": "$s1.ok"
+            "photo_id": "$s1.photo_id",
+            "upload_url": "https://storage…/p77?signature=…"
           }
         }
       },
@@ -442,7 +451,7 @@
         "id": "api-view",
         "name": "View a photo",
         "sample": true,
-        "desc": "A follower opens photo p1.",
+        "desc": "A follower opens photo p1: the image comes from object storage (and, after the first view, from the CDN).",
         "request": {
           "method": "GET",
           "path": "/v1/photos/p1"
@@ -452,7 +461,7 @@
             "id": "s1",
             "op": "blob",
             "mode": "get",
-            "entity": "photos",
+            "entity": "images",
             "key": {
               "photo_id": "p1"
             },
@@ -561,37 +570,37 @@
       ],
       "decisions": [
         {
-          "id": "upload",
+          "id": "upload-2",
           "q": "How does a phone upload a photo?",
           "options": [
-            "Stream the bytes through your app servers",
-            "Email it to the service",
-            "Ask the API for a signed upload link, then send the bytes straight to object storage"
+            "Send the bytes to the API servers, which store them",
+            "Get a signed link from the API, send bytes straight to storage",
+            "Send the bytes to the API servers, which save them in the database"
           ],
-          "answer": 2,
-          "why": "Big uploads through app servers tie them up for seconds each. A signed link lets storage take the bytes while the API handles only the small metadata."
+          "answer": 1,
+          "why": "Big uploads through app servers tie them up for seconds each, and image bytes in database rows make it huge and slow. A signed link lets object storage take the bytes while the API handles only the small details."
         },
         {
-          "id": "sizes",
+          "id": "sizes-2",
           "q": "Phones on slow networks need small images. When are smaller sizes made?",
           "options": [
-            "Resized on every view",
-            "The phone shrinks what it downloads",
+            "Resized on every view, to the size the phone asks for",
+            "On the phone, after it downloads the full photo",
             "A few sizes, once, in the background after upload"
           ],
           "answer": 2,
-          "why": "Resizing once is cheap; resizing on every view repeats the work millions of times, and shrinking on the phone wastes its data."
+          "why": "Resizing once is cheap; resizing on every view repeats the work crores of times, and shrinking on the phone wastes its data on the full 3 MB first."
         },
         {
-          "id": "serve",
+          "id": "serve-2",
           "q": "Who serves photos to viewers?",
           "options": [
-            "App servers read storage on each view",
-            "The database",
-            "A CDN in front of the storage"
+            "A CDN in front of object storage",
+            "The app servers, reading from object storage on each view",
+            "Object storage directly, with a public link per photo"
           ],
-          "answer": 2,
-          "why": "Popular photos are viewed again and again from all over; a CDN answers from servers near the viewer."
+          "answer": 0,
+          "why": "Popular photos are viewed again and again from all over India; a CDN answers from servers near the viewer. Serving from app servers wastes them, and object storage alone is slower and costs more per view."
         }
       ]
     },
@@ -706,7 +715,7 @@
             "schema": {
               "tables": [
                 {
-                  "name": "photos",
+                  "name": "images",
                   "fields": [
                     {
                       "name": "photo_id",
@@ -719,6 +728,69 @@
                   ],
                   "key": [
                     "photo_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "db2",
+          "type": "database",
+          "name": "Photo details",
+          "x": 1200,
+          "y": 130,
+          "config": {
+            "size": "db.m5.large",
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "photos",
+                  "fields": [
+                    {
+                      "name": "photo_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "dish",
+                      "type": "string"
+                    },
+                    {
+                      "name": "caption",
+                      "type": "text"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "photo_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    },
+                    {
+                      "fields": [
+                        "restaurant_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    }
                   ]
                 }
               ]
@@ -766,6 +838,14 @@
         {
           "from": "cache2",
           "to": "db1"
+        },
+        {
+          "from": "cache1",
+          "to": "db2"
+        },
+        {
+          "from": "cache2",
+          "to": "db2"
         }
       ]
     },
@@ -1369,8 +1449,8 @@
       },
       {
         "name": "Photos in a database table",
-        "why": "The photo bytes go into database rows: every read, copy and backup carries them. Files belong in object storage.",
-        "fails": "api-upload",
+        "why": "The image bytes sit in a database row instead of object storage: every view drags megabytes through the database, and the CDN has nothing to cache.",
+        "fails": "api-view",
         "schemaWrong": true,
         "nodes": [
           {
@@ -1451,7 +1531,8 @@
             "x": 1200,
             "y": 0,
             "config": {
-              "role": "objects",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
               "schema": {
                 "tables": [
                   {
@@ -1462,12 +1543,48 @@
                         "type": "string"
                       },
                       {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "dish",
+                        "type": "string"
+                      },
+                      {
+                        "name": "caption",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      },
+                      {
                         "name": "bytes",
                         "type": "blob"
                       }
                     ],
                     "key": [
                       "photo_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      },
+                      {
+                        "fields": [
+                          "restaurant_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
                     ]
                   }
                 ]
@@ -1523,8 +1640,11 @@
       "fields": [
         "photo_id",
         "user_id",
-        "bytes",
-        "created_at"
+        "restaurant_id",
+        "dish",
+        "caption",
+        "created_at",
+        "bytes"
       ],
       "aliases": {
         "bytes": [
@@ -1533,15 +1653,35 @@
           "data",
           "content",
           "blob"
+        ],
+        "restaurant_id": [
+          "restaurant",
+          "place_id"
+        ],
+        "caption": [
+          "text",
+          "description"
         ]
       },
       "entities": {
         "photos": {
-          "rows": 10000000000,
+          "rows": 730000000,
           "sample": [
             {
               "photo_id": "p1",
               "user_id": "u1",
+              "restaurant_id": "r_88",
+              "dish": "Ghee roast dosa",
+              "caption": "Crispy!",
+              "created_at": "2026-11-07T13:00:00Z"
+            }
+          ]
+        },
+        "images": {
+          "rows": 730000000,
+          "sample": [
+            {
+              "photo_id": "p1",
               "bytes": "<bytes>"
             }
           ]

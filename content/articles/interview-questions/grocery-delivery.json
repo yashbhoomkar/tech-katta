@@ -437,7 +437,7 @@
         "desc": "The app shows how much milk the nearest store has.",
         "request": {
           "method": "GET",
-          "path": "/v1/stores/s1/stock/milk"
+          "path": "/v1/stores/s1/items/milk"
         },
         "steps": [
           {
@@ -463,16 +463,20 @@
       },
       {
         "id": "api-hold",
-        "name": "Hold two milks while paying",
+        "name": "Order two milks",
         "sample": true,
-        "desc": "Taking stock and recording the hold must happen together, and only if enough is left.",
+        "desc": "Placing the order holds the stock until it is paid: taking stock and recording the hold must happen together, and only if enough is left.",
         "request": {
           "method": "POST",
-          "path": "/v1/holds",
+          "path": "/v1/orders",
           "body": {
             "store_id": "s1",
-            "item_id": "milk",
-            "qty": 2
+            "items": [
+              {
+                "id": "milk",
+                "qty": 2
+              }
+            ]
           }
         },
         "steps": [
@@ -625,37 +629,37 @@
       ],
       "decisions": [
         {
-          "id": "last",
+          "id": "last-2",
           "q": "Two people pay for the last packet of milk at the same moment. How do you not sell it twice?",
           "options": [
-            "Check the stock, then subtract, as two separate steps",
-            "One atomic step: take it only if stock is above zero (or hold it first)",
-            "Sell both and refund one later"
+            "Read the stock, check it's above zero, then subtract it",
+            "One atomic step: take it only if stock is still above zero",
+            "Lock the store's whole stock table while each order is placed"
           ],
           "answer": 1,
-          "why": "Between a separate check and subtract, the other order can slip in. A conditional update or a hold does both in one step, so only one can win."
+          "why": "Between a separate read and subtract, the other order can slip in. A conditional update does both in one step, so only one can win; locking the whole table makes every order in the store wait in line."
         },
         {
-          "id": "abandon",
+          "id": "abandon-2",
           "q": "Someone leaves halfway through paying. What happens to their held items?",
           "options": [
-            "The hold expires after a few minutes and the stock comes back",
-            "They stay held until staff clear them",
-            "They are sold anyway"
+            "They stay held until the store's staff clear them",
+            "They stay held until the person comes back to the app to finish",
+            "The hold expires after a few minutes; the stock comes back"
           ],
-          "answer": 0,
+          "answer": 2,
           "why": "Holds with an expiry free stock by themselves, so abandoned baskets never block other shoppers for long."
         },
         {
-          "id": "store",
+          "id": "store-2",
           "q": "Which store packs an order?",
           "options": [
-            "Any store in the city",
-            "The biggest warehouse",
-            "The nearest dark store that has every item, found from the delivery location"
+            "The nearest dark store that has every item in the basket",
+            "The store with the most stock of the basket's items",
+            "Whichever store in the city has the fewest open orders"
           ],
-          "answer": 2,
-          "why": "Ten-minute delivery only works from a store a few kilometres away, and only if it has everything in the basket."
+          "answer": 0,
+          "why": "Ten-minute delivery only works from a store a few kilometres away, and only if it has everything in the basket. A store with more stock or fewer orders can be too far."
         }
       ]
     },
