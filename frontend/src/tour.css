@@ -5,8 +5,11 @@
 .tour-card b{display:block;font-size:16px;margin:4px 0 4px}
 .tour-card p{margin:0;font-size:14px;line-height:1.55;color:#36424f}
 .tour-act{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.tour-act button{height:34px;padding:0 12px;border:1px solid #d9dee7;background:#fff;font:600 11px "IBM Plex Mono",monospace;color:#1c2733;cursor:pointer}
-.tour-act button:hover,.tour-act button:focus-visible{border-color:#2855d9;color:#2855d9}.tour-act button:focus-visible{outline:2px solid #2855d9;outline-offset:2px}
+.tour-act button,.tour-act a{display:inline-flex;align-items:center;text-decoration:none;height:34px;padding:0 12px;border:1px solid #d9dee7;background:#fff;font:600 11px "IBM Plex Mono",monospace;color:#1c2733;cursor:pointer}
+.tour-act a:hover,.tour-act button:hover,.tour-act button:focus-visible,.tour-act a:focus-visible{border-color:#2855d9;color:#2855d9}.tour-act a:focus-visible,.tour-act button:focus-visible{outline:2px solid #2855d9;outline-offset:2px}
 .tour-act .tour-next{background:#2855d9;border-color:#2855d9;color:#fff}.tour-act .tour-next:hover,.tour-act .tour-next:focus-visible{color:#fff;background:#1f46b8}
 .tour-act .tour-skip{margin-right:auto;border-color:transparent;color:#586575}
 @media(prefers-reduced-motion:reduce){.tour-hole{transition:none}}
+.tour-prog{height:3px;margin:-14px -16px 12px;background:#e6eaf0}.tour-prog i{display:block;height:100%;background:#2855d9;transition:width .2s ease}
+.tour-card{max-height:calc(100vh - 24px);overflow:auto;box-shadow:0 8px 30px rgba(28,39,51,.18)}
+@media(prefers-reduced-motion:reduce){.tour-prog i{transition:none}}

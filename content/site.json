@@ -369,33 +369,118 @@
     "back": "Back",
     "skip": "Skip",
     "done": "Done",
+    "close": "Close",
+    "version": 2,
     "dashboard": [
       {
         "target": ".tabs",
-        "title": "Everything is in these tabs",
-        "text": "Concepts, Components and Interview Questions are the library; Quick Notes and Did you know are short reads."
+        "title": "Learn, then practise",
+        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes and Did you know are two-minute reads."
+      },
+      {
+        "target": ".tabs .tab[href=\"#problems\"]",
+        "title": "Problems: practise against tests",
+        "text": "Interview problems, each with its own test suite. Design it on a canvas, Run the example tests, then Submit for a score out of 100."
+      },
+      {
+        "target": ".tabs .tab[href=\"#interview-questions\"]",
+        "title": "Worked answers",
+        "text": "Each question worked from requirements and rough numbers to a design you can defend, with the traps an interviewer looks for. It opens beside its own canvas."
+      },
+      {
+        "target": ".tabs .tab[href=\"#components\"]",
+        "title": "The building blocks",
+        "text": "Load balancers, caches, queues and databases: what each one is for and where it breaks, with figures. Concepts covers the ideas behind them."
       },
       {
         "target": ".tabs .tab[href=\"#lab\"]",
-        "title": "The Lab",
-        "text": "Build a system from cloud components, send traffic through it and watch what breaks. Challenges give you up to three stars each."
+        "title": "The Lab: free play",
+        "text": "Build any system from cloud parts, send traffic through it and watch what breaks. Challenges give up to three stars each."
+      },
+      {
+        "target": ".d-head .acct",
+        "title": "Your progress",
+        "text": "Signed in, your solved problems, scores and designs follow you to every device."
       },
       {
         "target": ".d-tour",
-        "title": "Come back to this tour",
-        "text": "Press Tour any time. Your progress and designs stay in this browser."
+        "title": "That's it",
+        "text": "Press Tour any time: each page has its own. The best place to start is the first problem.",
+        "cta": {
+          "label": "Try the first problem →",
+          "href": "#problems/url-shortener"
+        }
+      }
+    ],
+    "problem": [
+      {
+        "target": ".sv-tabs",
+        "title": "The problem, in tabs",
+        "text": "Description is the brief and its example tests. Your answer, Hints, Solution and Submissions are next to it."
+      },
+      {
+        "target": ".sv-tests",
+        "title": "Example tests",
+        "text": "What Run checks: traffic at the busiest hour, a failure or two, and API calls, each with the request and the response it should get. Submit adds more tests."
+      },
+      {
+        "target": ".sv-lab .lab-pal",
+        "title": "Build your design",
+        "text": "Drag a part onto the canvas, or tap it. Join two parts by dragging from the dot on the right of one to the dot on the left of the other."
+      },
+      {
+        "target": ".sv-lab .lab-ins",
+        "click": ".sv-lab .react-flow__node:last-of-type",
+        "title": "Each part's settings",
+        "text": "Select a part to set it up: a name, \"What it does\" (a geo index, a WebSocket gateway…), its size and how many. A database also gets an engine (PostgreSQL, DynamoDB, S3…) and a Schema: the tables and keys the API calls need."
+      },
+      {
+        "target": ".sv-run",
+        "title": "Run",
+        "text": "Runs the example tests on your design. The results show what failed and why; for an API call, ▶ Watch follows the request from part to part."
+      },
+      {
+        "target": ".sv-submit",
+        "title": "Submit",
+        "text": "Runs every test and grades your written answer, for a score out of 100: half for the design, half for the answer. Each submission is kept under Submissions."
+      },
+      {
+        "target": ".sv-tabs > :nth-child(2)",
+        "title": "Your answer",
+        "text": "Write it like the interview: requirements, rough numbers, the API and the key decisions. It's graded when you Submit."
+      },
+      {
+        "target": ".sv-tabs > :nth-child(3)",
+        "title": "Stuck? Hints",
+        "text": "One at a time, from a nudge to nearly the answer. Each one takes 3 points off."
+      },
+      {
+        "target": ".sv-tabs > :nth-child(4)",
+        "title": "Solution",
+        "text": "The worked answer and a design that passes every test. Copy to my canvas puts it on yours to run and change; submitted unchanged, it doesn't count as solved."
+      },
+      {
+        "target": ".sv-clock",
+        "title": "Timer and Reset",
+        "text": "Time yourself like the real thing, and Reset to start again from the problem's first design."
       }
     ],
     "lab": [
       {
         "target": ".lab-pal",
         "title": "Components",
-        "text": "Drag a component onto the canvas, or tap it. Each has a realistic price and limit; select it to see what it is like in real life."
+        "text": "Drag a component onto the canvas, or tap it. Each has a realistic price and limit."
       },
       {
         "target": ".lab-canvas",
         "title": "Your design",
         "text": "Connect two components by dragging from the dot on the right of one to the dot on the left of the other. Click an arrow to remove it."
+      },
+      {
+        "target": ".lab-ins",
+        "click": ".lab .react-flow__node:last-of-type",
+        "title": "Settings",
+        "text": "Select a component to name it, give it a job under \"What it does\", and set its size and count. Databases get an engine and a Schema."
       },
       {
         "target": ".lab-btn.run",
