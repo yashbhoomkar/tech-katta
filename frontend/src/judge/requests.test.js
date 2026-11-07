@@ -108,3 +108,17 @@ test('a write behind a queue is fine when the call accepts 202, and not when it 
   assert.deepEqual(r.trace.map((h) => h.at), ['c', 'lb', 's', 'q', 'w', 'db', 's', 'lb', 'c']);
   assert.match(runRequest(design(links(t), { queue: true }), lab, problem, { ...click, async: false }).why[0], /must answer with the result now/);
 });
+
+test('a conditional update: Cassandra does it with IF (a lightweight transaction); S3 and OpenSearch can\'t', () => {
+  const p = { data: { entities: { seats: { rows: 1e7, sample: [{ show: 's1', seat: 'A1', status: 'free' }] } } } };
+  const hold = { id: 'h', async: true, request: { method: 'POST', path: '/holds' }, steps: [{ id: 's1', op: 'update', entity: 'seats', by: { show: 's1', seat: 'A1' }, set: { status: 'held' }, cond: { status: { eq: 'free' } } }], respond: { status: 202, body: { held: true } } };
+  const t = { name: 'seats', fields: [{ name: 'show', type: 'string' }, { name: 'seat', type: 'string' }, { name: 'status', type: 'string' }], key: ['show', 'seat'] };
+  const c = runRequest(design({ engine: 'cassandra', ...links(t) }), lab, p, hold);
+  assert.equal(c.ok, true, c.why.join(' ')); assert.match(c.trace.find((x) => x.at === 'db').json, /UPDATE seats SET status = 'held' WHERE show = 's1' AND seat = 'A1' IF status = 'free';/);
+  assert.equal(runRequest(design(links(t)), lab, p, hold).ok, true);
+  assert.match(runRequest(design({ engine: 'opensearch', ...links(t) }), lab, p, hold).why[0], /can't change a row only if it is still as expected/);
+  // the seat is taken: the update doesn't apply, and the call says so
+  const taken = { data: { entities: { seats: { rows: 1e7, sample: [{ show: 's1', seat: 'A1', status: 'held' }] } } } };
+  const r = runRequest(design(links(t)), lab, taken, hold);
+  assert.equal(r.ok, false); assert.equal(r.output.status, 409);
+});
