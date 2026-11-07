@@ -582,10 +582,10 @@
           "options": [
             "A larger database instance, with more memory, behind the servers",
             "Sending only every second keystroke from the app",
-            "Wait ~100 ms after the last keystroke; cache on the phone"
+            "Wait ~150 ms after the last keystroke; cache on the phone"
           ],
           "answer": 2,
-          "why": "Most keystrokes are followed by another within 100 ms; waiting for a pause skips those, and remembering recent answers on the phone removes many more. A bigger database doesn't reduce requests, and skipping alternate keystrokes shows wrong suggestions."
+          "why": "Most keystrokes are followed by another within 150 ms; waiting for a pause skips those, and remembering recent answers on the phone removes many more. A bigger database doesn't reduce requests, and skipping alternate keystrokes shows wrong suggestions."
         }
       ]
     },

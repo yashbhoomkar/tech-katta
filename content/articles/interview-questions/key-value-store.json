@@ -80,7 +80,7 @@
     {
       "t": "list",
       "items": [
-        "Value: `key`, `value` (bytes), `version` (rising, with the writer's id to break ties; the other write is lost, so carts may want to merge instead), `deleted` (a marker, so a delete isn't undone by an old copy).",
+        "Value: `key`, `value` (bytes), `version` (a version vector: one counter per machine that wrote it, so two writes made apart, say on both sides of a network split, show up as concurrent; both are kept and the reader, here the cart service, merges them), `deleted` (a marker, so a delete isn't undone by an old copy).",
         "Ring: which machines own which slices of the hash range, shared by every node and client library."
       ]
     },

@@ -215,7 +215,7 @@
             "\"The same long URL is shortened twice: same code?\" Optional: keep an index on `long_url` per account and return the existing code, at the cost of one more lookup per create.",
             "\"Can a custom alias clash with a generated code?\" Yes, if they share a format: an alias `2Bj` is a code the counter will reach. Give them separate spaces: aliases of 8 or more characters, or with a `-`.",
             "\"How do you count clicks without slowing redirects?\" Write a click event to a stream (Kafka) and count in a separate consumer; the redirect never waits for it.",
-            "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the cache-restart challenge.",
+            "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the \"cache restarts at dinner\" Lab challenge.",
             "\"Links in two regions?\" Give each region its own range of IDs, so codes stay unique without talking across regions."
           ]
         }
