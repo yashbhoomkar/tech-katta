@@ -369,7 +369,7 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
     { name: 'page_view', at: at(30), visitor: v1, device: 'phone', page: '/', props: { section: 'landing', slug: '', ref: 'instagram.com' } },
     { name: 'lab_locked', at: at(29), visitor: v1, device: 'phone', page: '/', props: { lite: true } },
     { name: 'sign_in', at: at(28), visitor: v1, device: 'phone', page: '/', props: { ads: false } },
-    { name: 'score', at: at(27), visitor: v1, device: 'phone', page: '/', props: { challenge: 'ind-vs-pak', stars: 2, max: 3, passed: '110', lite: true } },
+    { name: 'score', at: at(27), visitor: v1, userId: 'u-signed-in', device: 'phone', page: '/', props: { challenge: 'ind-vs-pak', stars: 2, max: 3, passed: '110', lite: true } },
     { name: 'score', at: at(26), visitor: v1, device: 'phone', page: '/', props: { challenge: 'ind-vs-pak', stars: 3, max: 3, passed: '111', lite: true } },
     { name: 'page_view', at: at(20), visitor: v2, device: 'desktop', page: '/', props: { section: 'landing', slug: '', ref: '' } },
     { name: 'lab_locked', at: at(19), visitor: v2, device: 'desktop', page: '/', props: { lite: false } },
@@ -385,7 +385,7 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   assert.equal(r.headers.get('cache-control'), 'no-store');
   const s = await r.json();
   assert.equal(s.days, 7);
-  assert.deepEqual(s.totals, { events: 10, visitors: 2, users: 0 });
+  assert.deepEqual(s.totals, { events: 10, visitors: 2, users: 1 });
   assert.ok(Array.isArray(s.problems), 'problems submitted, per problem');
   assert.deepEqual(s.devices.map((d) => `${d.device}:${d.visitors}`).sort(), ['desktop:1', 'phone:1']);
   assert.deepEqual(s.funnel.map((x) => x.visitors), [2, 2, 1, 1]);
@@ -395,6 +395,7 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   const sc = s.lab.scores[0];
   assert.deepEqual([sc.challenge, sc.attempts, sc.visitors, sc.stars, sc.best, sc.max, sc.lite, sc.checkPass], ['ind-vs-pak', 2, 1, 2.5, 3, 3, 2, [100, 100, 50]]);
   assert.equal(s.daily.reduce((a, d) => a + d.views, 0), 2);
+  assert.equal(s.daily.reduce((a, d) => a + d.users, 0), 1, 'signed-in users per day');
   assert.ok(s.accounts.total >= 2); assert.ok(s.accounts.recent.some((u) => u.email === 'owner@example.com' && u.country === 'IN'));
   assert.ok(!JSON.stringify(s).includes('googleSub') && !JSON.stringify(s).includes('tokenHash'), 'no ids or hashes');
   // range is clamped, other sites can't read it
