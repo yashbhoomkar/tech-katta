@@ -3,7 +3,7 @@
 // capacities come from the API (GET /v1/lab, content/lab.json). Designs are kept in this browser.
 import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
 import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow,BaseEdge,EdgeLabelRenderer,getSmoothStepPath}from"@xyflow/react";
-import"@xyflow/react/dist/style.css";import"./lab.css";
+import"@xyflow/react/dist/style.css";import"./lab.css";import SchemaEditor from"./SchemaEditor.jsx";import{schemaIssues,schemaSummary,vocab}from"./schema.js";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow,replicasOf,roleOf,displayName,MAX_NAME,engineOf,sizesOf,sizeOf,perRequest}from"./engine.js";
 import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{parseText,parseJSON,exportDesign}from"./importer.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";
@@ -49,6 +49,7 @@ return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")}>
 :data.kind==="queue"?<span className={"ln-m"+(run.backlog?.[id]>0?" ln-q":"")}>{num(r.served)}/s in · {num(r.delivered)}/s to workers{run.backlog?.[id]>0?` · backlog ${num(run.backlog[id])}`:""}</span>
 :<><div className="ln-bar"><i style={{width:Math.min(100,r.utilisation*100)+"%"}}/></div><span className="ln-m">{Math.round(r.utilisation*100)}% · {Math.round(r.latencyMs)} ms{r.dropped>0?` · drops ${num(r.dropped)}/s`:""}</span>
 {data.kind==="cache"&&run.cold?.[id]!==undefined&&<span className="ln-m ln-q">warming up · {Math.round(r.hit*100)}% hits</span>}{data.kind==="cache"&&run.backlog?.[id]>0&&<span className="ln-m ln-q">unflushed writes {num(run.backlog[id])}</span>}</>)}
+{data.kind==="database"&&!running&&back===undefined&&data.config?.schema?.tables?.length>0&&<span className="ln-m ln-sch">{schemaSummary(engineOf(comp,data.config),data.config.schema)}</span>}
 {data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const nodeTypes={comp:CompNode};
 // Arrows: click (or tap) one to select it; a selected arrow shows ✕ to remove it (Delete works too).
@@ -78,7 +79,14 @@ return <figure className="lab-day"><svg viewBox={`0 0 ${w} ${h+14}`} role="img" 
 <line x1={x} x2={x} y1="0" y2={h} className="lab-day-now"/>{[0,6,12,18,24].map(t=><text key={t} x={t/24*w} y={h+11} textAnchor={t===0?"start":t===24?"end":"middle"}>{String(t).padStart(2,"0")}:00</text>)}</svg>
 <figcaption>Now {simTime(hours).split(", ")[1]} · {num((config.rps??comp.rps.default)*trafficAt(comp,config,hours*60))} req/s</figcaption></figure>}
 function Field({label,children}){return <label className="lab-f"><span>{label}</span>{children}</label>}
-function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn}){
+// A database's schema in its settings: what it holds, its problems, and the editor.
+function SchemaBox({comp,cfg,set,title,suggest}){const[open,setOpen]=useState(false);const e=engineOf(comp,cfg),v=vocab(e),iss=schemaIssues(e,cfg.schema),errs=iss.filter(x=>x.level==="error").length;
+return <div className="lab-sch"><div className="lab-h">{(comp.schemaLabel||"Schema").toUpperCase()}</div>
+<p className="lab-note lab-note-tight">{cfg.schema?.tables?.length?schemaSummary(e,cfg.schema):`No ${v.tables} yet. Add them so request tests can see where data lives and how it is found.`}</p>
+{iss.length>0&&<p className={"lab-note lab-note-tight "+(errs?"lab-warn":"")}>{errs?`${errs} problem${errs>1?"s":""}`:""}{errs&&iss.length>errs?" · ":""}{iss.length>errs?`${iss.length-errs} warning${iss.length-errs>1?"s":""}`:""}: open the schema to see them.</p>}
+<button type="button" className="lab-btn ghost" onClick={()=>setOpen(true)}>{cfg.schema?.tables?.length?"Edit schema":`Add ${v.tables}`}</button>
+{open&&<SchemaEditor engine={e} schema={cfg.schema} title={title} suggest={suggest} save={schema=>set({schema})} close={()=>setOpen(false)}/>}</div>}
+function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn,fieldHints}){
 // Settings a challenge fixes are shown at the challenge's value and can't be changed (QA M4).
 const fx=ch?.fixed||{},lockOf=t=>t==="server"?{queriesPerRequest:fx.queriesPerRequest}:t==="cache"?{hitPct:fx.hitPct,writePct:fx.writePct}:t==="cdn"?{hitPct:fx.cdnHitPct,live:fx.cdnLive}:{};
 const chBox=ch&&<div className="lab-ch"><div className="lab-h">CHALLENGE · {lab.levels.find(l=>l.id===ch.level)?.label.toUpperCase()}</div><h3>{ch.title}</h3><p className="lab-desc">{ch.brief}</p>
@@ -100,6 +108,7 @@ return <aside className="lab-ins" aria-label="Component settings"><div className
 {comp.type==="client"&&comp.patterns&&<><Field label="Traffic through the day"><select value={patternOf(comp,cfg)?.id||comp.patterns[0].id} onChange={e=>set({pattern:e.target.value})}>{comp.patterns.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></Field><p className="lab-note lab-note-tight">{patternOf(comp,cfg)?.desc||comp.patterns[0].desc}</p><DayChart comp={comp} config={cfg} hours={hours}/></>}
 {comp.type==="database"&&comp.engines&&(()=>{const e=engineOf(comp,cfg),fam=[...new Set(comp.engines.map(x=>x.family))];return <><Field label={comp.engineLabel||"Engine"}><select value={e.id} onChange={ev=>{const n=comp.engines.find(x=>x.id===ev.target.value),c={...cfg,engine:n.id};set({engine:n.id,size:sizesOf(comp,c)[1],...(n.replicas===false?{replicas:0}:{}),...(n.multiAz==="builtin"?{multiAz:false}:{})})}}>{fam.map(f=><optgroup key={f} label={f}>{comp.engines.filter(x=>x.family===f).map(x=><option key={x.id} value={x.id}>{x.aws.startsWith(x.label)?x.aws:`${x.label} · ${x.aws}`}</option>)}</optgroup>)}</select></Field>
 <p className="lab-note lab-note-tight">{e.desc}</p>{e.features?.length>0&&<p className="lab-note lab-note-tight lab-good"><b>Good at:</b> {e.features.map(f=>comp.features?.find(x=>x.id===f)?.label||f).join(", ")}.</p>}</>})()}
+{comp.type==="database"&&comp.engines&&<SchemaBox key={node.id} comp={comp} cfg={cfg} set={set} title={displayName(comp,{name:node.data.name,config:cfg})} suggest={fieldHints||[]}/>}
 {comp.roles&&<><Field label="What it does"><select value={roleOf(comp,cfg)?.id||""} onChange={e=>set({role:e.target.value||undefined})}><option value="">{comp.name} (general)</option>{comp.roles.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}</select></Field><p className="lab-note lab-note-tight">{roleOf(comp,cfg)?.desc||lab.roleNote}</p></>}
 {sizesOf(comp,cfg)[0]&&!perRequest(comp,cfg)&&<Field label="Size"><select value={sizeOf(comp,cfg)?.id||sizesOf(comp,cfg)[1]} onChange={e=>set({size:e.target.value})}>{sizesOf(comp,cfg)[0].map(s=><option key={s.id} value={s.id}>{s.label} · {num(s.rps||s.qps||s.ops)} {s.rps?"req":s.qps?"queries":"ops"}/s · ${s.hourly}/h</option>)}</select></Field>}
 {comp.queriesPerRequest&&<Field label={comp.queriesPerRequest.label+(locked("queriesPerRequest")?" · set by the challenge":"")}><input type="number" disabled={locked("queriesPerRequest")} min={comp.queriesPerRequest.min} max={comp.queriesPerRequest.max} value={cfg.queriesPerRequest??comp.queriesPerRequest.default} onChange={e=>set({queriesPerRequest:Math.max(comp.queriesPerRequest.min,Math.min(comp.queriesPerRequest.max,Math.round(+e.target.value)||1))})}/></Field>}
@@ -262,7 +271,7 @@ return <Ctx.Provider value={{cat,result,running,run}}><div className="lab">
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt}/>
+<Inspector fieldHints={problem?.fields} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt}/>
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={!embedded&&nextCh&&(()=>startChallenge(nextCh.id))} more={embedded}/>}
 </div></Ctx.Provider>}
 

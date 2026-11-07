@@ -102,3 +102,8 @@ test("an engine is kept when known, and a size only if it belongs to that engine
   const d=cleanDesign({nodes:[{id:"a",type:"database",config:{engine:"mongodb",size:"docdb.r6g.large"}},{id:"b",type:"database",config:{engine:"mongodb",size:"db.m5.large"}},{id:"c",type:"database",config:{engine:"oracle",size:"db.m5.large"}}],edges:[]},lab,"x");
   assert.deepEqual(d.nodes[0].config,{engine:"mongodb",size:"docdb.r6g.large"});assert.deepEqual(d.nodes[1].config,{engine:"mongodb"});assert.deepEqual(d.nodes[2].config,{size:"db.m5.large"});
 });
+
+test("a database's schema is cleaned and kept; other components get none",()=>{
+  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{engine:"dynamodb",schema:{tables:[{name:"links",fields:[{name:"code",type:"string"}],key:["code"]}]}}},{id:"b",type:"server",config:{schema:{tables:[{name:"x",fields:[]}]}}}],edges:[]},lab,"x");
+  assert.deepEqual(d.nodes[0].config.schema,{tables:[{name:"links",fields:[{name:"code",type:"string"}],key:["code"]}]});assert.equal(d.nodes[1].config.schema,undefined);
+});

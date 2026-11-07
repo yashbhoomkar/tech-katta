@@ -80,3 +80,19 @@
 .lab-import{width:min(620px,100%)}.lab-import textarea{width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);font:500 12.5px/1.55 var(--mono);color:#1c2733;resize:vertical;min-height:110px}.lab-import textarea:focus{outline:none;border-color:var(--blue)}.lab-imp-help{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--muted)}.lab-imp-file{display:grid;gap:6px;margin-top:10px;font:600 10px var(--mono);letter-spacing:.04em;color:var(--muted)}.lab-imp-file input{font:12px var(--mono)}.lab-imp-res{margin-top:10px;font-size:13px;line-height:1.5}.lab-imp-res b{font:600 12px var(--mono);color:var(--blue)}.lab-imp-res p{margin:4px 0 0;color:#9a6700}.lab-imp-res p.bad{color:#b42318}
 .lab-open{display:inline-flex;align-items:center;text-decoration:none}a.lab-btn{display:inline-flex;align-items:center;text-decoration:none}
 .lab-conn{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.lab-conn ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}.lab-conn li{display:flex;align-items:center;justify-content:space-between;font-size:13px}.lab-conn .lab-x{width:28px;height:28px}
+/* A database's schema: the section in its settings, the line on its node, and the editor dialog */
+.lab-sch{margin:4px 0 14px;padding-top:10px;border-top:1px solid var(--line,#d9dee5)}.lab-sch .lab-btn{width:100%}.lab-good b{font-weight:600}
+.ln-sch{color:#3a4654;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sch{background:#fff;border:1px solid #1c2733;width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.sch header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.sch header small{font:600 11px var(--mono,monospace);letter-spacing:.06em;color:#5a6672}.sch h3{margin:2px 0 0;font-size:18px}
+.sch-help{font-size:13.5px;line-height:1.5;color:#3a4654;margin:8px 0 12px}
+.sch-t{border:1px solid #d9dee5;padding:10px 12px;margin:0 0 12px}.sch-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:6px 0}
+.sch-name{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#5a6672;flex:1 1 180px}.sch-name input,.sch-name select{font-size:14px;padding:5px 7px}
+.sch input,.sch select{border:1px solid #c5ccd5;background:#fff;color:#1c2733;font:inherit;font-size:13.5px;padding:4px 6px;min-width:0}.sch input[aria-invalid=true]{border-color:#c0392b}
+.sch-f{width:100%;border-collapse:collapse;margin:6px 0;font-size:13.5px}.sch-f th{text-align:left;font-weight:600;font-size:12px;color:#5a6672;padding:4px}.sch-f td{padding:3px 4px}.sch-f td input:not([type=checkbox]),.sch-f td select{width:100%}.sch-f .c{text-align:center}
+.sch-add{background:none;border:0;color:#1d4ed8;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;padding:4px 0}.sch-add:disabled{color:#9aa4ae;cursor:default}
+.sch-del{background:none;border:1px solid #c5ccd5;font-size:12.5px;padding:5px 8px;cursor:pointer;color:#3a4654}
+.sch-ix{margin-top:8px;font-size:13.5px}.sch-none{color:#5a6672}
+.sch-issues{list-style:none;margin:8px 0 0;padding:0;font-size:13px;line-height:1.45}.sch-issues .error{color:#b42318}.sch-issues .warn{color:#8a5a00}.sch-err{color:#b42318;font-size:12.5px;margin:2px 0}
+.sch-foot{display:flex;gap:8px;justify-content:space-between;margin-top:8px}
+@media (max-width:640px){.lab-score-back:has(.sch){padding:0}.sch{max-height:100vh;height:100%;border:0}.sch-f th:nth-child(3){font-size:0}.sch-f th:nth-child(3)::after{content:"Key";font-size:12px}}

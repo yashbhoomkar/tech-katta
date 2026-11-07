@@ -520,7 +520,17 @@
           "replicas": true,
           "crash": true,
           "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
-          "aliases": ["postgres", "postgresql", "rds", "aurora", "sql"]
+          "aliases": ["postgres", "postgresql", "rds", "aurora", "sql"],
+          "schema": {
+            "table": "Table",
+            "tables": "tables",
+            "key": "Primary key",
+            "index": "Index",
+            "indexKinds": ["btree", "unique", "geo", "text"],
+            "ttl": false,
+            "keyRequired": true,
+            "maxIndexFields": 3
+          }
         },
         {
           "id": "mysql",
@@ -533,7 +543,17 @@
           "replicas": true,
           "crash": true,
           "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
-          "aliases": ["mysql", "mariadb"]
+          "aliases": ["mysql", "mariadb"],
+          "schema": {
+            "table": "Table",
+            "tables": "tables",
+            "key": "Primary key",
+            "index": "Index",
+            "indexKinds": ["btree", "unique", "geo", "text"],
+            "ttl": false,
+            "keyRequired": true,
+            "maxIndexFields": 3
+          }
         },
         {
           "id": "dynamodb",
@@ -550,7 +570,18 @@
           "replicas": false,
           "crash": false,
           "features": ["secondaryIndex", "range", "ttl", "highWrites", "transactions"],
-          "aliases": ["dynamodb", "dynamo", "ddb"]
+          "aliases": ["dynamodb", "dynamo", "ddb"],
+          "schema": {
+            "table": "Table",
+            "tables": "tables",
+            "key": "Partition key",
+            "sortKey": "Sort key",
+            "index": "Global secondary index",
+            "indexKinds": ["btree"],
+            "ttl": true,
+            "keyRequired": true,
+            "maxIndexFields": 2
+          }
         },
         {
           "id": "mongodb",
@@ -590,7 +621,17 @@
           ],
           "defaultSize": "docdb.r6g.large",
           "features": ["secondaryIndex", "range", "geo", "fullText", "aggregate", "transactions"],
-          "aliases": ["mongodb", "mongo", "documentdb", "docdb", "document db"]
+          "aliases": ["mongodb", "mongo", "documentdb", "docdb", "document db"],
+          "schema": {
+            "table": "Collection",
+            "tables": "collections",
+            "key": "Key (_id)",
+            "index": "Index",
+            "indexKinds": ["btree", "unique", "geo", "text"],
+            "ttl": true,
+            "keyRequired": true,
+            "maxIndexFields": 3
+          }
         },
         {
           "id": "cassandra",
@@ -607,7 +648,18 @@
           "replicas": false,
           "crash": false,
           "features": ["range", "ttl", "highWrites"],
-          "aliases": ["cassandra", "keyspaces", "scylla", "scylladb", "wide column", "wide-column"]
+          "aliases": ["cassandra", "keyspaces", "scylla", "scylladb", "wide column", "wide-column"],
+          "schema": {
+            "table": "Table",
+            "tables": "tables",
+            "key": "Partition key",
+            "sortKey": "Clustering column",
+            "index": "Index",
+            "indexKinds": [],
+            "ttl": true,
+            "keyRequired": true,
+            "maxIndexFields": 1
+          }
         },
         {
           "id": "opensearch",
@@ -642,7 +694,18 @@
           ],
           "defaultSize": "r6g.large.search",
           "features": ["fullText", "geo", "range", "aggregate", "secondaryIndex"],
-          "aliases": ["opensearch", "elasticsearch", "elastic", "search engine", "solr"]
+          "aliases": ["opensearch", "elasticsearch", "elastic", "search engine", "solr"],
+          "schema": {
+            "table": "Index",
+            "tables": "indexes",
+            "key": "Document id",
+            "index": "Index",
+            "indexKinds": [],
+            "ttl": false,
+            "keyRequired": false,
+            "maxIndexFields": 1,
+            "allIndexed": true
+          }
         },
         {
           "id": "s3",
@@ -659,7 +722,17 @@
           "replicas": false,
           "crash": false,
           "features": ["blobs"],
-          "aliases": ["s3", "object storage", "object store", "blob storage", "blob store", "gcs"]
+          "aliases": ["s3", "object storage", "object store", "blob storage", "blob store", "gcs"],
+          "schema": {
+            "table": "Bucket",
+            "tables": "buckets",
+            "key": "Object key (path)",
+            "index": "Index",
+            "indexKinds": [],
+            "ttl": true,
+            "keyRequired": true,
+            "maxIndexFields": 1
+          }
         },
         {
           "id": "timeseries",
@@ -693,7 +766,18 @@
           ],
           "defaultSize": "db.influx.large",
           "features": ["range", "aggregate", "ttl", "highWrites"],
-          "aliases": ["influxdb", "influx", "timestream", "timescale", "timescaledb", "time series", "time-series"]
+          "aliases": ["influxdb", "influx", "timestream", "timescale", "timescaledb", "time series", "time-series"],
+          "schema": {
+            "table": "Measurement",
+            "tables": "measurements",
+            "key": "Tags (indexed)",
+            "sortKey": "Time",
+            "index": "Index",
+            "indexKinds": [],
+            "ttl": true,
+            "keyRequired": true,
+            "maxIndexFields": 1
+          }
         },
         {
           "id": "graph",
@@ -728,9 +812,20 @@
           ],
           "defaultSize": "db.r6g.large.graph",
           "features": ["graph", "transactions", "secondaryIndex"],
-          "aliases": ["neptune", "neo4j", "graph", "graph db", "graph database"]
+          "aliases": ["neptune", "neo4j", "graph", "graph db", "graph database"],
+          "schema": {
+            "table": "Vertex or edge label",
+            "tables": "labels",
+            "key": "Id",
+            "index": "Index",
+            "indexKinds": ["btree", "unique"],
+            "ttl": false,
+            "keyRequired": true,
+            "maxIndexFields": 2
+          }
         }
-      ]
+      ],
+      "schemaLabel": "Schema"
     }
   ],
   "example": {

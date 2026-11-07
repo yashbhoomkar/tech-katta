@@ -435,3 +435,15 @@ test('a problem is served without its reference and wrong designs', async () => 
   assert.equal(a.practice.reference, undefined);
   assert.equal(a.practice.wrong, undefined);
 });
+
+test('a design in content may give its database an engine and a schema, which must be valid for it', async () => {
+  const { validateDesign } = await import('../src/content/validate.js');
+  const lab = JSON.parse((await import('node:fs')).readFileSync(new URL('../../content/lab.json', import.meta.url)));
+  const d = (config) => ({ name: 'x', nodes: [{ id: 'c', type: 'client', x: 0, y: 0, config: {} }, { id: 'db', type: 'database', x: 1, y: 0, config }], edges: [{ from: 'c', to: 'db' }] });
+  const ok = { engine: 'dynamodb', schema: { tables: [{ name: 'links', fields: [{ name: 'code', type: 'string' }], key: ['code'] }] } };
+  assert.deepEqual(validateDesign(d(ok), lab, 'test', []).filter((p) => /schema|engine|size/.test(p)), []);
+  assert.ok(validateDesign(d({ engine: 'oracle' }), lab, 'test', []).some((p) => /unknown engine/.test(p)));
+  assert.ok(validateDesign(d({ engine: 'mongodb', size: 'db.m5.large' }), lab, 'test', []).some((p) => /unknown size db.m5.large for MongoDB/.test(p)));
+  assert.ok(validateDesign(d({ engine: 'dynamodb', schema: { tables: [{ name: 'p', fields: [{ name: 'id', type: 'string' }, { name: 'loc', type: 'geo' }], key: ['id'], indexes: [{ kind: 'geo', fields: ['loc'] }] }] } }), lab, 'test', []).some((p) => /geohash/.test(p)));
+  assert.ok(validateDesign(d({ schema: { tables: [{ name: 'bad name', fields: [] }] } }), lab, 'test', []).some((p) => /schema is malformed/.test(p)));
+});
