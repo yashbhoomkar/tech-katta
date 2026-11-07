@@ -471,10 +471,10 @@
       },
       {
         "id": "api-chunk",
-        "name": "Upload a changed chunk",
+        "name": "Store a changed chunk",
         "sample": true,
         "async": true,
-        "desc": "Only the changed 4 MB chunk of a file is sent.",
+        "desc": "The changed 4 MB chunk is stored in object storage under its hash. (In the real system the phone sends it there itself, with a signed URL; the Lab sends every call through a server, so read this as: where does a chunk end up?)",
         "request": {
           "method": "PUT",
           "path": "/v1/chunks/9f2c"
@@ -502,12 +502,13 @@
         "id": "api-commit",
         "name": "Commit the new version",
         "async": true,
-        "desc": "The file's new version is recorded.",
+        "desc": "The upload is committed: the file's new chunk list becomes version 3.",
         "request": {
           "method": "POST",
-          "path": "/v1/files/f1/versions",
+          "path": "/v1/uploads/u81/commit",
           "body": {
-            "version": 3,
+            "file_id": "f1",
+            "base_version": 2,
             "chunks": [
               "9f2c"
             ]

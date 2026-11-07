@@ -796,6 +796,38 @@
               ]
             }
           }
+        },
+        {
+          "id": "queue",
+          "type": "queue",
+          "x": 960,
+          "y": 225,
+          "config": {}
+        },
+        {
+          "id": "work1",
+          "type": "server",
+          "name": "Resize workers",
+          "x": 1200,
+          "y": 165,
+          "config": {
+            "size": "m5.large",
+            "count": 2,
+            "queriesPerRequest": 1,
+            "role": "transcoder"
+          }
+        },
+        {
+          "id": "work2",
+          "type": "server",
+          "x": 1200,
+          "y": 295,
+          "config": {
+            "size": "m5.large",
+            "count": 2,
+            "queriesPerRequest": 1,
+            "role": "transcoder"
+          }
         }
       ],
       "edges": [
@@ -845,6 +877,38 @@
         },
         {
           "from": "cache2",
+          "to": "db2"
+        },
+        {
+          "from": "app1",
+          "to": "queue"
+        },
+        {
+          "from": "app2",
+          "to": "queue"
+        },
+        {
+          "from": "queue",
+          "to": "work1"
+        },
+        {
+          "from": "work1",
+          "to": "db1"
+        },
+        {
+          "from": "work1",
+          "to": "db2"
+        },
+        {
+          "from": "queue",
+          "to": "work2"
+        },
+        {
+          "from": "work2",
+          "to": "db1"
+        },
+        {
+          "from": "work2",
           "to": "db2"
         }
       ]

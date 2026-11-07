@@ -210,7 +210,7 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends chat messages. Saving one and bumping its conversation's sequence is 2 queries; delivering it to the other phones can follow a moment later. Your Clients' own rate is ignored.",
+    "brief": "Each test sends chat messages. A message is acknowledged once it is safely in a durable queue (a log kept on several machines); workers then number it and save it (2 queries) and deliver it to the other phones. Your Clients' own rate is ignored.",
     "fixed": {
       "queriesPerRequest": 2
     },
@@ -404,7 +404,7 @@
         "name": "Send a message",
         "sample": true,
         "async": true,
-        "desc": "u1 sends \"hi\" in chat c1. Delivery and storage can happen just after the reply.",
+        "desc": "u1 sends \"hi\" in chat c1. The reply comes once the message is safely in the durable queue; workers number it, store it and deliver it a moment later.",
         "request": {
           "method": "POST",
           "path": "/v1/chats/c1/messages",

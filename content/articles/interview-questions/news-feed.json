@@ -778,6 +778,38 @@
               ]
             }
           }
+        },
+        {
+          "id": "queue",
+          "type": "queue",
+          "x": 720,
+          "y": 225,
+          "config": {}
+        },
+        {
+          "id": "work1",
+          "type": "server",
+          "name": "Fan-out workers",
+          "x": 960,
+          "y": 165,
+          "config": {
+            "size": "m5.large",
+            "count": 3,
+            "queriesPerRequest": 1,
+            "role": "fanout"
+          }
+        },
+        {
+          "id": "work2",
+          "type": "server",
+          "x": 960,
+          "y": 295,
+          "config": {
+            "size": "m5.large",
+            "count": 3,
+            "queriesPerRequest": 1,
+            "role": "fanout"
+          }
         }
       ],
       "edges": [
@@ -816,6 +848,38 @@
         {
           "from": "cache2",
           "to": "db1"
+        },
+        {
+          "from": "app1",
+          "to": "queue"
+        },
+        {
+          "from": "app2",
+          "to": "queue"
+        },
+        {
+          "from": "queue",
+          "to": "work1"
+        },
+        {
+          "from": "work1",
+          "to": "cache1"
+        },
+        {
+          "from": "work1",
+          "to": "cache2"
+        },
+        {
+          "from": "queue",
+          "to": "work2"
+        },
+        {
+          "from": "work2",
+          "to": "cache1"
+        },
+        {
+          "from": "work2",
+          "to": "cache2"
         }
       ]
     },

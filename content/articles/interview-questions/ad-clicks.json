@@ -88,7 +88,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /events  [ { \"id\": \"e_8f\", \"type\": \"click\", \"ad\": \"ad_214\", \"at\": \"2026-11-06T20:41:07+05:30\" }, … ]  → 202\nGET  /ads/ad_214/stats?from=20:00&to=21:00&by=minute  → 200 { \"rows\": [ { \"minute\": \"20:41\", \"views\": 1840, \"clicks\": 37 }, … ] }",
+      "x": "POST /events  { \"events\": [ { \"id\": \"e_8f\", \"type\": \"click\", \"ad\": \"ad_214\", \"at\": \"2026-11-06T20:41:07+05:30\" }, … ] }  → 202\nGET  /ads/ad_214/stats?from=20:00&to=21:00&by=minute  → 200 { \"rows\": [ { \"minute\": \"20:41\", \"views\": 1840, \"clicks\": 37 }, … ] }",
       "say": "The app sends events in small batches. Advertisers read their numbers by minute, hour or day."
     },
     {
@@ -168,7 +168,7 @@
     {
       "t": "list",
       "items": [
-        "Partitioning by ad sends all of a very popular ad's events to one aggregator. For the biggest few ads, add a suffix from the person's id (ad_214#3, user id mod 8), so one person's clicks stay on one partition, to spread them over several partitions, and add up the parts when writing the minute total.",
+        "Partitioning by ad sends all of a very popular ad's events to one aggregator. For the biggest few ads, add a suffix from the person's id (ad_214#3 when the user id mod 8 is 3) to spread the ad over several partitions, and add up the parts when writing the minute total. One person's clicks still land on one partition, so the repeat-click rule keeps working.",
         "Apps can also send events in small batches every few seconds, which cuts requests without changing the counts."
       ]
     },
@@ -202,7 +202,7 @@
     },
     {
       "t": "lab",
-      "x": "Ad views follow the lunch and dinner rush. The first-rush challenge practises sizing for a day with two peaks.",
+      "x": "Ad views follow the lunch and dinner rush. The lunch and dinner rush challenge practises sizing for a day with two peaks.",
       "to": "lab/first-rush",
       "go": "Try the lunch and dinner rush challenge"
     }

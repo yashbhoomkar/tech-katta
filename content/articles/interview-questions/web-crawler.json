@@ -70,7 +70,7 @@
         "100 crore pages in a month of about 26 lakh seconds is around 390 pages a second, day and night.",
         "At about 100 KB a page, that's about 39 MB a second of downloads, roughly 310 Mbps, and 100 TB a month before compression. Compressed, closer to 25 TB.",
         "Politeness: at one page a second per site, 390 pages a second needs at least 390 sites being crawled at any moment. With 50 lakh sites, there are plenty.",
-        "The seen filter: 100 crore URLs fetched, and several times more links seen. Stored as 8-byte hashes, that's 8 GB, which fits on one machine or a small cluster; a Bloom filter would be smaller still."
+        "The seen filter: 100 crore URLs fetched, stored as 8-byte hashes, is 8 GB. Counting the links seen but not yet fetched, a few times more, it's a few tens of GB: one large machine or a small cluster. A Bloom filter would be several times smaller."
       ]
     },
     {
@@ -522,7 +522,7 @@
         },
         {
           "id": "seen",
-          "label": "Seen filter size",
+          "label": "Seen filter for the URLs fetched",
           "unit": "GB",
           "answer": 8,
           "tol": 3,
