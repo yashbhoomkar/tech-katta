@@ -36,7 +36,9 @@ function options(comp,rest){
     take(/\s(?:fail(?: when down)?|fail-closed)(?=\s)/,()=>{config.onDown="fail"});
   }
   if(comp.type==="cdn"){take(/\s(\d+)\s?%\s?(?:hits?|from the edge|edge|cached)(?=\s)|\shits?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.hitPct=+(a||b)});take(/\slive(?: video| stream)?(?=\s)/,()=>{config.live=true})}
-  if(comp.type==="database")take(/\smulti[- ]?az(?=\s)/,()=>{config.multiAz=true});
+  if(comp.type==="database"){take(/\smulti[- ]?az(?=\s)/,()=>{config.multiAz=true});
+    if(comp.replicas){take(/\s(\d+)\s?(?:read\s)?replicas?(?=\s)|\sreplicas?\s(\d+)(?=\s)/,(_,a,b)=>{config.replicas=Math.min(comp.replicas.max,+(a||b))});
+      take(/\s(\d+)\s?%\s?writes?(?=\s)|\swrites?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.writePct=+(a||b)})}}
   // sizes by id, with or without the "db." / "cache." prefix
   if(comp.sizes)for(const tok of s.trim().split(" ").filter(Boolean)){const z=comp.sizes.find(x=>x.id===tok||x.id==="db."+tok||x.id==="cache."+tok);if(z){config.size=z.id;s=s.replace(" "+tok+" "," ")}}
   for(const tok of s.trim().split(" ").filter(Boolean))unknown.push(tok);

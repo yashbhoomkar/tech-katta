@@ -95,7 +95,7 @@ Each component has `type, name, group, desc` plus the numbers its type needs (ch
 | `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash`, optional `autoscaling` | each request makes `queriesPerRequest` queries to a cache or database |
 | `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
 | `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash`, optional `warmupMinutes, flushSeconds, writePolicy, onDown` | Server → Cache → Database: only misses and writes reach the database |
-| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash` | receives only |
+| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash`, optional `replicas, writePct` | receives only |
 
 `client`, `apigw`, `server` and `database` are required; the others are optional.
 
@@ -105,6 +105,13 @@ at the same hour make a jump), multipliers 0–1 with at least one 1: the Client
 multiplier`, linear between points, repeating every simulated day. The first pattern is the default.
 `label` is the menu entry, `desc` the line under it, `short` what the canvas shows on the Clients box.
 A design's Clients pick one with `config.pattern`.
+
+**Read replicas** (`database.replicas {label, min, max, default}` whole numbers from 0, max at most 10,
+and `database.writePct`, a percent; both optional): a design's database sets `config.replicas` and
+`config.writePct` (the share of the queries reaching it that are writes). Writes all go to the
+primary, reads spread over the primary and its replicas, so it takes `qps / (w + (1 − w) / (1 +
+replicas))` queries a second; each replica costs what the primary costs. While the primary is down
+the replicas still answer reads and writes fail. Replication lag is not modelled.
 
 **Cache behaviour** (all optional; without them a cache is write-through, never cold, and fails its
 queries while down): `warmupMinutes` — after a crash the cache comes back empty and its hit rate

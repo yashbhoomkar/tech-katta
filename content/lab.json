@@ -263,7 +263,7 @@
       "type": "database",
       "name": "Database",
       "group": "Storage",
-      "desc": "RDS for PostgreSQL. Every request that reaches a server makes that server's number of queries. Multi-AZ keeps a standby copy, fails over when the primary crashes, and doubles the price.",
+      "desc": "RDS for PostgreSQL. Every request that reaches a server makes that server's number of queries. Multi-AZ keeps a standby copy, fails over when the primary crashes, and doubles the price. Read replicas are copies that take reads: writes still all go to the primary, each replica costs as much as the primary, and while the primary is down the replicas keep answering reads.",
       "latencyMs": 5,
       "sizes": [
         {
@@ -296,6 +296,18 @@
         "label": "Multi-AZ standby",
         "default": false,
         "priceFactor": 2
+      },
+      "replicas": {
+        "label": "Read replicas",
+        "min": 0,
+        "max": 5,
+        "default": 0
+      },
+      "writePct": {
+        "label": "Writes among its queries, %",
+        "min": 0,
+        "max": 100,
+        "default": 20
       },
       "crash": {
         "above": 1.2,
@@ -1210,7 +1222,7 @@
       "Clients: a number is requests a second; rush, sale or steady sets the pattern",
       "Server: x4 instances, a size such as m5.large, auto up to 12, 3 queries",
       "Cache: 85% hits, 10% writes, write-back",
-      "Database: a size such as m5.xlarge, multi-az"
+      "Database: a size such as m5.xlarge, multi-az, 2 replicas, 10% writes"
     ],
     "file": "Or open a JSON file exported from the Lab",
     "create": "Create design",

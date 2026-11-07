@@ -80,3 +80,9 @@ test("huge or absurd saved designs are cut down (QA M5, L7)",()=>{
   assert.equal(out.nodes.length,200);
   assert.deepEqual([out.nodes[0].x,out.nodes[0].y],[0,-5]);
 });
+
+test("read replicas are kept within the catalogue's range; nonsense is dropped",()=>{
+  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{replicas:9,writePct:30}},{id:"b",type:"database",config:{replicas:"two",writePct:-5}}],edges:[]},lab,"x");
+  assert.deepEqual(d.nodes[0].config,{replicas:5,writePct:30});
+  assert.deepEqual(d.nodes[1].config,{writePct:0});
+});

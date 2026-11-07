@@ -143,7 +143,9 @@ const autoscaling = (a) => a && typeof a === 'object' && (a.like === undefined |
 const choice = (ids) => (c) => c && typeof c === 'object' && isText(c.label) && Array.isArray(c.options) && c.options.length === ids.length
   && c.options.every((o) => o && ids.includes(o.id) && isText(o.label) && isText(o.desc)) && new Set(c.options.map((o) => o.id)).size === ids.length && ids.includes(c.default);
 const CHOICES = { writePolicy: ['through', 'back'], onDown: ['database', 'fail'] };
-const OPTIONAL_FIELDS = { client: { patterns }, server: { autoscaling }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown) } };
+// Read replicas on Database: a whole-number range that may start at 0, and the share of writes.
+const replicas = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every((v) => Number.isInteger(v) && v >= 0) && r.min <= r.default && r.default <= r.max && r.max <= 10;
+const OPTIONAL_FIELDS = { database: { replicas, writePct: percent }, client: { patterns }, server: { autoscaling }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown) } };
 // Every catalogue needs the original four; the others are optional so content can add them later.
 const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
@@ -251,6 +253,7 @@ export function validateDesign(design, lab, at, problems = []) {
     }
     if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
+    if (c.type === 'database') { inRange('replicas', c.replicas); inRange('writePct', c.writePct); }
   }
   const seen = new Set();
   for (const e of design.edges) {

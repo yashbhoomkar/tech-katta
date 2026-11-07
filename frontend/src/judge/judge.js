@@ -24,7 +24,7 @@
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
-import { simulate, advance, newRun, runOptions, crashNow, catalogue } from '../lab/engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 
 export const STEP = 5; // simulated minutes per step
@@ -124,7 +124,7 @@ export function runTest(design, lab, problem, test) {
       if (crash) why.push(`At ${at(crash.t)} the ${nm[crash.id]} was overloaded and ${crash.kind === 'failover' ? 'failed over to its standby' : 'crashed'}; ${pct(100 - c.value)} of requests failed (the test allows ${pct(100 - c.min)}).`);
       else if (left > 0) why.push(`Work was still waiting in a queue when the test ended (${fmt(left)} messages); it counts as failed. The workers behind it are too slow.`);
       else if (low.bottleneck && low.util > 1) why.push(`At ${at(low.t)} the ${nm[low.bottleneck]} was at ${fmt(low.util * 100)}% of its capacity and turned requests away; ${pct(c.value)} succeeded, the test needs ${pct(c.min)}.`);
-      else if (forced.length) why.push(`The test crashed the busiest ${nm[forced[0].id]} at ${at(forced[0].t)} and requests had nowhere else to go; ${pct(c.value)} succeeded, the test needs ${pct(c.min)}.`);
+      else if (forced.length) { const f = d.nodes.find((n) => n.id === forced[0].id), ro = f?.type === 'database' && replicasOf(cat.database, f.config) > 0; why.push(`The test crashed the busiest ${nm[forced[0].id]} at ${at(forced[0].t)} and ${ro ? 'only its read replicas were left: reads kept working, writes failed' : 'requests had nowhere else to go'}; ${pct(c.value)} succeeded, the test needs ${pct(c.min)}.`); }
       else why.push(`${pct(c.value)} of requests succeeded; the test needs ${pct(c.min)}.`);
     } else if (c.kind === 'p99') why.push(`p99 latency reached ${fmt(c.value)} ms at ${at(worst.t)} (limit ${fmt(c.max)} ms)${worst.bottleneck ? `: the ${nm[worst.bottleneck]} was at ${fmt(worst.util * 100)}% load, and requests queue up near capacity` : ''}.`);
     else if (c.kind === 'cost') { const r0 = simulate(d, lab, runOptions(newRun(), start * 60, lab)); const top = d.nodes.filter((n) => n.type !== 'client').sort((a, b) => r0.nodes[b.id].cost - r0.nodes[a.id].cost)[0]; why.push(`It averages $${fmt(c.value)} a month; the limit is $${fmt(c.max)}.${top ? ` The biggest cost is the ${nm[top.id]} ($${fmt(r0.nodes[top.id].cost)} a month).` : ''}`); }

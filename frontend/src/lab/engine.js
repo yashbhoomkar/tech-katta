@@ -38,6 +38,13 @@
 //     a backlog builds up (advance() tracks it) and drains once they catch up. Workers never get
 //     more than they can handle, so a queue protects them from spikes; users never wait on them.
 //
+// Read replicas (optional catalogue fields `replicas` and `writePct` on Database; design `replicas`
+//   0–5, `writePct` the share of the queries reaching it that are writes): every replica is a copy of
+//   the same size. Writes all go to the primary; reads are spread evenly over the primary and the
+//   replicas, so the database takes qps / (w + (1 − w) / (1 + replicas)) queries a second. Each replica
+//   is billed like the primary. While the primary is down (crashed, or failing over) the replicas keep
+//   answering reads; writes fail. Replication lag is not modelled.
+//
 // Time-based traffic: a Clients component can follow a daily pattern from the catalogue
 // (`patterns`: [hour, multiplier] points from 0 to 24, linear in between, two points at the same hour
 // make a jump). Its rps setting is the rate at the peak (multiplier 1). The pattern repeats every
@@ -80,7 +87,7 @@ export function defaultConfig(comp) {
   if (comp.type === 'cache') return { size: comp.defaultSize, hitPct: comp.hitPct.default, writePct: comp.writePct.default };
   if (comp.type === 'cdn') return { hitPct: comp.hitPct.default };
   if (comp.type === 'server') return { size: comp.defaultSize, count: comp.count.default, ...(comp.queriesPerRequest ? { queriesPerRequest: comp.queriesPerRequest.default } : {}) };
-  if (comp.type === 'database') return { size: comp.defaultSize, multiAz: comp.multiAz.default };
+  if (comp.type === 'database') return { size: comp.defaultSize, multiAz: comp.multiAz.default, ...(comp.replicas ? { replicas: comp.replicas.default, writePct: comp.writePct.default } : {}) };
   return {};
 }
 
@@ -89,7 +96,7 @@ export function capacity(comp, config = {}) {
   if (comp.type === 'apigw' || comp.type === 'lb' || comp.type === 'queue' || comp.type === 'cdn') return comp.limitRps;
   if (comp.type === 'cache') return sizeOf(comp, config).ops;
   if (comp.type === 'server') return sizeOf(comp, config).rps * (config.count || 1);
-  if (comp.type === 'database') return sizeOf(comp, config).qps;
+  if (comp.type === 'database') { const q = sizeOf(comp, config).qps, n = replicasOf(comp, config), w = dbWrites(comp, config); return n ? q / (w + (1 - w) / (1 + n)) : q; }
   return Infinity;
 }
 
@@ -100,7 +107,7 @@ export function monthlyCost(comp, config = {}, servedRps = 0) {
   if (comp.type === 'lb') return (comp.hourly + Math.max(1, servedRps / comp.rpsPerLcu) * comp.lcuHourly) * HOURS_PER_MONTH;
   if (comp.type === 'cache') return sizeOf(comp, config).hourly * HOURS_PER_MONTH;
   if (comp.type === 'server') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * (config.count || 1);
-  if (comp.type === 'database') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * (config.multiAz ? comp.multiAz.priceFactor : 1);
+  if (comp.type === 'database') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * ((config.multiAz ? comp.multiAz.priceFactor : 1) + replicasOf(comp, config));
   return 0;
 }
 
@@ -113,7 +120,7 @@ export function summary(comp, config = {}) {
   if (comp.type === 'queue') return 'async · workers pull';
   if (comp.type === 'cache') return `${sizeOf(comp, config).id} · ${pct(comp, config, 'hitPct')}% hits · ${pct(comp, config, 'writePct')}% writes`;
   if (comp.type === 'server') { const auto = autoscaled(comp, config), [lo, hi] = scaleRange(comp, config); return `${auto ? config.live ?? lo : config.count || 1} × ${sizeOf(comp, config).id}${auto ? ` · up to ${hi}` : ''}${comp.queriesPerRequest ? ` · ${qpr(comp, config)} q/req` : ''}`; }
-  if (comp.type === 'database') return `${sizeOf(comp, config).id}${config.multiAz ? ' · Multi-AZ' : ''}`;
+  if (comp.type === 'database') { const n = replicasOf(comp, config); return `${sizeOf(comp, config).id}${config.multiAz ? ' · Multi-AZ' : ''}${n ? ` · ${n} read replica${n > 1 ? 's' : ''}` : ''}`; }
   return '';
 }
 
@@ -128,6 +135,9 @@ export function cacheFlow(comp, config, warm = 1) {
   const w = pct(comp, config, 'writePct') / 100, h = (pct(comp, config, 'hitPct') / 100) * warm;
   return { w, readMiss: (1 - w) * (1 - h), hit: h, back: choice(comp, config, 'writePolicy') === 'back', fallThrough: choice(comp, config, 'onDown') === 'database' };
 }
+// Read replicas of a database (0 without the catalogue field) and the share of its queries that are writes.
+export const replicasOf = (comp, config) => (comp?.replicas ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
+const dbWrites = (comp, config) => (comp?.writePct ? pct(comp, config, 'writePct') / 100 : 1);
 const qpr = (comp, config) => comp.queriesPerRequest ? (config?.queriesPerRequest ?? comp.queriesPerRequest.default) : 1;
 
 // One steady pass with clients sending `factor` × their rps (1 + retries); `down` = crashed ids.
@@ -141,10 +151,14 @@ function pass(nodes, byId, out, order, cat, factor, down, backlog, warm) {
   for (const n of nodes) if (n.type === 'client') { res[n.id].offered = (n.config?.rps || 0) * factor; res[n.id].reached = true; }
   for (const id of order) {
     const r = res[id], node = byId.get(id), comp = cat[node.type];
-    r.served = Math.min(r.offered, r.capacity);
+    // A database whose primary is down still answers reads from its replicas (writes fail).
+    const reps = node.type === 'database' && r.down ? replicasOf(comp, node.config) : 0;
+    if (reps) { r.capacity = sizeOf(comp, node.config).qps * reps; r.readOnly = true; }
+    const asks = reps ? r.offered * (1 - dbWrites(comp, node.config)) : r.offered;
+    r.served = Math.min(asks, r.capacity);
     r.dropped = r.offered - r.served;
-    r.utilisation = r.capacity === Infinity ? 0 : r.capacity === 0 ? (r.offered > 0 ? Infinity : 0) : r.offered / r.capacity;
-    r.latencyMs = r.down ? 0 : comp.latencyMs ? (r.utilisation < 1 ? comp.latencyMs / (1 - Math.min(r.utilisation, 0.95)) : comp.latencyMs * SATURATED) : 0;
+    r.utilisation = r.capacity === Infinity ? 0 : r.capacity === 0 ? (asks > 0 ? Infinity : 0) : asks / r.capacity;
+    r.latencyMs = r.down && !reps ? 0 : comp.latencyMs ? (r.utilisation < 1 ? comp.latencyMs / (1 - Math.min(r.utilisation, 0.95)) : comp.latencyMs * SATURATED) : 0;
     // What this component passes on: a queue hands workers only what they can take (all of it
     // while there is a backlog to work through); everything else passes on what it served.
     let sent = r.served;
