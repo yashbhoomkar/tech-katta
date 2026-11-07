@@ -242,10 +242,15 @@ const restore=()=>{const want=clicked?0:pos.get(location.hash)||0;clicked=false;
 addEventListener("hashchange",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore)}},[]);
 useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
 useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
-// Guided tour: once on the first visit to the dashboard and to the Lab (not for automated browsers), and from the Tour button.
-const[tour,setTour]=useState(null);const closeTour=()=>{markStep("tour:"+tour);setTour(null)};
-useEffect(()=>{if(!c.tour||navigator.webdriver)return;const want=active==="lab"?(route.art?null:"lab"):"dashboard";if(!want||readProgress().steps["tour:"+want])return;
-let n=0;const iv=setInterval(()=>{const ready=document.querySelector(want==="lab"?".lab-pal":".tabs");if(ready||++n>40){clearInterval(iv);if(ready)setTour(want)}},150);return()=>clearInterval(iv)},[active,route.art]);
+// Guided tour, one per kind of page: the dashboard, a problem's workspace, the Lab. Each runs once on the
+// first visit (not for automated browsers) and from the Tour button. A new tour version (site.json
+// tour.version) shows once more to people who saw the old one.
+const tourKind=solving?(c.tour?.problem?"problem":null):active==="lab"&&!route.art?"lab":"dashboard";
+const tourKey=k=>"tour:"+k+((c.tour?.version||1)>1?"@"+c.tour.version:"");
+const[tour,setTour]=useState(null);const closeTour=()=>{markStep(tourKey(tour));setTour(null)};
+useEffect(()=>{if(!c.tour||navigator.webdriver||!tourKind||readProgress().steps[tourKey(tourKind)])return;
+const ready=tourKind==="lab"?".lab-pal":tourKind==="problem"?(matchMedia("(max-width:900px)").matches?".sv-tabs":".sv-lab .react-flow__node"):".tabs";
+let n=0;const iv=setInterval(()=>{const el=document.querySelector(ready);if(el||++n>60){clearInterval(iv);if(el)setTimeout(()=>setTour(tourKind),400)}},150);return()=>clearInterval(iv)},[tourKind,ws]);// eslint-disable-line
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
 const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
@@ -255,7 +260,7 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}><a class
 <div className="side-label">{d.label}</div><nav className="side-nav">{links("side-link")}</nav>
 {c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}{c.terms&&<a className="side-priv" href="#terms">{c.account?.termsLink||c.terms.title}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
-<div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>setTour(active==="lab"?"lab":"dashboard")}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
+<div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>tourKind&&setTour(tourKind)}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
 <main tabIndex={-1} className={"d-body"+(inLab&&!gate?" d-lab":"")}>{gate==="wait"?<Loading/>:gate?<PageLock t={c.account} lock={c.account.pageLock} title={gate} section={active} slug={route.art?.slug||route.sub||""}/>:solving?<Suspense fallback={<Loading/>}><Solve slug={ws} tab={active==="problems"?"q":"a"} s={c.problems.solve} articles={articles} Block={Block} Article={Article} prep={knownFigs} Lab={Lab}/></Suspense>:route.art?<ArticlePage s={route.art}/>:active==="lab"?<Suspense fallback={<Loading label="Loading the Lab"/>}><Lab challenge={route.sub}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.
