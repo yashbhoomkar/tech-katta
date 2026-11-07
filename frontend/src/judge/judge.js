@@ -28,7 +28,7 @@
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
-import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf } from '../lab/engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 
 export const STEP = 5; // simulated minutes per step
@@ -39,7 +39,7 @@ export const CHECKS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLost
 export function names(design, lab) {
   const cat = catalogue(lab), seen = {}, out = {};
   // a component with a role goes by its role ("Geo index"), numbered among those with the same name
-  const label = (n) => roleOf(cat[n.type], n.config)?.label || cat[n.type]?.name || n.type;
+  const label = (n) => displayName(cat[n.type], n);
   for (const n of design.nodes) { const t = label(n); seen[t] = (seen[t] || 0) + 1; out[n.id] = { name: t, i: seen[t] }; }
   for (const n of design.nodes) { const x = out[n.id]; out[n.id] = x.name + (seen[x.name] > 1 ? ' ' + x.i : ''); }
   return out;

@@ -1,7 +1,7 @@
 // Judge tests, and the calibration of every problem in content/: the reference design passes every
 // test, each wrong design fails the test it names, and the starting design passes no non-sample test.
 import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";import path from "node:path";import{fileURLToPath}from"node:url";
-import{judge,runTest,gradeAnswer,score,WEIGHTS,roleOnPath}from"./judge.js";
+import{judge,runTest,gradeAnswer,score,WEIGHTS,roleOnPath,names}from"./judge.js";
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),"..","..","..","content");
 const lab=JSON.parse(fs.readFileSync(path.join(root,"lab.json"),"utf8"));
 const index=JSON.parse(fs.readFileSync(path.join(root,"articles","index.json"),"utf8")).articles;
@@ -66,4 +66,9 @@ test("roleOnPath: on every path, only behind a queue, and how many",()=>{
   r=roleOnPath(d({d:"geo"},[...line,{from:"s",to:"d"}]),"geo");assert.equal(r.every,true);
   r=roleOnPath(d({w:"sync"},[...line,{from:"s",to:"d"}]),"sync");assert.equal(r.every,false);assert.equal(r.any,true);
   assert.equal(roleOnPath(d({},line),"geo").count,0);
+});
+
+test("names: a component the user named is called by that name in messages",()=>{
+  const n=names({nodes:[{id:"a",type:"server",name:"Orders API"},{id:"b",type:"server"},{id:"c",type:"server"},{id:"d",type:"database",config:{role:"geo"}}],edges:[]},lab);
+  assert.deepEqual([n.a,n.b,n.c,n.d],["Orders API","Server 1","Server 2","Geo index"]);
 });

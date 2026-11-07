@@ -83,3 +83,9 @@ test('"as <role>" gives a component its job; an unknown role is reported, not gu
   const bad = parseText('Clients 1000 -> Server as rocket -> Database', lab);
   assert.equal(bad.design?.nodes.find((n) => n.type === 'server')?.config.role, undefined);
 });
+
+test('a ":label" names the component with the case typed', () => {
+  const r = parseText('Clients 100 -> Server:OrdersAPI x2 -> Database', lab);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.design.nodes.find((n) => n.type === 'server').name, 'OrdersAPI');
+});
