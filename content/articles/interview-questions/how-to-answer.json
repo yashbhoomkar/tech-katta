@@ -4,6 +4,7 @@
   "group": "start",
   "no": "QUESTION // 00",
   "tag": "METHOD",
+  "access": "free",
   "date": "5 Nov 2026",
   "title": "How to answer a system design question",
   "dek": "The same six steps for every question, how long to spend on each, and what the interviewer is listening for at each one. Every question in this section follows them.",

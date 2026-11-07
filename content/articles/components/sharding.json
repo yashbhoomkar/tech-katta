@@ -4,6 +4,7 @@
   "group": "storage",
   "no": "COMPONENT // 07",
   "tag": "STORAGE",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Sharding and partitioning: splitting data across machines",
   "dek": "When one database can't keep up, split the data by a key. How to choose that key, why one popular restaurant can sink a shard, and what you give up once the data lives in many places.",

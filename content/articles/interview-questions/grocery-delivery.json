@@ -4,6 +4,7 @@
   "group": "easy",
   "no": "QUESTION // 04",
   "tag": "EASY",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design 10-minute grocery delivery",
   "dek": "Zotato Minutes promises milk, bread and instant noodles at your door in 10 minutes. That only works if the store is close, the shelf count is right, and nobody sells the last packet twice.",

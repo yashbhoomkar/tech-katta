@@ -4,6 +4,7 @@
   "group": "easy",
   "no": "QUESTION // 03",
   "tag": "EASY",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design restaurants near me",
   "dek": "Open Zotato in Koramangala at 8 pm and the home screen lists restaurants that deliver to you, nearest and best first, in a blink. Find those few hundred among 3 lakh restaurants, thousands of times a second, while kitchens switch on and off all evening.",

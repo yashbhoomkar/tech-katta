@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 12",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design search autocomplete",
   "dek": "Type \"bir\" in the Zotato search box and \"biryani\" is already there before you finish. Suggest the best few dishes and restaurants after every keystroke, for crores of searches a day, in well under the time it takes to type the next letter.",

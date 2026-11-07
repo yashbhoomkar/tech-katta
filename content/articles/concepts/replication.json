@@ -4,6 +4,7 @@
   "group": "data",
   "no": "CONCEPT // 02",
   "tag": "DATA",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Replication: keeping copies of your data, and what goes wrong",
   "dek": "Why every serious database keeps copies, the price of waiting for them, the odd bugs a lagging copy causes, and what really happens when the main copy dies.",

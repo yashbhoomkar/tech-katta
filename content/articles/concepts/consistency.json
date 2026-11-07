@@ -4,6 +4,7 @@
   "group": "data",
   "no": "CONCEPT // 03",
   "tag": "DATA",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Consistency models: how up to date does a read have to be?",
   "dek": "Strong, eventual and the useful guarantees in between, what each costs, and how to choose one feature at a time: a rider's assignment, a menu price, a like count.",

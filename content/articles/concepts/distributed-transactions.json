@@ -4,6 +4,7 @@
   "group": "coordination",
   "no": "CONCEPT // 07",
   "tag": "AGREEING",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Transactions across services: sagas, the outbox and doing things twice safely",
   "dek": "One Zotato order touches payment, the restaurant and a rider, and each keeps its own database. No single transaction covers all three. Here's how an order still ends up either fully done or cleanly undone, never half.",

@@ -29,7 +29,12 @@ A release is validated (`node backend/scripts/check-content.mjs <dir>`) before `
 
 ## Article blocks
 
-An article is `{section, slug, no, tag, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
+`access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
+locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
+topics people search for, each leading into paid material. Everything else is paid, and an article with
+`practice` (a problem) must be paid (the validator checks it). The Lab and videos are paid too.
+
+An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
 - `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit`, `scale-out`, `autoscale`, `cache-aside`, `cache-warm`, `db-index`, `db-replicas` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)

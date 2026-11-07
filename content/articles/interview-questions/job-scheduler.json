@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 14",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a job scheduler",
   "dek": "\"Ask for a rating an hour after delivery.\" \"Pay every restaurant at 9 pm.\" \"Sync menus every 15 minutes.\" Zotato has crores of jobs that must run at a set time. Run each one close to on time, never lose one, and survive the moment 9 pm arrives.",

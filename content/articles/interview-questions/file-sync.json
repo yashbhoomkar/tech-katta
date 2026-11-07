@@ -4,6 +4,7 @@
   "group": "easy",
   "no": "QUESTION // 02",
   "tag": "EASY",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design file storage and sync",
   "dek": "A bakery owner in Pune fixes a price in the menu PDF on the counter laptop, and the copy on their phone updates a few seconds later. Store people's files safely, keep every device in step, and don't resend a 200 MB video because one second of it changed.",

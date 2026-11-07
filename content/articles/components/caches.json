@@ -4,6 +4,7 @@
   "group": "storage",
   "no": "COMPONENT // 05",
   "tag": "STORAGE",
+  "access": "free",
   "date": "4 Nov 2026",
   "title": "Caches: keeping the answers you need again",
   "dek": "How a cache like Redis takes most reads off your database, the ways to read and write through one, and what happens on the day it comes back empty.",

@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 21",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design video streaming",
   "dek": "Zotato Recipes lets chefs upload short cooking videos, and 50 lakh people a day watch them on their phones, many on patchy 4G. Get a 10-minute upload ready to watch within minutes, start playback in a couple of seconds, and keep it playing in a lift.",

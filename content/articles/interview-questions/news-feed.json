@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 07",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a news feed",
   "dek": "Open Zotato Snaps and the home screen shows new posts from the diners and restaurants you follow, newest first. Build it so it opens instantly, even when a food blogger with 50 lakh followers posts at dinner time.",

@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 15",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a web crawler",
   "dek": "Zotato wants its food search to know what India's restaurant sites and food blogs say: menus, timings, reviews. That means fetching about 100 crore public pages a month, without ever hammering a small restaurant's website or fetching the same page twice.",

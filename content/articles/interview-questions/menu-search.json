@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 22",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design menu search",
   "dek": "Someone in Pune opens Zotato and types \"panir butter masala\" and expects the right dish from restaurants that are open and deliver to them, in a blink. Search 3 crore dishes across India by their words, cope with Hinglish spellings, and show a price change within a minute.",

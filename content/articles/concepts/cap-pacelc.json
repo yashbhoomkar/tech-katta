@@ -4,6 +4,7 @@
   "group": "data",
   "no": "CONCEPT // 04",
   "tag": "DATA",
+  "access": "free",
   "date": "5 Nov 2026",
   "title": "CAP and PACELC in practice: what to do when copies can't talk",
   "dek": "What the CAP theorem really says, why \"pick two of three\" is the wrong way to read it, and the trade-off you make every day even when the network is fine.",
