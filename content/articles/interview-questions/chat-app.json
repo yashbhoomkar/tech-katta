@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 10",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a chat app",
   "dek": "Zotato Chat lets friends plan dinner together: one-to-one chats and small groups, messages that arrive in a blink, ticks that show they were delivered and read, and nothing lost when a phone drops off the network in a lift.",

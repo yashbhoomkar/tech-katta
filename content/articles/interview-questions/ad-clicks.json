@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 17",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design ad click counting",
   "dek": "Restaurants on Zotato can pay to appear higher in the list. They want to watch views and clicks minute by minute, and they're billed per click. Count crores of events a day fast enough to watch, and exactly enough to bill.",

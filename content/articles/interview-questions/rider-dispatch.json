@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 20",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design rider assignment for food delivery",
   "dek": "At 8:30 pm Zotato has 3 lakh riders on the road and hundreds of new orders every second. Pick the right rider for each order, so the food is picked up just as it's ready, and never give one rider two orders by mistake.",

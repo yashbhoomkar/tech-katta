@@ -4,6 +4,7 @@
   "group": "compute",
   "no": "COMPONENT // 04",
   "tag": "COMPUTE",
+  "access": "paid",
   "date": "4 Nov 2026",
   "title": "App servers and autoscaling: more cooks for the rush",
   "dek": "Why app servers should keep no state, when a bigger machine beats more machines, and how autoscaling follows the day without failing the first minutes of a spike.",

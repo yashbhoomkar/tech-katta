@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 18",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a distributed key-value store",
   "dek": "Zotato keeps carts, sessions and app settings for 20 crore accounts: about a terabyte of small values, read lakhs of times a second. Build a store that spreads them over many machines, keeps three copies, and keeps working when a machine dies.",

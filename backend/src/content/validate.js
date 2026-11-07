@@ -335,6 +335,10 @@ export function validateContent({ site, examples, articles, lab }) {
     if (!sections.has(a.section)) problems.push(`${at}: unknown section ${a.section}`);
     for (const key of ['no', 'tag', 'date', 'title', 'dek']) if (!isText(a[key])) problems.push(`${at}: needs ${key}`);
     if (a.group !== undefined && !groupIds.get(a.section)?.has(a.group)) problems.push(`${at}: unknown group ${a.group} for section ${a.section}`);
+    // who can read it once subscriptions start: a few articles are free, everything with practice (the
+    // problems), the Lab and the videos are for subscribers
+    if (a.access !== 'free' && a.access !== 'paid') problems.push(`${at}: access must be "free" or "paid"`);
+    else if (a.access === 'free' && a.practice !== undefined) problems.push(`${at}: a problem (an article with practice) must be paid`);
     checkBlocks(a.body, at, problems, challenges);
     // practice designs are checked against the Lab catalogue, so only when it is given
     if (a.practice !== undefined && lab) validatePractice(a.practice, lab, `${at} practice`, problems);

@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 16",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a live leaderboard",
   "dek": "During an IPL match, Zotato runs a quiz: a question after every few overs, 20 seconds to answer, points for being right. 50 lakh people play, and each wants the top 100 and their own rank, updated seconds after every question.",

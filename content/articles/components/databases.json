@@ -4,6 +4,7 @@
   "group": "storage",
   "no": "COMPONENT // 06",
   "tag": "STORAGE",
+  "access": "paid",
   "date": "4 Nov 2026",
   "title": "Databases: choosing one, making it fast, keeping it up",
   "dek": "Relational or NoSQL and how to decide, why transactions matter for an order, what an index does, and how replicas and a standby share the work of reads and failures.",

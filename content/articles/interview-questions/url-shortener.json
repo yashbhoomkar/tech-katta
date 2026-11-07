@@ -4,6 +4,7 @@
   "group": "easy",
   "no": "QUESTION // 01",
   "tag": "EASY",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design a URL shortener",
   "dek": "Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.",

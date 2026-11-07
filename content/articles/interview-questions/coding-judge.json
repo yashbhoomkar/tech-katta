@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 09",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a coding judge",
   "dek": "Zotato hires engineers through a 3-hour online contest. A lakh candidates write code in the browser, press Submit, and expect a verdict in seconds: accepted, wrong answer, or too slow. Run strangers' code safely, keep it fair, and survive the rush in the last 15 minutes.",

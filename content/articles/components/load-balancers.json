@@ -4,6 +4,7 @@
   "group": "edge",
   "no": "COMPONENT // 01",
   "tag": "EDGE",
+  "access": "free",
   "date": "4 Nov 2026",
   "title": "Load balancers: one address in front of many servers",
   "dek": "How a load balancer spreads requests, notices a dead server and lets you deploy without downtime, and what it costs you to add one.",

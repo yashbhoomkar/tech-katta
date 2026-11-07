@@ -4,6 +4,7 @@
   "group": "messaging",
   "no": "COMPONENT // 09",
   "tag": "MESSAGING",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Queues and event streams: work that can wait, and events many services need",
   "dek": "Why the order screen shouldn't wait for the SMS, how a queue differs from a stream like Kafka, what at-least-once delivery means for your code, and what to do when readers fall behind.",

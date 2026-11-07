@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 13",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a payment system",
   "dek": "A customer pays ₹480 for an order by UPI or card, through a payment gateway. Charge them exactly once, never tell them \"failed\" when the money actually went, and keep books that match the bank's to the paisa.",

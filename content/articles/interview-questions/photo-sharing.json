@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 06",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design photo sharing",
   "dek": "Zotato Snaps lets diners post photos of what they ate. Each one shows on their profile and on the restaurant's page within seconds, loads fast on a 4G phone, and survives a dish going viral.",

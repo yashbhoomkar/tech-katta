@@ -29,7 +29,7 @@ export async function loadContent(dir) {
   return { site, examples, articles, lab, release };
 }
 
-const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'date', 'title', 'dek', 'audio'];
+const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek', 'audio'];
 const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
 
 // A summary also names the Lab challenge the article's Lab card opens (`lab`), for lists such as Problems.

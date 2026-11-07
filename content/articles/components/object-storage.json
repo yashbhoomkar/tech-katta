@@ -4,6 +4,7 @@
   "group": "storage",
   "no": "COMPONENT // 08",
   "tag": "STORAGE",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Object storage: where the photos, PDFs and videos go",
   "dek": "Why files don't belong in the database or on a server's disk, how uploads go straight from the phone to storage, how to keep private files private, and how old files get cheaper on their own.",

@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 11",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a notification service",
   "dek": "Zotato sends login OTPs, \"your order is on the way\" updates and a Diwali offer to 5 crore people, by push, SMS and email. Build one service that sends them all, where an OTP is never stuck behind a promotion and nobody gets the same message twice.",

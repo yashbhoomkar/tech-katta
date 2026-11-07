@@ -4,6 +4,7 @@
   "group": "edge",
   "no": "COMPONENT // 02",
   "tag": "EDGE",
+  "access": "paid",
   "date": "4 Nov 2026",
   "title": "CDNs: answering from a city near the user",
   "dek": "How a content delivery network keeps copies close to your users, what decides whether it can answer, and why a live cricket match is possible at all.",

@@ -122,6 +122,16 @@ test('repo content is valid', () => {
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab }), []);
 });
 
+// Free or paid: every article says which; a problem is never free; the lists carry it.
+test('every article is free or paid, and no problem is free', async () => {
+  const free = allArticles.filter((a) => a.access === 'free').map((a) => a.slug).sort();
+  assert.deepEqual(free, ['api-types', 'caches', 'cap-pacelc', 'how-to-answer', 'load-balancers']);
+  const problem = allArticles.find((a) => a.practice);
+  const check = (change) => validateContent({ site, examples, articles: allArticles.map((a) => (a === problem ? change(structuredClone(a)) : a)), lab });
+  assert.ok(check((a) => ({ ...a, access: 'free' })).some((p) => p.includes('must be paid')));
+  assert.ok(check((a) => { delete a.access; return a; }).some((p) => p.includes('access must be')));
+});
+
 test('GET /v1/lab returns the Lab catalogue', async () => {
   const response = await get('/v1/lab');
   assert.equal(response.status, 200);

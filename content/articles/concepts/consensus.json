@@ -4,6 +4,7 @@
   "group": "coordination",
   "no": "CONCEPT // 06",
   "tag": "AGREEING",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Consensus and leader election: how machines agree when some of them fail",
   "dek": "Who is the leader? Did that write happen? Which settings are current? When several machines must give one answer, and any of them can pause, crash or lose the network, \"just ask everyone\" stops working. Majorities and numbered terms are how real systems get one answer anyway.",

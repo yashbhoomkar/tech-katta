@@ -4,6 +4,7 @@
   "group": "medium",
   "no": "QUESTION // 19",
   "tag": "MEDIUM",
+  "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a shared document editor",
   "dek": "A restaurant's owner, chef and manager edit their Zotato menu together: one adds a dish while another changes a price, each seeing the other's changes as they type. Build editing where nobody's change is lost, and everyone ends up with the same menu.",

@@ -4,6 +4,7 @@
   "group": "reliability",
   "no": "CONCEPT // 05",
   "tag": "RELIABILITY",
+  "access": "paid",
   "date": "5 Nov 2026",
   "title": "Timeouts, retries and circuit breakers: staying up when something you call is slow",
   "dek": "Most outages don't start with something down. They start with something slow, and every caller waiting for it. Three small habits stop one slow service from taking the rest with it.",

@@ -4,6 +4,7 @@
   "group": "edge",
   "no": "COMPONENT // 03",
   "tag": "EDGE",
+  "access": "paid",
   "date": "4 Nov 2026",
   "title": "API gateways and rate limiting: the front door and its bouncer",
   "dek": "What a gateway does before a request reaches your code, how it differs from a load balancer, and how rate limiters decide who gets a 429.",
