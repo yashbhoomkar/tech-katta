@@ -6,16 +6,21 @@
 // A component is named by any of its catalogue `aliases` (longest match wins), optionally followed by
 // ":label" to tell two of the same kind apart; the same kind and label on several lines is the same
 // component. The rest of the item sets its options; anything not understood is reported, not guessed.
+// A database engine's names (DynamoDB, Mongo, S3, Postgres…) name a Database with that engine, and
+// can also follow "Database" as an option ("Database dynamodb").
 // The design is then laid out left to right and repaired against the catalogue (store.js cleanDesign).
-import{cleanDesign,MAX_NODES}from"./store.js";
+import{cleanDesign,MAX_NODES}from"./store.js";import{sizesOf}from"./engine.js";
 export const MAX_TEXT=20000,MAX_FILE=1e6;
 
 const norm=s=>s.toLowerCase().replace(/\s+/g," ").trim();
-function aliasesOf(lab){const out=[];for(const c of lab.components)for(const a of [c.name,c.type,...(c.aliases||[])])out.push([norm(a),c]);return out.sort((a,b)=>b[0].length-a[0].length)}
+const engineNames=e=>[e.id,e.label,...(e.aliases||[])].map(norm);
+function aliasesOf(lab){const out=[];for(const c of lab.components){for(const a of [c.name,c.type,...(c.aliases||[])])out.push([norm(a),c,null]);for(const e of c.engines||[])for(const a of engineNames(e))out.push([a,c,e.id])}return out.sort((a,b)=>b[0].length-a[0].length)}
+// A size by its id, or without its family's prefix or suffix ("m5.large" for "db.m5.large").
+const bare=id=>id.replace(/^(?:db|cache|docdb)\./,"").replace(/\.(?:search|graph)$/,"");
 
 // Read one item's options (everything after the name). Returns {config, unknown: [tokens]}.
-function options(comp,rest){
-  const config={},unknown=[];let s=" "+norm(rest)+" ";
+function options(comp,rest,engine=null){
+  const config=engine?{engine}:{},unknown=[];let s=" "+norm(rest)+" ";
   const take=(re,fn)=>{s=s.replace(re,(...m)=>{fn(...m);return" "})};
   if(comp.type==="client"){
     take(/\s(\d[\d,]*)\s*(?:rps|req\/s|requests?(?: per second| a second)?)?(?=\s)/,(_,n)=>{config.rps=+n.replace(/,/g,"")});
@@ -36,13 +41,15 @@ function options(comp,rest){
     take(/\s(?:fail(?: when down)?|fail-closed)(?=\s)/,()=>{config.onDown="fail"});
   }
   if(comp.type==="cdn"){take(/\s(\d+)\s?%\s?(?:hits?|from the edge|edge|cached)(?=\s)|\shits?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.hitPct=+(a||b)});take(/\slive(?: video| stream)?(?=\s)/,()=>{config.live=true})}
+  if(comp.type==="database"&&comp.engines&&!engine){const all=comp.engines.flatMap(e=>engineNames(e).map(a=>[a,e.id])).sort((a,b)=>b[0].length-a[0].length);for(const[a,id]of all)if(s.includes(" "+a+" ")){config.engine=id;s=s.replace(" "+a+" "," ");break}}
   if(comp.type==="database"){take(/\smulti[- ]?az(?=\s)/,()=>{config.multiAz=true});
     if(comp.replicas){take(/\s(\d+)\s?(?:read\s)?replicas?(?=\s)|\sreplicas?\s(\d+)(?=\s)/,(_,a,b)=>{config.replicas=Math.min(comp.replicas.max,+(a||b))});
       take(/\s(\d+)\s?%\s?writes?(?=\s)|\swrites?\s(\d+)\s?%(?=\s)/,(_,a,b)=>{config.writePct=+(a||b)})}}
   // a role by id: "as geo", "as websocket"
   if(comp.roles)take(new RegExp(`\\sas\\s(${comp.roles.map(r=>r.id).join("|")})(?=\\s)`),(_,id)=>{config.role=id});
   // sizes by id, with or without the "db." / "cache." prefix
-  if(comp.sizes)for(const tok of s.trim().split(" ").filter(Boolean)){const z=comp.sizes.find(x=>x.id===tok||x.id==="db."+tok||x.id==="cache."+tok);if(z){config.size=z.id;s=s.replace(" "+tok+" "," ")}}
+  const sizes=sizesOf(comp,config)[0];
+  if(sizes)for(const tok of s.trim().split(" ").filter(Boolean)){const z=sizes.find(x=>x.id===tok||bare(x.id)===bare(tok));if(z){config.size=z.id;s=s.replace(" "+tok+" "," ")}}
   for(const tok of s.trim().split(" ").filter(Boolean))unknown.push(tok);
   return{config,unknown};
 }
@@ -59,12 +66,13 @@ export function parseText(text,lab){
     for(const item of items){
       const low=norm(item);const hit=names.find(([a])=>low===a||low.startsWith(a+" ")||low.startsWith(a+":"));
       if(!hit){errors.push({line:n,message:`"${item.trim()}" is not a component I know. Try one of: ${lab.components.map(c=>c.name).join(", ")}.`});ids.push(null);continue}
-      const[alias,comp]=hit;let rest=item.trim().slice(alias.length);let label="";
+      const[alias,comp,eng]=hit;let rest=item.trim().slice(alias.length);let label="";
       const m=rest.match(/^\s*:\s*([\w.-]+)/);let typed="";if(m){typed=m[1];label=m[1].toLowerCase();rest=rest.slice(m[0].length)}
-      const key=comp.type+(label?":"+label:"");const{config,unknown}=options(comp,rest);
+      // a database named by its engine ("DynamoDB") is a different database from "Mongo" or "Database"
+      const key=comp.type+(eng?"@"+eng:"")+(label?":"+label:"");const{config,unknown}=options(comp,rest,eng);
       if(unknown.length)warnings.push({line:n,message:`Ignored "${unknown.join(" ")}" on ${comp.name}${label?":"+label:""}.`});
       // ids keep labels apart: "a.b" and "a-b" stay two components (labels can't contain ~)
-      if(!nodes.has(key)){if(nodes.size>=MAX_NODES){errors.push({line:n,message:`A design can have at most ${MAX_NODES} components.`});ids.push(null);continue}nodes.set(key,{id:key.replace(/\./g,"~").replace(/[^a-z0-9:_~-]/g,"-"),type:comp.type,label,...(typed?{name:typed}:{}),config:{}})}
+      if(!nodes.has(key)){if(nodes.size>=MAX_NODES){errors.push({line:n,message:`A design can have at most ${MAX_NODES} components.`});ids.push(null);continue}nodes.set(key,{id:key.replace(/\./g,"~").replace(/@/g,"_").replace(/[^a-z0-9:_~-]/g,"-"),type:comp.type,label,...(typed?{name:typed}:{}),config:{}})}
       Object.assign(nodes.get(key).config,config);ids.push(key);
     }
     for(let i=0;i+1<ids.length;i++){const a=ids[i],b=ids[i+1];if(!a||!b)continue;const A=nodes.get(a),Bn=nodes.get(b);

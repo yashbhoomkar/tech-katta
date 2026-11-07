@@ -145,6 +145,18 @@ const choice = (ids) => (c) => c && typeof c === 'object' && isText(c.label) && 
 const CHOICES = { writePolicy: ['through', 'back'], onDown: ['database', 'fail'] };
 // Read replicas on Database: a whole-number range that may start at 0, and the share of writes.
 const replicas = (r) => r && typeof r === 'object' && isText(r.label) && [r.min, r.max, r.default].every((v) => Number.isInteger(v) && v >= 0) && r.min <= r.default && r.default <= r.max && r.max <= 10;
+// Database engines: what a database is. "instance" engines have sizes (or use the component's) and
+// may crash; "request" engines have a throughput limit and per-million prices. `features` name what
+// the engine is good at, from the component's `features` list.
+const ENGINE_FAMILIES = new Set(['Relational', 'Key-value / document', 'Document', 'Wide-column', 'Search', 'Object storage', 'Time-series', 'Graph']);
+const features = (list) => Array.isArray(list) && list.length > 0 && list.every((f) => f && /^[a-zA-Z]{2,24}$/.test(f.id || '') && isText(f.label)) && new Set(list.map((f) => f.id)).size === list.length;
+const engine = (e, known) => e && typeof e === 'object' && /^[a-z0-9]{2,20}$/.test(e.id || '') && isText(e.label) && ENGINE_FAMILIES.has(e.family) && isText(e.desc) && isText(e.aws)
+  && ['instance', 'request'].includes(e.capacity) && ['option', 'builtin', 'none'].includes(e.multiAz) && typeof e.replicas === 'boolean' && typeof e.crash === 'boolean'
+  && (e.latencyMs === undefined || positive(e.latencyMs))
+  && (e.capacity === 'request' ? positive(e.limitQps) && nonNegative(e.readPerMillion) && nonNegative(e.writePerMillion) && e.crash === false && e.replicas === false
+    : (e.sizes === undefined || (sizesOf('qps')(e.sizes) && e.sizes.some((s) => s.id === e.defaultSize))))
+  && Array.isArray(e.features) && e.features.every((f) => known.has(f))
+  && (e.aliases === undefined || (Array.isArray(e.aliases) && e.aliases.every(isText)));
 // Roles: the jobs a component can be given ({id, label, desc}, ids lowercase letters, unique).
 const roles = (list) => Array.isArray(list) && list.length > 0 && list.every((r) => r && /^[a-z]{2,20}$/.test(r.id || '') && isText(r.label) && isText(r.desc)) && new Set(list.map((r) => r.id)).size === list.length;
 const OPTIONAL_FIELDS = { database: { replicas, writePct: percent, roles }, client: { patterns }, server: { autoscaling, roles }, queue: { roles }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown), roles } };
@@ -170,6 +182,16 @@ export function validateLab(lab, problems = []) {
     for (const [key, ok] of Object.entries(LAB_TYPES[c.type])) if (!ok(c[key])) problems.push(`${where}: ${key} is missing or malformed`);
     for (const [key, ok] of Object.entries(OPTIONAL_FIELDS[c.type] || {})) if (c[key] !== undefined && !ok(c[key])) problems.push(`${where}: ${key} is malformed`);
     if (c.type === 'server' && autoscaling(c.autoscaling) && range(c.count) && c.autoscaling.defaultMax > c.count.max) problems.push(`${where}: autoscaling.defaultMax is above count.max`);
+    if (c.type === 'database' && c.engines !== undefined) {
+      const known = new Set(features(c.features) ? c.features.map((f) => f.id) : []);
+      if (!features(c.features)) problems.push(`${where}: features must be [{id, label}] with unique ids`);
+      if (!Array.isArray(c.engines) || !c.engines.length) problems.push(`${where}: engines must be a list`);
+      else {
+        for (const [j, e] of c.engines.entries()) if (!engine(e, known)) problems.push(`${where}: engines[${j}] (${e && e.id}) is malformed`);
+        if (new Set(c.engines.map((e) => e && e.id)).size !== c.engines.length) problems.push(`${where}: engine ids must be unique`);
+        if (!c.engines.some((e) => e && e.id === c.defaultEngine)) problems.push(`${where}: defaultEngine must be one of its engines`);
+      }
+    }
     if (Array.isArray(c.sizes) && !c.sizes.some((s) => s && s.id === c.defaultSize)) problems.push(`${where}: defaultSize ${c.defaultSize} is not one of its sizes`);
   }
   for (const type of REQUIRED_TYPES) if (!types.has(type)) problems.push(`${at}: missing component ${type}`);
@@ -255,7 +277,10 @@ export function validateDesign(design, lab, at, problems = []) {
       inRange('hitPct', c.hitPct); inRange('writePct', c.writePct);
       for (const key of Object.keys(CHOICES)) if (cfg[key] !== undefined && !(c[key] && Array.isArray(c[key].options) && c[key].options.some((o) => o && o.id === cfg[key]))) problems.push(`${where}: unknown ${key} ${cfg[key]}`);
     }
-    if (Array.isArray(c.sizes) && cfg.size !== undefined && !c.sizes.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}`);
+    const eng = c.type === 'database' && Array.isArray(c.engines) ? c.engines.find((e) => e && e.id === (cfg.engine ?? c.defaultEngine)) : null;
+    if (c.type === 'database' && cfg.engine !== undefined && !eng) problems.push(`${where}: unknown engine ${cfg.engine}`);
+    const sizeList = eng && Array.isArray(eng.sizes) ? eng.sizes : c.sizes;
+    if (Array.isArray(sizeList) && cfg.size !== undefined && !sizeList.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}${eng ? ` for ${eng.label}` : ''}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
     if (c.type === 'database') { inRange('replicas', c.replicas); inRange('writePct', c.writePct); }
     if (cfg.role !== undefined && !(Array.isArray(c.roles) && c.roles.some((r) => r && r.id === cfg.role))) problems.push(`${where}: unknown role ${cfg.role}`);

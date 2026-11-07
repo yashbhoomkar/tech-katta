@@ -97,3 +97,8 @@ test("a component's own name is kept short and printable; blank means none",()=>
   const d=cleanDesign({nodes:[{id:"a",type:"server",name:"  Orders\n API  "},{id:"b",type:"server",name:long},{id:"c",type:"server",name:"   "},{id:"d",type:"server",name:42}],edges:[]},lab,"x");
   assert.equal(d.nodes[0].name,"Orders API");assert.equal(d.nodes[1].name.length,40);assert.equal(d.nodes[2].name,undefined);assert.equal(d.nodes[3].name,undefined);
 });
+
+test("an engine is kept when known, and a size only if it belongs to that engine",()=>{
+  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{engine:"mongodb",size:"docdb.r6g.large"}},{id:"b",type:"database",config:{engine:"mongodb",size:"db.m5.large"}},{id:"c",type:"database",config:{engine:"oracle",size:"db.m5.large"}}],edges:[]},lab,"x");
+  assert.deepEqual(d.nodes[0].config,{engine:"mongodb",size:"docdb.r6g.large"});assert.deepEqual(d.nodes[1].config,{engine:"mongodb"});assert.deepEqual(d.nodes[2].config,{size:"db.m5.large"});
+});

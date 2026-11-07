@@ -12,7 +12,7 @@
 //   spend {max}          dollars spent during the run (for short, expensive evenings)
 //   noCrash {type?}      no component (of that type) crashed from overload; chaos crashes don't count
 //   noLostWrites         no writes lost by a write-back cache
-import { simulate, advance, newRun, runOptions, crashNow, catalogue } from './engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, crashOf } from './engine.js';
 
 export function applyChallenge(design, ch) {
   const clients = design.nodes.filter((n) => n.type === 'client').length || 1;
@@ -29,7 +29,7 @@ export function applyChallenge(design, ch) {
 // The component of a type with the most traffic right now: what a chaos event crashes.
 export function chaosTarget(design, lab, run, type) {
   const cat = catalogue(lab), r = simulate(design, lab, runOptions(run, (run.start || 0) * 60 + run.t, lab));
-  return design.nodes.filter((n) => n.type === type && cat[n.type]?.crash && !Object.hasOwn(run.down, n.id)).sort((a, b) => r.nodes[b.id].offered - r.nodes[a.id].offered)[0]?.id || null;
+  return design.nodes.filter((n) => n.type === type && cat[n.type] && crashOf(cat[n.type], n.config) && !Object.hasOwn(run.down, n.id)).sort((a, b) => r.nodes[b.id].offered - r.nodes[a.id].offered)[0]?.id || null;
 }
 
 const STEP = 5; // simulated minutes per scoring step (chaos minutes and windows are multiples of 5)

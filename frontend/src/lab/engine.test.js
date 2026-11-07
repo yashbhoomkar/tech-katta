@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { simulate, monthlyCost, catalogue, advance, newRun, trafficAt, runOptions } from './engine.js';
+import { simulate, monthlyCost, catalogue, advance, newRun, trafficAt, runOptions, crashNow, engineOf, sizeOf, standby, summary, SECONDS_PER_MONTH } from './engine.js';
 
 const lab = JSON.parse(readFileSync(new URL('../../../content/lab.json', import.meta.url)));
 const example = { nodes: lab.example.nodes, edges: lab.example.edges };
@@ -349,4 +349,35 @@ test('read replicas take reads: more capacity, each billed like the primary, rea
   assert.equal(none.total.successPct, 0);
   // writes only: replicas add nothing
   assert.equal(simulate(db({ replicas: 3, writePct: 100 }), lab).nodes.db.capacity, 2500);
+});
+
+test('database engines: their own sizes, per-request pricing, throttling instead of crashing, zones', () => {
+  const cat = catalogue(lab);
+  const db = (cfg, rps = 1000, q = 4) => ({ nodes: [{ id: 'c', type: 'client', config: { rps } }, { id: 'g', type: 'apigw', config: {} }, { id: 's', type: 'server', config: { size: 'c5.2xlarge', count: 20, queriesPerRequest: q } }, { id: 'db', type: 'database', config: cfg }], edges: [{ from: 'c', to: 'g' }, { from: 'g', to: 's' }, { from: 's', to: 'db' }] });
+  // the default is PostgreSQL with the component's sizes; a saved design without an engine is unchanged
+  assert.equal(engineOf(cat.database, {}).id, 'postgres');
+  assert.equal(simulate(db({ size: 'db.m5.large' }), lab).nodes.db.capacity, 2500);
+  // MongoDB brings its own sizes; an unknown size falls back to its default
+  assert.equal(sizeOf(cat.database, { engine: 'mongodb', size: 'docdb.r6g.xlarge' }).qps, 5000);
+  assert.equal(sizeOf(cat.database, { engine: 'mongodb', size: 'db.m5.large' }).id, 'docdb.r6g.large');
+  // DynamoDB: a throughput limit, paid per million reads and writes, spread over zones
+  const dd = engineOf(cat.database, { engine: 'dynamodb' });
+  const r = simulate(db({ engine: 'dynamodb', writePct: 20 }), lab);
+  assert.equal(r.nodes.db.capacity, dd.limitQps);
+  const monthly = 4000 * SECONDS_PER_MONTH / 1e6 * (0.2 * dd.writePerMillion + 0.8 * dd.readPerMillion);
+  assert.ok(Math.abs(r.nodes.db.cost - monthly) < 1e-6);
+  assert.equal(summary(cat.database, { engine: 'dynamodb' }), 'DynamoDB · on demand');
+  assert.ok(standby(cat.database, { engine: 'dynamodb' }) && !standby(cat.database, {}) && standby(cat.database, { multiAz: true }));
+  // far past its limit it throttles (drops) but never crashes; PostgreSQL crashes
+  const hot = (cfg) => advance(db(cfg, 20000), lab, newRun(), 60);
+  assert.ok(!hot({ engine: 'dynamodb' }).events.some((e) => e.kind === 'crashed'));
+  assert.ok(simulate(db({ engine: 'dynamodb' }, 20000, 10), lab).nodes.db.dropped > 0);
+  assert.ok(hot({ size: 'db.m5.large' }).events.some((e) => e.kind === 'crashed'));
+  // chaos can't crash a managed engine
+  assert.deepEqual(crashNow(db({ engine: 's3' }), lab, newRun(), 'db').down, newRun().down);
+  // S3 and Cassandra have no read replicas; Mongo does
+  assert.equal(simulate(db({ engine: 's3', replicas: 3 }), lab).nodes.db.capacity, engineOf(cat.database, { engine: 's3' }).limitQps);
+  assert.ok(simulate(db({ engine: 'mongodb', replicas: 2, writePct: 20 }), lab).nodes.db.capacity > 2500);
+  // Multi-AZ on an instance engine doubles the bill, as before
+  assert.equal(monthlyCost(cat.database, { engine: 'mongodb', multiAz: true }), 2 * monthlyCost(cat.database, { engine: 'mongodb' }));
 });

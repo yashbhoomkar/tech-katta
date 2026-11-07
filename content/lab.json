@@ -359,7 +359,7 @@
       "type": "database",
       "name": "Database",
       "group": "Storage",
-      "desc": "RDS for PostgreSQL. Every request that reaches a server makes that server's number of queries. Multi-AZ keeps a standby copy, fails over when the primary crashes, and doubles the price. Read replicas are copies that take reads: writes still all go to the primary, each replica costs as much as the primary, and while the primary is down the replicas keep answering reads.",
+      "desc": "A database. Pick its engine: relational (PostgreSQL, MySQL), key-value (DynamoDB), document (MongoDB), wide-column (Cassandra), search (OpenSearch), object storage (S3), time-series (InfluxDB) or graph (Neptune). Each has its own sizes, prices and failure behaviour. Every request that reaches a server makes that server's number of queries.",
       "latencyMs": 5,
       "sizes": [
         {
@@ -412,7 +412,7 @@
         "failoverMinutes": 2
       },
       "like": "The shop's ledger: the one record everyone trusts, so every change has to be written into it carefully.",
-      "aliases": ["database", "db", "postgres", "postgresql", "mysql", "rds", "aurora"],
+      "aliases": ["database", "db", "datastore", "data store"],
       "roles": [
         {
           "id": "geo",
@@ -458,6 +458,277 @@
           "id": "oplog",
           "label": "Operation log",
           "desc": "Every edit to a document in order, so anyone can replay it to the latest version."
+        }
+      ],
+      "features": [
+        {
+          "id": "transactions",
+          "label": "transactions across rows"
+        },
+        {
+          "id": "joins",
+          "label": "joins between tables"
+        },
+        {
+          "id": "secondaryIndex",
+          "label": "lookups by fields other than the key"
+        },
+        {
+          "id": "range",
+          "label": "ranges and sorting on an indexed field"
+        },
+        {
+          "id": "geo",
+          "label": "\"near this point\" queries"
+        },
+        {
+          "id": "fullText",
+          "label": "searching by words"
+        },
+        {
+          "id": "aggregate",
+          "label": "sums and counts over many rows"
+        },
+        {
+          "id": "ttl",
+          "label": "rows that expire by themselves"
+        },
+        {
+          "id": "blobs",
+          "label": "big files (photos, video)"
+        },
+        {
+          "id": "graph",
+          "label": "following links between things (friends of friends)"
+        },
+        {
+          "id": "highWrites",
+          "label": "very high write rates"
+        }
+      ],
+      "engineLabel": "Engine",
+      "defaultEngine": "postgres",
+      "engines": [
+        {
+          "id": "postgres",
+          "label": "PostgreSQL",
+          "family": "Relational",
+          "aws": "RDS for PostgreSQL",
+          "desc": "Tables with a fixed set of columns, joins and transactions. The safe default when the data has relationships and must stay correct.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": true,
+          "crash": true,
+          "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
+          "aliases": ["postgres", "postgresql", "rds", "aurora", "sql"]
+        },
+        {
+          "id": "mysql",
+          "label": "MySQL",
+          "family": "Relational",
+          "aws": "RDS for MySQL",
+          "desc": "Tables, joins and transactions, like PostgreSQL. Widely used for orders, users and payments.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": true,
+          "crash": true,
+          "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
+          "aliases": ["mysql", "mariadb"]
+        },
+        {
+          "id": "dynamodb",
+          "label": "DynamoDB",
+          "family": "Key-value / document",
+          "aws": "DynamoDB on demand",
+          "desc": "Items found by a partition key (and sorted by an optional sort key). Very fast at any size, paid per request, spread over three zones by AWS. Queries must follow the keys and indexes you define.",
+          "capacity": "request",
+          "limitQps": 40000,
+          "readPerMillion": 0.15,
+          "writePerMillion": 0.75,
+          "latencyMs": 4,
+          "multiAz": "builtin",
+          "replicas": false,
+          "crash": false,
+          "features": ["secondaryIndex", "range", "ttl", "highWrites", "transactions"],
+          "aliases": ["dynamodb", "dynamo", "ddb"]
+        },
+        {
+          "id": "mongodb",
+          "label": "MongoDB",
+          "family": "Document",
+          "aws": "DocumentDB (MongoDB-compatible)",
+          "desc": "JSON documents with flexible fields, indexes on any field, and \"near this point\" queries. Good when each record is read as a whole.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": true,
+          "crash": true,
+          "sizes": [
+            {
+              "id": "docdb.t3.medium",
+              "label": "db.t3.medium · 2 vCPU, 4 GB",
+              "qps": 700,
+              "hourly": 0.09
+            },
+            {
+              "id": "docdb.r6g.large",
+              "label": "db.r6g.large · 2 vCPU, 16 GB",
+              "qps": 2500,
+              "hourly": 0.31
+            },
+            {
+              "id": "docdb.r6g.xlarge",
+              "label": "db.r6g.xlarge · 4 vCPU, 32 GB",
+              "qps": 5000,
+              "hourly": 0.62
+            },
+            {
+              "id": "docdb.r6g.2xlarge",
+              "label": "db.r6g.2xlarge · 8 vCPU, 64 GB",
+              "qps": 10000,
+              "hourly": 1.24
+            }
+          ],
+          "defaultSize": "docdb.r6g.large",
+          "features": ["secondaryIndex", "range", "geo", "fullText", "aggregate", "transactions"],
+          "aliases": ["mongodb", "mongo", "documentdb", "docdb", "document db"]
+        },
+        {
+          "id": "cassandra",
+          "label": "Cassandra",
+          "family": "Wide-column",
+          "aws": "Keyspaces on demand",
+          "desc": "Rows grouped by a partition key and kept sorted inside it. Built for huge numbers of writes, such as messages or events; queries must follow the partition key.",
+          "capacity": "request",
+          "limitQps": 40000,
+          "readPerMillion": 0.33,
+          "writePerMillion": 1.6,
+          "latencyMs": 6,
+          "multiAz": "builtin",
+          "replicas": false,
+          "crash": false,
+          "features": ["range", "ttl", "highWrites"],
+          "aliases": ["cassandra", "keyspaces", "scylla", "scylladb", "wide column", "wide-column"]
+        },
+        {
+          "id": "opensearch",
+          "label": "OpenSearch",
+          "family": "Search",
+          "aws": "OpenSearch Service",
+          "desc": "A search engine: finds documents by the words in them, with filters, ranking and \"near this point\". Usually a copy of data whose source of truth lives elsewhere.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": false,
+          "crash": true,
+          "latencyMs": 15,
+          "sizes": [
+            {
+              "id": "r6g.large.search",
+              "label": "r6g.large.search · 2 vCPU, 16 GB",
+              "qps": 1500,
+              "hourly": 0.19
+            },
+            {
+              "id": "r6g.xlarge.search",
+              "label": "r6g.xlarge.search · 4 vCPU, 32 GB",
+              "qps": 3000,
+              "hourly": 0.38
+            },
+            {
+              "id": "r6g.2xlarge.search",
+              "label": "r6g.2xlarge.search · 8 vCPU, 64 GB",
+              "qps": 6000,
+              "hourly": 0.76
+            }
+          ],
+          "defaultSize": "r6g.large.search",
+          "features": ["fullText", "geo", "range", "aggregate", "secondaryIndex"],
+          "aliases": ["opensearch", "elasticsearch", "elastic", "search engine", "solr"]
+        },
+        {
+          "id": "s3",
+          "label": "S3",
+          "family": "Object storage",
+          "aws": "S3 Standard",
+          "desc": "Files by key: photos, videos, backups, file chunks. Cheap and very durable, paid per request; it can only get and put whole objects by their key, not query them.",
+          "capacity": "request",
+          "limitQps": 50000,
+          "readPerMillion": 0.44,
+          "writePerMillion": 5.5,
+          "latencyMs": 20,
+          "multiAz": "builtin",
+          "replicas": false,
+          "crash": false,
+          "features": ["blobs"],
+          "aliases": ["s3", "object storage", "object store", "blob storage", "blob store", "gcs"]
+        },
+        {
+          "id": "timeseries",
+          "label": "InfluxDB",
+          "family": "Time-series",
+          "aws": "Timestream for InfluxDB",
+          "desc": "Measurements with a time: counts per minute, prices over a day. Fast to add to and to sum over a time range.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": false,
+          "crash": true,
+          "sizes": [
+            {
+              "id": "db.influx.medium",
+              "label": "db.influx.medium · 1 vCPU, 8 GB",
+              "qps": 1500,
+              "hourly": 0.11
+            },
+            {
+              "id": "db.influx.large",
+              "label": "db.influx.large · 2 vCPU, 16 GB",
+              "qps": 3500,
+              "hourly": 0.22
+            },
+            {
+              "id": "db.influx.xlarge",
+              "label": "db.influx.xlarge · 4 vCPU, 32 GB",
+              "qps": 7000,
+              "hourly": 0.44
+            }
+          ],
+          "defaultSize": "db.influx.large",
+          "features": ["range", "aggregate", "ttl", "highWrites"],
+          "aliases": ["influxdb", "influx", "timestream", "timescale", "timescaledb", "time series", "time-series"]
+        },
+        {
+          "id": "graph",
+          "label": "Neptune",
+          "family": "Graph",
+          "aws": "Neptune",
+          "desc": "Things and the links between them: who follows whom, friends of friends, recommendations by connections.",
+          "capacity": "instance",
+          "multiAz": "option",
+          "replicas": true,
+          "crash": true,
+          "latencyMs": 8,
+          "sizes": [
+            {
+              "id": "db.r6g.large.graph",
+              "label": "db.r6g.large · 2 vCPU, 16 GB",
+              "qps": 1500,
+              "hourly": 0.39
+            },
+            {
+              "id": "db.r6g.xlarge.graph",
+              "label": "db.r6g.xlarge · 4 vCPU, 32 GB",
+              "qps": 3000,
+              "hourly": 0.78
+            },
+            {
+              "id": "db.r6g.2xlarge.graph",
+              "label": "db.r6g.2xlarge · 8 vCPU, 64 GB",
+              "qps": 6000,
+              "hourly": 1.56
+            }
+          ],
+          "defaultSize": "db.r6g.large.graph",
+          "features": ["graph", "transactions", "secondaryIndex"],
+          "aliases": ["neptune", "neo4j", "graph", "graph db", "graph database"]
         }
       ]
     }

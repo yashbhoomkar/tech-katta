@@ -13,7 +13,8 @@
 //         | {kind: "noLostWrites"}                   no acknowledged write lost
 //         | {kind: "requires", types: [type]}        every request passes through these types
 //         | {kind: "redundant", type}                no single component of that type that every request needs
-//         | {kind: "multiAz"}                        every database keeps a standby (Multi-AZ)
+//         | {kind: "multiAz"}                        every database keeps a standby in another zone (Multi-AZ,
+//                                                    or an engine AWS spreads over zones, e.g. DynamoDB)
 //         | {kind: "has", type}                      the design has at least one of that type
 //         | {kind: "role", role, any?, behind?, min?} a component doing this job (its role, e.g. "geo") is on
 //                                                    every request's path (any: on at least one path);
@@ -28,7 +29,7 @@
 // judge() runs a list of tests and returns a verdict; gradeAnswer() checks the written steps
 // (functional and non-functional requirements, estimates, APIs) against the problem's rubric;
 // score() puts it together out of 100. All pure: the browser runs them for Run and Submit.
-import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName } from '../lab/engine.js';
+import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName, standby } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 
 export const STEP = 5; // simulated minutes per step
@@ -81,12 +82,12 @@ export function roleOnPath(d, role, behind) {
 }
 
 // Checks on the shape of the design (no simulation needed).
-function rule(c, d) {
+function rule(c, d, cat) {
   const of = (t) => d.nodes.filter((n) => n.type === t);
   if (c.kind === 'role') { const r = roleOnPath(d, c.role, c.behind); const placed = c.any ? r.any : r.every; return { ok: placed && r.count >= (c.min || 1) && !r.early, value: r.count, placed, early: r.early }; }
   if (c.kind === 'requires') { const miss = missingOnPath(d, c.types); return { ok: !miss, value: miss }; }
   if (c.kind === 'redundant') { const spof = singlePoints(d, c.type); return { ok: of(c.type).length > 0 && !spof.length, value: spof[0] || null, count: of(c.type).length }; }
-  if (c.kind === 'multiAz') { const dbs = of('database'); const single = dbs.filter((n) => !n.config?.multiAz).length; return { ok: dbs.length > 0 && single === 0, value: single }; }
+  if (c.kind === 'multiAz') { const dbs = of('database'); const single = dbs.filter((n) => !standby(cat.database, n.config)).length; return { ok: dbs.length > 0 && single === 0, value: single }; }
   if (c.kind === 'has') { const n = of(c.type).length; return { ok: n > 0, value: n }; }
   return null;
 }
@@ -126,7 +127,7 @@ export function runTest(design, lab, problem, test) {
   const overload = run.events.filter((e) => (e.kind === 'crashed' || e.kind === 'failover') && !e.forced);
   const at = (m) => clock(start * 60 + m);
   const checks = test.checks.map((c, i) => {
-    const r = rule(c, d);
+    const r = rule(c, d, cat);
     if (r) return { ...c, ...r };
     if (c.kind === 'availability') { const v = c.from !== undefined ? (windows[i].sent ? 100 * windows[i].served / windows[i].sent : 100) : availability; return { ...c, ok: v >= c.min - 1e-9, value: v }; }
     if (c.kind === 'p99') return { ...c, ok: worst.p99 <= c.max + 1e-9, value: worst.p99 };
@@ -152,7 +153,7 @@ export function runTest(design, lab, problem, test) {
     else if (c.kind === 'noLostWrites') why.push(`${fmt(c.value)} acknowledged writes were lost when a write-back cache went down.`);
     else if (c.kind === 'requires') why.push(`Some requests never pass through a ${cat[c.value]?.name || c.value}.`);
     else if (c.kind === 'redundant') why.push(c.count ? `The ${nm[c.value]} is a single point of failure: if it goes down, requests have no other way through. Put a second group beside it.` : `The design has no ${cat[c.type]?.name || c.type}.`);
-    else if (c.kind === 'multiAz') why.push(c.value ? 'A database has no standby in another zone (Multi-AZ is off).' : 'There is no database.');
+    else if (c.kind === 'multiAz') why.push(c.value ? 'A database has no standby in another zone (Multi-AZ is off, and its engine is not spread over zones by AWS).' : 'There is no database.');
     else if (c.kind === 'has') why.push(`The design has no ${cat[c.type]?.name || c.type}.`);
     else if (c.kind === 'role') {
       const rl = Object.values(cat).flatMap((x) => x.roles || []).find((x) => x.id === c.role)?.label || c.role;
