@@ -328,6 +328,11 @@
           "data-modelling",
           "Data modelling",
           "The data model step of an interview: choosing a database model, keys and relationships, indexes and normalisation, and splitting the data."
+        ],
+        [
+          "caching",
+          "Caching",
+          "When to add a cache and how to explain it: where to cache, the four patterns, eviction and expiry, and what goes wrong."
         ]
       ],
       "interview-questions": [

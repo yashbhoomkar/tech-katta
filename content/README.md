@@ -41,7 +41,8 @@ site's page on the topic was the reference for what to cover, point by point. Do
 
 API design (CONCEPT // 37-43, `API_FIGS` in `apidesign.jsx`) and Data modelling (CONCEPT // 44-48, `DM_FIGS` in
 `datamodel.jsx`) are groups built the same way: Concepts groups, our own words and figures, checked paragraph by
-paragraph against the reference for coverage.
+paragraph against the reference for coverage. Caching (CONCEPT // 49-53, `CACHE_FIGS` in
+`caching.jsx`) follows the same method.
 
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry

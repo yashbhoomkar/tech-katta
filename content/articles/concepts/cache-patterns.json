@@ -1,0 +1,186 @@
+{
+  "section": "concepts",
+  "slug": "cache-patterns",
+  "group": "caching",
+  "no": "CONCEPT // 51",
+  "tag": "CACHING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Cache-aside, write-through, write-behind, read-through: who talks to the database",
+  "dek": "A caching pattern decides who reads and writes the database, and in what order: your code, or the cache on your behalf. That choice sets how fresh the cached data is, how fast writes are, and what can be lost. Cache-aside is the default in interviews and in practice; the other three each fit a narrower case.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Cache-aside (lazy loading): your code checks the cache, and on a miss reads the database and fills the cache. Lean and simple: the one to remember.",
+        "Write-through: writes go through the cache to the database before they complete. Fresh reads, slower writes, and still two systems that can disagree.",
+        "Write-behind: writes land in the cache and reach the database later, in batches. Very fast writes; a crash can lose them. Read-through: the cache fetches from the database itself on a miss, as a CDN does."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Cache-aside (lazy loading)"
+    },
+    {
+      "t": "p",
+      "x": "The most common pattern, and the one to use in an interview unless you have a reason not to. The application owns all the logic:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Look in the cache.",
+        "If the entry is there, return it.",
+        "If not, read the database, store the answer in the cache, and return it."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cache-aside",
+      "cap": "A hit is answered from memory. A miss reads the database once and stores the answer, so the next read is a hit."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Only data someone actually asked for is cached, so the cache stays lean.",
+        "The cost is the miss: the first read of each entry, and every read after it expires, pays for the cache lookup and the database query.",
+        "On a write, update the database and then delete the cached entry, so the next read fetches the new value. The article 'When caching goes wrong' explains why deleting beats updating.",
+        "Redis and Memcached are used this way: they are plain stores that know nothing about your database.",
+        "If you remember only one pattern for interviews, make it this one."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Cache-aside, in a few lines",
+      "x": "def get_menu(restaurant_id):\n    key = f\"menu:{restaurant_id}\"\n    menu = redis.get(key)\n    if menu is not None:\n        return menu                       # hit\n    menu = db.load_menu(restaurant_id)    # miss: one database read\n    redis.set(key, menu, ex=600)          # keep it for 10 minutes\n    return menu\n\ndef update_dish(restaurant_id, dish):\n    db.save_dish(dish)                    # the database first\n    redis.delete(f\"menu:{restaurant_id}\")  # then drop the stale copy",
+      "say": "Get menu: build the key menu colon restaurant id and look it up in Redis. If it's there, return it. Otherwise load the menu from the database, store it in Redis for ten minutes, and return it. Update dish: save the dish in the database first, then delete the cached menu so the next read fetches the new one."
+    },
+    {
+      "t": "h2",
+      "x": "Write-through"
+    },
+    {
+      "t": "p",
+      "x": "With write-through, the application writes to the cache, and the cache writes to the database synchronously before it answers. The write isn't finished until both have the new value."
+    },
+    {
+      "t": "fig",
+      "id": "ca-write-through",
+      "cap": "Write-through: the cache passes each write to the database and answers only when both hold it. Reads are fresh; every write waits for both."
+    },
+    {
+      "t": "list",
+      "items": [
+        "You need a cache that can do this: usually a caching library with a plug-in for your database, which calls your database code before it acknowledges the write. Redis doesn't do it by itself, so in practice it is your own code or a framework writing both.",
+        "Writes are slower, because each one waits for the cache and the database.",
+        "Everything written lands in the cache, including data nobody will read again, which wastes memory (often paired with a TTL to clear it).",
+        "It still has the dual-write problem: if the cache update succeeds and the database write fails, or the other way round, the two disagree. You need retries and error handling, and must accept that perfect agreement between two systems needs a distributed transaction.",
+        "Use it when reads must always see the latest value and writes can afford to be a little slower. In interviews it is less common than cache-aside, because it needs special infrastructure and still has these edge cases."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Write-behind (write-back)"
+    },
+    {
+      "t": "p",
+      "x": "With write-behind, the application writes only to the cache and gets an answer at once. The cache writes to the database later, in the background, usually in batches."
+    },
+    {
+      "t": "fig",
+      "id": "ca-write-behind",
+      "cap": "Write-behind: writes are answered from the cache at once and reach the database later in batches. If the cache dies before a flush, those writes are gone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Writes are very fast, and batching turns many small writes into a few large ones, which databases handle well.",
+        "The risk is loss: if the cache crashes before it flushes, the writes it was holding are gone.",
+        "So it fits work where losing a few seconds of writes is acceptable and eventual consistency is fine: view counts, analytics events, metrics.",
+        "Never for orders or payments: a customer charged for an order the database never saw is a real problem."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Read-through"
+    },
+    {
+      "t": "p",
+      "x": "With read-through, the cache sits in front of the database as a proxy, and the application talks only to the cache. On a miss, the cache itself fetches from the database, stores the answer and returns it."
+    },
+    {
+      "t": "fig",
+      "id": "ca-read-through",
+      "cap": "Read-through: the application only ever asks the cache. On a miss, the cache loads from the database itself; the application's code has no database calls for these reads."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is the read side of write-through: in both, the cache stands between your code and the database. Read-through handles reads, write-through handles writes, and systems that use one often use both.",
+        "It keeps the caching logic in one place, but needs a cache that knows how to load from your database: a specialised library or service.",
+        "A CDN is a read-through cache: on a miss it fetches from your origin, keeps a copy and answers. That is the main place you'll meet it in an interview.",
+        "For application data in Redis, cache-aside is far more common; there are few reasons to propose read-through unless you are talking about a CDN or similar infrastructure."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Caching patterns",
+      "head": [
+        "Pattern",
+        "Who reads or writes the database",
+        "Good at",
+        "Watch out for",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "Cache-aside",
+          "Your code, on a miss and on writes",
+          "Simple; only cached when asked for",
+          "Slow first read; stale until deleted or expired",
+          "Menus, profiles, restaurant cards"
+        ],
+        [
+          "Write-through",
+          "The cache, before acknowledging a write",
+          "Reads always fresh",
+          "Slower writes; caches unread data; dual writes",
+          "Rarely; maybe restaurant open/closed status"
+        ],
+        [
+          "Write-behind",
+          "The cache, later, in batches",
+          "Very fast writes",
+          "Writes lost if the cache crashes",
+          "Dish view counts for analytics"
+        ],
+        [
+          "Read-through",
+          "The cache, on a miss",
+          "Caching logic in one place",
+          "Needs a cache that can load data",
+          "The CDN in front of dish photos"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'cache-aside, delete on write' and you have covered most designs.",
+        "Pick write-through only when reads must be fresh and writes can wait, and mention the dual-write risk.",
+        "Pick write-behind only for data you can afford to lose a little of, and say so.",
+        "Name a CDN as the read-through cache in your design, if there is one."
+      ]
+    }
+  ]
+}
