@@ -97,7 +97,7 @@
         "Pre-signed URLs: the API signs a URL that allows one action (upload or download) on one key for a few minutes. The phone uses it directly; no storage keys ever reach the app.",
         "Choose the key yourself, with a random part: `restaurants/12/menu/9f3c2a.jpg`. Never use the name the user sent; it can be anything.",
         "Check after upload, not before: the worker confirms the type and size, strips location data from photos, and only then marks the photo ready in the database.",
-        "Big files (videos, exports) go up in parts with multipart upload, so a dropped connection resends one part, not the whole file.",
+        "Big files (videos, exports) go up in parts with multipart upload, so a dropped connection resends one part, not the whole file. The Big files concept walks through it.",
         "Downloads of private files work the same way: the API checks who is asking and returns a short-lived signed URL."
       ]
     },

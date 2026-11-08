@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "consistency",
   "group": "data",
-  "no": "CONCEPT // 03",
+  "no": "CONCEPT // 06",
   "tag": "DATA",
   "access": "paid",
   "date": "5 Nov 2026",
@@ -95,7 +95,7 @@
     {
       "t": "list",
       "items": [
-        "Uniqueness: one username, one rider per order, the last unit of stock. Let one copy decide, with a unique index or a conditional write.",
+        "Uniqueness: one username, one rider per order, the last unit of stock. Let one copy decide, with a unique index or a conditional write. The Contention concept has the patterns.",
         "Money: balances and wallet top-ups go through the leader in a transaction. Read them from the leader too when the number matters.",
         "Coordination: locks, leader election and configuration go in a store built for it (etcd, ZooKeeper, or the database's leader), not a cache.",
         "Everything else can be weaker. Ask \"what breaks if this read is two seconds old?\" If the answer is \"nothing much\", it doesn't need strong."

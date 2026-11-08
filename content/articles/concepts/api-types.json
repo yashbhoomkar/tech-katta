@@ -91,7 +91,7 @@
       "ex": "The rider app sends its location every few seconds and receives new delivery jobs on the same connection.",
       "more": [
         "The client opens an ordinary HTTP request and asks to upgrade it; after that the TCP connection stays open. The message format is up to you, so you also design message types, acknowledgements and errors.",
-        "The cost: every connected user holds a connection on a server, so servers carry state. Load balancers must allow long-lived connections, deploys drop them, and clients need reconnect logic."
+        "The cost: every connected user holds a connection on a server, so servers carry state. Load balancers must allow long-lived connections, deploys drop them, and clients need reconnect logic. The concept 'Live updates at scale' covers running them."
       ],
       "like": "A phone call. Once it connects, either side can speak at any moment until someone hangs up."
     },

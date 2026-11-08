@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "distributed-transactions",
   "group": "coordination",
-  "no": "CONCEPT // 07",
+  "no": "CONCEPT // 13",
   "tag": "AGREEING",
   "access": "paid",
   "date": "6 Nov 2026",
@@ -76,7 +76,7 @@
       "items": [
         "Put what's hard to undo last. Hold the money first (an authorisation) and take it (capture) only after the restaurant accepts. Releasing a hold is easier than a refund. With UPI the money usually leaves at once, so the undo there is a refund.",
         "Some steps can't be undone: the food is cooked, the rider has picked it up. After that point, the saga only moves forward, and problems are handled as support cases, not rollbacks.",
-        "One place should own the flow. An order service that tells each step what to do and saves its progress (orchestration) is easier to follow than services reacting to each other's events (choreography), especially where money moves.",
+        "One place should own the flow. An order service that tells each step what to do and saves its progress (orchestration) is easier to follow than services reacting to each other's events (choreography), especially where money moves. The concept 'Processes with many steps' goes further, with state machines and durable workflows.",
         "Save the saga's progress after every step. If the order service restarts, it reads where it was and carries on."
       ]
     },

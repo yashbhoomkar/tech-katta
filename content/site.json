@@ -49,7 +49,7 @@
         "no": "SECTION // 01",
         "kind": "PARADIGMS",
         "title": "Concepts",
-        "desc": "Replication, partitioning, consistency and consensus: what each idea means, and where it stops holding.",
+        "desc": "How systems talk, store, copy and agree, and the patterns that come up in every design: what each idea means, and where it stops holding.",
         "foot": "FOUNDATIONS",
         "link": "Explore Concepts",
         "visual": "cap"

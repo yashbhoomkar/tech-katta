@@ -70,7 +70,7 @@
           "Channel per user",
           "Each server subscribes to a channel for every user connected to it (user:77); senders publish to that channel",
           "Simple code; the broker does the routing",
-          "Millions of channels on one broker; plan how to split them"
+          "Lakhs of channels on one broker; plan how to split them"
         ],
         [
           "Topic per room",
