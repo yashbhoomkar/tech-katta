@@ -1,0 +1,168 @@
+{
+  "section": "networking",
+  "slug": "tcp-or-udp",
+  "group": "foundations",
+  "no": "NETWORK // 03",
+  "tag": "FOUNDATIONS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "TCP or UDP: guaranteed or quick",
+  "dek": "Above IP, a program chooses how its data travels. TCP turns lost, shuffled packets into a reliable, ordered stream, at the cost of waiting. UDP sends each message on its own and promises nothing, so nothing ever waits. Most of Zotato runs on TCP; the rider's voice call is the exception, and the reason is worth knowing.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "TCP: a connection, every byte delivered in order, lost packets resent, and speed adjusted to the receiver and the network. The default for almost everything.",
+        "UDP: separate messages with no connection, no ordering and no resending. Right when late data is worthless (voice, video, games) or when the protocol on top handles loss itself (DNS, QUIC).",
+        "In an interview, TCP is assumed. Arguing well for UDP somewhere it fits, and saying how browsers will connect, earns credit."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "TCP: a reliable stream"
+    },
+    {
+      "t": "p",
+      "x": "TCP gives two programs the illusion of a pipe: whatever one writes, the other reads, complete and in the same order. Underneath, IP may lose, duplicate or reorder packets; TCP numbers every byte, has the receiver acknowledge what it got, and resends anything not acknowledged in time."
+    },
+    {
+      "t": "fig",
+      "id": "nw-tcp",
+      "cap": "TCP's promise of order has a price. Segments 3 and 4 arrived safely but sat in the server's buffer until segment 2 was resent, because the application must never see a gap."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Connection first: the three-way handshake (SYN, SYN-ACK, ACK) sets up state on both ends before any data moves.",
+        "Reliable and ordered: sequence numbers and acknowledgements; missing data is resent and later data waits for it.",
+        "Flow control: the receiver says how much buffer it has left, so a fast sender can't swamp a slow phone.",
+        "Congestion control: the sender starts slowly and backs off when packets are lost, so the network as a whole isn't overloaded.",
+        "A stream, not messages: TCP delivers bytes, not 'requests'. Protocols on top (HTTP, gRPC) mark where one message ends and the next begins."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "At Zotato, every API call, payment, database query and file upload runs on TCP. A missing byte in an order or a payment is never acceptable, and a few extra milliseconds are."
+    },
+    {
+      "t": "h2",
+      "x": "UDP: messages with no promises"
+    },
+    {
+      "t": "p",
+      "x": "UDP adds very little to IP: a source port, a destination port, a length and a checksum, 8 bytes in all. Each message (a datagram) travels on its own. It may arrive, arrive twice, arrive out of order or vanish, and neither side is told. There is no handshake, so the first message is also the first data."
+    },
+    {
+      "t": "fig",
+      "id": "nw-udp",
+      "cap": "For live audio, a frame that arrives late is as useless as one that never arrives. UDP lets the call play on through a lost frame; TCP would hold every later frame until the lost one had been resent."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Voice and video calls: the rider's call to the customer, and any video consultation. Codecs hide a lost 20 ms frame; a frozen call is far worse.",
+        "Games and live positions: each update replaces the last, so an old one is not worth resending.",
+        "Telemetry and metrics: millions of small reports where losing a few is fine and the overhead of connections isn't.",
+        "DNS: one small question, one small answer. If it is lost, the client just asks again after a timeout.",
+        "QUIC and HTTP/3: built on UDP so they can do their own, better loss handling in ordinary application code."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Side by side"
+    },
+    {
+      "t": "table",
+      "label": "TCP compared with UDP",
+      "head": [
+        "Compared",
+        "TCP",
+        "UDP"
+      ],
+      "rows": [
+        [
+          "Setup",
+          "Handshake before data",
+          "None: send at once"
+        ],
+        [
+          "Delivery",
+          "Everything, or the connection fails",
+          "Best effort"
+        ],
+        [
+          "Order",
+          "Kept",
+          "Not kept"
+        ],
+        [
+          "Flow and congestion control",
+          "Built in",
+          "None; the app must behave"
+        ],
+        [
+          "Header",
+          "20–60 bytes",
+          "8 bytes"
+        ],
+        [
+          "Unit",
+          "A stream of bytes",
+          "Separate messages"
+        ],
+        [
+          "In browsers",
+          "Everything (HTTP, WebSocket)",
+          "Only through WebRTC"
+        ],
+        [
+          "Use for",
+          "APIs, payments, files, databases",
+          "Calls, video, games, telemetry, DNS"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "QUIC: TCP's job, rebuilt on UDP"
+    },
+    {
+      "t": "p",
+      "x": "TCP lives in operating systems and is hard to change, and its strict order has a cost: if HTTP/2 sends ten requests over one TCP connection and one packet is lost, all ten wait (head-of-line blocking). QUIC moves the transport into the application, on top of UDP. It keeps reliability and congestion control, but each stream is ordered separately, so one lost packet only delays its own stream. It also combines the transport and TLS handshakes into one round trip, and a connection survives the phone switching from Wi-Fi to 4G."
+    },
+    {
+      "t": "p",
+      "x": "HTTP/3 is HTTP over QUIC, and most large sites and CDNs serve it already. In an interview it is a good detail to mention when talking about mobile performance, but rarely worth more than a sentence."
+    },
+    {
+      "t": "h2",
+      "x": "Choosing in a design"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say nothing and use TCP for APIs, payments, uploads and anything that touches data. Interviewers assume it.",
+        "Choose UDP when freshness beats completeness (live audio, video, positions in a game), and say what happens on loss: the codec hides it, or the next update replaces it.",
+        "Remember browsers can't open raw UDP sockets. A web client gets UDP only through WebRTC, so plan a path for it: Zotato's web dashboard could get rider positions over a WebSocket while the apps use UDP.",
+        "Mixing is normal: a video call uses HTTPS for login and call setup and UDP for the media."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: what a UDP application has to do itself",
+      "body": [
+        {
+          "t": "p",
+          "x": "Because UDP promises nothing, applications on it rebuild only the parts they need. Voice apps number their packets so the receiver can reorder a few and notice gaps, and they keep a small jitter buffer of 30 to 60 ms so slightly late packets still play in time. They watch loss and switch to a lower bitrate when the network struggles, which is their own congestion control."
+        },
+        {
+          "t": "p",
+          "x": "A UDP sender that ignores congestion can flood a network and starve every TCP connection sharing it, so well-behaved protocols on UDP, QUIC among them, implement congestion control as carefully as TCP does."
+        }
+      ]
+    }
+  ]
+}

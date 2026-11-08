@@ -402,7 +402,7 @@ test('the figure ids the content may use are exactly the ones the frontend draws
   const { readFile } = await import('node:fs/promises');
   const src = (f) => readFile(new URL(`../../frontend/src/${f}`, import.meta.url), 'utf8');
   const dash = (await src('dashboard.jsx')).match(/const FIGS=\{(.*)\};/)[1], comp = (await src('figs/components.jsx')).match(/COMPONENT_FIGS=\{([\s\S]*?)\n\};/)[1];
-  const conc = (await src('figs/concepts.jsx')).match(/CONCEPT_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/questions.jsx')).match(/QUESTION_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/papers.jsx')).match(/PAPER_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/tools.jsx')).match(/TOOL_FIGS=\{([\s\S]*?)\n\};/)[1];
+  const conc = (await src('figs/concepts.jsx')).match(/CONCEPT_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/questions.jsx')).match(/QUESTION_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/papers.jsx')).match(/PAPER_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/network.jsx')).match(/NETWORK_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/tools.jsx')).match(/TOOL_FIGS=\{([\s\S]*?)\n\};/)[1];
   const ids = [...dash.matchAll(/(?:^|\},)"?([a-z-]+)"?:\{C:/g), ...comp.matchAll(/^"([a-z-]+)":\{C:/gm), ...conc.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]);
   assert.deepEqual(ids.sort(), [...FIGS].sort());
 });

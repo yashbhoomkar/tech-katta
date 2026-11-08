@@ -34,6 +34,12 @@ animated figures: the paper (title, author, venue, year), the problem it solved,
 promises, where you see it today and how to use it in an interview. Write it in our own words and figures; never
 copy the paper's text or diagrams.
 
+Networking (`networking/`, owner 11-08) is its own tab: how machines reach each other, from layers and
+addresses to load balancers, live updates, distance and failing calls, in four groups. Figures are
+`NETWORK_FIGS` in `frontend/src/figs/network.jsx`; the section header is site.json `networking`. Written in
+our own words and figures, through Zotato; another site's page on the topic is reference only, never copied
+or named.
+
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
 topics people search for, each leading into paid material. Everything else is paid, and an article with

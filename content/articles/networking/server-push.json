@@ -1,0 +1,166 @@
+{
+  "section": "networking",
+  "slug": "server-push",
+  "group": "protocols",
+  "no": "NETWORK // 06",
+  "tag": "PROTOCOLS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Pushing updates: server-sent events and WebSockets",
+  "dek": "HTTP is the client asking and the server answering. But a customer tracking order 9101 wants to hear 'picked up' the moment it happens, and the rider wants the customer's message without refreshing. Two standard tools let the server speak first: server-sent events for one-way news, and WebSockets for conversations.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Server-sent events (SSE): one HTTP response kept open, carrying many small events from server to client. Simple, works through most infrastructure, reconnects by itself with the last event id.",
+        "WebSockets: an HTTP connection upgraded into a two-way channel where either side sends messages at any time. Right for chat, games and anything interactive.",
+        "Both keep a connection open per user. That costs servers and load balancer capacity, ties a user to one server, and must be justified: plain requests or polling are often enough."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem"
+    },
+    {
+      "t": "p",
+      "x": "Order tracking at Zotato changes about five times in 35 minutes: accepted, cooking, ready, picked up, arriving. If the app asked every two seconds it would send about a thousand requests to learn five things, and still be up to two seconds late. What it needs is for the server to send each change as it happens. The concept 'Live updates' compares polling, long polling, SSE and WebSockets; here we look at how the two push methods work on the wire."
+    },
+    {
+      "t": "h2",
+      "x": "Server-sent events"
+    },
+    {
+      "t": "p",
+      "x": "SSE is plain HTTP. The client makes one request and says it accepts `text/event-stream`. The server answers with headers and then doesn't finish the response: it writes a small block of text for each event, whenever it likes, and the client handles each block as soon as it arrives."
+    },
+    {
+      "t": "code",
+      "label": "An event stream",
+      "x": "HTTP/1.1 200 OK\nContent-Type: text/event-stream\n\nid: 1\ndata: {\"status\":\"accepted\"}\n\nid: 2\ndata: {\"status\":\"cooking\"}\n\nid: 3\ndata: {\"status\":\"picked_up\",\"rider\":\"Ravi\"}\n",
+      "say": "An event-stream response: the status line and content type, then three events, each with an id and a line of JSON data, separated by blank lines."
+    },
+    {
+      "t": "fig",
+      "id": "nw-sse",
+      "cap": "One response carries every update. When a proxy cuts the long connection, the browser reconnects by itself and sends the last id it saw, so the server can send only what was missed."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Browsers have a built-in client, EventSource, that reconnects automatically and sends `Last-Event-ID`. The server has to keep recent events (in Redis, say) so it can replay from that id.",
+        "It is one-way. The client still sends its own actions as normal requests (POST a cancellation), which is fine for most features.",
+        "Proxies and load balancers may close a response that has been open a long time or idle a while. Send a comment line every 15 to 30 seconds as a heartbeat, and expect reconnects.",
+        "Some corporate proxies buffer responses and deliver events in batches, which defeats the point. It's rare, but it's why some apps fall back to long polling.",
+        "Over HTTP/1.1, browsers allow about six connections per site, and each open stream uses one. Over HTTP/2 the streams share one connection, so this limit goes away."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Use SSE for notifications and live status: order tracking, a live leaderboard, prices that change during an auction, progress of a long job."
+    },
+    {
+      "t": "h2",
+      "x": "WebSockets"
+    },
+    {
+      "t": "p",
+      "x": "Chat between a customer and a rider goes both ways, often, and quickly. A WebSocket starts life as an HTTP request that asks to switch protocols. If the server agrees (101 Switching Protocols), the same TCP connection becomes a channel of messages in both directions, with no requests or responses any more."
+    },
+    {
+      "t": "fig",
+      "id": "nw-ws",
+      "cap": "After the upgrade there are no requests: either side sends a message whenever it has one. The connection stays open for the whole delivery."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The handshake is HTTP, so cookies and auth headers are checked once at the start.",
+        "Messages can be text or binary. WebSocket defines no format; most apps send JSON with a type field, and those message types are your API: `{type: 'msg'}`, `{type: 'typing'}`, `{type: 'read'}`.",
+        "Every proxy, firewall and load balancer on the path must allow the upgrade and keep the connection open. Many have idle timeouts (60 seconds is a common default), so both sides send pings.",
+        "A layer 4 load balancer suits WebSockets well: it passes the whole connection to one server and leaves it there.",
+        "Scaling needs a plan: the connections live on dedicated connection servers, and a message for a user must reach whichever server holds that user's socket, usually through a pub/sub system such as Redis."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "Pushing updates to clients",
+      "head": [
+        "Compared",
+        "Plain requests / polling",
+        "Server-sent events",
+        "WebSockets"
+      ],
+      "rows": [
+        [
+          "Direction",
+          "Client asks",
+          "Server to client",
+          "Both ways"
+        ],
+        [
+          "Built on",
+          "HTTP",
+          "HTTP (one long response)",
+          "HTTP upgrade, then its own frames"
+        ],
+        [
+          "Reconnect",
+          "Not needed",
+          "Built in, resumes by id",
+          "Your code"
+        ],
+        [
+          "Infrastructure",
+          "Works everywhere",
+          "Works almost everywhere",
+          "Every hop must support it"
+        ],
+        [
+          "Cost per user",
+          "Wasted requests",
+          "One open connection",
+          "One open connection"
+        ],
+        [
+          "Zotato uses it for",
+          "Restaurant list, menus",
+          "Order tracking",
+          "Customer–rider chat"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pick by direction and frequency, and say why: 'tracking only needs server-to-client, so SSE; chat needs both ways, so a WebSocket'.",
+        "Don't reach for WebSockets by reflex. Interviewers often push back if a feature would work with requests, because long-lived connections are expensive to run and complicate deploys.",
+        "If you do use them, say where the connections live, how a message reaches the right connection server, and what happens when that server restarts (clients reconnect elsewhere and catch up)."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: deploying servers that hold connections",
+      "body": [
+        {
+          "t": "p",
+          "x": "A server holding 50,000 WebSockets can't simply be restarted: every client drops at once and reconnects at once, often to the same few servers. Deploys drain gradually instead: the server stops accepting new connections, tells existing clients to reconnect elsewhere over a few minutes, then exits."
+        },
+        {
+          "t": "p",
+          "x": "Clients should reconnect with backoff and jitter (see 'When calls fail' in this tab) and resume from the last message they saw, so a restart costs a few seconds of delay instead of a flood of reconnections and lost messages."
+        }
+      ]
+    }
+  ]
+}

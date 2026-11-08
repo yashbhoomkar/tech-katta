@@ -1,0 +1,109 @@
+{
+  "section": "networking",
+  "slug": "peer-to-peer",
+  "group": "protocols",
+  "no": "NETWORK // 07",
+  "tag": "PROTOCOLS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Phone to phone: WebRTC and getting past NAT",
+  "dek": "When a rider calls a customer through the Zotato app, the audio shouldn't travel to Mumbai and back: it should go straight between the two phones. WebRTC makes that possible, in browsers and apps alike. The hard part isn't sending audio; it's finding a path between two devices that are both hidden behind routers.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "WebRTC carries audio, video and data directly between two devices, over UDP, encrypted. It is the only browser technology that gives you UDP.",
+        "Most devices sit behind NAT and can't accept incoming connections, so setting up a call needs help: a signalling server to introduce the peers, STUN to discover public addresses, and TURN to relay when no direct path works.",
+        "Use it for calls and video. For collaborative documents and chat, a server in the middle (WebSockets) is usually simpler and you need one anyway to store the data."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why direct is hard"
+    },
+    {
+      "t": "p",
+      "x": "A server has a public address and listens for connections. A phone has neither: it has a private address behind its home router or its mobile network's NAT, and those only let replies in to connections the phone opened itself. Two phones that want to talk are each waiting for the other to call first, and neither can be reached."
+    },
+    {
+      "t": "h2",
+      "x": "The four pieces"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Signalling server: Zotato's own server (often a WebSocket service) that knows the rider and customer are on the same order and passes messages between them while the call is set up. WebRTC doesn't define it; you build it.",
+        "STUN server: a simple public server that tells a device what its address and port look like from the internet, after NAT. The device opens a hole by sending this request, and that public address and port are what the other phone will aim at.",
+        "Exchange: each phone sends the other, through signalling, its possible addresses (called candidates) and its audio settings (codecs, in a format called SDP), as an offer and an answer.",
+        "TURN server: a relay with a public address. When the phones can't reach each other directly, typically because a strict firewall or NAT blocks it, both send their media to TURN, which forwards it. It always works, but it costs bandwidth on your servers."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nw-webrtc",
+      "cap": "Setting up a call: introduce the phones, let each learn its public address, swap addresses, then connect directly. TURN is the fallback that makes the call work when a direct path can't be opened."
+    },
+    {
+      "t": "h2",
+      "x": "Once connected"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Media travels over UDP, encrypted end to end (DTLS and SRTP). A lost packet is concealed by the codec, not resent.",
+        "Bitrate adapts: when packets start to go missing, the sender lowers quality instead of letting the call freeze.",
+        "Data channels can carry arbitrary messages between the peers, reliable or not, which is how some games and file-sharing tools use WebRTC.",
+        "The call keeps checking its path; if a phone switches from Wi-Fi to 4G, the peers try again and may move to TURN."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Group calls"
+    },
+    {
+      "t": "p",
+      "x": "Direct connections work for two people. For five people, each would send its video four times, which a phone can't sustain. Group calls therefore use a server in the middle, a selective forwarding unit (SFU): each participant sends one stream up to it, and it forwards the right streams to everyone else. It is still WebRTC between each phone and the SFU, but no longer peer to peer."
+    },
+    {
+      "t": "h2",
+      "x": "When to use it, and when not"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use it for audio and video between people: rider–customer calls, support video calls, consultations. Nothing else in a browser gets you low-latency media.",
+        "Collaborative editing (a shared document or a group cart) can run over WebRTC data channels, but you still need a server to store the document, check permissions and handle people who join later. A WebSocket to that server is usually simpler, and it's what most editors do.",
+        "Plan for failure: even good WebRTC setups lose calls on bad networks. Have the app retry, and fall back to a normal phone call through a masked number if needed."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep WebRTC for real-time audio and video. Designing a peer-to-peer system where a server would do is a common way to lose the thread of an interview.",
+        "If you use it, name the pieces in one breath: signalling over WebSocket, STUN for addresses, TURN as the relay, media over UDP, an SFU for groups.",
+        "Remember the server costs that remain: signalling, TURN bandwidth for calls that need it, and SFUs for group calls."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how a hole gets punched",
+      "body": [
+        {
+          "t": "p",
+          "x": "When a phone sends a packet out through NAT, the router creates a mapping: replies from that destination to that public port come back to the phone. Hole punching uses this. Both phones learn their public mappings from STUN, swap them through signalling, and then send packets to each other at about the same time. Each phone's outgoing packet opens its own NAT for replies from the other, so the next packets get through in both directions."
+        },
+        {
+          "t": "p",
+          "x": "It fails when a NAT gives a different public port for every destination (a symmetric NAT, common on some mobile networks and corporate firewalls): the port STUN saw is not the port the other phone would need. That is when TURN carries the call."
+        }
+      ]
+    }
+  ]
+}

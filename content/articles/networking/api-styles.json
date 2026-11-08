@@ -1,0 +1,196 @@
+{
+  "section": "networking",
+  "slug": "api-styles",
+  "group": "protocols",
+  "no": "NETWORK // 05",
+  "tag": "PROTOCOLS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "REST, GraphQL and gRPC: three ways to shape an API",
+  "dek": "Once you know services will talk over HTTP, the next choice is the shape of the conversation. REST models everything as resources, GraphQL lets the caller ask for exactly the fields it wants, and gRPC calls functions on another service with compact binary messages. Each fits a different caller, and Zotato uses more than one.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "REST: resources at URLs, acted on with HTTP methods, usually with JSON. The default in interviews and for public APIs.",
+        "GraphQL: one endpoint where the client names the fields it needs. It solves too many calls (under-fetching) and too much data (over-fetching) for screens built by separate teams.",
+        "gRPC: typed function calls between services, protobuf over HTTP/2. Smaller and faster than JSON, with generated code, but not for browsers. Common pattern: REST outside, gRPC inside."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "REST: resources and verbs"
+    },
+    {
+      "t": "p",
+      "x": "A REST API exposes things, not actions. Each thing (a restaurant, an order, a user's address) has a URL, and the HTTP method says what to do with it. Most of the work is choosing the resources well, and they usually match the core entities of the design."
+    },
+    {
+      "t": "code",
+      "label": "REST endpoints",
+      "x": "GET    /restaurants/42                 -> Restaurant\nGET    /restaurants/42/menu            -> Menu\nPOST   /orders            {items, address}   -> 201, Order\nGET    /orders/9101                    -> Order\nPATCH  /orders/9101       {status: \"cancelled\"}\nGET    /users/77/orders?cursor=abc     -> a page of Orders",
+      "say": "Six example endpoints: get a restaurant, get its menu, create an order with POST, read an order, cancel it with PATCH, and list a user's orders a page at a time."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Nouns in paths, verbs in methods. `POST /cancelOrder` is not RESTful; `PATCH /orders/9101` with a new status is. If an action really isn't a change to a resource, model it as one: `POST /orders/9101/refunds` creates a refund.",
+        "Nest to show belonging: `/restaurants/42/menu`, `/users/77/orders`. Keep it to one or two levels.",
+        "The server assigns ids on create, so `POST /orders` has no id in the path and returns it.",
+        "Paginate lists with a cursor, not page numbers, so new rows don't shift the pages."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "REST is easy to read, cache (GET responses work with CDNs and browser caches) and call from anything. Its costs are JSON's size and parsing time, and the fact that the server, not the caller, decides what each response contains. For almost every interview, REST is the right default; change only when a requirement pushes you."
+    },
+    {
+      "t": "h2",
+      "x": "GraphQL: the caller chooses the fields"
+    },
+    {
+      "t": "p",
+      "x": "Zotato's home screen is built by the app team; the restaurant, offer and rating data belong to three backend teams. With REST, the app team has three bad options: make many calls, ask for a big custom endpoint for every screen, or take whatever the existing endpoints return."
+    },
+    {
+      "t": "fig",
+      "id": "nw-underfetch",
+      "cap": "Under-fetching: the endpoints each return a little, so one screen needs dozens of calls, and on a phone the round trips dominate."
+    },
+    {
+      "t": "fig",
+      "id": "nw-overfetch",
+      "cap": "Over-fetching: the endpoint returns everything about a restaurant, so a screen that needs four fields downloads forty."
+    },
+    {
+      "t": "code",
+      "label": "A GraphQL query",
+      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n}",
+      "say": "A GraphQL query for the home screen: restaurants near a city, the first twenty, with only their name, rating, delivery time, photo and offer titles."
+    },
+    {
+      "t": "p",
+      "x": "A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for: apps with many screens and several client teams, mobile apps on slow networks, and products whose screens change every week.",
+        "Costs: the server must protect itself from expensive queries (depth and cost limits), resolvers can make one database call per item unless batched, and HTTP caching is harder because every query is a POST to the same URL.",
+        "In an interview, requirements are fixed and the interviewer wants to see you design efficient queries, which GraphQL hides behind resolvers. Mention it when the problem stresses many clients or fast-changing screens; otherwise stay with REST."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "gRPC: function calls between services"
+    },
+    {
+      "t": "p",
+      "x": "Inside Zotato, the Orders service calls Payments, Dispatch and Menu thousands of times a second. Those calls don't need to be readable by humans or browsers; they need to be fast, small and checked. gRPC describes each service and its messages in a .proto file, generates client and server code in each language, and sends binary protobuf messages over HTTP/2."
+    },
+    {
+      "t": "code",
+      "label": "orders.proto",
+      "x": "message Order {\n  string id = 1;\n  int64 amount_paise = 2;\n  string city = 3;\n}\nservice Orders {\n  rpc GetOrder(GetOrderRequest) returns (Order);\n  rpc WatchOrder(GetOrderRequest) returns (stream OrderEvent);\n}",
+      "say": "A protobuf message for an order with an id, an amount in paise and a city, each field numbered; and an Orders service with a GetOrder call and a WatchOrder call that streams events."
+    },
+    {
+      "t": "p",
+      "x": "The field numbers, not names, go on the wire, and numbers are packed tightly. The order above is 49 bytes as JSON and 18 as protobuf, and decoding it is a few memory copies rather than parsing text. gRPC adds deadlines that pass from service to service, streaming in either or both directions, and client-side load balancing."
+    },
+    {
+      "t": "fig",
+      "id": "nw-grpc",
+      "cap": "The common split: REST and JSON at the edge, where callers are browsers and apps you don't control, and gRPC between your own services, where both ends share the schema."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use it for internal, high-volume service-to-service calls, and where many languages must agree on one contract.",
+        "Not for public APIs or browsers: browsers can't speak gRPC directly (gRPC-Web needs a proxy), and outside developers expect REST and JSON.",
+        "Don't lead with it. Unless the interviewer pushes on internal latency or throughput, REST between services is a fine answer; the bigger wins are usually elsewhere (caching, fewer calls, better data layout)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "REST, GraphQL and gRPC",
+      "head": [
+        "Compared",
+        "REST",
+        "GraphQL",
+        "gRPC"
+      ],
+      "rows": [
+        [
+          "Shape",
+          "Resources and methods",
+          "One query endpoint, typed schema",
+          "Typed functions"
+        ],
+        [
+          "Format",
+          "JSON, usually",
+          "JSON",
+          "Protobuf (binary)"
+        ],
+        [
+          "Best caller",
+          "Anyone, especially the public",
+          "Apps with many screens and teams",
+          "Your own services"
+        ],
+        [
+          "Caching",
+          "Easy with HTTP caches",
+          "Hard; needs its own",
+          "In your code"
+        ],
+        [
+          "Browsers",
+          "Yes",
+          "Yes",
+          "Only through a proxy"
+        ],
+        [
+          "Zotato uses it for",
+          "Public and partner APIs",
+          "Could serve the app's screens",
+          "Orders to Payments, Dispatch"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Default to REST and spend the time on the resources: the entities, the endpoints, the status codes, pagination.",
+        "Bring in GraphQL only when the question is about flexible clients, and gRPC only for internal calls where speed matters. Say why in one sentence.",
+        "Whatever you pick, the latency you save by changing format is usually smaller than what you save by making fewer calls."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why gRPC needs HTTP/2",
+      "body": [
+        {
+          "t": "p",
+          "x": "gRPC sends many calls at once over one long-lived connection, each as its own HTTP/2 stream, and uses HTTP/2's ability to send trailers (headers after the body) for the call's status. Streaming calls are just streams that stay open while both sides send messages."
+        },
+        {
+          "t": "p",
+          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in this tab)."
+        }
+      ]
+    }
+  ]
+}

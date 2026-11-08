@@ -1,0 +1,186 @@
+{
+  "section": "networking",
+  "slug": "spreading-load",
+  "group": "balancing",
+  "no": "NETWORK // 08",
+  "tag": "LOAD BALANCING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Spreading load: from the caller, through DNS, or through a load balancer",
+  "dek": "One server eventually isn't enough, and the cheap fix of a bigger server runs out too. Once there are many servers, every request has to be sent to one of them. The caller can choose itself from a list, DNS can hand different callers different addresses, or a load balancer in the middle can decide. Each fits a different kind of caller.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Scale up (a bigger machine) as far as it sensibly goes; scale out (more machines) for more capacity and for surviving failures. Scaling out needs something to choose a server for each request.",
+        "Client-side balancing: the caller gets the list of servers and picks one itself. No extra hop, but every caller must learn about changes. Good for your own services (gRPC, Redis Cluster) and, slowly, for DNS.",
+        "A dedicated load balancer: clients know one address and the balancer chooses. One more hop, but changes take effect at once and clients know nothing. The usual answer for traffic from apps and browsers."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Up or out"
+    },
+    {
+      "t": "fig",
+      "id": "nw-scale",
+      "cap": "A bigger machine is the simplest way to grow, and today's largest servers are very large. Spreading the work over several machines is what removes the ceiling and the single point of failure, and it creates the routing question."
+    },
+    {
+      "t": "p",
+      "x": "Scaling up deserves more respect than it gets in interviews. A single large server with 96 cores and hundreds of gigabytes of memory handles far more than most products ever need, with no network hops between its parts. But it is still one machine: when it fails or is patched, everything stops, and eventually there is no larger size to buy. Interview designs scale out by default for that reason, and it is worth saying that you would also make each machine reasonably large."
+    },
+    {
+      "t": "p",
+      "x": "With several servers able to answer, two questions follow: which server does each request go to, and how does anyone learn when servers are added, removed or fail?"
+    },
+    {
+      "t": "h2",
+      "x": "Option 1: the caller chooses"
+    },
+    {
+      "t": "p",
+      "x": "In client-side load balancing, each caller keeps a list of servers and picks one for every request, connecting to it directly. The list comes from a service registry (Consul, etcd, Kubernetes, or the cluster itself), which servers join when they start and leave when they stop, or stop sending heartbeats."
+    },
+    {
+      "t": "fig",
+      "id": "nw-client-lb",
+      "cap": "No box sits in the middle, so there is no extra hop and nothing extra to scale or fail. The price is that every caller must hear about changes, and calls go to a dead server until it does."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Redis Cluster works this way: the nodes share the cluster's layout among themselves, a client asks any node for it, then hashes each key to find the node that owns it and goes there directly. If it is wrong, the node answers MOVED and the client updates its map.",
+        "gRPC does it for internal calls: the client resolves the service to a list of addresses and spreads calls over them itself.",
+        "It works when the callers are few and yours (other services you deploy), so pushing them updates is easy and fast."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Option 2: DNS hands out the addresses"
+    },
+    {
+      "t": "p",
+      "x": "DNS is client-side balancing for the whole internet. api.zotato.in can resolve to several addresses, and the DNS server can return them in a different order for each lookup, or a different set by region. Each client takes the first and so traffic spreads."
+    },
+    {
+      "t": "fig",
+      "id": "nw-dns-lb",
+      "cap": "DNS spreads users across load balancers in different places, and lets a client move on when one fails. Its weakness is speed: answers are cached for their TTL, so a change takes at least that long to reach everyone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is how Zotato avoids a single load balancer being a single point of failure: two load balancers in different zones or regions, both in DNS.",
+        "It is slow to change. Resolvers and phones cache answers for the record's TTL (60 seconds here), and some cache longer than they should. Removing a failed address takes effect gradually, never instantly.",
+        "So DNS is good at spreading many users roughly, and at moving traffic between regions over minutes. It is not how you take a crashed server out of rotation in seconds."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Option 3: a load balancer in the middle"
+    },
+    {
+      "t": "p",
+      "x": "When callers are apps and browsers you don't control, or when changes must take effect immediately, put a load balancer between them and the servers. Clients know one name; the load balancer knows the servers, checks their health and decides where each request or connection goes."
+    },
+    {
+      "t": "fig",
+      "id": "nw-dedicated",
+      "cap": "Clients see one address. The load balancer stops sending traffic to a server that fails its health checks and starts using a new one as soon as it passes, without any client being told."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Health checks: every few seconds the balancer opens a TCP connection to each server (cheap), or requests a health URL and expects a 200 (closer to 'is it really working'). After a couple of failures a server is taken out; after a couple of successes it is put back.",
+        "It costs one more network hop (well under a millisecond inside a region) and is itself something that must not fail: managed load balancers run as many machines behind one address, and DNS can point at two of them.",
+        "It can work on connections (layer 4) or on requests (layer 7); the next article covers the difference."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Which algorithm"
+    },
+    {
+      "t": "table",
+      "label": "Load balancing algorithms",
+      "head": [
+        "Algorithm",
+        "How it picks",
+        "Use when"
+      ],
+      "rows": [
+        [
+          "Round robin",
+          "Each server in turn",
+          "Stateless HTTP servers of the same size: the default"
+        ],
+        [
+          "Random",
+          "Any server, at random",
+          "Same as round robin; works without shared state"
+        ],
+        [
+          "Weighted",
+          "In proportion to each server's weight",
+          "Servers of different sizes, or sending 5% to a new version"
+        ],
+        [
+          "Least connections",
+          "The server with fewest open connections",
+          "Long-lived connections: WebSockets, SSE, gRPC streams"
+        ],
+        [
+          "Least response time",
+          "The fastest recent responder",
+          "Servers that slow down unevenly"
+        ],
+        [
+          "Hash of client or key",
+          "The same client always to the same server",
+          "A server keeps something per user; consistent hashing limits reshuffling"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Round robin is fine for stateless request traffic and needs no configuration when servers come and go. For long-lived connections it can leave one server with far more than its share (a server that restarts gets none, then all the new ones), so least connections is the better choice there."
+    },
+    {
+      "t": "lab",
+      "x": "Too much for one server: add servers behind a load balancer and watch the queue drain.",
+      "to": "lab/one-server",
+      "go": "Try it in the Lab"
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Draw a load balancer in front of any group of identical servers that face users, and say it checks their health.",
+        "For calls between your own services, say client-side balancing is an option (and built into gRPC); a load balancer there is also fine.",
+        "Don't forget the balancer can fail: say it is a managed, redundant service, or that there are two behind DNS.",
+        "Pick round robin for stateless HTTP and least connections for WebSockets, and say why."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how fast can one load balancer go?",
+      "body": [
+        {
+          "t": "p",
+          "x": "Software load balancers (NGINX, HAProxy, Envoy) on one large machine handle hundreds of thousands of HTTP requests a second; at layer 4, in the kernel or with special packet processing, millions of packets a second. Cloud load balancers are many such machines behind one address and scale out by themselves, though a sudden jump can take minutes to absorb, which is why providers let you 'pre-warm' them before a planned spike."
+        },
+        {
+          "t": "p",
+          "x": "Dedicated hardware appliances go further still. Interviews rarely ask how to scale the load balancer itself; if they do, the answer is several of them, spread by DNS or by routing (anycast, where many machines share one address), with hardware for the extreme cases."
+        }
+      ]
+    }
+  ]
+}

@@ -235,6 +235,11 @@
         "components"
       ],
       [
+        "networking",
+        "Networking",
+        null
+      ],
+      [
         "interview-questions",
         "Interview Questions",
         "problems"
@@ -353,6 +358,28 @@
           "Worth reading",
           "Shorter or more surprising papers with ideas you will meet again."
         ]
+      ],
+      "networking": [
+        [
+          "foundations",
+          "How data moves",
+          "Layers, addresses, one request from start to finish, and TCP or UDP."
+        ],
+        [
+          "protocols",
+          "Talking to servers",
+          "HTTP, the three API styles, pushing updates to apps, and calls between phones."
+        ],
+        [
+          "balancing",
+          "Spreading traffic",
+          "Sending each request to one of many servers: from the caller, through DNS, or through a load balancer."
+        ],
+        [
+          "practice",
+          "Distance and failure",
+          "What the speed of light costs, and how to survive calls that fail."
+        ]
       ]
     },
     "groupEmpty": "Coming soon."
@@ -372,6 +399,10 @@
     "eyebrow": "RESEARCH PAPERS",
     "desc": "The papers behind the systems you design, explained in plain words with moving diagrams: the problem each one solved, its idea, how it works, where you see it today and how to use it in an interview."
   },
+  "networking": {
+    "eyebrow": "NETWORKING",
+    "desc": "How machines reach each other, from the layers under every request to load balancers, live updates and failing calls: what each piece does, what it costs in round trips, and when to choose it in an interview."
+  },
   "tour": {
     "button": "Tour",
     "next": "Next",
@@ -383,7 +414,7 @@
       {
         "target": ".tabs",
         "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Research Papers explains the classic papers simply."
+        "text": "Concepts, Components, Networking and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Research Papers explains the classic papers simply."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
