@@ -39,6 +39,10 @@ reach each other, from layers and addresses to load balancers, live updates, dis
 Figures are `NETWORK_FIGS` in `frontend/src/figs/network.jsx`. Written through Zotato with our own figures; another
 site's page on the topic was the reference for what to cover, point by point. Don't name that site on ours.
 
+API design (CONCEPT // 37-43, `API_FIGS` in `apidesign.jsx`) and Data modelling (CONCEPT // 44-48, `DM_FIGS` in
+`datamodel.jsx`) are groups built the same way: Concepts groups, our own words and figures, checked paragraph by
+paragraph against the reference for coverage.
+
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
 topics people search for, each leading into paid material. Everything else is paid, and an article with
