@@ -13,7 +13,7 @@
       "destination": "/dashboard/index.html"
     },
     {
-      "source": "/dashboard/:path+",
+      "source": "/dashboard/(.*)",
       "destination": "/dashboard/index.html"
     },
     {
