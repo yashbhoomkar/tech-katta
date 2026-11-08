@@ -1,0 +1,155 @@
+{
+  "section": "concepts",
+  "slug": "cache-problems",
+  "group": "caching",
+  "no": "CONCEPT // 53",
+  "tag": "CACHING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "When caching goes wrong: stampedes, stale reads, hot keys and a cache that goes down",
+  "dek": "A cache makes a system faster and also gives it new ways to fail. Interviewers often move from 'you added a cache' to 'what happens when…', to see whether you understand the cost as well as the gain. Four problems come up again and again: many requests rebuilding the same entry at once, the cache disagreeing with the database, one key too popular for one cache node, and the cache itself going away.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Stampede: a popular entry expires and thousands of requests hit the database together. Let one request rebuild it while the others wait (request coalescing), or refresh it before it expires.",
+        "Stale reads: the database changed but the cache still holds the old value. Delete the entry on write, keep TTLs short where staleness hurts, and accept a short delay where it doesn't.",
+        "Hot keys: one key gets so many reads that its cache node can't keep up. Copy it to several nodes or into each server's memory. And plan for the cache going down: the database must not be crushed."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Stampedes (thundering herd)"
+    },
+    {
+      "t": "p",
+      "x": "A stampede happens when a popular entry expires, or is deleted, and many requests notice the miss at the same moment. For a brief window, even a second, every one of them goes to the database to rebuild the same entry. Instead of one query, the database gets hundreds or thousands at once."
+    },
+    {
+      "t": "fig",
+      "id": "ca-stampede",
+      "cap": "The 'popular near you' list expires at 20:01:00. Without coalescing, every request in that second queries the database. With it, one request rebuilds the list and the rest wait a few milliseconds for its answer."
+    },
+    {
+      "t": "p",
+      "x": "For example, Zotato caches the 'popular near you' list for each area with a 60-second TTL. At 20:01:00, at the dinner peak, the list for a busy area expires; every request in that instant misses and runs the same 200 ms query. If enough arrive, the database slows, more requests pile up behind it, and the slowdown spreads to everything else that database serves."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Request coalescing (single flight): the first request that misses takes a short lock (in Redis, SET with NX and a few seconds' expiry) and rebuilds the entry; the others wait briefly and then read what it stored, or are served the old value meanwhile. This is the most effective fix.",
+        "Refresh early: rebuild popular keys before they expire, either on a schedule (cache warming) or by letting a request that arrives close to expiry refresh the entry with a small probability (probabilistic early expiration), so the rebuild is spread out instead of happening at one instant.",
+        "Warming only helps with TTL-based expiry. If entries are deleted when the data changes, the delete itself can start a stampede, and coalescing is still needed.",
+        "Random jitter on TTLs (600 ± 60 seconds) stops many keys written together from expiring together."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: probabilistic early expiration",
+      "body": [
+        {
+          "t": "p",
+          "x": "Each read of a cached entry checks how close it is to expiring. The closer it is, the higher the chance that this read refreshes the entry in the background while still returning the cached value. With thousands of reads a second, one of them almost always refreshes the entry a little before it expires, and no read ever sees a miss. Rarely read keys are never refreshed early, which is fine because they can't cause a stampede."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Stale reads (cache consistency)"
+    },
+    {
+      "t": "p",
+      "x": "The cache and the database can disagree. Most systems write to the database and read from the cache, so after any write there is a window when the cache still holds the old value. This is one of the most discussed caching problems in interviews."
+    },
+    {
+      "t": "p",
+      "x": "For example, a restaurant changes its biryani price from ₹240 to ₹260. The database has ₹260, but menu:42 in Redis still says ₹240, and every customer who opens the menu sees the old price until that entry is deleted or expires."
+    },
+    {
+      "t": "fig",
+      "id": "ca-stale",
+      "cap": "A price change reaches the database first. Until the cached menu is deleted or expires, readers see the old price; deleting the entry on write closes that window to milliseconds."
+    },
+    {
+      "t": "p",
+      "x": "There is no perfect fix; choose by how fresh each kind of data must be:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Delete on write: after updating the database, delete the cached entry, so the next read repopulates it with fresh data. Delete rather than update: two writers updating the cache in the wrong order can leave an old value there, while a delete can only cause one extra miss.",
+        "Short TTLs where some staleness is acceptable: an entry that lives 30 seconds is never more than 30 seconds out of date, even if a delete is missed.",
+        "Accept eventual consistency where a delay doesn't matter: feeds, view counts, ratings, analytics.",
+        "And read from the database for the few things that must be exact: the price charged at checkout is read from the database, not the cached menu."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Hot keys"
+    },
+    {
+      "t": "p",
+      "x": "A hot key is one cache entry that gets far more traffic than the rest. Even with a high hit rate, one key can overload the single cache node or Redis shard that holds it, because every read of it goes to that one machine."
+    },
+    {
+      "t": "p",
+      "x": "For example, during a cricket final Zotato's home banner, the key promo:final-night, is read by every user who opens the app: lakhs of reads a second, all on one Redis node. Everything is working as designed, and that node is still the bottleneck."
+    },
+    {
+      "t": "fig",
+      "id": "ca-hot-key",
+      "cap": "One key, lakhs of reads a second, all on one Redis node. Copying it to replicas spreads the reads, and a few seconds' copy in each app server's memory keeps most of them off Redis entirely."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Replicate the hot key: keep the same value on several nodes (read replicas, or copies under keys such as promo:final-night:1 … :8) and spread reads across them.",
+        "Add a local cache: keep extremely hot values in each server's own memory for a few seconds, so most reads never reach Redis.",
+        "Rate-limit abusive patterns: if the traffic on one key comes from a few clients hammering it, slow them down.",
+        "The same problem appears beyond caches whenever millions of people want the same thing at once; the concept 'When reads outnumber writes' covers it as a pattern."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "hot-key-merge",
+      "cap": "Coalescing sends one request to the database for an expired hot key, and a short copy in each server spreads the reads."
+    },
+    {
+      "t": "h2",
+      "x": "When the cache goes down"
+    },
+    {
+      "t": "p",
+      "x": "A cache that takes 90% of the reads is also hiding 90% of the load. If Redis fails, or restarts empty, every read falls through to the database at once, and a database sized for the 10% can collapse."
+    },
+    {
+      "t": "fig",
+      "id": "cache-warm",
+      "cap": "When the cache restarts empty at dinner, every read reaches the database until the cache fills again."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Fall back to the database, but not blindly: a circuit breaker and a limit on concurrent queries keep the database alive, and some requests get a simpler page or fail fast instead.",
+        "Keep a small in-process cache as a last layer for the hottest data.",
+        "Run the cache with a replica in another zone so a failure doesn't mean an empty cache, and warm a new cache with the most-read keys before sending traffic to it.",
+        "Or size the database for the cold-cache load, if that is affordable."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't recite all four. Pick the one or two that fit the system: stampedes and hot keys for viral content, stale reads for prices and stock, cache failure for anything with a big hit rate.",
+        "For each, give the fix in a sentence: coalescing, delete on write, replicate or copy locally, circuit breaker and warm replicas.",
+        "Show the costs as well as the gains: that is what this part of the interview is testing."
+      ]
+    }
+  ]
+}

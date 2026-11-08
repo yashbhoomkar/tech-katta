@@ -1,0 +1,145 @@
+{
+  "section": "concepts",
+  "slug": "cache-eviction",
+  "group": "caching",
+  "no": "CONCEPT // 52",
+  "tag": "CACHING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "When the cache is full: LRU, LFU, FIFO and expiry (TTL)",
+  "dek": "A cache has less memory than the database has data, so sooner or later it must throw something out to make room. The eviction policy decides what goes. LRU is the safe default; LFU suits keys that stay popular; FIFO is rarely right. A TTL is different: it expires data for being old, not for lack of room, and almost every cache needs one.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "LRU removes the entry unused for the longest time. It fits most workloads, because what was used recently tends to be used again.",
+        "LFU removes the entry used least often: good when the same keys stay popular for a long time. FIFO removes the oldest entry regardless of use, so it can throw out hot data.",
+        "A TTL expires each entry after a set time so data gets refreshed. Combine it with LRU or LFU: one keeps data fresh, the other keeps memory in bounds."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why caches evict"
+    },
+    {
+      "t": "p",
+      "x": "Memory is limited and costs more than disk, so a cache holds only a slice of the data. When it is full and a new entry arrives, something has to go. The rule for choosing is the eviction policy. In Redis it is a setting (maxmemory-policy), and choosing it is part of designing the cache."
+    },
+    {
+      "t": "fig",
+      "id": "ca-evict",
+      "cap": "A cache with room for four menus, after the same reads. Each policy throws out a different menu when a fifth arrives: LRU the one unused longest, LFU the one used least, FIFO the one stored first."
+    },
+    {
+      "t": "h2",
+      "x": "LRU: least recently used"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry that has gone longest without being read.",
+        "It is kept cheap by ordering entries by last use, for example in a linked list where each read moves the entry to the front, so the entry at the back can be removed in constant time. Redis approximates this by sampling a few keys and evicting the oldest of those.",
+        "It is the default in many systems because it fits most workloads: a menu read a minute ago is likely to be read again soon, and one untouched for hours probably isn't.",
+        "Its weak spot is a one-off scan: reading a million keys once (a nightly report) can push out everything that was genuinely hot."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "LFU: least frequently used"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry with the fewest reads. Each key keeps a counter, and the one with the lowest count goes.",
+        "Exact counts for every key cost memory and time, so real systems (Redis's allkeys-lfu included) keep approximate counters that also fade over time, so yesterday's hit doesn't stay protected forever.",
+        "It works well when some keys stay popular for a long time: the most-ordered restaurants in a city, trending videos, top playlists. A one-off scan doesn't push them out.",
+        "Its weak spot is change: without fading counts, an item that was popular last week can linger while today's new favourite is evicted."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "FIFO: first in, first out"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry stored earliest, regardless of how often or how recently it was read. A simple queue is enough to implement it.",
+        "Because it ignores use, it happily throws out the hottest key just because it was cached first.",
+        "So it is rarely used beyond the simplest caches, where tracking use isn't worth the effort."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "TTL: time to live"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A TTL is not an eviction policy on its own. It gives each entry an expiry time, and entries older than that are removed whether or not memory is full.",
+        "Its job is freshness, not space: it puts an upper limit on how stale a cached copy can be. A menu with a 10-minute TTL is at most 10 minutes out of date, even if a delete was missed.",
+        "It is usually combined with LRU or LFU: the TTL keeps data fresh, the eviction policy keeps memory in bounds.",
+        "It is a must for anything that has to refresh eventually: API responses, session tokens, a 'popular near you' list. Add a little randomness (600 seconds ± 60) so keys written together don't all expire together."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-ttl",
+      "cap": "Expiry and eviction do different jobs. The TTL removes a menu after 10 minutes however popular it is; LRU removes the least-used menu only when memory runs out."
+    },
+    {
+      "t": "h2",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Eviction policies",
+      "head": [
+        "Policy",
+        "Removes",
+        "Good for",
+        "Weak spot"
+      ],
+      "rows": [
+        [
+          "LRU",
+          "The entry unused for longest",
+          "Most workloads: the safe default",
+          "One-off scans push out hot data"
+        ],
+        [
+          "LFU",
+          "The entry used least often",
+          "Keys that stay popular for a long time",
+          "Slow to forget old favourites"
+        ],
+        [
+          "FIFO",
+          "The entry stored first",
+          "Very simple caches",
+          "Evicts hot data; rarely the right choice"
+        ],
+        [
+          "TTL (expiry)",
+          "Entries older than their time limit",
+          "Freshness: sessions, API responses",
+          "Not a space policy; combine with LRU or LFU"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'LRU when full, and a TTL on every key', and give the TTL for each kind of data with a reason.",
+        "Mention LFU if a small set of keys stays popular for a long time.",
+        "Size the cache so the data read often fits, and watch the hit rate and eviction count; a falling hit rate with many evictions means the cache is too small."
+      ]
+    }
+  ]
+}

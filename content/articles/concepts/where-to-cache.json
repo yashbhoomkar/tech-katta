@@ -1,0 +1,218 @@
+{
+  "section": "concepts",
+  "slug": "where-to-cache",
+  "group": "caching",
+  "no": "CONCEPT // 50",
+  "tag": "CACHING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Where to cache: on the device, at the edge, in a shared cache, inside the server",
+  "dek": "Caching isn't one box between the app and the database. Phones and browsers cache, CDNs cache, servers can cache in their own memory, and databases cache their busiest pages. Each place trades speed against control: the closer the copy is to the user, the faster it is and the harder it is to change. In an interview the shared cache, usually Redis, is the default; the others come in for specific reasons.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A shared cache (Redis, Memcached) that every app server talks to over the network is what interviewers mean by 'a cache'. Start there.",
+        "A CDN caches files, and sometimes public responses, in cities near users: the first thing to add when a design serves images or video.",
+        "Device caches and in-process caches are faster still, but you control them less: copies can't easily be updated or shared, so keep them for data that rarely changes."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Many layers"
+    },
+    {
+      "t": "p",
+      "x": "Most engineers hear 'cache' and picture Redis or Memcached between the application and the database, and that is the one interviewers care about most. But a single Zotato menu view can be served from four caches before the database is ever asked: the phone's own copy, a CDN edge for the dish photos, the app server's memory, and Redis. Even the database keeps its most-used pages in memory (Postgres's shared buffers), which is why a repeated query is faster than the first."
+    },
+    {
+      "t": "fig",
+      "id": "ca-layers",
+      "cap": "One menu view, layer by layer. Each cache answers what it can and passes the rest on; the closer a layer is to the user, the faster it answers and the harder its copies are to change."
+    },
+    {
+      "t": "h2",
+      "x": "A shared cache over the network"
+    },
+    {
+      "t": "p",
+      "x": "An external cache is a separate service your application calls over the network, such as Redis or Memcached, holding data that is read often so the database isn't asked every time."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every app server reads and writes the same cache, so a menu cached by one server is a hit for all of them, and a deleted entry is gone for all of them. That is why it scales: adding app servers doesn't lower the hit rate.",
+        "Its memory stays bounded: an eviction policy such as LRU removes old entries when it fills up, and a TTL expires each entry after a set time.",
+        "Each read still crosses the network: about a millisecond inside one data centre. Fast, but not free.",
+        "In an interview, Redis as an external cache is the default answer for any system with heavy reads. Add the other kinds only when the problem calls for them."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-external",
+      "cap": "Every app server shares one cache. A menu stored by one server is a hit for the next request, whichever server takes it."
+    },
+    {
+      "t": "h2",
+      "x": "A CDN, at the edge"
+    },
+    {
+      "t": "p",
+      "x": "A CDN is a network of cache servers in many cities. Instead of every request travelling to your own servers (the origin), users are sent to a nearby edge server that keeps copies of what people ask for. Cloudflare, Fastly, Akamai and CloudFront are the usual names."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A user opens a restaurant and the app asks for a dish photo.",
+        "The request goes to the nearest edge server.",
+        "If the edge has the photo, it answers straight away.",
+        "If not, the edge fetches it from the origin, keeps a copy and answers.",
+        "The next user nearby gets the copy from the edge, without touching the origin."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cdn-edge",
+      "cap": "The first request in a city fetches from the origin; everyone after that is answered from the edge nearby."
+    },
+    {
+      "t": "p",
+      "x": "Distance is the reason. If the origin is in North Virginia and the user is in Pune, every round trip takes 250 to 300 ms; from an edge in Mumbai it takes 20 to 40 ms. For a screen with forty photos, that is the difference between instant and sluggish."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Modern CDNs can do more than files: they can cache public API responses and HTML pages, and run small programs at the edge to personalise pages or block bad traffic before it reaches you.",
+        "But their biggest and most common job is still images, video and other files, and that is the safest reason to add one in an interview. Start with media, and mention the rest only if the problem needs it. The component 'CDNs' covers headers, hit ratios and purging."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "On the device"
+    },
+    {
+      "t": "p",
+      "x": "A client-side cache keeps data where the request starts, to avoid a network call altogether. Usually that is the user's device: the browser's HTTP cache and local storage, or a mobile app's memory and on-device storage."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is the fastest of all, because nothing travels. A browser that reuses a photo it downloaded yesterday is a cache. So is a running app that keeps your run on the phone while you're offline and uploads it when the signal returns.",
+        "But you control it least. Once a copy is on a phone, the server can't delete it; it can only send headers saying how long to keep it, or make the app check for changes. Data goes stale, and invalidation is hard.",
+        "So keep device caches for data that changes rarely (photos, the list of cities, yesterday's order history) or where showing a slightly old copy is fine."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "A 'client' can also be a library inside your own servers. A Redis Cluster client keeps a copy of which node owns which slot, so it can send each command straight to the right node instead of asking the cluster every time; it refreshes the map only when a node answers 'moved'. The component 'Redis' shows that routing."
+    },
+    {
+      "t": "fig",
+      "id": "ca-client",
+      "cap": "Two client-side caches: the app keeps dish photos and the city list on the phone, and the Redis client keeps the cluster's slot map, so it sends each command straight to the node that owns the key."
+    },
+    {
+      "t": "h2",
+      "x": "Inside the server process"
+    },
+    {
+      "t": "p",
+      "x": "Servers have a lot of memory, and each new generation has more. An in-process cache uses some of it to keep data inside the application itself, in an ordinary map in its own memory, so a read needs no network call at all. It is even faster than Redis: nanoseconds to microseconds instead of a millisecond."
+    },
+    {
+      "t": "p",
+      "x": "It suits small values that are read constantly:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Configuration values and feature flags.",
+        "Small reference data: the list of cities, cuisines, tax rates.",
+        "A few extremely hot keys, such as the home banner during a sale.",
+        "Rate-limit counters that only need to be roughly right per server.",
+        "Precomputed values, such as delivery fee tables."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-in-process",
+      "cap": "Each app server keeps its own copy of small, hot values. Reads are instant, but when one server's copy changes, the others don't know until their own copies expire."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The catch: each server has its own copy. Nothing is shared, so ten servers mean ten misses to fill ten caches, and when one server updates or deletes a value, the other nine keep the old one.",
+        "So give in-process entries a short TTL, or use them only for data that rarely changes, and accept that servers may disagree for a few seconds.",
+        "It does not replace a shared cache. In an interview, add it as an extra layer after Redis, for a few hot keys or for reference data."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Where to cache",
+      "head": [
+        "Where",
+        "Speed of a hit",
+        "Shared by",
+        "Who can change a copy",
+        "Use it for"
+      ],
+      "rows": [
+        [
+          "Device (browser, app)",
+          "No network at all",
+          "One user",
+          "Hard: only headers or the app's own logic",
+          "Photos, reference lists, offline data"
+        ],
+        [
+          "CDN edge",
+          "20–40 ms, nearby",
+          "Everyone in a region",
+          "Purge, or a new file name",
+          "Images, video, files; some public responses"
+        ],
+        [
+          "In-process",
+          "Nanoseconds to microseconds",
+          "One server",
+          "Each server separately",
+          "Config, flags, small hot values"
+        ],
+        [
+          "Shared cache (Redis)",
+          "About 1 ms",
+          "Every app server",
+          "Your code, at once",
+          "Most cached reads: the default"
+        ],
+        [
+          "Database buffer cache",
+          "Fast for repeated queries",
+          "Every query",
+          "The database itself",
+          "Automatic; no design needed"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start with Redis as a shared cache in front of the database, and say what it holds.",
+        "Add a CDN as soon as the design serves images or video to many users.",
+        "Mention device caching for data that changes rarely, and say how long a copy may live.",
+        "Add an in-process cache only as a later layer, for a few very hot keys, with a short TTL."
+      ]
+    }
+  ]
+}
