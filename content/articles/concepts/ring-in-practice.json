@@ -82,7 +82,7 @@
       "t": "list",
       "items": [
         "Apache Cassandra places data on a ring of token ranges, with virtual nodes.",
-        "Amazon DynamoDB uses a form of consistent hashing to place partitions (its ancestor, the Dynamo paper, introduced the ring with virtual nodes; see the paper in Research Papers).",
+        "Amazon DynamoDB hashes each partition key to an internal partition and splits or moves partitions as they grow, a fixed-slot style rather than a visible ring; its ancestor, the Dynamo paper, is where the ring with virtual nodes became famous (see the paper in Research Papers).",
         "CDNs and cache clusters use it to decide which server caches which object, so adding a cache server doesn't empty all the others.",
         "Load balancers use it to send a user's requests to the same server (sticky routing) while servers come and go."
       ]

@@ -47,6 +47,10 @@
       "cap": "Sharded by city, a restaurant's orders are on one shard. A question across every city, such as one user's history over the years, has to ask every shard and merge the results."
     },
     {
+      "t": "p",
+      "x": "City is one defensible key for Zotato's orders, not the only one. Keyed by customer_id instead, a customer's whole history and receipts sit on one shard, and a restaurant's live orders become the query that needs a second copy. Which is right depends on which queries dominate: live operations favour city, order history favours the customer. Say which you're optimising for, and keep a second, smaller copy keyed the other way. The Sharding group in Concepts works through the customer_id version."
+    },
+    {
       "t": "h2",
       "x": "Keys to avoid"
     },
@@ -80,7 +84,7 @@
       "items": [
         "Only shard when the numbers say one machine isn't enough, and say which numbers.",
         "Name the shard key, the queries it keeps on one shard, and the one query it makes expensive, with your answer for it.",
-        "Mention the components article 'Sharding and partitioning' for consistent hashing and resharding if the interviewer goes deeper."
+        "Point to the Sharding and Consistent hashing groups in Concepts (and the component 'Sharding and partitioning') for strategies, resharding and hot spots if the interviewer goes deeper."
       ]
     }
   ]
