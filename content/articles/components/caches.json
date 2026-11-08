@@ -47,7 +47,7 @@
     ]},
     {"t": "more", "label": "Stampedes and hot keys", "body": [
       {"t": "p", "x": "When a popular key expires, every request that misses it in that moment goes to the database at once: a cache stampede. Three fixes, often combined: let only one request rebuild the key (a short lock with `SET … NX`) while the others wait or get the old value; refresh popular keys a little before they expire; and add randomness to TTLs."},
-      {"t": "p", "x": "A hot key is one key read so often that the single cache node holding it is overloaded, such as the menu of the restaurant everyone orders from during a match. Keep a copy in each server's own memory for a few seconds, or read it from replicas."}
+      {"t": "p", "x": "A hot key is one key read so often that the single cache node holding it is overloaded, such as the menu of the restaurant everyone orders from during a match. Keep a copy in each server's own memory for a few seconds, or read it from replicas. The concept 'When reads outnumber writes' covers both, with request coalescing."}
     ]},
     {"t": "more", "label": "Redis, Memcached and caches inside the server", "body": [
       {"t": "p", "x": "Redis has data types beyond strings (hashes, sorted sets for leaderboards, counters), replicas with automatic failover, optional saving to disk, and Redis Cluster to split keys across nodes. Memcached is simpler: strings only, no replication, but multi-threaded and very fast. Most teams pick Redis (or Valkey, its open-source fork) because the extras are useful."},

@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "consensus",
   "group": "coordination",
-  "no": "CONCEPT // 06",
+  "no": "CONCEPT // 12",
   "tag": "AGREEING",
   "access": "paid",
   "date": "6 Nov 2026",
@@ -177,9 +177,9 @@
     },
     {
       "t": "lab",
-      "x": "In the Lab's cache-restart challenge, the cache crashes in the middle of dinner. Watch which parts of your design keep going and which ones struggle, the same question consensus answers for leaders.",
-      "to": "lab/cache-restart",
-      "go": "Try the cache-restart challenge"
+      "x": "In the Lab, turn on Multi-AZ and push the database until it crashes: the standby takes over in 2 minutes, while without it the database is down for 30. Choosing exactly one new primary, and keeping the old one out, is the problem this article is about; a managed database solves it for you.",
+      "to": "lab",
+      "go": "Open the Lab"
     }
   ]
 }

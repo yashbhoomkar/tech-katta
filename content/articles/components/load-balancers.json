@@ -31,7 +31,7 @@
     {"t": "list", "items": [
       "Round robin: each server in turn. Simple and fair when every request costs about the same. Weighted round robin gives a bigger server a bigger share.",
       "Least connections (or least outstanding requests): send to the server with the fewest requests still open. Better when some requests take 10 ms and others 2 seconds, like Zotato's search next to its order history export.",
-      "Hash on a key: the same key (user ID, restaurant ID, client IP) always lands on the same server. Useful when that server keeps something in memory for that key. Consistent hashing keeps most keys in place when a server is added or removed.",
+      "Hash on a key: the same key (user ID, restaurant ID, client IP) always lands on the same server. Useful when that server keeps something in memory for that key. Consistent hashing keeps most keys in place when a server is added or removed; the Hash rings concept shows how.",
       "Random choice of two: pick two servers at random and send to the less busy one. Nearly as good as least connections, and it needs no shared count, so it suits many balancers working at once."
     ]},
     {"t": "h2", "x": "Health checks and deploys"},

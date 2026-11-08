@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "A read can be answered by any copy; a write has to reach the primary and then every replica. Adding replicas adds read capacity and leaves write capacity where it was. A primary that takes a few thousand writes a second is the ceiling until you change how you write."
+      "x": "A read can be answered by any copy; a write has to reach the primary and then every replica. Adding replicas adds read capacity and leaves write capacity where it was. A typical primary takes a few thousand writes a second, and the largest machines reach tens of thousands. That is the ceiling until you change how you write."
     },
     {
       "t": "h2",

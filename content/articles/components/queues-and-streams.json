@@ -139,7 +139,7 @@
         "Key the work on something unique. Before sending the \"order confirmed\" SMS, record `sms_sent(order_id)`; if the row already exists, skip.",
         "Set the visibility timeout (SQS) longer than the job takes, or a slow job is handed to a second worker while the first is still working.",
         "Retry with growing gaps (1 s, 10 s, a minute) instead of at once, so a struggling provider gets room.",
-        "After a few failed tries, move the message to a dead-letter queue and alert. One bad message must not block the rest or retry forever.",
+        "After a few failed tries, move the message to a dead-letter queue and alert. One bad message must not block the rest or retry forever. The concept 'Jobs that run for minutes' covers leases, retries and dead-letter queues for job workers.",
         "\"Exactly once\" usually means at least once plus duplicates removed. Kafka's transactions give it only for reading from and writing to Kafka itself."
       ]
     },

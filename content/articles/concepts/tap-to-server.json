@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "tap-to-server",
   "group": "basics",
-  "no": "CONCEPT // 08",
+  "no": "CONCEPT // 02",
   "tag": "NETWORKING",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -167,7 +167,7 @@
     },
     {
       "t": "p",
-      "x": "Order tracking at Zotato needs updates from the server only, so server-sent events are enough; the rider chat sends messages both ways, so it uses a WebSocket. Either way, the open connections live on dedicated connection servers, and a message bus tells the right one which user to notify (see the Chat app problem)."
+      "x": "Order tracking at Zotato needs updates from the server only, so server-sent events are enough; the rider chat sends messages both ways, so it uses a WebSocket. Either way, the open connections live on dedicated connection servers, and a message bus tells the right one which user to notify (see the concept 'Live updates at scale' and the Chat app problem)."
     },
     {
       "t": "h2",
