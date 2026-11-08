@@ -1,0 +1,156 @@
+{
+  "section": "concepts",
+  "slug": "ring-in-practice",
+  "group": "consistent-hashing",
+  "no": "CONCEPT // 60",
+  "tag": "CONSISTENT HASHING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Rings in practice: hot keys, replication, and fixed slots",
+  "dek": "A hash ring places data evenly, but real clusters need more: one key can still attract most of the traffic, a server's failure shouldn't mean copying terabytes, and some systems swap the ring for fixed slots. This is what to say once the interviewer has seen the ring and asks what happens next.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Consistent hashing spreads keys evenly, not traffic. A key that is far busier than the rest (the final's tickets) still lands on one server. Fix it with replicas of the hot key, key salting or automatic rebalancing.",
+        "Real systems pair the ring with replication: each key is stored on the next few servers clockwise, so when one fails a replica answers and no data has to move. Data moves only for planned changes, and only a bounded share of it.",
+        "Redis Cluster uses 16,384 fixed slots instead of a ring: simpler to reason about, with moves done slot by slot. Choosing between a ring and fixed slots is a real trade-off."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Hot spots"
+    },
+    {
+      "t": "p",
+      "x": "Virtual nodes spread keys evenly, but not every key gets the same traffic. A hot spot is one server taking far more requests than the rest because a few of its keys are far more popular. When tickets for a World Cup final go on sale, that one match can get a hundred times the reads of any other, and all of them go to the server that owns its key."
+    },
+    {
+      "t": "p",
+      "x": "Consistent hashing can't fix this by itself: it balances keys, not traffic. Real systems use:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Replicas of hot keys: store the popular key on several servers and spread its reads across them. This is the most common answer.",
+        "Key salting: add a suffix to the hot key, such as final-tickets-0 to final-tickets-9, so the ten versions hash to different servers. Writes go to one version (or all), and reads go to any version or combine all of them.",
+        "Adaptive rebalancing: watch traffic and move the busiest key ranges off overloaded servers. It is complex to run, but some managed databases, DynamoDB among them, do it automatically."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-salt",
+      "cap": "One hot key all lands on one server. Salted into ten keys, it spreads across the ring, and reads are shared by many servers."
+    },
+    {
+      "t": "p",
+      "x": "The distinction to make in an interview: virtual nodes fix structural imbalance, keys spread unevenly; replication and salting fix workload imbalance, traffic spread unevenly."
+    },
+    {
+      "t": "h2",
+      "x": "Moving data in practice"
+    },
+    {
+      "t": "p",
+      "x": "The ring tells you where data should live; it doesn't move terabytes by magic when a server dies. In practice, distributed databases replicate data alongside the ring, so most failures need no data movement at all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cassandra stores each key on the server that owns it and the next N − 1 distinct servers clockwise (N is the replication factor, often 3). If one fails, the others still have the data and keep serving reads and writes.",
+        "DynamoDB keeps every partition in three availability zones. When the node leading a partition fails, a replica takes over through a consensus protocol (Paxos-based), and no data needs to move.",
+        "Data really moves only for planned changes: adding capacity, or permanently replacing a server to restore the replication factor. Even then, the ring limits it to the keys whose owners changed, not the whole dataset."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-replicas",
+      "cap": "Each key is stored on three servers in a row on the ring. When one fails, the next replica answers, and nothing has to be copied before service continues."
+    },
+    {
+      "t": "h2",
+      "x": "Where it is used"
+    },
+    {
+      "t": "p",
+      "x": "The example was databases, but consistent hashing fits any cluster that must divide work among servers that come and go: caches, message brokers, even plain application servers that each keep some state."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Apache Cassandra places data on a ring of token ranges, with virtual nodes.",
+        "Amazon DynamoDB uses a form of consistent hashing to place partitions (its ancestor, the Dynamo paper, introduced the ring with virtual nodes; see the paper in Research Papers).",
+        "CDNs and cache clusters use it to decide which server caches which object, so adding a cache server doesn't empty all the others.",
+        "Load balancers use it to send a user's requests to the same server (sticky routing) while servers come and go."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Fixed slots instead of a ring"
+    },
+    {
+      "t": "p",
+      "x": "Not everything uses a ring. Redis Cluster divides the key space into 16,384 fixed slots: slot = CRC16(key) mod 16384, and each node is assigned ranges of slots. Adding a node means moving some slots to it, key by key, while the cluster keeps serving."
+    },
+    {
+      "t": "fig",
+      "id": "redis-slots",
+      "cap": "The client knows which node owns each slot, so a request goes straight to it; MOVED corrects the client after slots change hands."
+    },
+    {
+      "t": "table",
+      "label": "Ring or fixed slots",
+      "head": [
+        "Compared",
+        "Hash ring with virtual nodes",
+        "Fixed slots or buckets"
+      ],
+      "rows": [
+        [
+          "Where a key lives",
+          "First server clockwise from its hash",
+          "slot = hash % (fixed number); slot → server table"
+        ],
+        [
+          "Adding a server",
+          "Its points take small arcs from everyone",
+          "Move whole slots to it, chosen by an operator or balancer"
+        ],
+        [
+          "Reasoning about it",
+          "Depends on where points happen to fall",
+          "Simple: a short table of slot ranges"
+        ],
+        [
+          "Coordination",
+          "Every client needs the ring (or asks a router)",
+          "Every client needs the slot table; moves need care"
+        ],
+        [
+          "Used by",
+          "Cassandra, Dynamo-style stores, cache clients",
+          "Redis Cluster, many sharded SQL setups, Kafka partitions"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Both keep data movement bounded when servers change. Fixed slots are easier to reason about and to move deliberately; the ring needs no table of slots and suits clusters where servers join and leave often. Naming that trade-off is a good senior-level point."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Separate the two imbalances: virtual nodes for uneven keys, replicas and salting for uneven traffic.",
+        "Say the ring is paired with replication, so a failure is handled by a replica, not by copying data.",
+        "Know the fixed-slot alternative and one reason to prefer each."
+      ]
+    }
+  ]
+}

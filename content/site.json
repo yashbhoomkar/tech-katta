@@ -338,6 +338,11 @@
           "sharding",
           "Sharding",
           "Splitting one database across machines: when it's needed, partitioning versus sharding, choosing the key and strategy, and what sharding breaks."
+        ],
+        [
+          "consistent-hashing",
+          "Consistent hashing",
+          "Placing data on servers so that adding or losing one moves only a slice: when to explain it, the ring and virtual nodes, hot keys, replication and fixed slots."
         ]
       ],
       "interview-questions": [
