@@ -138,31 +138,20 @@ for the owner to confirm):
 
 ## Ledger pending
 
-Check each key in both canonical collections and insert only the missing ones in `frontend_git_commits`
-(value as in the ledger doc's #216–#218 table in the context repo); then clear this list and note the
-result and the row count under Review notes. The 01:15 IST session couldn't reach Atlas, so these are
-unverified, not known missing.
-- #216: `4c78226232b3dbbd210a24d77b45b5567c7bc790`, `680fa62609ff0234dfd208e8003e13625ef63cf6`, merge `05be25dd2a22bc96152981fe604bfe5bd2361890`
-- #217: `cfcf4d0c9ccb9ce144419ee1fa2ea239c8886488`, `3442440f29c0b26e5dedf45be1ac99ef4684161c`, `2527493434df786bbbe168c7999d979b7f530dc6`, merge `b718f8616cc01af3b0c5a86be7786586fc944b20`
-- #218: `cc7986651024342e4e9bce8db59c6dfa31cfb6c8`, `1378cee746b4a050a954b4bb189ec0e282b1ca3b`, merge `863069bb65220b07f749a9a322dd67af4daa7300`
-- #219: `007e38d2d25e96505d4ac0d3bdeede1192d0d9f5`, `1ea2115146681a3e2d8e19fc340f145f42ff8775`, merge `af9d7b4d7ba3bdd017557e815514141489d28635`
-- #220: `b735e6760ea9ba91a9c4aae9acfd7429b8c48164`, `e8b7e8fd368f5a6554f2dca17badefe1dd6aa38a`, `053816a2dcce4e13f6862ac8feab39b6346caecd`, merge `c9563216957ed0235606416a920ef06cfea2aced` (frontend + backend)
-- #221–#231 (2026-11-07 sessions; Atlas refused from those sessions too): every source and merge SHA, with
-  what it changed, is listed in the context repo's `11-MONGODB-COMMIT-LEDGER.md` (lines for #221 to #231).
-  Merges: #221 `996dbd13db41293c629d3175213da5beb05715da`, #222 `18fa7a720fad7423f1d395a875da7e919aee9d99`,
-  #223 `1b0e213af92b6c29b6a328f70f57d1d06fc70982`, #224 `974113ce99f79c391a1aa13a9adab5deb3ed5c0f`,
-  #225 `af15e49ea179ab8a0b60d234dd2dda2b9cb2a2ae`, #226 `3719625c46cc84119acd6a3682ddd1e9eb8b677c`,
-  #227 `ffe2911275da62abd1fba9ccdad8794e6ff0e649`, #228 `2bc1f0730ad906dd4c8734185f8861e57313ab3d`,
-  #229 `f88ae4ed4c67892d14a6dfbf4111d6ec5ce2944f`, #230 `d677a8dd39e57b1e408af2e2db6f54a3fea3c95a`,
-  #231 `77d5be75330e45fb6161c143137fdc155c50e659`
+(none — checked in Atlas through #252 on 2026-11-08 13:30 IST.)
 
 ## Context repo pending
 
-(none — handover checked through #231 on 2026-11-07 11:45 IST; ledger for #216–#231 under Ledger pending.
+(none — handover and ledger doc updated through #252 on 2026-11-08.
 Every merged PR adds its handover §12 row here, so a human-led session sees what to copy.)
 
 ## Review notes (newest first)
 
+- 2026-11-08 13:30 IST — Ledger caught up at the owner's request. #216–#218 were already in
+  `frontend_git_commits`. #219–#252 (111 SHAs: source, branch-sync and squash-merge commits) were in
+  neither collection, so 97 went into `frontend_git_commits` (now 608 rows) and 101 into
+  `backend_git_commits` (now 486), by the folders each PR touched. Vercel built no deploy for #252
+  (daily limit again), so production showed #251's front end until this PR's merge redeployed main.
 - 2026-11-07 01:15 IST — Human-led session: handover, ledger doc and git history updated through #218 in
   the context repo. Vercel stopped after the #218 preview (17:53 IST, daily limit): production frontend is
   still #215, so Q21/Q22 show without figures until the next deploy; the first cycle after it live-checks
