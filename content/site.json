@@ -343,6 +343,11 @@
           "consistent-hashing",
           "Consistent hashing",
           "Placing data on servers so that adding or losing one moves only a slice: when to explain it, the ring and virtual nodes, hot keys, replication and fixed slots."
+        ],
+        [
+          "cap",
+          "CAP theorem",
+          "When the network splits, consistency or availability: the one question to ask, how each choice shapes the design, and choosing per feature."
         ]
       ],
       "interview-questions": [
