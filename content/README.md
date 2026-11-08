@@ -29,6 +29,11 @@ A release is validated (`node backend/scripts/check-content.mjs <dir>`) before `
 
 ## Article blocks
 
+Research Papers (`papers/`, owner 11-08) replace "Did you know": one classic paper per article, in plain words with
+animated figures: the paper (title, author, venue, year), the problem it solved, the idea, how it works, what it
+promises, where you see it today and how to use it in an interview. Write it in our own words and figures; never
+copy the paper's text or diagrams.
+
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
 topics people search for, each leading into paid material. Everything else is paid, and an article with
@@ -37,7 +42,7 @@ topics people search for, each leading into paid material. Everything else is pa
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
-- `fig {id, cap}`: `id` must be a figure the frontend can draw: `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit`, `scale-out`, `autoscale`, `cache-aside`, `cache-warm`, `db-index`, `db-replicas` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
+- `fig {id, cap}`: `id` must be a figure the frontend can draw (Research Papers figures: `PAPER_FIGS` in `frontend/src/figs/papers.jsx`): `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit`, `scale-out`, `autoscale`, `cache-aside`, `cache-warm`, `db-index`, `db-replicas` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
