@@ -87,7 +87,7 @@
     },
     {
       "t": "p",
-      "x": "The 2011 version had no replication: if a broker's disk died, its partitions were lost. Replication arrived soon after, consumer offsets moved into Kafka itself, and later versions added transactions so a consumer could process and write results exactly once. Kafka became the usual backbone between services, and the idea of a durable, replayable log spread to many other systems."
+      "x": "The 2011 version had no replication: if a broker's disk died, its partitions were lost. Replication arrived soon after, consumer offsets moved into Kafka itself, and later versions added transactions so a consumer could process and write results exactly once. Kafka became the usual backbone between services, and the idea of a durable, replayable log spread to many other systems. 'Kafka in practice' in Components covers running it today."
     },
     {
       "t": "h2",

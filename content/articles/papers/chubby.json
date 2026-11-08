@@ -82,7 +82,7 @@
     },
     {
       "t": "p",
-      "x": "ZooKeeper brought the same idea to open source a few years later, and etcd followed. Today leader election in many systems, including Kubernetes controllers, is a lease in one of these stores, with the same session expiry and the same need for fencing tokens."
+      "x": "ZooKeeper brought the same idea to open source a few years later (see its page in Components), and etcd followed. Today leader election in many systems, including Kubernetes controllers, is a lease in one of these stores, with the same session expiry and the same need for fencing tokens."
     },
     {
       "t": "h2",

@@ -1,0 +1,199 @@
+{
+  "section": "components",
+  "slug": "redis",
+  "group": "tools",
+  "no": "COMPONENT // 10",
+  "tag": "IN-MEMORY STORE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Redis: one fast server, many data structures",
+  "dek": "Most people meet Redis as a cache, but it is a server of data structures kept in memory: strings, hashes, sorted sets, streams. Here is what each is for, why one command never interrupts another, how it keeps data across a restart, and how a cluster splits keys over machines.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Redis keeps everything in memory and runs commands one at a time, so each command is atomic and most finish in microseconds. One node handles around a lakh simple operations a second.",
+        "Pick the data structure for the job: strings for cached values, hashes for objects, sorted sets for rankings, streams for logs, counters with an expiry for rate limits.",
+        "It can save to disk, but a crash can still lose the last second of writes. Treat it as a cache or as fast secondary state, not as the only copy of orders or payments."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Five structures, five jobs"
+    },
+    {
+      "t": "fig",
+      "id": "redis-types",
+      "cap": "Every command changes one structure on the server, in one step. That is why a cart, a ranking or a rate limit needs no locks in your code."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Strings hold any value up to 512 MB, usually a serialised object, with an optional expiry (`EX 300`).",
+        "Hashes hold fields inside one key, so a cart can change one dish without rewriting the whole cart.",
+        "Sorted sets keep members ordered by a score; `ZREVRANGE top:pune 0 9` returns the top 10 at once, which is why leaderboards use them.",
+        "Streams are append-only logs with consumer groups, like a small Kafka inside Redis. Plain pub/sub, by contrast, delivers only to whoever is listening at that moment and keeps nothing.",
+        "Geo commands keep points in a sorted set, scored by geohash, and find members within a radius: one quick way to answer \"restaurants near me\"."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · THREE JOBS IN REDIS",
+      "x": "# today's top restaurants in Pune\nZINCRBY top:pune:2026-11-08 1 r42\nZREVRANGE top:pune:2026-11-08 0 9 WITHSCORES\n\n# at most 5 OTPs per phone per hour\nINCR otp:9800000001                 # returns the count so far\nEXPIRE otp:9800000001 3600 NX       # start the hour on the first request only\n\n# restaurants within 3 km, nearest first\nGEOADD rest:pune 73.8567 18.5204 r42\nGEOSEARCH rest:pune FROMLONLAT 73.85 18.52 BYRADIUS 3 km ASC COUNT 20",
+      "say": "Three jobs. A daily sorted set per city: add one to a restaurant's score per order and read the top ten with their scores. An OTP counter per phone: increment it, and set a one-hour expiry only on the first request; refuse when the count passes five. A geo set of restaurants: add each by longitude and latitude, and search within 3 kilometres of the customer, nearest first, 20 results."
+    },
+    {
+      "t": "h2",
+      "x": "One command at a time"
+    },
+    {
+      "t": "p",
+      "x": "Redis runs commands on a single thread (newer versions use extra threads for network reads and writes, not for commands). Two clients incrementing the same counter can't interleave, so `INCR` is safe without a lock. Several commands can run as one unit with `MULTI`/`EXEC`, or as a Lua script, which also runs without interruption."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The flip side: one slow command stalls everyone. `KEYS *` on lakhs of keys, deleting a huge set, or a long Lua script blocks the server for every other client. Use `SCAN` to walk keys and `UNLINK` to delete big ones in the background.",
+        "One CPU core per node is the ceiling for commands, so scale out with more nodes, not a bigger machine."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping data across a restart"
+    },
+    {
+      "t": "table",
+      "label": "Persistence options",
+      "head": [
+        "Option",
+        "How it works",
+        "What a crash loses"
+      ],
+      "rows": [
+        [
+          "None",
+          "Pure memory",
+          "Everything; fine for a cache that can refill"
+        ],
+        [
+          "Snapshots (RDB)",
+          "Writes the whole dataset to disk every few minutes",
+          "Everything since the last snapshot"
+        ],
+        [
+          "Append-only file, every second",
+          "Logs each write and flushes the log once a second",
+          "About the last second of writes"
+        ],
+        [
+          "Append-only file, always",
+          "Flushes before answering each write",
+          "Nothing, at a large cost in speed"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Replication to a replica is asynchronous, so a failover can also lose the last writes the replica hadn't received. Sentinel watches a primary and its replicas and promotes one when the primary dies; managed services do the same for you."
+    },
+    {
+      "t": "h2",
+      "x": "Redis Cluster: splitting keys"
+    },
+    {
+      "t": "fig",
+      "id": "redis-slots",
+      "cap": "The client does the routing: it knows which node owns each slot, so a request takes one hop, and MOVED corrects it after slots change hands."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Commands that touch several keys work only when all the keys are in the same slot. Put the shared part in braces, a hash tag: `{user:77}:cart` and `{user:77}:profile` land in the same slot.",
+        "A hash tag that everyone shares puts all of it on one node, so use it for small groups of keys, not for a whole feature.",
+        "Replicas can serve reads, but they lag a little behind, as replicas always do."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Where it fits, and where it doesn't"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good: caching, sessions, rate limits, leaderboards, counters, short-lived locks with an expiry, deduplicating recent events, small queues.",
+        "Careful: anything that must survive a crash with no loss, data bigger than memory, and queries you can't express as a key lookup.",
+        "Memory is the bill. Set `maxmemory` and an eviction policy (`allkeys-lru` for a cache) so a full server evicts instead of refusing writes.",
+        "In 2024 Redis moved to a more restrictive licence and the Linux Foundation started Valkey, a compatible open-source fork; in 2025 Redis added an open-source (AGPL) option again. Managed clouds offer one or both; the commands are the same."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "A command, inside one data centre",
+          "well under a millisecond"
+        ],
+        [
+          "Simple operations per node",
+          "around a lakh a second; more with pipelining"
+        ],
+        [
+          "Largest value",
+          "512 MB, but keep values to a few hundred KB"
+        ],
+        [
+          "Memory per key",
+          "your data plus tens of bytes of overhead"
+        ],
+        [
+          "Slots in Redis Cluster",
+          "16,384"
+        ],
+        [
+          "Lost on a crash with appendfsync everysec",
+          "about the last second of writes"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name the structure, not just 'Redis': a sorted set for the leaderboard, a hash for the cart, `INCR` plus `EXPIRE` for the rate limit.",
+        "Say what happens if Redis restarts: a cache refills from the database; anything else needs a source of truth elsewhere.",
+        "Mention hot keys and big keys, and that one slow command blocks all others.",
+        "For more than one node, say Redis Cluster with 16,384 slots, or client-side sharding.",
+        "Where it appears here: the Leaderboard problem ranks players with sorted sets, and Restaurants near me keeps live open/closed status in Redis."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: a lock in Redis, and its limits",
+      "body": [
+        {
+          "t": "p",
+          "x": "`SET lock:payout:42 owner-17 NX PX 30000` takes a lock only if nobody holds it, with a 30-second expiry. Release it only if you still own it, with a short Lua script that checks the value before deleting. This is fine to stop two workers doing the same harmless job at once."
+        },
+        {
+          "t": "p",
+          "x": "It is not safe for correctness on its own: a worker can pause past the expiry while another takes the lock. When a duplicate would do damage, add a fencing token checked by the system you write to, as the Contention concept and the Chubby paper explain."
+        }
+      ]
+    }
+  ]
+}

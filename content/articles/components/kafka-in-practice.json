@@ -1,0 +1,211 @@
+{
+  "section": "components",
+  "slug": "kafka-in-practice",
+  "group": "tools",
+  "no": "COMPONENT // 12",
+  "tag": "EVENT LOG",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Kafka in practice: topics, groups and not losing events",
+  "dek": "The Kafka paper explains the idea of a log. This is the working knowledge: choosing keys and partitions, the settings that decide whether an acknowledged event can be lost, how consumer groups share work and rebalance, and what to do when consumers fall behind.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Producers append to partitions chosen by key; consumers in a group each own some partitions and track their offsets. Order holds only within a partition.",
+        "For no loss: replication factor 3, `acks=all`, `min.insync.replicas=2`, and an idempotent producer. Then an acknowledged event survives one broker failing.",
+        "Commit offsets after processing, so a crash means reprocessing (at least once), never skipping. Make consumers idempotent."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Keys, partitions and order"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The producer hashes the key to pick a partition, so every event for order 9051 goes to the same partition and stays in order.",
+        "Choose the key from what must stay in order: the order ID for order events, the restaurant ID for kitchen events. Events without a key are spread for throughput, with no order between them.",
+        "You can add partitions later but not remove them, and adding them changes which partition a key maps to, so new events for a key may land elsewhere. Size for the busiest day ahead.",
+        "Partitions cap parallelism: a group can't have more busy consumers than partitions."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Consumer groups"
+    },
+    {
+      "t": "fig",
+      "id": "kafka-group",
+      "cap": "The group, not the code, decides who reads what. Adding a consumer is how you scale reading, up to one per partition."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each partition is owned by one consumer in the group at a time; different groups (notifications, analytics) each read everything independently.",
+        "When a consumer joins, leaves or stops sending heartbeats, the group rebalances. Older protocols paused the whole group during it; cooperative rebalancing moves only the partitions that change owner.",
+        "A consumer that takes too long between polls is assumed dead and loses its partitions, so keep processing per batch short, or hand slow work to a queue.",
+        "Offsets live in Kafka itself, in an internal topic. Commit them after the work is done."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Settings that decide whether you lose events"
+    },
+    {
+      "t": "fig",
+      "id": "kafka-isr",
+      "cap": "acks=all waits for every in-sync copy, and min.insync.replicas sets how few copies are still acceptable. Together they turn 'acknowledged' into 'on at least two disks'."
+    },
+    {
+      "t": "table",
+      "label": "Producer acks",
+      "head": [
+        "Setting",
+        "Producer is told OK when",
+        "Risk"
+      ],
+      "rows": [
+        [
+          "acks=0",
+          "It sent the event",
+          "Lost on any hiccup; fine only for metrics you can drop"
+        ],
+        [
+          "acks=1",
+          "The leader has written it",
+          "Lost if the leader dies before followers copy it"
+        ],
+        [
+          "acks=all",
+          "Every in-sync replica has it",
+          "None beyond losing all in-sync copies at once"
+        ]
+      ]
+    },
+    {
+      "t": "list",
+      "items": [
+        "Since Kafka 3.0 producers are idempotent by default: a retried send isn't written twice into the log.",
+        "Keep unclean leader election off, so an out-of-date replica can never become leader and silently drop acknowledged events.",
+        "Transactions give exactly-once processing for read-from-Kafka, write-to-Kafka pipelines; effects outside Kafka still need idempotency."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · THE ORDERS TOPIC AND ITS CLIENTS",
+      "x": "# topic\npartitions=48  replication.factor=3  min.insync.replicas=2\nretention.ms=604800000            # 7 days\n\n# producer\nacks=all\nenable.idempotence=true            # the default since Kafka 3.0\nlinger.ms=5                        # wait up to 5 ms to fill a batch\ncompression.type=lz4\n\n# consumer (group: notifications)\nenable.auto.commit=false           # commit offsets after the work is done",
+      "say": "The orders topic: 48 partitions, three copies, at least two in sync to accept a write, kept 7 days. The producer waits for all in-sync copies, is idempotent, waits up to 5 milliseconds to fill a batch and compresses it. The notifications consumer commits offsets itself, after processing."
+    },
+    {
+      "t": "h2",
+      "x": "Retention and compaction"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Time or size retention deletes old segments, often after 7 days, whether or not anyone read them.",
+        "Log compaction keeps the latest event per key forever: the current state of every restaurant, rebuildable by reading the topic from the start.",
+        "Storage is the cost: 2,000 events a second of 1 KB, kept 7 days with 3 copies, is about 3.6 TB."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Kafka or a plain queue"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A queue (SQS, RabbitMQ) suits jobs: each message done once by one worker, with per-message retries, delays and dead-letter handling built in.",
+        "Kafka suits events: several services reading the same stream, replay from any point, order per key, and very high volume.",
+        "Many systems use both: Kafka for the events, and a queue for the jobs one service derives from them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When consumers fall behind"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Watch consumer lag per group, in events and in time: 'notifications are 7 minutes behind' is the alert that matters.",
+        "Add consumers up to the partition count; beyond that, make each consumer faster or add partitions for future keys.",
+        "A poison event that always fails blocks its partition. Retry a few times, then park it in a dead-letter topic and move on.",
+        "Keep retention longer than your worst plausible lag, or events expire before they're read."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Running it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Since Kafka 4.0 the cluster manages its own metadata with a built-in Raft quorum (KRaft); older clusters needed ZooKeeper.",
+        "Three brokers across three zones is the usual minimum for replication factor 3.",
+        "Managed services take away broker operations, but keys, partitions, acks and lag are still your design."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "One partition",
+          "tens of MB a second, written and read sequentially"
+        ],
+        [
+          "Default retention",
+          "7 days"
+        ],
+        [
+          "Largest message by default",
+          "about 1 MB; put big payloads in object storage"
+        ],
+        [
+          "Latency with acks=all, in one region",
+          "a few to a few tens of milliseconds"
+        ],
+        [
+          "Brokers for replication factor 3",
+          "at least 3, one per zone"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name the topic, the key and why: 'orders, keyed by order ID, so each order's events stay in order'.",
+        "Give the durability settings: replication 3, acks=all, min.insync.replicas=2.",
+        "Say consumers commit after processing and are idempotent.",
+        "Size partitions from the peak and the consumer throughput, and mention lag monitoring.",
+        "Where it appears here: the Ad clicks problem streams clicks through Kafka, and the URL shortener sends click events to it for analytics."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how many partitions",
+      "body": [
+        {
+          "t": "p",
+          "x": "Work backwards from throughput. If one consumer handles 500 events a second and the peak is 20,000, you need at least 40 consumers, so at least 40 partitions; round up for growth, since adding partitions later reshuffles keys. Very many partitions per broker cost memory and slow down leader elections, so thousands per cluster are fine, but not lakhs."
+        }
+      ]
+    }
+  ]
+}

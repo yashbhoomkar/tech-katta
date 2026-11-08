@@ -1,0 +1,199 @@
+{
+  "section": "components",
+  "slug": "elasticsearch",
+  "group": "tools",
+  "no": "COMPONENT // 11",
+  "tag": "SEARCH ENGINE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Elasticsearch: search by words, not by keys",
+  "dek": "Databases find rows by keys and ranges. A search box needs something else: every dish whose name contains these words, ranked by how well it matches, with typos forgiven and results near the user. Here is how an inverted index does that, how to keep it in step with the database, and how to size it.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Elasticsearch (and its fork OpenSearch) keeps an inverted index: for every word, the list of documents containing it. A search reads a few short lists instead of every document.",
+        "Text is analysed on the way in: split into words, lowercased, stemmed, with synonyms if you add them. Results are ranked by relevance (BM25 by default).",
+        "It is a copy, not the source of truth. Feed it from the database through a change stream, expect about a second of delay, and be able to rebuild it."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "How a search finds things"
+    },
+    {
+      "t": "fig",
+      "id": "es-inverted",
+      "cap": "The index is built once per change; every search then reads only the lists for its own words. That is why searching crores of dishes still takes milliseconds."
+    },
+    {
+      "t": "list",
+      "items": [
+        "An analyser turns text into tokens: split on spaces and punctuation, lowercase, maybe stem (`masalas` → `masala`), maybe map synonyms (`curd` ↔ `dahi`).",
+        "The same analyser runs on the query, so the words match the way they were indexed.",
+        "BM25 scores a document higher when it contains rare query words, contains them more often, and is shorter.",
+        "Fuzzy queries forgive small typos (`panner` → `paneer`), and edge n-grams or completion suggesters power search-as-you-type."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "More than words"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Filters (`open_now: true`, `veg: true`) narrow results without affecting the score, and they are cached, so they're cheap.",
+        "Geo queries find documents within a distance of a point, which is how 'restaurants near me' is answered: `geo_distance` of 3 km from the user.",
+        "Aggregations count results by field, which fills the facet counts beside the results: 'North Indian (412) · South Indian (198)'.",
+        "Deep paging with `from`/`size` gets slow and is capped at 10,000 results by default; use `search_after` with a sort key instead."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · \"PANER TIKKA\", OPEN, WITHIN 3 KM",
+      "x": "GET dishes/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\":   { \"match\": { \"name\": { \"query\": \"paner tikka\", \"fuzziness\": \"AUTO\" } } },\n      \"filter\": [\n        { \"term\": { \"open_now\": true } },\n        { \"geo_distance\": { \"distance\": \"3km\", \"location\": { \"lat\": 18.52, \"lon\": 73.85 } } }\n      ]\n    }\n  },\n  \"size\": 20\n}",
+      "say": "A search on the dishes index. It must match the words paner tikka in the name, allowing typos, so paner still finds paneer. Two filters that don't affect the score: the restaurant is open now, and it is within 3 kilometres of the customer. Return 20 results."
+    },
+    {
+      "t": "h2",
+      "x": "Shards, replicas and the refresh"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An index is split into primary shards, each a self-contained search index, and each shard has replicas on other nodes for reads and failover.",
+        "The number of primary shards is set when the index is created; changing it means splitting, shrinking or reindexing. A common guide is shards of 10 to 50 GB.",
+        "New documents become searchable after the next refresh, every second by default. Search is near real-time, not instant.",
+        "A query goes to one copy of every shard and the results are merged, so too many small shards make every search slower."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping it in step with the database"
+    },
+    {
+      "t": "fig",
+      "id": "es-sync",
+      "cap": "Never write to the database and the index from the same request and hope both succeed. One source of truth and a stream of its changes keep them in step, and an alias lets you rebuild without downtime."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Feed the index from the database's change stream (change-data capture into Kafka, or an outbox), so a failed index write is retried rather than lost.",
+        "Make indexing idempotent: index by the dish's ID, so replaying events overwrites instead of duplicating.",
+        "Changing a field's type or analyser means a new index. Build it beside the old one, then move the alias the search API uses.",
+        "If the index is lost, rebuild it from the database. That is the test of whether it is truly a copy."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Search in the database, or a search engine"
+    },
+    {
+      "t": "table",
+      "label": "Choosing where search runs",
+      "head": [
+        "Option",
+        "Good for",
+        "Falls short when"
+      ],
+      "rows": [
+        [
+          "`LIKE '%paneer%'`",
+          "Tiny tables and admin screens",
+          "Always: it reads every row and ranks nothing"
+        ],
+        [
+          "PostgreSQL full-text search (`tsvector` + GIN)",
+          "Search over one database, kept in the same transaction",
+          "You need typo tolerance, tuned ranking, facets or many machines"
+        ],
+        [
+          "Elasticsearch or OpenSearch",
+          "Search boxes, fuzzy matching, facets, geo, large data",
+          "You need it to be the source of truth or transactional"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Memory and disk: indexes, especially with n-grams for typing, can be larger than the data itself.",
+        "Another cluster to run, upgrade and size, or a managed service bill.",
+        "Eventual consistency: a menu change shows in search a second or more later.",
+        "No transactions and no joins worth the name; shape documents for the search, with the restaurant's name and area copied into each dish."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "New documents become searchable",
+          "after the refresh, every second by default"
+        ],
+        [
+          "Size of one shard",
+          "aim for 10 to 50 GB"
+        ],
+        [
+          "Deepest page with from/size",
+          "10,000 results by default"
+        ],
+        [
+          "Primary shards in a new index",
+          "1 by default; set it when you create the index"
+        ],
+        [
+          "Java heap per node",
+          "about half the memory, at most about 30 GB; the rest caches files"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use a search engine as soon as the question has a search box, fuzzy matching, 'near me' or facet counts.",
+        "Say it is fed from the database through a change stream and can be rebuilt.",
+        "Name the analyser steps and the ranking (BM25, plus your own boosts such as rating and distance).",
+        "Mention the refresh delay and how you'd reindex for a mapping change (a new index and an alias).",
+        "Where it appears here: the Menu search problem builds exactly this, with typos, synonyms and ranking."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "In the Lab, add a search engine to a design and open its schema: OpenSearch indexes every field by its type, and a problem's request tests use it for text and 'near me' queries.",
+      "to": "lab",
+      "go": "Open the Lab"
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why relevance needs tuning",
+      "body": [
+        {
+          "t": "p",
+          "x": "BM25 knows words, not your business. A dish called 'Paneer' at a closed restaurant 20 km away can outrank a popular 'Paneer tikka' nearby. Real search combines the text score with your own signals (distance, rating, open now, past orders) through function scores or a second ranking step, and measures it: which results do people tap, and how often do they search again because the first results were wrong."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "section": "components",
+  "slug": "cassandra",
+  "group": "tools",
+  "no": "COMPONENT // 15",
+  "tag": "WIDE-COLUMN DATABASE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Cassandra: a ring of equals built for writes",
+  "dek": "Cassandra has no leader: every node takes reads and writes, data is copied around a ring, and writes are cheap appends. The catch is that you design one table per question, and deletes behave in ways that surprise people. Here is how to model for it, tune its consistency, and keep it healthy.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Cassandra spreads partitions over a ring of equal nodes and copies each to several of them (replication factor 3 is usual). Any node can coordinate any request.",
+        "Model from the queries: the partition key decides where a query goes, clustering columns decide the order inside it. One table per question, with data written to several tables.",
+        "Choose consistency per query (ONE, QUORUM, LOCAL_QUORUM). Deletes leave tombstones, so tables used like queues or with heavy deletes slow down."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "How data is placed"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each partition key is hashed to a token on a ring; virtual nodes (16 per node by default since 4.0) give each node many small ranges.",
+        "With replication factor 3, a partition lives on three nodes. NetworkTopologyStrategy places copies in different racks and data centres.",
+        "Any node can receive a request and coordinate it with the replicas. There is no leader to fail over.",
+        "Writes go to a commit log and a memtable, then to immutable SSTables merged by compaction: the Bigtable write path on Dynamo's ring."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Modelling: one table per question"
+    },
+    {
+      "t": "fig",
+      "id": "cass-model",
+      "cap": "The partition key is the address of the data. A query that gives it goes to three nodes; a query that doesn't goes to all of them."
+    },
+    {
+      "t": "list",
+      "items": [
+        "List the queries first. 'Messages of a chat, newest first' becomes `messages_by_chat`, partitioned by chat_id and clustered by sent_at DESC.",
+        "Another question, such as 'chats of a user', is another table. The application writes both; batches keep writes to several tables together, at some cost.",
+        "Keep partitions bounded: well under about 100 MB. A chat that runs for years needs a time bucket in its key: (chat_id, month).",
+        "Secondary indexes and `ALLOW FILTERING` exist, but on big tables they ask every node. Treat them as a sign the model is missing a table."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Consistency you choose per query"
+    },
+    {
+      "t": "table",
+      "label": "Consistency levels with replication factor 3",
+      "head": [
+        "Level",
+        "Waits for",
+        "Use for"
+      ],
+      "rows": [
+        [
+          "ONE",
+          "1 replica",
+          "Fast reads where slightly old data is fine; logs and metrics"
+        ],
+        [
+          "QUORUM",
+          "2 of 3 replicas, anywhere",
+          "Reads that must see the latest QUORUM write, in one data centre"
+        ],
+        [
+          "LOCAL_QUORUM",
+          "2 of 3 in the local data centre",
+          "The usual choice with several data centres: strong locally, no cross-region wait"
+        ],
+        [
+          "ALL",
+          "All 3",
+          "Rarely: one replica down and the request fails"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Writing and reading at QUORUM gives read-your-latest-write, because 2 + 2 > 3. Conditional writes (`INSERT … IF NOT EXISTS`) use Paxos and take several round trips, so use them only where you need compare-and-set, such as claiming a username."
+    },
+    {
+      "t": "h2",
+      "x": "Deletes and tombstones"
+    },
+    {
+      "t": "fig",
+      "id": "cass-tombstone",
+      "cap": "In a system without a leader, a delete must be remembered for a while, or a replica that missed it would bring the row back. That memory is the tombstone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't use Cassandra as a queue: insert-then-delete patterns build up tombstones in exactly the partitions you read most.",
+        "Prefer TTLs on time-series data with TimeWindowCompactionStrategy, so whole files expire together.",
+        "Run repair regularly, more often than gc_grace_seconds, so every replica has seen each delete before its tombstone is dropped.",
+        "Overwrites are cheap, but updating a collection by replacing it entirely also writes tombstones."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · A RIDER'S PATH, EXPIRING ON ITS OWN",
+      "x": "CREATE TABLE rider_path (\n  order_id bigint, at timestamp, lat double, lng double,\n  PRIMARY KEY ((order_id), at)\n) WITH CLUSTERING ORDER BY (at DESC)\n  AND default_time_to_live = 604800                -- 7 days\n  AND compaction = {'class': 'TimeWindowCompactionStrategy'};",
+      "say": "A table of a rider's path for each order: one partition per order, points sorted newest first. Every row expires after 7 days, and time-window compaction groups rows by time so whole files expire together instead of leaving tombstones scattered through the table."
+    },
+    {
+      "t": "h2",
+      "x": "Running it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Nodes are added or removed while the cluster serves traffic; data streams to the new owner of each range.",
+        "Compaction needs spare disk (up to half the disk for the default strategy), so don't fill nodes past about half.",
+        "ScyllaDB is a compatible rewrite in C++; managed versions exist on the big clouds.",
+        "It shines for heavy, steady writes with known queries: messages, events, sensor data, rider locations. It is a poor fit for ad hoc queries, joins and transactions."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Cassandra, DynamoDB or PostgreSQL"
+    },
+    {
+      "t": "table",
+      "label": "Choosing a store for heavy writes",
+      "head": [
+        "Store",
+        "Choose it when",
+        "Think twice when"
+      ],
+      "rows": [
+        [
+          "Cassandra",
+          "Very high, steady writes; several regions taking writes; you can run a cluster",
+          "Queries change often; you need joins or transactions"
+        ],
+        [
+          "DynamoDB",
+          "You want the same key-first model with no servers to run",
+          "You are not on that cloud, or traffic is steady enough that a cluster is cheaper"
+        ],
+        [
+          "PostgreSQL",
+          "Data with relations and rules; queries you can't predict",
+          "Writes outgrow one primary and sharding by hand looks worse"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Usual replication factor",
+          "3 in each data centre"
+        ],
+        [
+          "Keep partitions under",
+          "about 100 MB"
+        ],
+        [
+          "Tombstones per read",
+          "warning at 1,000, failure at 1,00,000"
+        ],
+        [
+          "Tombstones kept for",
+          "gc_grace_seconds, 10 days by default"
+        ],
+        [
+          "Virtual nodes per node",
+          "16 by default since 4.0"
+        ],
+        [
+          "Writes per node",
+          "thousands to tens of thousands a second, by hardware and row size"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Write the table: partition key, clustering columns, order, and the query it serves.",
+        "Bound partition size with a time bucket, and mention hot partitions.",
+        "Give the consistency level: LOCAL_QUORUM for reads and writes, and why.",
+        "Mention tombstones if the design deletes a lot, and avoid queue-like tables."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why last write wins",
+      "body": [
+        {
+          "t": "p",
+          "x": "Every cell carries a write timestamp, and when replicas disagree the newest timestamp wins. That makes conflicts simple but means clocks matter: a node with a clock running ahead can make its writes win over later ones. Keep clocks in sync, and for a value that must not be lost to a race, such as a counter, use Cassandra's counter type or a conditional write."
+        }
+      ]
+    }
+  ]
+}
