@@ -1,13 +1,14 @@
 import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./dashboard.css";import Problems,{Questions}from"./problems.jsx";
-import Numbers from"./numbers.jsx";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import{PAPER_FIGS}from"./figs/papers.jsx";import{TOOL_FIGS}from"./figs/tools.jsx";import LibraryCards from"./library.jsx";import{Analytics}from"@vercel/analytics/react";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle,vercelGate}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
+import Numbers from"./numbers.jsx";import{routeKey,pathFor}from"./routes.js";import{LOOP,Dot,Box,Arr,Glow,Show,Mark}from"./figs/parts.jsx";import{COMPONENT_FIGS}from"./figs/components.jsx";import{CONCEPT_FIGS}from"./figs/concepts.jsx";import{QUESTION_FIGS}from"./figs/questions.jsx";import{PAPER_FIGS}from"./figs/papers.jsx";import{TOOL_FIGS}from"./figs/tools.jsx";import LibraryCards from"./library.jsx";import{Analytics}from"@vercel/analytics/react";import Tour from"./tour.jsx";import{startAccount,wireSync}from"./account.js";import{track,referrer,readArticle,vercelGate}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
 const ICON={problems:"M3.5 5.5l1.5 1.5 2.5-2.5M10 6h6.5M3.5 10.5l1.5 1.5 2.5-2.5M10 11h6.5M3.5 15.5h4M10 16h6.5",papers:"M5 2.5h7l3 3v12H5zM12 2.5v3h3M7.5 9h5M7.5 12h5M7.5 15h3",lab:"M7.5 3h5M8.5 3v5.2L4.2 15.6A1 1 0 0 0 5.1 17h9.8a1 1 0 0 0 .9-1.4L11.5 8.2V3M6.3 12.5h7.4",concepts:"M3 4.5h5.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 0-1.5-1.5H3zM17 4.5h-5.5A1.5 1.5 0 0 0 10 6v10a1.5 1.5 0 0 1 1.5-1.5H17z",components:"M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z","interview-questions":"M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3","quick-notes":"M4 5h9M4 9h7M4 13h4M15.5 8.5l2 2-6 6H9.5v-2z",menu:"M3 5h14M3 10h14M3 15h14",collapse:"M3 4h14v12H3zM8 4v12M14 8l-2 2 2 2",close:"M5 5l10 10M15 5L5 15",back:"M12 5l-5 5 5 5"};
 const Icon=({name})=><svg className="ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[name]}/></svg>;
 // Filled from the API at boot (see bottom): site copy, dashboard chrome, article summaries, example system.
 let c,d,ids,articles,example;
-// Hash routes: #<section> lists a section, #<section>/<slug> opens an article.
-const fromHash=()=>{let h;try{h=decodeURIComponent(location.hash.slice(1))}catch{h=""}const[sec,slug]=h.split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"||sec==="problems"&&c.problems?.solve?slug:undefined}};
+// Routes: /dashboard/<section>/ lists a section, /dashboard/<section>/<slug>/ opens an article (routes.js).
+// In-app links use #<section>/<slug>; the address bar then shows the path form (see Dashboard).
+const fromHash=()=>{const[sec,slug]=routeKey(location).split("/");if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="lab"||sec==="problems"&&c.problems?.solve?slug:undefined}};
 const inline=x=>x.split(/`([^`]+)`/).map((t,i)=>i%2?<code key={i}>{t}</code>:t);
 // Read time of the main text; "more" sections and type details are extra.
 const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
@@ -226,6 +227,7 @@ if(open||!c.account?.pageLock)return false;if(!a.ready)return"wait";if(!a.enable
 return route.art?route.art.title:d.sections.find(s=>s[0]===route.sec)?.[1]||""}
 // Skip link: the dashboard routes on the hash, so it focuses <main> instead of linking to an id.
 const skipToMain=e=>{e.preventDefault();const m=document.querySelector("main");if(m){m.focus();m.scrollIntoView()}};
+const keyOf=r=>!r.sec?"":r.art?`${r.sec}/${r.art.slug}`:r.sub?`${r.sec}/${r.sub}`:r.sec;
 function Dashboard(){const[route,setRoute]=useState(fromHash);const gate=useGate(route);const firstView=useRef(true);useEffect(()=>{track("page_view",{section:route.sec||"home",slug:route.art?.slug||route.sub||"",ref:firstView.current?referrer():""});firstView.current=false},[route.sec,route.art?.slug,route.sub]);// eslint-disable-line
 const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
 // The Lab needs the width: the sidebar folds to icons there by default (the saved preference for
@@ -235,11 +237,14 @@ const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-side
 const ws=!c.problems?.solve?null:active==="problems"&&route.sub?route.sub:route.art&&route.art.section==="interview-questions"&&route.art.group!=="start"?route.art.slug:null;
 const solving=!!ws;const inLab=(active==="lab"&&!route.art)||solving;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
 // Back/Forward return to where you were on that page; following a link starts at the top (QA M8).
-useEffect(()=>{const pos=new Map();let clicked=false,key=location.hash;const onScroll=()=>pos.set(key,scrollY);const onClick=e=>{const a=e.target.closest?.("a[href^='#']");if(a)clicked=true};
+useEffect(()=>{const pos=new Map();let clicked=false,key=routeKey(location);const onScroll=()=>pos.set(key,scrollY);const onClick=e=>{const a=e.target.closest?.("a[href^='#']");if(a)clicked=true};
 addEventListener("scroll",onScroll,{passive:true});document.addEventListener("click",onClick,true);
-const restore=()=>{const want=clicked?0:pos.get(location.hash)||0;clicked=false;key=location.hash;if(!want){scrollTo(0,0);return}let n=0;const go=()=>{scrollTo(0,want);if(Math.abs(scrollY-want)>2&&++n<40)setTimeout(go,50)};go()};
-addEventListener("hashchange",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore)}},[]);
-useEffect(()=>{const f=()=>{setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
+const restore=()=>{const k=routeKey(location);if(k===key)return;const want=clicked?0:pos.get(k)||0;clicked=false;key=k;if(!want){scrollTo(0,0);return}let n=0;const go=()=>{scrollTo(0,want);if(Math.abs(scrollY-want)>2&&++n<40)setTimeout(go,50)};go()};
+addEventListener("hashchange",restore);addEventListener("popstate",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore);removeEventListener("popstate",restore)}},[]);
+// A link (#…) or Back/Forward (a path) changes the route; both events can fire for one link, so only a new
+// route counts. The address bar then shows the route's own path, the one search engines and shares use.
+useEffect(()=>{let last=routeKey(location);const f=()=>{const k=routeKey(location);if(k===last)return;last=k;setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);addEventListener("popstate",f);return()=>{removeEventListener("hashchange",f);removeEventListener("popstate",f)}},[]);
+useEffect(()=>{const p=pathFor(keyOf(route));if(location.pathname!==p||location.hash){try{history.replaceState(history.state,"",p)}catch{}}let l=document.querySelector('link[rel="canonical"]');if(!l){l=document.createElement("link");l.rel="canonical";document.head.appendChild(l)}l.href="https://tech.katta.cc"+p},[route]);
 useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
 // Guided tour, one per kind of page: the dashboard, a problem's workspace, the Lab. It opens only when
 // the Tour button is pressed (owner's decision, 2026-11-07): never by itself.

@@ -13,6 +13,10 @@
       "destination": "/dashboard/index.html"
     },
     {
+      "source": "/dashboard/:path+",
+      "destination": "/dashboard/index.html"
+    },
+    {
       "source": "/analytics",
       "destination": "/analytics/index.html"
     }
