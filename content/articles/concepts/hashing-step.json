@@ -1,0 +1,103 @@
+{
+  "section": "concepts",
+  "slug": "hashing-step",
+  "group": "consistent-hashing",
+  "no": "CONCEPT // 58",
+  "tag": "CONSISTENT HASHING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Consistent hashing in an interview: when to name it, and when to explain it",
+  "dek": "Consistent hashing decides which server holds each piece of data so that adding or removing a server moves only a small share of it. Most interviews need only one sentence about it, because the database or cache you choose already does it. In interviews about building the storage system itself, a distributed database, cache or message broker, it becomes a core part of the answer. This article says which is which, and what to be ready to explain.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "The problem it solves: with hash(key) % N, changing the number of servers N moves almost every key. Consistent hashing moves only about 1/N of them.",
+        "In most interviews, one sentence is enough: 'DynamoDB (or Cassandra) spreads partitions with a form of consistent hashing, so we can add capacity without reshuffling everything.'",
+        "In infrastructure interviews (design a distributed cache, database or message broker), be ready to explain the ring, virtual nodes, failures, hot keys and how replication fits in."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem, in one picture"
+    },
+    {
+      "t": "p",
+      "x": "Once data is split across several servers, every request must work out which server holds its key. The obvious rule is hash(key) % N, where N is the number of servers. It spreads keys evenly, until N changes. Add a fifth server to four and the rule becomes % 5: almost every key now maps to a different server, so almost all the data has to move at once, and the databases spend the next hours copying instead of serving. Losing a server causes the same reshuffle."
+    },
+    {
+      "t": "fig",
+      "id": "hash-move",
+      "cap": "Twenty keys on four servers, then five. With % N most keys change server; on a ring, only the keys the new server takes over move."
+    },
+    {
+      "t": "p",
+      "x": "Consistent hashing fixes this by placing servers and keys on a circle and giving each key to the next server clockwise. Adding a server takes over a slice of one neighbour's keys; removing one hands its keys to its neighbour; everything else stays put. The article 'The hash ring' walks through it step by step."
+    },
+    {
+      "t": "h2",
+      "x": "Most interviews: name it and move on"
+    },
+    {
+      "t": "p",
+      "x": "Most modern databases and caches spread data for you. When the design uses DynamoDB, Cassandra or a managed Redis cluster, you don't need to explain the algorithm; say that the system uses consistent hashing, or something like it, under the hood, so it can add capacity and survive failures without reshuffling all the data. Then spend your time on the shard key and the queries."
+    },
+    {
+      "t": "h2",
+      "x": "Infrastructure interviews: go deep"
+    },
+    {
+      "t": "p",
+      "x": "It becomes central when the question is to build the distributed part yourself:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Design a distributed database or key-value store.",
+        "Design a distributed cache.",
+        "Design a distributed message broker or log."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "In those, be ready to explain:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Why consistent hashing beats hash % N: how much data moves when a server joins or leaves.",
+        "How virtual nodes even out the load and spread a failed server's keys across all the others.",
+        "What happens when a server fails, and when one is added.",
+        "How hot keys arise even when keys are spread evenly, and how replication and key salting deal with them.",
+        "How replication works on the ring, so a failure doesn't mean moving data at all."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The articles 'The hash ring' and 'Rings in practice' cover each of these."
+    },
+    {
+      "t": "h2",
+      "x": "The name is used loosely"
+    },
+    {
+      "t": "p",
+      "x": "Many systems said to use consistent hashing actually use a close cousin: a fixed number of hash slots or buckets, assigned to servers and moved between them in whole units. Redis Cluster's 16,384 slots and DynamoDB's internal partitions work this way. 'Designing Data-Intensive Applications' points out the same confusion. What matters is the principle they share: when servers come and go, only a bounded share of the data moves."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For most designs: one sentence, naming the database that does it.",
+        "For infrastructure designs: the ring, virtual nodes, failures, hot keys and replication, in that order.",
+        "Know the alternative: fixed slots or buckets, as Redis Cluster does, and when you'd choose them."
+      ]
+    }
+  ]
+}
