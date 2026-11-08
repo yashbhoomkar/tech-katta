@@ -1,0 +1,246 @@
+{
+  "section": "concepts",
+  "slug": "estimates",
+  "group": "basics",
+  "no": "CONCEPT // 10",
+  "tag": "ESTIMATION",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Back-of-envelope maths: the figures worth memorising",
+  "dek": "Estimates answer one question early in a design: does this fit on one machine, or does it need many? You don't need precision, just the right order of magnitude, a handful of memorised figures, and the habit of saying your assumptions out loud.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "An estimate decides the shape of the design: one database or many, cache or not, one region or several. Orders of magnitude are enough.",
+        "Memorise a few anchors: one day is about 1 lakh seconds; memory is about 1,000 times faster than an SSD; a round trip within India is tens of milliseconds; one database handles thousands of simple queries a second.",
+        "Go from the requirement to requests per second, then the peak, then reads and writes separately, then bytes per day and per year, and compare each with what one machine can do."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Units that make Indian numbers easy"
+    },
+    {
+      "t": "table",
+      "label": "Conversions",
+      "head": [
+        "Figure",
+        "Value",
+        "Use it for"
+      ],
+      "rows": [
+        [
+          "1 lakh",
+          "100,000 = 10⁵",
+          "One day is about 86,400 s, so about 1 lakh seconds"
+        ],
+        [
+          "1 crore",
+          "10,000,000 = 10⁷",
+          "1 crore a day ÷ 1 lakh s ≈ 100 a second (116 exactly)"
+        ],
+        [
+          "10 lakh a day",
+          "≈ 12 a second",
+          "A small service; any one machine copes"
+        ],
+        [
+          "1 KB × 1 crore",
+          "≈ 10 GB",
+          "Rows of data per day or in total"
+        ],
+        [
+          "Peak",
+          "2 to 3 × the average",
+          "Dinner time; 10 × or more during a sale"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Time: how long things take"
+    },
+    {
+      "t": "table",
+      "label": "Latency anchors",
+      "head": [
+        "Operation",
+        "Roughly",
+        "So"
+      ],
+      "rows": [
+        [
+          "Read from memory",
+          "100 ns",
+          "A cache lookup's work is almost free"
+        ],
+        [
+          "SSD random read",
+          "100 µs",
+          "About 1,000 × slower than memory"
+        ],
+        [
+          "Round trip in one data centre",
+          "0.5 ms",
+          "A network call costs more than the lookup itself"
+        ],
+        [
+          "Indexed database read",
+          "1 ms",
+          "Fine once per request, slow a hundred times in a loop"
+        ],
+        [
+          "Mumbai to Delhi and back",
+          "25–35 ms",
+          "Fine for a page; noticeable if chained"
+        ],
+        [
+          "India to the US east coast and back",
+          "~200 ms",
+          "Why Indian users need servers in India"
+        ]
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "est-budget",
+      "cap": "A 300 ms target is mostly spent outside your servers: the network and the phone take more than half. Work you do in parallel costs only as much as its slowest part, and a cache read barely registers."
+    },
+    {
+      "t": "h2",
+      "x": "Capacity: what one machine can do"
+    },
+    {
+      "t": "p",
+      "x": "These are rough, for simple operations on a modern server. They vary several-fold with the work per request, so use them to decide whether you need one machine or fifty, not one or two."
+    },
+    {
+      "t": "table",
+      "label": "Rules of thumb per machine",
+      "head": [
+        "Component",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "API server, simple requests",
+          "a few thousand requests a second"
+        ],
+        [
+          "Relational database primary",
+          "thousands to tens of thousands of simple indexed reads a second; writes a few thousand a second"
+        ],
+        [
+          "In-memory cache node",
+          "around 1 lakh operations a second"
+        ],
+        [
+          "Log partition (Kafka-style)",
+          "tens of MB a second"
+        ],
+        [
+          "Network card",
+          "10 Gbit/s ≈ 1.25 GB a second"
+        ],
+        [
+          "Memory and disk",
+          "64–512 GB of memory; several TB of SSD"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Size: how big things are"
+    },
+    {
+      "t": "table",
+      "label": "Sizes worth knowing",
+      "head": [
+        "Thing",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "An order row, with items",
+          "1–2 KB"
+        ],
+        [
+          "A user profile",
+          "about 1 KB"
+        ],
+        [
+          "A dish photo, compressed for the app",
+          "100–300 KB"
+        ],
+        [
+          "One minute of 720p video",
+          "about 5–15 MB"
+        ],
+        [
+          "1 crore rows of 1 KB",
+          "about 10 GB, before indexes and copies"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "A worked estimate"
+    },
+    {
+      "t": "fig",
+      "id": "est-funnel",
+      "cap": "Six multiplications turn 'a crore orders a day' into decisions: the writes fit one primary, the reads need a cache or replicas, and the data needs a plan for its second year."
+    },
+    {
+      "t": "list",
+      "items": [
+        "State the assumptions first: 1 crore orders a day, three times the average at dinner, each order read about 20 times, about 2 KB each.",
+        "Writes: 1 crore ÷ 1 lakh s ≈ 116 a second; at peak ≈ 350. One database primary handles that.",
+        "Reads: 350 × 20 ≈ 7,000 a second at peak. Possible on one database, but a cache or read replicas give headroom.",
+        "Storage: 2 KB × 1 crore ≈ 20 GB a day, about 7 TB a year, more with indexes and three copies. One machine holds a year; several years need archiving or sharding.",
+        "Bandwidth: 7,000 reads × 2 KB ≈ 14 MB a second, far below one network card."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Mistakes that sink estimates"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Forgetting the peak: dinner, a sale or a cricket final can be 3 to 10 times the daily average.",
+        "Forgetting copies: three replicas triple storage, and indexes add more on top.",
+        "Mixing bits and bytes: a 10 Gbit/s link moves 1.25 GB a second, not 10.",
+        "Mixing per day and per second: always convert to per second before comparing with a machine's capacity.",
+        "False precision: 116.7 orders a second is not more useful than 'about a hundred'."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say your assumptions, round hard, and write the numbers where the interviewer can see them.",
+        "Compute requests per second at peak, reads and writes separately, storage per year, and bandwidth if media is involved.",
+        "Turn each number into a decision: one database or shards, cache or not, CDN or not.",
+        "Come back to the numbers when the design changes, such as adding a feed that multiplies reads."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: when bandwidth is the number that matters",
+      "body": [
+        {
+          "t": "p",
+          "x": "For video or images, bandwidth dominates. One lakh people watching a live match at about 2 Mbit/s each need about 200 Gbit/s, which is twenty fully loaded 10-gigabit network cards just for that stream. No origin server can do that alone, which is why video is served from a CDN and why the Video streaming problem starts with bandwidth rather than requests per second."
+        }
+      ]
+    }
+  ]
+}
