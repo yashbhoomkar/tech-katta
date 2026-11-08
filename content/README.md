@@ -36,9 +36,8 @@ copy the paper's text or diagrams.
 
 Networking essentials (owner 11-08) is a group inside Concepts (CONCEPT // 26-36), not a tab: how machines
 reach each other, from layers and addresses to load balancers, live updates, distance and failing calls.
-Figures are `NETWORK_FIGS` in `frontend/src/figs/network.jsx`. Written in our own words, structure and figures,
-through Zotato; another site's page on the topic is reference for which topics to cover only, never
-rephrased paragraph by paragraph, copied or named.
+Figures are `NETWORK_FIGS` in `frontend/src/figs/network.jsx`. Written through Zotato with our own figures; another
+site's page on the topic was the reference for what to cover, point by point. Don't name that site on ours.
 
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry

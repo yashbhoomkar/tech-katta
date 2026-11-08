@@ -141,7 +141,9 @@
         "`dig api.example.com` shows a DNS answer and its TTL; run it twice and watch the TTL count down from the cached copy.",
         "In the browser's developer tools, the Network tab breaks every request into DNS, connecting, TLS, waiting and download. Turn on throttling (for example 'Slow 4G') and reload: the handshakes, not the downloads, take most of the time.",
         "`traceroute` (or `mtr`) lists the routers between you and a server and the round trip to each, which shows where distance is spent.",
-        "Wireshark captures the packets themselves: the SYN, SYN-ACK and ACK, the TLS hello, retransmissions on a bad network."
+        "Wireshark captures the packets themselves: the SYN, SYN-ACK and ACK, the TLS hello, retransmissions on a bad network.",
+        "HTTP/1.1 is plain text, so you can even type a request by hand: `nc example.com 80`, then `GET / HTTP/1.1`, `Host: example.com` and an empty line.",
+        "To feel a bad network on purpose, add delay and loss: Apple's Network Link Conditioner (part of Xcode's extra tools) on a Mac or iPhone, or `tc netem` on Linux. Try your own app on a poor 3G profile and watch what it does when calls stall."
       ]
     },
     {

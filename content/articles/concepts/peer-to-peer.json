@@ -76,6 +76,7 @@
       "items": [
         "Use it for audio and video between people: rider–customer calls, support video calls, consultations. Nothing else in a browser gets you low-latency media.",
         "Collaborative editing (a shared document or a group cart) can run over WebRTC data channels, but you still need a server to store the document, check permissions and handle people who join later. A WebSocket to that server is usually simpler, and it's what most editors do.",
+        "A middle path for shared editing: send edits directly between peers and merge them with CRDTs, data structures built so that every copy ends up the same whatever order the edits arrive in. It removes the server from the editing path, but a server is still needed to store the document and bring newcomers up to date.",
         "Plan for failure: even good WebRTC setups lose calls on bad networks. Have the app retry, and fall back to a normal phone call through a masked number if needed."
       ]
     },

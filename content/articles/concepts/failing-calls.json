@@ -31,7 +31,8 @@
         "The server is slow: overloaded, garbage collecting, waiting on its own slow dependency.",
         "The work succeeds but the response is lost. This is the dangerous one: the caller can't tell it from a failure.",
         "The call fails fast with an error: connection refused, 503, 429.",
-        "Partial failure: one replica is bad, one zone is cut off, one in a hundred calls fails."
+        "Partial failure: one replica is bad, one zone is cut off, one in a hundred calls fails.",
+        "Underneath all of these, the physical world fails: a bit flips in memory, a rack loses power, a fibre cable is dug up, a router reboots."
       ]
     },
     {
@@ -75,7 +76,7 @@
     },
     {
       "t": "p",
-      "x": "In an interview, 'retry with exponential backoff and jitter' is the phrase to use, and being able to explain why jitter matters is what separates senior answers."
+      "x": "For a thorough treatment with measurements, AWS's Builders' Library article on timeouts, retries and backoff with jitter is worth reading. In an interview, 'retry with exponential backoff and jitter' is the phrase to use, and being able to explain why jitter matters is what separates senior answers."
     },
     {
       "t": "h2",

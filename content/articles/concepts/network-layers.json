@@ -33,6 +33,10 @@
       "x": "It is the same trick as reading a file. Your code opens a path and reads lines; it never moves a disk head. The file system, the driver and the disk controller each handle one part."
     },
     {
+      "t": "p",
+      "x": "How deep an interview goes depends on the role. For infrastructure, platform or networking roles, expect follow-up questions on load balancers, CDNs, timeouts and what breaks; interviewers there have often just dealt with exactly those in production. For product and full-stack roles, a sound working knowledge of the pieces in this group is enough."
+    },
+    {
       "t": "fig",
       "id": "nw-stack",
       "cap": "On the way down, each layer wraps what it was given in its own small header: HTTP's request inside TCP's segment, inside IP's packet, inside a Wi-Fi or Ethernet frame. The server peels them off in reverse until its application sees the same GET /menu/42."
@@ -80,6 +84,10 @@
     {
       "t": "p",
       "x": "The numbers come from the seven-layer OSI model. Nobody needs layers 5 and 6 in an interview; when people say a load balancer works at 'layer 4' or 'layer 7', they mean it reads only TCP connections, or reads the HTTP requests inside them. That distinction has its own article in Networking essentials."
+    },
+    {
+      "t": "p",
+      "x": "IP is not the only option at layer 3. Large machine-learning training clusters often connect their machines with InfiniBand, which skips much of the usual stack for lower latency. For system design interviews, IP is assumed everywhere."
     },
     {
       "t": "p",

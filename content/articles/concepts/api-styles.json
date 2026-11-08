@@ -73,7 +73,7 @@
     },
     {
       "t": "p",
-      "x": "A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
+      "x": "Facebook built GraphQL for its own mobile apps and released it as open source in 2015. A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
     },
     {
       "t": "list",
