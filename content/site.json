@@ -318,6 +318,11 @@
           "networking",
           "Networking essentials",
           "How machines reach each other: layers, one request end to end, TCP or UDP, HTTP, API styles, live updates, WebRTC, load balancing, distance and failing calls."
+        ],
+        [
+          "api-design",
+          "API design",
+          "The API step in an interview: REST endpoints, GraphQL, RPC, habits of a clean API, everyday patterns and security."
         ]
       ],
       "interview-questions": [

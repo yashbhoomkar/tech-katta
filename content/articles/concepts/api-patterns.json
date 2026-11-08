@@ -1,0 +1,145 @@
+{
+  "section": "concepts",
+  "slug": "api-patterns",
+  "group": "api-design",
+  "no": "CONCEPT // 42",
+  "tag": "API DESIGN",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Everyday API patterns: pages, filters, retries, errors and versions",
+  "dek": "The same handful of patterns turn up in every real API, whether it is REST, GraphQL or RPC: return long lists in pages, filter and sort with query parameters, make retried writes harmless, describe errors in one consistent shape, and version the API so old clients keep working.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Pages: offset (?offset=40&limit=20) is simple but repeats or skips rows when data changes; a cursor (the last item seen) stays correct. Offset is fine unless the list changes fast or is huge.",
+        "Filters and sorting go in the query string, named the same way everywhere: ?status=delivered&sort=-created_at.",
+        "Idempotency keys make retried writes safe; one error envelope with a stable code makes errors usable; /v1/ in the URL is the simplest way to version."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Pagination"
+    },
+    {
+      "t": "p",
+      "x": "A city's restaurant list or a busy restaurant's order history can have tens of thousands of rows. No client needs them all at once, and returning them all would be slow for everyone. Every list endpoint returns a page and a way to get the next one."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Offset pagination skips a number of rows and returns the next few: /restaurants/42/orders?offset=40&limit=20 gives rows 41 to 60. Easy to build and allows 'jump to page 7'.",
+        "Its flaw shows when rows arrive while someone is paging: a new order pushes everything down one place, so the next page repeats a row (or, with deletes, skips one). Large offsets are also slow, because the database still walks past every skipped row.",
+        "Cursor pagination remembers where you stopped instead of counting: the response carries a cursor, usually the encoded id or timestamp of the last row, and the next request asks for rows after it. New rows don't shift anything, and the query uses an index directly.",
+        "Its cost: no jumping to page 7, only next (and sometimes previous). For feeds, histories and infinite scroll, that is all anyone needs."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "api-pages",
+      "cap": "A new order arrives between page 1 and page 2. Counting rows (offset) shows order 46 twice; asking for orders older than the last one seen (cursor) does not."
+    },
+    {
+      "t": "code",
+      "label": "A cursor-paged response",
+      "x": "GET /restaurants/42/orders?limit=20\n\n{\n  \"orders\": [ {\"id\": 9120, …}, …, {\"id\": 9101, …} ],\n  \"next_cursor\": \"b3JkZXI6OTEwMQ\"\n}\n\nGET /restaurants/42/orders?limit=20&cursor=b3JkZXI6OTEwMQ",
+      "say": "A cursor-paged list: the first request returns twenty orders and a next cursor that encodes the last order's id; the next request passes that cursor to continue."
+    },
+    {
+      "t": "p",
+      "x": "In an interview, any pagination is better than none: say 'paginated' on every list endpoint. Offset is acceptable for most problems; pick a cursor when the list changes quickly (feeds, live orders) or is very large, and say why."
+    },
+    {
+      "t": "h2",
+      "x": "Filtering and sorting"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Filters are query parameters named after fields: /restaurants?city=pune&veg=true&open_now=true.",
+        "Sorting takes a field and a direction; a leading minus is a common convention for descending: ?sort=-rating, ?sort=delivery_time.",
+        "Use the same names everywhere. If orders filter by status, payments and refunds filter by status too, with the same values where they mean the same thing.",
+        "In an interview, show one filtered endpoint fully and say the others follow the same conventions."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Idempotency keys"
+    },
+    {
+      "t": "p",
+      "x": "A customer taps 'Place order', the network stalls, and the app retries. If the first attempt reached the server, a naive API now has two orders and two charges. 'Never retry' isn't an option on mobile networks, so the API has to make a repeated request harmless."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The client generates a unique key for each logical operation (this order attempt, not each HTTP request) and sends it in a header, usually `Idempotency-Key`.",
+        "The server stores the key with the outcome of the first request. A repeat with the same key gets the stored response; nothing is created or charged again.",
+        "Payment providers such as Stripe and Razorpay work exactly this way, which is a good thing to mention.",
+        "It matters wherever a duplicate costs money or trust: orders, payments, bookings, refunds, transfers. Bringing it up unprompted shows you think about failure."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The figure 'The same payment, sent twice' under 'When calls fail' in Networking essentials walks through a retried payment step by step."
+    },
+    {
+      "t": "h2",
+      "x": "Consistent errors"
+    },
+    {
+      "t": "p",
+      "x": "The status code says what kind of failure it was; the body should say exactly what went wrong, in the same shape on every endpoint."
+    },
+    {
+      "t": "code",
+      "label": "One error shape for every endpoint",
+      "x": "HTTP/1.1 409 Conflict\n\n{\n  \"error\": {\n    \"code\": \"RESTAURANT_CLOSED\",\n    \"message\": \"Shree Misal stopped taking orders at 10:30 pm.\",\n    \"retryable\": false\n  }\n}",
+      "say": "An error response: status 409 Conflict and a JSON error with a stable code, RESTAURANT_CLOSED, a message for people, and whether retrying makes sense."
+    },
+    {
+      "t": "fig",
+      "id": "ad-errors",
+      "cap": "The app branches on the stable code, never on the message. The message can be reworded or translated at any time without breaking a single client."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The code is a contract: clients write logic against it (show the 'closed' screen, open the address picker), so it never changes.",
+        "The message is for humans and can change freely.",
+        "Use the same envelope everywhere so the app's error handling is written once.",
+        "In an interview, one sentence covers it: 'errors use one envelope with a machine-readable code and a message'."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Versioning"
+    },
+    {
+      "t": "list",
+      "items": [
+        "APIs change, and old clients (especially mobile apps that users never update) must keep working. Public and partner APIs need a plan most of all.",
+        "URL versioning, /v1/orders then /v2/orders, is the most common: explicit, easy to route at the gateway, easy to see in logs and to try in a browser.",
+        "Header versioning (`API-Version: 2`, or a version in the Accept header) keeps URLs stable and is closer to how HTTP intends content to be negotiated, but it's invisible in a URL and harder to test by hand.",
+        "Prefer compatible changes so you need new versions rarely: add optional fields and new endpoints; never rename or remove in place.",
+        "In an interview, default to /v1/ in the URL if it comes up. It rarely does, but that reflects what interviewers ask about, not how much it matters in production."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Paginate every list (and say offset or cursor, with a reason).",
+        "Show one filtered, sorted endpoint and claim the convention for the rest.",
+        "Put an idempotency key on every write that costs money or creates something users care about.",
+        "One line each for errors (envelope with a code) and versions (/v1/)."
+      ]
+    }
+  ]
+}
