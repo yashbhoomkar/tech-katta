@@ -193,7 +193,7 @@
           "t": "list",
           "items": [
             "\"Hourly and daily numbers?\" Add up minute rows into hour and day rows as each closes; never recount raw events for a dashboard.",
-            "\"Unique viewers per ad?\" Exact counts of distinct people are expensive; an estimate (HyperLogLog) is a few KB per ad and close enough for a dashboard. Unlike counts, uniques can't be added up across minutes; merge the estimates instead.",
+            "\"Unique viewers per ad?\" Exact counts of distinct people are expensive; an estimate (HyperLogLog) is about 12 KB per ad, within about 1%, and close enough for a dashboard. Unlike counts, uniques can't be added up across minutes; merge the estimates instead.",
             "\"An advertiser disputes a bill?\" Recount their ad from the raw events with the rules of that day, and show the invalid clicks with reasons.",
             "\"The aggregator falls an hour behind?\" Add aggregators (up to one per partition); the log keeps the events, and the dashboard says how far behind it is.",
             "\"How do you test it?\" Replay a day of events with injected repeats, late clicks and bots, and check the fast counts and the recount agree within the expected difference."

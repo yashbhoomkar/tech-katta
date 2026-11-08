@@ -130,7 +130,7 @@
         "Reach for a Bloom filter when you need 'have I seen this?' over a huge set, memory is tight, and an occasional false 'yes' is cheap to double-check.",
         "Size it out loud: items × 10 bits for about 1% error.",
         "Say what a false positive costs in your design: an extra database read is fine; refusing a username that is actually free may not be, so confirm 'yes' answers against the database.",
-        "Mention that it can't delete, and what you'd do instead: rebuild it periodically, or use a counting filter."
+        "Mention that it can't delete, and what you'd do instead: rebuild it periodically, or use a counting filter. Its cousins, HyperLogLog and Count-Min, are in the Sketches concept."
       ]
     },
     {
