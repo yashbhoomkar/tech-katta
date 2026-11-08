@@ -151,6 +151,19 @@
     },
     {
       "t": "h2",
+      "x": "Try it"
+    },
+    {
+      "t": "p",
+      "x": "The ring below holds 40 match keys, coloured by the server that owns them. Add a server, remove one, make S2 fail, or switch virtual nodes on. After each change the keys that moved are ringed in red, and when the number of servers changes the counter shows how many would have moved with hash % N instead. Watch how unevenly four single points split the keys, and how much more even six points per server make it."
+    },
+    {
+      "t": "fig",
+      "id": "ch-playground",
+      "cap": "An interactive ring: 40 keys, up to eight servers. Each change reports how many keys moved, and compares it with hash % N; the bars show how many keys each server holds."
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
