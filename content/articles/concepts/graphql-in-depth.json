@@ -43,6 +43,11 @@
       "say": "A GraphQL query for the customer's order screen: the order's status and ETA, the rider's name and phone, and each item's name and quantity."
     },
     {
+      "t": "fig",
+      "id": "nw-overfetch",
+      "cap": "What GraphQL fixes: a REST endpoint sends the whole object to every client; a GraphQL query names only the fields this screen shows."
+    },
+    {
       "t": "p",
       "x": "The query goes to a single URL, usually POST /graphql. The response is JSON in exactly the query's shape: an order with those six fields and nothing else. The restaurant dashboard sends its own query for the same order and gets a different shape. Adding a field to a screen is a change to the app's query, not a new backend deploy, as long as the field already exists in the schema."
     },
