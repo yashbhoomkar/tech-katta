@@ -134,6 +134,38 @@ const caps=[["1 · a key belongs to the first server clockwise from its hash",BL
 return <Fig still={still} h={250} id={`cpt${uid}`} caps={caps} title="Replication on the ring. Key K hashes to position 9, so its owner is S2, the first server clockwise. With a replication factor of 3, copies are also kept on the next two servers, S3 and S4. When S2 fails, S3 already has K and answers straight away, so nothing has to be copied before service goes on."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
+
+// Consistent hashing, interactive: a ring you can change. Not a captioned loop like the others; it has state.
+const fnv=str=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;};
+const PAL=["#1c2733","#2855d9","#c8372d","#1f8a5b","#b7791f","#7c3aed","#0e7490","#be185d"];
+const NK=40,KEYS=Array.from({length:NK},(_,i)=>{const h=fnv(`match-${i}`);return{h,p:(h%10000)/100};});
+const place=(servers,v)=>{const pts=[];servers.forEach(s=>{for(let k=0;k<(v?6:1);k++){const h=fnv(`1700:S${s}#${k}`);pts.push({s,p:(h%10000)/100});}});pts.sort((a,b)=>a.p-b.p);
+return{pts,own:KEYS.map(k=>(pts.find(x=>x.p>=k.p)||pts[0]).s)};};
+const START={servers:[1,2,3,4],v:false,prev:null,msg:"Four servers, one point each. Change something.",mod:null};
+const Btn=({x,y,w,t,on,off,act})=>{const go=e=>{if(off)return;if(e.type==="click"||e.key==="Enter"||e.key===" "){e.preventDefault();on();}};
+return <g role="button" tabIndex={off?-1:0} aria-disabled={off||undefined} aria-pressed={act===undefined?undefined:act} onClick={go} onKeyDown={go} style={{cursor:off?"default":"pointer"}}>
+<rect x={x} y={y} width={w} height={26} rx={3} fill={off?"#f4f5f7":act?BLUE:LB} stroke={off?"#d5dae1":BLUE}/><text x={x+w/2} y={y+17} textAnchor="middle" className="fb" style={{fill:off?GREY:act?"#fff":BLUE}}>{t}</text></g>;};
+function PlaygroundFig({uid=""}){const[st,set]=React.useState(START);const cur=place(st.servers,st.v);const R={cx:150,cy:162,r:104};
+const change=(servers,v,what)=>{const nx=place(servers,v);const moved=nx.own.reduce((n,o,i)=>n+(o!==cur.own[i]?1:0),0);
+const mod=v===st.v&&servers.length!==st.servers.length?KEYS.reduce((n,k)=>n+(st.servers[k.h%st.servers.length]!==servers[k.h%servers.length]?1:0),0):null;
+set({servers,v,prev:cur.own,msg:`${what}: ${moved} of ${NK} keys moved (${Math.round(moved*100/NK)}%)`,mod});};
+const next=[1,2,3,4,5,6,7,8].find(n=>!st.servers.includes(n));
+const add=()=>change([...st.servers,next],st.v,`S${next} added`),drop=()=>{const s=st.servers[st.servers.length-1];change(st.servers.slice(0,-1),st.v,`S${s} removed`);},
+fail=()=>change(st.servers.filter(n=>n!==2),st.v,"S2 failed"),vn=()=>change(st.servers,!st.v,st.v?"virtual nodes off":"virtual nodes on");
+const count=s=>cur.own.filter(o=>o===s).length;
+return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><title id={`cpg${uid}`}>An interactive hash ring with forty keys. Add or remove servers, make server 2 fail, or switch virtual nodes on, and see how many keys move compared with hash modulo N.</title>
+<text x="10" y="26" className="fb" style={{fill:BLUE}}>Try it: change the servers and watch which keys move</text>
+<Ring {...R}/>
+{KEYS.map((k,i)=>{const[x,y]=pt(R.cx,R.cy,R.r-14,k.p);const mv=st.prev&&st.prev[i]!==cur.own[i];return <g key={i}>{mv&&<circle cx={x} cy={y} r={7.5} fill="none" stroke={RED} strokeWidth="2"/>}<circle cx={x} cy={y} r={4} fill={PAL[cur.own[i]-1]}/></g>;})}
+{cur.pts.map((q,i)=>{const[x,y]=pt(R.cx,R.cy,R.r+4,q.p);return <g key={i}><circle cx={x} cy={y} r={st.v?7:10} fill={PAL[q.s-1]}/><text x={x} y={y+(st.v?3:4)} textAnchor="middle" className="fb" style={{fill:"#fff",fontSize:st.v?8:10}}>{q.s}</text></g>;})}
+<Btn x={310} y={48} w={100} t="+ add server" on={add} off={!next}/><Btn x={416} y={48} w={100} t="− remove last" on={drop} off={st.servers.length<=2}/><Btn x={522} y={48} w={108} t="S2 fails" on={fail} off={!st.servers.includes(2)||st.servers.length<=2}/>
+<Btn x={310} y={82} w={170} t={st.v?"virtual nodes: on (6 each)":"virtual nodes: off"} on={vn} act={st.v}/><Btn x={486} y={82} w={80} t="reset" on={()=>set(START)}/>
+<g aria-live="polite"><text x="310" y="134" className="fb">{st.msg}</text>
+<text x="310" y="152" className="fl" style={{fill:st.mod!==null?RED:GREY}}>{st.mod!==null?`hash % N would have moved ${st.mod} of ${NK} (${Math.round(st.mod*100/NK)}%)`:"red rings mark the keys that moved"}</text></g>
+<text x="310" y="174" className="fl">{`${st.servers.length} servers · ${st.v?"6 points":"1 point"} each · keys per server:`}</text>
+{st.servers.map((s,i)=><g key={s}><text x="310" y={196+i*13} className="fl">{`S${s}`}</text><rect x={336} y={188+i*13} width={Math.max(1,count(s)*7)} height={9} fill={PAL[s-1]}/><text x={342+count(s)*7} y={196+i*13} className="fl">{count(s)}</text></g>)}
+</svg>;}
+
 export const HASH_FIGS={
 "ch-shard-events":{C:ShardEventsFig,ar:640/236,title:()=>"WHICH DATABASE HOLDS THIS MATCH?"},
 "ch-modulo":{C:ModuloFig,ar:640/208,title:()=>"HASH, THEN MODULO"},
@@ -144,4 +176,5 @@ export const HASH_FIGS={
 "ch-vnodes-fail":{C:VnodesFailFig,ar:640/254,title:()=>"WITH VIRTUAL NODES, A FAILURE IS SHARED"},
 "ch-salt":{C:SaltFig,ar:640/262,title:()=>"ONE HOT KEY, SALTED INTO TEN"},
 "ch-replicas":{C:ReplicasFig,ar:640/250,title:()=>"COPIES ROUND THE RING"},
+"ch-playground":{C:PlaygroundFig,ar:640/300,title:()=>"TRY IT: A RING YOU CAN CHANGE"},
 };
