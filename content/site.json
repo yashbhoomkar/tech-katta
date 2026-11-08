@@ -245,8 +245,8 @@
         null
       ],
       [
-        "did-you-know",
-        "Did you know",
+        "papers",
+        "Research Papers",
         null
       ],
       [
@@ -341,27 +341,9 @@
     ]
   },
   "example": "zotato",
-  "fact": {
-    "eyebrow": "DID YOU KNOW",
-    "title": "One of the busiest websites on Earth is an adult video site.",
-    "desc": "It reported about 115 million visits a day in 2019, and in 2018 it sent 4,403 petabytes of video: about 140 GB every second, busiest late at night. Here is how a site like that stays up.",
-    "points": [
-      [
-        "Video is cut into chunks",
-        "Each video is split into pieces a few seconds long, in several qualities. Any server can send any piece, and a player can switch quality between pieces when the network slows."
-      ],
-      [
-        "The CDN does the heavy lifting",
-        "Servers in hundreds of cities keep the popular pieces close to viewers. Almost every request ends there; the company's own servers see a small share."
-      ],
-      [
-        "Plan for the peak, not the average",
-        "Traffic is far higher at night than in the afternoon. Capacity is sized for the busiest hour, and the CDN absorbs the surges."
-      ]
-    ],
-    "source": "Figures from the site's own published yearly reports for 2018 and 2019.",
-    "link": "Try a traffic spike yourself",
-    "linkHref": "#lab/ind-vs-pak"
+  "papers": {
+    "eyebrow": "RESEARCH PAPERS",
+    "desc": "The papers behind the systems you design, explained in plain words with moving diagrams: the problem each one solved, its idea, how it works, where you see it today and how to use it in an interview."
   },
   "tour": {
     "button": "Tour",
@@ -374,7 +356,7 @@
       {
         "target": ".tabs",
         "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes and Did you know are two-minute reads."
+        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Research Papers explains the classic papers simply."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
