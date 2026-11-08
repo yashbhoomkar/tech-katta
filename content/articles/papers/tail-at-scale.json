@@ -1,0 +1,94 @@
+{
+  "section": "papers",
+  "slug": "tail-at-scale",
+  "group": "worth-reading",
+  "no": "PAPER // 13",
+  "tag": "LATENCY",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "The Tail at Scale: why the slowest 1% sets your speed",
+  "dek": "In 2013 two engineers who ran some of the largest services on the internet explained a counter-intuitive fact: when one request fans out to many servers, rare slowness becomes normal. Instead of chasing every cause, they showed how to build systems that are fast even though some of their parts are slow.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Every server is occasionally slow, for reasons you can't remove: queues, garbage collection, background work, shared disks and networks.",
+        "If a request waits for 100 servers and each is slow 1% of the time, 63% of requests are slow. Fan-out turns the rare tail into the common case.",
+        "So tolerate it instead: send a backup copy of a request that is taking too long (a hedged request), skip a slow server, or answer with what you have."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The paper: \"The Tail at Scale\" by Jeffrey Dean and Luiz André Barroso, Communications of the ACM, February 2013."
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it solved"
+    },
+    {
+      "t": "p",
+      "x": "A search query, a feed or a restaurant listing page is built from many backend calls in parallel, and the page is only ready when the slowest one answers. Most calls take a few milliseconds, but a small fraction take far longer, and the reasons are everywhere: another job sharing the machine, a background compaction, a garbage-collection pause, a queue behind a burst of requests, a CPU slowing down to save power. You can reduce these, but you can't remove them all."
+    },
+    {
+      "t": "fig",
+      "id": "tail-fan",
+      "cap": "With 1% of calls slow on each server, a request that needs all of 100 servers is slow 63% of the time: 1 − 0.99¹⁰⁰. The bigger the fan-out, the more the tail decides your speed."
+    },
+    {
+      "t": "h2",
+      "x": "Tolerating slowness within a request"
+    },
+    {
+      "t": "fig",
+      "id": "tail-hedge",
+      "cap": "A hedge is sent only after the normal answer time has passed, so most requests never send a second copy. When the first copy is stuck behind something slow, the second one usually isn't."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Hedged requests: send the request to one replica; if it hasn't answered by the 95th-percentile time, send it to another and use whichever answers first. In the paper's test, reading 1,000 keys spread over 100 servers, hedging after 10 ms cut the 99.9th-percentile latency from 1,800 ms to 74 ms while sending only 2% more requests.",
+        "Tied requests: send to two replicas at once, each told about the other; whichever starts work first cancels its twin. This removes queueing delay without doubling the work.",
+        "Good-enough answers: for search and feeds, answer when most shards have replied rather than waiting for the last one, and say the result may be slightly incomplete."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Tolerating slowness across requests"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Micro-partitions: split data into many more pieces than machines, so a busy machine can shed a few pieces quickly.",
+        "Selective replication: keep extra copies of hot items, so their load spreads over more machines.",
+        "Latency-induced probation: temporarily stop sending traffic to a server that is being slow, while still sending it a few probe requests to see when it recovers.",
+        "Canary requests: send a new kind of request to a few servers first, so a request that crashes or stalls servers can't take them all down at once."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Use it in an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "State latency goals as percentiles (p99), and say how fan-out affects them: 'the page calls 30 services, so each needs a p99 well under the page's target'.",
+        "Use timeouts with a hedge or retry to another replica for idempotent reads, and say what fraction of extra load that adds.",
+        "Return partial results when it's acceptable, such as a feed missing one source or search results from 99% of shards.",
+        "Keep background work (compaction, batch jobs) away from latency-critical servers, or limit how much they can use."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: hedging safely",
+      "body": [
+        {
+          "t": "p",
+          "x": "A hedge doubles the work for the requests it fires on, so it must be limited. Firing after the 95th-percentile time caps extra load at about 5%. Hedges should only be sent for requests that are safe to repeat, such as reads, or writes carrying an idempotency key, and a system under heavy load should stop hedging, since extra copies would only lengthen the queues they're trying to avoid."
+        }
+      ]
+    }
+  ]
+}

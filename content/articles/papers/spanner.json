@@ -1,0 +1,102 @@
+{
+  "section": "papers",
+  "slug": "spanner",
+  "group": "worth-reading",
+  "no": "PAPER // 12",
+  "tag": "GLOBAL TRANSACTIONS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Spanner: using real clocks to order transactions worldwide",
+  "dek": "Lamport showed in 1978 that you can't trust clocks to order events. In 2012 a team showed that you can, if you know exactly how wrong they might be and are willing to wait out that uncertainty. With GPS and atomic clocks in every data centre, Spanner gave a database spread across continents strongly consistent transactions.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Spanner is a SQL-style database whose data is split, copied across data centres with Paxos, and kept strongly consistent across the world.",
+        "Its key idea is TrueTime: instead of one time, a clock returns an interval guaranteed to contain the real time, a few milliseconds wide, kept narrow by GPS receivers and atomic clocks.",
+        "A transaction takes the top of the interval as its timestamp and waits until that moment has certainly passed. Then timestamp order matches real-time order everywhere."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The paper: \"Spanner: Google's Globally-Distributed Database\" by James C. Corbett and colleagues, OSDI 2012."
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it solved"
+    },
+    {
+      "t": "p",
+      "x": "Dynamo-style stores scale by giving up consistency; sharded SQL databases keep transactions but only within one shard, and resharding them is painful. The authors' advertising backend ran on manually sharded MySQL and needed both: transactions across shards, and copies in several regions so a region could fail. The hard part is ordering: to know which of two transactions in different continents came first, the machines need a shared idea of time, and Lamport had shown that clocks can't simply be trusted."
+    },
+    {
+      "t": "h2",
+      "x": "TrueTime: time with error bars"
+    },
+    {
+      "t": "p",
+      "x": "Every data centre has time masters: some with GPS receivers, some with atomic clocks, which fail in different ways. Each machine syncs with several of them and tracks how far its own clock may have drifted since. TT.now() returns an interval, earliest to latest, that is guaranteed to contain the real time. The uncertainty is usually between 1 and 7 ms."
+    },
+    {
+      "t": "fig",
+      "id": "spanner-time",
+      "cap": "Commit wait turns uncertainty into order. A transaction takes TT.now().latest as its timestamp and doesn't let anyone see its result until TrueTime's earliest is past that timestamp. Any transaction that starts after that point must get a later timestamp, wherever in the world it runs."
+    },
+    {
+      "t": "p",
+      "x": "The cost is the wait, about twice the uncertainty, a few milliseconds per write. That is why keeping the interval narrow, with good clocks, matters so much: the paper's design is only practical because the error bars are small."
+    },
+    {
+      "t": "h2",
+      "x": "Everything else follows"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Data is split into ranges, and each range is copied to several data centres by its own Paxos group, with one leader.",
+        "A transaction that touches several ranges uses two-phase commit across their Paxos groups, so each participant is itself replicated and won't vanish mid-commit.",
+        "Read-only transactions take no locks: they pick a timestamp and read every range as of that moment, from any replica that is up to date.",
+        "Schemas can store child rows physically next to their parent, such as a restaurant's menu items under the restaurant, so common joins stay within one range."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "spanner-snap",
+      "cap": "Because every version carries a timestamp that matches real-time order, a read at one timestamp sees a consistent picture of the whole database, without blocking any writer."
+    },
+    {
+      "t": "h2",
+      "x": "What happened next"
+    },
+    {
+      "t": "p",
+      "x": "Spanner became the database behind the authors' advertising system and was later sold as a cloud service. Open-source databases such as CockroachDB and YugabyteDB copied the architecture of Paxos- or Raft-replicated ranges plus timestamps, but without atomic clocks they use hybrid clocks and larger uncertainty, handling the gap with retries instead of a fixed wait."
+    },
+    {
+      "t": "h2",
+      "x": "Use it in an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for a Spanner-style database only when you truly need transactions across regions with strong consistency, such as money or inventory that must never be double-spent across the world.",
+        "State the cost: every write waits for a cross-region majority plus commit wait, so tens to hundreds of milliseconds, not single digits.",
+        "Contrast it with the alternatives: one primary region (simpler, but slow writes from far away), or eventual consistency (fast, but conflicts).",
+        "Mention read-only transactions at a timestamp: cheap, lock-free and consistent, which is why read-heavy workloads still do well."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: external consistency",
+      "body": [
+        {
+          "t": "p",
+          "x": "The paper's guarantee is called external consistency, the same as linearizability for transactions: if transaction A commits before transaction B starts, as anyone in the real world could observe, then A's timestamp is smaller than B's. Lamport clocks guarantee this only for events connected by messages. TrueTime extends it to events with no messages between them, such as two customers in different countries, by paying for the clocks' uncertainty with a short wait."
+        }
+      ]
+    }
+  ]
+}
