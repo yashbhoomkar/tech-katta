@@ -1,0 +1,114 @@
+{
+  "section": "networking",
+  "slug": "distance",
+  "group": "practice",
+  "no": "NETWORK // 10",
+  "tag": "IN PRACTICE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Distance: regions, CDNs and keeping data close",
+  "dek": "No amount of code makes light faster. A round trip from Mumbai to the US east coast takes about 200 ms however good the servers are, and a page that makes five such trips takes a second. Designs that feel fast keep users, servers and data near each other: regions close to users, CDNs for shared files, and data split so that each region rarely needs another.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Light in fibre travels about 200 km a millisecond, so every 1,000 km adds at least 10 ms to a round trip; real networks roughly double that.",
+        "Keep computation and data together and near users: an app server in Mumbai calling a database in the US pays 200 ms per query.",
+        "Three tools: run in regions near your users (with several zones in each for failures), serve shared files from a CDN, and partition data by region so most requests never leave it."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The speed of light is a budget"
+    },
+    {
+      "t": "fig",
+      "id": "nw-light",
+      "cap": "The dark bars are what physics allows; the blue bars are what a real network gives. The gap is cables that don't run straight and routers on the way, but the floor itself can't be engineered away."
+    },
+    {
+      "t": "p",
+      "x": "The numbers to remember: within one data centre, under a millisecond; within a country like India, tens of milliseconds; between continents, 100 to 250 ms. A design that makes several sequential calls between continents for one user action will feel slow no matter how fast each server is."
+    },
+    {
+      "t": "h2",
+      "x": "Regions and zones"
+    },
+    {
+      "t": "p",
+      "x": "Cloud providers group data centres into regions (Mumbai, Hyderabad, Singapore) and, inside each, into availability zones: separate buildings with separate power and network, a millisecond or two apart. Running in two or three zones of one region survives a building failing without paying the cost of distance. Running in several regions brings servers closer to users far away, and survives a whole region failing, but data must then be copied between regions, slowly and with care (see 'Replication' in Concepts)."
+    },
+    {
+      "t": "p",
+      "x": "For Zotato, whose users are in India, one region (Mumbai) with three zones serves everyone within 10 to 40 ms. A second region (Hyderabad) adds resilience and can serve the south. A US region would help no customer and would slow down anything that crossed to it."
+    },
+    {
+      "t": "h2",
+      "x": "CDNs: bring the files to the users"
+    },
+    {
+      "t": "p",
+      "x": "A content delivery network has servers (edges) in hundreds of cities. A file requested once from the Pune edge is cached there, and the next customer in Pune gets it in a few milliseconds without the request ever reaching Zotato's servers. It is the most effective latency fix for anything that is the same for many users: images, app bundles, video, and even API responses that change slowly, such as a city's restaurant list cached for 30 seconds."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It works because of caching: only content that many people read, and that can be a little stale, benefits. A customer's own order can't be served from an edge.",
+        "Besides latency it takes load off your servers: on a busy night most image and menu-photo traffic ends at the edges.",
+        "The Components article on CDNs covers TTLs, invalidation and what to cache."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Partition by region"
+    },
+    {
+      "t": "p",
+      "x": "Some data naturally belongs to one place. A restaurant in Pune only matters to customers and riders near Pune; a Pune order never needs a Chennai rider. Splitting the data by region means each region holds only its own cities, with its own servers and database close to them, and almost every request is answered inside one region."
+    },
+    {
+      "t": "fig",
+      "id": "nw-regions",
+      "cap": "Splitting by region keeps each request local and each database a fraction of the size. Only a little data, such as user accounts, needs to be available everywhere."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Group cities into regions large enough to be worth running but small enough to keep data close: West, South, North, East.",
+        "Put each region's services next to its database, so the calls between them stay inside one zone.",
+        "Handle the few global things separately: a user's account and payment methods are needed wherever they order, so they live in one home region and are copied to the others, or looked up once per session.",
+        "Expect edge cases: a user travelling from Mumbai to Bengaluru should be served by the South region for new orders, while their order history may still live in the West."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ask where users are. If they are in one country, one region with several zones is usually right; say so instead of drawing a global design by reflex.",
+        "Put a CDN in front of anything static or widely shared, and say what its cache time is.",
+        "When the problem is naturally local (deliveries, rides, nearby search), partition by region and say that requests rarely cross regions.",
+        "Use the numbers: 'a database in another continent adds 200 ms per query, so the service must sit next to its data'."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: what multi-region costs",
+      "body": [
+        {
+          "t": "p",
+          "x": "Running in two regions doubles more than servers. Writes in one region must reach the other, either synchronously (every write pays the round trip between regions) or asynchronously (the other region may be seconds behind, and a failover can lose the latest writes). Deciding which data is allowed to be stale, and which must be written in one place only, is most of the work."
+        },
+        {
+          "t": "p",
+          "x": "A common middle path is active–passive: one region takes writes, the other has an up-to-date copy and takes over if the first fails. Active–active, where both take writes for the same data, needs conflict handling and is worth it only when users in both places need low-latency writes."
+        }
+      ]
+    }
+  ]
+}

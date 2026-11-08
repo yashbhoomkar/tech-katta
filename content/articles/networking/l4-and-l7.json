@@ -1,0 +1,161 @@
+{
+  "section": "networking",
+  "slug": "l4-and-l7",
+  "group": "balancing",
+  "no": "NETWORK // 09",
+  "tag": "LOAD BALANCING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Layer 4 or layer 7: two kinds of load balancer",
+  "dek": "A load balancer can work on connections or on requests. A layer 4 balancer passes each TCP connection to one server without reading it: fast, simple and ideal for long connections. A layer 7 balancer reads every HTTP request and routes by what it says: slower per request, but far more useful for web APIs. Knowing which to draw, and why, is a common interview check.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Layer 4: chooses a server when a TCP connection opens, from addresses and ports only, then forwards every packet of that connection there. Fast; can't see URLs, headers or cookies.",
+        "Layer 7: ends the client's connection (and TLS), reads each HTTP request, and sends it to a server over its own connections. Can route by path, header or cookie, retry, and spread individual requests.",
+        "Rule of thumb: layer 7 for HTTP APIs and websites; layer 4 for WebSockets, other long-lived connections and non-HTTP traffic, or when raw speed matters most."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Layer 4: the connection goes through"
+    },
+    {
+      "t": "p",
+      "x": "A layer 4 balancer sees a new TCP connection arrive (or a UDP flow), picks a server, and from then on forwards that connection's packets to it. It doesn't decrypt or read anything. To the server, it looks almost as if the client had connected directly."
+    },
+    {
+      "t": "fig",
+      "id": "nw-lb-conn",
+      "cap": "The balancer decides once per connection. Everything inside that connection, whether one request or an hour of WebSocket messages, goes to the same server, unread."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Very fast and cheap: no TLS, no parsing, little memory. One balancer handles millions of connections.",
+        "A long connection stays on one server, which is exactly what WebSockets and other persistent connections need.",
+        "It can't route by URL, header or cookie, can't retry a failed request on another server, and can't spread the requests inside one connection. A client that sends everything over one HTTP/2 connection lands on one server.",
+        "TLS is handled by the servers themselves (or passed through), so they need the certificates."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Cloud examples: AWS's Network Load Balancer, Google's network load balancing, HAProxy or Envoy in TCP mode."
+    },
+    {
+      "t": "h2",
+      "x": "Layer 7: read the request, then route it"
+    },
+    {
+      "t": "p",
+      "x": "A layer 7 balancer is a reverse proxy. It accepts the client's connection, ends TLS, reads each HTTP request, chooses a server for that request, and sends it over a connection of its own (usually one it keeps open and reuses). The response comes back the same way."
+    },
+    {
+      "t": "fig",
+      "id": "nw-lb-request",
+      "cap": "Because it reads requests, a layer 7 balancer can route by path, header or cookie, send a slice of users to a new version, and spread the requests of one client across many servers."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Route by content: /api to the API servers, /img to the image servers, a header or 5% of users to a canary. This overlaps with what an API gateway does.",
+        "Spread individual requests, including the many streams inside one HTTP/2 or gRPC connection.",
+        "Retry an idempotent request on another server when one fails, and add headers such as the client's real IP (X-Forwarded-For).",
+        "Stickiness by cookie when you must keep a user on one server (better to avoid needing it).",
+        "Costs: CPU for TLS and parsing on every request, a little added latency, and two connections per request path instead of one."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Cloud examples: AWS's Application Load Balancer, Google's HTTP(S) load balancing, NGINX, Envoy, HAProxy in HTTP mode."
+    },
+    {
+      "t": "h2",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "Layer 4 and layer 7 load balancers",
+      "head": [
+        "Compared",
+        "Layer 4",
+        "Layer 7"
+      ],
+      "rows": [
+        [
+          "Decides per",
+          "Connection",
+          "Request"
+        ],
+        [
+          "Reads",
+          "Addresses and ports",
+          "The whole HTTP request"
+        ],
+        [
+          "TLS",
+          "Passed through to servers",
+          "Usually ended at the balancer"
+        ],
+        [
+          "Routes by path, header, cookie",
+          "No",
+          "Yes"
+        ],
+        [
+          "Long-lived connections",
+          "Ideal: stays on one server",
+          "Possible, but heavier"
+        ],
+        [
+          "Speed and cost",
+          "Very fast, cheap",
+          "More CPU per request"
+        ],
+        [
+          "Zotato uses it for",
+          "Chat and tracking connection servers",
+          "The public API and website"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Health checks behind both"
+    },
+    {
+      "t": "p",
+      "x": "Both kinds check their servers. A layer 4 check usually just opens a TCP connection: it proves the process is listening, not that it works. A layer 7 check requests a URL such as /health and expects a 200 within a timeout; a good health endpoint checks the server's own critical dependencies lightly, but shouldn't fail just because a shared database is slow, or every server fails together and the balancer has nowhere to send anything."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For an HTTP API, draw a layer 7 load balancer and mention it ends TLS and can route by path.",
+        "If the design uses WebSockets, say the connection servers sit behind a layer 4 balancer and use least connections, so each socket stays put and load stays even.",
+        "For gRPC between services, say either client-side balancing or a layer 7 balancer that understands HTTP/2, because a layer 4 one would pin each client to one server."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: keeping a user on one server",
+      "body": [
+        {
+          "t": "p",
+          "x": "Stickiness (session affinity) sends a user to the same server every time, by cookie at layer 7 or by hashing the client's address at layer 4. It is tempting when a server keeps something in memory, such as a half-built cart, but it fights the load balancer: a busy user's server gets busier, and when that server restarts, its users lose whatever it held."
+        },
+        {
+          "t": "p",
+          "x": "The usual fix is to make servers stateless and keep the state in Redis or the database, so any server can answer. Affinity is still useful as a cache hint (a server is more likely to have that user's data warm) as long as nothing breaks without it."
+        }
+      ]
+    }
+  ]
+}
