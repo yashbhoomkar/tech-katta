@@ -287,7 +287,7 @@
         [
           "data",
           "Data across machines",
-          "Copies and their trade-offs: replication, consistency, CAP."
+          "Storing data across machines: copies, consistency, CAP, data models, indexes and hash rings."
         ],
         [
           "reliability",
