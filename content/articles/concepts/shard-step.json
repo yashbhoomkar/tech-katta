@@ -53,7 +53,7 @@
       "t": "list",
       "items": [
         "Storage: 'Zotato keeps about 2 KB per order and takes 50 lakh orders a day: 10 GB a day, about 3.6 TB a year. One Postgres can hold a year, but not five years of history with indexes. Old orders can be archived, or the table sharded.'",
-        "Write throughput: 'At the dinner peak we expect 50,000 writes a second: orders, status changes, rider pings. One primary can't take that, however big. We need to split the writes.'",
+        "Write throughput: 'At the dinner peak we expect 50,000 writes a second: orders, status changes, rider pings, each updating several indexes and shipped to replicas. That is more than one primary can sustain with headroom, however big. We need to split the writes.'",
         "Read throughput: 'Even with read replicas, 1 crore daily users making many queries each are more than one primary and its replicas can serve with fresh enough data, so we spread the reads across shards.'"
       ]
     },
@@ -112,6 +112,10 @@
     {
       "t": "p",
       "x": "Notice how this flows: each step gives a reason and names the cost. That reasoning, not a list of facts, is what the interviewer is listening for."
+    },
+    {
+      "t": "p",
+      "x": "Customer is not the only defensible key for Zotato's orders. If live, local operations dominate (a restaurant's kitchen screen, a rider's assignments), sharding by city keeps those on one shard and makes order history the expensive query instead; the data-modelling article 'When one database isn't enough' takes that route. Either is a good answer if you say which queries you are optimising for."
     },
     {
       "t": "h2",
