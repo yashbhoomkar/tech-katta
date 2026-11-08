@@ -1,0 +1,126 @@
+{
+  "section": "concepts",
+  "slug": "graphql-in-depth",
+  "group": "api-design",
+  "no": "CONCEPT // 39",
+  "tag": "API DESIGN",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "GraphQL in depth: schemas, resolvers and the N+1 trap",
+  "dek": "GraphQL lets each client ask for exactly the data it needs in one request. That solves a real problem for products with several apps, but it moves work to the server: every query has to be parsed, checked, resolved field by field and protected. Here is how it works, how to design a schema, and the problems to mention when you propose it.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "GraphQL exposes one endpoint and a typed schema; clients send queries naming the fields they want, nested as deep as they like, and get back exactly that shape.",
+        "It shines when several clients need different views of the same data and frontend teams change screens often. It costs query parsing and validation, harder caching, and resolvers that can hammer the database.",
+        "Mention the N+1 problem and its fix (batching), and that permissions are checked per field in resolvers. Propose GraphQL only when the problem is about flexible data needs."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it was built for"
+    },
+    {
+      "t": "p",
+      "x": "Facebook built GraphQL in 2012 for its mobile apps and released it publicly in 2015. The mobile app and the website needed different data about the same things, and each new screen meant asking a backend team for a new endpoint or living with responses full of fields the phone didn't need."
+    },
+    {
+      "t": "p",
+      "x": "Zotato has the same tension. The customer app shows an order's status, ETA and rider; the restaurant dashboard shows the same order's items, notes and preparation time; the support tool wants everything. With REST the backend either keeps adding endpoints for each screen, or returns one large order object that every app downloads in full. GraphQL lets each app describe what it needs."
+    },
+    {
+      "t": "h2",
+      "x": "How a query works"
+    },
+    {
+      "t": "code",
+      "label": "The customer app's order screen",
+      "x": "query OrderScreen($id: ID!) {\n  order(id: $id) {\n    status\n    eta\n    rider { name phone }\n    items { name qty }\n  }\n}",
+      "say": "A GraphQL query for the customer's order screen: the order's status and ETA, the rider's name and phone, and each item's name and quantity."
+    },
+    {
+      "t": "p",
+      "x": "The query goes to a single URL, usually POST /graphql. The response is JSON in exactly the query's shape: an order with those six fields and nothing else. The restaurant dashboard sends its own query for the same order and gets a different shape. Adding a field to a screen is a change to the app's query, not a new backend deploy, as long as the field already exists in the schema."
+    },
+    {
+      "t": "h2",
+      "x": "Designing the schema"
+    },
+    {
+      "t": "p",
+      "x": "A GraphQL API is designed as types and the links between them, rather than as endpoints. Each type lists its fields and their types; the Query type lists the entry points."
+    },
+    {
+      "t": "code",
+      "label": "Part of Zotato's schema",
+      "x": "type Order {\n  id: ID!\n  status: OrderStatus!\n  eta: DateTime\n  restaurant: Restaurant!\n  rider: Rider\n  items: [OrderItem!]!\n}\n\ntype Restaurant {\n  id: ID!\n  name: String!\n  menu: [Dish!]!\n}\n\ntype Query {\n  order(id: ID!): Order\n  restaurants(near: String!, first: Int, after: String): RestaurantPage!\n}",
+      "say": "Part of a GraphQL schema: an Order type with an id, status, ETA, restaurant, optional rider and a list of items; a Restaurant type with a name and menu; and a Query type with entry points for one order and for a page of nearby restaurants."
+    },
+    {
+      "t": "list",
+      "items": [
+        "An exclamation mark means the field is never null; square brackets mean a list.",
+        "Links are fields: an Order has a Restaurant, so a client can ask for the order and its restaurant's name in one query.",
+        "Lists that can grow take paging arguments (first, after), the same cursor idea as in REST.",
+        "The schema is the contract: tools generate typed client code from it, and the server rejects queries that ask for fields that don't exist."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Resolvers and the N+1 problem"
+    },
+    {
+      "t": "p",
+      "x": "Behind each field is a resolver, a function that fetches its value. The order resolver reads the orders table; the restaurant resolver on Order reads the restaurants table. Written naively, a list multiplies the calls."
+    },
+    {
+      "t": "fig",
+      "id": "ad-nplus-one",
+      "cap": "Asking for 50 orders and each order's restaurant runs 1 query for the list and then 1 per order: 51 in all. A batching loader collects the 50 restaurant ids and fetches them in one query: 2 in all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The usual fix is a loader (the DataLoader pattern): resolvers ask the loader for restaurant 42, 17, 42, 8…; it waits for the current batch, removes duplicates, runs one query with all the ids, and hands each resolver its row.",
+        "It is extra machinery REST endpoints don't need, because a REST endpoint is written for one known shape and can use a single join.",
+        "Expensive queries also need limits: maximum depth, maximum cost, timeouts, or only allowing pre-approved queries in production."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Permissions per field"
+    },
+    {
+      "t": "p",
+      "x": "In REST you protect an endpoint. In GraphQL one query can reach many types, so checks live in the resolvers: anyone may see a restaurant's name and rating, but its payout bank details resolve only for the restaurant's owner and finance staff. Forgetting a check on one field exposes it through every query that can reach it, so permissions must be designed with the schema."
+    },
+    {
+      "t": "h2",
+      "x": "When to propose it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Several clients (customer app, restaurant dashboard, support tool, partner integrations) need different shapes of the same data.",
+        "The interviewer raises over-fetching or under-fetching, or slow screens that make many calls.",
+        "Frontend teams need to change screens without waiting on backend changes.",
+        "Say the costs in the same breath: parsing and validating each query, caching that can't rely on plain HTTP caches, resolvers that need batching, and permission checks per field.",
+        "Otherwise stay with REST. Most interview problems have fixed requirements, and the interviewer wants to see you design efficient data access, which REST makes explicit."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: caching GraphQL",
+      "body": [
+        {
+          "t": "p",
+          "x": "HTTP caches and CDNs key on the URL, and every GraphQL query goes to the same URL as a POST, so they can't cache responses. Common answers: persisted queries, where the client sends a short id for a query registered in advance (which can then be a cacheable GET); caching inside the server, per resolver or per object id; and a normalised cache in the client that stores objects by id and reuses them across queries."
+        }
+      ]
+    }
+  ]
+}

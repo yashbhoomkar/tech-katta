@@ -1,0 +1,173 @@
+{
+  "section": "concepts",
+  "slug": "api-security",
+  "group": "api-design",
+  "no": "CONCEPT // 43",
+  "tag": "API DESIGN",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Securing an API: who is calling, what may they do, and how often",
+  "dek": "Security is the part of the API step most candidates skip, which is why a few precise sentences about it stand out. Three questions cover it: who is calling (authentication), are they allowed to do this (authorisation), and how much may they do (rate limiting).",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Authentication proves who is calling; authorisation decides whether they may do this particular thing. 'This is Priya' versus 'Priya may cancel her own order, not someone else's'.",
+        "API keys identify an application (partners, internal services); signed tokens such as JWTs identify a user's session in web and mobile apps and can be checked without a database lookup.",
+        "Roles group permissions (customer, restaurant owner, rider, support); every request checks both identity and permission. Rate limits per user, per IP and per endpoint return 429 when exceeded."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Who is calling, and may they?"
+    },
+    {
+      "t": "p",
+      "x": "Every request answers two questions in order. Authentication: is this really Priya's app, signed in as Priya? Authorisation: may Priya cancel order 9101? The second is where real systems leak: an API that checks only 'is someone signed in' lets any signed-in user read anyone's orders by changing an id."
+    },
+    {
+      "t": "h2",
+      "x": "API keys"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An API key is a long random string issued to an application, not a person: a restaurant chain's billing system, a delivery partner, or one of your own services.",
+        "It is sent with every request, typically in the Authorization header, and the server looks it up to find out which app is calling, what it may do and what its rate limit is.",
+        "Issue one per client, store only a hash, and make them easy to rotate and revoke.",
+        "Good for server-to-server and third-party developer access. Wrong for end users: people can't manage secret strings, keys don't expire on their own, and they say nothing about which user is acting."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "A partner calling with an API key",
+      "x": "GET /partners/v1/orders?status=ready\nAuthorization: Bearer zk_live_4f9a…",
+      "say": "A partner's system listing ready orders, authenticated with an API key in the Authorization header."
+    },
+    {
+      "t": "h2",
+      "x": "Signed tokens (JWT)"
+    },
+    {
+      "t": "p",
+      "x": "When Priya signs in, the auth service issues a token containing claims about her (her user id, her role, when the token expires) and signs it. Every later request carries the token. Any service with the verification key can check the signature and read the claims without calling a database or the auth service."
+    },
+    {
+      "t": "code",
+      "label": "What a token carries",
+      "x": "{\n  \"sub\": \"user_77\",\n  \"role\": \"customer\",\n  \"city\": \"pune\",\n  \"exp\": 1794134400\n}",
+      "say": "The claims inside a signed token: the user id, the role customer, the city, and an expiry time."
+    },
+    {
+      "t": "fig",
+      "id": "ad-jwt",
+      "cap": "The token is checked by signature, so the gateway and each service can trust it without asking the auth service. The trade-off: a token stays valid until it expires, so keep its lifetime short."
+    },
+    {
+      "t": "list",
+      "items": [
+        "This suits distributed systems: the API gateway verifies the token once, and services behind it read the user id and role from it.",
+        "Keep access tokens short-lived (minutes to an hour) and use a refresh token to get new ones, because a signed token can't easily be revoked before it expires.",
+        "Don't put secrets in the claims: a JWT is signed, not encrypted, so anyone holding it can read it.",
+        "A server-side session (a random id looked up in a database or Redis) is the simpler alternative, easy to revoke, at the cost of a lookup per request.",
+        "Rule of thumb: API keys for applications and partners; tokens or sessions for people using your apps."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Roles and ownership"
+    },
+    {
+      "t": "p",
+      "x": "Rather than granting permissions user by user, give users roles and give roles permissions. Zotato's roles might be:"
+    },
+    {
+      "t": "table",
+      "label": "Zotato's roles",
+      "head": [
+        "Role",
+        "May",
+        "May not"
+      ],
+      "rows": [
+        [
+          "Customer",
+          "Browse, order, track and cancel their own orders, rate them",
+          "See other customers' orders"
+        ],
+        [
+          "Restaurant owner",
+          "Edit their menu, accept and prepare their orders, see their sales",
+          "Touch other restaurants' menus or payouts"
+        ],
+        [
+          "Rider",
+          "See orders assigned to them, update pickup and delivery",
+          "See customers' payment details"
+        ],
+        [
+          "Support agent",
+          "Read any order, issue refunds up to a limit",
+          "Change menus or payouts"
+        ],
+        [
+          "Admin",
+          "Everything, with every action logged",
+          "Act without leaving a record"
+        ]
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ad-authz",
+      "cap": "Two checks on every request: is the token valid, and may this user do this to this order? A valid token alone isn't enough, which is the mistake that leaks data."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ownership usually matters as much as role: a customer may cancel an order only if it is theirs; a restaurant owner may see orders only for their restaurant.",
+        "Check on the server, for every request; hiding a button in the app is not a permission check.",
+        "In an interview, say which endpoints need which role only when it matters to the problem (a marketplace with buyers and sellers, an admin tool); otherwise one sentence on auth is enough."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Rate limiting"
+    },
+    {
+      "t": "p",
+      "x": "Rate limits cap how many requests a client may make in a window, which protects against abuse, scraping and bugs that loop."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Per user, for signed-in traffic: say 600 requests a minute per customer.",
+        "Per IP address, for traffic before sign-in: say 60 a minute, so a script can't hammer the login and search pages.",
+        "Per endpoint, for sensitive or costly actions: at most 5 OTP requests per phone in 15 minutes, or 3 coupon attempts a minute, to stop guessing.",
+        "Enforced at the API gateway or in middleware, with counters in Redis; over the limit, answer 429 Too Many Requests with a Retry-After header.",
+        "In an interview, 'rate limited per user and per IP at the gateway' is usually enough. The algorithms (token bucket, sliding window) are a separate topic; see 'Rate limiter' in Interview Questions and the API gateways component."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "rate-limit",
+      "cap": "Three common ways to count requests against a limit. The choice matters less in the API step than saying where the limit is enforced and what the client gets back."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name which endpoints need sign-in (almost all) and how: 'JWTs checked at the gateway' or 'a session in Redis'.",
+        "Mention ownership checks on anything user-specific, with one example.",
+        "Add one line on rate limiting, and a stricter limit on any endpoint that can be abused (OTP, login, coupons).",
+        "Keep it short: security that shows judgment in three sentences beats a full design nobody asked for."
+      ]
+    }
+  ]
+}

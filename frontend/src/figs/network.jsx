@@ -230,6 +230,17 @@ const caps=[["1 · every client knows one address: the load balancer's",INK],["2
 return <Fig still={still} h={240} id={`nbt${uid}`} M={M} caps={caps} title="A dedicated load balancer. Apps and browsers know one address, api.zotato.in, which is the load balancer's. It spreads requests over the servers behind it. It checks every server every 5 seconds; server 3 fails two checks in a row and gets no more requests. A new server, server 4, passes its checks and starts getting traffic at once, and no client had to be told."
 base={base} g={[null,s2,s3,s4]} last={<g>{s2}{s3}{s4}</g>}/>}
 
+// FIG 5: choosing where the balancing happens: two questions.
+function LbChooseFig({still,uid=""}){const M=`nh${uid}`;
+const base=<g><Bx x={190} y={42} w={260} h={40} t="Do you deploy every caller yourself?"/></g>;
+const s1=<g><Ar x1={230} y1={84} x2={120} y2={144} m={M} c={BLUE}/><T x={160} y={108} t="yes" a="end" c={BLUE}/><Bx x={20} y={148} w={200} h={48} t="Client-side balancing" s="gRPC, Redis Cluster clients" c={BLUE} fill={LB}/><T x={120} y={214} t="no extra hop; you push the list" a="middle"/></g>;
+const s2=<g><Ar x1={410} y1={84} x2={470} y2={110} m={M}/><T x={452} y={92} t="no"/><Bx x={330} y={114} w={300} h={40} t="Can a change take a minute to reach them?"/></g>;
+const s3=<g><Ar x1={420} y1={156} x2={400} y2={190} m={M} c={BLUE}/><T x={404} y={176} t="yes" a="end" c={BLUE}/><Bx x={330} y={194} w={140} h={48} t="DNS" s="users across regions" c={BLUE} fill={LB}/></g>;
+const s4=<g><Ar x1={560} y1={156} x2={570} y2={190} m={M} c={BLUE}/><T x={574} y={176} t="no" c={BLUE}/><Bx x={490} y={194} w={140} h={48} t="Load balancer" s="apps, browsers" c={BLUE} fill={LB}/></g>;
+const caps=[["1 · if every caller is a service you deploy, they can do the balancing themselves",BLUE],["2 · otherwise: can a change reach callers slowly?",INK],["3 · yes: DNS can spread them, as long as minutes-old answers are fine",BLUE],["4 · no, it must take effect now: put a load balancer in front",BLUE]];
+return <Fig still={still} h={250} id={`nht${uid}`} M={M} caps={caps} title="Choosing where load balancing happens. First question: do you deploy every caller yourself? If yes, as with your own services, the callers can balance on the client side, as gRPC and Redis Cluster clients do, with no extra hop. If not, can a change take a minute or more to reach the callers? If yes, DNS can spread them, for example users across regions. If a change must take effect immediately, as with apps and browsers you don't control, put a dedicated load balancer in front."
+base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
+
 // ---------- 09 Layer 4 and layer 7 ----------
 
 // FIG 1: a layer 4 load balancer passes a whole connection to one server.
@@ -339,6 +350,7 @@ export const NETWORK_FIGS={
 "nw-scale":{C:ScaleFig,ar:640/244,title:()=>"A BIGGER SERVER, OR MORE SERVERS"},
 "nw-client-lb":{C:ClientLbFig,ar:640/236,title:()=>"THE CALLER PICKS THE SERVER"},
 "nw-dns-lb":{C:DnsLbFig,ar:640/272,title:()=>"DNS HANDS OUT THE ADDRESSES"},
+"nw-lb-choose":{C:LbChooseFig,ar:640/250,title:()=>"WHERE SHOULD THE BALANCING HAPPEN?"},
 "nw-dedicated":{C:DedicatedFig,ar:640/240,title:()=>"ONE ADDRESS IN FRONT OF MANY SERVERS"},
 "nw-lb-conn":{C:L4Fig,ar:640/238,title:()=>"LAYER 4: THE CONNECTION GOES STRAIGHT THROUGH"},
 "nw-lb-request":{C:L7Fig,ar:640/220,title:()=>"LAYER 7: READ THE REQUEST, THEN ROUTE IT"},
