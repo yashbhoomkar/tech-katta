@@ -333,6 +333,11 @@
           "caching",
           "Caching",
           "When to add a cache and how to explain it: where to cache, the four patterns, eviction and expiry, and what goes wrong."
+        ],
+        [
+          "sharding",
+          "Sharding",
+          "Splitting one database across machines: when it's needed, partitioning versus sharding, choosing the key and strategy, and what sharding breaks."
         ]
       ],
       "interview-questions": [
