@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "api-styles",
-  "group": "protocols",
-  "no": "NETWORK // 05",
+  "group": "networking",
+  "no": "CONCEPT // 30",
   "tag": "PROTOCOLS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -73,7 +73,7 @@
     },
     {
       "t": "p",
-      "x": "A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
+      "x": "Facebook built GraphQL for its own mobile apps and released it as open source in 2015. A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
     },
     {
       "t": "list",
@@ -188,7 +188,7 @@
         },
         {
           "t": "p",
-          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in this tab)."
+          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in Networking essentials)."
         }
       ]
     }

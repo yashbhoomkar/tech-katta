@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "l4-and-l7",
-  "group": "balancing",
-  "no": "NETWORK // 09",
+  "group": "networking",
+  "no": "CONCEPT // 34",
   "tag": "LOAD BALANCING",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -66,6 +66,7 @@
         "Spread individual requests, including the many streams inside one HTTP/2 or gRPC connection.",
         "Retry an idempotent request on another server when one fails, and add headers such as the client's real IP (X-Forwarded-For).",
         "Stickiness by cookie when you must keep a user on one server (better to avoid needing it).",
+        "HTTP-based push, long polling and server-sent events, works well behind it: each is an ordinary HTTP request, just a slow one, so it can be routed by path like any other. Some layer 7 balancers also carry WebSockets, but a layer 4 one is usually the better home for them.",
         "Costs: CPU for TLS and parsing on every request, a little added latency, and two connections per request path instead of one."
       ]
     },

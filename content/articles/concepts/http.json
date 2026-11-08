@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "http",
-  "group": "protocols",
-  "no": "NETWORK // 04",
+  "group": "networking",
+  "no": "CONCEPT // 29",
   "tag": "PROTOCOLS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -85,7 +85,7 @@
     },
     {
       "t": "p",
-      "x": "'Safe to repeat' (idempotent) matters more than it looks. Networks fail between the request and the response, and clients, proxies and load balancers retry. A repeated GET or PUT is harmless; a repeated POST can create a second order or a second charge. The article on failing calls in this tab shows how idempotency keys make a POST safe to retry."
+      "x": "'Safe to repeat' (idempotent) matters more than it looks. Networks fail between the request and the response, and clients, proxies and load balancers retry. A repeated GET or PUT is harmless; a repeated POST can create a second order or a second charge. The article on failing calls in Networking essentials shows how idempotency keys make a POST safe to retry."
     },
     {
       "t": "h2",

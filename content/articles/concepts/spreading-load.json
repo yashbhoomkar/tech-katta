@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "spreading-load",
-  "group": "balancing",
-  "no": "NETWORK // 08",
+  "group": "networking",
+  "no": "CONCEPT // 33",
   "tag": "LOAD BALANCING",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -178,7 +178,7 @@
         },
         {
           "t": "p",
-          "x": "Dedicated hardware appliances go further still. Interviews rarely ask how to scale the load balancer itself; if they do, the answer is several of them, spread by DNS or by routing (anycast, where many machines share one address), with hardware for the extreme cases."
+          "x": "Names worth knowing: in software, NGINX, HAProxy and Envoy; in the cloud, AWS's Application and Network Load Balancers, Google Cloud Load Balancing and Azure Load Balancer; in hardware, appliances such as F5 BIG-IP. Dedicated hardware appliances go further still. Interviews rarely ask how to scale the load balancer itself; if they do, the answer is several of them, spread by DNS or by routing (anycast, where many machines share one address), with hardware for the extreme cases."
         }
       ]
     }

@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "network-layers",
-  "group": "foundations",
-  "no": "NETWORK // 01",
+  "group": "networking",
+  "no": "CONCEPT // 26",
   "tag": "FOUNDATIONS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -31,6 +31,10 @@
     {
       "t": "p",
       "x": "It is the same trick as reading a file. Your code opens a path and reads lines; it never moves a disk head. The file system, the driver and the disk controller each handle one part."
+    },
+    {
+      "t": "p",
+      "x": "How deep an interview goes depends on the role. For infrastructure, platform or networking roles, expect follow-up questions on load balancers, CDNs, timeouts and what breaks; interviewers there have often just dealt with exactly those in production. For product and full-stack roles, a sound working knowledge of the pieces in this group is enough."
     },
     {
       "t": "fig",
@@ -79,7 +83,11 @@
     },
     {
       "t": "p",
-      "x": "The numbers come from the seven-layer OSI model. Nobody needs layers 5 and 6 in an interview; when people say a load balancer works at 'layer 4' or 'layer 7', they mean it reads only TCP connections, or reads the HTTP requests inside them. That distinction has its own article in this tab."
+      "x": "The numbers come from the seven-layer OSI model. Nobody needs layers 5 and 6 in an interview; when people say a load balancer works at 'layer 4' or 'layer 7', they mean it reads only TCP connections, or reads the HTTP requests inside them. That distinction has its own article in Networking essentials."
+    },
+    {
+      "t": "p",
+      "x": "IP is not the only option at layer 3. Large machine-learning training clusters often connect their machines with InfiniBand, which skips much of the usual stack for lower latency. For system design interviews, IP is assumed everywhere."
     },
     {
       "t": "p",
@@ -146,7 +154,7 @@
         },
         {
           "t": "p",
-          "x": "Two consequences show up in designs. First, a server can't open a connection to a phone: there is no address to reach it at until the phone connects first, which is why apps keep a connection open, or use push notifications, to receive messages. Second, two phones can't easily connect to each other directly, which is the problem WebRTC solves with STUN and TURN (see 'Phone to phone' in this tab)."
+          "x": "Two consequences show up in designs. First, a server can't open a connection to a phone: there is no address to reach it at until the phone connects first, which is why apps keep a connection open, or use push notifications, to receive messages. Second, two phones can't easily connect to each other directly, which is the problem WebRTC solves with STUN and TURN (see 'Phone to phone' in Networking essentials)."
         },
         {
           "t": "p",

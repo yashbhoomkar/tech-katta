@@ -84,7 +84,6 @@ const SITE = {
   'inside?': { eyebrow: 'text', title: 'text', desc: 'text', items: [{ kind: 'text', title: 'text', text: 'text', link: 'text', href: 'text' }], cta: 'text', ctaHref: 'text' },
   'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
   'papers?': { eyebrow: 'text', desc: 'text' },
-  'networking?': { eyebrow: 'text', desc: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
   numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },

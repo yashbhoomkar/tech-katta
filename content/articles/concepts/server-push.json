@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "server-push",
-  "group": "protocols",
-  "no": "NETWORK // 06",
+  "group": "networking",
+  "no": "CONCEPT // 31",
   "tag": "PROTOCOLS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -158,7 +158,7 @@
         },
         {
           "t": "p",
-          "x": "Clients should reconnect with backoff and jitter (see 'When calls fail' in this tab) and resume from the last message they saw, so a restart costs a few seconds of delay instead of a flood of reconnections and lost messages."
+          "x": "Clients should reconnect with backoff and jitter (see 'When calls fail' in Networking essentials) and resume from the last message they saw, so a restart costs a few seconds of delay instead of a flood of reconnections and lost messages."
         }
       ]
     }
