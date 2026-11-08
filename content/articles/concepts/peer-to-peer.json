@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "peer-to-peer",
-  "group": "protocols",
-  "no": "NETWORK // 07",
+  "group": "networking",
+  "no": "CONCEPT // 32",
   "tag": "PROTOCOLS",
   "access": "paid",
   "date": "8 Nov 2026",

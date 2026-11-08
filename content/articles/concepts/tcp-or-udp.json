@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "tcp-or-udp",
-  "group": "foundations",
-  "no": "NETWORK // 03",
+  "group": "networking",
+  "no": "CONCEPT // 28",
   "tag": "FOUNDATIONS",
   "access": "paid",
   "date": "8 Nov 2026",

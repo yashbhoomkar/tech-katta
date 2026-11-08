@@ -71,6 +71,11 @@
   ],
   "redirects": [
     {
+      "source": "/dashboard/networking/:slug*",
+      "destination": "/dashboard/concepts/:slug*",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "l4-and-l7",
-  "group": "balancing",
-  "no": "NETWORK // 09",
+  "group": "networking",
+  "no": "CONCEPT // 34",
   "tag": "LOAD BALANCING",
   "access": "paid",
   "date": "8 Nov 2026",

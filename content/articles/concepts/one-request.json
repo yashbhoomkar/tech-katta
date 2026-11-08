@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "one-request",
-  "group": "foundations",
-  "no": "NETWORK // 02",
+  "group": "networking",
+  "no": "CONCEPT // 27",
   "tag": "FOUNDATIONS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -116,7 +116,7 @@
     },
     {
       "t": "p",
-      "x": "Every open connection holds memory and a file handle on the server, and an entry in each load balancer and NAT on the path. A server can hold tens of thousands of idle connections comfortably, but not unlimited numbers, and a connection that is kept open to push live updates ties the client to one particular server. That is why designs with long-lived connections (live order tracking, chat) need extra thought: which server holds a user's connection, what happens when it restarts, and how a message for that user finds it. The articles on pushing updates and on load balancers in this tab come back to this."
+      "x": "Every open connection holds memory and a file handle on the server, and an entry in each load balancer and NAT on the path. A server can hold tens of thousands of idle connections comfortably, but not unlimited numbers, and a connection that is kept open to push live updates ties the client to one particular server. That is why designs with long-lived connections (live order tracking, chat) need extra thought: which server holds a user's connection, what happens when it restarts, and how a message for that user finds it. The articles on pushing updates and on load balancers in Networking essentials come back to this."
     },
     {
       "t": "h2",
@@ -128,6 +128,20 @@
         "When latency matters, count round trips, not bytes: 'a cold call from a phone in India to a US region costs nearly a second before any work is done'.",
         "Mention connection reuse and pooling when you draw service-to-service calls and database access. It's a cheap, credible optimisation.",
         "'What happens when you type a URL' is asked less often now, but walking through DNS, TCP, TLS, HTTP and rendering in two minutes is still a good warm-up."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "See it for yourself"
+    },
+    {
+      "t": "list",
+      "items": [
+        "`curl -v https://example.com` prints each stage as it happens: the address it resolved, the TLS handshake, the request headers it sent and the response headers it got back.",
+        "`dig api.example.com` shows a DNS answer and its TTL; run it twice and watch the TTL count down from the cached copy.",
+        "In the browser's developer tools, the Network tab breaks every request into DNS, connecting, TLS, waiting and download. Turn on throttling (for example 'Slow 4G') and reload: the handshakes, not the downloads, take most of the time.",
+        "`traceroute` (or `mtr`) lists the routers between you and a server and the round trip to each, which shows where distance is spent.",
+        "Wireshark captures the packets themselves: the SYN, SYN-ACK and ACK, the TLS hello, retransmissions on a bad network."
       ]
     },
     {

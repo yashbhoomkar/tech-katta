@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "spreading-load",
-  "group": "balancing",
-  "no": "NETWORK // 08",
+  "group": "networking",
+  "no": "CONCEPT // 33",
   "tag": "LOAD BALANCING",
   "access": "paid",
   "date": "8 Nov 2026",

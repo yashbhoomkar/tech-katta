@@ -1,8 +1,8 @@
 {
-  "section": "networking",
+  "section": "concepts",
   "slug": "api-styles",
-  "group": "protocols",
-  "no": "NETWORK // 05",
+  "group": "networking",
+  "no": "CONCEPT // 30",
   "tag": "PROTOCOLS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -188,7 +188,7 @@
         },
         {
           "t": "p",
-          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in this tab)."
+          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in Networking essentials)."
         }
       ]
     }
