@@ -8,23 +8,23 @@
   "nav": [
     [
       "Concepts",
-      "/dashboard/#concepts"
+      "/dashboard/concepts/"
     ],
     [
       "Components",
-      "/dashboard/#components"
+      "/dashboard/components/"
     ],
     [
       "Interview Questions",
-      "/dashboard/#interview-questions"
+      "/dashboard/interview-questions/"
     ],
     [
       "Problems",
-      "/dashboard/#problems"
+      "/dashboard/problems/"
     ],
     [
       "Lab",
-      "/dashboard/#lab"
+      "/dashboard/lab/"
     ]
   ],
   "hero": {
@@ -36,7 +36,7 @@
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
-    "primaryHref": "/dashboard/#problems",
+    "primaryHref": "/dashboard/problems/",
     "secondaryHref": "#ind-vs-pak"
   },
   "topics": {
@@ -571,32 +571,32 @@
         "title": "Interview Questions",
         "text": "From a URL shortener to a chat app, each one worked from requirements and rough numbers to a design you can defend, with the traps an interviewer looks for.",
         "link": "See the questions",
-        "href": "/dashboard/#interview-questions"
+        "href": "/dashboard/interview-questions/"
       },
       {
         "kind": "{questions} PROBLEMS",
         "title": "Problems, judged",
         "text": "Build your design on the canvas, Run the example tests, then Submit: peaks, spikes, a dead server and the monthly bill decide whether it's accepted. Your requirements, estimates and APIs are checked too.",
         "link": "Solve a problem",
-        "href": "/dashboard/#problems"
+        "href": "/dashboard/problems/"
       },
       {
         "kind": "{challenges} CHALLENGES",
         "title": "The Lab",
         "text": "Build a design, send it a real evening's traffic, and earn up to three stars for staying up, not crashing and keeping to the budget.",
         "link": "Open the Lab",
-        "href": "/dashboard/#lab"
+        "href": "/dashboard/lab/"
       },
       {
         "kind": "{articles} ARTICLES",
         "title": "Concepts and Components",
         "text": "Short, plain articles on the parts every design uses: caches, queues, databases, replication, retries.",
         "link": "Start reading",
-        "href": "/dashboard/#concepts"
+        "href": "/dashboard/concepts/"
       }
     ],
     "cta": "All problems and your progress",
-    "ctaHref": "/dashboard/#problems"
+    "ctaHref": "/dashboard/problems/"
   },
   "landingLab": {
     "eyebrow": "TRY IT NOW",
@@ -605,7 +605,7 @@
     "challenge": "ind-vs-pak",
     "loading": "Loading the Lab",
     "open": "Open in the full Lab",
-    "openHref": "/dashboard/#lab/ind-vs-pak",
+    "openHref": "/dashboard/lab/ind-vs-pak/",
     "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
     "lite": {
       "diagram": "Your design, from the viewers down to your servers",
