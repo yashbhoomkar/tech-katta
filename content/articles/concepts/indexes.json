@@ -1,0 +1,197 @@
+{
+  "section": "concepts",
+  "slug": "indexes",
+  "group": "data",
+  "no": "CONCEPT // 12",
+  "tag": "INDEXING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Indexes: how a database finds one row among crores",
+  "dek": "Without an index, a database answers a question by reading every row. With the right one, it reads three or four pages. Here is how a B-tree does that, why the order of columns matters so much, which other kinds of index exist, and what each one costs on every write.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "An index is a second, sorted copy of some columns that points to the rows. A B-tree finds any key in a few page reads, even among crores of rows.",
+        "Column order decides what an index can do: one on (restaurant, status, time) serves queries that start with the restaurant, and does little for a query on status alone.",
+        "Every index slows every write and takes space. Index the queries you run often, and check with EXPLAIN instead of guessing."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Without an index, the database reads everything"
+    },
+    {
+      "t": "p",
+      "x": "A table is stored in pages, 8 KB each in PostgreSQL and 16 KB in MySQL, roughly in the order rows arrived. To answer `WHERE name = 'Priya Nair'` without an index, the database reads every page and checks every row: a full table scan. On 6.4 crore customers, that is many gigabytes read for one answer."
+    },
+    {
+      "t": "p",
+      "x": "A scan is fine on a small table, and for a report that needs most of the rows anyway. It is a disaster for a query that a screen runs a thousand times a second."
+    },
+    {
+      "t": "h2",
+      "x": "Inside a B-tree"
+    },
+    {
+      "t": "fig",
+      "id": "btree-path",
+      "cap": "Each page holds hundreds of keys, so the tree is wide and shallow. Three levels cover crores of names, and the top levels are read so often that they stay in memory."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A B-tree keeps keys sorted in pages. Each page points to the pages below it, and the bottom pages, the leaves, hold every key with the address of its row.",
+        "The leaves are linked in order, so after finding the first match the database can keep walking. Ranges (`placed_at > '19:00'`), sorting (`ORDER BY placed_at`) and prefixes (`LIKE 'Pri%'`) all use the same index.",
+        "A lookup usually costs one or two reads from disk, because the upper levels are already in memory, plus one more for the row.",
+        "In MySQL's InnoDB the table itself is a B-tree sorted by the primary key, and other indexes point to the primary key. In PostgreSQL the table is a heap of rows in no order, and every index points to a row's location."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Indexes on more than one column"
+    },
+    {
+      "t": "fig",
+      "id": "index-order",
+      "cap": "A composite index is sorted by its first column, then by the second within it, and so on. A query can jump to one range only if it gives the leading columns."
+    },
+    {
+      "t": "analogy",
+      "x": "A phone book is an index on (surname, first name). Finding every Shah is quick, and every Priya Shah quicker still. Finding every Priya means reading the whole book."
+    },
+    {
+      "t": "list",
+      "items": [
+        "An index on (a, b, c) serves queries on a, on a and b, and on a, b and c. This is called the leftmost-prefix rule.",
+        "Put the columns compared with = first, and the column used for a range or for ORDER BY last. For the kitchen screen, (restaurant_id, status, placed_at) answers 'restaurant 42's orders being prepared, oldest first' straight from the index, already in order.",
+        "A query on status alone needs another index. In PostgreSQL a partial index fits best: `CREATE INDEX ON orders (placed_at) WHERE status IN ('new', 'preparing')` holds only the few live orders, not the crores already delivered."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When the index alone answers the query"
+    },
+    {
+      "t": "p",
+      "x": "If every column a query needs is in the index, the database never visits the table. This is a covering index (an index-only scan, in PostgreSQL's words). 'My orders', showing the order ID, time and total, can come entirely from an index on (customer_id, placed_at) that also carries the total. PostgreSQL's `INCLUDE (total)` adds a column to the index's leaves without sorting by it."
+    },
+    {
+      "t": "h2",
+      "x": "Other kinds of index"
+    },
+    {
+      "t": "table",
+      "label": "Kinds of index",
+      "head": [
+        "Kind",
+        "How it works",
+        "Use it for",
+        "Not for"
+      ],
+      "rows": [
+        [
+          "B-tree",
+          "Sorted pages, a few levels deep",
+          "Exact matches, ranges, sorting and prefixes; the default almost everywhere",
+          "Words inside text; distances"
+        ],
+        [
+          "Hash",
+          "A hash table from value to row",
+          "Exact matches only",
+          "Ranges or sorting"
+        ],
+        [
+          "LSM tree",
+          "Writes collect in memory, then go to sorted files that are merged in the background",
+          "Very high write rates (Cassandra, RocksDB)",
+          "Reads may check several files; Bloom filters skip most of them"
+        ],
+        [
+          "Inverted (full text)",
+          "Each word lists the rows that contain it",
+          "Search boxes: 'paneer tikka near me'",
+          "Exact filters and sorting by value"
+        ],
+        [
+          "Geospatial",
+          "Nearby points are stored near each other (geohash, R-tree)",
+          "'Restaurants within 3 km'",
+          "Anything that isn't about location"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What every index costs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every insert and delete, and every update of an indexed column, must change each index too. A table with eight indexes does about nine writes for each new row.",
+        "Indexes take space, often a large share of the table's own size, and they compete with the data for memory. An index that doesn't fit in memory is much slower.",
+        "An index nobody uses is pure cost. PostgreSQL counts the scans of each index in `pg_stat_user_indexes`; drop the ones that stay at zero.",
+        "Building an index on a big, busy table can block writes. Use the online way: `CREATE INDEX CONCURRENTLY` in PostgreSQL; MySQL's InnoDB builds most indexes online."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Find slow queries, don't guess"
+    },
+    {
+      "t": "code",
+      "label": "POSTGRESQL · EXPLAIN ANALYZE, SIMPLIFIED",
+      "x": "EXPLAIN ANALYZE\nSELECT id, placed_at, total FROM orders\nWHERE restaurant_id = 42 AND status = 'preparing'\nORDER BY placed_at;\n\n-- before: no index\nSort  (actual time=2411.20..2411.21 rows=12)\n  ->  Seq Scan on orders  (actual time=0.03..2410.11 rows=12)\n        Rows Removed by Filter: 49999988\n\n-- after: index on (restaurant_id, status, placed_at)\nIndex Scan using orders_kitchen on orders  (actual time=0.04..0.09 rows=12)",
+      "say": "Explain analyze of the kitchen query. Before the index: a sequential scan of orders that throws away almost 5 crore rows and takes 2.4 seconds, then a sort. After adding an index on restaurant ID, status and time: an index scan that takes under a tenth of a millisecond, with no sort."
+    },
+    {
+      "t": "list",
+      "items": [
+        "`EXPLAIN ANALYZE` runs the query and shows the plan the database chose and the time each step took. 'Seq Scan' on a big table, in a query that returns a few rows, is the thing to look for.",
+        "Turn on the slow query log (PostgreSQL's `log_min_duration_statement`, MySQL's slow query log) and fix the queries with the most total time first, not the slowest single run.",
+        "Watch for one query per item in a loop, the N+1 problem: each is fast, but fifty of them for one page are not."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For each hot query, name the index that serves it, with its columns in order.",
+        "Mention the cost: indexes slow writes, so a write-heavy table such as rider locations gets as few as possible.",
+        "Know when a B-tree isn't the answer: searching words, finding nearby places, or very high write rates.",
+        "Say how you would check: EXPLAIN on the real query and the slow query log, not guesses."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "Click a database in the Lab and open its schema. Add an index, or take one away: in a problem's practice, the request tests plan every query against your schema and tell you which ones would read every row.",
+      "to": "lab",
+      "go": "Open the Lab"
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why the database sometimes ignores your index",
+      "body": [
+        {
+          "t": "p",
+          "x": "The query planner estimates how many rows will match and picks the cheapest plan. If a value matches a large share of the table, jumping from the index to the table for each row costs more than reading the table in order, so it scans, and it is right to."
+        },
+        {
+          "t": "list",
+          "items": [
+            "Old statistics mislead the planner. `ANALYZE` refreshes them; autovacuum usually does it for you.",
+            "A function on the column hides the index: `WHERE lower(email) = '…'` can't use an index on email, but it can use an index on `lower(email)`.",
+            "Comparing a text column with a number, or a column with a different type, can force a conversion on every row, which also skips the index."
+          ]
+        }
+      ]
+    }
+  ]
+}

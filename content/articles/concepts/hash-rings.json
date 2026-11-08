@@ -1,0 +1,160 @@
+{
+  "section": "concepts",
+  "slug": "hash-rings",
+  "group": "data",
+  "no": "CONCEPT // 13",
+  "tag": "CONSISTENT HASHING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Hash rings: adding a server without moving everything",
+  "dek": "Spread keys with hash % N, and adding one server sends almost every key somewhere new. A hash ring moves only the keys next to the new server. Here is how the ring works, why each server needs many points on it, and the simpler alternatives that are often enough.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "With hash(key) % N, changing N moves most keys: going from 4 servers to 5 moves 4 keys in 5.",
+        "On a hash ring each key belongs to the next server clockwise. Adding or removing a server moves only the keys next to it, about 1 in N.",
+        "Give each server many points on the ring (virtual nodes) so the load is even and a failed server's keys spread over all the others. Fixed slots with a map, as in Redis Cluster, do the same job more simply."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why hash % N breaks when N changes"
+    },
+    {
+      "t": "fig",
+      "id": "hash-move",
+      "cap": "Twenty of Zotato's carts on 4 servers, then 5. With % N most carts change server; on a ring only the carts between the new server and the one before it move."
+    },
+    {
+      "t": "p",
+      "x": "With % N, a key stays put only if its hash leaves the same remainder for N and for N + 1. Going from 4 servers to 5, that is 1 key in 5; the other 80% move. For a cache, it means most lookups suddenly miss and all of them land on the database at once. For a database, it means copying almost all the data while serving traffic."
+    },
+    {
+      "t": "h2",
+      "x": "Servers and keys on one circle"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Hash each server's name to a point on a circle of numbers, say 0 to 2³² − 1, wrapping around at the top. Hash each key the same way.",
+        "A key belongs to the first server at or after its point, going clockwise.",
+        "Adding a server takes over only the keys between it and the server before it. Removing one hands its keys to the next server. Either way, about 1 in N keys move, and only to or from that one server.",
+        "Finding a key's server is a binary search in a sorted list of points. Every client or router can keep that list in memory."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "One point per server is not enough"
+    },
+    {
+      "t": "fig",
+      "id": "hash-vnodes",
+      "cap": "Random points make uneven arcs, and a failed server's whole arc lands on one neighbour. Many points per server even out the shares and spread a failure over everyone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "With a few points, arcs come out uneven: in the figure, C holds 39% of the keys and B only 11%.",
+        "When a server fails, its whole arc falls on the next one, which may then be overloaded and fail in turn.",
+        "Virtual nodes fix both. Each server gets many points, tens to hundreds, mixed around the ring. Shares come out close to equal, and a failed server's load spreads over all the others.",
+        "Points also let you weight servers: a machine with twice the memory gets twice the points."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Copies on the ring"
+    },
+    {
+      "t": "p",
+      "x": "To keep three copies, store each key on the next three different servers clockwise, skipping extra points of a server already chosen. Cassandra and other Dynamo-style stores place copies this way; the Dynamo paper, in Research Papers, shows what happens when one of the three is down."
+    },
+    {
+      "t": "h2",
+      "x": "Other ways to get the same effect"
+    },
+    {
+      "t": "table",
+      "label": "Ways to spread keys",
+      "head": [
+        "Method",
+        "How it works",
+        "Good for",
+        "Trade-off"
+      ],
+      "rows": [
+        [
+          "Fixed slots",
+          "hash % a fixed number of slots, then a small map from slot to server; rebalancing moves whole slots",
+          "Caches and databases that move data in pieces (Redis Cluster uses 16,384 slots)",
+          "The map has to be stored and shared, usually by a coordinator"
+        ],
+        [
+          "Ring with virtual nodes",
+          "Servers own arcs of a ring; clients find the next point clockwise",
+          "Large clusters with no central map, such as Cassandra",
+          "Uneven without enough points; more moving parts than slots"
+        ],
+        [
+          "Rendezvous hashing",
+          "Score every server with hash(key, server) and pick the highest",
+          "A client choosing among tens of servers with no shared state",
+          "Scoring every server for each key is slow with thousands of servers"
+        ],
+        [
+          "Jump hash",
+          "A short formula maps a key to one of N numbered buckets, moving 1 in N keys when N grows",
+          "Numbered shards that only ever grow",
+          "Can't remove a bucket from the middle"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The fixed buckets in the Sharding component are the slot idea. In an interview either answer works; what matters is that adding a machine moves a small, known share of the data, a piece at a time."
+    },
+    {
+      "t": "h2",
+      "x": "Where it shows up"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Caches: the client spreads keys over cache servers, so adding a server empties only a small part of the cache.",
+        "Databases: Cassandra and other Dynamo-style stores place data and its copies on a ring.",
+        "Load balancers: the same user or session goes to the same server without a lookup table, while servers come and go.",
+        "Connection servers for chat or games: deciding which server owns a room or a match."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say why not % N: adding a server would move most keys and empty most of the cache.",
+        "Describe the ring in two sentences, then add virtual nodes for even load and for spreading a failure.",
+        "Mention copies: the next few different servers clockwise.",
+        "Remember hot keys. Hashing spreads keys, not load: one very popular key still lands on one server, so cache it closer to the caller or split it."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: exactly how much moves",
+      "body": [
+        {
+          "t": "p",
+          "x": "With N servers on a ring and one more joining, the new server takes about 1/(N + 1) of the keys, all from the servers whose arcs it splits. With virtual nodes those come from many servers, a little from each, which also spreads the copying work."
+        },
+        {
+          "t": "p",
+          "x": "With % N, going from N servers to N + 1 keeps a key in place only when its hash leaves the same remainder for both, which happens for 1 key in N + 1. So N/(N + 1) of all keys move: 80% going from 4 to 5, and 99% going from 99 to 100."
+        }
+      ]
+    }
+  ]
+}
