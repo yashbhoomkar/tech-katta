@@ -1,6 +1,7 @@
 {
   "section": "papers",
   "slug": "lamport-clocks",
+  "group": "must-know",
   "no": "PAPER // 01",
   "tag": "TIME AND ORDER",
   "access": "paid",
