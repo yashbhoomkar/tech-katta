@@ -1,0 +1,111 @@
+{
+  "section": "papers",
+  "slug": "chubby",
+  "group": "worth-reading",
+  "no": "PAPER // 10",
+  "tag": "COORDINATION",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Chubby: the lock service that became a phone book",
+  "dek": "In 2006 Mike Burrows described a small service with a big job: give thousands of machines a reliable way to elect a leader and agree on tiny pieces of configuration. Rather than a consensus library, it offered files and locks. It is also one of the most honest papers about how engineers actually use, and misuse, such a service.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Chubby is a lock service: a cell of five replicas, kept consistent with Paxos, offering small files and coarse locks that are held for hours or days, not milliseconds.",
+        "Its main job is leader election: the server that holds a lock is the primary, and it writes its address into the lock file so everyone can find it.",
+        "Locks expire with the holder's session, so a dead primary is replaced within seconds, and sequencers stop an old primary that wakes up late from doing damage."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The paper: \"The Chubby lock service for loosely-coupled distributed systems\" by Mike Burrows, OSDI 2006."
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it solved"
+    },
+    {
+      "t": "p",
+      "x": "GFS and Bigtable each needed exactly one master, and many other systems needed to elect a primary or share a little configuration. Each team could have embedded a Paxos library, but consensus is hard to get right and most teams didn't want to run five machines just to pick a leader. A shared service with a familiar interface, files and locks, was easier to adopt than a library, even for programs not written with distribution in mind."
+    },
+    {
+      "t": "h2",
+      "x": "How it works"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A cell is five replicas. They elect a master with Paxos, and all client requests go to the master; the others copy its database.",
+        "Clients open small files and directories, such as /ls/cell/bigtable/master, and can hold a reader or writer lock on any of them.",
+        "Each client has a session kept alive by KeepAlive messages. If the session lease, 12 seconds by default, runs out, the client's locks are released.",
+        "Clients cache file contents. Before a file changes, the master tells every client caching it to drop its copy, so caches are never stale.",
+        "Clients can subscribe to events, such as a file's contents changing or a lock being freed."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "chubby-elect",
+      "cap": "Electing a primary is just taking a lock. The winner writes its address into the lock file; the others wait for it to be freed, and clients read the file to find whoever currently leads."
+    },
+    {
+      "t": "h2",
+      "x": "Sequencers: the stale-leader problem"
+    },
+    {
+      "t": "p",
+      "x": "A lock can be lost without its holder knowing: a long garbage-collection pause, a stalled disk or a network partition can outlast the session. The old holder then wakes up still believing it is primary. Chubby's answer is the sequencer, a token naming the lock and its generation number, which the holder attaches to every request it sends. Servers check it and refuse anything older than the newest generation they've seen."
+    },
+    {
+      "t": "fig",
+      "id": "chubby-fence",
+      "cap": "The lock alone can't stop a frozen primary from waking up and writing. The generation number can, because the storage server compares it with the newest one it has seen. This pattern is now usually called a fencing token."
+    },
+    {
+      "t": "h2",
+      "x": "What actually happened"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The biggest use turned out to be naming, not locking: programs read Chubby files to find servers, and that load dwarfed the locks. One cell served about 90,000 clients from a single master.",
+        "Developers rarely planned for Chubby being unavailable, so outages of the cell spread to the systems that depended on it. The team added a proxy layer and spent time reviewing how other teams used the service.",
+        "Coarse locks, held for long periods, were the right default: they put little load on the cell, and a brief outage barely matters to a lock held for a day."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What happened next"
+    },
+    {
+      "t": "p",
+      "x": "ZooKeeper brought the same idea to open source a few years later, and etcd followed. Today leader election in many systems, including Kubernetes controllers, is a lease in one of these stores, with the same session expiry and the same need for fencing tokens."
+    },
+    {
+      "t": "h2",
+      "x": "Use it in an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For 'only one worker may run this', such as the payout job in the Job scheduler problem, use a lease in a coordination service such as ZooKeeper or etcd, not a lock row in your main database.",
+        "Always add a fencing token: the lock's generation number, checked by whatever the worker writes to. Without it, a paused worker can come back and overwrite the new worker's results.",
+        "Use the service for small, slow-changing data: leaders, configuration, membership. Not for the data itself, and not for high-rate locks.",
+        "Say what happens when the coordination service is down: the current leader keeps working on its lease for a short grace period, and new elections wait."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why a service and not a library",
+      "body": [
+        {
+          "t": "p",
+          "x": "The paper argues that a lock service fits the way programs are actually written. A program usually starts on one machine and grows into a cluster; adding 'take a lock and write your address in a file' is a few lines, while restructuring it around a consensus library is a rewrite. A service also needs only one machine of the client's to be up to make progress, where a library needs a majority of the client's own machines."
+        }
+      ]
+    }
+  ]
+}
