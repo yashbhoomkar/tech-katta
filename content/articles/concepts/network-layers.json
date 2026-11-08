@@ -141,6 +141,7 @@
       "items": [
         "You rarely need to draw the layers. Use the vocabulary precisely: 'this load balancer works at layer 4, so it can't route by URL'.",
         "Say which parts of your design have public addresses (load balancers, a CDN) and which stay private (application servers, databases). Keeping databases off the internet is basic security.",
+        "Across this whole group there is rarely one right answer: name the sensible default (TCP, REST, a layer 7 balancer, one region), then the requirement that would make you choose differently. Interviewers grade the reasoning about trade-offs.",
         "If someone asks how a request reaches your service, walk down the stack once: DNS gives an address, IP carries packets there, TCP makes them reliable, HTTP carries the request."
       ]
     },

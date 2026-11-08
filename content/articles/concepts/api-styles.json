@@ -68,8 +68,8 @@
     {
       "t": "code",
       "label": "A GraphQL query",
-      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n}",
-      "say": "A GraphQL query for the home screen: restaurants near a city, the first twenty, with only their name, rating, delivery time, photo and offer titles."
+      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n  pageInfo { hasNextPage endCursor }\n}",
+      "say": "A GraphQL query for the home screen: restaurants near a city, the first twenty, with only their name, rating, delivery time, photo and offer titles, plus whether there is a next page and where it starts."
     },
     {
       "t": "p",
@@ -109,8 +109,8 @@
     {
       "t": "list",
       "items": [
-        "Use it for internal, high-volume service-to-service calls, and where many languages must agree on one contract.",
-        "Not for public APIs or browsers: browsers can't speak gRPC directly (gRPC-Web needs a proxy), and outside developers expect REST and JSON.",
+        "Use it for internal, high-volume service-to-service calls, and where many languages must agree on one contract. It pays off most when a call's time is mostly spent on the network and encoding rather than on the work itself.",
+        "Not for public APIs or browsers: browsers can't speak gRPC directly (gRPC-Web needs a proxy), outside developers expect REST and JSON, and the tooling for inspecting and testing calls is thinner than for plain HTTP.",
         "Don't lead with it. Unless the interviewer pushes on internal latency or throughput, REST between services is a fine answer; the bigger wins are usually elsewhere (caching, fewer calls, better data layout)."
       ]
     },

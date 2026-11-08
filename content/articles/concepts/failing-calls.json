@@ -125,7 +125,7 @@
     },
     {
       "t": "p",
-      "x": "Put breakers around calls to third-party APIs (maps, SMS, payments), around each downstream service, and around anything slow or expensive. Libraries and service meshes provide them; you choose the thresholds and the fallbacks."
+      "x": "The name comes from the breaker in a home's fuse box: when too much current flows it cuts the circuit, so one faulty appliance doesn't burn the wiring, and someone resets it once the fault is gone. Put breakers around calls to third-party APIs (maps, SMS, payments), around each downstream service, and around anything slow or expensive. Libraries and service meshes provide them; you choose the thresholds and the fallbacks."
     },
     {
       "t": "h2",

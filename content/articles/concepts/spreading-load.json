@@ -151,6 +151,11 @@
       ]
     },
     {
+      "t": "fig",
+      "id": "lb-algos",
+      "cap": "The same burst of requests spread by different algorithms. Round robin ignores how busy each server is; least connections and least response time react to it."
+    },
+    {
       "t": "p",
       "x": "Round robin is fine for stateless request traffic and needs no configuration when servers come and go. For long-lived connections it can leave one server with far more than its share (a server that restarts gets none, then all the new ones), so least connections is the better choice there."
     },

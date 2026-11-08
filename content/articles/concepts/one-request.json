@@ -41,6 +41,10 @@
     },
     {
       "t": "p",
+      "x": "Every layer and every box in the path adds its own share: a load balancer in front of the servers is one more hop, an API gateway another, each with its own connections to open. Each costs little alone, which is why it's easy to ignore until a page needs ten calls in a row and the small costs add up."
+    },
+    {
+      "t": "p",
       "x": "A request is many packets, not one. The 18 KB response is about a dozen packets of 1,500 bytes; each is acknowledged; any lost one is resent. It is easy to forget, and it is why a design that 'makes one call' may still be slow on a poor network."
     },
     {
