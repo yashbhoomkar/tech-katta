@@ -33,3 +33,12 @@ test('the sitemap lists the home page, the dashboard and every page', () => {
   assert.match(xml, /<loc>https:\/\/tech.katta.cc\/<\/loc>/);
   assert.match(xml, /<loc>https:\/\/tech.katta.cc\/dashboard\/concepts\/caches\/<\/loc>/);
 });
+
+test('the API gives the same pages as the content folder', async () => {
+  const { pagesOf } = await import('../seo.js');
+  const fs = await import('node:fs');
+  const site = JSON.parse(fs.readFileSync(path.join(content, 'site.json'), 'utf8'));
+  const refs = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'index.json'), 'utf8')).articles;
+  const list = refs.map((r) => { const { body, ...rest } = JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8')); return rest; });
+  assert.deepEqual(pagesOf(site, list), pagesFrom(content));
+});
