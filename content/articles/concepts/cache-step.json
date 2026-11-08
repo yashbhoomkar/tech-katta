@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "Reading one user's profile from Postgres can take tens of milliseconds once you count the query, the disk and the network; reading the same profile from an in-memory store such as Redis takes about one. That is a difference of 30 to 50 times. The reason is physical: a database keeps its data on disk and pays for disk access on many queries, while memory sits right next to the CPU."
+      "x": "Reading one user's profile from Postgres takes a few milliseconds when the row is already in the database's memory, and tens of milliseconds when the query joins several tables or has to wait for the disk under load; reading the same profile from an in-memory store such as Redis takes about one millisecond, network included. That is 5 to 50 times faster, and the gap grows exactly when the database is busiest. The reason is physical: a database keeps its data on disk and pays for disk access on many queries, while memory sits right next to the CPU."
     },
     {
       "t": "fig",
@@ -48,7 +48,7 @@
     {
       "t": "list",
       "items": [
-        "Many reads: 'Zotato has 1 crore daily users making about 20 reads each: 20 crore reads a day, around 2,300 a second on average and 12,000 at dinner. Even with indexes each takes 20 to 50 ms. A cache answers in under 2 ms and keeps most of them off the database.'",
+        "Many reads: 'Zotato has 1 crore daily users making about 20 reads each: 20 crore reads a day, around 2,300 a second on average and 12,000 at dinner. Even with indexes, at dinner each takes 10 to 30 ms. A cache answers in under 2 ms and keeps most of them off the database.'",
         "An expensive query: 'The home screen's 'popular near you' list joins orders, restaurants and ratings and takes 200 ms. Compute it once a minute per area, keep it in Redis, and serve it in 1 ms.'",
         "A busy database: 'The database CPU sits at 80% at dinner, almost all of it the same menu queries over and over. Caching them should cut its load by 70 to 80%.'",
         "A latency target: 'The menu API must answer in under 10 ms, and the database takes 30 to 50. A cache is the only way to meet it.'"

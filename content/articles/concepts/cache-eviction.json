@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "Memory is limited and costs more than disk, so a cache holds only a slice of the data. When it is full and a new entry arrives, something has to go. The rule for choosing is the eviction policy. In Redis it is a setting (maxmemory-policy), and choosing it is part of designing the cache."
+      "x": "Memory is limited and costs more than disk, so a cache holds only a slice of the data. When it is full and a new entry arrives, something has to go. The rule for choosing is the eviction policy. In Redis it is a setting (maxmemory-policy), and choosing it is part of designing the cache: the default, noeviction, refuses new writes once memory is full, which suits Redis used as a database but breaks a cache, so a cache is set to allkeys-lru or allkeys-lfu."
     },
     {
       "t": "fig",

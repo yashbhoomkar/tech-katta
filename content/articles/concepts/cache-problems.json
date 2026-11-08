@@ -87,6 +87,24 @@
       ]
     },
     {
+      "t": "more",
+      "label": "Go deeper: the race that delete-on-write still allows",
+      "body": [
+        {
+          "t": "p",
+          "x": "A reader misses menu:42 and reads the database just before the owner's update, so it holds ₹240. The update commits and deletes menu:42. Then the slow reader finishes and stores its ₹240 in the cache, after the delete. The cache now holds the old price until the entry expires. It is rare, because the reader must be slower than a whole write, but it happens under load."
+        },
+        {
+          "t": "list",
+          "items": [
+            "The TTL is the safety net: whatever goes wrong, the stale entry dies when it expires. This is why cached entries should always have one.",
+            "A second, delayed delete (a few hundred milliseconds after the write) catches most of these races.",
+            "Or version the value: store the row's updated_at with it, and refuse to overwrite a newer version with an older one."
+          ]
+        }
+      ]
+    },
+    {
       "t": "h2",
       "x": "Hot keys"
     },
