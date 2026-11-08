@@ -39,6 +39,12 @@
       ]
     },
     {
+      "t": "code",
+      "label": "FLINK SQL · CLICKS PER AD PER MINUTE",
+      "x": "CREATE TABLE ad_clicks (\n  ad_id BIGINT,\n  click_time TIMESTAMP(3),\n  WATERMARK FOR click_time AS click_time - INTERVAL '5' SECOND\n) WITH ('connector' = 'kafka', 'topic' = 'ad-clicks' /* plus broker and format settings */);\n\nSELECT ad_id, window_start, COUNT(*) AS clicks\nFROM TABLE(TUMBLE(TABLE ad_clicks, DESCRIPTOR(click_time), INTERVAL '1' MINUTE))\nGROUP BY ad_id, window_start, window_end;",
+      "say": "A Flink SQL table over the ad-clicks Kafka topic, with the click time as event time and a watermark 5 seconds behind the newest click seen. The query counts clicks per ad in one-minute tumbling windows by event time."
+    },
+    {
       "t": "h2",
       "x": "State, checkpoints and recovery"
     },
@@ -118,6 +124,36 @@
     },
     {
       "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Checkpoint interval",
+          "seconds to a few minutes"
+        ],
+        [
+          "End-to-end latency",
+          "milliseconds to seconds"
+        ],
+        [
+          "State per job",
+          "up to terabytes, on local disk with RocksDB"
+        ],
+        [
+          "Watermark delay",
+          "a few seconds is common; it is a trade of lateness against completeness"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -126,7 +162,8 @@
         "When numbers are needed within seconds, describe a stream job: source, key, window, state, sink.",
         "Say event time with a watermark, and what happens to late events.",
         "Explain recovery: checkpoints with offsets, replay, exactly-once state, idempotent or transactional output.",
-        "Keep a batch job beside it to recompute exact numbers daily, if billing depends on them."
+        "Keep a batch job beside it to recompute exact numbers daily, if billing depends on them.",
+        "Where it appears here: the Ad clicks problem counts clicks in minute windows with a watermark, which is this design."
       ]
     },
     {

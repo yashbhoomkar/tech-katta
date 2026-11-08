@@ -99,6 +99,12 @@
       ]
     },
     {
+      "t": "code",
+      "label": "ZOTATO · THREE THINGS POSTGRESQL DOES WELL",
+      "x": "-- the kitchen's live orders: a partial index holds only these\nCREATE INDEX CONCURRENTLY orders_live ON orders (restaurant_id, placed_at)\n  WHERE status IN ('new', 'preparing');\n\n-- take the next delivery job; two workers never get the same one\nSELECT id FROM delivery_jobs WHERE state = 'queued'\nORDER BY created_at LIMIT 1\nFOR UPDATE SKIP LOCKED;\n\n-- restaurants within 3 km (PostGIS)\nSELECT id, name FROM restaurants\nWHERE ST_DWithin(location, ST_MakePoint(73.85, 18.52)::geography, 3000);",
+      "say": "Three examples. A partial index on orders that holds only new and preparing orders, built without blocking writes. Taking the next queued delivery job with FOR UPDATE SKIP LOCKED, so two workers never take the same one. And a PostGIS query for restaurants within 3,000 metres of a point."
+    },
+    {
       "t": "h2",
       "x": "Replication and failover"
     },
@@ -125,6 +131,52 @@
     },
     {
       "t": "h2",
+      "x": "PostgreSQL or MySQL"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Both are fine defaults; teams usually pick the one they already run well.",
+        "PostgreSQL brings richer types, indexes and extensions: jsonb, PostGIS, partial and expression indexes, full-text search.",
+        "MySQL's InnoDB stores each table in primary-key order, which makes primary-key lookups and ranges very fast, and has mature sharding tools such as Vitess."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Page size",
+          "8 KB"
+        ],
+        [
+          "max_connections by default",
+          "100; each connection is a process using several MB"
+        ],
+        [
+          "Default isolation",
+          "read committed"
+        ],
+        [
+          "One primary on good hardware",
+          "thousands of writes and tens of thousands of reads a second"
+        ],
+        [
+          "Transaction IDs before wraparound",
+          "about 2 billion (200 crore), handled by VACUUM"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -133,7 +185,8 @@
         "Start with PostgreSQL unless a requirement rules it out, and say which requirement would.",
         "Sketch tables, keys and the indexes for the main queries.",
         "Mention a pooler, replicas for reads, a synchronous standby for failover, and backups with point-in-time recovery.",
-        "Know the next step at scale: partitioning, then sharding by a key."
+        "Know the next step at scale: partitioning, then sharding by a key.",
+        "Where it appears here: the Ticket booking and Payments problems lean on its transactions: a hold on several seats, or a payment and its ledger entries, all or nothing."
       ]
     },
     {

@@ -122,6 +122,46 @@
       ]
     },
     {
+      "t": "code",
+      "label": "KONG · DECLARATIVE CONFIG FOR /orders",
+      "x": "_format_version: \"3.0\"\nservices:\n  - name: orders\n    url: http://orders-v1.internal:8080\n    routes:\n      - name: orders\n        paths: [/orders]\n    plugins:\n      - name: jwt                    # reject requests without a valid token\n      - name: rate-limiting\n        config: { minute: 600, policy: local }   # per node; 'redis' shares one count",
+      "say": "A Kong configuration file, kept in version control. One service, orders, at an internal address, reached through the path /orders. Two plugins: JWT checks the token, and rate limiting allows 600 requests a minute, counted on each gateway node; the redis policy would share one count across nodes."
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Managed per-request price",
+          "about $1 to $3.50 per million, cheaper at volume"
+        ],
+        [
+          "Longest request through some managed gateways",
+          "about 30 seconds"
+        ],
+        [
+          "Largest request body on some managed gateways",
+          "about 10 MB"
+        ],
+        [
+          "One self-hosted instance",
+          "thousands to tens of thousands of requests a second, depending on plugins"
+        ],
+        [
+          "Self-hosted minimum",
+          "two instances in two zones, behind a load balancer"
+        ]
+      ]
+    },
+    {
       "t": "h2",
       "x": "In an interview"
     },
@@ -131,7 +171,8 @@
         "Say which kind you'd use and why: managed for a new product, self-hosted Envoy or Kong at high, steady traffic.",
         "Do the cost maths in one line: requests a month × price per million, against a few servers.",
         "Mention timeouts and payload limits, and route uploads and long work around them.",
-        "Use the gateway for canary releases and rollbacks."
+        "Use the gateway for canary releases and rollbacks.",
+        "The API gateways component covers what a gateway does and how rate limiters decide; this page is about choosing and running one."
       ]
     },
     {

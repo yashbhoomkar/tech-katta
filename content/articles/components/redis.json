@@ -35,8 +35,15 @@
         "Strings hold any value up to 512 MB, usually a serialised object, with an optional expiry (`EX 300`).",
         "Hashes hold fields inside one key, so a cart can change one dish without rewriting the whole cart.",
         "Sorted sets keep members ordered by a score; `ZREVRANGE top:pune 0 9` returns the top 10 at once, which is why leaderboards use them.",
-        "Streams are append-only logs with consumer groups, like a small Kafka inside Redis. Plain pub/sub, by contrast, delivers only to whoever is listening at that moment and keeps nothing."
+        "Streams are append-only logs with consumer groups, like a small Kafka inside Redis. Plain pub/sub, by contrast, delivers only to whoever is listening at that moment and keeps nothing.",
+        "Geo commands keep points in a sorted set, scored by geohash, and find members within a radius: one quick way to answer \"restaurants near me\"."
       ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · THREE JOBS IN REDIS",
+      "x": "# today's top restaurants in Pune\nZINCRBY top:pune:2026-11-08 1 r42\nZREVRANGE top:pune:2026-11-08 0 9 WITHSCORES\n\n# at most 5 OTPs per phone per hour\nINCR otp:9800000001                 # returns the count so far\nEXPIRE otp:9800000001 3600 NX       # start the hour on the first request only\n\n# restaurants within 3 km, nearest first\nGEOADD rest:pune 73.8567 18.5204 r42\nGEOSEARCH rest:pune FROMLONLAT 73.85 18.52 BYRADIUS 3 km ASC COUNT 20",
+      "say": "Three jobs. A daily sorted set per city: add one to a restaurant's score per order and read the top ten with their scores. An OTP counter per phone: increment it, and set a one-hour expiry only on the first request; refuse when the count passes five. A geo set of restaurants: add each by longitude and latitude, and search within 3 kilometres of the customer, nearest first, 20 results."
     },
     {
       "t": "h2",
@@ -124,6 +131,44 @@
     },
     {
       "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "A command, inside one data centre",
+          "well under a millisecond"
+        ],
+        [
+          "Simple operations per node",
+          "around a lakh a second; more with pipelining"
+        ],
+        [
+          "Largest value",
+          "512 MB, but keep values to a few hundred KB"
+        ],
+        [
+          "Memory per key",
+          "your data plus tens of bytes of overhead"
+        ],
+        [
+          "Slots in Redis Cluster",
+          "16,384"
+        ],
+        [
+          "Lost on a crash with appendfsync everysec",
+          "about the last second of writes"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -132,7 +177,8 @@
         "Name the structure, not just 'Redis': a sorted set for the leaderboard, a hash for the cart, `INCR` plus `EXPIRE` for the rate limit.",
         "Say what happens if Redis restarts: a cache refills from the database; anything else needs a source of truth elsewhere.",
         "Mention hot keys and big keys, and that one slow command blocks all others.",
-        "For more than one node, say Redis Cluster with 16,384 slots, or client-side sharding."
+        "For more than one node, say Redis Cluster with 16,384 slots, or client-side sharding.",
+        "Where it appears here: the Leaderboard problem ranks players with sorted sets, and Restaurants near me keeps live open/closed status in Redis."
       ]
     },
     {

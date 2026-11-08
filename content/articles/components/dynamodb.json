@@ -52,6 +52,45 @@
     },
     {
       "t": "h2",
+      "x": "Zotato's orders, key by key"
+    },
+    {
+      "t": "table",
+      "label": "Access patterns and the key that serves each",
+      "head": [
+        "Question",
+        "Served by",
+        "Key"
+      ],
+      "rows": [
+        [
+          "A customer's orders, newest first",
+          "The table",
+          "partition customer_id, sort placed_at"
+        ],
+        [
+          "A restaurant's orders today",
+          "Index by_restaurant_day",
+          "partition restaurant_id#2026-11-08, sort placed_at"
+        ],
+        [
+          "One order by its ID",
+          "Index by_order",
+          "partition order_id"
+        ],
+        [
+          "Orders waiting for a rider",
+          "Sparse index awaiting_rider",
+          "only items with an awaiting_rider attribute are in it; remove the attribute once assigned"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Putting the date into the restaurant key keeps each partition to one day, so a busy restaurant never builds one ever-growing partition. A sparse index holds only the items that have its key attribute, which makes \"everything still waiting\" a small, cheap query."
+    },
+    {
+      "t": "h2",
       "x": "Capacity and hot partitions"
     },
     {
@@ -95,6 +134,56 @@
     },
     {
       "t": "h2",
+      "x": "Not the Dynamo paper"
+    },
+    {
+      "t": "p",
+      "x": "DynamoDB shares a name with the Dynamo paper in Research Papers, but works differently. The paper describes a leaderless ring with sloppy quorums and vector clocks. DynamoDB keeps each partition on a small replica group with a leader, replicated with Multi-Paxos, and offers strongly consistent reads. The paper's ideas live on more directly in Cassandra and Riak."
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Largest item",
+          "400 KB"
+        ],
+        [
+          "One partition",
+          "about 1,000 writes and 3,000 reads a second, and about 10 GB"
+        ],
+        [
+          "Read and write units",
+          "a 4 KB strong read, or two eventual ones; a 1 KB write"
+        ],
+        [
+          "Transaction size",
+          "up to 100 actions"
+        ],
+        [
+          "Global secondary indexes per table",
+          "20 by default"
+        ],
+        [
+          "Stream retention",
+          "24 hours"
+        ],
+        [
+          "Latency of a key lookup",
+          "single-digit milliseconds"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -103,7 +192,8 @@
         "Write the key schema for each access pattern: table keys first, then each index and the question it answers.",
         "Check every key for heat: a celebrity, a match, today's date.",
         "Say where you need strong reads or conditional writes, and where eventual is fine.",
-        "Name the stream for anything derived: search index, counters, notifications."
+        "Name the stream for anything derived: search index, counters, notifications.",
+        "Where it appears here: the Key-value store problem designs a store of this kind yourself."
       ]
     },
     {

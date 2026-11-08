@@ -52,6 +52,12 @@
       ]
     },
     {
+      "t": "code",
+      "label": "ZOTATO · AN ORDER AS A WORKFLOW (TYPESCRIPT SDK)",
+      "x": "const { holdPayment, capturePayment, releaseHold, findRider, notify } =\n  proxyActivities<typeof activities>({ startToCloseTimeout: '30 seconds' });\nexport const accepted = defineSignal('accepted');\n\nexport async function placeOrder(o: Order): Promise<void> {\n  let isAccepted = false;\n  setHandler(accepted, () => { isAccepted = true; });\n\n  const hold = await holdPayment(o.id, o.total);           // retried by Temporal\n  if (!(await condition(() => isAccepted, '5 minutes'))) {\n    await releaseHold(hold);                                 // the undo\n    await notify(o.customerId, 'Restaurant did not accept; hold released');\n    return;\n  }\n  await capturePayment(hold);\n  const rider = await findRider(o.id);                       // may take minutes\n  await notify(o.customerId, `On the way with ${rider.name}`);\n}",
+      "say": "A Zotato order as a Temporal workflow. Activities for the payment hold, capture, release, finding a rider and notifying the customer, each with a 30-second timeout and Temporal's retries. A signal named accepted. The workflow holds the payment, then waits up to 5 minutes for the restaurant to accept. If it doesn't, it releases the hold and tells the customer. If it does, it captures the payment, finds a rider and tells the customer who is on the way."
+    },
+    {
       "t": "h2",
       "x": "Waiting for time and for people"
     },
@@ -95,6 +101,36 @@
     },
     {
       "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Events in one workflow history",
+          "warnings from about 10,000; stopped at about 50,000"
+        ],
+        [
+          "Activity retries by default",
+          "unlimited, starting at 1 s and doubling"
+        ],
+        [
+          "Cost of a step",
+          "tens of milliseconds through the service"
+        ],
+        [
+          "Cost of waiting a day",
+          "a stored timer, no worker held"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -103,7 +139,8 @@
         "For a multi-step process, say 'a durable workflow, for example on Temporal', and list its steps as activities with retries.",
         "Say what happens on a crash: the workflow replays its history on another worker and continues.",
         "Show the waits: timeouts for the restaurant, a signal for approval, a timer for reminders.",
-        "Keep the compensations next to the steps they undo."
+        "Keep the compensations next to the steps they undo.",
+        "The 'Processes with many steps' concept covers the same ideas without a specific engine."
       ]
     },
     {

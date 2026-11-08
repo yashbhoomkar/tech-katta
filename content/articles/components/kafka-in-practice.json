@@ -95,6 +95,12 @@
       ]
     },
     {
+      "t": "code",
+      "label": "ZOTATO · THE ORDERS TOPIC AND ITS CLIENTS",
+      "x": "# topic\npartitions=48  replication.factor=3  min.insync.replicas=2\nretention.ms=604800000            # 7 days\n\n# producer\nacks=all\nenable.idempotence=true            # the default since Kafka 3.0\nlinger.ms=5                        # wait up to 5 ms to fill a batch\ncompression.type=lz4\n\n# consumer (group: notifications)\nenable.auto.commit=false           # commit offsets after the work is done",
+      "say": "The orders topic: 48 partitions, three copies, at least two in sync to accept a write, kept 7 days. The producer waits for all in-sync copies, is idempotent, waits up to 5 milliseconds to fill a batch and compresses it. The notifications consumer commits offsets itself, after processing."
+    },
+    {
       "t": "h2",
       "x": "Retention and compaction"
     },
@@ -104,6 +110,18 @@
         "Time or size retention deletes old segments, often after 7 days, whether or not anyone read them.",
         "Log compaction keeps the latest event per key forever: the current state of every restaurant, rebuildable by reading the topic from the start.",
         "Storage is the cost: 2,000 events a second of 1 KB, kept 7 days with 3 copies, is about 3.6 TB."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Kafka or a plain queue"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A queue (SQS, RabbitMQ) suits jobs: each message done once by one worker, with per-message retries, delays and dead-letter handling built in.",
+        "Kafka suits events: several services reading the same stream, replay from any point, order per key, and very high volume.",
+        "Many systems use both: Kafka for the events, and a queue for the jobs one service derives from them."
       ]
     },
     {
@@ -133,6 +151,40 @@
     },
     {
       "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "One partition",
+          "tens of MB a second, written and read sequentially"
+        ],
+        [
+          "Default retention",
+          "7 days"
+        ],
+        [
+          "Largest message by default",
+          "about 1 MB; put big payloads in object storage"
+        ],
+        [
+          "Latency with acks=all, in one region",
+          "a few to a few tens of milliseconds"
+        ],
+        [
+          "Brokers for replication factor 3",
+          "at least 3, one per zone"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
       "x": "In an interview"
     },
     {
@@ -141,7 +193,8 @@
         "Name the topic, the key and why: 'orders, keyed by order ID, so each order's events stay in order'.",
         "Give the durability settings: replication 3, acks=all, min.insync.replicas=2.",
         "Say consumers commit after processing and are idempotent.",
-        "Size partitions from the peak and the consumer throughput, and mention lag monitoring."
+        "Size partitions from the peak and the consumer throughput, and mention lag monitoring.",
+        "Where it appears here: the Ad clicks problem streams clicks through Kafka, and the URL shortener sends click events to it for analytics."
       ]
     },
     {
