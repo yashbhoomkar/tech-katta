@@ -54,6 +54,11 @@
       "x": "A content delivery network has servers (edges) in hundreds of cities. A file requested once from the Pune edge is cached there, and the next customer in Pune gets it in a few milliseconds without the request ever reaching Zotato's servers. It is the most effective latency fix for anything that is the same for many users: images, app bundles, video, and even API responses that change slowly, such as a city's restaurant list cached for 30 seconds."
     },
     {
+      "t": "fig",
+      "id": "cdn-edge",
+      "cap": "The first request for a file in a city goes to the origin; the edge keeps a copy, and everyone nearby after that is served from the edge."
+    },
+    {
       "t": "list",
       "items": [
         "It works because of caching: only content that many people read, and that can be a little stale, benefits. A customer's own order can't be served from an edge.",
@@ -67,7 +72,7 @@
     },
     {
       "t": "p",
-      "x": "Some data naturally belongs to one place. A restaurant in Pune only matters to customers and riders near Pune; a Pune order never needs a Chennai rider. Splitting the data by region means each region holds only its own cities, with its own servers and database close to them, and almost every request is answered inside one region."
+      "x": "Some data naturally belongs to one place. Zotato may have lakhs of riders across the country, but at any moment a single city has a few thousand online, and an order only ever needs the ones nearby. A restaurant in Pune only matters to customers and riders near Pune; a Pune order never needs a Chennai rider. Splitting the data by region means each region holds only its own cities, with its own servers and database close to them, and almost every request is answered inside one region."
     },
     {
       "t": "fig",

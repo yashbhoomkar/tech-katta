@@ -34,7 +34,7 @@
     },
     {
       "t": "p",
-      "x": "SSE is plain HTTP. The client makes one request and says it accepts `text/event-stream`. The server answers with headers and then doesn't finish the response: it writes a small block of text for each event, whenever it likes, and the client handles each block as soon as it arrives."
+      "x": "A normal JSON response is no good for this: the client can only use it once the whole response has arrived, so 'send me updates' would mean waiting for all of them. SSE is plain HTTP. The client makes one request and says it accepts `text/event-stream`. The server answers with headers and then doesn't finish the response: it writes a small block of text for each event, whenever it likes, and the client handles each block as soon as it arrives."
     },
     {
       "t": "code",
@@ -54,6 +54,7 @@
         "It is one-way. The client still sends its own actions as normal requests (POST a cancellation), which is fine for most features.",
         "Proxies and load balancers may close a response that has been open a long time or idle a while. Send a comment line every 15 to 30 seconds as a heartbeat, and expect reconnects.",
         "Some corporate proxies buffer responses and deliver events in batches, which defeats the point. It's rare, but it's why some apps fall back to long polling.",
+        "Many interviewers haven't run SSE in production and won't raise these limits; mentioning them unprompted (reconnects, replay from the last id, buffering proxies) shows you have.",
         "Over HTTP/1.1, browsers allow about six connections per site, and each open stream uses one. Over HTTP/2 the streams share one connection, so this limit goes away."
       ]
     },

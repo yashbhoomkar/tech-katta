@@ -87,6 +87,11 @@
       "x": "The figure 'The same payment, sent twice' under 'When calls fail' in Networking essentials walks through a retried payment step by step."
     },
     {
+      "t": "fig",
+      "id": "nw-idem",
+      "cap": "The retry carries the same key as the first attempt, so Payments returns the result it already has instead of charging again."
+    },
+    {
       "t": "h2",
       "x": "Consistent errors"
     },

@@ -30,9 +30,13 @@
     },
     {
       "t": "code",
-      "label": "The same work as calls",
-      "x": "menu      = Menu.GetMenu(restaurant_id: 42)\ncharge    = Payments.ChargeOrder(order_id: 9101, amount_paise: 34900)\nrider     = Dispatch.AssignRider(order_id: 9101, pickup: {lat, lng})\nok        = Offers.CheckCoupon(code: \"FEAST50\", user_id: 77)",
-      "say": "Internal calls written as functions: get a menu, charge an order, assign a rider, check a coupon."
+      "label": "The same work as calls, with the REST it replaces",
+      "x": "menu   = Menu.GetMenu(restaurant_id: 42)            # instead of GET  /restaurants/42/menu\ncharge = Payments.ChargeOrder(order_id: 9101,        # instead of POST /orders/9101/payments\n                              amount_paise: 34900)\nrider  = Dispatch.AssignRider(order_id: 9101)        # instead of POST /orders/9101/rider-assignment\nok     = Offers.CheckCoupon(code: \"FEAST50\",        # instead of GET  /coupons/FEAST50?user=77\n                            user_id: 77)",
+      "say": "Internal calls written as functions, each next to the REST endpoint it replaces: get a menu instead of GET on the menu resource, charge an order instead of POSTing a payment, assign a rider instead of POSTing a rider assignment, check a coupon instead of reading a coupon resource."
+    },
+    {
+      "t": "p",
+      "x": "Notice how the REST versions have to invent resources ('a rider assignment') for what are really actions. Between your own services there is no need to: name the action and call it."
     },
     {
       "t": "h2",

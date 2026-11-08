@@ -121,6 +121,16 @@
       ]
     },
     {
+      "t": "code",
+      "label": "Roles given to users",
+      "x": "user_77   Priya       customer\nuser_901  Anil        restaurant_owner (restaurant 42)\nuser_3301 Ravi        rider\nuser_12   Meera       support_agent",
+      "say": "Four users and their roles: Priya is a customer, Anil owns restaurant 42, Ravi is a rider, and Meera is a support agent."
+    },
+    {
+      "t": "p",
+      "x": "Permissions hang off the roles, so adding a support agent is one assignment, not a list of permissions copied by hand. A role can carry a scope too, as Anil's does: he owns restaurant 42, not every restaurant."
+    },
+    {
       "t": "fig",
       "id": "ad-authz",
       "cap": "Two checks on every request: is the token valid, and may this user do this to this order? A valid token alone isn't enough, which is the mistake that leaks data."
