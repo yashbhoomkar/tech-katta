@@ -326,6 +326,18 @@
           "Practice",
           "Shorter questions to try on your own with the method."
         ]
+      ],
+      "papers": [
+        [
+          "must-know",
+          "Must know",
+          "The papers behind the systems interviewers ask about. Read these first."
+        ],
+        [
+          "worth-reading",
+          "Worth reading",
+          "Shorter or more surprising papers with ideas you will meet again."
+        ]
       ]
     },
     "groupEmpty": "Coming soon."

@@ -1,0 +1,113 @@
+{
+  "section": "papers",
+  "slug": "raft",
+  "group": "must-know",
+  "no": "PAPER // 08",
+  "tag": "CONSENSUS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Raft: consensus designed to be understood",
+  "dek": "Paxos had solved agreement among machines for years, but few people could explain it and real systems drifted away from the proof. In 2014 two Stanford researchers designed Raft with understandability as the first goal. It became the consensus algorithm most new systems choose.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Raft keeps a log identical on a small group of servers, usually three or five, so together they act like one reliable machine while a majority is up.",
+        "One leader at a time takes every write, copies it to the followers, and treats it as committed once a majority has stored it.",
+        "Leaders are elected with random timeouts and numbered terms, and a server only votes for a candidate whose log is at least as up to date as its own, so no committed entry is ever lost."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The paper: \"In Search of an Understandable Consensus Algorithm\" by Diego Ongaro and John Ousterhout, USENIX ATC 2014. The Consensus concept covers majorities and elections in general; this page follows the paper itself."
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it solved"
+    },
+    {
+      "t": "p",
+      "x": "Consensus lets a group of machines agree on one sequence of commands. Each then applies them in that order and ends in the same state: Lamport's state machine idea, kept safe when machines fail. The standard answer, Paxos, is correct but famously hard to follow, and real systems had to add pieces the papers left out. Raft made understandability a goal and split the problem into parts that can be explained one at a time."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Leader election: one leader per term, and a new one when it fails.",
+        "Log replication: the leader takes commands and copies its log to the others.",
+        "Safety: once an entry is committed, every future leader has it."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "At Zotato, a three-server Raft group could hold the settings every server reads, such as which restaurants are open. Every change goes through the leader and is safe once two of the three have it."
+    },
+    {
+      "t": "h2",
+      "x": "Log replication"
+    },
+    {
+      "t": "fig",
+      "id": "raft-log",
+      "cap": "Each entry records the term in which the leader received it. Entry 6 is committed as soon as three of the five servers have stored it; the slower followers don't hold up the client, and they catch up later."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The leader sends new entries in AppendEntries messages, which also serve as heartbeats when there is nothing new.",
+        "Each message names the entry just before the new ones, by index and term. A follower whose log doesn't match there refuses; the leader steps back one entry at a time until they match, then replaces whatever the follower had after that point. So two logs never stay different.",
+        "Once an entry is on a majority, the leader applies it and answers the client, and followers apply it when the next message tells them how far is committed."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Elections and the voting rule"
+    },
+    {
+      "t": "p",
+      "x": "Followers expect a heartbeat. If none arrives within a random timeout, 150 to 300 ms in the paper, a follower becomes a candidate: it starts a new term, votes for itself and asks the others. Because the timeouts are random, one server usually wakes first and wins before the rest start, so split votes are rare."
+    },
+    {
+      "t": "fig",
+      "id": "raft-vote",
+      "cap": "S5's log is missing committed entries, so the others refuse to make it leader. S2's log is complete; it wins. The rule is checked on every vote, so whoever wins already has everything that was committed."
+    },
+    {
+      "t": "p",
+      "x": "The voting rule is the whole safety argument. A server refuses a candidate whose log is less up to date than its own: compare the term of the last entry, then the length. A committed entry sits on a majority; winning needs votes from a majority; any two majorities share a server; so every winner holds every committed entry."
+    },
+    {
+      "t": "h2",
+      "x": "Did it work?"
+    },
+    {
+      "t": "p",
+      "x": "The authors tested understandability directly: students at two universities learned both Raft and Paxos and took a quiz on each, and they did better on Raft. Since then Raft has become the usual choice for a small replicated core, in etcd and Consul, and in the metadata and log layers of many distributed databases."
+    },
+    {
+      "t": "h2",
+      "x": "Use it in an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use a Raft group of three or five servers for small, critical state that must have one answer: which node leads a shard, who holds a job's lock, configuration. Don't push all your data through one group: it is one log, and every write waits for a majority.",
+        "Explain why five servers survive two failures, and why four survive no more than three do.",
+        "Mention terms: an old leader that comes back sees a higher term and steps down, so two leaders never act at once.",
+        "A write is safe once a majority has it. That is your durability promise, and its cost is one round trip to the faster of the two followers in a group of three."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: changing the group",
+      "body": [
+        {
+          "t": "p",
+          "x": "Adding or removing servers is risky: for a moment the old group and the new group could each form a majority and elect two leaders. The paper moves through a joint configuration that needs a majority of both the old and the new group. Later work simplified this to adding or removing one server at a time, which can never create two separate majorities."
+        }
+      ]
+    }
+  ]
+}
