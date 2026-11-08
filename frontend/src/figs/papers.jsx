@@ -180,6 +180,100 @@ return <svg viewBox="0 0 640 256" role="img" aria-labelledby={`rvt${uid}`}><titl
 <Show t0={0} t1={1} dur={D}>{s1}</Show><Show t0={.25} t1={.5} dur={D}>{s2}</Show>{[1,2,3].map((i,k)=><Dot key={i} x1={cxo(4)} x2={cxo(i)} y={104} t0={.28+k*.03} t1={.4+k*.03} dur={D}/>)}
 <Show t0={.5} t1={.75} dur={D}>{s3}</Show>{[2,3,4].map((i,k)=><Dot key={i} x1={cxo(1)} x2={cxo(i)} y={104} t0={.53+k*.03} t1={.65+k*.03} dur={D}/>)}<Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
 
+// Bigtable, FIG 1: rows sorted by key, cut into tablets. A restaurant's orders sit next to each other; a
+// read finds the tablet through the location table; tablet 1 grows and splits; the master moves half of it.
+function BigtableTabletsFig({still,uid=""}){const D="14s",K=["0007/orders/31","0042/orders/88","0042/orders/89","0042/orders/90","0099/orders/12","0412/orders/05","0500/orders/77","0731/orders/40","0950/orders/02"],ry=i=>78+i*20;
+const caps=[["1 · rows are kept sorted by key and cut into ranges called tablets",INK],["2 · a read for 0042/orders/89 finds tablet 1's server and goes straight to it",BLUE],["3 · tablet 1 grows past its size limit and splits in two",BLUE],["4 · the master moves the new half, tablet 1b, to a less busy server",BLUE]];
+const tab=(i0,i1,t,c=GREY,fill="#fff")=><g><rect x="210" y={ry(i0)-12} width="110" height={(i1-i0)*20+20} fill={fill} stroke={c}/><text x="265" y={(ry(i0)+ry(i1))/2+4} textAnchor="middle" className="fb">{t}</text></g>;
+const base=<g><text x="10" y="54" className="fl">row key, sorted</text><rect x="10" y="62" width="180" height="188" fill="#fff" stroke={GREY}/>{K.map((k,i)=><text key={k} x="20" y={ry(i)+4} className="fl" style={i>=1&&i<=3?{fill:BLUE}:undefined}>{k}</text>)}
+{tab(5,6,"tablet 2")}{tab(7,8,"tablet 3")}<Bx x={400} y={110} w={230} h={40} t="tablet server 2" s="tablet 2"/></g>;
+const s1=<g>{tab(0,4,"tablet 1")}<Bx x={400} y={50} w={230} h={40} t="tablet server 1" s="tablet 1"/><Bx x={400} y={170} w={230} h={40} t="tablet server 3" s="tablet 3"/></g>;
+const s2=<g><text x="400" y="236" className="fl" style={{fill:BLUE}}>location table: 0042/… is in</text><text x="400" y="252" className="fl" style={{fill:BLUE}}>tablet 1, on server 1</text><text x="400" y="268" className="fl">(cached by the client)</text></g>;
+const s3=<g>{tab(0,2,"tablet 1a",BLUE,"#f8faff")}{tab(3,4,"tablet 1b",BLUE,"#f8faff")}<Bx x={400} y={50} w={230} h={40} t="tablet server 1" s="tablet 1a, tablet 1b"/><Bx x={400} y={170} w={230} h={40} t="tablet server 3" s="tablet 3"/></g>;
+const s4=<g>{tab(0,2,"tablet 1a",BLUE,"#f8faff")}{tab(3,4,"tablet 1b",BLUE,"#f8faff")}<Bx x={400} y={50} w={230} h={40} t="tablet server 1" s="tablet 1a"/><Bx x={400} y={170} w={230} h={40} t="tablet server 3" s="tablet 3, tablet 1b" c={BLUE} fill="#f8faff"/><text x="400" y="236" className="fl">The data stays in GFS: moving a</text><text x="400" y="252" className="fl">tablet only changes which server</text><text x="400" y="268" className="fl">answers for it, so it takes moments.</text></g>;
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`btt${uid}`}><title id={`btt${uid}`}>A Bigtable table whose rows are sorted by key, such as restaurant 0042's orders 88, 89 and 90, which sit next to each other. The sorted rows are cut into ranges called tablets: tablet 1 on tablet server 1, tablet 2 on server 2, tablet 3 on server 3. A read for row 0042/orders/89 looks up the location table, learns that tablet 1 is on server 1, caches that, and goes straight there. Tablet 1 grows past its size limit and splits into tablets 1a and 1b. The master then moves tablet 1b to the less busy server 3. Because the data itself stays in GFS, moving a tablet only changes which server answers for it.</title>
+{base}{still?<g>{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={0} t1={.5} dur={D}>{s1}</Show><Show t0={.25} t1={.5} dur={D}>{s2}</Show><Dot x1={190} x2={400} y={ry(2)} y2={70} t0={.3} t1={.44} dur={D}/>
+<Show t0={.5} t1={.75} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show><Dot x1={320} x2={400} y={ry(3)+10} y2={190} t0={.78} t1={.9} dur={D}/></g>}</svg>}
+
+// Bigtable, FIG 2: the write and read path. A write goes to the commit log and the memtable; a full memtable
+// becomes an immutable SSTable; a read merges the memtable with the SSTables, Bloom filters skipping files
+// that can't hold the row; compaction merges SSTables and drops deleted rows.
+function BigtableLsmFig({still,uid=""}){const M=`bl${uid}`,D="14s";
+const caps=[["1 · a write is appended to the commit log, then added to the sorted memtable",INK],["2 · the full memtable is frozen and written to GFS as a new SSTable",BLUE],["3 · a read merges the memtable and SSTables; Bloom filters skip files without the row",BLUE],["4 · compaction merges SSTables into one and drops deleted rows",BLUE]];
+const base=<g><Bx x={10} y={70} w={130} h={40} t="write" s="order 0042/91"/><Bx x={200} y={50} w={170} h={40} t="commit log" s="appended, on GFS"/><Bx x={200} y={120} w={170} h={40} t="memtable" s="sorted, in memory" c={BLUE}/><Bx x={10} y={190} w={130} h={40} t="read" s="0042/orders/89"/>
+<Ar x1={140} y1={84} x2={197} y2={72} m={M}/><Ar x1={140} y1={96} x2={197} y2={136} m={M}/><text x="440" y="44" className="fl">SSTables: in GFS, never changed</text></g>;
+const ss=(y,t,s,c=GREY,dash)=><g><rect x="440" y={y} width="190" height="36" fill="#fff" stroke={c} strokeDasharray={dash?"4 3":undefined}/><text x="535" y={y+15} textAnchor="middle" className="fb">{t}</text><text x="535" y={y+29} textAnchor="middle" className="fl">{s}</text></g>;
+const olds=<g>{ss(100,"SSTable 2","")}{ss(144,"SSTable 1","")}</g>;
+const s2=<g>{ss(56,"SSTable 3","newest",BLUE)}<Ar x1={370} y1={140} x2={437} y2={76} m={M}/></g>;
+const s3=<g><Ar x1={140} y1={206} x2={197} y2={152} m={M}/><text x="440" y="208" className="fl" style={{fill:BLUE}}>SSTable 3: has it → read</text><text x="440" y="224" className="fl">SSTables 2, 1: Bloom filter</text><text x="440" y="238" className="fl">says no → never read from disk</text></g>;
+const s4=<g>{ss(56,"SSTable 3","",GREY,1)}{ss(100,"SSTable 2","",GREY,1)}{ss(144,"SSTable 1","",GREY,1)}{ss(200,"SSTable 4","all three merged",BLUE)}</g>;
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`blt${uid}`}><title id={`blt${uid}`}>Bigtable's write and read path. A write of a new order is first appended to the commit log on GFS, then added to the memtable, a sorted table in memory. When the memtable is full it is frozen and written to GFS as a new SSTable, a sorted file that is never changed. A read merges the memtable with the SSTables, newest first; a Bloom filter for each SSTable says when a file cannot hold the row, so most files are never read from disk. Compaction later merges several SSTables into one and drops rows that were deleted.</title><Mk m={M}/>
+{base}{still?<g>{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={0} t1={.75} dur={D}>{olds}</Show><Dot x1={140} x2={200} y={84} y2={70} t0={.05} t1={.14} dur={D}/><Dot x1={140} x2={200} y={96} y2={140} t0={.12} t1={.21} dur={D}/>
+<Show t0={.25} t1={.75} dur={D}>{s2}</Show><Dot x1={370} x2={440} y={140} y2={74} t0={.3} t1={.42} dur={D}/>
+<Show t0={.5} t1={.75} dur={D}>{s3}</Show><Dot x1={140} x2={200} y={206} y2={150} t0={.53} t1={.62} dur={D}/>
+<Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+
+// Kafka, FIG 1: a topic as partitioned logs. Restaurant 42's order goes to partition hash(42) = 1 at offset
+// 8; a partition is a log and a message is its offset; in the notifications group each partition has one
+// reader; analytics reads the same log at its own pace.
+function KafkaLogFig({still,uid=""}){const D="14s",Y=[86,146,206],n=[8,8,7],cx=i=>190+i*30;
+const caps=[["1 · restaurant 42's order goes to partition hash(42) = 1, appended at offset 8",INK],["2 · a partition is just a log: a message is known by its offset, nothing more",BLUE],["3 · in the notifications group each partition has one reader, which keeps its offset",BLUE],["4 · analytics reads the same log at its own pace: reading deletes nothing",BLUE]];
+const cell=(i,y,c=GREY,fill="#fff")=><g key={i+"-"+y}><rect x={cx(i)} y={y-13} width="26" height="26" fill={fill} stroke={c}/><text x={cx(i)+13} y={y+4} textAnchor="middle" className="fl">{i}</text></g>;
+const base=<g><Bx x={10} y={126} w={120} h={40} t="order service" s="producer"/><text x="190" y="54" className="fl">topic "orders"</text>{Y.map((y,p)=><g key={y}><text x="190" y={y-19} className="fl">partition {p}</text>{Array.from({length:n[p]},(_,i)=>cell(i,y))}</g>)}</g>;
+const s1=cell(8,Y[1],BLUE,"#f8faff");
+const ptr=(i,y,t,c)=><g><path d={`M${cx(i)+13} ${y+16}l-5 8h10z`} fill={c}/><text x={cx(i)+13} y={y+36} textAnchor="middle" className="fl" style={{fill:c}}>{t}</text></g>;
+const s3=<g><Bx x={500} y={70} w={130} h={40} t="notify 1" s="reads p0, p1" c={BLUE}/><Bx x={500} y={186} w={130} h={40} t="notify 2" s="reads p2" c={BLUE}/></g>;
+const s4=<g><Bx x={500} y={128} w={130} h={40} t="analytics" s="its own offsets"/>{ptr(3,Y[0],"analytics",GREY)}</g>;
+return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`klt${uid}`}><title id={`klt${uid}`}>A Kafka topic called orders with three partitions, each an append-only log of numbered messages. The order service sends an event for restaurant 42; the hash of 42 picks partition 1, and the event is appended at offset 8. A message is known only by its partition and offset. In the notifications consumer group, consumer 1 reads partitions 0 and 1 and consumer 2 reads partition 2, each keeping track of its own offset. The analytics group reads the same partitions at its own pace, here further behind at offset 3; reading a message does not delete it.</title>
+{base}{still?<g>{s1}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Dot x1={130} x2={cx(8)+13} y={146} t0={.05} t1={.18} dur={D}/><Show t0={.15} t1={1} dur={D}>{s1}</Show>
+<Show t0={.25} t1={.5} dur={D}><text x="10" y="250" className="fl" style={{fill:BLUE}}>no message IDs and no per-message state: the broker only appends and hands out ranges</text></Show>
+<Show t0={.5} t1={1} dur={D}>{s3}</Show>{[[0,Y[0],90],[1,Y[1],90],[2,Y[2],206]].map(([p,y,ty])=><Dot key={p} x1={cx(7)+13} x2={500} y={y} y2={ty} t0={.53+p*.03} t1={.66+p*.03} dur={D}/>)}
+<Show t0={.75} t1={1} dur={D}>{s4}</Show><Dot x1={cx(3)+13} x2={500} y={Y[0]} y2={148} t0={.78} t1={.9} dur={D}/></g>}</svg>}
+
+// Kafka, FIG 2: rewinding. The broker keeps a week of order events whether or not they were read. The search
+// indexer is at offset 9,120; a bug is fixed and its offset moved back to yesterday's 4,000; it re-reads the day
+// and rebuilds the index without anyone sending anything again.
+function KafkaRewindFig({still,uid=""}){const D="12s",X=i=>20+i*37,days=["Mon","Tue","Wed","Thu"];
+const caps=[["1 · the broker keeps a week of order events, read or not",INK],["2 · the search indexer has read up to offset 9,120",BLUE],["3 · a bug in the indexer is fixed, and its offset is moved back to yesterday: 4,000",RED],["4 · it re-reads the day and rebuilds the index; nothing had to be sent again",BLUE]];
+const ptr=(i,t,c)=><g><path d={`M${X(i)+16} 150l-6 10h12z`} fill={c}/><text x={X(i)+16} y="176" textAnchor="middle" className="fl" style={{fill:c}}>{t}</text></g>;
+const base=<g>{Array.from({length:16},(_,i)=><rect key={i} x={X(i)} y="100" width="33" height="44" fill={i>=7?"#f8faff":"#fff"} stroke={GREY}/>)}{days.map((d,k)=><text key={d} x={X(k*4)+2} y="90" className="fl">{d}</text>)}<text x="20" y="220" className="fl">one partition of "orders"; old segments are deleted after 7 days, not when they are read</text></g>;
+const s2=ptr(15,"offset 9,120",BLUE),s3=<g>{ptr(7,"offset 4,000",RED)}<text x={X(15)+16} y="176" textAnchor="middle" className="fl" style={{fill:GREY}}>was 9,120</text></g>;
+const s4=<g>{ptr(15,"caught up again",BLUE)}<text x={X(7)+16} y="176" textAnchor="middle" className="fl" style={{fill:GREY}}>4,000</text></g>;
+return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`krt${uid}`}><title id={`krt${uid}`}>One partition of the orders topic laid out as a row of log segments from Monday to Thursday. The broker keeps a week of events whether or not anyone has read them. The search indexer has read up to offset 9,120. A bug is found in the indexer; after the fix, its offset is moved back to yesterday, offset 4,000. It reads the day's events again and rebuilds the index, catching up to the end. Nothing had to be sent again, because reading never deleted anything.</title>
+{base}{still?<g>{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={.5} dur={D}>{s2}</Show><Show t0={.5} t1={.75} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show>
+{[0,1,2].map(k=><Dot key={k} x1={X(7)+16} x2={X(15)+16} y={122} t0={.77+k*.04} t1={.92+k*.02} dur={D}/>)}</g>}</svg>}
+
+// Memcache, FIG 1: leases against a thundering herd. A menu edit deletes menu:0042; a thousand page loads miss
+// at once; memcache gives one a lease and tells the rest to wait; one database read refills the cache.
+function MemcacheLeaseFig({still,uid=""}){const M=`ml${uid}`,D="14s";
+const caps=[["1 · a menu edit updates the database and deletes menu:0042 from the cache",INK],["2 · a thousand page loads miss at the same moment",RED],["3 · memcache gives a lease to the first; the other 999 are told to wait a moment",BLUE],["4 · one database read refills the cache; the 999 retry and hit it",BLUE]];
+const base=<g><Bx x={10} y={100} w={150} h={60} t="1,000 page loads" s="restaurant 42's page"/><Bx x={460} y={50} w={170} h={40} t="menu edit"/><Bx x={460} y={170} w={170} h={50} t="database" s="the source of truth"/></g>;
+const mc=(s,c=GREY,fill="#fff")=><Bx x={240} y={100} w={150} h={60} t="memcache" s={s} c={c} fill={fill}/>;
+const s2=<text x="200" y="92" className="fl" style={{fill:RED}}>miss × 1,000</text>,s3=<g><text x="168" y="186" className="fl" style={{fill:BLUE}}>lease → 1 page load</text><text x="168" y="202" className="fl">wait 10 ms, retry → 999</text></g>;
+const s4=<g><text x="10" y="252" className="fl">In the paper, leases cut the database's peak reads for keys like this from 17,000 to 1,300 a second.</text></g>;
+return <svg viewBox="0 0 640 264" role="img" aria-labelledby={`mlt${uid}`}><title id={`mlt${uid}`}>A thundering herd stopped by memcache leases. A menu edit updates the database and deletes the cached menu for restaurant 42. A thousand page loads miss in the cache at the same moment. Memcache gives a lease to the first of them and tells the other 999 to wait a few milliseconds and retry. The lease holder reads the database once and fills the cache, and the 999 retries hit the cache. In the paper, leases cut peak database reads for such keys from 17,000 to 1,300 a second.</title><Mk m={M}/>
+{base}{still?<g>{mc("menu:0042 · filled",BLUE,"#f8faff")}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={0} t1={.75} dur={D}>{mc("menu:0042 · deleted",RED,"#fff5f4")}</Show><Dot x1={545} x2={545} y={90} y2={170} t0={.04} t1={.12} dur={D}/><Dot x1={460} x2={390} y={70} y2={110} t0={.08} t1={.18} dur={D}/>
+<Show t0={.25} t1={.5} dur={D}>{s2}</Show>{[0,1,2,3,4].map(k=><Dot key={k} x1={160} x2={240} y={110+k*10} t0={.27+k*.015} t1={.37+k*.015} dur={D}/>)}
+<Show t0={.5} t1={1} dur={D}>{s3}</Show>
+<Show t0={.75} t1={1} dur={D}>{mc("menu:0042 · filled",BLUE,"#f8faff")}{s4}</Show><Dot x1={160} x2={460} y={150} y2={195} t0={.76} t1={.84} dur={D}/><Dot x1={460} x2={390} y={185} y2={140} t0={.84} t1={.9} dur={D}/>{[0,1,2].map(k=><Dot key={k} x1={160} x2={240} y={115+k*12} t0={.9+k*.01} t1={.97+k*.01} dur={D}/>)}</g>}</svg>}
+
+// Memcache, FIG 2: invalidation. The web server writes the database and deletes the key in its own cluster's
+// cache; a daemon reading the database's commit log sends the delete to every cluster; deletes, not updates.
+function MemcacheInvalFig({still,uid=""}){const D="12s",X=[10,245,480],W=150;
+const caps=[["1 · a web server in cluster A writes the new menu to the database",INK],["2 · it deletes the key from its own cluster's cache, so its user sees the change",BLUE],["3 · a daemon reading the database's commit log sends the delete to every cluster",BLUE],["4 · deletes, not updates: repeating one is harmless, and the next read refills it",BLUE]];
+const base=<g><Bx x={X[0]} y={60} w={W} h={44} t="web server" s="cluster A"/><Bx x={X[1]} y={60} w={W} h={44} t="database" s="commit log"/><Bx x={X[2]} y={60} w={W} h={44} t="log reader" s="tails the commit log"/>
+{["A","B","C"].map((c,i)=><Bx key={c} x={X[i]} y={180} w={W} h={44} t={`memcache, cluster ${c}`} s="menu:0042"/>)}</g>;
+const del=i=><Bx x={X[i]} y={180} w={W} h={44} t={`memcache, cluster ${"ABC"[i]}`} s="menu:0042 deleted" c={BLUE} fill="#f8faff"/>;
+return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`mit${uid}`}><title id={`mit${uid}`}>How a write invalidates cached copies. A web server in cluster A writes the new menu to the database, then deletes the menu key from cluster A's memcache, so its own user sees the change at once. A daemon that tails the database's commit log sees the write and sends a delete for the key to the memcache servers in every cluster, A, B and C. The system sends deletes rather than new values, because deleting twice is harmless and the next read refills the cache from the database.</title>
+{base}{still?<g>{del(0)}{del(1)}{del(2)}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Dot x1={160} x2={245} y={82} t0={.05} t1={.17} dur={D}/><Show t0={.25} t1={1} dur={D}>{del(0)}</Show><Dot x1={85} x2={85} y={104} y2={180} t0={.28} t1={.4} dur={D}/>
+<Dot x1={395} x2={480} y={82} t0={.52} t1={.6} dur={D}/>{[0,1,2].map(i=><Dot key={i} x1={555} x2={X[i]+75} y={104} y2={180} t0={.61+i*.02} t1={.71+i*.02} dur={D}/>)}<Show t0={.72} t1={1} dur={D}>{del(1)}{del(2)}</Show></g>}</svg>}
+
 export const PAPER_FIGS={
 "lamport-clocks":{C:LamportClocksFig,ar:640/300,title:()=>"COUNTING INSTEAD OF TIMING"},
 "lamport-order":{C:LamportOrderFig,ar:640/290,title:()=>"ONE ORDER FOR EVERY MACHINE"},
@@ -191,4 +285,10 @@ export const PAPER_FIGS={
 "dynamo-versions":{C:DynamoVersionsFig,ar:640/260,title:()=>"TWO VERSIONS OF ONE CART"},
 "raft-log":{C:RaftLogFig,ar:640/260,title:()=>"ONE ENTRY, COPIED TO A MAJORITY"},
 "raft-vote":{C:RaftVoteFig,ar:640/256,title:()=>"ONLY AN UP-TO-DATE SERVER CAN LEAD"},
+"bigtable-tablets":{C:BigtableTabletsFig,ar:640/280,title:()=>"SORTED ROWS, CUT INTO TABLETS"},
+"bigtable-lsm":{C:BigtableLsmFig,ar:640/260,title:()=>"MEMTABLE, SSTABLES AND COMPACTION"},
+"kafka-log":{C:KafkaLogFig,ar:640/260,title:()=>"A TOPIC IS A SET OF LOGS"},
+"kafka-rewind":{C:KafkaRewindFig,ar:640/240,title:()=>"READING AGAIN FROM YESTERDAY"},
+"memcache-lease":{C:MemcacheLeaseFig,ar:640/264,title:()=>"ONE MISS, NOT A THOUSAND"},
+"memcache-inval":{C:MemcacheInvalFig,ar:640/250,title:()=>"A WRITE, AND EVERY CACHE FORGETTING THE OLD VALUE"},
 };

@@ -1,0 +1,120 @@
+{
+  "section": "papers",
+  "slug": "bigtable",
+  "group": "must-know",
+  "no": "PAPER // 04",
+  "tag": "WIDE-COLUMN STORE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Bigtable: one sorted map spread over thousands of machines",
+  "dek": "In 2006 the team behind GFS and MapReduce described a store for structured data at petabyte scale: one huge table, rows kept sorted by key, cut into ranges that move between servers. Its storage engine, a memtable plus immutable sorted files, became the standard way write-heavy databases are built.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Bigtable is one giant map: row key, column and timestamp in, bytes out. Rows are kept sorted by key, so related rows sit next to each other and a range of them can be read in one scan.",
+        "The sorted rows are cut into tablets of 100 to 200 MB, each served by one tablet server. Tablets split as they grow and move between servers in moments, because the data itself stays in GFS.",
+        "Writes go to a log and a sorted in-memory table; full tables become immutable sorted files that are later merged. That design, later called an LSM tree, makes writes cheap at any scale."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The paper: \"Bigtable: A Distributed Storage System for Structured Data\" by Fay Chang and eight co-authors, OSDI 2006."
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The problem it solved"
+    },
+    {
+      "t": "p",
+      "x": "A search engine's crawl, a map product's satellite tiles and per-user settings all needed storage that held billions of rows, absorbed constant writes and served both bulk jobs and quick lookups. A relational database on one machine couldn't hold them, and GFS stored files, not rows. Bigtable sits between: GFS underneath for durable storage, and a simple data model on top that spreads naturally across machines. In August 2006 there were 388 production clusters with about 24,500 tablet servers between them."
+    },
+    {
+      "t": "h2",
+      "x": "The data model: a sorted map"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every value is addressed by (row key, column, timestamp). Rows can have any columns, and empty columns cost nothing.",
+        "Columns are grouped into column families, the unit of access control and of how data is stored together.",
+        "Each cell keeps several versions by timestamp, and old versions are cleaned up by rule: keep the last n, or those newer than a week.",
+        "Rows are sorted by key. The paper's web table stored pages under reversed host names, such as com.example.www, so all pages of one site are neighbours."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Choosing the row key is the main design decision. Zotato could key orders by restaurant ID, then order ID, so a restaurant's whole history is one contiguous range: a single scan, not thousands of lookups."
+    },
+    {
+      "t": "h2",
+      "x": "Tablets: ranges that move"
+    },
+    {
+      "t": "fig",
+      "id": "bigtable-tablets",
+      "cap": "The table is cut into tablets by row range, and each tablet server serves between ten and a thousand of them. A client finds a row's tablet through a small location table and caches the answer, so most reads go straight to the right server."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A master assigns tablets to tablet servers, balances load and handles splits. Clients rarely talk to it.",
+        "Chubby, a lock service, makes sure there is only one master and tracks which tablet servers are alive.",
+        "Tablet locations are stored in a three-level tree of ordinary tablets, which can address billions of tablets; clients cache them.",
+        "Only one row's changes are atomic: a read-modify-write on one row is safe, but there are no transactions across rows."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Writes, reads and compaction"
+    },
+    {
+      "t": "fig",
+      "id": "bigtable-lsm",
+      "cap": "Writes never modify a file in place: they are appended to a log and kept in a sorted memtable, which is later written out whole. Reads pay for this by merging several files, and Bloom filters keep that cheap by ruling out most files without touching the disk."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A write is appended to the commit log on GFS for durability, then inserted into the memtable, a sorted structure in memory.",
+        "When the memtable is full it is frozen and written as an SSTable: an immutable file of sorted key–value pairs with an index.",
+        "A read looks in the memtable and the SSTables, newest first. A Bloom filter per SSTable answers 'definitely not here', so a read touches only the files that may hold the row.",
+        "Compaction merges SSTables in the background, keeps the number of files a read must check small, and finally removes deleted rows and old versions."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What happened next"
+    },
+    {
+      "t": "p",
+      "x": "HBase copied the design in the open, and Cassandra combined Bigtable's storage engine with Dynamo's ring. The write path, a log plus memtable plus immutable sorted files plus compaction, became the LSM-tree engine inside LevelDB, RocksDB and many databases built on them. When people say a database is 'good at writes', this is usually why."
+    },
+    {
+      "t": "h2",
+      "x": "Use it in an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For huge, write-heavy, key-ordered data (event histories, messages, time series, the crawl store in the Web crawler problem), propose a wide-column store and spend your time on the row key.",
+        "Design keys for the reads you need: restaurant then time for 'latest orders of this restaurant'; and avoid hot spots, since keys that start with the current time send every write to one tablet. Put an ID first, or add a small hash prefix.",
+        "Say what is atomic: one row. Anything that must change two rows together needs another design.",
+        "Explain why writes are cheap (append and sort in memory) and what reads cost (merging files, helped by Bloom filters and compaction)."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how compaction is split up",
+      "body": [
+        {
+          "t": "p",
+          "x": "The paper names three kinds. A minor compaction turns a full memtable into a new SSTable, which bounds memory and shortens recovery, since less of the log must be replayed. A merging compaction combines a few SSTables and the memtable into one, so reads check fewer files. A major compaction rewrites everything into a single SSTable and is the only one that finally drops deleted data, which matters when data must really be gone."
+        }
+      ]
+    }
+  ]
+}
