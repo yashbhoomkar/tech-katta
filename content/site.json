@@ -298,6 +298,11 @@
           "coordination",
           "Agreeing",
           "Consensus, leader election and transactions across services."
+        ],
+        [
+          "patterns",
+          "Recurring patterns",
+          "Problems that come up in many designs, and the usual ways to solve them."
         ]
       ],
       "interview-questions": [

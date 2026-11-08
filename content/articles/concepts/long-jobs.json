@@ -1,0 +1,117 @@
+{
+  "section": "concepts",
+  "slug": "long-jobs",
+  "group": "patterns",
+  "no": "CONCEPT // 20",
+  "tag": "BACKGROUND JOBS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Jobs that run for minutes: queues, leases and retries",
+  "dek": "Reports, payouts, exports and video conversions take too long for a request. Here is how a job gets from the API to a worker, how a lease notices a worker that died, how retries and a dead-letter queue keep one bad job from blocking the rest, and how to show progress.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Anything that takes more than a second or two runs as a background job: the API records it and answers at once, and workers do the work.",
+        "A worker holds a lease on its job and renews it while working. If the worker dies, the lease runs out and another worker takes the job, so every job must be safe to run twice.",
+        "Retry failures with growing, randomised waits. After a few tries, move the job to a dead-letter queue and alert someone, so one bad job never blocks the rest."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "From request to job"
+    },
+    {
+      "t": "p",
+      "x": "The Shaping an API concept shows the API side: answer 202 with a job ID, and let the app check the job's status. Behind it sit a jobs table or queue and a pool of workers. Each job record holds its type, its input, its state (queued, running, done, failed), its attempts and its result."
+    },
+    {
+      "t": "h2",
+      "x": "Leases: who is working on what"
+    },
+    {
+      "t": "fig",
+      "id": "job-lease",
+      "cap": "A lease is a promise with an expiry. Renewals keep it alive while the worker is healthy; silence lets the job go to someone else."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A worker claims a job by setting `locked_until = now() + interval '60 seconds'` in one conditional update, or by receiving it from a queue with a 60-second visibility timeout.",
+        "In PostgreSQL, `SELECT … FOR UPDATE SKIP LOCKED` lets many workers take different jobs from one table without waiting on each other.",
+        "The worker renews the lease while it works, a heartbeat. A job whose lease runs out is assumed abandoned and handed out again.",
+        "Choosing the length is a trade-off. A short lease restarts a dead worker's job sooner; a long one needs fewer renewals and is less likely to expire under a worker that is merely slow.",
+        "Two workers can briefly run the same job, so jobs must be idempotent: store results under the job ID, and make side effects such as payouts and emails check whether they already happened."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Retries and the dead-letter queue"
+    },
+    {
+      "t": "fig",
+      "id": "job-retries",
+      "cap": "Growing waits give a struggling service room to recover, and the dead-letter queue takes the job out of the way after the last try."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Retry only what can succeed later: timeouts, 503s, a service that is briefly down. A job with bad input fails the same way every time.",
+        "Wait longer each time (30 seconds, 2 minutes, 10 minutes) and add jitter, a random part, so failed jobs don't all retry together and flatten a service that is recovering.",
+        "Cap the attempts. After the last one, move the job to a dead-letter queue with its error, alert someone, and give them a way to run it again after a fix.",
+        "Keep the attempt count and the last error on the job, so support can answer 'why hasn't this restaurant been paid?'"
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Progress, cancelling and very long jobs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Write progress to the job record (4,000 of 12,000 rows done), so the app can show a bar instead of a spinner.",
+        "Check a cancel flag between chunks, so a cancelled export stops within seconds.",
+        "Split very long jobs into chunks that each take minutes, saving a checkpoint after each. A crash then repeats one chunk, not three hours of work.",
+        "Give every job a time limit too. A worker stuck in a loop keeps renewing its lease, and only the time limit catches it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Schedules and priorities"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Recurring jobs, such as nightly payouts, come from a scheduler that adds them to the queue; the workers stay the same. Make sure each run is added once, or that a duplicate is harmless.",
+        "Keep separate queues for separate kinds of work: a customer's export shouldn't wait behind a three-hour nightly report. Give each queue its own workers.",
+        "Add workers based on how long the oldest job has waited, not only on how many are waiting."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Move anything slow out of the request: say what the API returns and how the app learns the result.",
+        "Say how a worker claims a job and what happens when it dies.",
+        "Make jobs idempotent, retry with backoff and jitter, and keep a dead-letter queue.",
+        "Mention progress and cancelling for jobs a user is waiting on."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: exactly once, in practice",
+      "body": [
+        {
+          "t": "p",
+          "x": "No queue can promise that a job runs exactly once: a worker can finish and die before it reports back. What you can have is at-least-once delivery plus effects that happen once. Record each effect under a unique key in the same transaction as the work, or ask the other side to remove duplicates, as payment providers do with an idempotency key."
+        }
+      ]
+    }
+  ]
+}
