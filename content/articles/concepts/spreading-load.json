@@ -80,6 +80,11 @@
       ]
     },
     {
+      "t": "fig",
+      "id": "nw-lb-choose",
+      "cap": "Two questions decide it: do you control every caller, and how quickly must a change reach them? Client-side balancing needs callers you can update; DNS tolerates slow updates; everything else gets a dedicated load balancer."
+    },
+    {
       "t": "h2",
       "x": "Option 3: a load balancer in the middle"
     },

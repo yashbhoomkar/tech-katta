@@ -45,7 +45,7 @@
     },
     {
       "t": "p",
-      "x": "REST is easy to read, cache (GET responses work with CDNs and browser caches) and call from anything. Its costs are JSON's size and parsing time, and the fact that the server, not the caller, decides what each response contains. For almost every interview, REST is the right default; change only when a requirement pushes you."
+      "x": "REST is not only for public APIs: plenty of infrastructure is run through one. Elasticsearch, for example, is created, configured and queried through a REST API of indexes and documents. REST is easy to read, cache (GET responses work with CDNs and browser caches) and call from anything. Its costs are JSON's size and parsing time, and the fact that the server, not the caller, decides what each response contains. For almost every interview, REST is the right default; change only when a requirement pushes you."
     },
     {
       "t": "h2",
@@ -99,7 +99,7 @@
     },
     {
       "t": "p",
-      "x": "The field numbers, not names, go on the wire, and numbers are packed tightly. The order above is 49 bytes as JSON and 18 as protobuf, and decoding it is a few memory copies rather than parsing text. gRPC adds deadlines that pass from service to service, streaming in either or both directions, and client-side load balancing."
+      "x": "The field numbers, not names, go on the wire, and numbers are packed tightly. The order above is 49 bytes as JSON and 18 as protobuf, and decoding it is a few memory copies rather than parsing text. Published benchmarks commonly show gRPC handling several times the requests per second of JSON over HTTP/1.1 on the same hardware; how much you gain depends on message sizes and how much of each call is spent on serialisation rather than real work. gRPC adds deadlines that pass from service to service, streaming in either or both directions, and client-side load balancing."
     },
     {
       "t": "fig",
