@@ -187,7 +187,7 @@
         },
         {
           "t": "p",
-          "x": "The fix is an outbox: in the same database transaction as the order, insert a row into an `outbox` table. A small relay reads new outbox rows and publishes them, marking each as sent. Either both the order and its outbox row exist or neither does, and the relay retries until the event is out. Change-data-capture tools such as Debezium do the relay's job by reading the database's change log."
+          "x": "The fix is an outbox: in the same database transaction as the order, insert a row into an `outbox` table. A small relay reads new outbox rows and publishes them, marking each as sent. Either both the order and its outbox row exist or neither does, and the relay retries until the event is out. Change-data-capture tools such as Debezium do the relay's job by reading the database's change log; the Change data capture concept goes further."
         }
       ]
     },

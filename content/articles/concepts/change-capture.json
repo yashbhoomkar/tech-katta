@@ -1,0 +1,167 @@
+{
+  "section": "concepts",
+  "slug": "change-capture",
+  "group": "specialised",
+  "no": "CONCEPT // 25",
+  "tag": "CHANGE DATA CAPTURE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Change data capture: turning a database into a stream",
+  "dek": "The search index, the cache and the analytics warehouse all need to know when an order changes. Writing to each from the app breaks the first time a write half-succeeds. Change data capture reads the database's own log instead, so every committed change becomes an event, in order, with nothing missed.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Every database already writes each committed change to a log for recovery and replication. CDC reads that log and publishes one event per changed row: what it was, what it is now.",
+        "It replaces 'write to the database, then to the search index' (which drifts when one write fails) with one source of truth and a stream derived from it.",
+        "Plan for the first snapshot, for schema changes, and for the log the database keeps while a connector is behind; a stopped connector can fill the disk."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why not just write twice"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The app saves an order and then updates the search index. If the process dies between the two, search shows the old status until someone notices.",
+        "Two writers updating the index in different orders can leave the older value there.",
+        "Polling a table for rows with a newer updated_at misses deletes, adds load, and can skip rows committed out of order.",
+        "Triggers that copy changes into another table work, but slow every write and live inside the database's code."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Reading the database's own log"
+    },
+    {
+      "t": "fig",
+      "id": "cdc-flow",
+      "cap": "The log already exists, already has every committed change in order, and is already how replicas stay in step. CDC is one more reader of it."
+    },
+    {
+      "t": "list",
+      "items": [
+        "PostgreSQL: logical decoding of the write-ahead log through a replication slot. MySQL: the binary log in row format. MongoDB: change streams. DynamoDB: Streams.",
+        "Debezium is the common open-source connector; it publishes to Kafka with one topic per table, keyed by primary key, so a row's changes stay in order.",
+        "Each event carries the row before and after, the operation (create, update, delete), the transaction and the log position.",
+        "A delete becomes an event too, and then a tombstone, so a compacted topic forgets the row."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · LETTING A CONNECTOR READ POSTGRESQL",
+      "x": "ALTER SYSTEM SET wal_level = logical;               -- needs a restart\nCREATE PUBLICATION zotato_cdc FOR TABLE orders, restaurants;\n-- the connector creates a replication slot and streams from it\n\n-- how much log each slot is holding back\nSELECT slot_name,\n       pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) AS held\nFROM pg_replication_slots;",
+      "say": "Setting PostgreSQL's write-ahead log level to logical, which needs a restart, and publishing the orders and restaurants tables for change capture. The connector creates a replication slot and streams from it. A monitoring query shows how much log each slot is holding back."
+    },
+    {
+      "t": "h2",
+      "x": "Starting up, and staying healthy"
+    },
+    {
+      "t": "fig",
+      "id": "cdc-snapshot",
+      "cap": "A snapshot gives the consumer the present; the log position taken with it makes sure every change after that present is delivered."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Make consumers idempotent and keyed by primary key: snapshots and restarts can deliver a change twice.",
+        "Watch the slot's lag. PostgreSQL keeps all log since the slot's position; cap it (`max_slot_wal_keep_size`) and alert long before the disk is at risk.",
+        "Schema changes reach every consumer. Adding a nullable column is safe; renaming or dropping one breaks them. A schema registry with compatibility rules catches it before deploy.",
+        "Events follow the table's shape, which is an internal detail. For events other teams depend on, publish an outbox table of deliberate events and capture that instead."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "CDC or an outbox"
+    },
+    {
+      "t": "table",
+      "label": "Two ways to get events out of a database",
+      "head": [
+        "Compared",
+        "CDC on the tables",
+        "Outbox, captured by CDC"
+      ],
+      "rows": [
+        [
+          "What consumers see",
+          "Row changes in the table's own shape",
+          "Events you designed: 'order accepted', with the fields you chose"
+        ],
+        [
+          "Code changes",
+          "None in the app",
+          "The app writes an outbox row in the same transaction"
+        ],
+        [
+          "Good for",
+          "Search indexes, caches, the warehouse: copies of the data",
+          "Events other services rely on as a contract"
+        ],
+        [
+          "Risk",
+          "Internal schema changes leak to consumers",
+          "Remembering to write the event"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Delay from commit to event",
+          "usually under a second; seconds under load"
+        ],
+        [
+          "Order guaranteed",
+          "per row (per key), not across tables"
+        ],
+        [
+          "PostgreSQL setting",
+          "wal_level = logical, one replication slot per connector"
+        ],
+        [
+          "DynamoDB Streams retention",
+          "24 hours"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Whenever a design keeps a copy (search index, cache, warehouse, read model), say how it stays in step: CDC from the database's log.",
+        "Mention the snapshot, idempotent consumers keyed by ID, and monitoring how far the connector is behind.",
+        "Use an outbox for events other teams depend on.",
+        "Where it appears here: the Restaurants near me problem feeds its geo index from the database's change stream; the Elasticsearch page shows the same pattern for search."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: ordering across tables",
+      "body": [
+        {
+          "t": "p",
+          "x": "Each table's topic is ordered per key, but an order row and its order_items rows land on different topics and can arrive in either order. Consumers that need the whole transaction can group events by the transaction ID the connector attaches, or read from an outbox event that already contains everything. Assume nothing about order between different keys unless you've arranged it."
+        }
+      ]
+    }
+  ]
+}
