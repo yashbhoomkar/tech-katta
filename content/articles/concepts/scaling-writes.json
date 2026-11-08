@@ -1,0 +1,126 @@
+{
+  "section": "concepts",
+  "slug": "scaling-writes",
+  "group": "patterns",
+  "no": "CONCEPT // 18",
+  "tag": "SCALING WRITES",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "When writes outrun one database: batch, buffer, split",
+  "dek": "Caches and replicas don't help with writes: every write still has to land on the primary. Here is how to make each write cheaper, how a queue turns a spike into a steady load, when to split the data across machines, and what to do about one counter everybody updates.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Writes are harder to scale than reads: every copy has to take every write, so caches and replicas don't add write capacity.",
+        "First make each write cheaper: fewer indexes, batching, and storage built for writing. Then smooth spikes with a queue, and finally split the data over several primaries.",
+        "Hot keys hurt writes most: one counter or row that everyone updates. Split it into parts, or add up in memory and write the total."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why writes are different"
+    },
+    {
+      "t": "p",
+      "x": "A read can be answered by any copy; a write has to reach the primary and then every replica. Adding replicas adds read capacity and leaves write capacity where it was. A primary that takes a few thousand writes a second is the ceiling until you change how you write."
+    },
+    {
+      "t": "h2",
+      "x": "Make each write cheaper"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Drop indexes nobody uses: each one is an extra write for every row.",
+        "Batch: one insert of 500 rows costs far less than 500 separate inserts, because they share the round trips, the commit and the log flush. A worker that collects events for 100 ms and writes them together can often take several times the load.",
+        "Write less: send a rider's location every 4 seconds rather than every second, keep only the latest position in the main database, and send the full trail to cheaper storage.",
+        "Use storage built for writes: LSM-based stores such as Cassandra take very high write rates by writing to memory and sorted files. The Indexes concept explains the trade-off."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Absorb spikes with a queue"
+    },
+    {
+      "t": "fig",
+      "id": "write-buffer",
+      "cap": "The queue turns a 10-minute spike into a 34-minute stretch of steady writing. Nothing is lost, and the database never goes past what it can take."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A queue in front of the database turns a spike into a longer, flatter load, and the database writes at its own steady pace.",
+        "Only for writes that can wait: analytics, notifications, search updates. An order the customer is watching can't sit in a queue for 24 minutes.",
+        "Size the queue with the maths: (arrival rate − write rate) × length of the spike, and check that it drains before the next spike.",
+        "Watch how old the oldest message is, not just how many are waiting. 'Oldest event is 9 minutes old' is what tells you users are affected."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Split the data"
+    },
+    {
+      "t": "p",
+      "x": "When even the steady rate is more than one primary can take, split the data by a key so each shard takes a share of the writes: orders by customer, messages by chat. The Sharding component covers choosing the key, and Hash rings covers adding shards later. The key has to spread the writes, not just the data: sharding by date puts all of today's writes on one shard."
+    },
+    {
+      "t": "h2",
+      "x": "One counter everyone updates"
+    },
+    {
+      "t": "fig",
+      "id": "split-counter",
+      "cap": "Ten parts on five shards turn one overloaded key into ten easy ones. A read adds ten numbers instead of reading one."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A hot key is one row or key that takes a big share of the writes: the like count of a viral video, a flash-sale item's stock, a match score.",
+        "Split it into parts and add them up when reading, as in the figure. Reads cost a little more; writes spread out.",
+        "Or add up in memory first: each server counts likes for a second and writes one '+137' instead of 137 separate '+1's.",
+        "Or accept a small delay: write each like as an event to a log, and let one consumer update the count every few seconds."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Give the peak write rate separately from reads, and compare it with what one primary takes.",
+        "Say which writes can wait, behind a queue, and which can't.",
+        "Choose a shard key that spreads writes, and say how you'd split any hot key.",
+        "Mention batching, and anything you'd stop writing altogether."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "On Monday at 10 am, 30 lakh laptops sync at once and 3,000 files a second land in storage, each needing 8 database queries. No database takes that, but the work can wait: let a queue hold the burst.",
+      "to": "lab/monday-sync",
+      "go": "Try \"Monday 10 am: every laptop syncs\""
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: the log flush is often the real limit",
+      "body": [
+        {
+          "t": "p",
+          "x": "Every committed write in a relational database goes to its write-ahead log, and the log is flushed to disk before the commit returns. For many small transactions, that flush sets the ceiling more than anything else."
+        },
+        {
+          "t": "list",
+          "items": [
+            "Group commit lets the database flush many transactions' log entries together.",
+            "Putting more work in each transaction, through batching, means fewer flushes for the same rows.",
+            "Faster disks with low write latency raise the ceiling directly."
+          ]
+        }
+      ]
+    }
+  ]
+}

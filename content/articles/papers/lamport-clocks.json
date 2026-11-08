@@ -4,7 +4,7 @@
   "group": "must-know",
   "no": "PAPER // 01",
   "tag": "TIME AND ORDER",
-  "access": "paid",
+  "access": "free",
   "date": "8 Nov 2026",
   "title": "Lamport clocks: ordering events when no two clocks agree",
   "dek": "In 1978 Leslie Lamport showed that machines don't need to agree on the time to agree on the order of events. Count instead of timing, send the count with every message, and a cause always gets a smaller number than its effect. Every replicated database still leans on this idea.",

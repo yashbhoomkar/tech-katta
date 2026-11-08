@@ -1,0 +1,122 @@
+{
+  "section": "concepts",
+  "slug": "big-files",
+  "group": "patterns",
+  "no": "CONCEPT // 19",
+  "tag": "LARGE FILES",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Big files: let the bytes go around your servers",
+  "dek": "Photos, videos and exports don't belong in the database or in an API server's memory. Here is how phones upload straight to storage in parts, how the database tracks each file from 'pending' to 'ready', and how downloads stay fast and private.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Keep file bytes in object storage, and only a row about each file in the database. The API should hand out permission to upload, not carry the bytes.",
+        "Phones upload and download directly with short-lived signed URLs. Big files go up in parts, so a dropped connection costs one part, not the whole file.",
+        "Track every file's state in the database, process it after upload, show only ready files, and sweep uploads nobody finished."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Keep bytes out of the database and the API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A 50 MB video passing through an API server ties up a worker and its memory for the whole upload, on a phone connection that can take minutes. A thousand of those and the API does nothing but copy bytes.",
+        "Databases cost much more per gigabyte than object storage, and they get slow to back up and copy when full of files. Keep files in object storage; in the database, keep the key, size, type, owner and status.",
+        "The Object storage component covers buckets, signed URLs and storage classes. This is how to use them for big files."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Uploading directly, in parts"
+    },
+    {
+      "t": "fig",
+      "id": "multipart",
+      "cap": "A dropped connection costs one 100 MB part, not the whole 1.6 GB. The phone can also pause and resume later, because storage keeps the parts it already has."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The API checks who is uploading what, writes the row, and returns signed URLs: one for a small file, one per part for a big one. The bytes never touch the API.",
+        "In S3, every part except the last must be at least 5 MB, and one file can have up to 10,000 parts. Parts of 8 to 100 MB are typical.",
+        "Send a few parts at a time, and keep the ID storage returns for each part, so a restarted app resumes instead of starting again.",
+        "Check integrity: send a checksum with each part, and compare the whole file's checksum after it is joined."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "After the upload"
+    },
+    {
+      "t": "fig",
+      "id": "file-states",
+      "cap": "The database row is the file's source of truth. Storage holds the bytes, but only the row says whether a file is safe to show."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Never trust an upload: check the real file type and size, scan for malware, and remove location data from photos.",
+        "Do the heavy work in the background: thumbnails, several video qualities for streaming, previews of documents. The Video streaming problem walks through the video pipeline.",
+        "Show 'processing' honestly, and notify the user when the file is ready.",
+        "Clean up: a lifecycle rule on the bucket deletes unfinished multipart uploads after a day, and a sweep deletes rows stuck in pending."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Downloads"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Public files, such as menu photos, go through the CDN with long cache times. When a file changes, give it a new key instead of overwriting the old one, so stale copies don't linger.",
+        "Private files, such as invoices, get a signed download URL that lasts a few minutes, issued after checking who is asking.",
+        "Range requests let a video player jump ahead and a broken download resume. Object storage and CDNs support them already.",
+        "For a huge export, build the file in the background and send a link when it is ready, as in 'Slow work: accept now, finish later' in the Shaping an API concept."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs"
+    },
+    {
+      "t": "p",
+      "x": "Storing bytes is cheap; sending them out is not. Serving videos straight from storage to users can cost more each month than storing them, which is why public files go through a CDN and old files move to cheaper storage classes. Do the maths: files a day × average size × days kept for storage, and gigabytes downloaded a month for transfer."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say early that files go to object storage, with a row in the database.",
+        "Describe the upload: a signed URL from the API, a direct upload in parts, and an event that starts processing.",
+        "List the states a file goes through and what the user sees in each.",
+        "Separate public files (CDN) from private ones (signed URLs), and mention the cleanup."
+      ]
+    },
+    {
+      "t": "lab",
+      "x": "The video for IND vs PAK sits in object storage and reaches 3.5 crore viewers through the CDN. Play the challenge with the CDN off, then on, and watch what storage has to send.",
+      "to": "lab/ind-vs-pak",
+      "go": "Try IND vs PAK in the Lab"
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: resumable uploads without parts",
+      "body": [
+        {
+          "t": "p",
+          "x": "Some upload APIs offer a single resumable upload instead of parts. The client asks the server how many bytes arrived and continues from there; the open tus protocol works this way, and most cloud storage offers something similar. The idea is the same as multipart: progress is kept on the server, so a broken connection costs seconds, not the whole file."
+        }
+      ]
+    }
+  ]
+}
