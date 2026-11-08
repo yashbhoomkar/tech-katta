@@ -92,7 +92,7 @@
     },
     {
       "t": "p",
-      "x": "A workflow engine (Temporal, Cadence, or the one your cloud provider offers) runs process code as if crashes didn't happen. It records the result of every step in a history. When a worker dies, another one replays the history: finished steps hand back their saved results at once, and the code carries on from the first step that hasn't run."
+      "x": "A workflow engine (Temporal, Cadence, or the one your cloud provider offers) runs process code as if crashes didn't happen; the Temporal page in Components goes further. It records the result of every step in a history. When a worker dies, another one replays the history: finished steps hand back their saved results at once, and the code carries on from the first step that hasn't run."
     },
     {
       "t": "list",

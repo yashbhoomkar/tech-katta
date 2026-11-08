@@ -1,0 +1,120 @@
+{
+  "section": "components",
+  "slug": "temporal",
+  "group": "tools",
+  "no": "COMPONENT // 13",
+  "tag": "WORKFLOW ENGINE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Temporal: workflows that outlive any server",
+  "dek": "Temporal runs ordinary code, such as 'charge, wait for the restaurant, find a rider, refund on failure', as a workflow that survives crashes, deploys and waits of days. Here is who does what in a Temporal setup, the rules workflow code must follow, and when it is worth bringing in.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A Temporal service stores each workflow's history and timers; your workers poll task queues and run the code. Workers keep no state, so any worker can continue any workflow.",
+        "Workflow code must be deterministic, because it is replayed from history after a crash. Anything with side effects (calling Payments, sending an SMS) goes in an activity, which is retried on its own.",
+        "Waiting is free: a workflow can wait days for a timer or a signal without holding a thread."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Who does what"
+    },
+    {
+      "t": "fig",
+      "id": "temporal-arch",
+      "cap": "The service is the memory; workers are the hands. Because every step is recorded in the service, losing a worker loses nothing."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Workflow: the orchestration code, such as order-9051's steps. It runs on workers but its progress lives in the service's history.",
+        "Activity: one piece of real work with side effects, such as charging the card. Each has timeouts and a retry policy; by default activities retry with exponential backoff until they succeed or time out.",
+        "Task queue: where the service puts work for workers. Separate queues let you run payment activities on their own pool of workers.",
+        "The service itself is a cluster backed by a database (Cassandra, PostgreSQL or MySQL), or Temporal Cloud."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Rules for workflow code"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Deterministic: the same history must produce the same decisions. No reading the clock, random numbers or network directly in workflow code; use the SDK's versions, or do it in an activity.",
+        "Changing workflow code while old workflows are still running needs versioning (`patched` in the SDKs), so replays of old histories take the old path.",
+        "Histories have limits (Temporal warns at about 10,000 events and stops a workflow at about 50,000), so long-lived workflows periodically 'continue as new' with a fresh history.",
+        "Activities must be idempotent, because a worker can finish one and die before the result is recorded."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Waiting for time and for people"
+    },
+    {
+      "t": "fig",
+      "id": "temporal-signal",
+      "cap": "Timers and signals are stored in the service, not in a sleeping thread. A workflow waiting a day costs a row in a database."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Timers: `sleep('30 days')` before a renewal reminder, held by the service.",
+        "Signals: messages into a running workflow, such as 'manager approved'. Queries read its state without changing it; updates do both and return a result.",
+        "Child workflows split big processes (one per item in a bulk refund) and get their own histories.",
+        "Cancellation is a request the workflow can handle, for example by running compensations."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When to use it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Worth it: processes with many steps, retries, long waits, human approvals and compensations, such as orders, payouts, onboarding, refunds.",
+        "Not worth it: a single API call, or a background job a queue and a worker already handle well.",
+        "Alternatives: a state machine in your own database with a scheduler (simple, but you write retries and history yourself), or a cloud workflow service with a JSON or YAML definition instead of code."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Another system to run, or a per-action bill for the managed one.",
+        "Every activity is a round trip through the service, so a workflow adds tens of milliseconds per step: fine for minutes-long processes, wrong for a request path that must answer in 50 ms.",
+        "The determinism rules surprise new developers; code review must watch for them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For a multi-step process, say 'a durable workflow, for example on Temporal', and list its steps as activities with retries.",
+        "Say what happens on a crash: the workflow replays its history on another worker and continues.",
+        "Show the waits: timeouts for the restaurant, a signal for approval, a timer for reminders.",
+        "Keep the compensations next to the steps they undo."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: replay, in one paragraph",
+      "body": [
+        {
+          "t": "p",
+          "x": "A workflow task doesn't run your code from where it stopped; it runs it from the beginning, feeding each SDK call the result recorded in history. 'Charge the card' returns the saved charge without calling Payments again, the timer returns at once because it already fired, and the code reaches the first step with no recorded result. That step is new work. This is why the code must take the same path every time: a replay that branches differently from history is reported as non-deterministic and stops."
+        }
+      ]
+    }
+  ]
+}

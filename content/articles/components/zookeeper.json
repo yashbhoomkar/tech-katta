@@ -1,0 +1,121 @@
+{
+  "section": "components",
+  "slug": "zookeeper",
+  "group": "tools",
+  "no": "COMPONENT // 19",
+  "tag": "COORDINATION",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "ZooKeeper: a small tree that a whole cluster agrees on",
+  "dek": "ZooKeeper stores a little data, configuration, membership, who leads, in a tree of nodes that a small ensemble of servers keeps consistent. Clients can watch nodes and have nodes vanish when they die. From those few pieces come leader election, locks and service discovery.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Data lives in znodes, a tree like a file system, each holding a little data (1 MB at most, usually far less). An ensemble of 3 or 5 servers keeps it consistent with its own atomic broadcast protocol (Zab).",
+        "Ephemeral znodes disappear when the client's session ends; sequential znodes get an increasing number; watches tell a client when a znode changes.",
+        "Writes go through the leader and need a majority. Reads come from the server a client is connected to and can be slightly behind."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The building blocks"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Persistent znodes stay until deleted: `/config/payouts/batch_size`.",
+        "Ephemeral znodes belong to a client session and vanish when it ends, which is how 'this worker is alive' is represented.",
+        "Sequential znodes get a counter appended (`n_0000000017`), which gives every candidate a place in line.",
+        "Watches are one-time notifications that a znode or its children changed; the client reads again and sets a new watch (newer versions also offer persistent watches)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Leader election, done properly"
+    },
+    {
+      "t": "fig",
+      "id": "zk-election",
+      "cap": "Watching only your predecessor means a leader's death wakes one waiting worker, not all of them. With a thousand candidates, that matters."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Locks work the same way: the lowest sequential znode under `/locks/payout-42` holds the lock.",
+        "Pass the znode's number, or the session's, to whatever the leader writes to as a fencing token, so a paused old leader is refused.",
+        "Session timeouts are a trade-off: a short timeout replaces a dead leader quickly but can also expire a leader that was only slow.",
+        "Use the Curator library's recipes rather than writing these yourself."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Writes, reads and the ensemble"
+    },
+    {
+      "t": "fig",
+      "id": "zk-quorum",
+      "cap": "A write is safe once a majority has it, so five servers survive two failures. Reads are local and fast, which is why they can lag."
+    },
+    {
+      "t": "list",
+      "items": [
+        "All updates from all clients are applied in one order, and each client's own operations happen in the order it sent them.",
+        "A client always sees its own writes and never goes back in time, even if it reconnects to another server.",
+        "For a read that must reflect every committed write, call `sync` first.",
+        "Everything is held in memory and every write goes through one leader, so ZooKeeper suits thousands of small writes a second, not your application's data."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Where you meet it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Older Kafka clusters used it for metadata and controller election; Kafka 4.0 removed that dependency.",
+        "HBase, Hadoop's high-availability setup and Solr use it for masters and cluster state.",
+        "Many companies use it for service discovery and configuration.",
+        "etcd (Raft-based, used by Kubernetes) and Consul fill the same role in newer stacks."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it costs you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Another small cluster that must be up: if the ensemble loses its majority, everything waiting on it stalls.",
+        "Careful client code for session expiry, reconnection and watches that fire once.",
+        "Limited write throughput; misuse as a database or a queue overloads it."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use a coordination service for leader election, locks, membership and small shared configuration; say ZooKeeper or etcd.",
+        "Explain ephemeral sequential znodes for election, and fencing for safety.",
+        "Size the ensemble: 3 survives 1 failure, 5 survives 2.",
+        "Keep application data out of it."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why one write order is enough",
+      "body": [
+        {
+          "t": "p",
+          "x": "ZooKeeper doesn't make every read linearizable; it guarantees that all writes happen in one order and that each client sees a consistent, ever-advancing view. That turns out to be enough to build locks and elections, because the decision ('my znode is the lowest') is made from a single ordered history. Keeping reads local is what lets ZooKeeper serve many more reads than writes."
+        }
+      ]
+    }
+  ]
+}

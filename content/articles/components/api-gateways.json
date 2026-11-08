@@ -58,7 +58,7 @@
       "Name the algorithm and its two numbers: \"token bucket per API key, refill 10 a second, burst 20\".",
       "Say where the counters live (Redis) and what happens when Redis is unavailable.",
       "Return `429` with `Retry-After`, and expect clients to back off.",
-      "If cost or latency comes up, mention that a self-hosted gateway or a plain load balancer can be cheaper at very high request rates."
+      "If cost or latency comes up, mention that a self-hosted gateway or a plain load balancer can be cheaper at very high request rates. 'Gateways in practice' compares the options and their costs."
     ]},
     {"t": "lab", "x": "A full day of Zotato traffic goes through an API Gateway. Keep every request flowing at the 8:30 pm peak, and watch what the gateway costs at this traffic.", "to": "lab/first-rush", "go": "Try \"Lunch and dinner rush\""}
   ]

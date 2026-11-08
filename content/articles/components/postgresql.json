@@ -1,0 +1,150 @@
+{
+  "section": "components",
+  "slug": "postgresql",
+  "group": "tools",
+  "no": "COMPONENT // 17",
+  "tag": "RELATIONAL DATABASE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "PostgreSQL: the default database, and how far it stretches",
+  "dek": "PostgreSQL is where most designs should start: transactions, SQL, rich indexes, JSON, geospatial queries and a huge set of extensions. Here is what is going on underneath (row versions, processes, the write-ahead log), how it scales, and where it stops.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "PostgreSQL keeps old and new versions of rows side by side (MVCC), so readers never block writers. VACUUM cleans up the old versions.",
+        "Each connection is a separate server process, so many app servers need a pooler such as PgBouncer in front.",
+        "One primary with replicas goes a long way: thousands of writes and tens of thousands of reads a second on good hardware. Beyond that, partition, then shard (for example with Citus)."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Row versions instead of locks"
+    },
+    {
+      "t": "fig",
+      "id": "pg-mvcc",
+      "cap": "Readers see a snapshot, so a long report and a stream of price changes don't wait for each other. The price is old versions that someone has to clean up."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every transaction reads a consistent snapshot. Read committed (the default) takes a new snapshot per statement; repeatable read keeps one for the whole transaction; serializable also detects conflicts and aborts one transaction to retry.",
+        "Writers still lock the rows they change, so two updates of the same row wait for each other.",
+        "Autovacuum removes dead versions in the background. Tables with heavy updates may need it tuned to run more often.",
+        "A transaction left open for hours stops cleanup everywhere and lets tables bloat. Set `idle_in_transaction_session_timeout`."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Connections"
+    },
+    {
+      "t": "fig",
+      "id": "pg-pool",
+      "cap": "PostgreSQL wants a few dozen busy connections, not thousands of idle ones. A pooler is the usual answer once there are many app servers."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Size the pool by cores and disks, not by app servers: often a few times the CPU count of the database machine.",
+        "Transaction pooling suits short web requests; session pooling keeps per-session features working.",
+        "Managed services offer their own proxies that pool connections and smooth failovers."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Indexes and features beyond tables"
+    },
+    {
+      "t": "table",
+      "label": "Index types",
+      "head": [
+        "Type",
+        "Good for",
+        "Zotato example"
+      ],
+      "rows": [
+        [
+          "B-tree",
+          "Equality, ranges, sorting; the default",
+          "Orders by (customer_id, placed_at)"
+        ],
+        [
+          "GIN",
+          "Values containing many keys: jsonb, arrays, full-text search",
+          "Dishes by tags in a jsonb column"
+        ],
+        [
+          "GiST",
+          "Geometry and ranges; PostGIS uses it",
+          "Restaurants within 3 km"
+        ],
+        [
+          "BRIN",
+          "Huge tables whose rows arrive in order, such as by time",
+          "Years of rider location history, by timestamp"
+        ]
+      ]
+    },
+    {
+      "t": "list",
+      "items": [
+        "`jsonb` stores flexible attributes with indexes, covering many uses of a document store.",
+        "Extensions add whole capabilities: PostGIS for maps, pg_stat_statements for finding slow queries, pgvector for similarity search.",
+        "Declarative partitioning splits a big table by range or list (orders by month), so old months can be dropped in a second."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Replication and failover"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Streaming replication ships the write-ahead log to replicas, asynchronously by default or synchronously for chosen standbys.",
+        "Logical replication sends row changes, which can feed another database version, a subset of tables or a change-data-capture pipeline.",
+        "Failover isn't built in: use a managed service, or a tool such as Patroni with a consensus store to promote a standby and stop the old primary."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How far it stretches"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Vertical first: large machines with fast disks handle most products for a long time.",
+        "Read replicas and caches for reads; partitioning for very large tables; archiving for old rows.",
+        "Sharding when one primary can't take the writes: Citus distributes tables across nodes, or the application routes by key.",
+        "The usual sharp edges: long transactions, missing indexes, too many connections, and schema changes that rewrite or lock a big table."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start with PostgreSQL unless a requirement rules it out, and say which requirement would.",
+        "Sketch tables, keys and the indexes for the main queries.",
+        "Mention a pooler, replicas for reads, a synchronous standby for failover, and backups with point-in-time recovery.",
+        "Know the next step at scale: partitioning, then sharding by a key."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: transaction ID wraparound",
+      "body": [
+        {
+          "t": "p",
+          "x": "Row versions are stamped with 32-bit transaction IDs, which wrap around after about 2 billion (200 crore). VACUUM 'freezes' old rows so the wrap is harmless. If vacuuming is blocked for a very long time on a busy database, PostgreSQL eventually stops accepting writes to protect the data. Monitoring how old the oldest unfrozen transaction is, and never blocking autovacuum for days, prevents it."
+        }
+      ]
+    }
+  ]
+}

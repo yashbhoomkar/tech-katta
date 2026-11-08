@@ -1,0 +1,120 @@
+{
+  "section": "components",
+  "slug": "dynamodb",
+  "group": "tools",
+  "no": "COMPONENT // 16",
+  "tag": "MANAGED KEY-VALUE",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "DynamoDB: a table you never have to run",
+  "dek": "DynamoDB is a key-value and document store where you never pick a server size, patch an engine or plan a failover. You pay for that with discipline: every query must use a key you designed in advance, and every partition has its own limit. Here is how keys, indexes, capacity and consistency work.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Every item has a partition key and an optional sort key. Queries fetch one partition, optionally a range of its sort key; anything else is a full-table Scan.",
+        "Global secondary indexes copy items under another key, asynchronously, so other questions can be answered by key too.",
+        "Capacity is per partition as well as per table: about 1,000 writes and 3,000 reads a second per partition. One hot key gets throttled even when the table has room."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Keys and queries"
+    },
+    {
+      "t": "fig",
+      "id": "ddb-keys",
+      "cap": "Design the keys from the questions: the table answers one, each index answers another. A question with no matching key is a scan."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Partition key only: get one item by ID, such as a session or a rider's latest location.",
+        "Partition key plus sort key: get a range inside a partition, such as a customer's orders between two dates, in order.",
+        "Items are up to 400 KB; bigger things go to object storage with the key in the item.",
+        "Some teams keep several entity types in one table with generic key names (single-table design) so one Query returns related items together. It is efficient, and harder to read and change."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Indexes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Global secondary indexes have their own partition and sort keys and their own capacity. They are updated asynchronously, so reads from them are always eventually consistent.",
+        "Local secondary indexes share the table's partition key with a different sort key; they must be created with the table and limit each partition key's data to 10 GB.",
+        "Each index copies the attributes you project into it, so storage and write costs grow with every index."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Capacity and hot partitions"
+    },
+    {
+      "t": "fig",
+      "id": "ddb-hot",
+      "cap": "The table's total capacity hides a per-partition limit. A key that everyone writes to is throttled, and the fix is in the key design, not in buying more capacity."
+    },
+    {
+      "t": "list",
+      "items": [
+        "On-demand mode bills per request and absorbs changes in traffic; provisioned mode is cheaper for steady load and can autoscale.",
+        "A read unit covers a strongly consistent read of up to 4 KB per second, or two eventually consistent ones; a write unit covers one write of up to 1 KB.",
+        "Adaptive capacity shifts throughput to busy partitions, but it can't take one partition past its own limit. Spread hot keys with a suffix and combine on read.",
+        "Throttled requests come back with an error; SDKs retry with backoff, which hides short bursts and makes long ones slow."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Consistency and transactions"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reads are eventually consistent by default; ask for a strongly consistent read and pay twice the read units, within one region.",
+        "Conditional writes (`attribute_not_exists`, a version check) make compare-and-set safe without locks.",
+        "Transactions group up to 100 actions across items and tables, all or nothing, at twice the cost of normal writes.",
+        "Global tables replicate across regions; by default concurrent writes to the same item are resolved by last writer wins."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Around the table"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Streams record every change for 24 hours, so a function or consumer can update search, caches or counters: change-data capture built in.",
+        "TTL deletes expired items for free, usually within a few days of expiry, so don't rely on it for exact timing.",
+        "Backups and point-in-time recovery are settings, not projects."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Write the key schema for each access pattern: table keys first, then each index and the question it answers.",
+        "Check every key for heat: a celebrity, a match, today's date.",
+        "Say where you need strong reads or conditional writes, and where eventual is fine.",
+        "Name the stream for anything derived: search index, counters, notifications."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: on-demand or provisioned",
+      "body": [
+        {
+          "t": "p",
+          "x": "On-demand suits new products and spiky traffic: no planning, no throttling from mis-set capacity, a higher price per request. Provisioned with autoscaling is cheaper once traffic is steady and known, but autoscaling reacts in minutes, so a sudden spike can be throttled first. Many teams start on-demand and switch tables to provisioned once a few months of traffic show the pattern."
+        }
+      ]
+    }
+  ]
+}

@@ -59,7 +59,7 @@
         "no": "SECTION // 02",
         "kind": "INFRASTRUCTURE",
         "title": "Core Components",
-        "desc": "How load balancers, caches, queues like Kafka and databases work, and what each one costs you when you add it to a system.",
+        "desc": "How load balancers, caches, queues and databases work, the named tools interviewers expect (Redis, Kafka, PostgreSQL and more), and what each one costs you when you add it to a system.",
         "foot": "LB · CACHE · QUEUE · DB",
         "link": "Explore Components",
         "visual": "path"
@@ -276,6 +276,11 @@
           "messaging",
           "Messaging",
           "Work that can wait: queues and event streams."
+        ],
+        [
+          "tools",
+          "Tools by name",
+          "The technologies interviewers expect you to know: what each does well, how it works inside, and where it breaks."
         ]
       ],
       "concepts": [

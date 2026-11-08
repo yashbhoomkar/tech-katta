@@ -215,7 +215,7 @@
         "Say which one and why: a queue for jobs, a stream when several services need the events or replay matters.",
         "Say \"at least once\" before you're asked, and how your handlers ignore duplicates.",
         "Name the partition key and what it keeps in order.",
-        "Mention lag monitoring, a dead-letter queue, and the outbox for saving and publishing together."
+        "Mention lag monitoring, a dead-letter queue, and the outbox for saving and publishing together.", "For Kafka settings, keys and consumer groups in detail, see 'Kafka in practice' in Tools by name."
       ]
     },
     {
