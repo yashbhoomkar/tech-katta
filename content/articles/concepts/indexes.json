@@ -45,7 +45,7 @@
       "t": "list",
       "items": [
         "A B-tree keeps keys sorted in pages. Each page points to the pages below it, and the bottom pages, the leaves, hold every key with the address of its row.",
-        "The leaves are linked in order, so after finding the first match the database can keep walking. Ranges (`placed_at > '19:00'`), sorting (`ORDER BY placed_at`) and prefixes (`LIKE 'Pri%'`) all use the same index.",
+        "The leaves are linked in order, so after finding the first match the database can keep walking. Ranges (`placed_at > '19:00'`) and sorting (`ORDER BY placed_at`) use the same index, and so can prefix searches such as `LIKE 'Pri%'`.",
         "A lookup usually costs one or two reads from disk, because the upper levels are already in memory, plus one more for the row.",
         "In MySQL's InnoDB the table itself is a B-tree sorted by the primary key, and other indexes point to the primary key. In PostgreSQL the table is a heap of rows in no order, and every index points to a row's location."
       ]
