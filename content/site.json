@@ -323,6 +323,11 @@
           "api-design",
           "API design",
           "The API step in an interview: REST endpoints, GraphQL, RPC, habits of a clean API, everyday patterns and security."
+        ],
+        [
+          "data-modelling",
+          "Data modelling",
+          "The data model step of an interview: choosing a database model, keys and relationships, indexes and normalisation, and splitting the data."
         ]
       ],
       "interview-questions": [

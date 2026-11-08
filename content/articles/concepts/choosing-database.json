@@ -1,0 +1,212 @@
+{
+  "section": "concepts",
+  "slug": "choosing-database",
+  "group": "data-modelling",
+  "no": "CONCEPT // 45",
+  "tag": "DATA MODELLING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Choosing a database model: relational first, the others for a reason",
+  "dek": "Before any tables, pick the kind of database, because it changes how you model everything. Relational databases are the right default for almost every interview problem. Document, key-value, wide-column and graph databases each fit specific shapes of data and traffic, and knowing when they fit, and when they don't, is what shows judgment.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Default to a relational database (PostgreSQL is a safe, well-understood choice). It gives a fixed schema, joins and transactions, and scales much further than its reputation suggests.",
+        "Document stores suit records that vary a lot or nest deeply; key-value stores suit lookups by one key, usually as a cache in front of SQL; wide-column stores suit huge write volumes and time-ordered data.",
+        "Graph databases are almost never needed in an interview; big social networks keep their relationships in relational databases."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Don't show off"
+    },
+    {
+      "t": "p",
+      "x": "The database type is the first modelling decision, because tables, documents and partitions each lead to a different schema. Knowing the alternatives still matters: it lets you say why relational fits, and spot the one part of a design that is better served by something else. This article spends most of its time on relational and covers the others briefly."
+    },
+    {
+      "t": "p",
+      "x": "Reaching for an unusual database to sound clever is a common way to lose points: it invites questions you then have to defend, about consistency, operations and why the usual choice wasn't enough. Pick relational unless the requirements give a clear reason, and if you have deep production experience with something else, say so and use it."
+    },
+    {
+      "t": "h2",
+      "x": "Relational (SQL)"
+    },
+    {
+      "t": "p",
+      "x": "Data lives in tables with a fixed set of columns; each row is one thing, and foreign keys link rows across tables. Transactions make several changes happen all together or not at all (ACID)."
+    },
+    {
+      "t": "code",
+      "label": "Three Zotato tables, a few rows each",
+      "x": "users        id │ name   │ phone       │ created_at\n             1  │ Priya  │ 98200 00001 │ 2026-11-01 09:00\n             2  │ Arjun  │ 98200 00002 │ 2026-11-01 09:05\n\norders       id   │ user_id → users │ restaurant_id │ status    │ created_at\n             9101 │ 1               │ 42            │ delivered │ 2026-11-08 12:10\n             9102 │ 1               │ 17            │ preparing │ 2026-11-08 19:40\n             9103 │ 2               │ 42            │ placed    │ 2026-11-08 19:45\n\norder_items  order_id → orders │ dish_id → dishes │ qty │ price_paise\n             9101              │ 9                │ 2   │ 24000\n             9101              │ 10               │ 1   │ 9000\n             9103              │ 9                │ 1   │ 24000",
+      "say": "Three tables with a few rows each. Users: Priya, id 1, and Arjun, id 2, with phone numbers and sign-up times. Orders: 9101 and 9102 belong to user 1, from restaurants 42 and 17; 9103 belongs to user 2, from restaurant 42; each has a status and a time. Order items: order 9101 has two of dish 9 and one of dish 10, and order 9103 has one of dish 9, each with the price paid. Every link is an id pointing at a row in another table."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It maps naturally onto most products: Zotato's users, restaurants, dishes, orders and payments, or a social app's users, posts, comments and likes.",
+        "Joins answer rich questions in one query: 'orders from restaurants in Pune this week, with their dishes, newest first'. But a query joining many large tables can become slow at scale, and reporting-style queries over everything are a warning sign: answer them from a precomputed table, a cache or a separate analytics store.",
+        "Transactions are the reason to stay relational for money and stock: an order and its payment, or the last plate of biryani, must never be counted twice.",
+        "'Relational doesn't scale' is mostly a myth: read replicas, connection pooling, caching and sharding take a relational database a very long way, and many of the largest sites run on MySQL or PostgreSQL.",
+        "Choices: PostgreSQL, MySQL; SQLite inside a single app or device."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Document databases"
+    },
+    {
+      "t": "p",
+      "x": "Each record is a JSON-like document with its own shape. Instead of spreading data over tables and joining, you nest related data inside one document."
+    },
+    {
+      "t": "fig",
+      "id": "model-shapes",
+      "cap": "The same restaurant and menu as rows in tables, as one nested document, and as a wide row. The shape you choose decides which reads are one lookup and which writes touch many places."
+    },
+    {
+      "t": "code",
+      "label": "A restaurant as one document",
+      "x": "{\n  \"_id\": 42,\n  \"name\": \"Spice Route\",\n  \"city\": \"Mumbai\",\n  \"menu\": [\n    { \"dish_id\": 9,  \"name\": \"Chicken biryani\", \"price_paise\": 24000 },\n    { \"dish_id\": 10, \"name\": \"Raita\",           \"price_paise\": 9000 }\n  ],\n  \"created_at\": \"2026-01-15\"\n}",
+      "say": "Restaurant 42 as a single JSON document: its id, name and city, with its menu embedded as an array of dishes, each with an id, a name and a price, and a creation date. One read returns the restaurant and its whole menu; there is no separate dishes table to join."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Embedding the menu inside the restaurant document means one read fetches both, with no join. But changing one dish means rewriting part of a large document, and data embedded in two places has to be updated in both.",
+        "Worth it when records genuinely vary (a rider's documents differ by city and vehicle; a restaurant's licences differ by state), when data is deeply nested and always read together, or when the schema changes faster than migrations can keep up.",
+        "In interviews the requirements are narrow and fixed, so 'the schema will change a lot' rarely applies; propose a document store only if the interviewer stresses changing or varied structure.",
+        "Model for the reads: embed what is read together, accept more storage and more complex updates.",
+        "Choices: MongoDB, Firestore, CouchDB."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Key-value stores"
+    },
+    {
+      "t": "p",
+      "x": "A key-value store finds a value by its exact key, very quickly, and does little else: no joins, few or no secondary lookups."
+    },
+    {
+      "t": "fig",
+      "id": "dm-kv-cache",
+      "cap": "The common pattern: the relational database stays the source of truth, and a key-value store in front of it serves the hot reads. A change updates the database and removes the cached copy."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for caches, sessions, feature flags, rate-limit counters, and anything always fetched by one id at very high rates.",
+        "'Key-value instead of SQL' is usually the wrong framing; 'SQL as the source of truth, with Redis in front for hot data' is what most designs need.",
+        "Modelling is flat: you choose keys per access pattern (menu:42, cart:77) and copy data into each, which makes reads trivial and consistency your job.",
+        "Choices: Redis, Memcached, DynamoDB (which also offers more, see its Components article)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Wide-column databases"
+    },
+    {
+      "t": "p",
+      "x": "Data is grouped into column families, and rows in the same table don't need the same columns. Rows are grouped by a partition key and sorted within it by a clustering key, so all of one partition's rows sit together on disk in order. Writes append; reads scan a slice of one partition."
+    },
+    {
+      "t": "fig",
+      "id": "dm-wide",
+      "cap": "Each rider's locations live together, sorted by time. A new ping is an append to the end of that rider's partition; 'the last ten minutes for rider 9' is one ordered slice."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for very high write rates and data that arrives in time order: rider location pings, app events, sensor readings, logs.",
+        "Model around the query, not the entity: the table for 'a rider's recent locations' is keyed (rider_id, time), and a different question gets a different table with the data copied in.",
+        "Time is part of the model: how far back you keep data, and how partitions are bounded so none grows forever.",
+        "Choices: Cassandra, ScyllaDB, HBase."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Graph databases"
+    },
+    {
+      "t": "p",
+      "x": "A graph database stores nodes and the edges between them, and is built for walking those edges: 'friends of friends who ordered from this restaurant'."
+    },
+    {
+      "t": "fig",
+      "id": "dm-graph",
+      "cap": "Relationships as a graph and as a table of edges. For the one- or two-hop questions most products ask, the edge table with an index answers just as well."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Almost never the right call in an interview. Social networks and recommendations are the classic examples, yet the biggest social graphs are stored in sharded relational databases, as rows of edges with indexes.",
+        "Proposing one is a common mistake: it adds a new system to run and defend for queries an indexed edges table already answers.",
+        "Choices, if you truly need deep traversals: Neo4j, Amazon Neptune."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Database models",
+      "head": [
+        "Model",
+        "Best at",
+        "Watch out for",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "Relational",
+          "Most products; joins; transactions",
+          "Huge joins and reports at scale",
+          "Orders, payments, menus"
+        ],
+        [
+          "Document",
+          "Varied or deeply nested records read whole",
+          "Updates to embedded copies",
+          "Rider onboarding documents"
+        ],
+        [
+          "Key-value",
+          "Lookups by one key, very fast",
+          "No queries beyond the key",
+          "Cache of menus, sessions, OTP counters"
+        ],
+        [
+          "Wide-column",
+          "Huge write rates, time-ordered data",
+          "One table per question; copies",
+          "Rider location history"
+        ],
+        [
+          "Graph",
+          "Deep relationship traversals",
+          "Rarely needed; another system to run",
+          "Nothing at Zotato's scale"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'PostgreSQL' (or MySQL) and give one reason tied to the requirements: transactions for orders and payments, joins for the screens.",
+        "Add another model only for a specific part, and say why: Redis in front for hot menus, Cassandra for location history.",
+        "If someone asks whether relational will scale, name the tools: replicas, pooling, caching, and sharding by the main access pattern."
+      ]
+    }
+  ]
+}

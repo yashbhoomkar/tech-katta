@@ -1,0 +1,104 @@
+{
+  "section": "concepts",
+  "slug": "keys-and-relationships",
+  "group": "data-modelling",
+  "no": "CONCEPT // 46",
+  "tag": "DATA MODELLING",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "From requirements to tables: keys, relationships and constraints",
+  "dek": "With the database chosen, the schema follows from three questions about the requirements: how much data, which queries, and what must stay consistent. Then each entity becomes a table with a stable identifier, links become foreign keys, and constraints let the database itself refuse bad data.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Three inputs decide the schema: data volume (does it fit on one machine?), access patterns (which queries must be fast?) and consistency (what must change together?).",
+        "Give every table a system-generated primary key, not a business value like a phone number or email, which can change. Links are foreign keys: one-to-many directly, many-to-many through a join table.",
+        "Foreign keys and constraints (NOT NULL, UNIQUE, CHECK) keep bad data out at the source, at a small cost on every write."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Start from the requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Volume: Zotato's orders grow by lakhs a day, menus barely at all. Data that outgrows one machine may end up in a different system from the rest, so its schema must refer to other data by id rather than by join.",
+        "Access patterns matter most. List the queries each API endpoint needs: order history by user and time, today's orders for a restaurant, a menu by restaurant. Every one should be fast with the model and its indexes.",
+        "Consistency decides what lives together. An order, its items and its payment record must change together, so they belong in one database with transactions. Ratings or a 'popular near you' list can lag by seconds, so they can live elsewhere and be updated asynchronously.",
+        "Say these out loud as reasons: 'orders and payments share one Postgres so placing an order is one transaction; the rating count on restaurants is denormalised so the list loads in one read'.",
+        "Everything that follows (tables, keys, indexes, copies, sharding) is a tool for meeting these three. When you make a choice, name which of them it serves."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Entities become tables"
+    },
+    {
+      "t": "code",
+      "label": "Zotato's schema",
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
+      "say": "Zotato's schema: users, restaurants, dishes, orders, order items, ratings and deliveries, with their keys, links and checks."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use a system-generated id as the primary key: a number from a sequence, or a UUID or similar when ids are created on many machines. Business values change: a user changes their phone number, a restaurant changes its name, and every reference would have to change with them.",
+        "Keep business values as ordinary columns with a UNIQUE constraint where they must not repeat (a phone number per user).",
+        "In an interview, name the primary key and why it matters: 'orders.id, which order_items, ratings and deliveries refer to'.",
+        "Name tables after the domain's nouns, the same ones as your core entities and API resources. A reader should recognise the product from the table list."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Relationships"
+    },
+    {
+      "t": "fig",
+      "id": "dm-relations",
+      "cap": "One-to-many is a foreign key on the 'many' side. Many-to-many needs a table of its own, here order_items, whose rows each link one order to one dish. One-to-one is rare and worth questioning."
+    },
+    {
+      "t": "list",
+      "items": [
+        "One-to-many: a restaurant has many dishes; a user has many orders. The 'many' side carries the foreign key (dishes.restaurant_id).",
+        "Many-to-many: an order contains many dishes and a dish appears in many orders. A join table, order_items, holds one row per pair, often with data about the pair (quantity, price paid).",
+        "One-to-one: an order has at most one delivery. Often two such tables should simply be one; keep them apart only for a reason, as here: deliveries are written by another service at another time, and many orders (pickups) have none."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Foreign keys and constraints"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A foreign key makes the database refuse an order for a restaurant that doesn't exist, or the deletion of a dish that past orders refer to. It prevents orphaned rows.",
+        "Each insert and update has to check the referenced row, which costs a little. Some very large systems drop foreign keys, especially across shards where the database can't check them, and enforce the rules in application code instead.",
+        "NOT NULL, UNIQUE and CHECK put simple rules in the database: every order has a user, a phone number belongs to one account, a price is positive, a rating is 1 to 5. Bugs in any service can't break them. Like foreign keys, each one is checked on every write, a small cost that is almost always worth paying.",
+        "In an interview, mention the one or two constraints that protect money or identity; nobody needs every column annotated."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "dm-constraints",
+      "cap": "Constraints reject bad writes at the database, whatever service sent them: an order for a restaurant that doesn't exist, a second account with the same phone, a dish with a negative price."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ground the schema in the requirements: say which query or consistency rule each choice serves.",
+        "Use surrogate ids, show the foreign keys, and use a join table for many-to-many.",
+        "Mention foreign keys and the key constraints, and the trade-off if the data is later sharded."
+      ]
+    }
+  ]
+}
