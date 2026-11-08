@@ -1,0 +1,190 @@
+{
+  "section": "concepts",
+  "slug": "shaping-apis",
+  "group": "basics",
+  "no": "CONCEPT // 09",
+  "tag": "API DESIGN",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Shaping an API: pages, errors, versions and slow work",
+  "dek": "The APIs concept is about choosing the kind of API. This one is about the decisions inside it: turning what users do into endpoints, returning lists that don't skip or repeat, errors that say what to fix, changes that don't break old apps, and work that takes longer than a request should.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Start from what the user does and what the screen needs; name resources as nouns, and give each action one clear endpoint.",
+        "Lists need cursor pagination, writes need idempotency keys, failures need consistent error bodies, and changes need a plan for old app versions.",
+        "Anything that takes more than a second or two becomes a job: answer 202 at once, then let the client check on it or receive a webhook."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "From actions to endpoints"
+    },
+    {
+      "t": "p",
+      "x": "Take Zotato's restaurant partner app. The kitchen sees new orders, accepts or rejects them, marks food ready, switches dishes off when they run out, and once a month downloads a statement. Each action becomes one endpoint on a resource:"
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · PARTNER API",
+      "x": "GET    /restaurants/42/orders?status=new     # the kitchen's queue\nPOST   /orders/{id}/accept                    # only if the order is still new\nPOST   /orders/{id}/ready                     # food is ready for the rider\nPATCH  /menu-items/{id}   {\"available\": false} # sold out\nPOST   /restaurants/42/statements {\"month\": \"2026-10\"}   # a slow job",
+      "say": "Get the restaurant's new orders. Post to accept an order, and to mark it ready. Patch a menu item to make it unavailable. Post to ask for a monthly statement, which is a slow job."
+    },
+    {
+      "t": "p",
+      "x": "Accepting an order could also be PATCH /orders/{id} with a new status. A separate action endpoint is clearer when the change has rules, such as 'only a new order can be accepted', because the server checks exactly one transition and can refuse it with a clear error."
+    },
+    {
+      "t": "h2",
+      "x": "What goes in a request and a response"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Return the resource you created, including its ID, so the app doesn't need a second call.",
+        "Times in ISO 8601 with a time zone, such as 2026-11-08T20:15:00+05:30.",
+        "Money as whole paise plus a currency, never as a floating-point number: 24950 and INR, not 249.5.",
+        "IDs as strings, so they can change format later without breaking apps.",
+        "Only what the screen needs. Optional extras behind a parameter such as ?include=items, rather than sending everything to every caller."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Lists that don't skip or repeat"
+    },
+    {
+      "t": "fig",
+      "id": "api-pages",
+      "cap": "Offsets count rows, so when new rows arrive at the top, every later page shifts and the user sees a row twice; when rows are deleted, they miss one instead. A cursor remembers the last item seen, so the next page starts exactly after it."
+    },
+    {
+      "t": "p",
+      "x": "Use a cursor: return the next page's starting point (often the last item's sort key and ID, encoded as an opaque string) with every page, and accept it back as ?after= or ?before=. Cursors are also faster on big tables, because the database jumps straight to the position through an index instead of counting and discarding rows. Offsets are fine for small, slow-changing lists where users want 'page 7'."
+    },
+    {
+      "t": "h2",
+      "x": "Errors people can act on"
+    },
+    {
+      "t": "table",
+      "label": "Status codes worth getting right",
+      "head": [
+        "Code",
+        "Means",
+        "Example at Zotato"
+      ],
+      "rows": [
+        [
+          "400",
+          "The request is malformed",
+          "A quantity of -2"
+        ],
+        [
+          "401",
+          "Not signed in, or the token expired",
+          "The app should refresh the token and retry"
+        ],
+        [
+          "403",
+          "Signed in, but not allowed",
+          "Restaurant 42's manager accepting restaurant 43's order"
+        ],
+        [
+          "404",
+          "No such thing",
+          "An order ID that doesn't exist"
+        ],
+        [
+          "409",
+          "Conflicts with the current state",
+          "Accepting an order the kitchen already rejected"
+        ],
+        [
+          "429",
+          "Too many requests; Retry-After says when to try again",
+          "Requesting an OTP ten times in a minute"
+        ],
+        [
+          "503",
+          "Temporarily unavailable; retry later",
+          "Payments provider down during a sale"
+        ]
+      ]
+    },
+    {
+      "t": "code",
+      "label": "AN ERROR BODY",
+      "x": "409 Conflict\n{\n  \"error\": {\n    \"code\": \"ORDER_NOT_NEW\",\n    \"message\": \"This order was already rejected at 20:14.\",\n    \"retryable\": false\n  }\n}",
+      "say": "A 409 Conflict, with an error code ORDER_NOT_NEW, a message saying the order was already rejected at 20:14, and retryable set to false."
+    },
+    {
+      "t": "p",
+      "x": "Give every error a stable code that apps can branch on, a message a person can read, and whether retrying could help. Status codes alone are too coarse: 409 could mean five different things."
+    },
+    {
+      "t": "h2",
+      "x": "Two people editing the same thing"
+    },
+    {
+      "t": "p",
+      "x": "The owner and the manager both edit the paneer tikka's price at once; without care, the last save silently wins. Give each resource a version (or an ETag). The app sends back the version it read, If-Match: 7, and the server refuses the save with 409 or 412 if the item has changed since. The second editor sees the new price and decides again, instead of overwriting it unknowingly."
+    },
+    {
+      "t": "h2",
+      "x": "Changing an API without breaking old apps"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Adding things is safe: a new optional field, a new endpoint, a new value apps are told to ignore if unknown.",
+        "Removing or renaming a field, changing its meaning or making a field required breaks someone. Those changes need a new version: /v2/… or a version header.",
+        "Phones keep old app versions for months, so the old version keeps running until usage is small enough to switch off, with a date announced in advance.",
+        "Contract tests that run the old app's requests against the new server catch accidental breaks before release."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Slow work: accept now, finish later"
+    },
+    {
+      "t": "fig",
+      "id": "api-job",
+      "cap": "A request that takes 40 seconds would hit timeouts in phones, proxies and load balancers. Turning it into a job makes the request instant and the waiting explicit: the app can show progress, and a retry doesn't start the work twice."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Answer 202 Accepted with a job ID and a URL to check; put the work on a queue for workers.",
+        "The client checks the job's status, or registers a webhook URL and is told when it is done.",
+        "Make creating the job idempotent too, so a retried request returns the same job rather than starting a second statement."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "List the user's actions first, then write one endpoint per action, with method, path and the key fields.",
+        "Say how lists are paged (cursor), how writes are made safe to retry (idempotency key), and how concurrent edits are caught (version or ETag).",
+        "Turn anything slow, such as reports, video processing or bulk imports, into a job with 202 and a status endpoint.",
+        "Mention auth and rate limits in one line each, and move on to the design; the API is the start of the answer, not the whole of it."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: webhooks done properly",
+      "body": [
+        {
+          "t": "p",
+          "x": "When your server calls a client's webhook, sign the request (an HMAC of the body with a shared secret) so the client can check it came from you, include an event ID so the client can ignore duplicates, and retry with backoff when the client's server is down. Clients should answer quickly and do the real work afterwards. Because deliveries can repeat or arrive out of order, every event should carry enough to be handled on its own, such as the job's current status rather than 'it changed'."
+        }
+      ]
+    }
+  ]
+}

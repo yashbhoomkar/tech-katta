@@ -1,7 +1,7 @@
 // Figures for the Concepts articles (the APIs article's own figures are in dashboard.jsx). Same
 // conventions as components.jsx: 640-wide viewBox, Swiss colours, SMIL on a loop, nothing animated
 // when `still`, and a `uid` so the full-screen copy gets its own marker ids.
-import React from"react";import{Dot,Box,Glow,Show,Mark}from"./parts.jsx";
+import React from"react";import{Dot,Box,Glow,Show,Mark,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
 
 const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
@@ -191,6 +191,91 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`obt${uid}`}><titl
 
 // id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
 // Keep in step with FIGS in backend/src/content/validate.js.
+// From tap to server, FIG 1: the first request on a new connection. A phone on 4G in Pune asks DNS for
+// api.zotato.in, opens TCP, agrees TLS keys and then sends the HTTP request: four round trips of about 40 ms
+// each plus 20 ms on the server, about 180 ms. On a reused connection only the last round trip happens.
+function NetFirstFig({still,uid=""}){const M=`nf${uid}`,D="14s",X={p:95,d:290,s:520};
+const caps=[["1 · DNS: the phone asks which address api.zotato.in has (1 round trip)",INK],["2 · TCP: SYN, SYN-ACK, and the connection is open (1 round trip)",INK],["3 · TLS 1.3: keys agreed, the server's certificate checked (1 round trip)",INK],["4 · HTTP: the request and the menu (1 round trip + 20 ms of work)",BLUE]];
+const T=(y,t)=><text x="10" y={y+4} className="fl">{t}</text>;
+const m=[<g key={1}><Msg x1={X.p} x2={X.d} y={100} t="api.zotato.in?" m={M}/><Msg x1={X.d} x2={X.p} y={118} t="13.235.x.x" m={M}/>{T(100,"0 ms")}</g>,
+<g key={2}><Msg x1={X.p} x2={X.s} y={150} t="SYN" tx={410} m={M}/><Msg x1={X.s} x2={X.p} y={166} t="SYN-ACK" tx={410} m={M}/>{T(150,"40 ms")}</g>,
+<g key={3}><Msg x1={X.p} x2={X.s} y={198} t="TLS hello" tx={410} m={M}/><Msg x1={X.s} x2={X.p} y={214} t="certificate, keys" tx={410} m={M}/>{T(198,"80 ms")}</g>,
+<g key={4}><Msg x1={X.p} x2={X.s} y={246} t="GET /restaurants/42/menu" tx={400} m={M}/><Msg x1={X.s} x2={X.p} y={270} t="200 OK · menu" tx={400} m={M} c={BLUE}/>{T(246,"120 ms")}{T(276,"180 ms")}<text x="10" y="316" className="fl" style={{fill:BLUE}}>4 round trips ≈ 180 ms on a new connection; on a reused one only the last: ≈ 60 ms.</text></g>];
+return <svg viewBox="0 0 640 326" role="img" aria-labelledby={`nft${uid}`}><title id={`nft${uid}`}>A sequence diagram of the first request a phone makes to the Zotato API. The phone, on 4G in Pune, first asks a DNS resolver for the address of api.zotato.in: one round trip, about 40 milliseconds. It then opens a TCP connection with SYN and SYN-ACK: another round trip. TLS 1.3 agrees encryption keys and checks the server's certificate: a third. Finally the phone sends GET /restaurants/42/menu and the menu comes back: a fourth round trip plus about 20 milliseconds of work on the server, about 180 milliseconds in all. On a connection that is already open, only the last round trip is needed, about 60 milliseconds.</title><Mk m={M}/>
+<Life x={X.p} t="Phone" s="4G, Pune" y1={292}/><Life x={X.d} t="DNS resolver" y1={292}/><Life x={X.s} t="Zotato API" s="Mumbai" y1={292}/>
+{still?<g>{m}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>{m.map((x,i)=><Show key={i} t0={i/4} t1={1} dur={D}>{x}</Show>)}
+<Dot x1={X.p} x2={X.d} y={100} t0={.04} t1={.12} dur={D}/><Dot x1={X.d} x2={X.p} y={118} t0={.13} t1={.21} dur={D}/><Dot x1={X.p} x2={X.s} y={150} t0={.29} t1={.37} dur={D}/><Dot x1={X.s} x2={X.p} y={166} t0={.38} t1={.46} dur={D}/>
+<Dot x1={X.p} x2={X.s} y={198} t0={.54} t1={.62} dur={D}/><Dot x1={X.s} x2={X.p} y={214} t0={.63} t1={.71} dur={D}/><Dot x1={X.p} x2={X.s} y={246} t0={.79} t1={.87} dur={D}/><Dot x1={X.s} x2={X.p} y={270} t0={.89} t1={.97} dur={D}/></g>}</svg>}
+
+// From tap to server, FIG 2: four ways to get live updates. The rider moves at 3, 7 and 12 seconds. Polling
+// every 2 s: five of eight polls find nothing and news waits for the next poll. Long polling: the server holds
+// the request until there is news. Server-sent events: one open response, pushed updates. WebSocket: one
+// connection, messages both ways.
+function NetLiveFig({still,uid=""}){const D="14s",x=t=>180+t*29,Y=[84,138,192,246],U=[3,7,12];
+const caps=[["1 · polling every 2 s: most polls find nothing, and news waits for the next one",RED],["2 · long polling: the server holds each request until there is news",INK],["3 · server-sent events: one response stays open and the server pushes updates",BLUE],["4 · WebSocket: one connection, messages both ways",BLUE]];
+const dot=(t,y,c=BLUE)=><circle key={t+"-"+y} cx={x(t)} cy={y} r="5" fill={c}/>,ring=(t,y)=><circle key={"r"+t} cx={x(t)} cy={y} r="5" fill="#fff" stroke={GREY}/>;
+const bar=(a,b,y,c=BLUE)=><rect key={a+"-"+y} x={x(a)} y={y-4} width={x(b)-x(a)} height="8" fill={c} opacity=".18" stroke={c} strokeOpacity=".5"/>;
+const base=<g>{U.map(t=><g key={t}><line x1={x(t)} y1="56" x2={x(t)} y2="262" stroke={GREY} strokeDasharray="3 3"/><text x={x(t)} y="50" textAnchor="middle" className="fl">rider moved</text></g>)}<line x1={x(0)} y1="272" x2={x(15)} y2="272" stroke={GREY}/>{[0,5,10,15].map(t=><text key={t} x={x(t)} y="286" textAnchor="middle" className="fl">{t} s</text>)}</g>;
+const lab=(i,t,s)=><g><text x="10" y={Y[i]} className="fb">{t}</text><text x="10" y={Y[i]+14} className="fl">{s}</text></g>;
+const r=[<g key={0}>{lab(0,"Polling, every 2 s","5 of 8 polls empty")}{[0,2,4,6,8,10,12,14].map(t=>[4,8,12].includes(t)?dot(t,Y[0]):ring(t,Y[0]))}</g>,
+<g key={1}>{lab(1,"Long polling","held until news")}{bar(0,3,Y[1])}{bar(3,7,Y[1])}{bar(7,12,Y[1])}{bar(12,15,Y[1])}{U.map(t=>dot(t,Y[1]))}</g>,
+<g key={2}>{lab(2,"Server-sent events","one-way stream")}{bar(0,15,Y[2])}{U.map(t=>dot(t,Y[2]))}</g>,
+<g key={3}>{lab(3,"WebSocket","both ways")}{bar(0,15,Y[3])}{U.map(t=>dot(t,Y[3]))}{[5,10].map(t=><g key={t}><rect x={x(t)-5} y={Y[3]-5} width="10" height="10" fill={INK}/><text x={x(t)} y={Y[3]-10} textAnchor="middle" className="fl">chat</text></g>)}</g>];
+return <svg viewBox="0 0 640 296" role="img" aria-labelledby={`nlt${uid}`}><title id={`nlt${uid}`}>Four ways for the customer's app to learn that the rider moved, at 3, 7 and 12 seconds. Polling every 2 seconds: five of the eight polls find nothing, and each update waits for the next poll. Long polling: the server holds each request open until there is news, answers at once, and the app asks again. Server-sent events: one response stays open and the server pushes each update down it. WebSocket: one connection carries messages both ways, the rider's location in and chat messages out.</title>
+{base}{still?<g>{r}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>{r.map((g,i)=><Show key={i} t0={i/4} t1={1} dur={D}>{g}</Show>)}</g>}</svg>}
+
+// Shaping an API, FIG 1: offset or cursor. Page 1 shows orders 50 to 46; order 51 arrives; ?offset=5 then
+// returns 46 to 42, repeating 46; ?before=46 returns 45 to 41, with nothing repeated or missed.
+function ApiPagesFig({still,uid=""}){const D="14s",X=[20,240,460],Y=i=>96+i*30;
+const caps=[["1 · page 1 of a restaurant's orders, newest first: 50 down to 46",INK],["2 · a new order, 51, arrives before the next page is loaded",INK],["3 · ?offset=5 skips five rows of the new list, so order 46 shows up twice",RED],["4 · ?before=46 asks for orders older than the last one seen: no repeats, no gaps",BLUE]];
+const row=(x,i,n,c=GREY,fill="#fff")=><g key={x+"-"+n}><rect x={x} y={Y(i)-14} width="160" height="26" fill={fill} stroke={c}/><text x={x+12} y={Y(i)+4} className="fl">order {n}</text></g>;
+const col=(i,t)=><text x={X[i]} y="72" className="fb">{t}</text>;
+const p1=<g>{col(0,"page 1")}{[50,49,48,47,46].map((n,i)=>row(X[0],i,n))}</g>;
+const s2=<g>{row(X[0],-1,51,BLUE,"#f8faff")}<text x={X[0]+170} y={Y(-1)+4} className="fl" style={{fill:BLUE}}>new</text></g>;
+const s3=<g>{col(1,"page 2 · ?offset=5")}{[46,45,44,43,42].map((n,i)=>row(X[1],i,n,n===46?RED:GREY,n===46?"#fff5f4":"#fff"))}<text x={X[1]} y="262" className="fl" style={{fill:RED}}>46 again: the list moved under it</text></g>;
+const s4=<g>{col(2,"page 2 · ?before=46")}{[45,44,43,42,41].map((n,i)=>row(X[2],i,n,BLUE,"#f8faff"))}<text x={X[2]} y="262" className="fl" style={{fill:BLUE}}>picks up right after 46</text></g>;
+return <svg viewBox="0 0 640 276" role="img" aria-labelledby={`apt${uid}`}><title id={`apt${uid}`}>Offset pagination against cursor pagination on a restaurant's order list, newest first. Page 1 shows orders 50 down to 46. A new order, 51, arrives before the next page is loaded. Asking for page 2 with offset 5 skips five rows of the new list, so it returns orders 46 to 42 and order 46 appears twice. Asking for orders before 46, a cursor, returns 45 to 41: nothing is repeated or missed.</title>
+{p1}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+
+// Shaping an API, FIG 2: slow work as a job. The partner app asks for October's statement; the API queues a
+// job and answers 202 at once; a worker spends about 40 s on it; the app checks the job (running), then
+// checks again and gets a link to the file.
+function ApiJobFig({still,uid=""}){const M=`aj${uid}`,D="14s",X={a:90,s:320,w:540};
+const caps=[["1 · the app asks for October's statement; the API queues a job and answers 202 at once",INK],["2 · a worker builds the statement, which takes about 40 seconds",INK],["3 · meanwhile the app checks on the job: still running",INK],["4 · the job is done, and the next check returns a link to the file",BLUE]];
+const m=[<g key={1}><Msg x1={X.a} x2={X.s} y={100} t="POST /statements · month=10" m={M}/><Msg x1={X.s} x2={X.a} y={124} t="202 Accepted · job 77" m={M} c={BLUE}/></g>,
+<g key={2}><Msg x1={X.s} x2={X.w} y={150} t="queue: job 77" m={M} dash/><rect x={X.w-5} y="160" width="10" height="84" fill="#dfe6fb" stroke={BLUE}/><text x={X.w+12} y="206" className="fl">~40 s</text></g>,
+<g key={3}><Msg x1={X.a} x2={X.s} y={184} t="GET /jobs/77" m={M}/><Msg x1={X.s} x2={X.a} y={204} t="running, 40%" m={M}/></g>,
+<g key={4}><Msg x1={X.w} x2={X.s} y={244} t="done: statement.pdf" m={M} dash/><Msg x1={X.a} x2={X.s} y={268} t="GET /jobs/77" m={M}/><Msg x1={X.s} x2={X.a} y={290} t="done · download link" m={M} c={BLUE}/></g>];
+return <svg viewBox="0 0 640 306" role="img" aria-labelledby={`ajt${uid}`}><title id={`ajt${uid}`}>A sequence diagram of slow work handled as a job. The restaurant partner app asks the statements API for October's statement. The API puts a job on a queue and answers at once with 202 Accepted and job number 77. A worker takes about 40 seconds to build the statement. Meanwhile the app checks job 77 and hears that it is still running, 40 percent done. When the worker finishes, the next check returns done, with a link to download the file.</title><Mk m={M}/>
+<Life x={X.a} t="Partner app" y1={298}/><Life x={X.s} t="Statements API" y1={298}/><Life x={X.w} t="Worker" y1={298}/>
+{still?<g>{m}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>{m.map((x,i)=><Show key={i} t0={i/4} t1={1} dur={D}>{x}</Show>)}
+<Dot x1={X.a} x2={X.s} y={100} t0={.03} t1={.11} dur={D}/><Dot x1={X.s} x2={X.a} y={124} t0={.13} t1={.21} dur={D}/><Dot x1={X.s} x2={X.w} y={150} t0={.28} t1={.36} dur={D}/><Dot x1={X.a} x2={X.s} y={184} t0={.53} t1={.61} dur={D}/><Dot x1={X.s} x2={X.a} y={204} t0={.63} t1={.71} dur={D}/><Dot x1={X.s} x2={X.a} y={290} t0={.88} t1={.97} dur={D}/></g>}</svg>}
+
+// Back-of-envelope, FIG 1: a 300 ms budget for opening a restaurant page on 4G. The round trip costs 80 ms,
+// the gateway 5 ms, three parallel calls as long as the slowest (delivery ETA, 60 ms), building the reply 5 ms,
+// downloading 80 KB 64 ms, drawing 40 ms: 254 ms.
+function EstBudgetFig({still,uid=""}){const D="14s",x=ms=>20+ms*2,Y=110;
+const S=[[0,80,"round trip",GREY],[80,85,"",GREY],[85,145,"calls",BLUE],[145,150,"",GREY],[150,214,"download",GREY],[214,254,"draw",GREY]];
+const caps=[["1 · the target: the restaurant page on screen within 300 ms, on 4G",INK],["2 · the round trip to Mumbai alone costs 80 ms, before any work is done",INK],["3 · three calls run in parallel, so the slowest, delivery ETA at 60 ms, sets the pace",BLUE],["4 · downloading and drawing add about 100 ms: 254 ms, inside the budget",BLUE]];
+const seg=([a,b,t,c],k)=><g key={k}><rect x={x(a)} y={Y-16} width={x(b)-x(a)} height="32" fill={c===BLUE?"#dfe6fb":"#eef1f5"} stroke={c}/>{t&&<text x={(x(a)+x(b))/2} y={Y+4} textAnchor="middle" className="fl">{t}</text>}</g>;
+const base=<g><line x1={x(300)} y1="70" x2={x(300)} y2="150" stroke={RED} strokeDasharray="4 3"/><text x={x(300)} y="64" textAnchor="end" className="fl" style={{fill:RED}}>budget 300 ms</text>{[0,100,200,300].map(t=><text key={t} x={x(t)} y="152" textAnchor="middle" className="fl">{t} ms</text>)}</g>;
+const calls=<g>{[["menu, from cache",2],["offers, from the database",15],["delivery ETA service",60]].map(([t,ms],i)=><g key={t}><rect x={x(85)} y={176+i*22} width={Math.max(2,ms*2)} height="14" fill={i===2?"#dfe6fb":"#eef1f5"} stroke={i===2?BLUE:GREY}/><text x={x(85)+ms*2+8} y={187+i*22} className="fl" style={i===2?{fill:BLUE}:undefined}>{t}: {ms} ms</text></g>)}</g>;
+const total=<text x={x(254)} y="88" textAnchor="middle" className="fb" style={{fill:BLUE}}>254 ms</text>;
+return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`ebt${uid}`}><title id={`ebt${uid}`}>A time budget of 300 milliseconds for opening a restaurant page on a 4G phone. The round trip to the Mumbai servers costs 80 milliseconds before any work starts. The gateway and sign-in check take 5. Three calls run in parallel: the menu from the cache in 2 milliseconds, offers from the database in 15, and the delivery-time service in 60, so the slowest, 60, sets the pace. Building the reply takes 5, downloading 80 kilobytes takes about 64, and drawing the page about 40. The total is 254 milliseconds, inside the budget.</title>
+{base}{still?<g>{S.map(seg)}{calls}{total}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={1} dur={D}>{seg(S[0],0)}</Show><Show t0={.5} t1={1} dur={D}>{seg(S[1],1)}{seg(S[2],2)}{calls}</Show><Show t0={.75} t1={1} dur={D}>{seg(S[3],3)}{seg(S[4],4)}{seg(S[5],5)}{total}</Show></g>}</svg>}
+
+// Back-of-envelope, FIG 2: from a requirement to a decision. 1 crore orders a day ÷ 1 lakh seconds ≈ 116 a
+// second; × 3 at dinner ≈ 350 writes a second; × 20 reads per order ≈ 7,000 reads a second; × 2 KB ≈ 20 GB a
+// day; × 365 ≈ 7.3 TB a year.
+function EstFunnelFig({still,uid=""}){const M=`ef${uid}`,D="14s",X=[20,230,440],W=180;
+const B=[[0,60,"1 crore orders a day","the requirement"],[1,60,"≈ 116 a second","÷ 1 lakh seconds"],[2,60,"≈ 350 writes a second","× 3 at dinner time"],[0,150,"≈ 7,000 reads a second","× 20 reads per order"],[1,150,"≈ 20 GB a day","× 2 KB per order"],[2,150,"≈ 7.3 TB a year","× 365"]];
+const caps=[["1 · start from the requirement: 1 crore orders a day",INK],["2 · per second, then at the peak: about 350 writes a second at dinner",BLUE],["3 · each order is read about 20 times (tracking, history): 7,000 reads a second",BLUE],["4 · and the bytes: about 20 GB a day, 7 TB a year",BLUE]];
+const box=([c,y,t,s],k)=><g key={k}><Bx x={X[c]} y={y} w={W} h={50} t={t} s={s} c={k?BLUE:GREY} fill={k?"#f8faff":"#fff"}/>{c>0&&<Ar x1={X[c]-28} y1={y+25} x2={X[c]-3} y2={y+25} m={M}/>}</g>;
+const verdict=<g><text x="20" y="232" className="fl" style={{fill:BLUE}}>One primary database takes 350 writes a second; a cache takes the 7,000 reads;</text><text x="20" y="248" className="fl" style={{fill:BLUE}}>7 TB a year means archiving old orders or sharding by the second year.</text></g>;
+return <svg viewBox="0 0 640 258" role="img" aria-labelledby={`eft${uid}`}><title id={`eft${uid}`}>A back-of-envelope estimate in six steps. One crore orders a day, divided by about one lakh seconds in a day, is about 116 orders a second. Times three at dinner time is about 350 writes a second. Each order is read about 20 times, for tracking and history, so about 7,000 reads a second. At about 2 kilobytes per order that is about 20 gigabytes a day, or 7.3 terabytes a year. So one primary database can take the writes, a cache takes the reads, and a year's data means archiving old orders or sharding by the second year.</title><Mk m={M}/>
+{still?<g>{B.map(box)}{verdict}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>{B.map((b,k)=><Show key={k} t0={[0,.25,.25,.5,.75,.75][k]} t1={1} dur={D}>{box(b,k)}</Show>)}<Show t0={.75} t1={1} dur={D}>{verdict}</Show></g>}</svg>}
+
 export const CONCEPT_FIGS={
 "repl-sync":{C:ReplSyncFig,ar:640/300,title:()=>"ONE PAYMENT, COPIED TWO WAYS"},
 "repl-failover":{C:ReplFailoverFig,ar:640/290,title:()=>"WHEN THE LEADER DIES"},
@@ -204,4 +289,10 @@ export const CONCEPT_FIGS={
 "election":{C:ElectionFig,ar:640/240,title:()=>"A NEW LEADER IN 300 MS"},
 "saga":{C:SagaFig,ar:640/230,title:()=>"BACKING OUT, STEP BY STEP"},
 "outbox":{C:OutboxFig,ar:640/240,title:()=>"SAVE AND SEND, TOGETHER"},
+"net-first":{C:NetFirstFig,ar:640/326,title:()=>"THE FIRST REQUEST ON A NEW CONNECTION"},
+"net-live":{C:NetLiveFig,ar:640/296,title:()=>"FOUR WAYS TO GET LIVE UPDATES"},
+"api-pages":{C:ApiPagesFig,ar:640/276,title:()=>"OFFSET OR CURSOR"},
+"api-job":{C:ApiJobFig,ar:640/306,title:()=>"SLOW WORK AS A JOB"},
+"est-budget":{C:EstBudgetFig,ar:640/250,title:()=>"WHERE 300 MILLISECONDS GO"},
+"est-funnel":{C:EstFunnelFig,ar:640/258,title:()=>"FROM A REQUIREMENT TO A DECISION"},
 };
