@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { loadContent, buildBodies } from './content/store.js';
 import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
 import { accountRoutes, ACCOUNT_PATHS, JSON_CSP } from './auth/routes.js';
+import { judgePool } from './auth/judge-pool.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -106,10 +107,13 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 // first use, so the API starts (and serves content) even when the database is unreachable.
 const auth = authConfig();
 const accounts = auth.enabled ? openAccounts({ uri: auth.uri, dbName: auth.dbName, secret: auth.secret }) : null;
+// Submissions are judged on worker threads, so a slow design never stalls the API (judge-pool.js).
+const judges = judgePool();
 const handleAccount = accountRoutes({
   enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
   // a problem's tests and rubric, from the content release being served (with its calibration designs)
   practiceFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice)?.practice || null,
+  judgeDesign: (job) => judges.run(job),
   analyticsOrigin: process.env.ANALYTICS_ORIGIN ?? 'https://analytics.katta.cc',
   verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
 });
@@ -143,10 +147,12 @@ function handleContent(request, response, pathname, searchParams) {
   return sendContent(request, response, article);
 }
 
-// Behind Nginx: a request has 30 s to arrive in full and its headers 10 s; Node checks every 2 s
-// (its default is 30 s, which let a stalled client hold a connection that long).
-const server = http.createServer({ requestTimeout: 30_000, headersTimeout: 10_000, connectionsCheckingInterval: 2_000 }, (request, response) => {
-  const url = new URL(request.url || '/', 'http://localhost');
+// Every request: content, accounts, health, or 404.
+function route(request, response) {
+  // An address the URL parser rejects (a bad host or port in an absolute-form request line) is the
+  // client's mistake: 400, not an exception.
+  let url;
+  try { url = new URL(request.url || '/', 'http://localhost'); } catch { return sendJson(request, response, 400, { status: 'error', error: 'bad_request' }); }
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
   if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
@@ -159,10 +165,7 @@ const server = http.createServer({ requestTimeout: 30_000, headersTimeout: 10_00
     return;
   }
 
-  if (ACCOUNT_PATHS.has(pathname)) {
-    handleAccount(request, response, pathname);
-    return;
-  }
+  if (ACCOUNT_PATHS.has(pathname)) return handleAccount(request, response, pathname);
 
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
@@ -197,6 +200,23 @@ const server = http.createServer({ requestTimeout: 30_000, headersTimeout: 10_00
     error: 'not_found',
     message: 'Route not found',
   });
+}
+
+// One request must never take the process (and every other visitor) down: anything a handler throws,
+// or an account handler's promise rejecting, is logged and answered with a 500 if nothing was sent yet.
+function failed(request, response, error) {
+  console.error(`Request failed: ${request.method} ${String(request.url).slice(0, 200)}\n`, error?.stack || error);
+  if (response.headersSent) { response.destroy(); return; }
+  try { sendJson(request, response, 500, { status: 'error', error: 'internal_error' }); } catch { response.destroy(); }
+}
+
+// Behind Nginx: a request has 30 s to arrive in full and its headers 10 s; Node checks every 2 s
+// (its default is 30 s, which let a stalled client hold a connection that long).
+const server = http.createServer({ requestTimeout: 30_000, headersTimeout: 10_000, connectionsCheckingInterval: 2_000 }, (request, response) => {
+  try {
+    const pending = route(request, response);
+    if (pending && typeof pending.then === 'function') pending.then(undefined, (error) => failed(request, response, error));
+  } catch (error) { failed(request, response, error); }
 });
 
 // Idle keep-alive connections close after 5 s, so stalled clients can't pile up connections.
@@ -210,6 +230,7 @@ server.listen(port, host, () => {
 // Stop taking new connections, let requests in flight finish (up to 10 s), then close MongoDB.
 function shutdown(signal) {
   console.log(`Received ${signal}; shutting down API server.`);
+  judges.close();
   server.close((error) => {
     if (error) { console.error('HTTP server shutdown failed:', error); process.exitCode = 1; }
     Promise.resolve(accounts?.close()).catch(() => {}).finally(() => process.exit());
