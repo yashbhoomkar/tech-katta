@@ -1,0 +1,150 @@
+{
+  "section": "interview-questions",
+  "slug": "patterns-guide",
+  "group": "start",
+  "no": "GUIDE // 06",
+  "tag": "OVERVIEW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "The patterns that keep coming back",
+  "dek": "Seven problems that show up in question after question, the usual answer to each, and where you'll meet them in the worked questions. Each points to its full article in Concepts.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Most interview questions are two or three familiar problems in a new setting: the same seat wanted by many, reads that swamp the database, a file too big for the API.",
+        "Spotting the pattern early tells you where the deep dives will be and gives you a tested answer to start from.",
+        "Seven patterns cover most questions: real-time updates, contention, processes with many steps, scaling reads, scaling writes, big files and long jobs."
+      ]
+    },
+    {
+      "t": "table",
+      "head": [
+        "Pattern",
+        "You meet it in"
+      ],
+      "rows": [
+        [
+          "Real-time updates",
+          "The chat app, the shared document editor, the live leaderboard and rider assignment"
+        ],
+        [
+          "Contention",
+          "Match ticket booking, 10-minute grocery delivery, rider assignment and the payment system"
+        ],
+        [
+          "Processes with many steps",
+          "The payment system, 10-minute grocery delivery and rider assignment"
+        ],
+        [
+          "Scaling reads",
+          "The URL shortener, restaurants near me, the news feed, photo sharing and video streaming"
+        ],
+        [
+          "Scaling writes",
+          "Ad click counting, the live leaderboard, photo sharing's like counts and the key-value store"
+        ],
+        [
+          "Big files",
+          "File storage and sync, photo sharing and video streaming"
+        ],
+        [
+          "Long jobs",
+          "The job scheduler, the coding judge, the web crawler, the notification service and video streaming"
+        ]
+      ],
+      "label": "Where each pattern appears"
+    },
+    {
+      "t": "h2",
+      "x": "Real-time updates"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: A change on the server must reach open screens within a second or two.",
+        "The usual answer: Keep a connection open (WebSockets or server-sent events) to a gateway, and route each update to the gateway holding that user's connection, often through pub/sub.",
+        "You meet it in the chat app, the shared document editor, the live leaderboard and rider assignment.",
+        "Read: 'Real-time updates' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Contention"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: Many requests try to change the same thing at once: the last seat, the last packet of milk, one rider.",
+        "The usual answer: Let the database pick one winner with a conditional write or a lock, keep the critical section short, and handle a very hot item separately.",
+        "You meet it in match ticket booking, 10-minute grocery delivery, rider assignment and the payment system.",
+        "Read: 'Contention' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Processes with many steps"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: A process spans services and minutes or days, and any step can fail or stall.",
+        "The usual answer: Store the process as a state machine, move it on with events and timeouts, make each step safe to retry, and use an outbox or a workflow engine.",
+        "You meet it in the payment system, 10-minute grocery delivery and rider assignment.",
+        "Read: 'Processes with many steps' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Scaling reads"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: Reads far outnumber writes, and the database that copes with the writes sinks under the reads.",
+        "The usual answer: Let each layer take its share: a CDN, a cache, read replicas and copies of data shaped for the read; plan for the one key everyone wants.",
+        "You meet it in the URL shortener, restaurants near me, the news feed, photo sharing and video streaming.",
+        "Read: 'When reads outnumber writes' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Scaling writes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: Writes outrun one database: every copy still takes every write.",
+        "The usual answer: Make each write cheaper, batch or buffer through a queue, split the data by a key, and spread a single hot counter over several rows.",
+        "You meet it in ad click counting, the live leaderboard, photo sharing's like counts and the key-value store.",
+        "Read: 'When writes outrun one database' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Big files"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: Photos, videos and exports are too big for the database or an API server's memory.",
+        "The usual answer: The API hands out a signed URL; the client uploads straight to object storage in parts; the database tracks each file from pending to ready; a CDN serves it.",
+        "You meet it in file storage and sync, photo sharing and video streaming.",
+        "Read: 'Big files' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Long jobs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The problem: Work takes longer than a request should: conversions, reports, crawls, judging code.",
+        "The usual answer: Record a job and answer at once; workers take jobs with a lease, retry with backoff, and park failures in a dead-letter queue; show progress.",
+        "You meet it in the job scheduler, the coding judge, the web crawler, the notification service and video streaming.",
+        "Read: 'Jobs that run for minutes' in Concepts."
+      ]
+    }
+  ]
+}

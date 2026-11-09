@@ -1,0 +1,211 @@
+{
+  "section": "interview-questions",
+  "slug": "core-concepts-guide",
+  "group": "start",
+  "no": "GUIDE // 04",
+  "tag": "OVERVIEW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "The core concepts in one page",
+  "dek": "The nine ideas that come up in almost every design: what each one is, when it enters an interview, and what to say about it. Each points to its full article in Concepts.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Nine ideas cover most of what interviewers ask: networking, API design, data modelling, caching, sharding, consistent hashing, CAP, database indexing and the numbers to know.",
+        "You won't need all nine in every answer. Bring each one in when a requirement or a number calls for it, and say why.",
+        "Each part below is a summary; the article of the same name in Concepts has the full story, with figures."
+      ]
+    },
+    {
+      "t": "table",
+      "head": [
+        "Concept",
+        "Comes up when"
+      ],
+      "rows": [
+        [
+          "Networking essentials",
+          "When you draw the first boxes, choose how the client talks to you, or explain why a response is slow."
+        ],
+        [
+          "API design",
+          "Right after the requirements and entities, in the API step: about five minutes."
+        ],
+        [
+          "Data modelling",
+          "Twice: name the core entities after the requirements, and sketch a schema when the database enters the design."
+        ],
+        [
+          "Caching",
+          "When reads are far more than the database can take, a query is slow, or a latency target is tight."
+        ],
+        [
+          "Sharding",
+          "Only when the numbers show one database can't hold the data or take the writes, after a bigger machine, replicas and a cache."
+        ],
+        [
+          "Consistent hashing",
+          "Whenever data or connections are spread over a changing number of servers: caches, key-value stores, chat gateways."
+        ],
+        [
+          "CAP theorem",
+          "In the non-functional requirements, and again for each feature in the deep dives."
+        ],
+        [
+          "Database indexing",
+          "When you name the queries each table must answer, or when a query is too slow."
+        ],
+        [
+          "Numbers to know",
+          "In the estimates step, and whenever you are about to add a cache, a shard or a queue."
+        ]
+      ],
+      "label": "Where each concept enters an answer"
+    },
+    {
+      "t": "h2",
+      "x": "Networking essentials"
+    },
+    {
+      "t": "p",
+      "x": "How a request gets from a phone to your servers and back: DNS, TCP or UDP, TLS, HTTP, the API styles built on it, load balancers at layer 4 or 7, and the distance between regions."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: When you draw the first boxes, choose how the client talks to you, or explain why a response is slow.",
+        "Say: Use HTTP and REST unless a requirement says otherwise; use WebSockets or server-sent events only for live updates; put a load balancer in front of every group of servers.",
+        "Read: 'Networking essentials' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "API design"
+    },
+    {
+      "t": "p",
+      "x": "Turning the features into calls: resources and methods, what goes in the path, query and body, pagination, idempotency keys, versions and authentication."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: Right after the requirements and entities, in the API step: about five minutes.",
+        "Say: One call per feature, REST by default, a cursor for any list that grows, and an idempotency key for anything that charges money or creates something.",
+        "Read: 'API design' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Data modelling"
+    },
+    {
+      "t": "p",
+      "x": "Choosing a database model and shaping the data: entities, keys and relationships, indexes, when to copy data for faster reads, and how to split it later."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: Twice: name the core entities after the requirements, and sketch a schema when the database enters the design.",
+        "Say: Start relational; add another kind of store only for a part that needs it, and name the queries each table must answer.",
+        "Read: 'Data modelling' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Caching"
+    },
+    {
+      "t": "p",
+      "x": "Keeping copies of hot data closer to whoever reads it: in the app, at the edge (a CDN), in a shared cache such as Redis, or inside the database."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: When reads are far more than the database can take, a query is slow, or a latency target is tight.",
+        "Say: Cache-aside with a TTL by default, and one thing that goes wrong (a stampede, stale data, a hot key) with your fix.",
+        "Read: 'Caching' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Sharding"
+    },
+    {
+      "t": "p",
+      "x": "Splitting the data across machines by a key, so each holds and writes a share."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: Only when the numbers show one database can't hold the data or take the writes, after a bigger machine, replicas and a cache.",
+        "Say: The shard key and why it spreads the load evenly, plus what becomes hard: hot keys, queries across shards, transactions across shards.",
+        "Read: 'Sharding' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Consistent hashing"
+    },
+    {
+      "t": "p",
+      "x": "Placing keys and servers on a ring so that adding or removing a server moves only a small share of the keys."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: Whenever data or connections are spread over a changing number of servers: caches, key-value stores, chat gateways.",
+        "Say: With hash(key) % N, changing N moves almost every key; a ring with virtual nodes moves about 1/N and spreads load evenly.",
+        "Read: 'Consistent hashing' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "CAP theorem"
+    },
+    {
+      "t": "p",
+      "x": "When the network between copies breaks, you choose: refuse some requests to stay consistent, or answer from the copy you have and accept stale data."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: In the non-functional requirements, and again for each feature in the deep dives.",
+        "Say: Decide per feature: a seat booking or a payment needs consistency; a feed, a rating or a menu can be a little stale.",
+        "Read: 'CAP theorem' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Database indexing"
+    },
+    {
+      "t": "p",
+      "x": "Sorted structures that find one row without reading the whole table: B-trees, LSM trees, hash indexes, and special ones for places and text."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: When you name the queries each table must answer, or when a query is too slow.",
+        "Say: An index for each frequent query, in the right column order, and what each costs: slower writes and more storage.",
+        "Read: 'Database indexing' in Concepts."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers to know"
+    },
+    {
+      "t": "p",
+      "x": "What one machine can really do today: memory, disk, a database's reads and writes a second, a cache's operations a second, and how long things take."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Comes up: In the estimates step, and whenever you are about to add a cache, a shard or a queue.",
+        "Say: Scale only when a number forces it, and say which number it was.",
+        "Read: 'Numbers to know' in Concepts."
+      ]
+    }
+  ]
+}

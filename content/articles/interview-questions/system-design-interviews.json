@@ -1,0 +1,118 @@
+{
+  "section": "interview-questions",
+  "slug": "system-design-interviews",
+  "group": "start",
+  "no": "GUIDE // 01",
+  "tag": "INTRODUCTION",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "System design interviews: what they test, and how to use this library",
+  "dek": "What happens in a system design interview, what the interviewer is scoring at each level, the kinds of question you'll get, and the order to use this site in.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A system design interview is 45 to 60 minutes on one open question, such as 'design a URL shortener'. There is no single right answer; the interviewer scores how you reach yours.",
+        "Four things are scored: how you pin down the problem, whether the design works end to end, how deep you go where it matters, and how clearly you explain the trade-offs.",
+        "The more senior the role, the more you are expected to lead: find the hard parts without being steered, and go deeper into them.",
+        "Use this site in order: these guides, then Concepts and Components, then the Interview Questions in the workspace, then the Lab."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "What happens in the room"
+    },
+    {
+      "t": "p",
+      "x": "You get one question, usually about a product most people have used: a link shortener, a chat app, a food delivery feature. You have a whiteboard or a shared drawing tool and 45 to 60 minutes. The interviewer acts as a colleague who knows the product but not your design: they answer questions about what's needed, push on weak spots and ask 'what happens when...?'."
+    },
+    {
+      "t": "p",
+      "x": "Introductions and your own questions at the end take a few minutes, so plan for 35 to 45 minutes of actual design."
+    },
+    {
+      "t": "h2",
+      "x": "What is being scored"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pinning down the problem: asking what matters, choosing a few features, and putting numbers on the qualities (how many users, how fast, how available).",
+        "A design that works: every feature traced through boxes that exist, with every piece of data stored somewhere sensible. A simple, complete design beats a clever, half-finished one.",
+        "Depth where it counts: finding the two or three hard parts (the seat two people want, the spike at noon, the one celebrity) and fixing them with reasons and numbers.",
+        "Communication: thinking out loud, naming each trade-off ('this gives up some freshness, which is fine for a feed'), and taking hints well."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What changes with seniority"
+    },
+    {
+      "t": "table",
+      "head": [
+        "Level",
+        "What's expected"
+      ],
+      "rows": [
+        [
+          "Early career (0 to 3 years)",
+          "A working high-level design with sensible parts. The interviewer may steer you towards the hard parts, and that's fine."
+        ],
+        [
+          "Mid-level (3 to 6 years)",
+          "A working design reached with little help, and at least one deep dive done well: a real bottleneck found and fixed with numbers."
+        ],
+        [
+          "Senior (6 years and more)",
+          "You lead: you choose which parts deserve depth, compare two or three options for each, and bring up failures before you're asked."
+        ],
+        [
+          "Staff and above",
+          "Depth in several places, plus judgement: what to build first, what to leave out, how the system grows, and what it costs to run."
+        ]
+      ],
+      "label": "What interviewers look for, by level"
+    },
+    {
+      "t": "p",
+      "x": "Every worked question on this site ends with a 'What's expected at each level' section for that question."
+    },
+    {
+      "t": "h2",
+      "x": "The kinds of question"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Product questions: build something people use, such as a news feed, ticket booking, a chat app or rider assignment. Most interviews are these.",
+        "Infrastructure questions: build a building block, such as a key-value store, a job scheduler or a web crawler. These go deeper into one mechanism.",
+        "Not covered here: object-oriented design ('design the classes for a parking lot'), which some companies also call system design."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How to use this library"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start here: these guides. 'How to answer a system design question' is the method every worked answer follows; read it before anything else.",
+        "Concepts: 21 articles on the ideas every design leans on (networking, API design, data modelling, caching, sharding, consistent hashing, CAP, indexing and the numbers to know), the patterns that keep coming back, and specialised data such as maps and time series.",
+        "Components: 10 articles on the technologies interviewers expect you to know by name, from Redis and Kafka to PostgreSQL, Cassandra and DynamoDB.",
+        "Interview Questions: worked answers. Open one in the workspace first: write your own requirements, numbers and API, build the design on the canvas, run its tests, and only then read ours.",
+        "Lab: challenges where your design meets real traffic, failures and a monthly bill."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "One example throughout"
+    },
+    {
+      "t": "p",
+      "x": "Every article uses the same made-up company, Zotato, a food delivery app in India. Seeing caching, sharding and queues applied to one familiar system makes it easier to carry them into whatever question you're given."
+    }
+  ]
+}
