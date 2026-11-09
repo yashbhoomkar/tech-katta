@@ -348,6 +348,11 @@
           "cap",
           "CAP theorem",
           "When the network splits, consistency or availability: the one question to ask, how each choice shapes the design, and choosing per feature."
+        ],
+        [
+          "indexing",
+          "Database indexing",
+          "Why indexes exist and what they cost, B-trees, LSM trees and hash indexes, and indexes for places, text, several columns and whole queries."
         ]
       ],
       "interview-questions": [
