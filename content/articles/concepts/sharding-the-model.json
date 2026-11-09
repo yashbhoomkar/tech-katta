@@ -84,7 +84,7 @@
       "items": [
         "Only shard when the numbers say one machine isn't enough, and say which numbers.",
         "Name the shard key, the queries it keeps on one shard, and the one query it makes expensive, with your answer for it.",
-        "Point to the Sharding and Consistent hashing groups in Concepts (and the component 'Sharding and partitioning') for strategies, resharding and hot spots if the interviewer goes deeper."
+        "Point to the Sharding and Consistent hashing groups in Concepts for strategies, resharding and hot spots if the interviewer goes deeper."
       ]
     }
   ]

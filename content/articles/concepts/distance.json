@@ -63,7 +63,7 @@
       "items": [
         "It works because of caching: only content that many people read, and that can be a little stale, benefits. A customer's own order can't be served from an edge.",
         "Besides latency it takes load off your servers: on a busy night most image and menu-photo traffic ends at the edges.",
-        "The Components article on CDNs covers TTLs, invalidation and what to cache."
+        "The Caching concepts cover TTLs, invalidation and what to cache at the edge ('Where to cache')."
       ]
     },
     {

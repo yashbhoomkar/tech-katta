@@ -86,7 +86,7 @@
       "t": "list",
       "items": [
         "Modern CDNs can do more than files: they can cache public API responses and HTML pages, and run small programs at the edge to personalise pages or block bad traffic before it reaches you.",
-        "But their biggest and most common job is still images, video and other files, and that is the safest reason to add one in an interview. Start with media, and mention the rest only if the problem needs it. The component 'CDNs' covers headers, hit ratios and purging."
+        "But their biggest and most common job is still images, video and other files, and that is the safest reason to add one in an interview. Start with media, and mention the rest only if the problem needs it."
       ]
     },
     {

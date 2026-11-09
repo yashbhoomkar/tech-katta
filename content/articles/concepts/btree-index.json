@@ -110,7 +110,7 @@
     },
     {
       "t": "p",
-      "x": "If an interviewer asks which index you'd use and the data is ordinary, a B-tree is a safe answer. The article 'Indexes' in Concepts goes further into how databases plan queries around them."
+      "x": "If an interviewer asks which index you'd use and the data is ordinary, a B-tree is a safe answer."
     },
     {
       "t": "h2",
