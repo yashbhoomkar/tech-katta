@@ -402,7 +402,7 @@ test('each sub-tab owns one figure module in the frontend and the same ids in th
   const { readFile, readdir } = await import('node:fs/promises');
   // frontend/src/figs/<tab>/<sub-tab>.jsx exports FIGS, one "id":{C:…} per line; backend/src/content/figs/<tab>/<sub-tab>.js
   // lists the same ids. Both folders hold the same files, each for a real sub-tab (site.json dashboard.groups),
-  // and both index files gather every one of them.
+  // and both sides gather every one of them.
   const fe = new URL('../../frontend/src/figs/', import.meta.url), be = new URL('../src/content/figs/', import.meta.url);
   const site = JSON.parse(await readFile(new URL('../../content/site.json', import.meta.url), 'utf8'));
   const subTabs = new Set(Object.entries(site.dashboard.groups).flatMap(([tab, gs]) => gs.map(([g]) => `${tab}/${g}`)));
@@ -411,10 +411,12 @@ test('each sub-tab owns one figure module in the frontend and the same ids in th
   const feMods = await modules(fe, '.jsx'), beMods = await modules(be, '.js');
   assert.deepEqual(feMods, beMods, 'the frontend and backend figure folders must hold the same sub-tabs');
   const feIndex = await readFile(new URL('index.js', fe), 'utf8'), beIndex = await readFile(new URL('index.js', be), 'utf8');
+  // the frontend loads every module on demand (figs/index.js), found by this pattern, and learns which module
+  // draws which figure from the modules themselves (frontend/figs-manifest.js, by the same rule as below)
+  assert.ok(feIndex.includes('import.meta.glob("./*/*.jsx")'), 'frontend/src/figs/index.js must load every <tab>/<sub-tab>.jsx');
   const all = [];
   for (const m of feMods) {
     assert.ok(subTabs.has(m), `${m} is not a sub-tab in content/site.json`);
-    assert.ok(feIndex.includes(`from"./${m}.jsx"`), `frontend/src/figs/index.js must import ${m}.jsx`);
     assert.ok(beIndex.includes(`from './${m}.js'`), `backend/src/content/figs/index.js must import ${m}.js`);
     const reg = (await readFile(new URL(`${m}.jsx`, fe), 'utf8')).match(/export const FIGS=\{([\s\S]*?)\n\};/);
     assert.ok(reg, `${m}.jsx must export FIGS`);

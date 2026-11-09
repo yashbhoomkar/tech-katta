@@ -38,7 +38,7 @@ const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useSt
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
 // a late answer for a problem the visitor has already left is dropped (cur): its starting design would otherwise open on this one
-const cur=useRef(slug);cur.current=slug;const load=()=>{const want=slug;set({});getJSON(`/v1/articles/${want}`).then(a=>{if(cur.current===want)set({a:prep(a)})},e=>{if(cur.current===want)set({err:e.status===404?"missing":"failed"})})};useEffect(load,[slug]);
+const cur=useRef(slug);cur.current=slug;const load=()=>{const want=slug;set({});getJSON(`/v1/articles/${want}`).then(prep).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":"failed"})})};useEffect(load,[slug]);
 useEffect(()=>{getJSON("/v1/lab").then(setLab,()=>{})},[]);
 const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]);
 useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
