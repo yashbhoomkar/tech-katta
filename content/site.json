@@ -358,6 +358,11 @@
           "numbers",
           "Numbers to know",
           "Today's hardware limits, what one cache, database, app server and queue can do, and the mistakes current numbers prevent."
+        ],
+        [
+          "realtime",
+          "Real-time updates",
+          "Pushing changes to open screens: the two hops, polling to WebSockets, routing updates to the right server, and reconnection, huge fan-out and ordering."
         ]
       ],
       "interview-questions": [
