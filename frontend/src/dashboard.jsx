@@ -83,7 +83,7 @@ return <button type="button" className="r-btn share" onClick={go} aria-live="pol
 
 function Block({b,i,rd,still,fn}){const k=i;const cls=x=>x+(rd?rd(k):"");
 switch(b.t){
-case"h2":return <h2 id={`s-${k}`} className={cls("")}>{b.x}</h2>;
+case"h2":return <h2 id={`s-${k}`} className={cls("")}>{b.x}</h2>;case"h3":return <h3 id={`s-${k}`} className={cls("")}>{b.x}</h3>;
 case"p":return <p className={cls("")}>{inline(b.x)}</p>;
 case"list":return <ul className={cls("")}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>;
 case"tldr":return <aside className={cls("a-tldr")} aria-label="In 30 seconds"><b>IN 30 SECONDS</b><ul>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul></aside>;

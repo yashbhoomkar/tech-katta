@@ -1,0 +1,369 @@
+{
+  "section": "concepts",
+  "slug": "cap-theorem",
+  "group": "core",
+  "no": "CONCEPT // 07",
+  "tag": "CAP THEOREM",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "CAP theorem: what to do when copies can't talk",
+  "dek": "The first question of your non-functional requirements, designing for consistency or for availability, and choosing consistency per feature, with the levels between strong and eventual.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "C: every read sees the latest write, as if there were one copy. A: every request to a working server gets an answer, maybe not the latest. P: the system keeps going when the network between its servers fails.",
+        "Consistency first: keep one source of truth (one primary database), or coordinate writes across stores (distributed transactions, consensus). Expect higher latency and errors during a split. Typical choices: PostgreSQL or MySQL, Spanner, DynamoDB with strongly consistent reads.",
+        "Decide per feature, and say it in one sentence: 'consistency for booking seats, availability for browsing matches.'"
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "CAP in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "The three letters"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Consistency: all servers show the same data at the same time. Once a write has succeeded, every later read, from any server, returns it.",
+        "Availability: every request that reaches a server that is up gets a response, without a promise that the response holds the latest data.",
+        "Partition tolerance: the system keeps working when messages between its servers are lost or delayed, that is, when the network splits the servers into groups that can't talk to each other."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The classic statement is that a distributed system can have only two of the three. Note that the C here is not the C in ACID: in ACID, consistency means a transaction leaves the data obeying its rules (no negative stock, every order has a customer). CAP's consistency is about copies agreeing. Same word, different idea."
+    },
+    {
+      "t": "h3",
+      "x": "Why it's really one choice"
+    },
+    {
+      "t": "p",
+      "x": "Any system with more than one server talks over a network, and networks fail: a cable is cut, a router reboots, a data centre loses its link. So partition tolerance is not something you can decline. The question CAP actually asks is narrower: while the network is split, do you keep answering (availability) or do you keep the data correct (consistency)? You can't have both during the split. When the network is healthy, you can have both."
+    },
+    {
+      "t": "h3",
+      "x": "An example"
+    },
+    {
+      "t": "p",
+      "x": "Zotato runs servers in Mumbai and in Singapore for its Southeast Asian users. A restaurant owner in Mumbai renames their restaurant from 'Spice Route' to 'Masala House'. The change is written in Mumbai and copied to Singapore, and a user in Singapore opening the restaurant sees the new name."
+    },
+    {
+      "t": "fig",
+      "id": "cp-replicate",
+      "cap": "Normally a change made in Mumbai is copied to Singapore within a fraction of a second, and readers on both sides see the same name."
+    },
+    {
+      "t": "p",
+      "x": "Then the link between Mumbai and Singapore goes down. The Singapore server can't tell whether the name has changed since it last heard from Mumbai. A user there opens the restaurant. Should Singapore:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "refuse, with an error, because it can't be sure its copy is current (choosing consistency), or",
+        "show the name it has, which might be out of date (choosing availability)?"
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cp-partition",
+      "cap": "With the link down, Singapore must choose: an error, to stay consistent, or the name it has, to stay available. For a restaurant's name, the old name is clearly better than an error."
+    },
+    {
+      "t": "p",
+      "x": "Here the answer is easy: showing 'Spice Route' for a few more minutes is far better than an error page. A stale name harms nobody. That is the kind of judgement CAP asks you to make for each part of a system."
+    },
+    {
+      "t": "h3",
+      "x": "When to choose consistency"
+    },
+    {
+      "t": "p",
+      "x": "Some features must never show stale data, even if that means refusing requests during a split:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Seat booking: if one fan books seat 14 in block C for the final, and during a split another fan's server still shows it free and sells it too, two people turn up for one seat.",
+        "Stock: if one plate of the day's special is left and two servers each believe it is available, both customers are charged for one plate.",
+        "Money: a wallet balance, a payment or a trading order book shown out of date leads to spending money twice or trading at a wrong price."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "double-accept",
+      "cap": "If each copy decides on its own, two riders can both accept the same order. Anything only one person may have needs one decision, and so consistency."
+    },
+    {
+      "t": "h3",
+      "x": "When to choose availability"
+    },
+    {
+      "t": "p",
+      "x": "Most features can show slightly old data for a while, and should keep answering. The data catches up when the network recovers (eventual consistency), within seconds or minutes:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Profiles: if a user changes their photo, others seeing the old one for a few minutes is fine.",
+        "Content: a dish description or a match preview shown out of date for a moment harms nobody.",
+        "Listings and reviews: a restaurant's opening hours or rating a little behind is far better than no page at all."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The question to ask for each feature: 'Would it be a disaster if users briefly saw inconsistent data?' If yes, choose consistency. If not, choose availability."
+    },
+    {
+      "t": "fig",
+      "id": "cp-choose",
+      "cap": "One question per feature: would briefly stale data be a disaster? Seats, stock and money say yes; profiles, menus and reviews say no."
+    },
+    {
+      "t": "h3",
+      "x": "Where it goes in the interview"
+    },
+    {
+      "t": "p",
+      "x": "A design interview usually starts by agreeing the functional requirements (what the system does) and then the non-functional ones (how well: scale, latency, availability, durability). CAP belongs at the start of the non-functional list, because it changes what you build: ask 'Does this system need consistency or availability when the network fails?', and if the answer differs by feature, say so. The parts 'Designing for consistency or for availability' and 'Consistency per feature' below show how the answer shapes the design."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "State CAP in one line: during a network split, choose consistency or availability.",
+        "Decide per feature with the 'would stale data be a disaster?' question, and say the answer out loud.",
+        "Don't recite 'pick two of three'; P is not optional."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Designing for consistency or for availability"
+    },
+    {
+      "t": "h3",
+      "x": "If you choose consistency"
+    },
+    {
+      "t": "list",
+      "items": [
+        "One source of truth: keep the data that must be exact in a single primary database. Every write and every read that must be current goes to it. Nothing can disagree because there is only one copy that counts. It limits how far that part scales, but often that part is small: bookings and payments, not menus.",
+        "Coordinated writes: when several stores must agree, for example the bookings database and a seat-map cache, coordinate them, with a distributed transaction such as two-phase commit, or by writing through a consensus-based store. Every write now waits for several machines, so latency rises, and during a split the system refuses writes it can't coordinate.",
+        "Strongly consistent databases: PostgreSQL and MySQL with reads from the primary; Google Spanner, which keeps strong consistency across regions using synchronised clocks and consensus; DynamoDB with strongly consistent reads (ConsistentRead: true), which read from the partition's leader; and coordination services like etcd or ZooKeeper for small, critical data."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "If you choose availability"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Read replicas with asynchronous replication: any replica can answer reads, even if it is a little behind. Reads scale out and keep working when the primary or a link is down, at the cost of possibly stale data.",
+        "Change data capture (CDC): the primary database stays the place where changes are made, and a stream of its changes updates caches, search indexes and other stores in the background. Each of them keeps serving while the updates flow through, a little later.",
+        "Databases built for it: Cassandra, which accepts writes on any replica and reconciles later; DynamoDB with eventually consistent reads and global tables across regions; Redis with replicas; and caches and CDNs in general."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cp-designs",
+      "cap": "Consistency first: every write and every exact read goes through one source of truth. Availability first: replicas and caches fed by a change stream answer on their own, a little behind."
+    },
+    {
+      "t": "h3",
+      "x": "Most databases let you choose"
+    },
+    {
+      "t": "p",
+      "x": "The line between 'consistent' and 'available' databases is blurrier than lists suggest, because many let you choose per request:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cassandra: each read and write names a consistency level. ONE answers from a single replica (fast, available, maybe stale); QUORUM needs a majority, and with QUORUM on both reads and writes a read always sees the latest write; ALL needs every replica.",
+        "DynamoDB: reads are eventually consistent by default and half the cost; ConsistentRead gives the latest data from the leader. Global tables replicate across regions asynchronously.",
+        "MongoDB: write concern (how many replicas must confirm) and read concern (whether a read may return data that could still be rolled back) are set per operation.",
+        "PostgreSQL: reads from the primary are current; reads from asynchronous replicas may lag; synchronous replication makes a commit wait for a replica."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "quorum-split",
+      "cap": "With five copies and majority quorums, the side of a split that holds three can keep going; the side with two must refuse, which is consistency chosen per operation."
+    },
+    {
+      "t": "table",
+      "label": "Choosing consistency or availability",
+      "head": [
+        "Compared",
+        "Consistency first",
+        "Availability first"
+      ],
+      "rows": [
+        [
+          "During a network split",
+          "Some requests fail or wait",
+          "Every working server answers, maybe with old data"
+        ],
+        [
+          "Normal latency",
+          "Higher: writes wait for agreement",
+          "Lower: the nearest copy answers"
+        ],
+        [
+          "Building blocks",
+          "One primary, consensus, distributed transactions",
+          "Async replicas, CDC, caches, multi-region writes"
+        ],
+        [
+          "Examples",
+          "PostgreSQL primary, Spanner, DynamoDB ConsistentRead, etcd",
+          "Cassandra at ONE, DynamoDB global tables, Redis replicas"
+        ],
+        [
+          "Zotato",
+          "Payments, wallet, seat booking, order placement",
+          "Menus, ratings, search, restaurant pages"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Even with a healthy network, waiting for copies to agree costs time. PACELC names that everyday half of the trade-off: if there's a Partition, Availability or Consistency; Else, Latency or Consistency."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "After choosing consistency or availability, name the building blocks that deliver it: one primary or consensus for consistency; replicas, CDC and caches for availability.",
+        "Name a database and its setting, not just its brand: 'DynamoDB with strongly consistent reads for bookings, eventually consistent reads for match pages.'",
+        "Say what the user sees during a split: an error, a wait, or slightly old data."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Consistency per feature, and the levels between strong and eventual"
+    },
+    {
+      "t": "h3",
+      "x": "Both, in one system"
+    },
+    {
+      "t": "p",
+      "x": "Most products contain features of both kinds. Two examples:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A cricket ticketing app. Booking a seat needs strong consistency, so no seat is sold twice. Viewing the match page, the teams, the venue, the preview, can favour availability: a description that is a minute out of date harms nobody. In an interview: 'For this ticketing system I'll keep booking strongly consistent and let browsing favour availability.'",
+        "A dating app. A match needs consistency: if two people swipe right on each other at almost the same moment, both should see the match, once. Viewing a profile can favour availability: an old photo for a minute after it changed is fine. In an interview: 'Consistency for matching, availability for viewing profiles.'"
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cp-per-feature",
+      "cap": "One ticketing app, two choices: booking a seat goes through one consistent store and may refuse during a split; browsing matches is served by replicas and caches and keeps working."
+    },
+    {
+      "t": "p",
+      "x": "Zotato is the same: placing an order and paying need consistency; menus, ratings and search favour availability. Splitting the system by feature this way is normal, and saying it explicitly is what interviewers look for at senior level."
+    },
+    {
+      "t": "fig",
+      "id": "cap-split",
+      "cap": "During a split between Mumbai and Hyderabad, a wallet top-up is refused because the balance can't be confirmed, while a menu edit is accepted and merged later: two features, two choices, in one system."
+    },
+    {
+      "t": "h3",
+      "x": "Levels of consistency"
+    },
+    {
+      "t": "p",
+      "x": "When people say 'consistency' in CAP, they mean strong consistency. But there is a range between strong and eventual, and the levels in the middle often give users what they need for much less cost:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Strong consistency: every read sees the latest write, as if there were one copy. The most expensive in latency and availability, and necessary where exactness matters: account balances, seat bookings, stock.",
+        "Causal consistency: if one event caused another, everyone sees them in that order. A reply never appears before the comment it answers; a 'delivered' status never shows before 'picked up'. Unrelated events may appear in different orders to different people.",
+        "Read-your-own-writes: you always see your own changes immediately, even if others see them a little later. After you edit your profile you see the new version, which is what users actually notice. Common in social and content products.",
+        "Eventual consistency: if writes stop, all copies eventually agree; until then a read may be old. The weakest and cheapest, and the default of many distributed databases. DNS is the classic example: a changed record reaches everyone within minutes or hours. It is what you get when you choose availability."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "consistency-timeline",
+      "cap": "A biryani's price changes from ₹250 to ₹280 at 100 ms. A strong read shows ₹280 at once, and so does the owner reading their own change; a customer on a lagging replica sees the old price for a while, and one bouncing between replicas can even see it go backwards."
+    },
+    {
+      "t": "table",
+      "label": "Levels of consistency",
+      "head": [
+        "Level",
+        "Promise",
+        "Cost",
+        "Use it for"
+      ],
+      "rows": [
+        [
+          "Strong",
+          "Every read sees the latest write",
+          "Highest: waits, refuses during splits",
+          "Balances, seat booking, stock"
+        ],
+        [
+          "Causal",
+          "Effects never appear before causes",
+          "Moderate: track what depends on what",
+          "Comments and replies, order status"
+        ],
+        [
+          "Read-your-own-writes",
+          "You always see your own changes",
+          "Low: route a user's reads sensibly",
+          "Profiles, posts, settings"
+        ],
+        [
+          "Eventual",
+          "Copies agree once writes stop",
+          "Lowest",
+          "Counts, feeds, search, DNS"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "The one question"
+    },
+    {
+      "t": "p",
+      "x": "CAP matters because it sets the direction of the design, and it shouldn't be skipped. But it doesn't need to be complicated. For each feature ask: 'Does every read need to see the most recent write?' If yes, prioritise consistency. If not, prioritise availability, and pick the weakest level of consistency your users won't notice."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Split the system by feature and give each its choice in one sentence.",
+        "Use the middle levels: read-your-own-writes for a user's own changes, causal for conversations and status updates.",
+        "Close with the one question, applied to the system in front of you."
+      ]
+    }
+  ]
+}

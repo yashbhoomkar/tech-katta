@@ -26,7 +26,7 @@ test("Cloudflare: redirects keep Vercel's codes, a folder rewrite becomes its 40
   const want = routes.redirects.filter((r) => !r.host).map((r) => `${r.from} ${r.to} ${r.permanent ? 308 : 307}`);
   assert.deepEqual(c.redirects.trim().split("\n"), [...want.filter((l) => !l.includes("*")), ...want.filter((l) => l.includes("*"))]);
   assert.ok(c.redirects.includes("/dashboard/networking/* /dashboard/concepts/:splat 308\n"));
-  assert.ok(c.redirects.includes("/dashboard/concepts/cap-pacelc/ /dashboard/concepts/cap-step/ 308\n"), "removed articles send their readers on");
+  assert.ok(c.redirects.includes("/dashboard/concepts/cap-pacelc/ /dashboard/concepts/cap-theorem/ 308\n"), "removed articles send their readers on");
   // "/health → /health.html" and the like are how Cloudflare serves pages anyway; a rule would loop
   // never a "/dashboard/* … 200" rule: Cloudflare would apply it over the article pages the build writes
   assert.ok(!/\*\s+\S+\s+200/.test(c.redirects));

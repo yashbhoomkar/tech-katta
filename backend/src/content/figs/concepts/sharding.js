@@ -1,4 +1,4 @@
-// Concepts › Sharding: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/sharding.jsx) draws.
+// Concepts › Sharding: the figure ids this article's frontend module (frontend/src/figs/concepts/sharding.jsx) draws.
 export const FIGS = [
   'sh-ceiling',
   'sh-partition',

@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "scaling-writes",
   "group": "patterns",
-  "no": "CONCEPT // 54",
+  "no": "CONCEPT // 14",
   "tag": "SCALING WRITES",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -38,7 +38,7 @@
         "Drop indexes nobody uses: each one is an extra write for every row.",
         "Batch: one insert of 500 rows costs far less than 500 separate inserts, because they share the round trips, the commit and the log flush. A worker that collects events for 100 ms and writes them together can often take several times the load.",
         "Write less: send a rider's location every 4 seconds rather than every second, keep only the latest position in the main database, and send the full trail to cheaper storage.",
-        "Use storage built for writes: LSM-based stores such as Cassandra take very high write rates by writing to memory and sorted files. The concept 'LSM trees and hash indexes' explains the trade-off."
+        "Use storage built for writes: LSM-based stores such as Cassandra take very high write rates by writing to memory and sorted files. The Database indexing concept explains the trade-off in its part 'LSM trees and hash indexes'."
       ]
     },
     {
@@ -65,7 +65,7 @@
     },
     {
       "t": "p",
-      "x": "When even the steady rate is more than one primary can take, split the data by a key so each shard takes a share of the writes: orders by customer, messages by chat. The Sharding concepts cover choosing the key, and the Consistent hashing concepts cover adding shards later. The key has to spread the writes, not just the data: sharding by date puts all of today's writes on one shard."
+      "x": "When even the steady rate is more than one primary can take, split the data by a key so each shard takes a share of the writes: orders by customer, messages by chat. The Sharding concept covers choosing the key, and the Consistent hashing concept covers adding shards later. The key has to spread the writes, not just the data: sharding by date puts all of today's writes on one shard."
     },
     {
       "t": "h2",

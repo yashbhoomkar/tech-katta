@@ -1,4 +1,4 @@
-// Concepts › Consistent hashing: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/consistent-hashing.jsx) draws.
+// Concepts › Consistent hashing: the figure ids this article's frontend module (frontend/src/figs/concepts/consistent-hashing.jsx) draws.
 export const FIGS = [
   'ch-shard-events',
   'ch-modulo',

@@ -1,4 +1,4 @@
-// Concepts › API design: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/api-design.jsx) draws.
+// Concepts › API design: the figure ids this article's frontend module (frontend/src/figs/concepts/api-design.jsx) draws.
 export const FIGS = [
   'ad-choose',
   'ad-retry-methods',

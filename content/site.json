@@ -260,54 +260,9 @@
       ],
       "concepts": [
         [
-          "networking",
-          "Networking essentials",
-          "How machines reach each other: layers, one request end to end, TCP or UDP, HTTP, API styles, live updates, WebRTC, load balancing, distance and failing calls."
-        ],
-        [
-          "api-design",
-          "API design",
-          "The API step in an interview: REST endpoints, GraphQL, RPC, habits of a clean API, everyday patterns and security."
-        ],
-        [
-          "data-modelling",
-          "Data modelling",
-          "The data model step of an interview: choosing a database model, keys and relationships, indexes and normalisation, and splitting the data."
-        ],
-        [
-          "caching",
-          "Caching",
-          "When to add a cache and how to explain it: where to cache, the four patterns, eviction and expiry, and what goes wrong."
-        ],
-        [
-          "sharding",
-          "Sharding",
-          "Splitting one database across machines: when it's needed, partitioning versus sharding, choosing the key and strategy, and what sharding breaks."
-        ],
-        [
-          "consistent-hashing",
-          "Consistent hashing",
-          "Placing data on servers so that adding or losing one moves only a slice: when to explain it, the ring and virtual nodes, hot keys, replication and fixed slots."
-        ],
-        [
-          "cap",
-          "CAP theorem",
-          "When the network splits, consistency or availability: the one question to ask, how each choice shapes the design, and choosing per feature."
-        ],
-        [
-          "indexing",
-          "Database indexing",
-          "Why indexes exist and what they cost, B-trees, LSM trees and hash indexes, and indexes for places, text, several columns and whole queries."
-        ],
-        [
-          "numbers",
-          "Numbers to know",
-          "Today's hardware limits, what one cache, database, app server and queue can do, and the mistakes current numbers prevent."
-        ],
-        [
-          "realtime",
-          "Real-time updates",
-          "Pushing changes to open screens: the two hops, polling to WebSockets, routing updates to the right server, and reconnection, huge fan-out and ordering."
+          "core",
+          "Core concepts",
+          "The ideas every design rests on: networking, APIs, data models, caching, sharding, consistent hashing, CAP, indexing and the numbers to know."
         ],
         [
           "patterns",

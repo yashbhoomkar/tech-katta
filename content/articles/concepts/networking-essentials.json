@@ -1,0 +1,1694 @@
+{
+  "section": "concepts",
+  "slug": "networking-essentials",
+  "group": "core",
+  "no": "CONCEPT // 01",
+  "tag": "FOUNDATIONS",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Networking essentials: how machines reach each other",
+  "dek": "Layers and addresses, one request from tap to answer, TCP or UDP, HTTP, the API styles built on it, pushing updates, phone-to-phone calls, spreading load, layer 4 or 7, distance, and what to do when calls fail.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A request passes through layers: the app's protocol (HTTP), transport (TCP or UDP), network (IP) and the physical link. Each adds a small header and relies on the layer below.",
+        "A fresh request costs a DNS lookup, a TCP handshake and a TLS handshake before the request itself: up to four round trips before the first byte of the answer.",
+        "TCP: a connection, every byte delivered in order, lost packets resent, and speed adjusted to the receiver and the network. The default for almost everything.",
+        "HTTP is request and response: the client sends a method and a path with headers and an optional body; the server answers with a status code, headers and a body.",
+        "REST: resources at URLs, acted on with HTTP methods, usually with JSON. The default in interviews and for public APIs.",
+        "Server-sent events (SSE): one HTTP response kept open, carrying many small events from server to client. Simple, works through most infrastructure, reconnects by itself with the last event id.",
+        "WebRTC carries audio, video and data directly between two devices, over UDP, encrypted. It is the only browser technology that gives you UDP.",
+        "Scale up (a bigger machine) as far as it sensibly goes; scale out (more machines) for more capacity and for surviving failures. Scaling out needs something to choose a server for each request.",
+        "Layer 4: chooses a server when a TCP connection opens, from addresses and ports only, then forwards every packet of that connection there. Fast; can't see URLs, headers or cookies.",
+        "Light in fibre travels about 200 km a millisecond, so every 1,000 km adds at least 10 ms to a round trip; real networks roughly double that.",
+        "Assume the network fails. Set a timeout on every call; retry only what is safe to repeat; back off exponentially with jitter so retries don't arrive all at once."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Layers and addresses"
+    },
+    {
+      "t": "h3",
+      "x": "Why layers"
+    },
+    {
+      "t": "p",
+      "x": "Sending a menu from a server in Mumbai to a phone in Pune involves radio signals, fibre, dozens of routers, lost packets and retries. The app developer at Zotato thinks about none of that. They call `fetch('/menu/42')` and get JSON back. That is possible because networking is built as a stack: each layer offers a simple promise to the layer above and hides how it keeps it."
+    },
+    {
+      "t": "p",
+      "x": "It is the same trick as reading a file. Your code opens a path and reads lines; it never moves a disk head. The file system, the driver and the disk controller each handle one part."
+    },
+    {
+      "t": "p",
+      "x": "How deep an interview goes depends on the role. For infrastructure, platform or networking roles, expect follow-up questions on load balancers, CDNs, timeouts and what breaks; interviewers there have often just dealt with exactly those in production. For product and full-stack roles, a sound working knowledge of the parts of this article is enough."
+    },
+    {
+      "t": "fig",
+      "id": "nw-stack",
+      "cap": "On the way down, each layer wraps what it was given in its own small header: HTTP's request inside TCP's segment, inside IP's packet, inside a Wi-Fi or Ethernet frame. The server peels them off in reverse until its application sees the same GET /menu/42."
+    },
+    {
+      "t": "h3",
+      "x": "The layers that come up in interviews"
+    },
+    {
+      "t": "table",
+      "label": "Network layers",
+      "head": [
+        "Layer",
+        "Job",
+        "Examples",
+        "What it promises"
+      ],
+      "rows": [
+        [
+          "Application (7)",
+          "Meaning: requests, responses, names",
+          "HTTP, DNS, WebSocket, gRPC",
+          "Whatever the protocol defines"
+        ],
+        [
+          "Transport (4)",
+          "Program to program, via ports",
+          "TCP, UDP, QUIC",
+          "TCP: every byte, in order. UDP: nothing"
+        ],
+        [
+          "Network (3)",
+          "Machine to machine, across networks",
+          "IP (v4 and v6)",
+          "Best effort: packets may be lost, duplicated or reordered"
+        ],
+        [
+          "Link (2) and physical (1)",
+          "One hop: phone to router, router to router",
+          "Wi-Fi, Ethernet, 4G, fibre",
+          "Gets bits to the next device"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The numbers come from the seven-layer OSI model. Nobody needs layers 5 and 6 in an interview; when people say a load balancer works at 'layer 4' or 'layer 7', they mean it reads only TCP connections, or reads the HTTP requests inside them. That distinction has its own article in Networking essentials."
+    },
+    {
+      "t": "p",
+      "x": "IP is not the only option at layer 3. Large machine-learning training clusters often connect their machines with InfiniBand, which skips much of the usual stack for lower latency. For system design interviews, IP is assumed everywhere."
+    },
+    {
+      "t": "p",
+      "x": "The lower layers live in the operating system's kernel and in network hardware, so they change slowly and run very fast. The application layer is ordinary code in your process, which is why new protocols appear there: it is the only place you can change without waiting for every phone and router in the world to update."
+    },
+    {
+      "t": "h3",
+      "x": "Addresses: who is who"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An IPv4 address is 32 bits, written as four numbers: 13.235.4.20. There are about 4.3 billion of them, fewer than there are devices, which is why most devices don't get one of their own.",
+        "Private ranges, 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16, are reused inside every home and every data centre. Zotato's servers have addresses like 10.0.1.5 that mean nothing outside its network.",
+        "Public addresses are unique on the internet. They are handed out in blocks by regional registries (APNIC covers India) to internet providers and cloud companies, who lend them to customers.",
+        "A device usually gets its address automatically when it joins a network, from a DHCP server: your home router lends your phone one for a day at a time.",
+        "IPv6 addresses are 128 bits, enough for every device to have a public one. Mobile networks in India use IPv6 widely, but servers still have to speak IPv4 to reach everyone."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nw-ip",
+      "cap": "A private address works only inside its own network. At the edge the router rewrites the packet to carry its public address instead (NAT) and remembers the swap, so the reply finds its way back to the right phone."
+    },
+    {
+      "t": "h3",
+      "x": "Routing: how a packet crosses the internet"
+    },
+    {
+      "t": "p",
+      "x": "No router knows the whole internet. Each one has a table of prefixes, such as 13.235.0.0/16, and the next hop to send them to. A packet bound for 13.235.4.20 is passed from router to router, each choosing the next hop from the most specific prefix it knows, until it reaches the network that owns that block. Big networks announce their blocks to each other with a protocol called BGP, which is how the internet's routers learn where Zotato's addresses live."
+    },
+    {
+      "t": "p",
+      "x": "For a design interview, three facts are enough: every hop adds a little time, the path is decided by the networks in between rather than by you, and a packet can be dropped at any hop. Everything above IP is built to cope with that last fact."
+    },
+    {
+      "t": "h3",
+      "x": "Ports: which program on the machine"
+    },
+    {
+      "t": "p",
+      "x": "An IP address picks the machine; a port, a number from 0 to 65,535, picks the program on it. HTTPS servers listen on 443, plain HTTP on 80, DNS on 53, PostgreSQL on 5432 and Redis on 6379. The phone's side of a connection uses a temporary port chosen by its operating system, such as 51234. A TCP connection is identified by all four values together: both addresses and both ports. That is why one server can hold thousands of connections on port 443 at once."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "You rarely need to draw the layers. Use the vocabulary precisely: 'this load balancer works at layer 4, so it can't route by URL'.",
+        "Say which parts of your design have public addresses (load balancers, a CDN) and which stay private (application servers, databases). Keeping databases off the internet is basic security.",
+        "Across networking there is rarely one right answer: name the sensible default (TCP, REST, a layer 7 balancer, one region), then the requirement that would make you choose differently. Interviewers grade the reasoning about trade-offs.",
+        "If someone asks how a request reaches your service, walk down the stack once: DNS gives an address, IP carries packets there, TCP makes them reliable, HTTP carries the request."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: NAT, and why it matters for phones",
+      "body": [
+        {
+          "t": "p",
+          "x": "A home router may have one public address and twenty devices behind it. When a phone opens a connection, the router rewrites the source to its public address and a fresh port, and keeps a table entry so replies to that port go back to the phone. Mobile networks do the same at a much larger scale (carrier-grade NAT), so thousands of phones share one public address."
+        },
+        {
+          "t": "p",
+          "x": "Two consequences show up in designs. First, a server can't open a connection to a phone: there is no address to reach it at until the phone connects first, which is why apps keep a connection open, or use push notifications, to receive messages. Second, two phones can't easily connect to each other directly, which is the problem WebRTC solves with STUN and TURN (see 'Phone to phone' in Networking essentials)."
+        },
+        {
+          "t": "p",
+          "x": "NAT table entries also expire when a connection is quiet, often after a few minutes on mobile networks. Long-lived connections send small keep-alive messages so their entry isn't forgotten."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "One request, start to finish"
+    },
+    {
+      "t": "h3",
+      "x": "The whole exchange"
+    },
+    {
+      "t": "fig",
+      "id": "nw-journey",
+      "cap": "Seen from the wire, one menu request is four exchanges: DNS, TCP, TLS and HTTP. The server's 40 ms of work is the only part most engineers measure, but on a phone the round trips before and after it are often larger."
+    },
+    {
+      "t": "list",
+      "items": [
+        "DNS. The phone needs an address for api.zotato.in. It asks a resolver (usually run by the mobile network or a public service), which may ask further servers and then answers with 13.235.4.20 and a time to live, say 60 seconds. Phone and resolver both cache the answer, so later lookups are usually free.",
+        "TCP handshake. The phone sends SYN, the server replies SYN-ACK, the phone sends ACK. Both sides now have state for this connection: sequence numbers, buffers, timers. One round trip.",
+        "TLS handshake. Phone and server agree encryption keys and the phone checks the server's certificate for api.zotato.in. TLS 1.3 needs one round trip; the older TLS 1.2 needed two.",
+        "The request. GET /menu/42 goes out, the server reads the database and builds the menu, and the response comes back: 200 OK with 18 KB of JSON, in one round trip plus the server's own time.",
+        "Closing. Either side sends FIN, the other acknowledges and sends its own FIN, which is acknowledged too. In practice apps keep the connection open and close it only after it has been idle a while."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Every layer and every box in the path adds its own share: a load balancer in front of the servers is one more hop, an API gateway another, each with its own connections to open. Each costs little alone, which is why it's easy to ignore until a page needs ten calls in a row and the small costs add up."
+    },
+    {
+      "t": "p",
+      "x": "A request is many packets, not one. The 18 KB response is about a dozen packets of 1,500 bytes; each is acknowledged; any lost one is resent. It is easy to forget, and it is why a design that 'makes one call' may still be slow on a poor network."
+    },
+    {
+      "t": "h3",
+      "x": "How long is a round trip?"
+    },
+    {
+      "t": "table",
+      "label": "Round-trip times",
+      "head": [
+        "Between",
+        "Roughly",
+        "So"
+      ],
+      "rows": [
+        [
+          "Two servers in one data centre",
+          "0.2–0.5 ms",
+          "Service-to-service calls are cheap but not free"
+        ],
+        [
+          "Two zones of one region (Mumbai)",
+          "1–2 ms",
+          "Fine to replicate synchronously"
+        ],
+        [
+          "Phone on Wi-Fi to Mumbai, from Pune",
+          "10–20 ms",
+          "Good home broadband barely adds to it"
+        ],
+        [
+          "Phone on 4G to Mumbai",
+          "40–80 ms",
+          "The radio adds most of it"
+        ],
+        [
+          "Mumbai to Delhi",
+          "25–35 ms",
+          "Fine for a page; noticeable if chained"
+        ],
+        [
+          "Mumbai to the US east coast",
+          "~200 ms",
+          "Four of these before the first byte is close to a second"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Multiply: on 4G at 60 ms a round trip, a cold request with DNS, TCP, TLS and HTTP takes about 240 ms before the server's own work is even counted. The same request on a warm connection takes 60 ms."
+    },
+    {
+      "t": "h3",
+      "x": "Reusing connections"
+    },
+    {
+      "t": "fig",
+      "id": "nw-keepalive",
+      "cap": "The same three requests cost 9, 5 or 3 round trips depending only on how connections are used. Nothing on the server changed."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep-alive: HTTP/1.1 keeps a connection open after a response so the next request can use it. Browsers and mobile HTTP libraries do this by default; make sure your servers and load balancers don't close idle connections too eagerly.",
+        "HTTP/2 sends many requests at once over one connection, each as its own stream, and compresses headers. A home screen that needs ten calls no longer opens six connections.",
+        "Connection pools between your own services: an app server keeps, say, 20 open connections to the database and lends them out per query. Opening a fresh database connection can take several milliseconds; a pooled one costs nothing.",
+        "HTTP/3 runs over QUIC (on UDP), which merges the transport and TLS handshakes into one round trip, and can resume a known server with zero."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "A connection is state"
+    },
+    {
+      "t": "p",
+      "x": "Every open connection holds memory and a file handle on the server, and an entry in each load balancer and NAT on the path. A server can hold tens of thousands of idle connections comfortably, but not unlimited numbers, and a connection that is kept open to push live updates ties the client to one particular server. That is why designs with long-lived connections (live order tracking, chat) need extra thought: which server holds a user's connection, what happens when it restarts, and how a message for that user finds it. The articles on pushing updates and on load balancers in Networking essentials come back to this."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When latency matters, count round trips, not bytes: 'a cold call from a phone in India to a US region costs nearly a second before any work is done'.",
+        "Mention connection reuse and pooling when you draw service-to-service calls and database access. It's a cheap, credible optimisation.",
+        "'What happens when you type a URL' is asked less often now, but walking through DNS, TCP, TLS, HTTP and rendering in two minutes is still a good warm-up."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "See it for yourself"
+    },
+    {
+      "t": "list",
+      "items": [
+        "`curl -v https://example.com` prints each stage as it happens: the address it resolved, the TLS handshake, the request headers it sent and the response headers it got back.",
+        "`dig api.example.com` shows a DNS answer and its TTL; run it twice and watch the TTL count down from the cached copy.",
+        "In the browser's developer tools, the Network tab breaks every request into DNS, connecting, TLS, waiting and download. Turn on throttling (for example 'Slow 4G') and reload: the handshakes, not the downloads, take most of the time.",
+        "`traceroute` (or `mtr`) lists the routers between you and a server and the round trip to each, which shows where distance is spent.",
+        "Wireshark captures the packets themselves: the SYN, SYN-ACK and ACK, the TLS hello, retransmissions on a bad network.",
+        "HTTP/1.1 is plain text, so you can even type a request by hand: `nc example.com 80`, then `GET / HTTP/1.1`, `Host: example.com` and an empty line.",
+        "To feel a bad network on purpose, add delay and loss: Apple's Network Link Conditioner (part of Xcode's extra tools) on a Mac or iPhone, or `tc netem` on Linux. Try your own app on a poor 3G profile and watch what it does when calls stall."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why a new connection is slow even after the handshakes",
+      "body": [
+        {
+          "t": "p",
+          "x": "TCP doesn't know how much the network between two machines can carry, so a new connection starts cautiously: it sends about ten packets (roughly 14 KB) and waits for acknowledgements before sending more, doubling the amount each round trip while nothing is lost. This is called slow start."
+        },
+        {
+          "t": "p",
+          "x": "So a 100 KB response on a fresh connection takes three or four round trips to arrive, even on a fast network, while the same response on a warm connection arrives in one. It is another reason to reuse connections, and a reason to keep the first screen's responses small."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "TCP or UDP"
+    },
+    {
+      "t": "h3",
+      "x": "TCP: a reliable stream"
+    },
+    {
+      "t": "p",
+      "x": "TCP gives two programs the illusion of a pipe: whatever one writes, the other reads, complete and in the same order. Underneath, IP may lose, duplicate or reorder packets; TCP numbers every byte, has the receiver acknowledge what it got, and resends anything not acknowledged in time."
+    },
+    {
+      "t": "fig",
+      "id": "nw-tcp",
+      "cap": "TCP's promise of order has a price. Segments 3 and 4 arrived safely but sat in the server's buffer until segment 2 was resent, because the application must never see a gap."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Connection first: the three-way handshake (SYN, SYN-ACK, ACK) sets up state on both ends before any data moves.",
+        "Reliable and ordered: sequence numbers and acknowledgements; missing data is resent and later data waits for it.",
+        "Flow control: the receiver says how much buffer it has left, so a fast sender can't swamp a slow phone.",
+        "Congestion control: the sender starts slowly and backs off when packets are lost, so the network as a whole isn't overloaded.",
+        "A stream, not messages: TCP delivers bytes, not 'requests'. Protocols on top (HTTP, gRPC) mark where one message ends and the next begins."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "At Zotato, every API call, payment, database query and file upload runs on TCP. A missing byte in an order or a payment is never acceptable, and a few extra milliseconds are."
+    },
+    {
+      "t": "h3",
+      "x": "UDP: messages with no promises"
+    },
+    {
+      "t": "p",
+      "x": "UDP adds very little to IP: a source port, a destination port, a length and a checksum, 8 bytes in all. Each message (a datagram) travels on its own. It may arrive, arrive twice, arrive out of order or vanish, and neither side is told. There is no handshake, so the first message is also the first data."
+    },
+    {
+      "t": "fig",
+      "id": "nw-udp",
+      "cap": "For live audio, a frame that arrives late is as useless as one that never arrives. UDP lets the call play on through a lost frame; TCP would hold every later frame until the lost one had been resent."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Voice and video calls: the rider's call to the customer, and any video consultation. Codecs hide a lost 20 ms frame; a frozen call is far worse.",
+        "Games and live positions: each update replaces the last, so an old one is not worth resending.",
+        "Telemetry and metrics: millions of small reports where losing a few is fine and the overhead of connections isn't.",
+        "DNS: one small question, one small answer. If it is lost, the client just asks again after a timeout.",
+        "QUIC and HTTP/3: built on UDP so they can do their own, better loss handling in ordinary application code."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Side by side"
+    },
+    {
+      "t": "table",
+      "label": "TCP compared with UDP",
+      "head": [
+        "Compared",
+        "TCP",
+        "UDP"
+      ],
+      "rows": [
+        [
+          "Setup",
+          "Handshake before data",
+          "None: send at once"
+        ],
+        [
+          "Delivery",
+          "Everything, or the connection fails",
+          "Best effort"
+        ],
+        [
+          "Order",
+          "Kept",
+          "Not kept"
+        ],
+        [
+          "Flow and congestion control",
+          "Built in",
+          "None; the app must behave"
+        ],
+        [
+          "Header",
+          "20–60 bytes",
+          "8 bytes"
+        ],
+        [
+          "Unit",
+          "A stream of bytes",
+          "Separate messages"
+        ],
+        [
+          "In browsers",
+          "Everything (HTTP, WebSocket)",
+          "Only through WebRTC"
+        ],
+        [
+          "Use for",
+          "APIs, payments, files, databases",
+          "Calls, video, games, telemetry, DNS"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "QUIC: TCP's job, rebuilt on UDP"
+    },
+    {
+      "t": "p",
+      "x": "TCP lives in operating systems and is hard to change, and its strict order has a cost: if HTTP/2 sends ten requests over one TCP connection and one packet is lost, all ten wait (head-of-line blocking). QUIC moves the transport into the application, on top of UDP. It keeps reliability and congestion control, but each stream is ordered separately, so one lost packet only delays its own stream. It also combines the transport and TLS handshakes into one round trip, and a connection survives the phone switching from Wi-Fi to 4G."
+    },
+    {
+      "t": "p",
+      "x": "HTTP/3 is HTTP over QUIC, and most large sites and CDNs serve it already. In an interview it is a good detail to mention when talking about mobile performance, but rarely worth more than a sentence."
+    },
+    {
+      "t": "h3",
+      "x": "Choosing in a design"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say nothing and use TCP for APIs, payments, uploads and anything that touches data. Interviewers assume it.",
+        "Choose UDP when freshness beats completeness (live audio, video, positions in a game), and say what happens on loss: the codec hides it, or the next update replaces it.",
+        "Remember browsers can't open raw UDP sockets. A web client gets UDP only through WebRTC, so plan a path for it: Zotato's web dashboard could get rider positions over a WebSocket while the apps use UDP.",
+        "Mixing is normal: a video call uses HTTPS for login and call setup and UDP for the media."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: what a UDP application has to do itself",
+      "body": [
+        {
+          "t": "p",
+          "x": "Because UDP promises nothing, applications on it rebuild only the parts they need. Voice apps number their packets so the receiver can reorder a few and notice gaps, and they keep a small jitter buffer of 30 to 60 ms so slightly late packets still play in time. They watch loss and switch to a lower bitrate when the network struggles, which is their own congestion control."
+        },
+        {
+          "t": "p",
+          "x": "A UDP sender that ignores congestion can flood a network and starve every TCP connection sharing it, so well-behaved protocols on UDP, QUIC among them, implement congestion control as carefully as TCP does."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "HTTP and HTTPS"
+    },
+    {
+      "t": "h3",
+      "x": "What is actually sent"
+    },
+    {
+      "t": "p",
+      "x": "HTTP/1.1 is plain text, so you can read it. HTTP/2 and HTTP/3 send the same information in binary frames, but the parts are the same."
+    },
+    {
+      "t": "fig",
+      "id": "nw-http",
+      "cap": "A request names a method and a path and adds headers; a response gives a status, headers and a body. Here the client offered gzip or br compression and the server picked br, so the 18 KB menu travelled as about 4 KB."
+    },
+    {
+      "t": "p",
+      "x": "The headers carry a lot of quiet negotiation. `Accept-Encoding` says which compressions the client can undo, and `Content-Encoding` says which one the server used. `Accept` and `Content-Type` do the same for formats, `Accept-Language` for languages, and `Cache-Control` tells browsers and CDNs how long a response may be reused. It is a good pattern for your own APIs too: let the client say what it can handle, and let the server choose."
+    },
+    {
+      "t": "h3",
+      "x": "Methods"
+    },
+    {
+      "t": "table",
+      "label": "HTTP methods",
+      "head": [
+        "Method",
+        "Use",
+        "Body",
+        "Safe to repeat?"
+      ],
+      "rows": [
+        [
+          "GET",
+          "Read: GET /restaurants/42/menu",
+          "No",
+          "Yes: it changes nothing"
+        ],
+        [
+          "POST",
+          "Create, or start an action: POST /orders",
+          "Yes",
+          "No: twice may create two orders"
+        ],
+        [
+          "PUT",
+          "Replace a whole resource: PUT /users/77/address",
+          "Yes",
+          "Yes: the end state is the same"
+        ],
+        [
+          "PATCH",
+          "Change some fields: PATCH /orders/9101 {status}",
+          "Yes",
+          "Not necessarily"
+        ],
+        [
+          "DELETE",
+          "Remove: DELETE /cart/items/3",
+          "Usually no",
+          "Yes: gone is gone"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "'Safe to repeat' (idempotent) matters more than it looks. Networks fail between the request and the response, and clients, proxies and load balancers retry. A repeated GET or PUT is harmless; a repeated POST can create a second order or a second charge. The article on failing calls in Networking essentials shows how idempotency keys make a POST safe to retry."
+    },
+    {
+      "t": "h3",
+      "x": "Status codes"
+    },
+    {
+      "t": "table",
+      "label": "Common status codes",
+      "head": [
+        "Code",
+        "Means",
+        "At Zotato"
+      ],
+      "rows": [
+        [
+          "200 OK",
+          "Here is the answer",
+          "The menu"
+        ],
+        [
+          "201 Created",
+          "A new resource exists",
+          "POST /orders created order 9101"
+        ],
+        [
+          "204 No Content",
+          "Done, nothing to return",
+          "An item removed from the cart"
+        ],
+        [
+          "301 / 302",
+          "Moved permanently / for now",
+          "Old links to a renamed restaurant page"
+        ],
+        [
+          "304 Not Modified",
+          "Your cached copy is still good",
+          "The menu hasn't changed since the app's copy"
+        ],
+        [
+          "400 Bad Request",
+          "The request is malformed",
+          "A quantity of -2"
+        ],
+        [
+          "401 Unauthorized",
+          "Who are you? Sign in",
+          "Expired session token"
+        ],
+        [
+          "403 Forbidden",
+          "I know who you are, and no",
+          "Reading someone else's order"
+        ],
+        [
+          "404 Not Found",
+          "No such resource",
+          "An unknown restaurant id"
+        ],
+        [
+          "409 Conflict",
+          "Clashes with the current state",
+          "Cancelling an order already delivered"
+        ],
+        [
+          "429 Too Many Requests",
+          "Slow down",
+          "OTP requested 10 times in a minute"
+        ],
+        [
+          "500 Internal Server Error",
+          "The server failed",
+          "A bug"
+        ],
+        [
+          "502 / 504",
+          "A gateway got a bad answer / no answer in time from the server behind it",
+          "The load balancer couldn't reach a healthy server"
+        ],
+        [
+          "503 Service Unavailable",
+          "Overloaded or down for now, try later",
+          "Shedding load during a sale"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The first digit is what clients act on: 2xx worked, 3xx look elsewhere, 4xx the client must change something (retrying the same request won't help), 5xx the server failed (a retry, later, might work). Getting 4xx and 5xx right is what lets retry logic behave."
+    },
+    {
+      "t": "h3",
+      "x": "Stateless on purpose"
+    },
+    {
+      "t": "p",
+      "x": "Each HTTP request carries everything needed to answer it: the path, the parameters and a token that says who is asking. The server keeps nothing about the client between requests. That is what lets Zotato run thirty identical API servers behind a load balancer and send each request to any of them, and lets a server be replaced in the middle of the day without anyone noticing. A useful way to think of a simple API server is as a function from the request (plus the database) to a response."
+    },
+    {
+      "t": "h3",
+      "x": "HTTPS: what it protects, and what it doesn't"
+    },
+    {
+      "t": "p",
+      "x": "HTTPS is HTTP inside TLS. TLS encrypts everything after the handshake, so nobody on the network (the café's Wi-Fi, an internet provider) can read or change the request, and the certificate proves the phone is talking to the real api.zotato.in. Every public site and API should use it; browsers warn on anything else."
+    },
+    {
+      "t": "fig",
+      "id": "nw-trust",
+      "cap": "TLS protects the request between the app and the server. It doesn't protect the server from the app: anyone can edit their own requests, so the server checks every id against the user in the signed token."
+    },
+    {
+      "t": "p",
+      "x": "The mistake to avoid is trusting what the client sends because the connection is secure. A user can change any part of their own request: an order id in the path, a price in the body, a userId field. The server must take the user's identity from a signed token or session and check that this user may read or change this order. Sending ids in the body is fine; believing them is not."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use the right method and a sensible status for each endpoint, and say which writes are safe to retry.",
+        "Mention HTTPS once for anything public, then move on. Say how the server knows who the caller is (a token checked on every request).",
+        "Say that API servers are stateless and why: any server can answer, so you can add and replace them freely."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: HTTP/1.1, HTTP/2 and HTTP/3",
+      "body": [
+        {
+          "t": "p",
+          "x": "HTTP/1.1 handles one request at a time per connection, so browsers open up to six connections per site to load a page in parallel. HTTP/2 sends many requests at once over one connection as separate streams and compresses headers, which helps mobile apps that make many small calls."
+        },
+        {
+          "t": "p",
+          "x": "Because HTTP/2 still runs on TCP, one lost packet stalls every stream until it is resent. HTTP/3 runs over QUIC, where each stream is ordered separately, so a loss only delays its own stream; it also sets up faster. Servers usually offer all three, and clients use the newest they support."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "REST, GraphQL and gRPC"
+    },
+    {
+      "t": "h3",
+      "x": "REST: resources and verbs"
+    },
+    {
+      "t": "p",
+      "x": "A REST API exposes things, not actions. Each thing (a restaurant, an order, a user's address) has a URL, and the HTTP method says what to do with it. Most of the work is choosing the resources well, and they usually match the core entities of the design."
+    },
+    {
+      "t": "code",
+      "label": "REST endpoints",
+      "x": "GET    /restaurants/42                 -> Restaurant\nGET    /restaurants/42/menu            -> Menu\nPOST   /orders            {items, address}   -> 201, Order\nGET    /orders/9101                    -> Order\nPATCH  /orders/9101       {status: \"cancelled\"}\nGET    /users/77/orders?cursor=abc     -> a page of Orders",
+      "say": "Six example endpoints: get a restaurant, get its menu, create an order with POST, read an order, cancel it with PATCH, and list a user's orders a page at a time."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Nouns in paths, verbs in methods. `POST /cancelOrder` is not RESTful; `PATCH /orders/9101` with a new status is. If an action really isn't a change to a resource, model it as one: `POST /orders/9101/refunds` creates a refund.",
+        "Nest to show belonging: `/restaurants/42/menu`, `/users/77/orders`. Keep it to one or two levels.",
+        "The server assigns ids on create, so `POST /orders` has no id in the path and returns it.",
+        "Paginate lists with a cursor, not page numbers, so new rows don't shift the pages."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "REST is not only for public APIs: plenty of infrastructure is run through one. Elasticsearch, for example, is created, configured and queried through a REST API of indexes and documents. REST is easy to read, cache (GET responses work with CDNs and browser caches) and call from anything. Its costs are JSON's size and parsing time, and the fact that the server, not the caller, decides what each response contains. For almost every interview, REST is the right default; change only when a requirement pushes you."
+    },
+    {
+      "t": "h3",
+      "x": "GraphQL: the caller chooses the fields"
+    },
+    {
+      "t": "p",
+      "x": "Zotato's home screen is built by the app team; the restaurant, offer and rating data belong to three backend teams. With REST, the app team has three bad options: make many calls, ask for a big custom endpoint for every screen, or take whatever the existing endpoints return."
+    },
+    {
+      "t": "fig",
+      "id": "nw-underfetch",
+      "cap": "Under-fetching: the endpoints each return a little, so one screen needs dozens of calls, and on a phone the round trips dominate."
+    },
+    {
+      "t": "fig",
+      "id": "nw-overfetch",
+      "cap": "Over-fetching: the endpoint returns everything about a restaurant, so a screen that needs four fields downloads forty."
+    },
+    {
+      "t": "code",
+      "label": "A GraphQL query",
+      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n  pageInfo { hasNextPage endCursor }\n}",
+      "say": "A GraphQL query for the home screen: restaurants near a city, the first twenty, with only their name, rating, delivery time, photo and offer titles, plus whether there is a next page and where it starts."
+    },
+    {
+      "t": "p",
+      "x": "Facebook built GraphQL for its own mobile apps and released it as open source in 2015. A GraphQL server publishes a schema of types and the fields on them. The client sends one query to one endpoint (usually POST /graphql) naming exactly the fields it needs, nested as deep as it likes, and gets back JSON in the same shape. Resolvers on the server fetch each field, from databases or other services."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for: apps with many screens and several client teams, mobile apps on slow networks, and products whose screens change every week.",
+        "Costs: the server must protect itself from expensive queries (depth and cost limits), resolvers can make one database call per item unless batched, and HTTP caching is harder because every query is a POST to the same URL.",
+        "In an interview, requirements are fixed and the interviewer wants to see you design efficient queries, which GraphQL hides behind resolvers. Mention it when the problem stresses many clients or fast-changing screens; otherwise stay with REST."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "gRPC: function calls between services"
+    },
+    {
+      "t": "p",
+      "x": "Inside Zotato, the Orders service calls Payments, Dispatch and Menu thousands of times a second. Those calls don't need to be readable by humans or browsers; they need to be fast, small and checked. gRPC describes each service and its messages in a .proto file, generates client and server code in each language, and sends binary protobuf messages over HTTP/2."
+    },
+    {
+      "t": "code",
+      "label": "orders.proto",
+      "x": "message Order {\n  string id = 1;\n  int64 amount_paise = 2;\n  string city = 3;\n}\nservice Orders {\n  rpc GetOrder(GetOrderRequest) returns (Order);\n  rpc WatchOrder(GetOrderRequest) returns (stream OrderEvent);\n}",
+      "say": "A protobuf message for an order with an id, an amount in paise and a city, each field numbered; and an Orders service with a GetOrder call and a WatchOrder call that streams events."
+    },
+    {
+      "t": "p",
+      "x": "The field numbers, not names, go on the wire, and numbers are packed tightly. The order above is 49 bytes as JSON and 18 as protobuf, and decoding it is a few memory copies rather than parsing text. Published benchmarks commonly show gRPC handling several times the requests per second of JSON over HTTP/1.1 on the same hardware; how much you gain depends on message sizes and how much of each call is spent on serialisation rather than real work. gRPC adds deadlines that pass from service to service, streaming in either or both directions, and client-side load balancing."
+    },
+    {
+      "t": "fig",
+      "id": "nw-grpc",
+      "cap": "The common split: REST and JSON at the edge, where callers are browsers and apps you don't control, and gRPC between your own services, where both ends share the schema."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use it for internal, high-volume service-to-service calls, and where many languages must agree on one contract. It pays off most when a call's time is mostly spent on the network and encoding rather than on the work itself.",
+        "Not for public APIs or browsers: browsers can't speak gRPC directly (gRPC-Web needs a proxy), outside developers expect REST and JSON, and the tooling for inspecting and testing calls is thinner than for plain HTTP.",
+        "Don't lead with it. Unless the interviewer pushes on internal latency or throughput, REST between services is a fine answer; the bigger wins are usually elsewhere (caching, fewer calls, better data layout)."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "REST, GraphQL and gRPC",
+      "head": [
+        "Compared",
+        "REST",
+        "GraphQL",
+        "gRPC"
+      ],
+      "rows": [
+        [
+          "Shape",
+          "Resources and methods",
+          "One query endpoint, typed schema",
+          "Typed functions"
+        ],
+        [
+          "Format",
+          "JSON, usually",
+          "JSON",
+          "Protobuf (binary)"
+        ],
+        [
+          "Best caller",
+          "Anyone, especially the public",
+          "Apps with many screens and teams",
+          "Your own services"
+        ],
+        [
+          "Caching",
+          "Easy with HTTP caches",
+          "Hard; needs its own",
+          "In your code"
+        ],
+        [
+          "Browsers",
+          "Yes",
+          "Yes",
+          "Only through a proxy"
+        ],
+        [
+          "Zotato uses it for",
+          "Public and partner APIs",
+          "Could serve the app's screens",
+          "Orders to Payments, Dispatch"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Default to REST and spend the time on the resources: the entities, the endpoints, the status codes, pagination.",
+        "Bring in GraphQL only when the question is about flexible clients, and gRPC only for internal calls where speed matters. Say why in one sentence.",
+        "Whatever you pick, the latency you save by changing format is usually smaller than what you save by making fewer calls."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why gRPC needs HTTP/2",
+      "body": [
+        {
+          "t": "p",
+          "x": "gRPC sends many calls at once over one long-lived connection, each as its own HTTP/2 stream, and uses HTTP/2's ability to send trailers (headers after the body) for the call's status. Streaming calls are just streams that stay open while both sides send messages."
+        },
+        {
+          "t": "p",
+          "x": "One consequence: a layer 4 load balancer sees one connection and sends all of a client's calls to one server. gRPC therefore usually balances on the client, or behind a layer 7 load balancer that understands HTTP/2 and spreads individual calls (see 'Layer 4 or layer 7' in Networking essentials)."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Pushing updates"
+    },
+    {
+      "t": "h3",
+      "x": "The problem"
+    },
+    {
+      "t": "p",
+      "x": "Order tracking at Zotato changes about five times in 35 minutes: accepted, cooking, ready, picked up, arriving. If the app asked every two seconds it would send about a thousand requests to learn five things, and still be up to two seconds late. What it needs is for the server to send each change as it happens. The Real-time updates concept compares polling, long polling, SSE and WebSockets; here we look at how the two push methods work on the wire."
+    },
+    {
+      "t": "h3",
+      "x": "Server-sent events"
+    },
+    {
+      "t": "p",
+      "x": "A normal JSON response is no good for this: the client can only use it once the whole response has arrived, so 'send me updates' would mean waiting for all of them. SSE is plain HTTP. The client makes one request and says it accepts `text/event-stream`. The server answers with headers and then doesn't finish the response: it writes a small block of text for each event, whenever it likes, and the client handles each block as soon as it arrives."
+    },
+    {
+      "t": "code",
+      "label": "An event stream",
+      "x": "HTTP/1.1 200 OK\nContent-Type: text/event-stream\n\nid: 1\ndata: {\"status\":\"accepted\"}\n\nid: 2\ndata: {\"status\":\"cooking\"}\n\nid: 3\ndata: {\"status\":\"picked_up\",\"rider\":\"Ravi\"}\n",
+      "say": "An event-stream response: the status line and content type, then three events, each with an id and a line of JSON data, separated by blank lines."
+    },
+    {
+      "t": "fig",
+      "id": "nw-sse",
+      "cap": "One response carries every update. When a proxy cuts the long connection, the browser reconnects by itself and sends the last id it saw, so the server can send only what was missed."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Browsers have a built-in client, EventSource, that reconnects automatically and sends `Last-Event-ID`. The server has to keep recent events (in Redis, say) so it can replay from that id.",
+        "It is one-way. The client still sends its own actions as normal requests (POST a cancellation), which is fine for most features.",
+        "Proxies and load balancers may close a response that has been open a long time or idle a while. Send a comment line every 15 to 30 seconds as a heartbeat, and expect reconnects.",
+        "Some corporate proxies buffer responses and deliver events in batches, which defeats the point. It's rare, but it's why some apps fall back to long polling.",
+        "Many interviewers haven't run SSE in production and won't raise these limits; mentioning them unprompted (reconnects, replay from the last id, buffering proxies) shows you have.",
+        "Over HTTP/1.1, browsers allow about six connections per site, and each open stream uses one. Over HTTP/2 the streams share one connection, so this limit goes away."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Use SSE for notifications and live status: order tracking, a live leaderboard, prices that change during an auction, progress of a long job."
+    },
+    {
+      "t": "h3",
+      "x": "WebSockets"
+    },
+    {
+      "t": "p",
+      "x": "Chat between a customer and a rider goes both ways, often, and quickly. A WebSocket starts life as an HTTP request that asks to switch protocols. If the server agrees (101 Switching Protocols), the same TCP connection becomes a channel of messages in both directions, with no requests or responses any more."
+    },
+    {
+      "t": "fig",
+      "id": "nw-ws",
+      "cap": "After the upgrade there are no requests: either side sends a message whenever it has one. The connection stays open for the whole delivery."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The handshake is HTTP, so cookies and auth headers are checked once at the start.",
+        "Messages can be text or binary. WebSocket defines no format; most apps send JSON with a type field, and those message types are your API: `{type: 'msg'}`, `{type: 'typing'}`, `{type: 'read'}`.",
+        "Every proxy, firewall and load balancer on the path must allow the upgrade and keep the connection open. Many have idle timeouts (60 seconds is a common default), so both sides send pings.",
+        "A layer 4 load balancer suits WebSockets well: it passes the whole connection to one server and leaves it there.",
+        "Scaling needs a plan: the connections live on dedicated connection servers, and a message for a user must reach whichever server holds that user's socket, usually through a pub/sub system such as Redis."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "Pushing updates to clients",
+      "head": [
+        "Compared",
+        "Plain requests / polling",
+        "Server-sent events",
+        "WebSockets"
+      ],
+      "rows": [
+        [
+          "Direction",
+          "Client asks",
+          "Server to client",
+          "Both ways"
+        ],
+        [
+          "Built on",
+          "HTTP",
+          "HTTP (one long response)",
+          "HTTP upgrade, then its own frames"
+        ],
+        [
+          "Reconnect",
+          "Not needed",
+          "Built in, resumes by id",
+          "Your code"
+        ],
+        [
+          "Infrastructure",
+          "Works everywhere",
+          "Works almost everywhere",
+          "Every hop must support it"
+        ],
+        [
+          "Cost per user",
+          "Wasted requests",
+          "One open connection",
+          "One open connection"
+        ],
+        [
+          "Zotato uses it for",
+          "Restaurant list, menus",
+          "Order tracking",
+          "Customer–rider chat"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pick by direction and frequency, and say why: 'tracking only needs server-to-client, so SSE; chat needs both ways, so a WebSocket'.",
+        "Don't reach for WebSockets by reflex. Interviewers often push back if a feature would work with requests, because long-lived connections are expensive to run and complicate deploys.",
+        "If you do use them, say where the connections live, how a message reaches the right connection server, and what happens when that server restarts (clients reconnect elsewhere and catch up)."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: deploying servers that hold connections",
+      "body": [
+        {
+          "t": "p",
+          "x": "A server holding 50,000 WebSockets can't simply be restarted: every client drops at once and reconnects at once, often to the same few servers. Deploys drain gradually instead: the server stops accepting new connections, tells existing clients to reconnect elsewhere over a few minutes, then exits."
+        },
+        {
+          "t": "p",
+          "x": "Clients should reconnect with backoff and jitter (see 'When calls fail' in Networking essentials) and resume from the last message they saw, so a restart costs a few seconds of delay instead of a flood of reconnections and lost messages."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Phone to phone"
+    },
+    {
+      "t": "h3",
+      "x": "Why direct is hard"
+    },
+    {
+      "t": "p",
+      "x": "A server has a public address and listens for connections. A phone has neither: it has a private address behind its home router or its mobile network's NAT, and those only let replies in to connections the phone opened itself. Two phones that want to talk are each waiting for the other to call first, and neither can be reached."
+    },
+    {
+      "t": "h3",
+      "x": "The four pieces"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Signalling server: Zotato's own server (often a WebSocket service) that knows the rider and customer are on the same order and passes messages between them while the call is set up. WebRTC doesn't define it; you build it.",
+        "STUN server: a simple public server that tells a device what its address and port look like from the internet, after NAT. The device opens a hole by sending this request, and that public address and port are what the other phone will aim at.",
+        "Exchange: each phone sends the other, through signalling, its possible addresses (called candidates) and its audio settings (codecs, in a format called SDP), as an offer and an answer.",
+        "TURN server: a relay with a public address. When the phones can't reach each other directly, typically because a strict firewall or NAT blocks it, both send their media to TURN, which forwards it. It always works, but it costs bandwidth on your servers."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nw-webrtc",
+      "cap": "Setting up a call: introduce the phones, let each learn its public address, swap addresses, then connect directly. TURN is the fallback that makes the call work when a direct path can't be opened."
+    },
+    {
+      "t": "h3",
+      "x": "Once connected"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Media travels over UDP, encrypted end to end (DTLS and SRTP). A lost packet is concealed by the codec, not resent.",
+        "Bitrate adapts: when packets start to go missing, the sender lowers quality instead of letting the call freeze.",
+        "Data channels can carry arbitrary messages between the peers, reliable or not, which is how some games and file-sharing tools use WebRTC.",
+        "The call keeps checking its path; if a phone switches from Wi-Fi to 4G, the peers try again and may move to TURN."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Group calls"
+    },
+    {
+      "t": "p",
+      "x": "Direct connections work for two people. For five people, each would send its video four times, which a phone can't sustain. Group calls therefore use a server in the middle, a selective forwarding unit (SFU): each participant sends one stream up to it, and it forwards the right streams to everyone else. It is still WebRTC between each phone and the SFU, but no longer peer to peer."
+    },
+    {
+      "t": "h3",
+      "x": "When to use it, and when not"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use it for audio and video between people: rider–customer calls, support video calls, consultations. Nothing else in a browser gets you low-latency media.",
+        "Collaborative editing (a shared document or a group cart) can run over WebRTC data channels, but you still need a server to store the document, check permissions and handle people who join later. A WebSocket to that server is usually simpler, and it's what most editors do.",
+        "A middle path for shared editing: send edits directly between peers and merge them with CRDTs, data structures built so that every copy ends up the same whatever order the edits arrive in. It removes the server from the editing path, but a server is still needed to store the document and bring newcomers up to date.",
+        "Plan for failure: even good WebRTC setups lose calls on bad networks. Have the app retry, and fall back to a normal phone call through a masked number if needed."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep WebRTC for real-time audio and video. Designing a peer-to-peer system where a server would do is a common way to lose the thread of an interview.",
+        "If you use it, name the pieces in one breath: signalling over WebSocket, STUN for addresses, TURN as the relay, media over UDP, an SFU for groups.",
+        "Remember the server costs that remain: signalling, TURN bandwidth for calls that need it, and SFUs for group calls."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how a hole gets punched",
+      "body": [
+        {
+          "t": "p",
+          "x": "When a phone sends a packet out through NAT, the router creates a mapping: replies from that destination to that public port come back to the phone. Hole punching uses this. Both phones learn their public mappings from STUN, swap them through signalling, and then send packets to each other at about the same time. Each phone's outgoing packet opens its own NAT for replies from the other, so the next packets get through in both directions."
+        },
+        {
+          "t": "p",
+          "x": "It fails when a NAT gives a different public port for every destination (a symmetric NAT, common on some mobile networks and corporate firewalls): the port STUN saw is not the port the other phone would need. That is when TURN carries the call."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Spreading load"
+    },
+    {
+      "t": "h3",
+      "x": "Up or out"
+    },
+    {
+      "t": "fig",
+      "id": "nw-scale",
+      "cap": "A bigger machine is the simplest way to grow, and today's largest servers are very large. Spreading the work over several machines is what removes the ceiling and the single point of failure, and it creates the routing question."
+    },
+    {
+      "t": "p",
+      "x": "Scaling up deserves more respect than it gets in interviews. A single large server with 96 cores and hundreds of gigabytes of memory handles far more than most products ever need, with no network hops between its parts. But it is still one machine: when it fails or is patched, everything stops, and eventually there is no larger size to buy. Interview designs scale out by default for that reason, and it is worth saying that you would also make each machine reasonably large."
+    },
+    {
+      "t": "p",
+      "x": "With several servers able to answer, two questions follow: which server does each request go to, and how does anyone learn when servers are added, removed or fail?"
+    },
+    {
+      "t": "h3",
+      "x": "Option 1: the caller chooses"
+    },
+    {
+      "t": "p",
+      "x": "In client-side load balancing, each caller keeps a list of servers and picks one for every request, connecting to it directly. The list comes from a service registry (Consul, etcd, Kubernetes, or the cluster itself), which servers join when they start and leave when they stop, or stop sending heartbeats."
+    },
+    {
+      "t": "fig",
+      "id": "nw-client-lb",
+      "cap": "No box sits in the middle, so there is no extra hop and nothing extra to scale or fail. The price is that every caller must hear about changes, and calls go to a dead server until it does."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Redis Cluster works this way: the nodes share the cluster's layout among themselves, a client asks any node for it, then hashes each key to find the node that owns it and goes there directly. If it is wrong, the node answers MOVED and the client updates its map.",
+        "gRPC does it for internal calls: the client resolves the service to a list of addresses and spreads calls over them itself.",
+        "It works when the callers are few and yours (other services you deploy), so pushing them updates is easy and fast."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Option 2: DNS hands out the addresses"
+    },
+    {
+      "t": "p",
+      "x": "DNS is client-side balancing for the whole internet. api.zotato.in can resolve to several addresses, and the DNS server can return them in a different order for each lookup, or a different set by region. Each client takes the first and so traffic spreads."
+    },
+    {
+      "t": "fig",
+      "id": "nw-dns-lb",
+      "cap": "DNS spreads users across load balancers in different places, and lets a client move on when one fails. Its weakness is speed: answers are cached for their TTL, so a change takes at least that long to reach everyone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is how Zotato avoids a single load balancer being a single point of failure: two load balancers in different zones or regions, both in DNS.",
+        "It is slow to change. Resolvers and phones cache answers for the record's TTL (60 seconds here), and some cache longer than they should. Removing a failed address takes effect gradually, never instantly.",
+        "So DNS is good at spreading many users roughly, and at moving traffic between regions over minutes. It is not how you take a crashed server out of rotation in seconds."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nw-lb-choose",
+      "cap": "Two questions decide it: do you control every caller, and how quickly must a change reach them? Client-side balancing needs callers you can update; DNS tolerates slow updates; everything else gets a dedicated load balancer."
+    },
+    {
+      "t": "h3",
+      "x": "Option 3: a load balancer in the middle"
+    },
+    {
+      "t": "p",
+      "x": "When callers are apps and browsers you don't control, or when changes must take effect immediately, put a load balancer between them and the servers. Clients know one name; the load balancer knows the servers, checks their health and decides where each request or connection goes."
+    },
+    {
+      "t": "fig",
+      "id": "nw-dedicated",
+      "cap": "Clients see one address. The load balancer stops sending traffic to a server that fails its health checks and starts using a new one as soon as it passes, without any client being told."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Health checks: every few seconds the balancer opens a TCP connection to each server (cheap), or requests a health URL and expects a 200 (closer to 'is it really working'). After a couple of failures a server is taken out; after a couple of successes it is put back.",
+        "It costs one more network hop (well under a millisecond inside a region) and is itself something that must not fail: managed load balancers run as many machines behind one address, and DNS can point at two of them.",
+        "It can work on connections (layer 4) or on requests (layer 7); the next part covers the difference."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Which algorithm"
+    },
+    {
+      "t": "table",
+      "label": "Load balancing algorithms",
+      "head": [
+        "Algorithm",
+        "How it picks",
+        "Use when"
+      ],
+      "rows": [
+        [
+          "Round robin",
+          "Each server in turn",
+          "Stateless HTTP servers of the same size: the default"
+        ],
+        [
+          "Random",
+          "Any server, at random",
+          "Same as round robin; works without shared state"
+        ],
+        [
+          "Weighted",
+          "In proportion to each server's weight",
+          "Servers of different sizes, or sending 5% to a new version"
+        ],
+        [
+          "Least connections",
+          "The server with fewest open connections",
+          "Long-lived connections: WebSockets, SSE, gRPC streams"
+        ],
+        [
+          "Least response time",
+          "The fastest recent responder",
+          "Servers that slow down unevenly"
+        ],
+        [
+          "Hash of client or key",
+          "The same client always to the same server",
+          "A server keeps something per user; consistent hashing limits reshuffling"
+        ]
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "lb-algos",
+      "cap": "The same burst of requests spread by different algorithms. Round robin ignores how busy each server is; least connections and least response time react to it."
+    },
+    {
+      "t": "p",
+      "x": "Round robin is fine for stateless request traffic and needs no configuration when servers come and go. For long-lived connections it can leave one server with far more than its share (a server that restarts gets none, then all the new ones), so least connections is the better choice there."
+    },
+    {
+      "t": "lab",
+      "x": "Too much for one server: add servers behind a load balancer and watch the queue drain.",
+      "to": "lab/one-server",
+      "go": "Try it in the Lab"
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Draw a load balancer in front of any group of identical servers that face users, and say it checks their health.",
+        "For calls between your own services, say client-side balancing is an option (and built into gRPC); a load balancer there is also fine.",
+        "Don't forget the balancer can fail: say it is a managed, redundant service, or that there are two behind DNS.",
+        "Pick round robin for stateless HTTP and least connections for WebSockets, and say why."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: how fast can one load balancer go?",
+      "body": [
+        {
+          "t": "p",
+          "x": "Software load balancers (NGINX, HAProxy, Envoy) on one large machine handle hundreds of thousands of HTTP requests a second; at layer 4, in the kernel or with special packet processing, millions of packets a second. Cloud load balancers are many such machines behind one address and scale out by themselves, though a sudden jump can take minutes to absorb, which is why providers let you 'pre-warm' them before a planned spike."
+        },
+        {
+          "t": "p",
+          "x": "Names worth knowing: in software, NGINX, HAProxy and Envoy; in the cloud, AWS's Application and Network Load Balancers, Google Cloud Load Balancing and Azure Load Balancer; in hardware, appliances such as F5 BIG-IP. Dedicated hardware appliances go further still. Interviews rarely ask how to scale the load balancer itself; if they do, the answer is several of them, spread by DNS or by routing (anycast, where many machines share one address), with hardware for the extreme cases."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Layer 4 or layer 7"
+    },
+    {
+      "t": "h3",
+      "x": "Layer 4: the connection goes through"
+    },
+    {
+      "t": "p",
+      "x": "A layer 4 balancer sees a new TCP connection arrive (or a UDP flow), picks a server, and from then on forwards that connection's packets to it. It doesn't decrypt or read anything. To the server, it looks almost as if the client had connected directly."
+    },
+    {
+      "t": "fig",
+      "id": "nw-lb-conn",
+      "cap": "The balancer decides once per connection. Everything inside that connection, whether one request or an hour of WebSocket messages, goes to the same server, unread."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Very fast and cheap: no TLS, no parsing, little memory. One balancer handles millions of connections.",
+        "A long connection stays on one server, which is exactly what WebSockets and other persistent connections need.",
+        "It can't route by URL, header or cookie, can't retry a failed request on another server, and can't spread the requests inside one connection. A client that sends everything over one HTTP/2 connection lands on one server.",
+        "TLS is handled by the servers themselves (or passed through), so they need the certificates."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Cloud examples: AWS's Network Load Balancer, Google's network load balancing, HAProxy or Envoy in TCP mode."
+    },
+    {
+      "t": "h3",
+      "x": "Layer 7: read the request, then route it"
+    },
+    {
+      "t": "p",
+      "x": "A layer 7 balancer is a reverse proxy. It accepts the client's connection, ends TLS, reads each HTTP request, chooses a server for that request, and sends it over a connection of its own (usually one it keeps open and reuses). The response comes back the same way."
+    },
+    {
+      "t": "fig",
+      "id": "nw-lb-request",
+      "cap": "Because it reads requests, a layer 7 balancer can route by path, header or cookie, send a slice of users to a new version, and spread the requests of one client across many servers."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Route by content: /api to the API servers, /img to the image servers, a header or 5% of users to a canary. This overlaps with what an API gateway does.",
+        "Spread individual requests, including the many streams inside one HTTP/2 or gRPC connection.",
+        "Retry an idempotent request on another server when one fails, and add headers such as the client's real IP (X-Forwarded-For).",
+        "Stickiness by cookie when you must keep a user on one server (better to avoid needing it).",
+        "HTTP-based push, long polling and server-sent events, works well behind it: each is an ordinary HTTP request, just a slow one, so it can be routed by path like any other. Some layer 7 balancers also carry WebSockets, but a layer 4 one is usually the better home for them.",
+        "Costs: CPU for TLS and parsing on every request, a little added latency, and two connections per request path instead of one."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Cloud examples: AWS's Application Load Balancer, Google's HTTP(S) load balancing, NGINX, Envoy, HAProxy in HTTP mode."
+    },
+    {
+      "t": "h3",
+      "x": "Choosing"
+    },
+    {
+      "t": "table",
+      "label": "Layer 4 and layer 7 load balancers",
+      "head": [
+        "Compared",
+        "Layer 4",
+        "Layer 7"
+      ],
+      "rows": [
+        [
+          "Decides per",
+          "Connection",
+          "Request"
+        ],
+        [
+          "Reads",
+          "Addresses and ports",
+          "The whole HTTP request"
+        ],
+        [
+          "TLS",
+          "Passed through to servers",
+          "Usually ended at the balancer"
+        ],
+        [
+          "Routes by path, header, cookie",
+          "No",
+          "Yes"
+        ],
+        [
+          "Long-lived connections",
+          "Ideal: stays on one server",
+          "Possible, but heavier"
+        ],
+        [
+          "Speed and cost",
+          "Very fast, cheap",
+          "More CPU per request"
+        ],
+        [
+          "Zotato uses it for",
+          "Chat and tracking connection servers",
+          "The public API and website"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Health checks behind both"
+    },
+    {
+      "t": "p",
+      "x": "Both kinds check their servers. A layer 4 check usually just opens a TCP connection: it proves the process is listening, not that it works. A layer 7 check requests a URL such as /health and expects a 200 within a timeout; a good health endpoint checks the server's own critical dependencies lightly, but shouldn't fail just because a shared database is slow, or every server fails together and the balancer has nowhere to send anything."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For an HTTP API, draw a layer 7 load balancer and mention it ends TLS and can route by path.",
+        "If the design uses WebSockets, say the connection servers sit behind a layer 4 balancer and use least connections, so each socket stays put and load stays even.",
+        "For gRPC between services, say either client-side balancing or a layer 7 balancer that understands HTTP/2, because a layer 4 one would pin each client to one server."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: keeping a user on one server",
+      "body": [
+        {
+          "t": "p",
+          "x": "Stickiness (session affinity) sends a user to the same server every time, by cookie at layer 7 or by hashing the client's address at layer 4. It is tempting when a server keeps something in memory, such as a half-built cart, but it fights the load balancer: a busy user's server gets busier, and when that server restarts, its users lose whatever it held."
+        },
+        {
+          "t": "p",
+          "x": "The usual fix is to make servers stateless and keep the state in Redis or the database, so any server can answer. Affinity is still useful as a cache hint (a server is more likely to have that user's data warm) as long as nothing breaks without it."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Distance"
+    },
+    {
+      "t": "h3",
+      "x": "The speed of light is a budget"
+    },
+    {
+      "t": "fig",
+      "id": "nw-light",
+      "cap": "The dark bars are what physics allows; the blue bars are what a real network gives. The gap is cables that don't run straight and routers on the way, but the floor itself can't be engineered away."
+    },
+    {
+      "t": "p",
+      "x": "The numbers to remember: within one data centre, under a millisecond; within a country like India, tens of milliseconds; between continents, 100 to 250 ms. A design that makes several sequential calls between continents for one user action will feel slow no matter how fast each server is."
+    },
+    {
+      "t": "h3",
+      "x": "Regions and zones"
+    },
+    {
+      "t": "p",
+      "x": "Cloud providers group data centres into regions (Mumbai, Hyderabad, Singapore) and, inside each, into availability zones: separate buildings with separate power and network, a millisecond or two apart. Running in two or three zones of one region survives a building failing without paying the cost of distance. Running in several regions brings servers closer to users far away, and survives a whole region failing, but data must then be copied between regions, slowly and with care (see the CAP theorem concept)."
+    },
+    {
+      "t": "p",
+      "x": "For Zotato, whose users are in India, one region (Mumbai) with three zones serves everyone within 10 to 40 ms. A second region (Hyderabad) adds resilience and can serve the south. A US region would help no customer and would slow down anything that crossed to it."
+    },
+    {
+      "t": "h3",
+      "x": "CDNs: bring the files to the users"
+    },
+    {
+      "t": "p",
+      "x": "A content delivery network has servers (edges) in hundreds of cities. A file requested once from the Pune edge is cached there, and the next customer in Pune gets it in a few milliseconds without the request ever reaching Zotato's servers. It is the most effective latency fix for anything that is the same for many users: images, app bundles, video, and even API responses that change slowly, such as a city's restaurant list cached for 30 seconds."
+    },
+    {
+      "t": "fig",
+      "id": "cdn-edge",
+      "cap": "The first request for a file in a city goes to the origin; the edge keeps a copy, and everyone nearby after that is served from the edge."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It works because of caching: only content that many people read, and that can be a little stale, benefits. A customer's own order can't be served from an edge.",
+        "Besides latency it takes load off your servers: on a busy night most image and menu-photo traffic ends at the edges.",
+        "The Caching concept covers TTLs, invalidation and what to cache at the edge, in its part 'Where to cache'."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Partition by region"
+    },
+    {
+      "t": "p",
+      "x": "Some data naturally belongs to one place. Zotato may have lakhs of riders across the country, but at any moment a single city has a few thousand online, and an order only ever needs the ones nearby. A restaurant in Pune only matters to customers and riders near Pune; a Pune order never needs a Chennai rider. Splitting the data by region means each region holds only its own cities, with its own servers and database close to them, and almost every request is answered inside one region."
+    },
+    {
+      "t": "fig",
+      "id": "nw-regions",
+      "cap": "Splitting by region keeps each request local and each database a fraction of the size. Only a little data, such as user accounts, needs to be available everywhere."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Group cities into regions large enough to be worth running but small enough to keep data close: West, South, North, East.",
+        "Put each region's services next to its database, so the calls between them stay inside one zone.",
+        "Handle the few global things separately: a user's account and payment methods are needed wherever they order, so they live in one home region and are copied to the others, or looked up once per session.",
+        "Expect edge cases: a user travelling from Mumbai to Bengaluru should be served by the South region for new orders, while their order history may still live in the West."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ask where users are. If they are in one country, one region with several zones is usually right; say so instead of drawing a global design by reflex.",
+        "Put a CDN in front of anything static or widely shared, and say what its cache time is.",
+        "When the problem is naturally local (deliveries, rides, nearby search), partition by region and say that requests rarely cross regions.",
+        "Use the numbers: 'a database in another continent adds 200 ms per query, so the service must sit next to its data'."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: what multi-region costs",
+      "body": [
+        {
+          "t": "p",
+          "x": "Running in two regions doubles more than servers. Writes in one region must reach the other, either synchronously (every write pays the round trip between regions) or asynchronously (the other region may be seconds behind, and a failover can lose the latest writes). Deciding which data is allowed to be stale, and which must be written in one place only, is most of the work."
+        },
+        {
+          "t": "p",
+          "x": "A common middle path is active–passive: one region takes writes, the other has an up-to-date copy and takes over if the first fails. Active–active, where both take writes for the same data, needs conflict handling and is worth it only when users in both places need low-latency writes."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When calls fail"
+    },
+    {
+      "t": "h3",
+      "x": "Ways a call goes wrong"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The request is lost, or the server crashes before answering: the caller hears nothing.",
+        "The server is slow: overloaded, garbage collecting, waiting on its own slow dependency.",
+        "The work succeeds but the response is lost. This is the dangerous one: the caller can't tell it from a failure.",
+        "The call fails fast with an error: connection refused, 503, 429.",
+        "Partial failure: one replica is bad, one zone is cut off, one in a hundred calls fails.",
+        "Underneath all of these, the physical world fails: a bit flips in memory, a rack loses power, a fibre cable is dug up, a router reboots."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "'The network is reliable' is the first of the well-known fallacies of distributed computing. A design that assumes every call returns promptly will hang, overload or double-charge on the first bad night."
+    },
+    {
+      "t": "h3",
+      "x": "Timeouts"
+    },
+    {
+      "t": "p",
+      "x": "A call with no timeout can wait forever, holding a thread, a connection and the user. Every network call needs one, set from what the caller can afford, not from how long the call usually takes: if the order screen must load in 2 seconds, the call to the menu service might get 300 ms. Separate the time to connect (short: a healthy server accepts in milliseconds) from the time to answer."
+    },
+    {
+      "t": "p",
+      "x": "Deadlines are better still: the first service sets a deadline for the whole request, and each call passes on what is left. Then a service three calls deep stops working on a request the user gave up on long ago. gRPC does this for you."
+    },
+    {
+      "t": "h3",
+      "x": "Retries, backoff and jitter"
+    },
+    {
+      "t": "p",
+      "x": "Many failures are brief: a packet lost, a server restarting, a moment of overload. Trying again usually works. But retries are also how a small problem becomes a large one."
+    },
+    {
+      "t": "fig",
+      "id": "nw-backoff",
+      "cap": "Retrying at once, or on a fixed schedule, turns a struggling service's failures into synchronised waves of extra load. Exponential backoff reduces how many retries there are; jitter spreads them out so they never arrive together."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Backoff: wait before retrying, and wait longer each time: 1 s, 2 s, 4 s, 8 s, up to a cap.",
+        "Jitter: randomise each wait, for example pick anything between zero and the backoff time. Without it, every client that failed at the same moment retries at the same moment.",
+        "Limit attempts (three is common) and keep a retry budget, for instance retries may add at most 10% to normal traffic; past that, fail.",
+        "Retry only what is safe to repeat and only failures that might be temporary: timeouts, 503, 429 (honouring `Retry-After`). A 400 or 403 will fail the same way again.",
+        "Retry at one layer. If the app, the gateway and each service all retry three times, one failure deep in the stack becomes 27 calls."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "For a thorough treatment with measurements, AWS's Builders' Library article on timeouts, retries and backoff with jitter is worth reading. In an interview, 'retry with exponential backoff and jitter' is the phrase to use, and being able to explain why jitter matters is what separates senior answers."
+    },
+    {
+      "t": "h3",
+      "x": "Idempotency: making a retry harmless"
+    },
+    {
+      "t": "p",
+      "x": "A retried GET is harmless. A retried 'charge ₹349' is not: if the first attempt worked and only its reply was lost, the customer pays twice. The fix is to make the operation idempotent, so that doing it twice has the same effect as doing it once."
+    },
+    {
+      "t": "fig",
+      "id": "nw-idem",
+      "cap": "The key names this payment attempt, not the request. The retry carries the same key, so Payments recognises it and returns the result it already has instead of charging again."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The client creates an idempotency key for each logical operation (a payment for order 9101, attempt 1) and sends it with every retry of that operation.",
+        "The server stores the key with the result before or as it does the work, in the same transaction where possible. A repeat with a finished key gets the stored result; a repeat while the first is still running waits for it or gets 409 'in progress'.",
+        "Keys can be natural: one rating per user per order means `user 77 + order 9101` is already a key. Unique constraints in the database then refuse the duplicate.",
+        "Keep keys for as long as retries can happen (a day is common), then let them expire.",
+        "Payment providers such as Razorpay and Stripe accept an idempotency key for exactly this reason; pass yours through."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Circuit breakers"
+    },
+    {
+      "t": "p",
+      "x": "When a dependency is down, timeouts and retries still cost something: every call waits for its timeout, threads pile up, and the retries add load to a service that is trying to recover. A database coming back after a crash can be flattened by the backlog of retries and fall over again, again and again."
+    },
+    {
+      "t": "fig",
+      "id": "nw-breaker",
+      "cap": "The breaker watches the calls. When too many fail it stops calling for a while and answers at once with a fallback, then lets a single test call decide whether to resume."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Closed: calls go through and failures are counted over a short window.",
+        "Open: once failures pass a threshold (say half of the calls in 10 seconds), calls fail immediately without being made. The caller uses a fallback: Dispatch shows an arrival time from distance alone; the menu shows its last cached version; a recommendation strip is hidden.",
+        "Half-open: after a pause (say 30 seconds), one test call is allowed. Success closes the breaker; failure opens it again for another pause.",
+        "Benefits: the caller fails fast instead of hanging, the struggling service gets room to recover, and users see a degraded feature instead of an error page."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The name comes from the breaker in a home's fuse box: when too much current flows it cuts the circuit, so one faulty appliance doesn't burn the wiring, and someone resets it once the fault is gone. Put breakers around calls to third-party APIs (maps, SMS, payments), around each downstream service, and around anything slow or expensive. Libraries and service meshes provide them; you choose the thresholds and the fallbacks."
+    },
+    {
+      "t": "h3",
+      "x": "Putting it together"
+    },
+    {
+      "t": "table",
+      "label": "Handling failing calls",
+      "head": [
+        "Habit",
+        "Protects against",
+        "Zotato example"
+      ],
+      "rows": [
+        [
+          "Timeout or deadline",
+          "Hanging forever",
+          "Menu call gets 300 ms of a 2 s screen budget"
+        ],
+        [
+          "Retry with backoff and jitter",
+          "Brief failures, without stampedes",
+          "Order status fetch: 3 tries, 1–4 s apart, randomised"
+        ],
+        [
+          "Idempotency key",
+          "Doing a write twice",
+          "Payment for order 9101 charged once however often it's retried"
+        ],
+        [
+          "Circuit breaker",
+          "Waiting on, and piling onto, a dead dependency",
+          "Maps API down: ETA from distance"
+        ],
+        [
+          "Fallback",
+          "Users seeing errors",
+          "Cached menu, hidden recommendations"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When you draw a call to another service or provider, say what happens if it is slow or down: the timeout, the retry policy and the fallback.",
+        "For any write that might be retried, especially payments and orders, say how you make it idempotent.",
+        "When asked about reliability or a dependency failing, describe a circuit breaker and what the user sees while it is open.",
+        "Watch for retry storms: 'retries are limited, backed off with jitter, and done at one layer only'."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: load shedding",
+      "body": [
+        {
+          "t": "p",
+          "x": "Backoff and breakers are the caller's side. The overloaded service can protect itself too, by refusing work it can't finish in time: once its queue is longer than it can clear within the callers' timeouts, answering 503 quickly is better than accepting requests that will time out anyway, because a fast refusal costs almost nothing and a slow failure costs as much as a success."
+        },
+        {
+          "t": "p",
+          "x": "Good shedding refuses the least important work first: during a dinner rush, Zotato would rather drop recommendation requests than order placements. Combined with clients that back off on 503, this lets a system run at its limit without collapsing."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,469 @@
+{
+  "section": "concepts",
+  "slug": "database-indexing",
+  "group": "core",
+  "no": "CONCEPT // 08",
+  "tag": "DATABASE INDEXING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Database indexing: finding one row among crores",
+  "dek": "Why indexes exist and what they cost, B-trees, LSM trees and hash indexes, and the indexes for special data: geospatial, full-text and more.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A table's rows sit on disk in pages, in no useful order. Without an index, finding one row means reading page after page until it turns up.",
+        "A B-tree node holds hundreds of sorted keys and pointers and fills one disk page. Three or four levels reach any of crores of keys.",
+        "LSM tree: writes go to a log and an in-memory table, which is flushed to sorted, immutable files on disk; background compaction merges the files. Writes are cheap and sequential.",
+        "Geospatial: a B-tree on latitude, then longitude, still scans a whole band of the map. Geohashes, quadtrees and R-trees index two dimensions so 'restaurants within 3 km' reads only nearby cells."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Database indexes in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "Why indexes matter"
+    },
+    {
+      "t": "p",
+      "x": "Think about logging in to Zotato with a phone number. The users table has 5 crore rows. With no help, the database checks every row in turn until it finds the one with that phone number, like looking for one book in a library by walking every shelf. For a table this size that takes seconds, and the login screen has to answer in milliseconds."
+    },
+    {
+      "t": "p",
+      "x": "Indexes solve this. The database keeps a separate structure built for searching, which leads straight to the right rows without looking at the others. They are what make fast lookups possible everywhere: a dish in the menu search, a user's profile, an order by id."
+    },
+    {
+      "t": "p",
+      "x": "Choosing which columns to index, and with what type of index, is part of most designs, and interviewers notice it. For product and full-stack roles, knowing when and why to add an index is usually enough. Infrastructure and senior roles go deeper: how the common index types work and when each one wins. This article covers both, starting here with how indexes work and what they cost."
+    },
+    {
+      "t": "h3",
+      "x": "How data sits on disk"
+    },
+    {
+      "t": "p",
+      "x": "A database ultimately writes its data to files on disk. The table's rows usually go into a heap file: rows stored in pages (typically 8 KB each) in roughly the order they arrived, like a notebook filled one entry after another. Nothing about the file's order helps you find a particular phone number."
+    },
+    {
+      "t": "p",
+      "x": "You don't need storage internals for most interviews, but one fact explains why indexes exist: data lives on disk, and the CPU can only work on what is in memory. Every query has to bring pages from disk into memory to look at them."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Without an index, a query that searches by an unindexed column reads every page of the table into memory and checks each row: millions of page reads to find one record, like turning every page of a thick book to find one word.",
+        "Databases soften this with caching (the buffer pool keeps recently used pages in memory) and read-ahead (prefetching the next pages of a scan), but reading a whole large table for every lookup is still far too slow.",
+        "With an index, the database follows a short path that ends at the exact pages holding the matching rows, like using a book's index instead of reading it cover to cover. A lookup becomes a few page reads."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-scan",
+      "cap": "Finding one phone number. Without an index, the database reads page after page of the table. With one, it follows three index pages to the one table page that holds the row."
+    },
+    {
+      "t": "p",
+      "x": "A common misunderstanding: SSDs didn't make this go away. Reading scattered pages (random access) is still slower than reading pages in order (sequential access), even on an SSD; the gap is smaller than on spinning disks, not gone. On hard disks, still used for some very large datasets, the difference is huge, which makes good indexing even more important."
+    },
+    {
+      "t": "h3",
+      "x": "What an index costs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Disk space: every index is another structure stored on disk, sometimes nearly as big as the table itself when it covers several wide columns.",
+        "Slower writes: inserting or updating a row means updating the table and every index on it. A table with five indexes turns one insert into six writes.",
+        "Memory: indexes compete with table data for the buffer pool. In practice this worry is often overstated, because databases manage the buffer pool well, but unused indexes still cost space and write time, so watch which indexes are actually used and drop the rest."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-cost",
+      "cap": "One new order, four writes: the table and each of its three indexes must be updated before the insert is done."
+    },
+    {
+      "t": "p",
+      "x": "So indexes can hurt more than they help. The classic case is a table with many writes and few reads, like an application log: rows arrive constantly and are rarely searched, so maintaining indexes costs more than it saves. Another is a tiny table, a few hundred rows of cities or tax rates, where reading the whole table is as quick as walking an index."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When you sketch the schema, name the indexes and the query each one serves.",
+        "Mention the cost when it matters: a write-heavy table gets fewer indexes, or none.",
+        "Default to B-tree indexes; reach for other kinds (LSM-based stores, hash, geospatial, inverted) when the data or the workload calls for them. The parts below explain each."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "B-trees"
+    },
+    {
+      "t": "h3",
+      "x": "The shape of a B-tree"
+    },
+    {
+      "t": "p",
+      "x": "A B-tree is a self-balancing tree that keeps its keys sorted and allows fast searches, inserts and deletes. Unlike a binary tree, where each node has at most two children, a B-tree node can have hundreds. Each node holds an ordered list of keys and, between them, pointers to the children that cover the ranges in between."
+    },
+    {
+      "t": "fig",
+      "id": "btree-path",
+      "cap": "Each page holds hundreds of keys, so the tree is wide and shallow. Three levels cover crores of names, and the top levels stay in memory."
+    },
+    {
+      "t": "p",
+      "x": "Every B-tree follows a few strict rules:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "All leaf nodes are at the same depth, so no lookup takes longer than another.",
+        "Each node (except the root) holds between m/2 and m keys, where m, the order of the tree, is set by how many keys fit in a page.",
+        "A node with k keys has exactly k + 1 children: one for the values below the first key, one between each pair of keys, one above the last.",
+        "The keys inside a node are kept in sorted order."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The clever part is how well this matches disks. Each node is sized to fill one page, typically 8 KB in PostgreSQL, so reading a node is exactly one page read. To find the row with id 350, the database reads the root page, perhaps one internal page, and one leaf page: two or three reads, even in a big table."
+    },
+    {
+      "t": "fig",
+      "id": "ix-btree-find",
+      "cap": "Looking up id 350: the root says 'between 300 and 600', an internal page narrows it to '340 to 360', and the leaf page holds the entry pointing to the row. Three page reads."
+    },
+    {
+      "t": "h3",
+      "x": "Staying balanced"
+    },
+    {
+      "t": "p",
+      "x": "When a leaf fills up, the next insert splits it into two half-full leaves and adds a key for the new leaf to the parent. If the parent fills up, it splits too, and occasionally the split reaches the root, which then gets a new root above it: the tree grows by one level, at the top, for every leaf at once. Deletes merge or rebalance nodes that get too empty. Because growth only happens at the root, all leaves always stay at the same depth."
+    },
+    {
+      "t": "fig",
+      "id": "ix-btree-split",
+      "cap": "A full leaf receives one more key: it splits into two half-full leaves and the parent gains a key pointing to the new one. The tree stays balanced."
+    },
+    {
+      "t": "h3",
+      "x": "Where you'll meet them"
+    },
+    {
+      "t": "p",
+      "x": "B-trees are everywhere. PostgreSQL uses them for nearly everything: primary keys, unique constraints and most ordinary indexes. Create this table:"
+    },
+    {
+      "t": "code",
+      "label": "Two indexes you didn't ask for",
+      "x": "CREATE TABLE users (\n  id     BIGSERIAL PRIMARY KEY,\n  phone  VARCHAR(15) UNIQUE\n);\n-- PostgreSQL creates two B-tree indexes:\n--   users_pkey       on (id)\n--   users_phone_key  on (phone)",
+      "say": "Create a users table with an id that is the primary key and a phone number that must be unique. PostgreSQL creates two B-tree indexes automatically: one for the primary key on id, and one for the unique constraint on phone."
+    },
+    {
+      "t": "p",
+      "x": "PostgreSQL silently creates two B-tree indexes here: one for the primary key and one to enforce the unique phone number. Keeping keys sorted is what makes the uniqueness check and range queries cheap."
+    },
+    {
+      "t": "list",
+      "items": [
+        "MySQL's InnoDB stores the table itself as a B+ tree ordered by primary key (a clustered index), and every secondary index is a B+ tree pointing to primary keys.",
+        "MongoDB, despite its document model, also uses B-trees for its indexes (B+ trees, a variant that keeps all entries in the leaves and links the leaves for fast scans). db.users.createIndex({ phone: 1 }) builds a B-tree from phone numbers to documents.",
+        "DynamoDB keeps items within a partition sorted by their sort key, which is what makes range queries within a partition efficient. Its storage engine isn't documented in detail and is generally understood to be LSM-style rather than a B-tree; the part 'LSM trees and hash indexes' below explains the difference."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Why B-trees are the default"
+    },
+    {
+      "t": "list",
+      "items": [
+        "They keep keys sorted, so range queries (age > 25, orders this week) and ORDER BY are efficient.",
+        "They balance themselves, so performance stays predictable as the table grows.",
+        "Their nodes match disk pages, so every step is one page read.",
+        "They handle exact matches (phone = '…') and ranges equally well.",
+        "They stay balanced under random inserts and deletes, with none of the sudden slowdowns simpler trees suffer when data arrives in an unlucky order."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "If an interviewer asks which index you'd use and the data is ordinary, a B-tree is a safe answer."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'a B-tree index on …' and give the query it serves.",
+        "Mention that it serves ranges and sorting too, so one index can cover 'this user's orders, newest first'.",
+        "Know that primary keys and unique constraints already come with one."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "LSM trees and hash indexes"
+    },
+    {
+      "t": "h3",
+      "x": "When writes pour in"
+    },
+    {
+      "t": "p",
+      "x": "Picture Zotato's rider tracking: every active rider's phone sends a location every few seconds, lakhs of writes a second at dinner. Or a metrics system taking millions of measurements a second from thousands of servers. With a B-tree, each insert lands somewhere in the tree and updates pages at random places on disk; at these rates the random writes become the bottleneck."
+    },
+    {
+      "t": "h3",
+      "x": "How an LSM tree works"
+    },
+    {
+      "t": "p",
+      "x": "A log-structured merge tree, LSM tree, never updates data in place. It collects writes in memory and writes them to disk in large sorted batches:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each write is first appended to a write-ahead log on disk, which is sequential and fast and lets the write survive a crash.",
+        "It is then inserted into the memtable, a sorted structure in memory. The write is complete: no disk page was searched or rewritten.",
+        "When the memtable fills (tens of megabytes), it is written out in one go as an SSTable, a sorted, immutable file, and a fresh memtable starts.",
+        "In the background, compaction merges SSTables into larger ones, keeping only the newest version of each key and dropping deleted ones, so the number of files stays bounded."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-lsm-write",
+      "cap": "A write is appended to the log and inserted into the memtable in memory. When the memtable fills, it is written to disk as one sorted file; compaction later merges small files into bigger ones."
+    },
+    {
+      "t": "h3",
+      "x": "The cost: reads look in several places"
+    },
+    {
+      "t": "p",
+      "x": "Because a key's latest value might be in the memtable or in any SSTable, a read checks the memtable first, then the SSTables from newest to oldest until it finds the key. A key that doesn't exist at all would mean checking every file. LSM stores fight this in three ways:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A Bloom filter per SSTable answers 'is this key definitely not in this file?' in memory, so most files are skipped without a disk read.",
+        "Each SSTable has a small sparse index, so finding a key inside a file takes one or two reads.",
+        "Compaction keeps the number of files small, at the price of extra background writing (write amplification): the same data is rewritten several times as files are merged."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-lsm-read",
+      "cap": "Reading a key: check the memtable, then each file's Bloom filter. Files that can't hold the key are skipped; only one is actually read."
+    },
+    {
+      "t": "p",
+      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase, and, by most accounts, DynamoDB's storage layer."
+    },
+    {
+      "t": "h3",
+      "x": "Hash indexes"
+    },
+    {
+      "t": "p",
+      "x": "A hash index is a hash table: it hashes the key and stores, at that position, where the row lives. A lookup hashes the key and goes straight there, in one step on average, however big the table."
+    },
+    {
+      "t": "fig",
+      "id": "ix-hash",
+      "cap": "A hash index jumps straight to 'phone = 98200 00001' in one step. But 'phones starting 98200' or 'orders after 8 pm' can't use it: hashing scrambles the order."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is excellent for exact matches: 'the session for this token', 'the user with this id'.",
+        "It is useless for anything else. Hashing scatters neighbouring values, so there is no order to scan: no ranges, no ORDER BY, no prefix search.",
+        "Where you meet them: Redis and Memcached are essentially huge hash tables; PostgreSQL offers hash indexes (crash-safe since version 10) but they are rarely chosen; MySQL's MEMORY engine uses them by default; and databases build temporary hash tables internally to join tables."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "In practice, a B-tree does exact lookups almost as fast and handles ranges too, which is why it stays the default. Choose a hash index only when the access is exact-match only and every bit of speed counts, which in a design usually means an in-memory key-value store, not a database index."
+    },
+    {
+      "t": "table",
+      "label": "B-tree, LSM tree or hash",
+      "head": [
+        "Compared",
+        "B-tree",
+        "LSM tree",
+        "Hash index"
+      ],
+      "rows": [
+        [
+          "Writes",
+          "Update pages in place: moderate",
+          "Append and flush: very fast",
+          "Fast"
+        ],
+        [
+          "Exact lookups",
+          "A few page reads",
+          "Memtable plus a few files, helped by Bloom filters",
+          "One step"
+        ],
+        [
+          "Ranges and sorting",
+          "Yes",
+          "Yes, within the sorted files",
+          "No"
+        ],
+        [
+          "Background work",
+          "Little",
+          "Compaction",
+          "Resizing"
+        ],
+        [
+          "Typical home",
+          "PostgreSQL, MySQL, MongoDB",
+          "Cassandra, RocksDB, HBase, Bigtable",
+          "Redis, Memcached, MEMORY tables"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For a write-heavy store (locations, metrics, chat messages), name an LSM-based database and say why: sequential writes, compaction later.",
+        "Name the cost: slower reads and compaction work, and how Bloom filters soften it.",
+        "Use hash indexes only for exact-match lookups; a B-tree is fine for most."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Indexes for special data, and indexes that do more"
+    },
+    {
+      "t": "h3",
+      "x": "Geospatial indexes"
+    },
+    {
+      "t": "p",
+      "x": "'Restaurants within 3 km of me' is a question about two dimensions at once. An ordinary index sorts by one value: index latitude, and the query 'latitude between A and B' finds a whole band stretching across the country, which then has to be filtered by longitude row by row. A composite index on (latitude, longitude) has the same problem, because longitude is only sorted within a single latitude."
+    },
+    {
+      "t": "fig",
+      "id": "ix-geo-band",
+      "cap": "A B-tree on latitude narrows the search to a band across the whole map; most of it is far away. A spatial index narrows it to the few cells around the user."
+    },
+    {
+      "t": "p",
+      "x": "Spatial indexes group nearby points so a search reads only the area around the user:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Geohash: divide the world into a grid of cells, each named by a string; nearby places share a prefix, so an ordinary B-tree on the geohash string finds a cell's places with a prefix search. Search the user's cell and its neighbours, because a place just across a cell border has a different prefix.",
+        "Quadtree: split the map into four squares, and keep splitting squares that hold too many places. Busy city centres get small cells and empty land gets big ones.",
+        "R-tree: group nearby points or shapes into bounding rectangles, and rectangles into bigger rectangles, like a B-tree for shapes. PostGIS uses it (through GiST indexes) and it handles polygons such as delivery zones as well as points."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "prox-quadtree",
+      "cap": "A fixed grid wastes cells on empty land and overloads the busy centre. A quadtree splits only where the restaurants are."
+    },
+    {
+      "t": "p",
+      "x": "The concept 'Finding what's nearby' covers cell sizes, hexagon grids and places that move."
+    },
+    {
+      "t": "h3",
+      "x": "Inverted indexes"
+    },
+    {
+      "t": "p",
+      "x": "A B-tree on dish names can find names that start with 'Butter', but not names that contain 'paneer' somewhere in the middle: a LIKE '%paneer%' query has to read every row. An inverted index turns the data around: for every word, it keeps the list of documents that contain it. Searching for 'paneer tikka' looks up two short lists and intersects them."
+    },
+    {
+      "t": "fig",
+      "id": "es-inverted",
+      "cap": "Each word keeps the list of dishes that contain it, so a search reads only the lists for its own words. That is why searching crores of dishes takes milliseconds."
+    },
+    {
+      "t": "p",
+      "x": "Inverted indexes power full-text search: Elasticsearch and OpenSearch (built on Lucene), and PostgreSQL's GIN indexes for full-text and array search. They also store word positions and frequencies, which is what lets search engines rank results. The component 'Elasticsearch' covers how they are built and kept in sync."
+    },
+    {
+      "t": "h3",
+      "x": "Composite indexes"
+    },
+    {
+      "t": "p",
+      "x": "A composite index covers several columns, sorted by the first, then by the second within each value of the first, and so on, like a phone book sorted by surname and then first name. That order decides which queries it can serve."
+    },
+    {
+      "t": "fig",
+      "id": "index-order",
+      "cap": "A composite index is sorted by its first column, then by the second within it. A query can use it from the left; skipping the first column means scanning it all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It serves queries that use its leading columns: an index on (restaurant_id, status, placed_at) serves 'restaurant 42's orders', 'restaurant 42's preparing orders', and 'restaurant 42's preparing orders, oldest first'.",
+        "It does little for queries that skip the first column: 'all preparing orders' can't use it, just as a phone book sorted by surname can't find everyone named Rahul.",
+        "Order the columns: equality filters first, then the column used for a range or for sorting. (restaurant_id, status, placed_at) serves 'WHERE restaurant_id = 42 AND status = 'preparing' ORDER BY placed_at' straight from the index; putting placed_at first would not.",
+        "One composite index often replaces several single-column ones, saving write cost."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Covering indexes"
+    },
+    {
+      "t": "p",
+      "x": "Normally an index finds the matching entries and then the database fetches each row from the table to read the other columns it needs, one more page read per row. If the index already contains every column the query uses, the database can answer from the index alone (an index-only scan) and never touch the table."
+    },
+    {
+      "t": "fig",
+      "id": "ix-covering",
+      "cap": "The order list needs id, status and total. An index on (customer_id, placed_at) INCLUDE (id, status, total) answers it alone; without the included columns, each of the 20 orders costs another read of the table."
+    },
+    {
+      "t": "code",
+      "label": "A covering index for 'my orders'",
+      "x": "CREATE INDEX orders_by_customer\n  ON orders (customer_id, placed_at DESC)\n  INCLUDE (id, status, total_paise);\n\n-- answered from the index alone:\nSELECT id, placed_at, status, total_paise\nFROM orders\nWHERE customer_id = 77\nORDER BY placed_at DESC\nLIMIT 20;",
+      "say": "Create an index on orders by customer id and placed-at time, newest first, and include the id, status and total. The query for customer 77's latest twenty orders, reading id, time, status and total, is answered from the index alone, without reading the table."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It makes the most common reads much faster, at the cost of a bigger index and more work on writes to the included columns.",
+        "Use it for one or two hot queries, not everywhere. PostgreSQL and SQL Server have INCLUDE; in MySQL, adding the columns to the index key does the same, and InnoDB secondary indexes always carry the primary key.",
+        "In PostgreSQL an index-only scan also needs the table's visibility map to be up to date (vacuum keeps it so); on a table with many recent changes it still checks some rows."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For location search, name a spatial index (geohash with a B-tree, or PostGIS) instead of indexing latitude and longitude.",
+        "For text search, name an inverted index, usually Elasticsearch kept in sync from the database.",
+        "For the main queries, give the composite index with its column order and why, and mention a covering index for the hottest one."
+      ]
+    }
+  ]
+}
