@@ -1,0 +1,118 @@
+{
+  "section": "interview-questions",
+  "slug": "how-to-prepare",
+  "group": "start",
+  "no": "GUIDE // 02",
+  "tag": "PREPARATION",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "How to prepare: a plan for the weeks before your interview",
+  "dek": "What to learn first, how to practise so it holds up in the room, how long it takes, and how to tell when you're ready.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Learn the vocabulary first (the core concepts and the ten named technologies), then spend most of your time practising questions out loud, against a clock.",
+        "Practise actively: answer a question before reading the worked answer, then compare. Reading answers alone feels like progress but doesn't hold up in an interview.",
+        "Four to eight weeks at about an hour a day is a common plan: less if you design systems at work, more if you never have.",
+        "You're ready when you can take a question you haven't seen, reach a working design in about 20 minutes, and go deep on its hardest part."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Weeks 1 and 2: the vocabulary"
+    },
+    {
+      "t": "p",
+      "x": "Interviewers expect you to reach for the right idea quickly. Read the core concepts in order; each builds on the ones before it."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Networking essentials, API design, Data modelling: how requests travel, what the API looks like, how the data is shaped.",
+        "Caching, Sharding, Consistent hashing, CAP theorem, Database indexing: how a design copes with load and with machines that fail.",
+        "Numbers to know: what one machine can really do, so you scale only when the numbers say so.",
+        "Then the ten Components, at least their 'In an interview' and 'Numbers worth remembering' parts."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Read the 'In an interview' part of each article first: it tells you how much of the rest you need."
+    },
+    {
+      "t": "h2",
+      "x": "Weeks 2 to 4: worked questions"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start with an easy question, such as the URL shortener or restaurants near me, and set a 45-minute timer.",
+        "In the workspace, write your requirements, numbers, entities and API in 'Your answer', build the design on the canvas, run the example tests, then submit.",
+        "Only then read the worked answer. Write down what you missed: a requirement, a number, a failure you didn't plan for.",
+        "Use a hint only after five minutes stuck. Each one costs points, so you notice how often you need them.",
+        "Do the four easy questions, then move on to medium. Redo a question a week later; the second attempt shows what stuck."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Weeks 4 to 6: patterns and depth"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Read the recurring patterns: real-time updates, contention, processes with many steps, scaling reads, scaling writes, big files and long jobs.",
+        "For each question you practise, name the patterns it uses before you design. Most questions are two or three patterns in a new setting.",
+        "Do the Lab challenges: they make you size the parts, survive failures and keep the bill down, which is what deep dives are about."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Mock interviews"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Practise with a friend or colleague: one asks, one answers, then swap. Speaking a design out loud is a different skill from thinking it.",
+        "Record yourself once. Most people find they skip the numbers, or never say what they are giving up.",
+        "Ask for feedback on the four things interviewers score: pinning down the problem, a working design, depth, and communication."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What to skip"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Memorising whole designs: interviewers change one requirement to see whether you understand yours.",
+        "Every database's internals: know PostgreSQL, Redis and Kafka well, and the rest by what each is for and where it breaks.",
+        "Rare technologies: a well-argued design with common parts beats a list of names."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How to tell you're ready"
+    },
+    {
+      "t": "list",
+      "items": [
+        "You can estimate in your head: requests a second from requests a day, storage a year from item sizes, whether one database can take the writes.",
+        "For every box in your design, you can say what happens when it fails.",
+        "You can state the trade-off behind each choice in one sentence.",
+        "On a medium question you haven't seen, you reach a complete design with at least 15 minutes left for deep dives."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The day before"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Set up and test the drawing tool you'll use, if it's a video interview.",
+        "Read the six steps in 'How to answer a system design question' once more, and the numbers you tend to forget.",
+        "Sleep. A rested 45 minutes is worth more than another question."
+      ]
+    }
+  ]
+}

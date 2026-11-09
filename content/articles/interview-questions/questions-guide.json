@@ -1,0 +1,154 @@
+{
+  "section": "interview-questions",
+  "slug": "questions-guide",
+  "group": "start",
+  "no": "GUIDE // 07",
+  "tag": "OVERVIEW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "The questions, and what each one teaches",
+  "dek": "Every worked question on the site, the core challenge it trains, and an order to take them in.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Each question trains one or two hard problems; the rest of the design is the same method every time.",
+        "Start with the easy questions to learn the method, then the medium ones for the deep dives most interviews reach.",
+        "Do each one in the workspace before reading the worked answer: your requirements, numbers, API and design, then the tests."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How each question is built"
+    },
+    {
+      "t": "p",
+      "x": "Every worked question follows the six steps in 'How to answer a system design question': requirements, the numbers that matter, entities and API, a high-level design, deep dives, and what's expected at each level. In the workspace, the same question has example tests to run while you design, more tests that run when you submit, hints that cost points, and the worked answer as its solution."
+    },
+    {
+      "t": "h2",
+      "x": "Easy"
+    },
+    {
+      "t": "table",
+      "head": [
+        "Question",
+        "What it trains"
+      ],
+      "rows": [
+        [
+          "Design a URL shortener",
+          "Unique short codes and redirects at lakhs a second"
+        ],
+        [
+          "Design file storage and sync",
+          "Big files on patchy networks, devices kept in step"
+        ],
+        [
+          "Design restaurants near me",
+          "Finding what is near a point, thousands of times a second"
+        ],
+        [
+          "Design 10-minute grocery delivery",
+          "Never selling the last packet twice, inside a time budget"
+        ]
+      ],
+      "label": "Easy questions"
+    },
+    {
+      "t": "h2",
+      "x": "Medium"
+    },
+    {
+      "t": "table",
+      "head": [
+        "Question",
+        "What it trains"
+      ],
+      "rows": [
+        [
+          "Design match ticket booking",
+          "A crowd 50 times larger than the seats, and no seat sold twice"
+        ],
+        [
+          "Design photo sharing",
+          "Images served fast, and a like count for a viral dish"
+        ],
+        [
+          "Design a news feed",
+          "Push or pull, and the follower with 50 lakh followers"
+        ],
+        [
+          "Design dating app swipes",
+          "Recording every swipe and spotting each match exactly once"
+        ],
+        [
+          "Design a coding judge",
+          "Running strangers' code safely, and the last-15-minutes rush"
+        ],
+        [
+          "Design a chat app",
+          "Messages to the phone in order, with nothing lost"
+        ],
+        [
+          "Design a notification service",
+          "An OTP never stuck behind a promotion, never sent twice"
+        ],
+        [
+          "Design a payment system",
+          "Charging exactly once, and \"unknown\" is not \"failed\""
+        ],
+        [
+          "Design a job scheduler",
+          "Finding what is due, and surviving 9 pm"
+        ],
+        [
+          "Design a web crawler",
+          "Being polite, never fetching twice, avoiding traps"
+        ],
+        [
+          "Design a live leaderboard",
+          "Keeping lakhs of players sorted, and your own rank cheaply"
+        ],
+        [
+          "Design ad click counting",
+          "Fast enough to watch, exact enough to bill"
+        ],
+        [
+          "Design a distributed key-value store",
+          "Where a key lives, and copies that agree enough"
+        ],
+        [
+          "Design a shared document editor",
+          "Two people editing one line, and your typing feeling instant"
+        ],
+        [
+          "Design rider assignment for food delivery",
+          "Live locations, and one order per rider"
+        ],
+        [
+          "Design video streaming",
+          "Getting videos ready fast and playing them smoothly"
+        ],
+        [
+          "Design menu search",
+          "Words, Hinglish, typos and ranking"
+        ]
+      ],
+      "label": "Medium questions"
+    },
+    {
+      "t": "h2",
+      "x": "An order to take them in"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Week 1: the four easy questions, in the order listed. They teach the method with one main problem each.",
+        "Week 2: match ticket booking, the news feed and the chat app: contention, scaling reads, and real-time updates.",
+        "Week 3: the payment system, the job scheduler and ad click counting: processes with many steps, long jobs and scaling writes.",
+        "Then the rest, in any order. Redo your weakest question a week later."
+      ]
+    }
+  ]
+}

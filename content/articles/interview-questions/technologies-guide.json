@@ -1,0 +1,241 @@
+{
+  "section": "interview-questions",
+  "slug": "technologies-guide",
+  "group": "start",
+  "no": "GUIDE // 05",
+  "tag": "OVERVIEW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "The technologies worth knowing by name",
+  "dek": "Ten technologies interviewers expect you to recognise: what each is for, when to reach for it, a number to remember, and the catch. Each points to its full article in Components.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Interviewers don't need you to know every product, but they expect the common ones by name and by purpose: a database, a cache, a log, a search engine, a stream processor and a coordinator.",
+        "Name a technology only with its reason: 'Redis, because the leaderboard is a sorted set and needs thousands of updates a second', not just 'Redis'.",
+        "For each one, know what it's for, one number, and the catch."
+      ]
+    },
+    {
+      "t": "table",
+      "head": [
+        "If you need",
+        "Reach for"
+      ],
+      "rows": [
+        [
+          "The record of truth, with transactions",
+          "PostgreSQL"
+        ],
+        [
+          "Fast reads of hot data, counters, rankings",
+          "Redis"
+        ],
+        [
+          "Events many services react to, or replay",
+          "Kafka"
+        ],
+        [
+          "A search box with words, typos and ranking",
+          "Elasticsearch"
+        ],
+        [
+          "Huge write rates, queries known in advance",
+          "Cassandra"
+        ],
+        [
+          "Key lookups at any scale, nothing to run",
+          "DynamoDB"
+        ],
+        [
+          "Answers computed while events flow",
+          "Flink"
+        ],
+        [
+          "A process of many steps that must finish",
+          "Temporal"
+        ],
+        [
+          "One front door: auth, limits, routing",
+          "API gateway"
+        ],
+        [
+          "Leader election, locks, shared configuration",
+          "ZooKeeper"
+        ]
+      ],
+      "label": "Which tool for which need"
+    },
+    {
+      "t": "h2",
+      "x": "Redis"
+    },
+    {
+      "t": "p",
+      "x": "An in-memory store of data structures: strings, hashes, sorted sets, streams."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: A cache, counters, rate limits, leaderboards (sorted sets), short-lived locks, sessions.",
+        "A number to remember: Around a lakh simple operations a second per node; a command takes well under a millisecond.",
+        "The catch: It lives in memory: size it, and don't rely on it as the only copy of data you can't lose.",
+        "Read: 'Redis' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Elasticsearch"
+    },
+    {
+      "t": "p",
+      "x": "A search engine built on an inverted index: for every word, the documents that contain it."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: A search box: words, typos, ranking, filters, places near the user.",
+        "A number to remember: New documents become searchable after about a second; aim for shards of 10 to 50 GB.",
+        "The catch: Not the source of truth: keep the database as the record and feed the index from it.",
+        "Read: 'Elasticsearch' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Kafka"
+    },
+    {
+      "t": "p",
+      "x": "A durable, partitioned log of events that many services read at their own pace."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Events several services react to, very high write rates, keeping order per key, replaying history.",
+        "A number to remember: One partition takes tens of MB a second; events are kept 7 days by default.",
+        "The catch: Order holds only within a partition; consumers must cope with seeing an event twice.",
+        "Read: 'Kafka in practice' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Temporal"
+    },
+    {
+      "t": "p",
+      "x": "A workflow engine that runs ordinary code as a process that survives crashes, deploys and long waits."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Multi-step processes across services with retries, timeouts and waits of hours or days: orders, payouts, refunds.",
+        "A number to remember: A step costs tens of milliseconds; waiting a day is just a stored timer.",
+        "The catch: Workflow code must be deterministic; it is another system to run, so use it when a state machine in your database would be painful.",
+        "Read: 'Temporal' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "API gateway"
+    },
+    {
+      "t": "p",
+      "x": "One front door for many services: ends HTTPS, checks who is calling, rate-limits and routes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Several services, outside partners or apps, per-client limits.",
+        "A number to remember: Managed gateways cost about $1 to $3.50 per million requests; some cut requests off at about 30 seconds.",
+        "The catch: It adds a few milliseconds and, at high traffic, a real bill; uploads and long work go around it.",
+        "Read: 'API gateways' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Cassandra"
+    },
+    {
+      "t": "p",
+      "x": "A wide-column database with no leader: every node takes reads and writes, data is copied around a ring."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Very high write rates, data spread across regions, queries known in advance (one table per query).",
+        "A number to remember: Replication factor 3 is usual; keep a partition under about 100 MB.",
+        "The catch: No joins and no ad-hoc queries; deletes leave tombstones that slow reads.",
+        "Read: 'Cassandra' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "DynamoDB"
+    },
+    {
+      "t": "p",
+      "x": "A managed key-value and document store: no servers to size, patch or fail over."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Key lookups at any scale with little to run, when every query can use a key you designed in advance.",
+        "A number to remember: One partition takes about 1,000 writes and 3,000 reads a second; an item is at most 400 KB.",
+        "The catch: Queries outside your keys need a full scan or a new index; a hot partition key hits its limit early.",
+        "Read: 'DynamoDB' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "PostgreSQL"
+    },
+    {
+      "t": "p",
+      "x": "The default relational database: transactions, SQL, rich indexes, JSON and geospatial queries."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Most designs, as the place where the truth lives, until a number says otherwise.",
+        "A number to remember: One primary takes thousands of writes and tens of thousands of reads a second on good hardware.",
+        "The catch: Writes go through one primary; past that you shard, by hand or with a tool such as Citus.",
+        "Read: 'PostgreSQL' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Flink"
+    },
+    {
+      "t": "p",
+      "x": "A stream processor: answers computed as events arrive, with state per key and exactly-once recovery."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Counts per minute, live fraud checks, live ETAs: anything that must be answered while the data is still flowing.",
+        "A number to remember: End-to-end latency of milliseconds to seconds; state up to terabytes on local disk.",
+        "The catch: It's a cluster to run: for simple counting, a consumer writing to Redis may be enough.",
+        "Read: 'Flink' in Components."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "ZooKeeper"
+    },
+    {
+      "t": "p",
+      "x": "A small, consistent tree of data that a cluster agrees on, with watches and nodes that vanish when their owner dies."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reach for it for: Leader election, locks, configuration and membership for other systems.",
+        "A number to remember: An ensemble of 3 survives one failure, 5 survives two; writes run at thousands a second.",
+        "The catch: For coordination only, never for application data; etcd and Consul do the same job.",
+        "Read: 'ZooKeeper' in Components."
+      ]
+    }
+  ]
+}

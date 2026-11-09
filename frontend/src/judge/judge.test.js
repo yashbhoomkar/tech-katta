@@ -8,7 +8,8 @@ const index=JSON.parse(fs.readFileSync(path.join(root,"articles","index.json"),"
 const problems=index.map(e=>JSON.parse(fs.readFileSync(path.join(root,"articles",e+".json"),"utf8"))).filter(a=>a.practice);
 
 test("every Interview Question has practice tests",()=>{
-  const qs=index.filter(e=>e.startsWith("interview-questions/")&&!e.endsWith("/how-to-answer"));
+  // the guides in Start here are articles, not problems
+  const qs=index.filter(e=>e.startsWith("interview-questions/")&&JSON.parse(fs.readFileSync(path.join(root,"articles",e+".json"),"utf8")).group!=="start");
   assert.equal(problems.length,qs.length,`missing practice: ${qs.filter(e=>!problems.some(a=>e.endsWith("/"+a.slug))).join(", ")}`);
 });
 for(const a of problems){
