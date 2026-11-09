@@ -245,6 +245,11 @@
         null
       ],
       [
+        "real-systems",
+        "Real systems",
+        null
+      ],
+      [
         "lab",
         "Lab",
         null
@@ -301,7 +306,20 @@
           "Practice",
           "Shorter questions to try on your own with the method."
         ]
+      ],
+      "real-systems": [
+        [
+          "case-studies",
+          "Case studies",
+          "Six hard problems that real engineering teams solved in production, retold in plain words: what broke, what they built, and what to take into an interview."
+        ]
       ]
+    },
+    "heads": {
+      "real-systems": {
+        "eyebrow": "REAL SYSTEMS",
+        "desc": "How Shopify, Discord, Slack, Figma, Spotify and Meta solved hard problems in production, from their own engineering write-ups: the numbers, the design, how they switched over, and the lessons for your interview."
+      }
     },
     "groupEmpty": "Coming soon."
   },
@@ -327,7 +345,7 @@
       {
         "target": ".tabs",
         "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise, and Quick Notes are two-minute reads."
+        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Real systems retells how real teams solved hard problems."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",

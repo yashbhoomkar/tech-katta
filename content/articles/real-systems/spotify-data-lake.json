@@ -1,0 +1,169 @@
+{
+  "section": "real-systems",
+  "slug": "spotify-data-lake",
+  "group": "case-studies",
+  "no": "CASE // 05",
+  "tag": "DATA LAKE",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Spotify: fast lookups by key, straight from the data lake",
+  "dek": "Spotify keeps petabytes in Bigtable for online use, but exabytes in Parquet files on cloud storage. Random Access Parquet (RAP) adds an index from each key to the exact files and rows, so one user's history can be read from the lake in a few small reads, without copying it into a key-value store.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Online features and AI agents need one user's data fast ('what was I listening to last summer?'). Keeping years of history in a key-value store costs too much, and SQL engines over the lake take seconds even for one row.",
+        "The slow part is a chain of reads, each waiting for the one before: a file's footer, then its metadata, then the key column, then the pages. An external index maps each key straight to its files and rows, so the reads can all go out at once.",
+        "Writing the files with lookups in mind (sorted by key, a page per key, the fields in one blob, small values kept in the index itself) can bring a lookup down to one small read, or none."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The problem"
+    },
+    {
+      "t": "p",
+      "x": "Online services, such as pages that show a user's listening history, and AI agents answering questions like 'what was I listening to last summer?', need to fetch and page through one user's data quickly. At Spotify, petabytes live in Bigtable for that kind of use, but exabytes sit in the data lake on Google Cloud Storage, and keeping all of that in a key-value store would cost far too much."
+    },
+    {
+      "t": "p",
+      "x": "The storage is fast enough: a read from cloud storage takes 30 to 100 ms, and newer tiers take a few milliseconds. The slow part is the query engines on top. Trino and BigQuery spend seconds scheduling and planning a job even to fetch one row, because they are built to scan, not to look up."
+    },
+    {
+      "t": "h2",
+      "x": "How many reads one lookup takes"
+    },
+    {
+      "t": "p",
+      "x": "Say listening history is written as 1,000 Parquet files a day. Last summer, about 90 days, is 90,000 files."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Bucketing by user ID: each day's files are split by a hash of the user ID, so the file name says which file a user could be in. 90,000 files become 90.",
+        "Bloom filters on the user ID column, cached in a metadata store, rule files out without opening them: 90 becomes the dozen or so days this user actually listened.",
+        "Inside each remaining file it's still slow: read the footer, parse the row-group metadata, scan the key column to find the rows, then use the page index to find the right pages in each column. Each step waits for the one before, across the network, for every file and every column."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Look the key up instead"
+    },
+    {
+      "t": "fig",
+      "id": "spotify-rap",
+      "cap": "Without an index, every file needs a chain of reads, each waiting for the last. With one, a single lookup gives the files and rows, cached metadata turns rows into byte ranges, and the ranged reads all go out at once."
+    },
+    {
+      "t": "p",
+      "x": "RAP replaces that chain with one lookup. An external index maps each key to the files and row numbers that hold it. Cached file metadata turns those row numbers into page locations, and the reader fetches exactly those byte ranges, all at the same time, because none of them depends on another."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It works on Parquet files as they already are. The index builder reads the footers and page locations, scans the key column, and writes out the map from key to location.",
+        "Each pipeline run adds new index pieces; existing pieces are never changed.",
+        "Each entry is small: the key, which file (as a number), the row numbers, and optionally a count of values, which helps with paging.",
+        "A rough rule: indexing terabytes of data makes gigabytes of index, and petabytes make terabytes. A large index is split by a hash of the key.",
+        "Bloom filters and Parquet's own page index only narrow the search, and a Bloom filter can be wrong. The external index is exact: it says precisely which files and rows hold the key."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The same idea holds at every level of storage. A read that has to wait for the previous one costs tens of milliseconds on cloud storage, microseconds on a local SSD and nanoseconds in memory. Removing the chain helps at each level, and most where a round trip costs most."
+    },
+    {
+      "t": "h2",
+      "x": "Writing files for lookups"
+    },
+    {
+      "t": "p",
+      "x": "On files left as they are, RAP still reads a whole page to get one row: perhaps 4 MB to extract 100 bytes. Writing the files with lookups in mind shrinks that. The changes apply only to the columns used for lookups; the others can keep whatever layout suits analytics."
+    },
+    {
+      "t": "table",
+      "label": "What each change buys, and costs",
+      "head": [
+        "Change",
+        "What it does for a lookup",
+        "What analytics gives up"
+      ],
+      "rows": [
+        [
+          "Sort by key",
+          "A key's rows sit together, in as few pages as possible",
+          "Nothing"
+        ],
+        [
+          "One row per key, values grouped in a list",
+          "Each key appears once in each file",
+          "Nothing"
+        ],
+        [
+          "Weekly partitions instead of daily",
+          "52 files per key a year instead of 365",
+          "Coarser partition pruning"
+        ],
+        [
+          "Start a new page at each key",
+          "The whole page is the answer",
+          "A bigger page index"
+        ],
+        [
+          "A separate compression frame per key",
+          "Each key's rows can be read alone, with normal page sizes",
+          "Only simple encodings; slightly bigger files"
+        ],
+        [
+          "All lookup fields in one blob column",
+          "One read per file instead of one per column",
+          "No pruning inside the blob"
+        ],
+        [
+          "Columns interleaved key by key",
+          "One contiguous read covers every column",
+          "Reading one column also reads the others"
+        ],
+        [
+          "Small values copied into the index",
+          "No storage read at all",
+          "A bigger index"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Together, these can bring a lookup down to one ranged read of a few kilobytes, or remove the storage read entirely."
+    },
+    {
+      "t": "p",
+      "x": "Other lookup keys, such as both the buyer and the seller of a transaction, get their own index over the same entries: a hash table for exact matches or a sorted index for ranges. Adding one is a decision for the serving layer; no pipeline changes, and no data is rewritten."
+    },
+    {
+      "t": "h2",
+      "x": "Why it matters"
+    },
+    {
+      "t": "p",
+      "x": "The files BigQuery scans for weekly reports are the same files an AI agent reads for one user's history: no second copy, no extra pipeline, no second storage bill. A lookup costs about as much as one cloud storage read, so old history and rarely used data can be served online too, not only what fits in the key-value store's budget."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Count the round trips in a read path that must happen one after another, not just the bytes. Each one adds a full network wait.",
+        "Narrow the search first (partition by key, Bloom filters), then make the final read exact with an index.",
+        "Not everything needs a key-value store. For cold or rarely read data, an index over cheap object storage can serve reads by key for far less.",
+        "Lay data out for the read you care about: sorted by key, grouped per key, fields together.",
+        "Related: 'Database indexing', 'Big files' and 'Counting the uncountable' (for Bloom filters) in Concepts, and 'DynamoDB' in Components."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Spotify Engineering's post 'Indexing the Data Lake for Online Point Queries' (July 2026). The numbers are Spotify's; the explanations and the diagram are ours."
+    }
+  ]
+}

@@ -291,6 +291,8 @@ test('validation checks every site.json field the pages render', () => {
   assert.ok(check((s) => { s.dashboard.sections.push(['concepts', 'Again', null]); }).some((p) => p.includes('duplicate id')));
   assert.ok(check((s) => { s.dashboard.sections[0][2] = 'nope'; }).some((p) => p.includes('unknown card nope')));
   assert.ok(check((s) => { s.footer.links.push('Pricing'); }).some((p) => p.includes('footer link Pricing')));
+  assert.ok(check((s) => { s.dashboard.heads = { nowhere: { eyebrow: 'X', desc: 'Y' } }; }).some((p) => p.includes('dashboard.heads.nowhere is not a dashboard section')));
+  assert.ok(check((s) => { s.dashboard.heads['real-systems'] = { eyebrow: 'X' }; }).some((p) => p.includes('dashboard.heads.real-systems.desc')));
   assert.ok(check((s) => { delete s.hero; }).some((p) => p.includes('site.json.hero')));
   const badExample = validateContent({ site, examples: { [site.example]: { ...example, parts: [['Apps']] } }, articles: allArticles, lab });
   assert.ok(badExample.some((p) => p.includes(`examples/${site.example}.json.parts[0]`)));

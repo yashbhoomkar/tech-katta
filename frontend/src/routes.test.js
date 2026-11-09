@@ -22,5 +22,5 @@ test('the path form has a trailing slash and round-trips', () => {
   assert.equal(pathFor(''), '/dashboard/');
   assert.equal(pathFor('concepts'), '/dashboard/concepts/');
   assert.equal(pathFor('concepts/caches'), '/dashboard/concepts/caches/');
-  for (const k of ['', 'papers', 'interview-questions/url-shortener', 'problems/menu-search']) assert.equal(routeKey(at(pathFor(k))), k);
+  for (const k of ['', 'real-systems', 'interview-questions/url-shortener', 'problems/menu-search']) assert.equal(routeKey(at(pathFor(k))), k);
 });

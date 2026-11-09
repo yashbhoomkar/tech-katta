@@ -84,7 +84,6 @@ const SITE = {
   'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', 'close?': 'text', dashboard: [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], 'problem?': [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], lab: [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }] },
   'inside?': { eyebrow: 'text', title: 'text', desc: 'text', items: [{ kind: 'text', title: 'text', text: 'text', link: 'text', href: 'text' }], cta: 'text', ctaHref: 'text' },
   'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
-  'papers?': { eyebrow: 'text', desc: 'text' },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
   numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },
@@ -99,6 +98,15 @@ export function validateSite(site, examples, problems = []) {
   const sections = list(site.dashboard?.sections).map((s) => s && s[0]);
   if (new Set(sections).size !== sections.length) problems.push('site.json: dashboard.sections has a duplicate id');
   const cards = new Set(list(site.topics?.cards).map((c) => c && c.id));
+  // A section without a library card can have its own header: dashboard.heads[section id] = { eyebrow, desc }.
+  const heads = site.dashboard?.heads;
+  if (heads !== undefined) {
+    if (!heads || typeof heads !== 'object' || Array.isArray(heads)) problems.push('site.json: dashboard.heads must be an object');
+    else for (const [id, h] of Object.entries(heads)) {
+      if (!sections.includes(id)) problems.push(`site.json: dashboard.heads.${id} is not a dashboard section`);
+      shape(h, { eyebrow: 'text', desc: 'text' }, `site.json: dashboard.heads.${id}`, problems);
+    }
+  }
   for (const s of list(site.dashboard?.sections)) if (Array.isArray(s) && s[2] && !cards.has(s[2])) problems.push(`site.json: dashboard section ${s[0]} points at unknown card ${s[2]}`);
   const navNames = new Set(list(site.nav).map((n) => n && n[0]));
   for (const l of list(site.footer?.links)) if (!navNames.has(l)) problems.push(`site.json: footer link ${l} is not in nav`);

@@ -13,6 +13,9 @@ test('every article and section gets a page', () => {
   assert.ok(keys.includes('concepts'));
   assert.ok(keys.includes('problems'));
   assert.ok(keys.includes('components/redis'));
+  assert.ok(keys.includes('real-systems/shopify-reservations'));
+  // a section without a library card describes itself with its own header (site.json dashboard.heads)
+  assert.match(pages.find((p) => p.key === 'real-systems').description, /^How Shopify, Discord/);
   assert.equal(new Set(keys).size, keys.length);
   for (const p of pages) { assert.ok(p.title.endsWith(' | Tech Katta')); assert.ok(p.description.length > 10, p.key); }
 });

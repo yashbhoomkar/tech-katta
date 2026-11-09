@@ -1,0 +1,167 @@
+{
+  "section": "real-systems",
+  "slug": "shopify-reservations",
+  "group": "case-studies",
+  "no": "CASE // 01",
+  "tag": "INVENTORY",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Shopify: holding the last unit at checkout, in MySQL instead of Redis",
+  "dek": "While a buyer pays, Shopify holds the units in their cart so nobody else can buy them. It moved those holds out of Redis and into the MySQL database that keeps the stock: one row per unit, SKIP LOCKED to share the rows out, and a slowdown that turned out to be connections, not queries.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "While payment runs, Shopify reserves the units being bought. The reservations were in Redis and the stock ledger in MySQL, and nothing could change both in one step, so a crash between the two could oversell or undersell.",
+        "They moved reservations into the same MySQL database: one row per unit for sale (at most 1,000 per item and location), handed out with `FOR UPDATE SKIP LOCKED`, so checkouts at the same moment take different rows instead of waiting for one.",
+        "In load tests the ceiling wasn't the queries. Other checkout code held database connections too long. Tagging every query with the process that sent it showed who, and fixing that removed the limit."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The problem"
+    },
+    {
+      "t": "p",
+      "x": "When a buyer presses 'Complete purchase', the items must still be there. Get it wrong one way and two buyers pay for the last unit: the shop cancels an order and apologises. Get it wrong the other way and a buyer is told an item is sold out when it isn't, and the shop loses the sale. At the peak of Black Friday 2025, shops on Shopify were selling $5.1 million a minute, and every one of those checkouts touches stock."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Reserve: when payment starts, hold the units for a few minutes.",
+        "Claim: when payment succeeds, take the units off the stock ledger for good. The ledger is the source of truth.",
+        "The rules: never oversell, never lose a reservation, reserve only from locations that can ship the order, and keep up with the busiest sale of the year."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Two systems, no shared transaction"
+    },
+    {
+      "t": "p",
+      "x": "In the old design each item had a counter in Redis: reserving was `DECR` and releasing was `INCR`. Redis handled many checkouts at once without trouble. The claim was the problem. It had to update the ledger in MySQL and clear the hold in Redis, and no transaction covers two different systems. If the work stopped between the two steps:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Hold cleared, ledger not updated: the unit is sold but the ledger still counts it, so it can be sold again. Oversold.",
+        "Ledger updated, hold not cleared: the unit has left the ledger and is still held, so it is counted out twice and buyers are turned away from stock that exists. Undersold.",
+        "Redis also knew nothing about locations, and it was one more cluster to run."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "With the reservations in the same database as the ledger, reserve, claim and the ledger change can share one ACID transaction, and those failures can't happen."
+    },
+    {
+      "t": "h2",
+      "x": "One row per unit"
+    },
+    {
+      "t": "fig",
+      "id": "shopify-skip-locked",
+      "cap": "Each row is one unit for sale. A checkout locks the rows it takes, and SKIP LOCKED makes the next checkout pass over them to free ones instead of waiting. A refill tops the pool back up from the stock ledger."
+    },
+    {
+      "t": "p",
+      "x": "An earlier attempt to do this in MySQL had failed. With one row per item and a quantity column, every checkout for a popular item waits for the same row lock, one after another. MySQL 8's SKIP LOCKED made a different shape possible: one row per unit. An item with 10 units has 10 rows, and reserving 3 means taking 3 rows in one transaction. If another transaction has locked some rows, the query skips them and returns free ones, so nobody waits."
+    },
+    {
+      "t": "code",
+      "label": "A RESERVATION, SIMPLIFIED (OUR SKETCH)",
+      "x": "-- one transaction, at READ COMMITTED\nSELECT id FROM reservation_units\n WHERE shop_id = ? AND inventory_item_id = ? AND inventory_group_id = ?\n LIMIT 3\n FOR UPDATE SKIP LOCKED;           -- rows others have locked are passed over\n\nDELETE FROM reservation_units WHERE id IN (...);    -- the units first\nINSERT INTO reserved_quantities (...) VALUES (...); -- then the hold\nCOMMIT;",
+      "say": "A simplified reservation in one transaction at read committed. Select three unit rows for this shop, item and inventory group, locking them and skipping rows that other transactions have locked. Delete those rows from the units table, then insert the hold into reserved quantities, and commit."
+    },
+    {
+      "t": "p",
+      "x": "Not every unit gets a row. An item with 50,000 units in 10 locations would need 500,000 rows, and finding free ones would slow down. So each item and location keeps a pool of at most 1,000 free rows, sized from the busiest flash sales they had seen, and a background process refills it from the ledger. If a flash sale empties the pool, the reservation that finds it empty refills it there and then. A lock lets only one transaction refill, and the others for that item wait for it instead of all inserting rows at once. That reservation is slower, but no buyer is told 'sold out' while stock exists."
+    },
+    {
+      "t": "h2",
+      "x": "Four details that mattered"
+    },
+    {
+      "t": "h3",
+      "x": "A primary key that matches the query"
+    },
+    {
+      "t": "p",
+      "x": "The first prototype used an auto-increment ID as the primary key, and each reservation took two locks per row: one in the secondary index the WHERE clause used, and one in the primary key. Making the primary key (shop_id, inventory_item_id, inventory_group_id, id), the columns the query filters on, cut it to one lock per row."
+    },
+    {
+      "t": "h3",
+      "x": "READ COMMITTED, to avoid gap locks"
+    },
+    {
+      "t": "p",
+      "x": "At MySQL's default isolation, REPEATABLE READ, `SELECT … FOR UPDATE` on an empty range also locks the gap where new rows would go. That blocked the refill from inserting rows, and could deadlock. These transactions run at READ COMMITTED, which doesn't take those gap locks. It was the first non-default isolation level in that codebase."
+    },
+    {
+      "t": "h3",
+      "x": "The same lock order everywhere"
+    },
+    {
+      "t": "p",
+      "x": "Reserve inserted the hold and then deleted the unit rows, while claim deleted holds, so two transactions could each hold a lock the other was waiting for. Now reserve always deletes the units first and then inserts the hold, and claim touches only the holds table. When every path takes locks in the same order, no cycle can form."
+    },
+    {
+      "t": "h3",
+      "x": "One round trip per cart"
+    },
+    {
+      "t": "p",
+      "x": "A cart with several items fetches the units for all of them in one query, joined with UNION ALL, instead of one query per item."
+    },
+    {
+      "t": "h2",
+      "x": "The bottleneck was elsewhere"
+    },
+    {
+      "t": "p",
+      "x": "In production tests, throughput stopped well short of the target. Reservation latency was fine, CPU wasn't maxed out and the queries were tuned. What they did see: threads queueing inside MySQL, CPU spikes when that queued work ran, and the ProxySQL layer running out of connections to MySQL."
+    },
+    {
+      "t": "p",
+      "x": "Knowing the connections are used up doesn't say who is holding them. So every SQL statement got a comment naming the business process that sent it, such as `/* conn_tag:checkout_completion */`, and the ProxySQL layer measured how long each tag held a connection. The answer: other steps of checkout were holding connections through long transactions. Reservations weren't slow; they were the last arrival at a pool that was nearly empty."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cleaning up the checkout path removed half the reads and a third of the transactions on the primary database.",
+        "InnoDB's thread concurrency limit had been set cautiously years before. Raising it where there was room removed a limit nobody had seen until the connection and CPU graphs sat side by side.",
+        "Afterwards, during big flash sales, the primary's CPU stayed under 50% and the replicas' under 16%."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Switching over safely"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Shadow mode: every reservation went to both Redis and MySQL, with Redis still in charge. Comparing the two on real traffic showed that MySQL gave the same answers, fast enough.",
+        "Nothing to copy: holds last only minutes, so MySQL built up its own set while the holds in Redis ran out.",
+        "Then MySQL became the source of truth, with Redis still written to and a kill switch to go back.",
+        "The rollout went pod by pod, from the quietest shops up to the busiest."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For 'two buyers, one item', keep the hold and the stock in one database so one transaction can change both. Two stores with no shared transaction leave a gap where oversells happen.",
+        "A single counter row makes everyone wait in line. Rows per unit with SKIP LOCKED let buyers take different rows at once, and a cap on the rows keeps the search short.",
+        "When throughput stalls with CPU to spare, look for a pool that has run out: connections, threads, locks. Tag the work so you can see who is holding what.",
+        "Migrate with shadow writes: compare, switch the source of truth, keep a way back.",
+        "Related: 'Contention' in Concepts, and 'Design match ticket booking' in Interview Questions."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Shopify Engineering's post 'We replaced Redis with MySQL for inventory reservations, and it scaled' (May 2026). The numbers are Shopify's; the explanations and the diagram are ours."
+    }
+  ]
+}
