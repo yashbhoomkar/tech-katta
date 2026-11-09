@@ -353,6 +353,11 @@
           "indexing",
           "Database indexing",
           "Why indexes exist and what they cost, B-trees, LSM trees and hash indexes, and indexes for places, text, several columns and whole queries."
+        ],
+        [
+          "numbers",
+          "Numbers to know",
+          "Today's hardware limits, what one cache, database, app server and queue can do, and the mistakes current numbers prevent."
         ]
       ],
       "interview-questions": [
