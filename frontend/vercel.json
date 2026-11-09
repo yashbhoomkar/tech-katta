@@ -81,6 +81,136 @@
       "permanent": true
     },
     {
+      "source": "/dashboard/concepts/api-types",
+      "destination": "/dashboard/concepts/api-styles/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-types/",
+      "destination": "/dashboard/concepts/api-styles/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/tap-to-server",
+      "destination": "/dashboard/concepts/one-request/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/tap-to-server/",
+      "destination": "/dashboard/concepts/one-request/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shaping-apis",
+      "destination": "/dashboard/concepts/api-patterns/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shaping-apis/",
+      "destination": "/dashboard/concepts/api-patterns/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/estimates",
+      "destination": "/dashboard/concepts/numbers-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/estimates/",
+      "destination": "/dashboard/concepts/numbers-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/replication",
+      "destination": "/dashboard/concepts/cap-designs/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/replication/",
+      "destination": "/dashboard/concepts/cap-designs/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/consistency",
+      "destination": "/dashboard/concepts/cap-per-feature/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/consistency/",
+      "destination": "/dashboard/concepts/cap-per-feature/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-pacelc",
+      "destination": "/dashboard/concepts/cap-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-pacelc/",
+      "destination": "/dashboard/concepts/cap-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/modelling-data",
+      "destination": "/dashboard/concepts/data-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/modelling-data/",
+      "destination": "/dashboard/concepts/data-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/indexes",
+      "destination": "/dashboard/concepts/index-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/indexes/",
+      "destination": "/dashboard/concepts/index-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hash-rings",
+      "destination": "/dashboard/concepts/hash-ring/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hash-rings/",
+      "destination": "/dashboard/concepts/hash-ring/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/timeouts-retries",
+      "destination": "/dashboard/concepts/failing-calls/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/timeouts-retries/",
+      "destination": "/dashboard/concepts/failing-calls/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/consensus",
+      "destination": "/dashboard/papers/raft/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/consensus/",
+      "destination": "/dashboard/papers/raft/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/distributed-transactions",
+      "destination": "/dashboard/concepts/workflows/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/distributed-transactions/",
+      "destination": "/dashboard/concepts/workflows/",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

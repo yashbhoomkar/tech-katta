@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "numbers-components",
   "group": "numbers",
-  "no": "CONCEPT // 69",
+  "no": "CONCEPT // 44",
   "tag": "NUMBERS TO KNOW",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -44,7 +44,7 @@
         "Reads: simple indexed reads run at tens of thousands a second on one large primary, and read replicas multiply that. A read served from memory takes well under a millisecond inside the database; one that goes to SSD takes about a millisecond or a few.",
         "Writes: on fast NVMe storage, a well-tuned primary handles around 10,000 simple transactional writes a second, and more with batching. Heavy indexes, large rows or many writes per transaction lower it.",
         "Connections: each connection costs memory, so a few hundred active connections per instance is typical; use a pooler (PgBouncer) in front of many app servers.",
-        "The 'Back-of-envelope maths' article uses deliberately conservative figures for a mid-sized database (writes in the thousands a second); a large modern machine goes several times higher. Use the conservative figure when you want headroom, the larger one when deciding whether to shard."
+        "Older rules of thumb use deliberately conservative figures for a mid-sized database (writes in the thousands a second); a large modern machine goes several times higher. Use the conservative figure when you want headroom, the larger one when deciding whether to shard."
       ]
     },
     {

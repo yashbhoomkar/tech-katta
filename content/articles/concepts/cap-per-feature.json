@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "cap-per-feature",
   "group": "cap",
-  "no": "CONCEPT // 63",
+  "no": "CONCEPT // 38",
   "tag": "CAP THEOREM",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -113,7 +113,7 @@
     },
     {
       "t": "p",
-      "x": "CAP matters because it sets the direction of the design, and it shouldn't be skipped. But it doesn't need to be complicated. For each feature ask: 'Does every read need to see the most recent write?' If yes, prioritise consistency. If not, prioritise availability, and pick the weakest level of consistency your users won't notice. The concept 'Consistency models' goes further into each level and how to get it."
+      "x": "CAP matters because it sets the direction of the design, and it shouldn't be skipped. But it doesn't need to be complicated. For each feature ask: 'Does every read need to see the most recent write?' If yes, prioritise consistency. If not, prioritise availability, and pick the weakest level of consistency your users won't notice."
     },
     {
       "t": "h2",

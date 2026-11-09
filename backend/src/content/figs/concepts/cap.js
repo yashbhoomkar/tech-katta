@@ -5,4 +5,8 @@ export const FIGS = [
   'cp-choose',
   'cp-designs',
   'cp-per-feature',
+  'consistency-timeline',
+  'double-accept',
+  'cap-split',
+  'quorum-split',
 ];

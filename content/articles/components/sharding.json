@@ -148,7 +148,7 @@
     },
     {
       "t": "p",
-      "x": "Instead, split the keys into many fixed buckets, say 1,024, with `hash(key) % 1024`, and keep a small map of which bucket lives on which machine. Four machines hold 256 buckets each. Adding a fifth means moving about 205 buckets to it, one at a time, while the rest keep serving. Consistent hashing does the same job with a ring instead of a table (see the Hash rings concept). Managed stores such as DynamoDB, and Vitess or Citus on top of MySQL and PostgreSQL, move these pieces for you."
+      "x": "Instead, split the keys into many fixed buckets, say 1,024, with `hash(key) % 1024`, and keep a small map of which bucket lives on which machine. Four machines hold 256 buckets each. Adding a fifth means moving about 205 buckets to it, one at a time, while the rest keep serving. Consistent hashing does the same job with a ring instead of a table (see the Consistent hashing concepts). Managed stores such as DynamoDB, and Vitess or Citus on top of MySQL and PostgreSQL, move these pieces for you."
     },
     {
       "t": "more",

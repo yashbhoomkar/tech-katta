@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "shard-problems",
   "group": "sharding",
-  "no": "CONCEPT // 57",
+  "no": "CONCEPT // 32",
   "tag": "SHARDING",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -109,7 +109,7 @@
     },
     {
       "t": "p",
-      "x": "Most applications can be designed with no cross-shard transactions at all. If you keep needing them, the shard key or the boundaries between shards are probably wrong. The concept 'Transactions across services' covers sagas and the outbox in depth."
+      "x": "Most applications can be designed with no cross-shard transactions at all. If you keep needing them, the shard key or the boundaries between shards are probably wrong. The concept 'Processes with many steps' covers sagas and the outbox."
     },
     {
       "t": "h2",

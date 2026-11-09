@@ -10,4 +10,6 @@ export const FIGS = [
   'ch-salt',
   'ch-replicas',
   'ch-playground',
+  'hash-move',
+  'hash-vnodes',
 ];

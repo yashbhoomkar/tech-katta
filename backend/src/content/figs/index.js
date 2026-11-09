@@ -1,9 +1,5 @@
 // Figure ids the frontend can draw, one list per sub-tab: backend/src/content/figs/<tab>/<sub-tab>.js mirrors
 // frontend/src/figs/<tab>/<sub-tab>.jsx, and a test checks that each pair has the same ids.
-import { FIGS as concepts_basics } from './concepts/basics.js';
-import { FIGS as concepts_data } from './concepts/data.js';
-import { FIGS as concepts_reliability } from './concepts/reliability.js';
-import { FIGS as concepts_coordination } from './concepts/coordination.js';
 import { FIGS as concepts_patterns } from './concepts/patterns.js';
 import { FIGS as concepts_specialised } from './concepts/specialised.js';
 import { FIGS as concepts_networking } from './concepts/networking.js';
@@ -28,10 +24,6 @@ import { FIGS as papers_must_know } from './papers/must-know.js';
 import { FIGS as papers_worth_reading } from './papers/worth-reading.js';
 
 export const FIGS = new Set([
-  ...concepts_basics,
-  ...concepts_data,
-  ...concepts_reliability,
-  ...concepts_coordination,
   ...concepts_patterns,
   ...concepts_specialised,
   ...concepts_networking,

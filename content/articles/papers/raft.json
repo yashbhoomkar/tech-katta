@@ -19,7 +19,7 @@
     },
     {
       "t": "p",
-      "x": "The paper: \"In Search of an Understandable Consensus Algorithm\" by Diego Ongaro and John Ousterhout, USENIX ATC 2014. The Consensus concept covers majorities and elections in general; this page follows the paper itself."
+      "x": "The paper: \"In Search of an Understandable Consensus Algorithm\" by Diego Ongaro and John Ousterhout, USENIX ATC 2014."
     },
     {
       "t": "example"

@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "live-updates",
   "group": "patterns",
-  "no": "CONCEPT // 14",
+  "no": "CONCEPT // 50",
   "tag": "REAL-TIME UPDATES",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "The 'From tap to server' concept compares polling, long polling, server-sent events and WebSockets for the last hop, between a server and a phone. At scale the harder part is the first hop. The update happens in the order service, but the customer's connection lives on one of hundreds of connection servers, and something has to carry the update from one to the other."
+      "x": "The Real-time updates concepts compare polling, long polling, server-sent events and WebSockets for the last hop, between a server and a phone. At scale the harder part is the first hop. The update happens in the order service, but the customer's connection lives on one of hundreds of connection servers, and something has to carry the update from one to the other."
     },
     {
       "t": "h2",

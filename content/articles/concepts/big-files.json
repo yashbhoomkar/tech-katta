@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "big-files",
   "group": "patterns",
-  "no": "CONCEPT // 19",
+  "no": "CONCEPT // 55",
   "tag": "LARGE FILES",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -78,7 +78,7 @@
         "Public files, such as menu photos, go through the CDN with long cache times. When a file changes, give it a new key instead of overwriting the old one, so stale copies don't linger.",
         "Private files, such as invoices, get a signed download URL that lasts a few minutes, issued after checking who is asking.",
         "Range requests let a video player jump ahead and a broken download resume. Object storage and CDNs support them already.",
-        "For a huge export, build the file in the background and send a link when it is ready, as in 'Slow work: accept now, finish later' in the Shaping an API concept."
+        "For a huge export, build the file in the background and send a link when it is ready, as in the concept 'Jobs that run for minutes'."
       ]
     },
     {

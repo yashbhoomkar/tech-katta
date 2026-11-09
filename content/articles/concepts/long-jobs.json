@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "long-jobs",
   "group": "patterns",
-  "no": "CONCEPT // 20",
+  "no": "CONCEPT // 56",
   "tag": "BACKGROUND JOBS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "The Shaping an API concept shows the API side: answer 202 with a job ID, and let the app check the job's status. Behind it sit a jobs table or queue and a pool of workers. Each job record holds its type, its input, its state (queued, running, done, failed), its attempts and its result."
+      "x": "On the API side, answer 202 with a job ID, and let the app check the job's status. Behind it sit a jobs table or queue and a pool of workers. Each job record holds its type, its input, its state (queued, running, done, failed), its attempts and its result."
     },
     {
       "t": "h2",

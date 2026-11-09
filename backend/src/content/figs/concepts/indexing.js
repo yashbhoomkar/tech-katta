@@ -9,4 +9,6 @@ export const FIGS = [
   'ix-hash',
   'ix-geo-band',
   'ix-covering',
+  'btree-path',
+  'index-order',
 ];
