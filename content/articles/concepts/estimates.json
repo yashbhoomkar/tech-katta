@@ -132,7 +132,7 @@
         ],
         [
           "Relational database primary",
-          "thousands to tens of thousands of simple indexed reads a second; writes a few thousand a second"
+          "thousands to tens of thousands of simple indexed reads a second; writes several thousand a second on a mid-sized machine, around 10,000 on a large one"
         ],
         [
           "In-memory cache node",
@@ -148,7 +148,7 @@
         ],
         [
           "Memory and disk",
-          "64–512 GB of memory; several TB of SSD"
+          "64–512 GB of memory (terabytes on memory-optimised machines); several to tens of TB of SSD"
         ]
       ]
     },

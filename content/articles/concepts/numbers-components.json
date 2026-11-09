@@ -1,0 +1,152 @@
+{
+  "section": "concepts",
+  "slug": "numbers-components",
+  "group": "numbers",
+  "no": "CONCEPT // 69",
+  "tag": "NUMBERS TO KNOW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "What one machine can do: caches, databases, app servers and queues",
+  "dek": "Each component has rough limits worth knowing: how many operations a second, how much data, how fast. Knowing them tells you when one instance is enough, when to add replicas or a cache, and when to split. The figures here are rounded, for well-provisioned modern machines and simple operations; real numbers depend on the workload, so treat them as orders of magnitude, and measure in real life.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Cache (Redis, Memcached): around 1 lakh to several lakh simple operations a second per node, sub-millisecond, with tens to hundreds of GB of memory.",
+        "Relational database (PostgreSQL, MySQL) on a large machine: tens of thousands of simple indexed reads a second, around 10,000 or more simple writes a second, and tens of terabytes of data before size alone forces a split.",
+        "App server: thousands to tens of thousands of simple requests a second, depending on the work per request. Kafka broker: hundreds of MB a second and lakhs of small messages a second, a few milliseconds end to end."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Caches"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Throughput: a single Redis node handles around 1 lakh simple operations a second, and several lakh with pipelining or on newer multi-threaded versions. A cluster multiplies that by the number of shards.",
+        "Latency: well under a millisecond on the server; about half a millisecond to a millisecond as seen by an app server in the same zone, mostly network.",
+        "Memory: nodes with tens to hundreds of GB are normal; a terabyte of cache across a small cluster is not unusual.",
+        "So: a cache is justified by a hot read path or an expensive computation, not by 'the database might be slow'. One node often covers a large product's hot data."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Databases"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Data size: a single PostgreSQL or MySQL instance comfortably holds several terabytes, and tens of terabytes with care; managed versions such as Aurora go to 128–256 TiB. Size alone is rarely the reason to shard below that.",
+        "Reads: simple indexed reads run at tens of thousands a second on one large primary, and read replicas multiply that. A read served from memory takes well under a millisecond inside the database; one that goes to SSD takes about a millisecond or a few.",
+        "Writes: on fast NVMe storage, a well-tuned primary handles around 10,000 simple transactional writes a second, and more with batching. Heavy indexes, large rows or many writes per transaction lower it.",
+        "Connections: each connection costs memory, so a few hundred active connections per instance is typical; use a pooler (PgBouncer) in front of many app servers.",
+        "The 'Back-of-envelope maths' article uses deliberately conservative figures for a mid-sized database (writes in the thousands a second); a large modern machine goes several times higher. Use the conservative figure when you want headroom, the larger one when deciding whether to shard."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Application servers"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Throughput: a modern server with 16 to 64 cores handles thousands to tens of thousands of simple requests a second, such as reading a cached object and returning JSON. Heavy work (image resizing, large JSON, complex templates) cuts that to hundreds.",
+        "Memory: 32 to 512 GB, so an in-process cache of a few GB is cheap.",
+        "Most of a request's time is usually spent waiting on databases and other services, not on the CPU; that's why a server can hold thousands of requests open at once with asynchronous I/O.",
+        "Scale them out freely: keep them stateless and add more behind a load balancer."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Message queues and logs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Kafka: one broker handles hundreds of MB a second of writes and lakhs of small messages a second; a cluster scales by adding brokers and partitions. End-to-end latency is a few milliseconds, and retention can be days or weeks of data on each broker's disks.",
+        "Managed queues such as SQS: standard queues scale to very high rates without planning; FIFO queues have lower per-queue limits (hundreds to thousands of messages a second, more in high-throughput mode).",
+        "So: a queue is rarely the bottleneck. It's chosen for decoupling, buffering bursts and retrying, not because a database can't take a few thousand writes a second."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nm-capacity",
+      "cap": "Rough operations a second for one well-provisioned instance of each component, on a log scale. Each bar is an order of magnitude to remember, not a benchmark."
+    },
+    {
+      "t": "h2",
+      "x": "Cheat sheet"
+    },
+    {
+      "t": "table",
+      "label": "Numbers to know (one modern instance, simple operations)",
+      "head": [
+        "Component",
+        "Throughput",
+        "Latency",
+        "Size",
+        "Split or scale when"
+      ],
+      "rows": [
+        [
+          "Cache node (Redis)",
+          "1 lakh to several lakh ops/s",
+          "< 1 ms",
+          "tens to hundreds of GB",
+          "memory or ops/s exceed one node"
+        ],
+        [
+          "Relational database",
+          "tens of thousands reads/s; ~10,000 writes/s",
+          "~1 ms indexed read",
+          "several to tens of TB",
+          "writes or data clearly exceed one primary"
+        ],
+        [
+          "App server",
+          "thousands to tens of thousands req/s",
+          "a few ms of own work",
+          "32–512 GB memory",
+          "CPU busy; just add servers"
+        ],
+        [
+          "Kafka broker",
+          "hundreds of MB/s; lakhs of msgs/s",
+          "a few ms end to end",
+          "TBs of retention",
+          "throughput or retention per broker"
+        ],
+        [
+          "Object storage (S3)",
+          "very high, per prefix limits",
+          "tens of ms per request",
+          "effectively unlimited",
+          "rarely; use a CDN in front for reads"
+        ],
+        [
+          "Network",
+          "25–100+ Gbit/s per machine",
+          "< 1 ms same zone; 1–2 ms cross zone",
+          "not the limit",
+          "cross-region calls in a hot path"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Quote an order of magnitude and say it's approximate: 'one Postgres primary can take around ten thousand simple writes a second'.",
+        "Compare your peak numbers with the table before adding a component: if one instance covers it with room to spare, say so and keep the design simple.",
+        "When a number is close to a limit, add headroom (a replica, a cache) rather than a whole new architecture."
+      ]
+    }
+  ]
+}
