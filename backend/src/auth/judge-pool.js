@@ -8,6 +8,7 @@
 import { Worker } from 'node:worker_threads';
 import os from 'node:os';
 
+// code: judge_busy, judge_timeout, judge_failed (the design couldn't be judged; `detail` says why), judge_closed
 export class JudgeError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
@@ -41,7 +42,7 @@ export function judgePool({ size = defaultSize(), timeoutMs = 10_000, maxQueue =
       fn(value);
       pump();
     };
-    const onMessage = (m) => { if (m?.id !== id) return; if (m.ok) finish(resolve, { judged: m.judged, copied: m.copied }, true); else finish(reject, new Error(m.error), true); };
+    const onMessage = (m) => { if (m?.id !== id) return; if (m.ok) finish(resolve, { judged: m.judged, copied: m.copied }, true); else finish(reject, Object.assign(new JudgeError('judge_failed'), { detail: m.error }), true); };
     const onError = (error) => finish(reject, error, false);
     const onExit = () => finish(reject, new JudgeError('judge_failed'), false);
     const timer = setTimeout(() => finish(reject, new JudgeError('judge_timeout'), false), timeoutMs);
