@@ -1,0 +1,23 @@
+// Components › Tools by name: the figure ids this sub-tab's frontend module (frontend/src/figs/components/tools.jsx) draws.
+export const FIGS = [
+  'redis-types',
+  'redis-slots',
+  'es-inverted',
+  'es-sync',
+  'kafka-group',
+  'kafka-isr',
+  'temporal-arch',
+  'temporal-signal',
+  'gw-canary',
+  'gw-cost',
+  'cass-model',
+  'cass-tombstone',
+  'ddb-keys',
+  'ddb-hot',
+  'pg-mvcc',
+  'pg-pool',
+  'flink-window',
+  'flink-checkpoint',
+  'zk-election',
+  'zk-quorum',
+];

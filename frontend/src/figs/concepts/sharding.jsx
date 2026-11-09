@@ -1,7 +1,6 @@
-// Figures for the "Sharding" group in Concepts. Same conventions as caching.jsx: 640-wide viewBox, Swiss colours,
-// four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X}from"./parts.jsx";
-
+// Concepts › Sharding: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "sharding").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X}from"../parts.jsx";
 
 // Sharding in an interview: scale up hits a ceiling, scale out keeps growing.
 function CeilingFig({still,uid=""}){
@@ -116,7 +115,7 @@ const caps=[["1 · step 1 commits on shard 1: wallet A is debited ₹500",INK],[
 return <Fig still={still} h={234} id={`stt${uid}`} M={M} caps={caps} title="A transfer between two shards as a saga. Step 1 debits wallet A by 500 rupees on shard 1 and commits. Step 2 tries to credit wallet B on shard 2 and fails. A compensating step then refunds wallet A on shard 1. Each step is an ordinary local transaction, and no lock spans both shards."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const SHARD_FIGS={
+export const FIGS={
 "sh-ceiling":{C:CeilingFig,ar:640/246,title:()=>"A BIGGER MACHINE, OR MORE MACHINES"},
 "sh-partition":{C:PartitionFig,ar:640/232,title:()=>"ONE TABLE, MONTHLY PARTITIONS"},
 "sh-vertical":{C:VerticalFig,ar:640/216,title:()=>"SPLITTING A TABLE BY COLUMNS"},

@@ -1,10 +1,12 @@
-// Figures for the "Data modelling" group in Concepts. Same conventions as apidesign.jsx: 640-wide viewBox, Swiss colours,
-// four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X,OK}from"./parts.jsx";
+// Concepts › Data modelling: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "data-modelling").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK}from"../parts.jsx";
 
 const HEAD="#f3f5f8";
+
 // A table: a name bar and one mono line per column. Row i is centred near y+30+14i.
 const Tbl=({x,y,w,name,cols,c=GREY,fill="#fff"})=><g><rect x={x} y={y} width={w} height={26+cols.length*14} fill={fill} stroke={c}/><rect x={x} y={y} width={w} height={20} fill={HEAD} stroke={c}/><T x={x+8} y={y+14} t={name} b/>{cols.map((k,i)=><T key={i} x={x+8} y={y+33+i*14} t={k}/>)}</g>;
+
 const Tag=({x,y,i,t})=><T x={x} y={y+33+i*14} t={t} a="end" c={BLUE}/>;
 
 // Data modelling in an interview, FIG 1: the finished whiteboard.
@@ -118,7 +120,7 @@ const caps=[["1 · orders are sharded by city: each city's orders live on one sh
 return <Fig still={still} h={272} id={`dst${uid}`} M={M} caps={caps} title="Orders sharded by city across three shards: Mumbai, Pune and Delhi. A restaurant's live orders, for restaurant 42 in Mumbai, include the shard key, so one shard answers. User 77's history has orders in all three cities, so every shard has to be asked and the app merges the answers. That is fine if it's rare; if not, keep a second copy of orders keyed by user."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const DM_FIGS={
+export const FIGS={
 "dm-whiteboard":{C:WhiteboardFig,ar:640/316,title:()=>"THE DATA MODEL ON THE WHITEBOARD"},
 "dm-kv-cache":{C:KvCacheFig,ar:640/296,title:()=>"A KEY-VALUE CACHE IN FRONT OF THE DATABASE"},
 "dm-wide":{C:WideFig,ar:640/222,title:()=>"ONE RIDER'S PINGS, IN ONE SORTED PARTITION"},

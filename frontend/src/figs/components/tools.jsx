@@ -1,8 +1,7 @@
-// Figures for the "Tools by name" articles in Components (Redis, Elasticsearch, Kafka, Temporal, gateways,
-// Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper). Same conventions as concepts.jsx: 640-wide viewBox,
-// Swiss colours, four captioned steps on a loop, the last step drawn when `still`, and a `uid` for markers.
-import React from"react";import{Glow,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps}from"./parts.jsx";
-
+// Components › Tools by name: the figures this sub-tab's articles draw (site.json dashboard.groups.components, "tools").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+// The tools: Redis, Elasticsearch, Kafka, Temporal, gateways, Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper.
+import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps}from"../parts.jsx";
 
 // Redis, FIG 1: five data types, each with one command and the Zotato job it does.
 function RedisTypesFig({still,uid=""}){
@@ -242,7 +241,7 @@ const m=[null,<g key={2}><Msg x1={X[0]} x2={X[1]} y={92} t="set /config" m={M}/>
 return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`zqt${uid}`}><title id={`zqt${uid}`}>A ZooKeeper ensemble of five servers: a leader and four followers. A client's write goes to the leader, which proposes it to every follower. Once two followers have acknowledged it, three of the five including the leader, it is committed and the client is told. Reads are answered by whichever server the client is connected to, so a read from a follower that hasn't caught up can return the old value; calling sync first makes the read see the latest committed write.</title><Mk m={M}/>
 {lanes}{still?<g>{m}<Cap t={caps[3][0]} c={RED}/></g>:<Steps caps={caps} g={m}/>}</svg>}
 
-export const TOOL_FIGS={
+export const FIGS={
 "redis-types":{C:RedisTypesFig,ar:640/264,title:()=>"ONE SERVER, FIVE SHAPES OF DATA"},
 "redis-slots":{C:RedisSlotsFig,ar:640/256,title:()=>"16,384 SLOTS, THREE PRIMARIES"},
 "es-inverted":{C:EsInvertedFig,ar:640/240,title:()=>"FROM DISH NAMES TO AN INVERTED INDEX"},

@@ -1,7 +1,6 @@
-// Figures for the "Caching" group in Concepts. Same conventions as datamodel.jsx: 640-wide viewBox, Swiss colours,
-// four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X}from"./parts.jsx";
-
+// Concepts › Caching: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "caching").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X}from"../parts.jsx";
 
 // Caching in an interview, FIG 1: the same reads with and without a cache.
 function WhyFig({still,uid=""}){const M=`cw${uid}`;
@@ -161,7 +160,7 @@ const caps=[["1 · every server reads promo:final-night, and the key lives on on
 return <Fig still={still} h={258} id={`cht${uid}`} M={M} caps={caps} only={[0,1]} title="A hot key. During a cricket final every app server reads promo:final-night, and the key lives on one Redis node, which takes 4 lakh reads a second while the other nodes handle about 2,000. Copying the key to all three nodes spreads the reads to about 1.3 lakh a second each. Keeping a 5-second copy in each app server's own memory stops most reads inside the server, so Redis sees only a few reads a second for the key."
 base={base} g={[hot,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 
-export const CACHE_FIGS={
+export const FIGS={
 "ca-why":{C:WhyFig,ar:640/250,title:()=>"THE SAME READS, WITH AND WITHOUT A CACHE"},
 "ca-layers":{C:LayersFig,ar:640/206,title:()=>"ONE MENU VIEW, LAYER BY LAYER"},
 "ca-external":{C:ExternalFig,ar:640/228,title:()=>"ONE CACHE FOR EVERY SERVER"},

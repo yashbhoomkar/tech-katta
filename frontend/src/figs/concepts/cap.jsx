@@ -1,5 +1,6 @@
-// Figures for the "CAP theorem" group in Concepts. Same conventions as sharding.jsx.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
+// Concepts › CAP theorem: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "cap").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=8})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
@@ -57,7 +58,7 @@ const caps=[["1 · booking a seat goes to one consistent store",INK],["2 · brow
 return <Fig still={still} h={248} id={`pft${uid}`} M={M} caps={caps} title="One ticketing app, two choices. Booking seat 14 in block C goes to one bookings database with a single primary: consistency. Browsing the match page is served by replicas and a cache near the user: availability. During a network split, booking refuses and asks the user to try again, so no seat is sold twice, while browsing keeps working with a preview a minute old."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const CAP_FIGS={
+export const FIGS={
 "cp-replicate":{C:ReplicateFig,ar:640/222,title:()=>"ONE RENAME, TWO COPIES"},
 "cp-partition":{C:PartitionFig,ar:640/248,title:()=>"THE LINK IS DOWN: ERROR OR OLD NAME?"},
 "cp-choose":{C:ChooseFig,ar:640/262,title:()=>"ONE QUESTION PER FEATURE"},

@@ -1,9 +1,6 @@
-// Figures for the "API design" group in Concepts. Same conventions as network.jsx: 640-wide viewBox, Swiss colours,
-// four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Dot,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X,OK}from"./parts.jsx";
-
-const MONO={fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:500};
-const Big=({x,y,t,c=INK})=><text x={x} y={y} style={{...MONO,fill:c}}>{t}</text>;
+// Concepts › API design: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "api-design").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK}from"../parts.jsx";
 
 // The API step, FIG 1: three questions pick the style.
 function ChooseFig({still,uid=""}){const M=`ac${uid}`;
@@ -110,7 +107,7 @@ const caps=[["1 · every request is checked twice: first who is calling",BLUE],[
 return <Fig still={still} h={262} id={`azt${uid}`} M={M} caps={caps} title="Authentication then authorisation. Priya, user 77, asks to cancel order 9101. First check: who is it? Her token is valid, so she is user 77. Second check: may she? The order's owner is user 77, so the cancellation goes through with 200. Then user 88 sends the same request for Priya's order with a valid token of their own. The first check passes, but the order's owner is 77, not 88, so the answer is 403 Forbidden: a valid token is not permission."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const API_FIGS={
+export const FIGS={
 "ad-choose":{C:ChooseFig,ar:640/272,title:()=>"PICKING AN API STYLE IN THREE QUESTIONS"},
 "ad-retry-methods":{C:RetryMethodsFig,ar:640/252,title:()=>"THE SAME REQUEST, SENT TWICE"},
 "ad-parts":{C:PartsFig,ar:640/254,title:()=>"PATH, QUERY, BODY AND HEADERS"},

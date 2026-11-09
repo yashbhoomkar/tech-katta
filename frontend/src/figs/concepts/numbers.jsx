@@ -1,8 +1,11 @@
-// Figures for the "Numbers to know" group in Concepts. Same conventions as sharding.jsx. Bars use log scales.
-import React from"react";import{Show,Bx,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
+// Concepts › Numbers to know: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "numbers").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+// Bars use log scales.
+import React from"react";import{INK,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
 
 // A log-scale bar: label on the left, bar from x0 to sx(v), value text after it.
 const Bar=({y,label,v,sx,x0,t,c=BLUE})=><g><T x={10} y={y+13} t={label}/><rect x={x0} y={y} width={Math.max(2,sx(v)-x0)} height={18} fill={c===RED?LR:LB} stroke={c}/><T x={sx(v)+6} y={y+13} t={t} c={c}/></g>;
+
 const Axis=({sx,ticks,y})=><g>{ticks.map(([v,t])=><g key={t}><line x1={sx(v)} y1={48} x2={sx(v)} y2={y} stroke="#e3e7ec"/><T x={sx(v)} y={y+14} t={t} a="middle"/></g>)}</g>;
 
 // FIG: what one machine offers today.
@@ -66,7 +69,7 @@ const caps=[["1 · menu edits and orders: tens to hundreds of writes a second",B
 return <Fig still={still} h={240} id={`nwt${uid}`} caps={caps} title="Write rates against one primary database, on a log scale. Menu edits are about 10 writes a second at peak, orders about 600, and order status updates about 3,000, all comfortably within one primary's range of up to about ten thousand. Rider location pings at about 2 lakh a second are the exception that needs an LSM-based store, batching or sharding."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const NUM_FIGS={
+export const FIGS={
 "nm-machine":{C:MachineFig,ar:640/236,title:()=>"ONE MACHINE, TODAY"},
 "nm-latency":{C:LatencyFig,ar:640/258,title:()=>"THE LATENCY LADDER"},
 "nm-capacity":{C:CapacityFig,ar:640/246,title:()=>"WHAT ONE INSTANCE CAN TAKE"},

@@ -1,6 +1,6 @@
-// Figures for the "Real-time updates" group in Concepts. Same conventions as sharding.jsx.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
-
+// Concepts › Real-time updates: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "realtime").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,T,Fig}from"../parts.jsx";
 
 // Real-time in an interview: two hops.
 function TwoHopsFig({still,uid=""}){const M=`rh${uid}`;
@@ -77,7 +77,7 @@ const caps=[["1 · the conversation's owner numbers each message: #17, then #18"
 return <Fig still={still} h={214} id={`rot${uid}`} M={M} caps={caps} title="Keeping messages in order. The chat service, which owns the conversation, numbers each of Asha's messages: 17, 'free tonight?', then 18, 'or tomorrow?'. They travel through different servers and 18 reaches Ravi's phone first, then 17. The phone orders them by number, so it shows 17 then 18 and the chat reads correctly."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-export const RT_FIGS={
+export const FIGS={
 "rt-two-hops":{C:TwoHopsFig,ar:640/242,title:()=>"TWO HOPS TO RAVI'S PHONE"},
 "rt-polling":{C:PollingFig,ar:640/232,title:()=>"ASK AGAIN, OR WAIT FOR NEWS"},
 "rt-hash-route":{C:HashRouteFig,ar:640/262,title:()=>"THE HASH SAYS WHERE RAVI IS"},

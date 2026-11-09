@@ -1,18 +1,27 @@
-// Figures for the "Consistent hashing" group in Concepts. Same conventions as sharding.jsx. Ring positions run
-// 0–100 clockwise from the top, like the articles' 100-position ring.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
+// Concepts › Consistent hashing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "consistent-hashing").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+// Ring positions run 0–100 clockwise from the top, like the articles' 100-position ring.
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=6})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
 // Ring helpers. pos 0..100 clockwise from the top.
 const pt=(cx,cy,r,p)=>{const a=p/100*2*Math.PI-Math.PI/2;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+
 const Ring=({cx,cy,r})=><circle cx={cx} cy={cy} r={r} fill="none" stroke={GREY} strokeWidth="1.5"/>;
+
 const Arc=({cx,cy,r,p1,p2,c=BLUE,w=6})=>{let q=p2<=p1?p2+100:p2;const[x1,y1]=pt(cx,cy,r,p1),[x2,y2]=pt(cx,cy,r,q);return <path d={`M${x1} ${y1}A${r} ${r} 0 ${q-p1>50?1:0} 1 ${x2} ${y2}`} fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" opacity="0.85"/>;};
+
 const Node=({cx,cy,r,p,t,c=INK,fill="#fff",nr=15})=>{const[x,y]=pt(cx,cy,r,p);return <g><circle cx={x} cy={y} r={nr} fill={fill} stroke={c} strokeWidth="1.5"/><text x={x} y={y+4} textAnchor="middle" className="fb" style={{fill:c,fontSize:nr<13?10:11}}>{t}</text></g>;};
+
 const Key=({cx,cy,r,p,c=BLUE,t})=>{const[x,y]=pt(cx,cy,r,p);const[lx,ly]=pt(cx,cy,r-22,p);return <g><circle cx={x} cy={y} r={5} fill={c}/>{t&&<text x={lx} y={ly+3} textAnchor="middle" className="fl" style={{fill:c}}>{t}</text>}</g>;};
+
 const Lab=({cx,cy,r,p,t})=>{const[x,y]=pt(cx,cy,r+26,p);return <text x={x} y={y+3} textAnchor="middle" className="fl">{t}</text>;};
+
 const C={cx:150,cy:150,r:88};
+
 const DB4=[[0,"DB1"],[25,"DB2"],[50,"DB3"],[75,"DB4"]];
+
 const nodes4=(skip)=><g>{DB4.map(([p,t])=>p!==skip&&<g key={t}><Lab {...C} p={p} t={String(p)}/><Node {...C} p={p} t={t}/></g>)}</g>;
 
 // The hash ring, FIG 1: from one database to several.
@@ -129,17 +138,22 @@ const caps=[["1 · a key belongs to the first server clockwise from its hash",BL
 return <Fig still={still} h={250} id={`cpt${uid}`} caps={caps} title="Replication on the ring. Key K hashes to position 9, so its owner is S2, the first server clockwise. With a replication factor of 3, copies are also kept on the next two servers, S3 and S4. When S2 fails, S3 already has K and answers straight away, so nothing has to be copied before service goes on."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
-
 // Consistent hashing, interactive: a ring you can change. Not a captioned loop like the others; it has state.
 const fnv=str=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;};
+
 const PAL=["#1c2733","#2855d9","#c8372d","#1f8a5b","#b7791f","#7c3aed","#0e7490","#be185d"];
+
 const NK=40,KEYS=Array.from({length:NK},(_,i)=>{const h=fnv(`match-${i}`);return{h,p:(h%10000)/100};});
+
 const place=(servers,v)=>{const pts=[];servers.forEach(s=>{for(let k=0;k<(v?6:1);k++){const h=fnv(`1700:S${s}#${k}`);pts.push({s,p:(h%10000)/100});}});pts.sort((a,b)=>a.p-b.p);
 return{pts,own:KEYS.map(k=>(pts.find(x=>x.p>=k.p)||pts[0]).s)};};
+
 const START={servers:[1,2,3,4],v:false,prev:null,msg:"Four servers, one point each. Change something.",mod:null};
+
 const Btn=({x,y,w,t,on,off,act})=>{const go=e=>{if(off)return;if(e.type==="click"||e.key==="Enter"||e.key===" "){e.preventDefault();on();}};
 return <g role="button" tabIndex={off?-1:0} aria-disabled={off||undefined} aria-pressed={act===undefined?undefined:act} onClick={go} onKeyDown={go} style={{cursor:off?"default":"pointer"}}>
 <rect x={x} y={y} width={w} height={26} rx={3} fill={off?"#f4f5f7":act?BLUE:LB} stroke={off?"#d5dae1":BLUE}/><text x={x+w/2} y={y+17} textAnchor="middle" className="fb" style={{fill:off?GREY:act?"#fff":BLUE}}>{t}</text></g>;};
+
 function PlaygroundFig({uid=""}){const[st,set]=React.useState(START);const cur=place(st.servers,st.v);const R={cx:150,cy:162,r:104};
 const change=(servers,v,what)=>{const nx=place(servers,v);const moved=nx.own.reduce((n,o,i)=>n+(o!==cur.own[i]?1:0),0);
 const mod=v===st.v&&servers.length!==st.servers.length?KEYS.reduce((n,k)=>n+(st.servers[k.h%st.servers.length]!==servers[k.h%servers.length]?1:0),0):null;
@@ -161,7 +175,7 @@ return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><ti
 {st.servers.map((s,i)=><g key={s}><text x="310" y={196+i*13} className="fl">{`S${s}`}</text><rect x={336} y={188+i*13} width={Math.max(1,count(s)*7)} height={9} fill={PAL[s-1]}/><text x={342+count(s)*7} y={196+i*13} className="fl">{count(s)}</text></g>)}
 </svg>;}
 
-export const HASH_FIGS={
+export const FIGS={
 "ch-shard-events":{C:ShardEventsFig,ar:640/236,title:()=>"WHICH DATABASE HOLDS THIS MATCH?"},
 "ch-modulo":{C:ModuloFig,ar:640/208,title:()=>"HASH, THEN MODULO"},
 "ch-mod-change":{C:ModChangeFig,ar:640/256,title:()=>"ONE DATABASE MORE OR LESS, MOST KEYS MOVE"},

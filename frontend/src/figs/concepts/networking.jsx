@@ -1,7 +1,6 @@
-// Figures for the Networking tab. Same conventions as concepts.jsx and tools.jsx: 640-wide viewBox, Swiss
-// colours, four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Dot,Glow,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Fig,X}from"./parts.jsx";
-
+// Concepts › Networking essentials: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "networking").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Dot,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X}from"../parts.jsx";
 
 // ---------- 01 Layers ----------
 
@@ -325,7 +324,7 @@ const caps=[["1 · closed: Dispatch's calls to the maps API go through as normal
 return <Fig still={still} h={232} id={`nzt${uid}`} M={M} caps={caps} title="A circuit breaker around Dispatch's calls to a maps API, with three states. Closed: calls go through as normal. When half the calls fail within 10 seconds, it opens: calls fail at once, and Dispatch shows an arrival time estimated from distance alone instead of waiting 5 seconds for the maps API. After 30 seconds it becomes half-open and lets one test call through. The test works, so it closes again; had the test failed, it would have gone back to open."
 base={base} g={[s1,s2,s3,s4]} only={[0,1,2,3]} last={s4}/>}
 
-export const NETWORK_FIGS={
+export const FIGS={
 "nw-stack":{C:StackFig,ar:640/222,title:()=>"ONE REQUEST, WRAPPED IN LAYERS"},
 "nw-ip":{C:IpFig,ar:640/240,title:()=>"PRIVATE ADDRESSES INSIDE, PUBLIC ONES OUTSIDE"},
 "nw-journey":{C:JourneyFig,ar:640/320,title:()=>"ONE MENU REQUEST, ON THE WIRE"},
