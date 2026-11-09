@@ -362,7 +362,7 @@ test('CONTENT_DIR serves content from another directory, and SIGHUP reloads it (
 test('the API refuses to start on invalid content', async (t) => {
   const dir = await copyContent();
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await editJson(path.join(dir, 'articles', 'concepts', 'network-layers.json'), (a) => { a.body.push({ t: 'fig', id: 'missing', cap: 'x' }); });
+  await editJson(path.join(dir, 'articles', 'concepts', 'networking-essentials.json'), (a) => { a.body.push({ t: 'fig', id: 'missing', cap: 'x' }); });
   const port = await getFreePort();
   const child = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(port), CONTENT_DIR: dir }, stdio: ['ignore', 'ignore', 'pipe'] });
   let stderr = '';
@@ -397,15 +397,16 @@ test('subsections and "Try it in the Lab" blocks are checked', () => {
   assert.deepEqual(check(null, (a) => { labBlock(a).to = 'lab'; }), []);
 });
 
-test('each sub-tab owns one figure module in the frontend and the same ids in the backend', async () => {
+test('each figure module belongs to a sub-tab or an article, with the same ids in the frontend and the backend', async () => {
   const { FIGS } = await import('../src/content/validate.js');
   const { readFile, readdir } = await import('node:fs/promises');
-  // frontend/src/figs/<tab>/<sub-tab>.jsx exports FIGS, one "id":{C:…} per line; backend/src/content/figs/<tab>/<sub-tab>.js
-  // lists the same ids. Both folders hold the same files, each for a real sub-tab (site.json dashboard.groups),
-  // and both sides gather every one of them.
+  // frontend/src/figs/<tab>/<name>.jsx exports FIGS, one "id":{C:…} per line; backend/src/content/figs/<tab>/<name>.js
+  // lists the same ids. <name> is a real sub-tab (site.json dashboard.groups) or, for a long article with its own
+  // figures (each Concepts topic), that article's slug. Both folders hold the same files, and both sides gather them all.
   const fe = new URL('../../frontend/src/figs/', import.meta.url), be = new URL('../src/content/figs/', import.meta.url);
   const site = JSON.parse(await readFile(new URL('../../content/site.json', import.meta.url), 'utf8'));
   const subTabs = new Set(Object.entries(site.dashboard.groups).flatMap(([tab, gs]) => gs.map(([g]) => `${tab}/${g}`)));
+  const articles = new Set(allArticles.map((a) => `${a.section}/${a.slug}`));
   const modules = async (dir, ext) => (await Promise.all((await readdir(dir, { withFileTypes: true })).filter((d) => d.isDirectory())
     .map(async (d) => (await readdir(new URL(`${d.name}/`, dir))).filter((f) => f.endsWith(ext)).map((f) => `${d.name}/${f.slice(0, -ext.length)}`)))).flat().sort();
   const feMods = await modules(fe, '.jsx'), beMods = await modules(be, '.js');
@@ -416,7 +417,7 @@ test('each sub-tab owns one figure module in the frontend and the same ids in th
   assert.ok(feIndex.includes('import.meta.glob("./*/*.jsx")'), 'frontend/src/figs/index.js must load every <tab>/<sub-tab>.jsx');
   const all = [];
   for (const m of feMods) {
-    assert.ok(subTabs.has(m), `${m} is not a sub-tab in content/site.json`);
+    assert.ok(subTabs.has(m) || articles.has(m), `${m} is neither a sub-tab in content/site.json nor an article`);
     assert.ok(beIndex.includes(`from './${m}.js'`), `backend/src/content/figs/index.js must import ${m}.js`);
     const reg = (await readFile(new URL(`${m}.jsx`, fe), 'utf8')).match(/export const FIGS=\{([\s\S]*?)\n\};/);
     assert.ok(reg, `${m}.jsx must export FIGS`);

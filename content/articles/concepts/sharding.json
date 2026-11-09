@@ -1,0 +1,563 @@
+{
+  "section": "concepts",
+  "slug": "sharding",
+  "group": "core",
+  "no": "CONCEPT // 05",
+  "tag": "SHARDING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Sharding: prove you need it, then pick the key",
+  "dek": "When to bring sharding into an answer, partitioning against sharding, shard keys and how to spread them, and what sharding breaks: hot spots, cross-shard queries and transactions.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A bigger machine, read replicas and a cache come first. Shard only when the numbers show one database can't hold the data or take the writes.",
+        "Partitioning splits a large table into pieces inside one database: by rows (one partition per month) or by columns (rarely used, large columns kept apart). No new machines; queries and maintenance touch only the pieces they need.",
+        "A good shard key has many distinct values, spreads data and traffic evenly, and appears in your most common queries. user_id or customer_id usually qualifies; a boolean, a country or a timestamp usually doesn't.",
+        "Hot spots: a celebrity key or a time-based key sends most traffic to one shard. Give the hottest keys their own shard, use a compound key, or let the database split busy shards."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Sharding in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "Why one machine stops being enough"
+    },
+    {
+      "t": "p",
+      "x": "A growing product first scales its database up: more CPU, more memory, faster disks. That works for a long time, and it changes nothing in your code. But a single machine has a ceiling. Queries slow down as tables and indexes outgrow memory, writes queue behind one primary, and storage runs out: even large managed databases top out at a few hundred terabytes (Amazon Aurora's limit is 256 TiB)."
+    },
+    {
+      "t": "fig",
+      "id": "sh-ceiling",
+      "cap": "A bigger machine raises the ceiling but never removes it. Splitting the data across machines lets storage and throughput grow with the number of machines."
+    },
+    {
+      "t": "p",
+      "x": "When one database can't keep up any more, the only real way forward is to split the data across several machines. Each machine, a shard, holds part of the data and takes only that part's reads and writes. That is sharding. It solves the capacity problem, and it creates new ones: choosing how to split, sending each query to the right shard, avoiding a shard that gets all the traffic, and moving data as the system grows."
+    },
+    {
+      "t": "p",
+      "x": "A note on words: 'partitioning' usually means splitting a table into pieces inside one database, and 'sharding' means splitting data across machines. Many engineers use the two loosely. Don't worry about the word; be clear whether the data lives on one machine or many. The next part, 'Partitioning and sharding', explains the difference."
+    },
+    {
+      "t": "h3",
+      "x": "When to bring it up"
+    },
+    {
+      "t": "p",
+      "x": "Don't shard early. First show, with rough numbers, that a single database won't do. Any of these limits is a good reason:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Storage: 'Zotato keeps about 2 KB per order and takes 50 lakh orders a day: 10 GB a day, about 3.6 TB a year. One Postgres can hold a year, but not five years of history with indexes. Old orders can be archived, or the table sharded.'",
+        "Write throughput: 'At the dinner peak we expect 50,000 writes a second: orders, status changes, rider pings, each updating several indexes and shipped to replicas. That is more than one primary can sustain with headroom, however big. We need to split the writes.'",
+        "Read throughput: 'Even with read replicas, 1 crore daily users making many queries each are more than one primary and its replicas can serve with fresh enough data, so we spread the reads across shards.'"
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The formula: name the bottleneck, explain why one database can't handle it, then propose sharding. The Numbers to know concept has the numbers for what one database can do."
+    },
+    {
+      "t": "p",
+      "x": "The most common sharding mistake in interviews is starting with it. Slow down, do the arithmetic, and shard only when it is clearly needed. A well-tuned single database with replicas goes surprisingly far."
+    },
+    {
+      "t": "h3",
+      "x": "What to say: four steps"
+    },
+    {
+      "t": "table",
+      "label": "Proposing sharding",
+      "head": [
+        "Step",
+        "What to say",
+        "Zotato orders"
+      ],
+      "rows": [
+        [
+          "1. The shard key",
+          "The field most queries already filter by, and why",
+          "customer_id: 'my orders' and 'my current order' are scoped to one customer"
+        ],
+        [
+          "2. How keys are spread",
+          "Usually hashing, with consistent hashing or many small buckets",
+          "hash(customer_id) over 64 buckets on 8 machines"
+        ],
+        [
+          "3. The trade-off",
+          "The query or transaction that now spans shards, and your answer",
+          "A restaurant's orders span shards: keep a second copy keyed by restaurant_id"
+        ],
+        [
+          "4. Growth",
+          "How shards are added without moving everything",
+          "Move whole buckets to new machines; only those buckets' data moves"
+        ]
+      ]
+    },
+    {
+      "t": "list",
+      "items": [
+        "Step 1: 'Most of Zotato's order reads are about one customer: their history, their current order, their receipts. So I'd shard orders by customer_id.'",
+        "Step 2: 'Hash the customer_id so customers spread evenly, using consistent hashing or a fixed set of buckets so adding shards later is cheap.'",
+        "Step 3: 'The cost: a restaurant's live orders are spread over every shard. I'll keep a second, smaller table of live orders keyed by restaurant_id, updated from the main one, and cache the restaurant dashboard.'",
+        "Step 4: 'Start with 64 buckets on 8 machines. To grow, move some buckets to new machines; only those buckets move, not the whole dataset.'"
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Notice how this flows: each step gives a reason and names the cost. That reasoning, not a list of facts, is what the interviewer is listening for."
+    },
+    {
+      "t": "p",
+      "x": "Customer is not the only defensible key for Zotato's orders. If live, local operations dominate (a restaurant's kitchen screen, a rider's assignments), sharding by city keeps those on one shard and makes order history the expensive query instead; the Data modelling concept takes that route in its last part, 'When one database isn't enough'. Either is a good answer if you say which queries you are optimising for."
+    },
+    {
+      "t": "h3",
+      "x": "You rarely build it yourself"
+    },
+    {
+      "t": "p",
+      "x": "Most distributed databases shard for you: you pick the partition key and they place, route and rebalance the data. So in an interview it is enough to say 'DynamoDB with customer_id as the partition key' or 'Vitess in front of MySQL, sharded by customer_id, with operator-driven resharding when we grow.' Explain the internals only if asked. The part 'Shard keys and how to spread them' below lists how the common databases do it."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Prove the need with numbers before saying 'shard'.",
+        "Name the shard key and the queries it keeps on one shard.",
+        "Name the one query or transaction it makes expensive, and your answer for it.",
+        "Say how you'll add shards later, and that you'd use a database that does the mechanics."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Partitioning and sharding"
+    },
+    {
+      "t": "h3",
+      "x": "Partitioning: one database, smaller pieces"
+    },
+    {
+      "t": "p",
+      "x": "Take Zotato's orders table after a few years: 50 crore rows and 2 TB. A query for last month's orders has to search the whole table unless an index narrows it, and the indexes themselves are enormous. Routine maintenance, such as vacuuming, refreshing statistics or rebuilding an index, works on the whole table at once and can slow everything else down."
+    },
+    {
+      "t": "p",
+      "x": "Partitioning splits that table into smaller tables the database manages separately, while your queries still use one table name. Nothing leaves the machine; the data is just organised into pieces. Now a query for last month reads one month's partition instead of the whole table, and old partitions can be archived or dropped in one cheap step."
+    },
+    {
+      "t": "fig",
+      "id": "sh-partition",
+      "cap": "The orders table split by month inside one database. A query for October reads one partition; dropping 2022 is one quick operation instead of deleting crores of rows."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Horizontal partitioning splits rows: one partition per month or year of orders. Every partition has the same columns and fewer rows. This is what 'partitioning' usually means (Postgres's PARTITION BY RANGE, LIST or HASH).",
+        "Vertical partitioning splits columns: the small, often-read columns of an order (id, status, total) in one table, and large or rarely read ones (the full delivery instructions, the receipt PDF's text) in another. Same rows, fewer columns per piece, so the hot table fits better in memory.",
+        "Partitioning doesn't add capacity: one machine still does all the work. It makes that machine's work more efficient, which can postpone sharding for a long time."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "sh-vertical",
+      "cap": "Vertical partitioning: the columns read on every screen stay together in a small, hot table; the large, rarely read columns move to a second table with the same ids."
+    },
+    {
+      "t": "h3",
+      "x": "Sharding: many databases, one dataset"
+    },
+    {
+      "t": "p",
+      "x": "Sharding is horizontal partitioning across machines. Each shard holds a subset of the rows, and all the shards together hold the whole dataset. Unlike partitions, shards don't share a machine: each is an independent database with its own CPU, memory, storage and connection pool."
+    },
+    {
+      "t": "fig",
+      "id": "sh-shards",
+      "cap": "Orders split by id across three databases. No machine holds all the data or takes all the traffic, so storage and throughput grow by adding shards."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Because no single machine holds all the data or serves all the requests, both storage and read and write throughput grow as you add shards.",
+        "The application, a routing layer or the database itself must now send each query to the shard that holds the data.",
+        "And you take on new problems: choosing a shard key, avoiding hot shards, queries and transactions that span shards, and moving data when shards are added. The parts 'Shard keys and how to spread them' and 'What sharding breaks' below cover them."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Partitioning and sharding",
+      "head": [
+        "Compared",
+        "Partitioning",
+        "Sharding"
+      ],
+      "rows": [
+        [
+          "Where the pieces live",
+          "One database, one machine",
+          "Many databases, many machines"
+        ],
+        [
+          "What it improves",
+          "Query and maintenance work on a big table",
+          "Total storage, reads and writes"
+        ],
+        [
+          "Splits by",
+          "Rows (usually) or columns",
+          "Rows, by a shard key"
+        ],
+        [
+          "Cost",
+          "Little: same database, same transactions",
+          "Routing, cross-shard queries, harder transactions, rebalancing"
+        ],
+        [
+          "Zotato",
+          "orders partitioned by month",
+          "orders sharded by customer_id when one machine isn't enough"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "If a table is just big, partition it by time first, and archive old partitions.",
+        "Shard only when one machine can't hold or serve the data.",
+        "Use the words carefully, but don't argue about them: say whether the data is on one machine or many."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Shard keys and how to spread them"
+    },
+    {
+      "t": "h3",
+      "x": "Two decisions"
+    },
+    {
+      "t": "list",
+      "items": [
+        "What to shard by: the field or column that splits the data. It decides which rows end up together.",
+        "How to distribute it: the rule that assigns those groups to shards. It decides how evenly they spread and what happens when you add a shard."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Choosing the shard key"
+    },
+    {
+      "t": "p",
+      "x": "In an interview you'll say 'I'll shard by …'. What matters is the reason. A bad key gives uneven shards, hot spots where one shard does all the work while the others idle, and queries that must ask every shard. A good key has three properties:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Many distinct values (high cardinality). A boolean such as is_premium allows at most two shards. A customer id with crores of values leaves plenty of room.",
+        "Even spread. Values should be spread evenly across data and traffic. Shard Zotato's users by city and Mumbai's shard is many times larger than Kochi's. Customer ids usually spread well. Creation time works only if new rows don't all pile onto the newest shard, which they usually do.",
+        "Matches the queries. The most common queries should include the key, so they go to one shard. Sharded by customer_id, 'this customer's profile' and 'this customer's orders' each touch one shard; a query without the key has to ask them all."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "shard-key",
+      "cap": "With orders sharded by hash(customer_id), 'my orders' goes straight to one shard; a query without the customer id must ask all four."
+    },
+    {
+      "t": "table",
+      "label": "Shard keys for Zotato",
+      "head": [
+        "Key",
+        "Verdict",
+        "Why"
+      ],
+      "rows": [
+        [
+          "customer_id for orders",
+          "Good",
+          "Crores of values, spreads evenly, and most order reads are about one customer"
+        ],
+        [
+          "order_id for order details",
+          "Good",
+          "Huge number of values; reads and updates are usually about one order"
+        ],
+        [
+          "is_veg for dishes",
+          "Bad",
+          "Two values means two shards at most, and they'd be very unequal"
+        ],
+        [
+          "created_at for orders",
+          "Bad",
+          "Every new order goes to the newest shard; old shards sit idle"
+        ],
+        [
+          "city for users",
+          "Bad on its own",
+          "A few cities hold most users; combine it with something finer if it is needed"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Range sharding"
+    },
+    {
+      "t": "p",
+      "x": "The simplest strategy: each shard takes a continuous range of key values. Shard 1 gets customer ids 1 to 10 lakh, shard 2 gets 10 lakh to 20 lakh, and so on."
+    },
+    {
+      "t": "fig",
+      "id": "sh-range",
+      "cap": "Range sharding gives each shard a band of ids. A range query stays on one shard, but if the newest ids are the busiest, so is the last shard."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is easy to understand, and range queries are efficient: 'customers 5 lakh to 6 lakh' touches one shard.",
+        "But real traffic rarely spreads evenly over ranges. Shard orders by created_at and almost all the traffic goes to the newest range, because new orders are written there and users mostly look at recent orders. The older shards sit idle.",
+        "It works well when different clients naturally use different ranges. A multi-tenant product, where each business customer gets its own range of ids, keeps each tenant's traffic on its own shard: a restaurant chain's staff only touch that chain's range."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Hash sharding: the default"
+    },
+    {
+      "t": "p",
+      "x": "Hash the shard key and use the result to pick a shard. The hash scrambles the input, so neighbouring ids land on different shards and data spreads evenly."
+    },
+    {
+      "t": "code",
+      "label": "Hash sharding over four shards",
+      "x": "shard = hash(customer_id) % 4\n\ncustomer 42   → hash(42)  % 4 = 2  → shard 2\ncustomer 99   → hash(99)  % 4 = 3  → shard 3\ncustomer 123  → hash(123) % 4 = 1  → shard 1",
+      "say": "The shard is the hash of the customer id modulo four. Customer 42 goes to shard 2, customer 99 to shard 3, and customer 123 to shard 1."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Its strength is the even spread: new customers are distributed across all shards, whatever their ids.",
+        "Its weakness is changing the number of shards. Going from 4 shards to 5 changes % 4 to % 5, and almost every key now maps to a different shard: most of the data has to move.",
+        "The fix is consistent hashing, or a fixed number of buckets (say 1,024) assigned to machines, so adding a machine moves only some buckets. The Consistent hashing concept explains both.",
+        "Hash sharding is the default and what an interviewer will assume unless you say otherwise. Its other cost: range queries over the key now hit every shard."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "sh-hash-mod",
+      "cap": "Twelve customers over four shards, then five. With hash % N, most customers change shard when N changes; with a ring or fixed buckets, only the ones the new shard takes over move."
+    },
+    {
+      "t": "h3",
+      "x": "Directory sharding"
+    },
+    {
+      "t": "p",
+      "x": "Instead of a formula, keep a lookup table, the directory, that records which shard holds each key: customer 15 on shard 1, customer 87 on shard 4, customer 204 on shard 2."
+    },
+    {
+      "t": "fig",
+      "id": "sh-directory",
+      "cap": "Every request first asks the directory where the data lives. That makes moves easy (change one row), but adds a lookup to every request and a service that must never fail."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is the most flexible strategy. A very busy key can get a shard of its own; rebalancing means changing directory rows; any placement rule is possible.",
+        "The cost is a lookup before every query, which adds latency, and a directory that is now critical: if it goes down, nothing works even though every shard is healthy. It must be replicated and cached, which is more to build.",
+        "Most systems start with hashing or ranges and add a directory only for a specific need, such as moving a few huge tenants. In an interview it is rarely the answer: it raises questions about latency and failure that pull the conversation away from your design."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Sharding strategies",
+      "head": [
+        "Strategy",
+        "How a key finds its shard",
+        "Good at",
+        "Watch out for"
+      ],
+      "rows": [
+        [
+          "Range",
+          "Look up which range the key falls in",
+          "Range scans; tenants with their own ranges",
+          "Busy ranges (new data) make hot shards"
+        ],
+        [
+          "Hash",
+          "hash(key), then ring or buckets",
+          "Even spread: the default",
+          "Range queries hit every shard; never plain % N"
+        ],
+        [
+          "Directory",
+          "Ask the directory service",
+          "Any placement, easy moves",
+          "A lookup per request; the directory must not fail"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "How databases do it for you"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cassandra hashes the partition key (Murmur3) onto a ring of token ranges, with many virtual nodes per machine: a form of consistent hashing.",
+        "DynamoDB hashes the partition key to pick an internal partition and splits partitions as they grow or get busy. You never see a ring.",
+        "MongoDB splits data into range-based chunks of the shard key (or of its hash, with a hashed shard key), and a background balancer splits and moves chunks to keep shards even.",
+        "For SQL, Vitess (MySQL) and Citus (Postgres) sit in front of many databases and handle routing, some cross-shard queries and resharding. Aurora and Spanner offer distributed SQL with sharding built in.",
+        "All of them route queries and rebalance when you add capacity, though the mechanics differ. In an interview, name the database and the key: 'DynamoDB, partition key customer_id'."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name the shard key and check it against the three properties out loud.",
+        "Default to hashing, and say how you'll add shards without moving everything.",
+        "Use ranges for tenant-shaped data or archives, and a directory only with a specific reason."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What sharding breaks"
+    },
+    {
+      "t": "h3",
+      "x": "Hot spots"
+    },
+    {
+      "t": "p",
+      "x": "Even with a good key, one shard can end up with far more traffic than the others. That shard becomes the bottleneck of the whole system, which cancels the point of sharding."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The celebrity problem: shard users by user_id and a famous account's shard takes a thousand times the traffic of the others, because everyone viewing, following or messaging that account lands on the same shard. Hashing doesn't help: the problem isn't how keys are spread, it's that one key is far busier than the rest. At Zotato, the same happens to a restaurant chain on a match night if orders are keyed by restaurant.",
+        "The time problem: shard by creation date and every new write lands on the newest shard, while older shards serve only the occasional read of history."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "hot-shard",
+      "cap": "Keyed by restaurant_id, one chain's match-night orders all land on one shard while the others idle; keyed by customer, the same orders spread out."
+    },
+    {
+      "t": "p",
+      "x": "You find hot spots by watching each shard's request rate, CPU and query latency; one shard that is consistently higher than the others is the sign. Then:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Give the hottest keys their own shard: move a celebrity account or a huge chain to a dedicated shard. This is where a small directory helps, for the few exceptions only.",
+        "Use a compound key: shard by hash(user_id, day) instead of user_id, so one busy user's data spreads over several shards over time. Reads of that user then touch several shards, so use it only for keys that are both huge and spread over time.",
+        "Split busy shards: some databases do this for you. MongoDB's balancer splits and moves chunks automatically; DynamoDB splits hot partitions; Vitess resharding is online but started and managed by an operator.",
+        "For read-heavy hot keys, a cache in front usually solves it before the shard is involved (see 'When caching goes wrong')."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Queries across shards"
+    },
+    {
+      "t": "p",
+      "x": "Any query whose data sits on several shards becomes expensive: the query is sent to every shard that might have rows, the slowest answer sets the time, and the application merges the results. Sharded by user_id, 'user 12345's profile' is one shard, but 'the 10 most popular posts right now' must ask all 64 shards, wait for all 64, merge and take the top 10: 64 times the calls, and as slow as the slowest shard."
+    },
+    {
+      "t": "fig",
+      "id": "sh-scatter",
+      "cap": "'Top 10 dishes in the city' asks all 64 shards and waits for the slowest. Cached for five minutes, the next thousand requests don't touch the shards at all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cache the result: if the top 10 needs every shard, compute it once and cache it for five minutes. The first request pays; the next thousand don't. Leaderboards, trending lists and totals are good candidates, because a few minutes' delay is fine.",
+        "Keep related data together: copy what a frequent query needs onto the shard it reads, or keep a second table organised for that query. It duplicates data and makes updates harder, but the query touches one shard.",
+        "Accept it when it is rare: an admin page showing total customers across all shards can be slow if it's opened a few times a day.",
+        "Precompute in the background: a job that builds the trending list every minute turns a scatter on every request into one per minute."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "In an interview, a common query that needs every shard is a signal to rethink. If you hear yourself say 'we'll query all the shards and merge the results' for a main screen, stop and ask: can I copy the data, cache it, or precompute it? Interviewers expect you to keep cross-shard queries rare, not to accept them."
+    },
+    {
+      "t": "h3",
+      "x": "Transactions across shards"
+    },
+    {
+      "t": "p",
+      "x": "On one database, a transaction makes several changes all or nothing: deduct stock and create the order together, or neither. The database guarantees it. Sharding breaks this: if the customer's wallet is on shard 1 and the restaurant's ledger is on shard 2, no single database can wrap both writes. They are two independent databases that don't know about each other."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The textbook answer is two-phase commit (2PC): a coordinator asks every shard to prepare, waits until all say yes, then tells all to commit. It keeps them consistent, but it is slow (several round trips, locks held throughout) and fragile: if the coordinator or a shard fails at the wrong moment, the others wait with locks held. Most production systems avoid it.",
+        "Best: choose the key so the transaction stays on one shard. Shard by customer_id and keep the customer's wallet, orders and payment records together; then their transactions are ordinary single-shard transactions, fast and reliable.",
+        "When an operation truly spans shards, use a saga: a sequence of local steps, each with a compensating step that undoes it. If a later step fails, run the compensations for the earlier ones in reverse.",
+        "Where exactness isn't needed, accept eventual consistency: a restaurant's rating count copied to several shards can disagree for a few seconds and then converge, which is far simpler than coordinating every update."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "sh-transfer",
+      "cap": "Moving ₹500 between two wallets on different shards as a saga. Each step commits on its own shard; if the credit fails, a compensating step refunds the first wallet."
+    },
+    {
+      "t": "code",
+      "label": "A transfer between shards, as a saga",
+      "x": "1. debit   wallet A  ₹500   (shard 1, local transaction)\n2. credit  wallet B  ₹500   (shard 2, local transaction)\n   if step 2 fails:\n2'. refund  wallet A  ₹500   (shard 1, compensating step)",
+      "say": "Step one debits wallet A by 500 rupees on shard 1. Step two credits wallet B on shard 2. If step two fails, a compensating step refunds wallet A on shard 1."
+    },
+    {
+      "t": "p",
+      "x": "Most applications can be designed with no cross-shard transactions at all. If you keep needing them, the shard key or the boundaries between shards are probably wrong. The concept 'Processes with many steps' covers sagas and the outbox."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name the hot spot your key could create (a celebrity, a big chain, today's date) and your fix.",
+        "Name the one common query your key makes cross-shard, and cache, copy or precompute it.",
+        "Keep transactions on one shard by the choice of key; use a saga, not 2PC, when they must span shards."
+      ]
+    }
+  ]
+}

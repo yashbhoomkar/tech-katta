@@ -1,4 +1,4 @@
-// Concepts › Networking essentials: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/networking.jsx) draws.
+// Concepts › Networking essentials: the figure ids this article's frontend module (frontend/src/figs/concepts/networking-essentials.jsx) draws.
 export const FIGS = [
   'nw-stack',
   'nw-ip',

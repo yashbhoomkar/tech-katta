@@ -1,0 +1,789 @@
+{
+  "section": "concepts",
+  "slug": "caching",
+  "group": "core",
+  "no": "CONCEPT // 04",
+  "tag": "CACHING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Caching: when to add a cache, and how to explain it",
+  "dek": "The method in an interview, where to cache (device, edge, shared cache or in the process), who talks to the cache and when, what to evict when it's full, and what goes wrong.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Add a cache only after naming a problem with numbers: too many reads for the database, a slow query, a busy database CPU, or a latency target the database can't meet.",
+        "A shared cache (Redis, Memcached) that every app server talks to over the network is what interviewers mean by 'a cache'. Start there.",
+        "Cache-aside (lazy loading): your code checks the cache, and on a miss reads the database and fills the cache. Lean and simple: the one to remember.",
+        "LRU removes the entry unused for the longest time. It fits most workloads, because what was used recently tends to be used again.",
+        "Stampede: a popular entry expires and thousands of requests hit the database together. Let one request rebuild it while the others wait (request coalescing), or refresh it before it expires."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Caching in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "Why memory is so much faster"
+    },
+    {
+      "t": "p",
+      "x": "Reading one user's profile from Postgres takes a few milliseconds when the row is already in the database's memory, and tens of milliseconds when the query joins several tables or has to wait for the disk under load; reading the same profile from an in-memory store such as Redis takes about one millisecond, network included. That is 5 to 50 times faster, and the gap grows exactly when the database is busiest. The reason is physical: a database keeps its data on disk and pays for disk access on many queries, while memory sits right next to the CPU."
+    },
+    {
+      "t": "fig",
+      "id": "ca-why",
+      "cap": "The same 12,000 menu reads a second, with and without a cache. With 90% of reads answered from memory, the database sees a tenth of the traffic, and most users wait a millisecond instead of thirty."
+    },
+    {
+      "t": "p",
+      "x": "So a cache does two jobs at once: it takes load off the database, and it cuts the time each read takes. It also brings two new problems: keeping the cached copy in step with the database, and surviving the day the cache fails. A good answer covers both sides."
+    },
+    {
+      "t": "h3",
+      "x": "When to bring it up"
+    },
+    {
+      "t": "p",
+      "x": "Don't open with a cache. First show the problem it solves. Any of these four is a good reason, and each is stronger with a rough number:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Many reads: 'Zotato has 1 crore daily users making about 20 reads each: 20 crore reads a day, around 2,300 a second on average and 12,000 at dinner. Even with indexes, at dinner each takes 10 to 30 ms. A cache answers in under 2 ms and keeps most of them off the database.'",
+        "An expensive query: 'The home screen's 'popular near you' list joins orders, restaurants and ratings and takes 200 ms. Compute it once a minute per area, keep it in Redis, and serve it in 1 ms.'",
+        "A busy database: 'The database CPU sits at 80% at dinner, almost all of it the same menu queries over and over. Caching them should cut its load by 70 to 80%.'",
+        "A latency target: 'The menu API must answer in under 10 ms, and the database takes 30 to 50. A cache is the only way to meet it.'"
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The pattern is always the same: name the problem, size it roughly, and say how the cache fixes it. The Numbers to know concept has the latency numbers worth knowing for databases and caches."
+    },
+    {
+      "t": "h3",
+      "x": "How to introduce it: five steps"
+    },
+    {
+      "t": "table",
+      "label": "Introducing a cache",
+      "head": [
+        "Step",
+        "What to say",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "1. The bottleneck",
+          "What exactly is slow or overloaded, with a number",
+          "Menu reads: 5,000 a second at dinner, 30 ms each, database CPU at 80%"
+        ],
+        [
+          "2. What to cache, and the key",
+          "Data read often, changed rarely, costly to fetch or compute",
+          "menu:{restaurant_id}, user:{id}:profile, popular:{area}"
+        ],
+        [
+          "3. The pattern",
+          "Usually cache-aside; others only for a stated reason",
+          "Cache-aside in Redis; a CDN for dish photos"
+        ],
+        [
+          "4. Eviction and expiry",
+          "LRU when memory is full; a TTL on every key",
+          "allkeys-lru; menus 10 minutes, popular list 60 seconds"
+        ],
+        [
+          "5. What goes wrong",
+          "One or two failure cases that matter for this system",
+          "Delete menu:{id} on edit; coalesce rebuilds of hot keys; survive Redis being down"
+        ]
+      ]
+    },
+    {
+      "t": "list",
+      "items": [
+        "Step 1: point at the specific problem: database load, query time, or an expensive computation. 'Profile reads hit the database 500 times a second at peak, 30 ms each. That's the bottleneck.'",
+        "Step 2: not everything belongs in a cache. Good candidates are read often, change rarely, and cost something to fetch: a menu is read on every visit and edited a few times a week. Decide the key too, because the key is how every read finds its entry: user:77:profile, popular:pune-kothrud.",
+        "Step 3: match the pattern to how fresh the data must be. 'Cache-aside: read Redis first; on a miss, read the database, store the answer and return it.' Write-through fits when every read must see the latest value and writes can wait; write-behind fits a flood of writes where losing a few is acceptable. Add a CDN if the system serves images or video, and a small in-process cache only for a few extremely hot keys.",
+        "Step 4: say how the cache stays within its memory: LRU is the safe default, and a TTL stops entries living forever. 'LRU eviction, a 10-minute TTL on menus, and the entry is deleted the moment a restaurant edits its menu.'",
+        "Step 5: show you know the costs. Invalidation: how does a change reach the cache, by deleting on write, by TTL, or by accepting some delay? Failure: if Redis goes down, every read lands on the database; limit that with a circuit breaker and a small local cache. Stampedes: when a popular entry expires, let one request rebuild it while the rest wait (request coalescing), or refresh it a little early."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Don't list every possible failure. Pick the one or two that matter for the system in front of you and explain how you'd handle them. At a senior level, spend the time on the cases that are important but not obvious, not on things the interviewer can take for granted."
+    },
+    {
+      "t": "h3",
+      "x": "When not to cache"
+    },
+    {
+      "t": "list",
+      "items": [
+        "If the database copes comfortably with the reads, with the right indexes, a cache only adds a second copy of the truth to keep correct.",
+        "If every read is different (a search with free text, a user's own unique report), few reads will ever hit, and the cache wastes memory.",
+        "If the data must be exactly current on every read (an account balance before a payment), a cache needs so much care that reading the database is simpler."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Bring up the cache after you have shown a read bottleneck, with numbers.",
+        "Say what you cache, the key, the pattern, the eviction policy and the TTL, in that order.",
+        "Name one or two things that go wrong and your answer to each; the part 'When caching goes wrong' below covers them.",
+        "A CDN for static media and an in-process cache for very hot keys are additions, not the first answer."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Where to cache"
+    },
+    {
+      "t": "h3",
+      "x": "Many layers"
+    },
+    {
+      "t": "p",
+      "x": "Most engineers hear 'cache' and picture Redis or Memcached between the application and the database, and that is the one interviewers care about most. But a single Zotato menu view can be served from four caches before the database is ever asked: the phone's own copy, a CDN edge for the dish photos, the app server's memory, and Redis. Even the database keeps its most-used pages in memory (Postgres's shared buffers), which is why a repeated query is faster than the first."
+    },
+    {
+      "t": "fig",
+      "id": "ca-layers",
+      "cap": "One menu view, layer by layer. Each cache answers what it can and passes the rest on; the closer a layer is to the user, the faster it answers and the harder its copies are to change."
+    },
+    {
+      "t": "h3",
+      "x": "A shared cache over the network"
+    },
+    {
+      "t": "p",
+      "x": "An external cache is a separate service your application calls over the network, such as Redis or Memcached, holding data that is read often so the database isn't asked every time."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Every app server reads and writes the same cache, so a menu cached by one server is a hit for all of them, and a deleted entry is gone for all of them. That is why it scales: adding app servers doesn't lower the hit rate.",
+        "Its memory stays bounded: an eviction policy such as LRU removes old entries when it fills up, and a TTL expires each entry after a set time.",
+        "Each read still crosses the network: about a millisecond inside one data centre. Fast, but not free.",
+        "In an interview, Redis as an external cache is the default answer for any system with heavy reads. Add the other kinds only when the problem calls for them."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-external",
+      "cap": "Every app server shares one cache. A menu stored by one server is a hit for the next request, whichever server takes it."
+    },
+    {
+      "t": "h3",
+      "x": "A CDN, at the edge"
+    },
+    {
+      "t": "p",
+      "x": "A CDN is a network of cache servers in many cities. Instead of every request travelling to your own servers (the origin), users are sent to a nearby edge server that keeps copies of what people ask for. Cloudflare, Fastly, Akamai and CloudFront are the usual names."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A user opens a restaurant and the app asks for a dish photo.",
+        "The request goes to the nearest edge server.",
+        "If the edge has the photo, it answers straight away.",
+        "If not, the edge fetches it from the origin, keeps a copy and answers.",
+        "The next user nearby gets the copy from the edge, without touching the origin."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cdn-edge",
+      "cap": "The first request in a city fetches from the origin; everyone after that is answered from the edge nearby."
+    },
+    {
+      "t": "p",
+      "x": "Distance is the reason. If the origin is in North Virginia and the user is in Pune, every round trip takes 250 to 300 ms; from an edge in Mumbai it takes 20 to 40 ms. For a screen with forty photos, that is the difference between instant and sluggish."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Modern CDNs can do more than files: they can cache public API responses and HTML pages, and run small programs at the edge to personalise pages or block bad traffic before it reaches you.",
+        "But their biggest and most common job is still images, video and other files, and that is the safest reason to add one in an interview. Start with media, and mention the rest only if the problem needs it."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "On the device"
+    },
+    {
+      "t": "p",
+      "x": "A client-side cache keeps data where the request starts, to avoid a network call altogether. Usually that is the user's device: the browser's HTTP cache and local storage, or a mobile app's memory and on-device storage."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is the fastest of all, because nothing travels. A browser that reuses a photo it downloaded yesterday is a cache. So is a running app that keeps your run on the phone while you're offline and uploads it when the signal returns.",
+        "But you control it least. Once a copy is on a phone, the server can't delete it; it can only send headers saying how long to keep it, or make the app check for changes. Data goes stale, and invalidation is hard.",
+        "So keep device caches for data that changes rarely (photos, the list of cities, yesterday's order history) or where showing a slightly old copy is fine."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "A 'client' can also be a library inside your own servers. A Redis Cluster client keeps a copy of which node owns which slot, so it can send each command straight to the right node instead of asking the cluster every time; it refreshes the map only when a node answers 'moved'. The component 'Redis' shows that routing."
+    },
+    {
+      "t": "fig",
+      "id": "ca-client",
+      "cap": "Two client-side caches: the app keeps dish photos and the city list on the phone, and the Redis client keeps the cluster's slot map, so it sends each command straight to the node that owns the key."
+    },
+    {
+      "t": "h3",
+      "x": "Inside the server process"
+    },
+    {
+      "t": "p",
+      "x": "Servers have a lot of memory, and each new generation has more. An in-process cache uses some of it to keep data inside the application itself, in an ordinary map in its own memory, so a read needs no network call at all. It is even faster than Redis: nanoseconds to microseconds instead of a millisecond."
+    },
+    {
+      "t": "p",
+      "x": "It suits small values that are read constantly:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Configuration values and feature flags.",
+        "Small reference data: the list of cities, cuisines, tax rates.",
+        "A few extremely hot keys, such as the home banner during a sale.",
+        "Rate-limit counters that only need to be roughly right per server.",
+        "Precomputed values, such as delivery fee tables."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-in-process",
+      "cap": "Each app server keeps its own copy of small, hot values. Reads are instant, but when one server's copy changes, the others don't know until their own copies expire."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The catch: each server has its own copy. Nothing is shared, so ten servers mean ten misses to fill ten caches, and when one server updates or deletes a value, the other nine keep the old one.",
+        "So give in-process entries a short TTL, or use them only for data that rarely changes, and accept that servers may disagree for a few seconds.",
+        "It does not replace a shared cache. In an interview, add it as an extra layer after Redis, for a few hot keys or for reference data."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Where to cache",
+      "head": [
+        "Where",
+        "Speed of a hit",
+        "Shared by",
+        "Who can change a copy",
+        "Use it for"
+      ],
+      "rows": [
+        [
+          "Device (browser, app)",
+          "No network at all",
+          "One user",
+          "Hard: only headers or the app's own logic",
+          "Photos, reference lists, offline data"
+        ],
+        [
+          "CDN edge",
+          "20–40 ms, nearby",
+          "Everyone in a region",
+          "Purge, or a new file name",
+          "Images, video, files; some public responses"
+        ],
+        [
+          "In-process",
+          "Nanoseconds to microseconds",
+          "One server",
+          "Each server separately",
+          "Config, flags, small hot values"
+        ],
+        [
+          "Shared cache (Redis)",
+          "About 1 ms",
+          "Every app server",
+          "Your code, at once",
+          "Most cached reads: the default"
+        ],
+        [
+          "Database buffer cache",
+          "Fast for repeated queries",
+          "Every query",
+          "The database itself",
+          "Automatic; no design needed"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Start with Redis as a shared cache in front of the database, and say what it holds.",
+        "Add a CDN as soon as the design serves images or video to many users.",
+        "Mention device caching for data that changes rarely, and say how long a copy may live.",
+        "Add an in-process cache only as a later layer, for a few very hot keys, with a short TTL."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Cache-aside, write-through, write-behind, read-through"
+    },
+    {
+      "t": "h3",
+      "x": "Cache-aside (lazy loading)"
+    },
+    {
+      "t": "p",
+      "x": "The most common pattern, and the one to use in an interview unless you have a reason not to. The application owns all the logic:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Look in the cache.",
+        "If the entry is there, return it.",
+        "If not, read the database, store the answer in the cache, and return it."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "cache-aside",
+      "cap": "A hit is answered from memory. A miss reads the database once and stores the answer, so the next read is a hit."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Only data someone actually asked for is cached, so the cache stays lean.",
+        "The cost is the miss: the first read of each entry, and every read after it expires, pays for the cache lookup and the database query.",
+        "On a write, update the database and then delete the cached entry, so the next read fetches the new value. The part 'When caching goes wrong' below explains why deleting beats updating.",
+        "Redis and Memcached are used this way: they are plain stores that know nothing about your database.",
+        "If you remember only one pattern for interviews, make it this one."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Cache-aside, in a few lines",
+      "x": "def get_menu(restaurant_id):\n    key = f\"menu:{restaurant_id}\"\n    menu = redis.get(key)\n    if menu is not None:\n        return menu                       # hit\n    menu = db.load_menu(restaurant_id)    # miss: one database read\n    redis.set(key, menu, ex=600)          # keep it for 10 minutes\n    return menu\n\ndef update_dish(restaurant_id, dish):\n    db.save_dish(dish)                    # the database first\n    redis.delete(f\"menu:{restaurant_id}\")  # then drop the stale copy",
+      "say": "Get menu: build the key menu colon restaurant id and look it up in Redis. If it's there, return it. Otherwise load the menu from the database, store it in Redis for ten minutes, and return it. Update dish: save the dish in the database first, then delete the cached menu so the next read fetches the new one."
+    },
+    {
+      "t": "h3",
+      "x": "Write-through"
+    },
+    {
+      "t": "p",
+      "x": "With write-through, the application writes to the cache, and the cache writes to the database synchronously before it answers. The write isn't finished until both have the new value."
+    },
+    {
+      "t": "fig",
+      "id": "ca-write-through",
+      "cap": "Write-through: the cache passes each write to the database and answers only when both hold it. Reads are fresh; every write waits for both."
+    },
+    {
+      "t": "list",
+      "items": [
+        "You need a cache that can do this: usually a caching library with a plug-in for your database, which calls your database code before it acknowledges the write. Redis doesn't do it by itself, so in practice it is your own code or a framework writing both.",
+        "Writes are slower, because each one waits for the cache and the database.",
+        "Everything written lands in the cache, including data nobody will read again, which wastes memory (often paired with a TTL to clear it).",
+        "It still has the dual-write problem: if the cache update succeeds and the database write fails, or the other way round, the two disagree. You need retries and error handling, and must accept that perfect agreement between two systems needs a distributed transaction.",
+        "Use it when reads must always see the latest value and writes can afford to be a little slower. In interviews it is less common than cache-aside, because it needs special infrastructure and still has these edge cases."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Write-behind (write-back)"
+    },
+    {
+      "t": "p",
+      "x": "With write-behind, the application writes only to the cache and gets an answer at once. The cache writes to the database later, in the background, usually in batches."
+    },
+    {
+      "t": "fig",
+      "id": "ca-write-behind",
+      "cap": "Write-behind: writes are answered from the cache at once and reach the database later in batches. If the cache dies before a flush, those writes are gone."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Writes are very fast, and batching turns many small writes into a few large ones, which databases handle well.",
+        "The risk is loss: if the cache crashes before it flushes, the writes it was holding are gone.",
+        "So it fits work where losing a few seconds of writes is acceptable and eventual consistency is fine: view counts, analytics events, metrics.",
+        "Never for orders or payments: a customer charged for an order the database never saw is a real problem."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Read-through"
+    },
+    {
+      "t": "p",
+      "x": "With read-through, the cache sits in front of the database as a proxy, and the application talks only to the cache. On a miss, the cache itself fetches from the database, stores the answer and returns it."
+    },
+    {
+      "t": "fig",
+      "id": "ca-read-through",
+      "cap": "Read-through: the application only ever asks the cache. On a miss, the cache loads from the database itself; the application's code has no database calls for these reads."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is the read side of write-through: in both, the cache stands between your code and the database. Read-through handles reads, write-through handles writes, and systems that use one often use both.",
+        "It keeps the caching logic in one place, but needs a cache that knows how to load from your database: a specialised library or service.",
+        "A CDN is a read-through cache: on a miss it fetches from your origin, keeps a copy and answers. That is the main place you'll meet it in an interview.",
+        "For application data in Redis, cache-aside is far more common; there are few reasons to propose read-through unless you are talking about a CDN or similar infrastructure."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Caching patterns",
+      "head": [
+        "Pattern",
+        "Who reads or writes the database",
+        "Good at",
+        "Watch out for",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "Cache-aside",
+          "Your code, on a miss and on writes",
+          "Simple; only cached when asked for",
+          "Slow first read; stale until deleted or expired",
+          "Menus, profiles, restaurant cards"
+        ],
+        [
+          "Write-through",
+          "The cache, before acknowledging a write",
+          "Reads always fresh",
+          "Slower writes; caches unread data; dual writes",
+          "Rarely; maybe restaurant open/closed status"
+        ],
+        [
+          "Write-behind",
+          "The cache, later, in batches",
+          "Very fast writes",
+          "Writes lost if the cache crashes",
+          "Dish view counts for analytics"
+        ],
+        [
+          "Read-through",
+          "The cache, on a miss",
+          "Caching logic in one place",
+          "Needs a cache that can load data",
+          "The CDN in front of dish photos"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'cache-aside, delete on write' and you have covered most designs.",
+        "Pick write-through only when reads must be fresh and writes can wait, and mention the dual-write risk.",
+        "Pick write-behind only for data you can afford to lose a little of, and say so.",
+        "Name a CDN as the read-through cache in your design, if there is one."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When the cache is full"
+    },
+    {
+      "t": "h3",
+      "x": "Why caches evict"
+    },
+    {
+      "t": "p",
+      "x": "Memory is limited and costs more than disk, so a cache holds only a slice of the data. When it is full and a new entry arrives, something has to go. The rule for choosing is the eviction policy. In Redis it is a setting (maxmemory-policy), and choosing it is part of designing the cache: the default, noeviction, refuses new writes once memory is full, which suits Redis used as a database but breaks a cache, so a cache is set to allkeys-lru or allkeys-lfu."
+    },
+    {
+      "t": "fig",
+      "id": "ca-evict",
+      "cap": "A cache with room for four menus, after the same reads. Each policy throws out a different menu when a fifth arrives: LRU the one unused longest, LFU the one used least, FIFO the one stored first."
+    },
+    {
+      "t": "h3",
+      "x": "LRU: least recently used"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry that has gone longest without being read.",
+        "It is kept cheap by ordering entries by last use, for example in a linked list where each read moves the entry to the front, so the entry at the back can be removed in constant time. Redis approximates this by sampling a few keys and evicting the oldest of those.",
+        "It is the default in many systems because it fits most workloads: a menu read a minute ago is likely to be read again soon, and one untouched for hours probably isn't.",
+        "Its weak spot is a one-off scan: reading a million keys once (a nightly report) can push out everything that was genuinely hot."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "LFU: least frequently used"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry with the fewest reads. Each key keeps a counter, and the one with the lowest count goes.",
+        "Exact counts for every key cost memory and time, so real systems (Redis's allkeys-lfu included) keep approximate counters that also fade over time, so yesterday's hit doesn't stay protected forever.",
+        "It works well when some keys stay popular for a long time: the most-ordered restaurants in a city, trending videos, top playlists. A one-off scan doesn't push them out.",
+        "Its weak spot is change: without fading counts, an item that was popular last week can linger while today's new favourite is evicted."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "FIFO: first in, first out"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Evicts the entry stored earliest, regardless of how often or how recently it was read. A simple queue is enough to implement it.",
+        "Because it ignores use, it happily throws out the hottest key just because it was cached first.",
+        "So it is rarely used beyond the simplest caches, where tracking use isn't worth the effort."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "TTL: time to live"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A TTL is not an eviction policy on its own. It gives each entry an expiry time, and entries older than that are removed whether or not memory is full.",
+        "Its job is freshness, not space: it puts an upper limit on how stale a cached copy can be. A menu with a 10-minute TTL is at most 10 minutes out of date, even if a delete was missed.",
+        "It is usually combined with LRU or LFU: the TTL keeps data fresh, the eviction policy keeps memory in bounds.",
+        "It is a must for anything that has to refresh eventually: API responses, session tokens, a 'popular near you' list. Add a little randomness (600 seconds ± 60) so keys written together don't all expire together."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ca-ttl",
+      "cap": "Expiry and eviction do different jobs. The TTL removes a menu after 10 minutes however popular it is; LRU removes the least-used menu only when memory runs out."
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Eviction policies",
+      "head": [
+        "Policy",
+        "Removes",
+        "Good for",
+        "Weak spot"
+      ],
+      "rows": [
+        [
+          "LRU",
+          "The entry unused for longest",
+          "Most workloads: the safe default",
+          "One-off scans push out hot data"
+        ],
+        [
+          "LFU",
+          "The entry used least often",
+          "Keys that stay popular for a long time",
+          "Slow to forget old favourites"
+        ],
+        [
+          "FIFO",
+          "The entry stored first",
+          "Very simple caches",
+          "Evicts hot data; rarely the right choice"
+        ],
+        [
+          "TTL (expiry)",
+          "Entries older than their time limit",
+          "Freshness: sessions, API responses",
+          "Not a space policy; combine with LRU or LFU"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'LRU when full, and a TTL on every key', and give the TTL for each kind of data with a reason.",
+        "Mention LFU if a small set of keys stays popular for a long time.",
+        "Size the cache so the data read often fits, and watch the hit rate and eviction count; a falling hit rate with many evictions means the cache is too small."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When caching goes wrong"
+    },
+    {
+      "t": "h3",
+      "x": "Stampedes (thundering herd)"
+    },
+    {
+      "t": "p",
+      "x": "A stampede happens when a popular entry expires, or is deleted, and many requests notice the miss at the same moment. For a brief window, even a second, every one of them goes to the database to rebuild the same entry. Instead of one query, the database gets hundreds or thousands at once."
+    },
+    {
+      "t": "fig",
+      "id": "ca-stampede",
+      "cap": "The 'popular near you' list expires at 20:01:00. Without coalescing, every request in that second queries the database. With it, one request rebuilds the list and the rest wait a few milliseconds for its answer."
+    },
+    {
+      "t": "p",
+      "x": "For example, Zotato caches the 'popular near you' list for each area with a 60-second TTL. At 20:01:00, at the dinner peak, the list for a busy area expires; every request in that instant misses and runs the same 200 ms query. If enough arrive, the database slows, more requests pile up behind it, and the slowdown spreads to everything else that database serves."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Request coalescing (single flight): the first request that misses takes a short lock (in Redis, SET with NX and a few seconds' expiry) and rebuilds the entry; the others wait briefly and then read what it stored, or are served the old value meanwhile. This is the most effective fix.",
+        "Refresh early: rebuild popular keys before they expire, either on a schedule (cache warming) or by letting a request that arrives close to expiry refresh the entry with a small probability (probabilistic early expiration), so the rebuild is spread out instead of happening at one instant.",
+        "Warming only helps with TTL-based expiry. If entries are deleted when the data changes, the delete itself can start a stampede, and coalescing is still needed.",
+        "Random jitter on TTLs (600 ± 60 seconds) stops many keys written together from expiring together."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: probabilistic early expiration",
+      "body": [
+        {
+          "t": "p",
+          "x": "Each read of a cached entry checks how close it is to expiring. The closer it is, the higher the chance that this read refreshes the entry in the background while still returning the cached value. With thousands of reads a second, one of them almost always refreshes the entry a little before it expires, and no read ever sees a miss. Rarely read keys are never refreshed early, which is fine because they can't cause a stampede."
+        }
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Stale reads (cache consistency)"
+    },
+    {
+      "t": "p",
+      "x": "The cache and the database can disagree. Most systems write to the database and read from the cache, so after any write there is a window when the cache still holds the old value. This is one of the most discussed caching problems in interviews."
+    },
+    {
+      "t": "p",
+      "x": "For example, a restaurant changes its biryani price from ₹240 to ₹260. The database has ₹260, but menu:42 in Redis still says ₹240, and every customer who opens the menu sees the old price until that entry is deleted or expires."
+    },
+    {
+      "t": "fig",
+      "id": "ca-stale",
+      "cap": "A price change reaches the database first. Until the cached menu is deleted or expires, readers see the old price; deleting the entry on write closes that window to milliseconds."
+    },
+    {
+      "t": "p",
+      "x": "There is no perfect fix; choose by how fresh each kind of data must be:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Delete on write: after updating the database, delete the cached entry, so the next read repopulates it with fresh data. Delete rather than update: two writers updating the cache in the wrong order can leave an old value there, while a delete can only cause one extra miss.",
+        "Short TTLs where some staleness is acceptable: an entry that lives 30 seconds is never more than 30 seconds out of date, even if a delete is missed.",
+        "Accept eventual consistency where a delay doesn't matter: feeds, view counts, ratings, analytics.",
+        "And read from the database for the few things that must be exact: the price charged at checkout is read from the database, not the cached menu."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: the race that delete-on-write still allows",
+      "body": [
+        {
+          "t": "p",
+          "x": "A reader misses menu:42 and reads the database just before the owner's update, so it holds ₹240. The update commits and deletes menu:42. Then the slow reader finishes and stores its ₹240 in the cache, after the delete. The cache now holds the old price until the entry expires. It is rare, because the reader must be slower than a whole write, but it happens under load."
+        },
+        {
+          "t": "list",
+          "items": [
+            "The TTL is the safety net: whatever goes wrong, the stale entry dies when it expires. This is why cached entries should always have one.",
+            "A second, delayed delete (a few hundred milliseconds after the write) catches most of these races.",
+            "Or version the value: store the row's updated_at with it, and refuse to overwrite a newer version with an older one."
+          ]
+        }
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Hot keys"
+    },
+    {
+      "t": "p",
+      "x": "A hot key is one cache entry that gets far more traffic than the rest. Even with a high hit rate, one key can overload the single cache node or Redis shard that holds it, because every read of it goes to that one machine."
+    },
+    {
+      "t": "p",
+      "x": "For example, during a cricket final Zotato's home banner, the key promo:final-night, is read by every user who opens the app: lakhs of reads a second, all on one Redis node. Everything is working as designed, and that node is still the bottleneck."
+    },
+    {
+      "t": "fig",
+      "id": "ca-hot-key",
+      "cap": "One key, lakhs of reads a second, all on one Redis node. Copying it to replicas spreads the reads, and a few seconds' copy in each app server's memory keeps most of them off Redis entirely."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Replicate the hot key: keep the same value on several nodes (read replicas, or copies under keys such as promo:final-night:1 … :8) and spread reads across them.",
+        "Add a local cache: keep extremely hot values in each server's own memory for a few seconds, so most reads never reach Redis.",
+        "Rate-limit abusive patterns: if the traffic on one key comes from a few clients hammering it, slow them down.",
+        "The same problem appears beyond caches whenever millions of people want the same thing at once; the concept 'When reads outnumber writes' covers it as a pattern."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "hot-key-merge",
+      "cap": "Coalescing sends one request to the database for an expired hot key, and a short copy in each server spreads the reads."
+    },
+    {
+      "t": "h3",
+      "x": "When the cache goes down"
+    },
+    {
+      "t": "p",
+      "x": "A cache that takes 90% of the reads is also hiding 90% of the load. If Redis fails, or restarts empty, every read falls through to the database at once, and a database sized for the 10% can collapse."
+    },
+    {
+      "t": "fig",
+      "id": "cache-warm",
+      "cap": "When the cache restarts empty at dinner, every read reaches the database until the cache fills again."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Fall back to the database, but not blindly: a circuit breaker and a limit on concurrent queries keep the database alive, and some requests get a simpler page or fail fast instead.",
+        "Keep a small in-process cache as a last layer for the hottest data.",
+        "Run the cache with a replica in another zone so a failure doesn't mean an empty cache, and warm a new cache with the most-read keys before sending traffic to it.",
+        "Or size the database for the cold-cache load, if that is affordable."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't recite all four. Pick the one or two that fit the system: stampedes and hot keys for viral content, stale reads for prices and stock, cache failure for anything with a big hit rate.",
+        "For each, give the fix in a sentence: coalescing, delete on write, replicate or copy locally, circuit breaker and warm replicas.",
+        "Show the costs as well as the gains: that is what this part of the interview is testing."
+      ]
+    }
+  ]
+}

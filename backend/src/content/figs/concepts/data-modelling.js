@@ -1,4 +1,4 @@
-// Concepts › Data modelling: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/data-modelling.jsx) draws.
+// Concepts › Data modelling: the figure ids this article's frontend module (frontend/src/figs/concepts/data-modelling.jsx) draws.
 export const FIGS = [
   'dm-whiteboard',
   'dm-kv-cache',

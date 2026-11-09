@@ -158,7 +158,7 @@
       "t": "list",
       "items": [
         "Index: the code is the primary key, so even without a cache a lookup is about a millisecond. Fine for a start, not for 3.5 lakh a second on one database.",
-        "Cache: most clicks are on links made in the last few days. Keeping the hottest 20% of a day's links in Redis is about 10 GB, and most redirects never reach the database. Cache-aside with a TTL, as in the Caching concepts.",
+        "Cache: most clicks are on links made in the last few days. Keeping the hottest 20% of a day's links in Redis is about 10 GB, and most redirects never reach the database. Cache-aside with a TTL, as in the Caching concept.",
         "Edge: put the redirect behind a CDN that caches the 302 for a short time, so a link blasted in a crore SMS is answered near the customer. You lose per-click counting at the edge unless the CDN reports it."
       ]
     },
@@ -177,7 +177,7 @@
     {
       "t": "list",
       "items": [
-        "Shard the links table by code (hash of the code), since every redirect looks up exactly one code. See the Sharding concepts.",
+        "Shard the links table by code (hash of the code), since every redirect looks up exactly one code. See the Sharding concept.",
         "Replicate each shard; redirects can read from replicas, because a link that's a few hundred milliseconds old is rarely opened that fast. If a replica says a code doesn't exist, ask the primary before answering 404, and cache a 404 for seconds at most, so a brand-new link isn't stuck broken.",
         "Expired links: don't delete them on the hot path. A nightly job removes them, and the redirect checks `expires_at` before answering."
       ]

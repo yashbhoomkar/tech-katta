@@ -1,0 +1,579 @@
+{
+  "section": "concepts",
+  "slug": "data-modelling",
+  "group": "core",
+  "no": "CONCEPT // 03",
+  "tag": "DATA MODELLING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Data modelling: from requirements to tables",
+  "dek": "What to decide in an interview and when, choosing a database model, keys and relationships, indexes and normalisation, and how to split the data when one database isn't enough.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Twice in an interview: name the core entities right after the requirements; sketch a schema (keys, links, indexes, maybe a shard key) when the database enters the design.",
+        "Default to a relational database (PostgreSQL is a safe, well-understood choice). It gives a fixed schema, joins and transactions, and scales much further than its reputation suggests.",
+        "Three inputs decide the schema: data volume (does it fit on one machine?), access patterns (which queries must be fast?) and consistency (what must change together?).",
+        "Add an index for each important query, and say which endpoint needs it: GET /users/{id}/orders needs an index on orders (user_id, created_at).",
+        "Shard only when one machine can't hold the data or its writes; replicas and caching come first for read load."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Data modelling in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "Two moments in the interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Right after the requirements, list the core entities: for Zotato, users, restaurants, dishes, orders, riders and deliveries. Nouns only, no columns yet. They become the API's resources and, later, the tables.",
+        "During the high-level design, when you draw a database, give it a schema: the columns that matter, the keys that link entities, and the indexes the main queries need. Partitioning comes up if the data or traffic outgrows one machine."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "A careful model pays off through the rest of the interview: it decides what can be fetched in one query, what must stay consistent together, what can be traced afterwards (who changed an order, what was charged), and how the data can be split later. A careless one turns the deep dives into repairs. But 'good enough' is the target; stop once the model clearly serves the requirements."
+    },
+    {
+      "t": "fig",
+      "id": "dm-whiteboard",
+      "cap": "What the data model on the whiteboard should look like by the end: the tables, their keys and links, the indexes that serve the main screens, and one line on how it would be split if it grows."
+    },
+    {
+      "t": "h3",
+      "x": "Six steps"
+    },
+    {
+      "t": "table",
+      "label": "Data modelling in six steps",
+      "head": [
+        "Step",
+        "Decide",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "1. Database type",
+          "Relational unless there is a reason not to",
+          "PostgreSQL for orders, payments and menus"
+        ],
+        [
+          "2. Columns",
+          "What each entity needs for the functional requirements",
+          "orders: user, restaurant, status, total, created_at"
+        ],
+        [
+          "3. Keys",
+          "A primary key per table; foreign keys for every link",
+          "order_items points at orders and dishes"
+        ],
+        [
+          "4. Indexes",
+          "One for each important query",
+          "orders by (user_id, created_at) for order history"
+        ],
+        [
+          "5. Denormalise?",
+          "Only where a hot read needs it",
+          "Keep a rating count on restaurants for the list screen"
+        ],
+        [
+          "6. Shard?",
+          "Only if one machine can't hold it; key on the main access pattern",
+          "Orders by city if they outgrow one primary"
+        ]
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Zotato's core schema",
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
+      "say": "Zotato's core schema: users with a unique phone; restaurants owned by a user; dishes belonging to a restaurant with a positive price; orders linking a user and a restaurant with a status, total and time; order items keyed by order and dish with a positive quantity and the price paid; ratings keyed by order with one to five stars; and deliveries keyed by order with a rider and pickup and delivery times."
+    },
+    {
+      "t": "p",
+      "x": "The parts below go through each step: choosing a database model, keys and relationships, indexes and normalisation, and sharding."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "List entities early, and keep them to the nouns the requirements need.",
+        "When you add a database, write the schema in two minutes: columns that matter, keys, indexes, and say why each index exists.",
+        "Say the database choice in one sentence with a reason, and move on. Most of the interview's points are in the design and deep dives, not in the column list."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Choosing a database model"
+    },
+    {
+      "t": "h3",
+      "x": "Don't show off"
+    },
+    {
+      "t": "p",
+      "x": "The database type is the first modelling decision, because tables, documents and partitions each lead to a different schema. Knowing the alternatives still matters: it lets you say why relational fits, and spot the one part of a design that is better served by something else. This article spends most of its time on relational and covers the others briefly."
+    },
+    {
+      "t": "p",
+      "x": "Reaching for an unusual database to sound clever is a common way to lose points: it invites questions you then have to defend, about consistency, operations and why the usual choice wasn't enough. Pick relational unless the requirements give a clear reason, and if you have deep production experience with something else, say so and use it."
+    },
+    {
+      "t": "h3",
+      "x": "Relational (SQL)"
+    },
+    {
+      "t": "p",
+      "x": "Data lives in tables with a fixed set of columns; each row is one thing, and foreign keys link rows across tables. Transactions make several changes happen all together or not at all (ACID)."
+    },
+    {
+      "t": "code",
+      "label": "Three Zotato tables, a few rows each",
+      "x": "users        id │ name   │ phone       │ created_at\n             1  │ Priya  │ 98200 00001 │ 2026-11-01 09:00\n             2  │ Arjun  │ 98200 00002 │ 2026-11-01 09:05\n\norders       id   │ user_id → users │ restaurant_id │ status    │ created_at\n             9101 │ 1               │ 42            │ delivered │ 2026-11-08 12:10\n             9102 │ 1               │ 17            │ preparing │ 2026-11-08 19:40\n             9103 │ 2               │ 42            │ placed    │ 2026-11-08 19:45\n\norder_items  order_id → orders │ dish_id → dishes │ qty │ price_paise\n             9101              │ 9                │ 2   │ 24000\n             9101              │ 10               │ 1   │ 9000\n             9103              │ 9                │ 1   │ 24000",
+      "say": "Three tables with a few rows each. Users: Priya, id 1, and Arjun, id 2, with phone numbers and sign-up times. Orders: 9101 and 9102 belong to user 1, from restaurants 42 and 17; 9103 belongs to user 2, from restaurant 42; each has a status and a time. Order items: order 9101 has two of dish 9 and one of dish 10, and order 9103 has one of dish 9, each with the price paid. Every link is an id pointing at a row in another table."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It maps naturally onto most products: Zotato's users, restaurants, dishes, orders and payments, or a social app's users, posts, comments and likes.",
+        "Joins answer rich questions in one query: 'orders from restaurants in Pune this week, with their dishes, newest first'. But a query joining many large tables can become slow at scale, and reporting-style queries over everything are a warning sign: answer them from a precomputed table, a cache or a separate analytics store.",
+        "Transactions are the reason to stay relational for money and stock: an order and its payment, or the last plate of biryani, must never be counted twice.",
+        "'Relational doesn't scale' is mostly a myth: read replicas, connection pooling, caching and sharding take a relational database a very long way, and many of the largest sites run on MySQL or PostgreSQL.",
+        "Choices: PostgreSQL, MySQL; SQLite inside a single app or device."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Document databases"
+    },
+    {
+      "t": "p",
+      "x": "Each record is a JSON-like document with its own shape. Instead of spreading data over tables and joining, you nest related data inside one document."
+    },
+    {
+      "t": "fig",
+      "id": "model-shapes",
+      "cap": "The same restaurant and menu as rows in tables, as one nested document, and as a wide row. The shape you choose decides which reads are one lookup and which writes touch many places."
+    },
+    {
+      "t": "code",
+      "label": "A restaurant as one document",
+      "x": "{\n  \"_id\": 42,\n  \"name\": \"Spice Route\",\n  \"city\": \"Mumbai\",\n  \"menu\": [\n    { \"dish_id\": 9,  \"name\": \"Chicken biryani\", \"price_paise\": 24000 },\n    { \"dish_id\": 10, \"name\": \"Raita\",           \"price_paise\": 9000 }\n  ],\n  \"created_at\": \"2026-01-15\"\n}",
+      "say": "Restaurant 42 as a single JSON document: its id, name and city, with its menu embedded as an array of dishes, each with an id, a name and a price, and a creation date. One read returns the restaurant and its whole menu; there is no separate dishes table to join."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Embedding the menu inside the restaurant document means one read fetches both, with no join. But changing one dish means rewriting part of a large document, and data embedded in two places has to be updated in both.",
+        "Worth it when records genuinely vary (a rider's documents differ by city and vehicle; a restaurant's licences differ by state), when data is deeply nested and always read together, or when the schema changes faster than migrations can keep up.",
+        "In interviews the requirements are narrow and fixed, so 'the schema will change a lot' rarely applies; propose a document store only if the interviewer stresses changing or varied structure.",
+        "Model for the reads: embed what is read together, accept more storage and more complex updates.",
+        "Choices: MongoDB, Firestore, CouchDB."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Key-value stores"
+    },
+    {
+      "t": "p",
+      "x": "A key-value store finds a value by its exact key, very quickly, and does little else: no joins, few or no secondary lookups."
+    },
+    {
+      "t": "fig",
+      "id": "dm-kv-cache",
+      "cap": "The common pattern: the relational database stays the source of truth, and a key-value store in front of it serves the hot reads. A change updates the database and removes the cached copy."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for caches, sessions, feature flags, rate-limit counters, and anything always fetched by one id at very high rates.",
+        "'Key-value instead of SQL' is usually the wrong framing; 'SQL as the source of truth, with Redis in front for hot data' is what most designs need.",
+        "Modelling is flat: you choose keys per access pattern (menu:42, cart:77) and copy data into each, which makes reads trivial and consistency your job.",
+        "Choices: Redis, Memcached, DynamoDB (which also offers more, see its Components article)."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Wide-column databases"
+    },
+    {
+      "t": "p",
+      "x": "Data is grouped into column families, and rows in the same table don't need the same columns. Rows are grouped by a partition key and sorted within it by a clustering key, so all of one partition's rows sit together on disk in order. Writes append; reads scan a slice of one partition."
+    },
+    {
+      "t": "fig",
+      "id": "dm-wide",
+      "cap": "Each rider's locations live together, sorted by time. A new ping is an append to the end of that rider's partition; 'the last ten minutes for rider 9' is one ordered slice."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Good for very high write rates and data that arrives in time order: rider location pings, app events, sensor readings, logs.",
+        "Model around the query, not the entity: the table for 'a rider's recent locations' is keyed (rider_id, time), and a different question gets a different table with the data copied in.",
+        "Time is part of the model: how far back you keep data, and how partitions are bounded so none grows forever.",
+        "Choices: Cassandra, ScyllaDB, HBase."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Graph databases"
+    },
+    {
+      "t": "p",
+      "x": "A graph database stores nodes and the edges between them, and is built for walking those edges: 'friends of friends who ordered from this restaurant'."
+    },
+    {
+      "t": "fig",
+      "id": "dm-graph",
+      "cap": "Relationships as a graph and as a table of edges. For the one- or two-hop questions most products ask, the edge table with an index answers just as well."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Almost never the right call in an interview. Social networks and recommendations are the classic examples, yet the biggest social graphs are stored in sharded relational databases, as rows of edges with indexes.",
+        "Proposing one is a common mistake: it adds a new system to run and defend for queries an indexed edges table already answers.",
+        "Choices, if you truly need deep traversals: Neo4j, Amazon Neptune."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "At a glance"
+    },
+    {
+      "t": "table",
+      "label": "Database models",
+      "head": [
+        "Model",
+        "Best at",
+        "Watch out for",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "Relational",
+          "Most products; joins; transactions",
+          "Huge joins and reports at scale",
+          "Orders, payments, menus"
+        ],
+        [
+          "Document",
+          "Varied or deeply nested records read whole",
+          "Updates to embedded copies",
+          "Rider onboarding documents"
+        ],
+        [
+          "Key-value",
+          "Lookups by one key, very fast",
+          "No queries beyond the key",
+          "Cache of menus, sessions, OTP counters"
+        ],
+        [
+          "Wide-column",
+          "Huge write rates, time-ordered data",
+          "One table per question; copies",
+          "Rider location history"
+        ],
+        [
+          "Graph",
+          "Deep relationship traversals",
+          "Rarely needed; another system to run",
+          "Nothing at Zotato's scale"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say 'PostgreSQL' (or MySQL) and give one reason tied to the requirements: transactions for orders and payments, joins for the screens.",
+        "Add another model only for a specific part, and say why: Redis in front for hot menus, Cassandra for location history.",
+        "If someone asks whether relational will scale, name the tools: replicas, pooling, caching, and sharding by the main access pattern."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "From requirements to tables"
+    },
+    {
+      "t": "h3",
+      "x": "Start from the requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Volume: Zotato's orders grow by lakhs a day, menus barely at all. Data that outgrows one machine may end up in a different system from the rest, so its schema must refer to other data by id rather than by join.",
+        "Access patterns matter most. List the queries each API endpoint needs: order history by user and time, today's orders for a restaurant, a menu by restaurant. Every one should be fast with the model and its indexes.",
+        "Consistency decides what lives together. An order, its items and its payment record must change together, so they belong in one database with transactions. Ratings or a 'popular near you' list can lag by seconds, so they can live elsewhere and be updated asynchronously.",
+        "Say these out loud as reasons: 'orders and payments share one Postgres so placing an order is one transaction; the rating count on restaurants is denormalised so the list loads in one read'.",
+        "Everything that follows (tables, keys, indexes, copies, sharding) is a tool for meeting these three. When you make a choice, name which of them it serves."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Entities become tables"
+    },
+    {
+      "t": "code",
+      "label": "Zotato's schema",
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
+      "say": "Zotato's schema: users, restaurants, dishes, orders, order items, ratings and deliveries, with their keys, links and checks."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use a system-generated id as the primary key: a number from a sequence, or a UUID or similar when ids are created on many machines. Business values change: a user changes their phone number, a restaurant changes its name, and every reference would have to change with them.",
+        "Keep business values as ordinary columns with a UNIQUE constraint where they must not repeat (a phone number per user).",
+        "In an interview, name the primary key and why it matters: 'orders.id, which order_items, ratings and deliveries refer to'.",
+        "Name tables after the domain's nouns, the same ones as your core entities and API resources. A reader should recognise the product from the table list."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Relationships"
+    },
+    {
+      "t": "fig",
+      "id": "dm-relations",
+      "cap": "One-to-many is a foreign key on the 'many' side. Many-to-many needs a table of its own, here order_items, whose rows each link one order to one dish. One-to-one is rare and worth questioning."
+    },
+    {
+      "t": "list",
+      "items": [
+        "One-to-many: a restaurant has many dishes; a user has many orders. The 'many' side carries the foreign key (dishes.restaurant_id).",
+        "Many-to-many: an order contains many dishes and a dish appears in many orders. A join table, order_items, holds one row per pair, often with data about the pair (quantity, price paid).",
+        "One-to-one: an order has at most one delivery. Often two such tables should simply be one; keep them apart only for a reason, as here: deliveries are written by another service at another time, and many orders (pickups) have none."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Foreign keys and constraints"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A foreign key makes the database refuse an order for a restaurant that doesn't exist, or the deletion of a dish that past orders refer to. It prevents orphaned rows.",
+        "Each insert and update has to check the referenced row, which costs a little. Some very large systems drop foreign keys, especially across shards where the database can't check them, and enforce the rules in application code instead.",
+        "NOT NULL, UNIQUE and CHECK put simple rules in the database: every order has a user, a phone number belongs to one account, a price is positive, a rating is 1 to 5. Bugs in any service can't break them. Like foreign keys, each one is checked on every write, a small cost that is almost always worth paying.",
+        "In an interview, mention the one or two constraints that protect money or identity; nobody needs every column annotated."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "dm-constraints",
+      "cap": "Constraints reject bad writes at the database, whatever service sent them: an order for a restaurant that doesn't exist, a second account with the same phone, a dish with a negative price."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ground the schema in the requirements: say which query or consistency rule each choice serves.",
+        "Use surrogate ids, show the foreign keys, and use a join table for many-to-many.",
+        "Mention foreign keys and the key constraints, and the trade-off if the data is later sharded."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Indexes and normalisation"
+    },
+    {
+      "t": "h3",
+      "x": "Indexes follow the endpoints"
+    },
+    {
+      "t": "p",
+      "x": "Without an index the database reads every row to find the ones you want, like searching a phone's contacts by scrolling through all of them instead of typing the first letters. An index is a sorted structure that jumps straight to the rows (the Database indexing concept explains B-trees and their costs)."
+    },
+    {
+      "t": "fig",
+      "id": "dm-endpoint-index",
+      "cap": "Each endpoint's query names the index it needs. Order history filters by user and sorts by time, so one composite index serves both the filter and the order."
+    },
+    {
+      "t": "table",
+      "label": "Zotato's indexes",
+      "head": [
+        "Endpoint",
+        "Query",
+        "Index"
+      ],
+      "rows": [
+        [
+          "GET /users/{id}/orders",
+          "orders of one user, newest first",
+          "orders (user_id, created_at)"
+        ],
+        [
+          "GET /restaurants/{id}/orders?status=preparing",
+          "a restaurant's live orders",
+          "orders (restaurant_id, status)"
+        ],
+        [
+          "GET /restaurants/{id}/menu",
+          "dishes of one restaurant",
+          "dishes (restaurant_id)"
+        ],
+        [
+          "GET /orders/recent (support tool)",
+          "latest orders everywhere",
+          "orders (created_at)"
+        ]
+      ]
+    },
+    {
+      "t": "list",
+      "items": [
+        "A composite index on (user_id, created_at) serves 'orders of user 77' and 'newest first' together; an index on user_id alone would still have to sort.",
+        "Every index makes writes slower and takes space, so add the ones the endpoints need, not one per column.",
+        "In an interview, name the indexes next to the schema and say which query each one serves."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Normalised: each fact once"
+    },
+    {
+      "t": "p",
+      "x": "In a normalised schema, a restaurant's name is stored once, in restaurants, and orders refer to it by id. A denormalised schema copies the name into every order row, so the order list can be shown without a join."
+    },
+    {
+      "t": "fig",
+      "id": "dm-anomaly",
+      "cap": "A restaurant renames itself. Normalised, that is one update. Denormalised, every order row carrying the old name must change, and any row missed now disagrees with the rest."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The danger of copies is drift: an update that misses one copy leaves the data contradicting itself, and nothing tells you.",
+        "So in interviews, start normalised and copy data only when a specific read needs it. Repeated data usually causes harder problems than the join it saves.",
+        "When you do copy, say how copies stay in step: in the same transaction, from a change stream, or by accepting that they lag."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "When copying is right"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Point-in-time records: order_items stores the price paid, deliberately, because the order must show what was charged even after the menu price changes. Audit trails and event logs are snapshots by design.",
+        "Analytics and reports: daily sales per restaurant are computed from orders and stored, because they're read often and change once a day.",
+        "Read-optimised copies: a search index of dishes and restaurants (Elasticsearch) is a denormalised copy built for one kind of read, kept in sync from the database.",
+        "Hot counters: a ratings_count and average on restaurants saves counting ratings on every list view; updated when a rating arrives."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "model-copy",
+      "cap": "Copying a fact into the place it's read saves a join or a lookup on every read, at the cost of updating every copy on every write."
+    },
+    {
+      "t": "h3",
+      "x": "A cache instead of a copy"
+    },
+    {
+      "t": "p",
+      "x": "Often you can have the fast read without denormalising the source of truth: keep the tables normalised and put the joined or aggregated result in a cache (a restaurant card with its rating and delivery time, cached for a minute). The database stays simple and correct; the cache absorbs the read traffic and can be rebuilt at any time."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Tie every index to an endpoint.",
+        "Say 'normalised, except…' and name each exception with its reason.",
+        "Prefer a cache or a separate read model to copying data inside the source of truth."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When one database isn't enough"
+    },
+    {
+      "t": "h3",
+      "x": "Keep together what is read together"
+    },
+    {
+      "t": "p",
+      "x": "A sharded table is split by the value of one column, the shard key: rows with the same key value live on the same shard. Any query that includes the shard key goes to one shard; a query without it must ask every shard and merge the answers."
+    },
+    {
+      "t": "fig",
+      "id": "shard-key",
+      "cap": "The shard key decides where each row lives. Queries that include it go to one shard; queries that don't must ask them all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Zotato's busiest queries are local: a restaurant's live orders, a rider's assignments, a customer's current order, all within one city. Sharding orders by city keeps each of those on one shard.",
+        "A user's full history across cities is the exception; it's rarer, can be slower, and can be served from a separate copy keyed by user.",
+        "For a social feed sharded by user_id, 'a user's own posts' is one shard, but 'posts from everyone I follow' touches many: that's why feeds are usually precomputed per user rather than assembled from shards at read time."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "dm-cross-shard",
+      "cap": "Sharded by city, a restaurant's orders are on one shard. A question across every city, such as one user's history over the years, has to ask every shard and merge the results."
+    },
+    {
+      "t": "p",
+      "x": "City is one defensible key for Zotato's orders, not the only one. Keyed by customer_id instead, a customer's whole history and receipts sit on one shard, and a restaurant's live orders become the query that needs a second copy. Which is right depends on which queries dominate: live operations favour city, order history favours the customer. Say which you're optimising for, and keep a second, smaller copy keyed the other way. The Sharding concept works through the customer_id version."
+    },
+    {
+      "t": "h3",
+      "x": "Keys to avoid"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Time (the month, the day) as the shard key for write-heavy data: every new order goes to the current period's shard, which runs hot while the others sit idle. Time-based splitting suits archives and analytics, where old periods are read rarely and written never.",
+        "A key with a few huge values: one city or one celebrity account can outgrow its shard. Split those further, for example by city and zone.",
+        "A key no common query includes: every query becomes a scatter across all shards."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "hot-shard",
+      "cap": "One very busy key concentrates the load on one shard while the others sit idle; splitting that key spreads it."
+    },
+    {
+      "t": "h3",
+      "x": "A decision that sticks"
+    },
+    {
+      "t": "p",
+      "x": "Moving to a new shard key means rewriting and moving every row while the system keeps running, so it is chosen once, from the access patterns, and checked against the queries in the requirements. Foreign keys and transactions across shards also stop working, so the data that must change together has to share a shard key (an order and its items both keyed by city, through the order)."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Only shard when the numbers say one machine isn't enough, and say which numbers.",
+        "Name the shard key, the queries it keeps on one shard, and the one query it makes expensive, with your answer for it.",
+        "Point to the Sharding and Consistent hashing concepts for strategies, resharding and hot spots if the interviewer goes deeper."
+      ]
+    }
+  ]
+}

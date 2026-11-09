@@ -82,112 +82,112 @@
     },
     {
       "source": "/dashboard/concepts/api-types",
-      "destination": "/dashboard/concepts/api-styles/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/api-types/",
-      "destination": "/dashboard/concepts/api-styles/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/tap-to-server",
-      "destination": "/dashboard/concepts/one-request/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/tap-to-server/",
-      "destination": "/dashboard/concepts/one-request/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/shaping-apis",
-      "destination": "/dashboard/concepts/api-patterns/",
+      "destination": "/dashboard/concepts/api-design/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/shaping-apis/",
-      "destination": "/dashboard/concepts/api-patterns/",
+      "destination": "/dashboard/concepts/api-design/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/estimates",
-      "destination": "/dashboard/concepts/numbers-step/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/estimates/",
-      "destination": "/dashboard/concepts/numbers-step/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/replication",
-      "destination": "/dashboard/concepts/cap-designs/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/replication/",
-      "destination": "/dashboard/concepts/cap-designs/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/consistency",
-      "destination": "/dashboard/concepts/cap-per-feature/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/consistency/",
-      "destination": "/dashboard/concepts/cap-per-feature/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/cap-pacelc",
-      "destination": "/dashboard/concepts/cap-step/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/cap-pacelc/",
-      "destination": "/dashboard/concepts/cap-step/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/modelling-data",
-      "destination": "/dashboard/concepts/data-step/",
+      "destination": "/dashboard/concepts/data-modelling/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/modelling-data/",
-      "destination": "/dashboard/concepts/data-step/",
+      "destination": "/dashboard/concepts/data-modelling/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/indexes",
-      "destination": "/dashboard/concepts/index-step/",
+      "destination": "/dashboard/concepts/database-indexing/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/indexes/",
-      "destination": "/dashboard/concepts/index-step/",
+      "destination": "/dashboard/concepts/database-indexing/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/hash-rings",
-      "destination": "/dashboard/concepts/hash-ring/",
+      "destination": "/dashboard/concepts/consistent-hashing/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/hash-rings/",
-      "destination": "/dashboard/concepts/hash-ring/",
+      "destination": "/dashboard/concepts/consistent-hashing/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/timeouts-retries",
-      "destination": "/dashboard/concepts/failing-calls/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/timeouts-retries/",
-      "destination": "/dashboard/concepts/failing-calls/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
@@ -212,22 +212,22 @@
     },
     {
       "source": "/dashboard/components/load-balancers",
-      "destination": "/dashboard/concepts/spreading-load/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/load-balancers/",
-      "destination": "/dashboard/concepts/spreading-load/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/cdns",
-      "destination": "/dashboard/concepts/distance/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/cdns/",
-      "destination": "/dashboard/concepts/distance/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
@@ -242,42 +242,42 @@
     },
     {
       "source": "/dashboard/components/app-servers",
-      "destination": "/dashboard/concepts/numbers-components/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/app-servers/",
-      "destination": "/dashboard/concepts/numbers-components/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/caches",
-      "destination": "/dashboard/concepts/cache-step/",
+      "destination": "/dashboard/concepts/caching/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/caches/",
-      "destination": "/dashboard/concepts/cache-step/",
+      "destination": "/dashboard/concepts/caching/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/databases",
-      "destination": "/dashboard/concepts/choosing-database/",
+      "destination": "/dashboard/concepts/data-modelling/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/databases/",
-      "destination": "/dashboard/concepts/choosing-database/",
+      "destination": "/dashboard/concepts/data-modelling/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/sharding",
-      "destination": "/dashboard/concepts/shard-step/",
+      "destination": "/dashboard/concepts/sharding/",
       "permanent": true
     },
     {
       "source": "/dashboard/components/sharding/",
-      "destination": "/dashboard/concepts/shard-step/",
+      "destination": "/dashboard/concepts/sharding/",
       "permanent": true
     },
     {
@@ -352,12 +352,12 @@
     },
     {
       "source": "/dashboard/papers/memcache",
-      "destination": "/dashboard/concepts/cache-step/",
+      "destination": "/dashboard/concepts/caching/",
       "permanent": true
     },
     {
       "source": "/dashboard/papers/memcache/",
-      "destination": "/dashboard/concepts/cache-step/",
+      "destination": "/dashboard/concepts/caching/",
       "permanent": true
     },
     {
@@ -392,22 +392,22 @@
     },
     {
       "source": "/dashboard/papers/spanner",
-      "destination": "/dashboard/concepts/cap-designs/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/papers/spanner/",
-      "destination": "/dashboard/concepts/cap-designs/",
+      "destination": "/dashboard/concepts/cap-theorem/",
       "permanent": true
     },
     {
       "source": "/dashboard/papers/tail-at-scale",
-      "destination": "/dashboard/concepts/failing-calls/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
       "source": "/dashboard/papers/tail-at-scale/",
-      "destination": "/dashboard/concepts/failing-calls/",
+      "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true
     },
     {
@@ -418,6 +418,506 @@
     {
       "source": "/dashboard/interview-questions/autocomplete/",
       "destination": "/dashboard/interview-questions/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/network-layers",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/network-layers/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/one-request",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/one-request/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/tcp-or-udp",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/tcp-or-udp/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/http",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/http/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-styles",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-styles/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/server-push",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/server-push/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/peer-to-peer",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/peer-to-peer/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/spreading-load",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/spreading-load/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/l4-and-l7",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/l4-and-l7/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/distance",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/distance/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/failing-calls",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/failing-calls/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-step",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-step/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/rest-endpoints",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/rest-endpoints/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/graphql-in-depth",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/graphql-in-depth/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/rpc-and-grpc",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/rpc-and-grpc/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-principles",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-principles/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-patterns",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-patterns/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-security",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/api-security/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/data-step",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/data-step/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/choosing-database",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/choosing-database/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/keys-and-relationships",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/keys-and-relationships/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/indexes-and-normalising",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/indexes-and-normalising/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/sharding-the-model",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/sharding-the-model/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-step",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-step/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/where-to-cache",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/where-to-cache/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-patterns",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-patterns/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-eviction",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-eviction/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-problems",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cache-problems/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-step",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-step/",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/partition-and-shard",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/partition-and-shard/",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-strategies",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-strategies/",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-problems",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/shard-problems/",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hashing-step",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hashing-step/",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hash-ring",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/hash-ring/",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/ring-in-practice",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/ring-in-practice/",
+      "destination": "/dashboard/concepts/consistent-hashing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-step",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-step/",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-designs",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-designs/",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-per-feature",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/cap-per-feature/",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/index-step",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/index-step/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/btree-index",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/btree-index/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/lsm-and-hash",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/lsm-and-hash/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/special-indexes",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/special-indexes/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-step",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-step/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-components",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-components/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-mistakes",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/numbers-mistakes/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-step",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-step/",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-first-hop",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-first-hop/",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-second-hop",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-second-hop/",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-deep-dives",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/realtime-deep-dives/",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/live-updates",
+      "destination": "/dashboard/concepts/real-time-updates/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/live-updates/",
+      "destination": "/dashboard/concepts/real-time-updates/",
       "permanent": true
     },
     {

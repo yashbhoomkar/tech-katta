@@ -1,4 +1,4 @@
-// Concepts › Caching: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/caching.jsx) draws.
+// Concepts › Caching: the figure ids this article's frontend module (frontend/src/figs/concepts/caching.jsx) draws.
 export const FIGS = [
   'ca-why',
   'ca-layers',

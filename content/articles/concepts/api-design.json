@@ -1,0 +1,1006 @@
+{
+  "section": "concepts",
+  "slug": "api-design",
+  "group": "core",
+  "no": "CONCEPT // 02",
+  "tag": "API DESIGN",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "API design: getting the interface right",
+  "dek": "The API step of an interview, REST endpoints done well, GraphQL and gRPC, the habits of a clean API, everyday patterns such as pages, filters, retries and versions, and securing it.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "The API step follows a fixed pattern: pick a style (almost always REST), turn the core entities into resources, and say what goes in and what comes back. About five minutes.",
+        "Resources come from the core entities and are nouns, usually plural: /restaurants, /orders, /payments. An action becomes a resource ('cancel an order' becomes POST /orders/{id}/cancellation).",
+        "GraphQL exposes one endpoint and a typed schema; clients send queries naming the fields they want, nested as deep as they like, and get back exactly that shape.",
+        "RPC calls a named procedure on another machine: ChargeOrder(order_id, amount). Generated stubs hide the network, so it reads like a local call.",
+        "Model resources, be consistent, behave the way HTTP leads people to expect, keep requests stateless, make retries safe.",
+        "Pages: offset (?offset=40&limit=20) is simple but repeats or skips rows when data changes; a cursor (the last item seen) stays correct. Offset is fine unless the list changes fast or is huge.",
+        "Authentication proves who is calling; authorisation decides whether they may do this particular thing. 'This is Priya' versus 'Priya may cancel her own order, not someone else's'."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "The API step"
+    },
+    {
+      "t": "h3",
+      "x": "Where the API fits"
+    },
+    {
+      "t": "p",
+      "x": "A typical delivery runs: requirements, core entities, API, high-level design, deep dives. By the time you reach the API you already know what the system must do (customers order food, restaurants accept orders, riders deliver) and which things it deals with (restaurants, menus, orders, riders, payments). The API turns those into the contract between the apps and the backend."
+    },
+    {
+      "t": "p",
+      "x": "The steps are the same every time: choose a style, name the resources, and for each endpoint say how data comes in (path, query or body) and what comes back (a status and a body). The parts below go through each step."
+    },
+    {
+      "t": "h3",
+      "x": "How much it matters, and to whom"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For most backend and infrastructure interviews, the API is a checkpoint, not the main event. A clear list of endpoints, then on to the design. The most common mistake here is spending fifteen minutes on it.",
+        "For frontend and product-focused roles it carries more weight: you work with APIs every day, so expect questions on pagination, errors and how the app will use each call.",
+        "For junior roles, interviewers expect less distributed-systems depth, so a well-shaped API takes a bigger share of the time and the score.",
+        "Whatever the role, the API should follow from the requirements: every functional requirement maps to one or more endpoints, and nothing appears that no requirement asked for."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Choosing a style"
+    },
+    {
+      "t": "fig",
+      "id": "ad-choose",
+      "cap": "Three questions settle it in most interviews. REST answers the large majority of them; the others are for specific needs you can name."
+    },
+    {
+      "t": "table",
+      "label": "API styles at a glance",
+      "head": [
+        "Style",
+        "Shape",
+        "Reach for it when",
+        "Zotato example"
+      ],
+      "rows": [
+        [
+          "REST",
+          "Resources at URLs, acted on with HTTP methods, JSON",
+          "Almost always: create, read, update and delete for web and mobile apps",
+          "GET /restaurants/42/menu, POST /orders"
+        ],
+        [
+          "GraphQL",
+          "One endpoint; the client names the fields it wants",
+          "Several clients need different shapes of the same data, or the interviewer brings up over- or under-fetching",
+          "The customer app and the restaurant dashboard reading orders differently"
+        ],
+        [
+          "RPC (gRPC)",
+          "Calls to named functions on another service, binary messages over HTTP/2",
+          "Internal, high-volume calls between your own services",
+          "Orders calling Payments: ChargeOrder(order_id, amount)"
+        ],
+        [
+          "SSE / WebSockets",
+          "A connection kept open so the server can push",
+          "Live updates: tracking, chat, notifications",
+          "Order status pushed to the customer app"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "REST covers the great majority of interview problems. If nothing in the requirements points elsewhere, say 'I'll use a REST API' and start listing resources; nobody will mark you down for it. Live updates are a separate decision: SSE and WebSockets are persistent connections rather than request-and-response APIs, and they are covered under 'Pushing updates' in Networking essentials and 'Live updates at scale' in Recurring patterns."
+    },
+    {
+      "t": "h3",
+      "x": "What a good API step sounds like"
+    },
+    {
+      "t": "code",
+      "label": "Zotato's API in an interview",
+      "x": "I'll use REST, with JSON.\n\nGET    /restaurants?near=pune&cursor=…     list nearby restaurants\nGET    /restaurants/{id}/menu             a restaurant's menu\nPOST   /orders            {items, address}   place an order -> 201 + order\nGET    /orders/{id}                       order and its status\nPOST   /orders/{id}/cancellation          cancel\n\nEvery call carries the user's token. Placing an order takes an\nIdempotency-Key header so a retry can't create a second order.",
+      "say": "An example of the API step: REST with JSON; list nearby restaurants with a cursor, read a menu, place an order with POST returning 201, read an order, cancel it; every call carries a token, and placing an order takes an idempotency key."
+    },
+    {
+      "t": "p",
+      "x": "That is the whole step: a style, five endpoints mapped to the requirements, and two sentences on auth and retries. It takes three minutes and leaves room for the design."
+    },
+    {
+      "t": "h3",
+      "x": "When you're unsure"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Fall back on a few habits: resources not actions, consistent names, standard methods and status codes, stateless requests, safe retries, pagination for anything that grows, auth on every endpoint. The part 'Habits of a clean API' below covers them.",
+        "Prefer the conventional choice and say why in one sentence. Interviewers reward judgment, not cleverness.",
+        "Leave internal service-to-service APIs out of this step unless asked; mention them briefly during the high-level design instead."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep the API step to about five minutes: style, resources, inputs and outputs, auth in one line.",
+        "Make every endpoint trace back to a requirement, and say so as you write it.",
+        "Name a different style only with a reason: 'the web dashboard and the rider app need very different order views, so GraphQL could help here'."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "REST endpoints"
+    },
+    {
+      "t": "h3",
+      "x": "Resources from the core entities"
+    },
+    {
+      "t": "p",
+      "x": "The core entities you listed before the API are your resources. For Zotato: restaurants, menus, dishes, orders, riders, payments. Each gets a collection URL and an item URL."
+    },
+    {
+      "t": "code",
+      "label": "Zotato's resources",
+      "x": "GET    /restaurants                    restaurants (filtered, paginated)\nGET    /restaurants/{id}               one restaurant\nGET    /restaurants/{id}/menu          its menu\nPOST   /orders                         place an order\nGET    /orders/{id}                    one order\nGET    /users/{id}/orders              a user's orders\nPOST   /orders/{id}/payments           pay for an order",
+      "say": "Zotato's REST resources: restaurants, one restaurant, its menu, placing an order, reading an order, a user's orders, and paying for an order."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Resources are things, not actions. 'Place order' is POST /orders, not /placeOrder; 'cancel' is POST /orders/{id}/cancellation, which creates a cancellation, or PATCH /orders/{id} with a new status.",
+        "Use plural nouns for collections: /orders/{id}, not /order/{id}. Few interviewers care, but it costs nothing and reads as practised.",
+        "Getting the resources right matters far more than polishing URLs. If you have the right nouns and sensible methods, the details can be fixed later."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Linking resources: path or query"
+    },
+    {
+      "t": "p",
+      "x": "Some resources only make sense inside another: a menu belongs to one restaurant. Others can be looked at many ways: orders can be listed by user, by restaurant or by status. A simple rule decides where the link goes."
+    },
+    {
+      "t": "table",
+      "label": "Path or query",
+      "head": [
+        "If the link is…",
+        "Put it in",
+        "Example"
+      ],
+      "rows": [
+        [
+          "Required: the child can't exist without the parent",
+          "The path (nesting)",
+          "/restaurants/42/menu"
+        ],
+        [
+          "Optional: one of several ways to narrow a list",
+          "The query string",
+          "/orders?restaurant=42&status=preparing"
+        ],
+        [
+          "Both make sense",
+          "Pick one and use it everywhere",
+          "/users/77/orders, or /orders?user=77"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Keep nesting to one or two levels. /restaurants/42/menu/dishes/9/reviews is hard to read and ties the URL to one way of looking at the data; /dishes/9/reviews is enough."
+    },
+    {
+      "t": "h3",
+      "x": "Methods, and which ones are safe to repeat"
+    },
+    {
+      "t": "table",
+      "label": "HTTP methods for REST",
+      "head": [
+        "Method",
+        "Does",
+        "Idempotent?",
+        "Note"
+      ],
+      "rows": [
+        [
+          "GET",
+          "Reads; changes nothing",
+          "Yes",
+          "Safe to cache and retry"
+        ],
+        [
+          "POST",
+          "Creates; the server assigns the id",
+          "No",
+          "Sent twice, it can create two orders"
+        ],
+        [
+          "PUT",
+          "Replaces the whole resource, or creates it at a known id",
+          "Yes",
+          "Send the full object every time"
+        ],
+        [
+          "PATCH",
+          "Changes some fields",
+          "Depends",
+          "'Set status to cancelled' is safe to repeat; 'add one item to the cart' is not"
+        ],
+        [
+          "DELETE",
+          "Removes",
+          "Yes",
+          "The second call may answer 404 instead of 204, but the end state is the same"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Idempotent means that sending the same request several times leaves the system in the same state as sending it once. It is the property that makes retries safe, and networks make retries unavoidable: a phone loses signal after sending POST /orders and can't tell whether the order went through."
+    },
+    {
+      "t": "fig",
+      "id": "ad-retry-methods",
+      "cap": "The same request sent twice, as happens on a retry. Only POST, and some PATCHes, change the outcome; that's why placing an order needs an idempotency key."
+    },
+    {
+      "t": "h3",
+      "x": "Where input goes: path, query, body"
+    },
+    {
+      "t": "fig",
+      "id": "ad-parts",
+      "cap": "One request, three places for input. The path says which resource, the query says how to narrow or shape the answer, and the body carries the data being created or changed."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Path parameters identify one resource and are always required: the 9101 in /orders/9101.",
+        "Query parameters filter, sort, page and tweak; they are optional and have defaults. The first follows a `?`, the rest are joined with `&`: /restaurants?city=pune&veg=true&limit=20.",
+        "The body carries what you're creating or updating: the items and address of a new order. Anything large, structured or sensitive goes here, not in the URL, because URLs end up in logs and browser history.",
+        "A quick test: if removing it changes which resource you mean, it's a path parameter; if it changes what you see of the resource, it's a query parameter; if it's the content itself, it's the body."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Placing an order",
+      "x": "POST /orders?notify=sms\nAuthorization: Bearer eyJ…\nIdempotency-Key: 7f3c-…\n\n{\n  \"restaurant_id\": 42,\n  \"items\": [{\"dish_id\": 9, \"qty\": 2}, {\"dish_id\": 14, \"qty\": 1}],\n  \"address_id\": 3,\n  \"payment\": \"upi\"\n}",
+      "say": "Placing an order: a POST to /orders with a query flag asking for an SMS update, a token and an idempotency key in the headers, and a JSON body with the restaurant, the dishes and quantities, the address and the payment method."
+    },
+    {
+      "t": "h3",
+      "x": "What comes back"
+    },
+    {
+      "t": "p",
+      "x": "A response is a status code and, usually, a JSON body. The status tells the client what kind of outcome it was; the body has the data or the details of the error."
+    },
+    {
+      "t": "table",
+      "label": "Status codes to know",
+      "head": [
+        "Code",
+        "Means",
+        "Zotato"
+      ],
+      "rows": [
+        [
+          "200 OK",
+          "Here is the result",
+          "GET /orders/9101"
+        ],
+        [
+          "201 Created",
+          "A new resource exists (with its location)",
+          "POST /orders"
+        ],
+        [
+          "204 No Content",
+          "Done, nothing to return",
+          "DELETE /cart/items/3"
+        ],
+        [
+          "400 Bad Request",
+          "The input is wrong",
+          "Quantity of -2"
+        ],
+        [
+          "401 Unauthorized",
+          "Not signed in, or the token expired",
+          "Missing token"
+        ],
+        [
+          "403 Forbidden",
+          "Signed in, but not allowed",
+          "Reading someone else's order"
+        ],
+        [
+          "404 Not Found",
+          "No such resource",
+          "Unknown restaurant"
+        ],
+        [
+          "409 Conflict",
+          "Clashes with the current state",
+          "Cancelling a delivered order"
+        ],
+        [
+          "429 Too Many Requests",
+          "Slow down",
+          "Too many OTP requests"
+        ],
+        [
+          "500 Internal Server Error",
+          "The server failed",
+          "A bug"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The distinction that matters most is 4xx against 5xx: 4xx means the client must change something before trying again, 5xx means the server failed and a later retry might work. In an interview, getting that split right matters more than remembering every code; writing 'returns 4xx' is fine if the exact number escapes you."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Write the resources first, from the core entities, then add methods. Say which requirement each endpoint serves.",
+        "Use the path for required links and the query for optional filters, and say which writes are safe to retry.",
+        "Give each endpoint its success status and the one or two errors that matter (201, 409 for a conflict, 403 for someone else's data)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "GraphQL in depth"
+    },
+    {
+      "t": "h3",
+      "x": "The problem it was built for"
+    },
+    {
+      "t": "p",
+      "x": "Facebook built GraphQL in 2012 for its mobile apps and released it publicly in 2015. The mobile app and the website needed different data about the same things, and each new screen meant asking a backend team for a new endpoint or living with responses full of fields the phone didn't need."
+    },
+    {
+      "t": "p",
+      "x": "Zotato has the same tension. The customer app shows an order's status, ETA and rider; the restaurant dashboard shows the same order's items, notes and preparation time; the support tool wants everything. With REST the backend either keeps adding endpoints for each screen, or returns one large order object that every app downloads in full. GraphQL lets each app describe what it needs."
+    },
+    {
+      "t": "h3",
+      "x": "How a query works"
+    },
+    {
+      "t": "code",
+      "label": "The customer app's order screen",
+      "x": "query OrderScreen($id: ID!) {\n  order(id: $id) {\n    status\n    eta\n    rider { name phone }\n    items { name qty }\n  }\n}",
+      "say": "A GraphQL query for the customer's order screen: the order's status and ETA, the rider's name and phone, and each item's name and quantity."
+    },
+    {
+      "t": "fig",
+      "id": "nw-overfetch",
+      "cap": "What GraphQL fixes: a REST endpoint sends the whole object to every client; a GraphQL query names only the fields this screen shows."
+    },
+    {
+      "t": "p",
+      "x": "The query goes to a single URL, usually POST /graphql. The response is JSON in exactly the query's shape: an order with those six fields and nothing else. The restaurant dashboard sends its own query for the same order and gets a different shape. Adding a field to a screen is a change to the app's query, not a new backend deploy, as long as the field already exists in the schema."
+    },
+    {
+      "t": "h3",
+      "x": "Designing the schema"
+    },
+    {
+      "t": "p",
+      "x": "A GraphQL API is designed as types and the links between them, rather than as endpoints. Each type lists its fields and their types; the Query type lists the entry points."
+    },
+    {
+      "t": "code",
+      "label": "Part of Zotato's schema",
+      "x": "type Order {\n  id: ID!\n  status: OrderStatus!\n  eta: DateTime\n  restaurant: Restaurant!\n  rider: Rider\n  items: [OrderItem!]!\n}\n\ntype Restaurant {\n  id: ID!\n  name: String!\n  menu: [Dish!]!\n}\n\ntype Query {\n  order(id: ID!): Order\n  restaurants(near: String!, first: Int, after: String): RestaurantPage!\n}",
+      "say": "Part of a GraphQL schema: an Order type with an id, status, ETA, restaurant, optional rider and a list of items; a Restaurant type with a name and menu; and a Query type with entry points for one order and for a page of nearby restaurants."
+    },
+    {
+      "t": "list",
+      "items": [
+        "An exclamation mark means the field is never null; square brackets mean a list.",
+        "Links are fields: an Order has a Restaurant, so a client can ask for the order and its restaurant's name in one query.",
+        "Lists that can grow take paging arguments (first, after), the same cursor idea as in REST.",
+        "The schema is the contract: tools generate typed client code from it, and the server rejects queries that ask for fields that don't exist."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Resolvers and the N+1 problem"
+    },
+    {
+      "t": "p",
+      "x": "Behind each field is a resolver, a function that fetches its value. The order resolver reads the orders table; the restaurant resolver on Order reads the restaurants table. Written naively, a list multiplies the calls."
+    },
+    {
+      "t": "fig",
+      "id": "ad-nplus-one",
+      "cap": "Asking for 50 orders and each order's restaurant runs 1 query for the list and then 1 per order: 51 in all. A batching loader collects the 50 restaurant ids and fetches them in one query: 2 in all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The usual fix is a loader (the DataLoader pattern): resolvers ask the loader for restaurant 42, 17, 42, 8…; it waits for the current batch, removes duplicates, runs one query with all the ids, and hands each resolver its row.",
+        "It is extra machinery REST endpoints don't need, because a REST endpoint is written for one known shape and can use a single join.",
+        "Expensive queries also need limits: maximum depth, maximum cost, timeouts, or only allowing pre-approved queries in production."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Permissions per field"
+    },
+    {
+      "t": "p",
+      "x": "In REST you protect an endpoint. In GraphQL one query can reach many types, so checks live in the resolvers: anyone may see a restaurant's name and rating, but its payout bank details resolve only for the restaurant's owner and finance staff. Forgetting a check on one field exposes it through every query that can reach it, so permissions must be designed with the schema."
+    },
+    {
+      "t": "h3",
+      "x": "When to propose it"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Several clients (customer app, restaurant dashboard, support tool, partner integrations) need different shapes of the same data.",
+        "The interviewer raises over-fetching or under-fetching, or slow screens that make many calls.",
+        "Frontend teams need to change screens without waiting on backend changes.",
+        "Say the costs in the same breath: parsing and validating each query, caching that can't rely on plain HTTP caches, resolvers that need batching, and permission checks per field.",
+        "Otherwise stay with REST. Most interview problems have fixed requirements, and the interviewer wants to see you design efficient data access, which REST makes explicit."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: caching GraphQL",
+      "body": [
+        {
+          "t": "p",
+          "x": "HTTP caches and CDNs key on the URL, and every GraphQL query goes to the same URL as a POST, so they can't cache responses. Common answers: persisted queries, where the client sends a short id for a query registered in advance (which can then be a cacheable GET); caching inside the server, per resolver or per object id; and a normalised cache in the client that stores objects by id and reuses them across queries."
+        }
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "RPC and gRPC"
+    },
+    {
+      "t": "h3",
+      "x": "Actions, not resources"
+    },
+    {
+      "t": "p",
+      "x": "A REST API asks 'what thing, and what to do to it?'. RPC asks 'which function, with which arguments?'. For calls between Zotato's own services, actions are often the natural fit: the Orders service doesn't want to create a 'charge resource', it wants Payments to charge an order."
+    },
+    {
+      "t": "code",
+      "label": "The same work as calls, with the REST it replaces",
+      "x": "menu   = Menu.GetMenu(restaurant_id: 42)            # instead of GET  /restaurants/42/menu\ncharge = Payments.ChargeOrder(order_id: 9101,        # instead of POST /orders/9101/payments\n                              amount_paise: 34900)\nrider  = Dispatch.AssignRider(order_id: 9101)        # instead of POST /orders/9101/rider-assignment\nok     = Offers.CheckCoupon(code: \"FEAST50\",        # instead of GET  /coupons/FEAST50?user=77\n                            user_id: 77)",
+      "say": "Internal calls written as functions, each next to the REST endpoint it replaces: get a menu instead of GET on the menu resource, charge an order instead of POSTing a payment, assign a rider instead of POSTing a rider assignment, check a coupon instead of reading a coupon resource."
+    },
+    {
+      "t": "p",
+      "x": "Notice how the REST versions have to invent resources ('a rider assignment') for what are really actions. Between your own services there is no need to: name the action and call it."
+    },
+    {
+      "t": "h3",
+      "x": "How a remote call works"
+    },
+    {
+      "t": "fig",
+      "id": "ad-rpc",
+      "cap": "The caller calls a generated function. The stub turns the arguments into a protobuf message and sends it; the server's stub turns it back into arguments and calls the real code. The result travels back the same way."
+    },
+    {
+      "t": "p",
+      "x": "The key word is generated. Both sides' code comes from one definition, so the caller can't send a field the server doesn't know or mistype a function name: it fails at build time, not in production."
+    },
+    {
+      "t": "h3",
+      "x": "Defining a service in protobuf"
+    },
+    {
+      "t": "code",
+      "label": "payments.proto",
+      "x": "syntax = \"proto3\";\n\nservice Payments {\n  rpc ChargeOrder(ChargeRequest) returns (Charge);\n  rpc RefundCharge(RefundRequest) returns (Charge);\n  rpc WatchCharge(ChargeId) returns (stream ChargeEvent);\n}\n\nmessage ChargeRequest {\n  int64 order_id = 1;\n  int64 amount_paise = 2;\n  string method = 3;          // \"upi\", \"card\"\n  string idempotency_key = 4;\n}",
+      "say": "A protobuf file for the Payments service: calls to charge an order, refund a charge and watch a charge's events as a stream, and the ChargeRequest message with an order id, an amount in paise, a payment method and an idempotency key, each field numbered."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Field numbers, not names, are sent on the wire, which keeps messages small and lets you rename a field safely. Never reuse a number for something else.",
+        "Code generators produce a client and a server skeleton in Go, Java, Python, Kotlin and many more, so a Go Orders service and a Java Payments service share one contract.",
+        "Adding a new field with a new number is backward compatible: old code ignores it."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "What gRPC adds"
+    },
+    {
+      "t": "list",
+      "items": [
+        "HTTP/2 underneath: many calls in flight over one connection, binary framing, header compression.",
+        "Deadlines that travel with the call: if the user's request has 600 ms left, Payments knows and stops working when time is up.",
+        "Streaming in either or both directions, for example a stream of charge events, or a rider app streaming locations while the server streams back instructions.",
+        "Client-side load balancing and retries configured per service.",
+        "Alternatives exist: Apache Thrift, which started at Facebook, works the same way with its own definition language; plain JSON-RPC exists too. gRPC is the usual default today."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Where it fits"
+    },
+    {
+      "t": "table",
+      "label": "REST or gRPC",
+      "head": [
+        "Use",
+        "When"
+      ],
+      "rows": [
+        [
+          "REST",
+          "Public APIs, mobile and web apps, partners, anything a browser calls; easy to read and debug"
+        ],
+        [
+          "gRPC",
+          "Busy calls between your own services; many languages; strict contracts; streaming; latency matters"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "A common Zotato shape: the apps talk REST to an API gateway; behind it, Orders, Payments, Dispatch and Menu call each other over gRPC. The figure in 'REST, GraphQL and gRPC' in Networking essentials shows this split."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "In the API step, list the API your users' apps call. Internal service-to-service calls usually don't belong there.",
+        "During the high-level design, a sentence is enough: 'services talk to each other over gRPC for speed and typed contracts'.",
+        "Give a reason if you choose it: call volume, many languages, streaming, or a tight latency budget."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Habits of a clean API"
+    },
+    {
+      "t": "h3",
+      "x": "Nine habits"
+    },
+    {
+      "t": "table",
+      "label": "Habits of a clean API",
+      "head": [
+        "Habit",
+        "What it means",
+        "Zotato",
+        "Red flag"
+      ],
+      "rows": [
+        [
+          "Resources, not actions",
+          "URLs name things; methods say what to do",
+          "POST /orders, GET /users/77/orders",
+          "/placeOrder, /getUserOrders"
+        ],
+        [
+          "Consistent everywhere",
+          "One naming style, one way to filter, one response shape",
+          "?status= on orders, payments and refunds alike",
+          "?status= here, ?state= there"
+        ],
+        [
+          "No surprises",
+          "HTTP means what people expect",
+          "GET never changes data; failures use error codes",
+          "200 OK with {\"success\": false}"
+        ],
+        [
+          "Stateless requests",
+          "Each request carries everything needed",
+          "Token, ids and data in every call",
+          "A server remembering 'the current restaurant'"
+        ],
+        [
+          "Safe retries",
+          "Repeating a request can't do harm",
+          "Idempotency-Key on POST /orders and payments",
+          "Retrying a POST that charges twice"
+        ],
+        [
+          "Paginate what grows",
+          "Lists come in pages, with a maximum size",
+          "?limit= capped at 50, with a cursor",
+          "?limit=100000 accepted"
+        ],
+        [
+          "Secure by default",
+          "Every endpoint needs auth unless marked public",
+          "Ownership checked on every order read",
+          "Public by default, locked down later"
+        ],
+        [
+          "Evolve without breaking",
+          "Add, don't rename or remove",
+          "New optional field eta_range",
+          "Renaming eta to arrival in place"
+        ],
+        [
+          "Actionable errors",
+          "Right status class, a stable code, a clear message",
+          "409 + ORDER_ALREADY_PICKED_UP",
+          "500 with 'something went wrong'"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Why each one matters"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Resources first, because it is the first thing an interviewer looks at, and action-style URLs multiply: every new action becomes a new endpoint instead of a method on an existing resource.",
+        "Consistency means a developer who has learned one endpoint has learned them all. Inconsistency is a small cost paid on every call by every client, forever.",
+        "No surprises: tools, caches and other developers assume GET is safe and 200 means success. A 200 with an error inside breaks retries, monitoring and caches that trust the status.",
+        "Statelessness is what lets any server answer any request, so scaling is adding servers behind a load balancer. It's also why signed tokens such as JWTs are popular: the request proves who the user is without a session lookup.",
+        "Safe retries, because mobile networks guarantee that some requests will be sent twice. GET, PUT and DELETE are safe by nature; creating orders and payments needs idempotency keys.",
+        "Pagination, because a list that is small at launch is not small a year later, and one request for 'all orders' can take down a database.",
+        "Secure by default, because the endpoint someone forgot to protect is the one that leaks. Pair it with ownership checks (user 77 can cancel only user 77's orders) and rate limits.",
+        "Compatible change, because old app versions stay installed for years. Adding a field is safe; renaming, removing or changing what a field means needs a new version.",
+        "Actionable errors, because a client can only react to an error it can tell apart from others: a stable machine-readable code, a message for people, and the right 4xx or 5xx."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ad-evolve",
+      "cap": "Old app versions keep calling your API for years. Adding an optional field is invisible to them; renaming one breaks every phone that hasn't updated."
+    },
+    {
+      "t": "h3",
+      "x": "Applying, not reciting"
+    },
+    {
+      "t": "p",
+      "x": "Interviewers rarely ask 'what makes a good API?'. They notice whether you use the habits. Say them as reasons while you write endpoints:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "'Orders are nested under users for the history screen, but placing one is a top-level POST /orders, because the order isn't owned by the URL's user until it exists.'",
+        "'POST /orders takes an Idempotency-Key so a retry on a flaky network can't place two orders.'",
+        "'The list is cursor-paginated with a limit capped at 50.'",
+        "'Errors return a stable code, so the app can show the right screen for RESTAURANT_CLOSED.'"
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Pick two or three habits that matter for this problem and mention them where they apply; don't list all nine.",
+        "If the interviewer questions a choice, justify it with one of these habits."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Everyday API patterns"
+    },
+    {
+      "t": "h3",
+      "x": "Pagination"
+    },
+    {
+      "t": "p",
+      "x": "A city's restaurant list or a busy restaurant's order history can have tens of thousands of rows. No client needs them all at once, and returning them all would be slow for everyone. Every list endpoint returns a page and a way to get the next one."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Offset pagination skips a number of rows and returns the next few: /restaurants/42/orders?offset=40&limit=20 gives rows 41 to 60. Easy to build and allows 'jump to page 7'.",
+        "Its flaw shows when rows arrive while someone is paging: a new order pushes everything down one place, so the next page repeats a row (or, with deletes, skips one). Large offsets are also slow, because the database still walks past every skipped row.",
+        "Cursor pagination remembers where you stopped instead of counting: the response carries a cursor, usually the encoded id or timestamp of the last row, and the next request asks for rows after it. New rows don't shift anything, and the query uses an index directly.",
+        "Its cost: no jumping to page 7, only next (and sometimes previous). For feeds, histories and infinite scroll, that is all anyone needs."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "api-pages",
+      "cap": "A new order arrives between page 1 and page 2. Counting rows (offset) shows order 46 twice; asking for orders older than the last one seen (cursor) does not."
+    },
+    {
+      "t": "code",
+      "label": "A cursor-paged response",
+      "x": "GET /restaurants/42/orders?limit=20\n\n{\n  \"orders\": [ {\"id\": 9120, …}, …, {\"id\": 9101, …} ],\n  \"next_cursor\": \"b3JkZXI6OTEwMQ\"\n}\n\nGET /restaurants/42/orders?limit=20&cursor=b3JkZXI6OTEwMQ",
+      "say": "A cursor-paged list: the first request returns twenty orders and a next cursor that encodes the last order's id; the next request passes that cursor to continue."
+    },
+    {
+      "t": "p",
+      "x": "In an interview, any pagination is better than none: say 'paginated' on every list endpoint. Offset is acceptable for most problems; pick a cursor when the list changes quickly (feeds, live orders) or is very large, and say why."
+    },
+    {
+      "t": "h3",
+      "x": "Filtering and sorting"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Filters are query parameters named after fields: /restaurants?city=pune&veg=true&open_now=true.",
+        "Sorting takes a field and a direction; a leading minus is a common convention for descending: ?sort=-rating, ?sort=delivery_time.",
+        "Use the same names everywhere. If orders filter by status, payments and refunds filter by status too, with the same values where they mean the same thing.",
+        "In an interview, show one filtered endpoint fully and say the others follow the same conventions."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Idempotency keys"
+    },
+    {
+      "t": "p",
+      "x": "A customer taps 'Place order', the network stalls, and the app retries. If the first attempt reached the server, a naive API now has two orders and two charges. 'Never retry' isn't an option on mobile networks, so the API has to make a repeated request harmless."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The client generates a unique key for each logical operation (this order attempt, not each HTTP request) and sends it in a header, usually `Idempotency-Key`.",
+        "The server stores the key with the outcome of the first request. A repeat with the same key gets the stored response; nothing is created or charged again.",
+        "Payment providers such as Stripe and Razorpay work exactly this way, which is a good thing to mention.",
+        "It matters wherever a duplicate costs money or trust: orders, payments, bookings, refunds, transfers. Bringing it up unprompted shows you think about failure."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The figure 'The same payment, sent twice' under 'When calls fail' in Networking essentials walks through a retried payment step by step."
+    },
+    {
+      "t": "fig",
+      "id": "nw-idem",
+      "cap": "The retry carries the same key as the first attempt, so Payments returns the result it already has instead of charging again."
+    },
+    {
+      "t": "h3",
+      "x": "Consistent errors"
+    },
+    {
+      "t": "p",
+      "x": "The status code says what kind of failure it was; the body should say exactly what went wrong, in the same shape on every endpoint."
+    },
+    {
+      "t": "code",
+      "label": "One error shape for every endpoint",
+      "x": "HTTP/1.1 409 Conflict\n\n{\n  \"error\": {\n    \"code\": \"RESTAURANT_CLOSED\",\n    \"message\": \"Shree Misal stopped taking orders at 10:30 pm.\",\n    \"retryable\": false\n  }\n}",
+      "say": "An error response: status 409 Conflict and a JSON error with a stable code, RESTAURANT_CLOSED, a message for people, and whether retrying makes sense."
+    },
+    {
+      "t": "fig",
+      "id": "ad-errors",
+      "cap": "The app branches on the stable code, never on the message. The message can be reworded or translated at any time without breaking a single client."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The code is a contract: clients write logic against it (show the 'closed' screen, open the address picker), so it never changes.",
+        "The message is for humans and can change freely.",
+        "Use the same envelope everywhere so the app's error handling is written once.",
+        "In an interview, one sentence covers it: 'errors use one envelope with a machine-readable code and a message'."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Versioning"
+    },
+    {
+      "t": "list",
+      "items": [
+        "APIs change, and old clients (especially mobile apps that users never update) must keep working. Public and partner APIs need a plan most of all.",
+        "URL versioning, /v1/orders then /v2/orders, is the most common: explicit, easy to route at the gateway, easy to see in logs and to try in a browser.",
+        "Header versioning (`API-Version: 2`, or a version in the Accept header) keeps URLs stable and is closer to how HTTP intends content to be negotiated, but it's invisible in a URL and harder to test by hand.",
+        "Prefer compatible changes so you need new versions rarely: add optional fields and new endpoints; never rename or remove in place.",
+        "In an interview, default to /v1/ in the URL if it comes up. It rarely does, but that reflects what interviewers ask about, not how much it matters in production."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Paginate every list (and say offset or cursor, with a reason).",
+        "Show one filtered, sorted endpoint and claim the convention for the rest.",
+        "Put an idempotency key on every write that costs money or creates something users care about.",
+        "One line each for errors (envelope with a code) and versions (/v1/)."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Securing an API"
+    },
+    {
+      "t": "h3",
+      "x": "Who is calling, and may they?"
+    },
+    {
+      "t": "p",
+      "x": "Every request answers two questions in order. Authentication: is this really Priya's app, signed in as Priya? Authorisation: may Priya cancel order 9101? The second is where real systems leak: an API that checks only 'is someone signed in' lets any signed-in user read anyone's orders by changing an id."
+    },
+    {
+      "t": "h3",
+      "x": "API keys"
+    },
+    {
+      "t": "list",
+      "items": [
+        "An API key is a long random string issued to an application, not a person: a restaurant chain's billing system, a delivery partner, or one of your own services.",
+        "It is sent with every request, typically in the Authorization header, and the server looks it up to find out which app is calling, what it may do and what its rate limit is.",
+        "Issue one per client, store only a hash, and make them easy to rotate and revoke.",
+        "Good for server-to-server and third-party developer access. Wrong for end users: people can't manage secret strings, keys don't expire on their own, and they say nothing about which user is acting."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "A partner calling with an API key",
+      "x": "GET /partners/v1/orders?status=ready\nAuthorization: Bearer zk_live_4f9a…",
+      "say": "A partner's system listing ready orders, authenticated with an API key in the Authorization header."
+    },
+    {
+      "t": "h3",
+      "x": "Signed tokens (JWT)"
+    },
+    {
+      "t": "p",
+      "x": "When Priya signs in, the auth service issues a token containing claims about her (her user id, her role, when the token expires) and signs it. Every later request carries the token. Any service with the verification key can check the signature and read the claims without calling a database or the auth service."
+    },
+    {
+      "t": "code",
+      "label": "What a token carries",
+      "x": "{\n  \"sub\": \"user_77\",\n  \"role\": \"customer\",\n  \"city\": \"pune\",\n  \"exp\": 1794134400\n}",
+      "say": "The claims inside a signed token: the user id, the role customer, the city, and an expiry time."
+    },
+    {
+      "t": "fig",
+      "id": "ad-jwt",
+      "cap": "The token is checked by signature, so the gateway and each service can trust it without asking the auth service. The trade-off: a token stays valid until it expires, so keep its lifetime short."
+    },
+    {
+      "t": "list",
+      "items": [
+        "This suits distributed systems: the API gateway verifies the token once, and services behind it read the user id and role from it.",
+        "Keep access tokens short-lived (minutes to an hour) and use a refresh token to get new ones, because a signed token can't easily be revoked before it expires.",
+        "Don't put secrets in the claims: a JWT is signed, not encrypted, so anyone holding it can read it.",
+        "A server-side session (a random id looked up in a database or Redis) is the simpler alternative, easy to revoke, at the cost of a lookup per request.",
+        "Rule of thumb: API keys for applications and partners; tokens or sessions for people using your apps."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Roles and ownership"
+    },
+    {
+      "t": "p",
+      "x": "Rather than granting permissions user by user, give users roles and give roles permissions. Zotato's roles might be:"
+    },
+    {
+      "t": "table",
+      "label": "Zotato's roles",
+      "head": [
+        "Role",
+        "May",
+        "May not"
+      ],
+      "rows": [
+        [
+          "Customer",
+          "Browse, order, track and cancel their own orders, rate them",
+          "See other customers' orders"
+        ],
+        [
+          "Restaurant owner",
+          "Edit their menu, accept and prepare their orders, see their sales",
+          "Touch other restaurants' menus or payouts"
+        ],
+        [
+          "Rider",
+          "See orders assigned to them, update pickup and delivery",
+          "See customers' payment details"
+        ],
+        [
+          "Support agent",
+          "Read any order, issue refunds up to a limit",
+          "Change menus or payouts"
+        ],
+        [
+          "Admin",
+          "Everything, with every action logged",
+          "Act without leaving a record"
+        ]
+      ]
+    },
+    {
+      "t": "code",
+      "label": "Roles given to users",
+      "x": "user_77   Priya       customer\nuser_901  Anil        restaurant_owner (restaurant 42)\nuser_3301 Ravi        rider\nuser_12   Meera       support_agent",
+      "say": "Four users and their roles: Priya is a customer, Anil owns restaurant 42, Ravi is a rider, and Meera is a support agent."
+    },
+    {
+      "t": "p",
+      "x": "Permissions hang off the roles, so adding a support agent is one assignment, not a list of permissions copied by hand. A role can carry a scope too, as Anil's does: he owns restaurant 42, not every restaurant."
+    },
+    {
+      "t": "fig",
+      "id": "ad-authz",
+      "cap": "Two checks on every request: is the token valid, and may this user do this to this order? A valid token alone isn't enough, which is the mistake that leaks data."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Ownership usually matters as much as role: a customer may cancel an order only if it is theirs; a restaurant owner may see orders only for their restaurant.",
+        "Check on the server, for every request; hiding a button in the app is not a permission check.",
+        "In an interview, say which endpoints need which role only when it matters to the problem (a marketplace with buyers and sellers, an admin tool); otherwise one sentence on auth is enough."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Rate limiting"
+    },
+    {
+      "t": "p",
+      "x": "Rate limits cap how many requests a client may make in a window, which protects against abuse, scraping and bugs that loop."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Per user, for signed-in traffic: say 600 requests a minute per customer.",
+        "Per IP address, for traffic before sign-in: say 60 a minute, so a script can't hammer the login and search pages.",
+        "Per endpoint, for sensitive or costly actions: at most 5 OTP requests per phone in 15 minutes, or 3 coupon attempts a minute, to stop guessing.",
+        "Enforced at the API gateway or in middleware, with counters in Redis; over the limit, answer 429 Too Many Requests with a Retry-After header.",
+        "In an interview, 'rate limited per user and per IP at the gateway' is usually enough. The algorithms (token bucket, sliding window) are a separate topic; the API gateways component covers them."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "rate-limit",
+      "cap": "Three common ways to count requests against a limit. The choice matters less in the API step than saying where the limit is enforced and what the client gets back."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name which endpoints need sign-in (almost all) and how: 'JWTs checked at the gateway' or 'a session in Redis'.",
+        "Mention ownership checks on anything user-specific, with one example.",
+        "Add one line on rate limiting, and a stricter limit on any endpoint that can be abused (OTP, login, coupons).",
+        "Keep it short: security that shows judgment in three sentences beats a full design nobody asked for."
+      ]
+    }
+  ]
+}

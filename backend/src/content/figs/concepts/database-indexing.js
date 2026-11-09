@@ -1,4 +1,4 @@
-// Concepts › Database indexing: the figure ids this sub-tab's frontend module (frontend/src/figs/concepts/indexing.jsx) draws.
+// Concepts › Database indexing: the figure ids this article's frontend module (frontend/src/figs/concepts/database-indexing.jsx) draws.
 export const FIGS = [
   'ix-scan',
   'ix-cost',

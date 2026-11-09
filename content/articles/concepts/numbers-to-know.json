@@ -1,0 +1,353 @@
+{
+  "section": "concepts",
+  "slug": "numbers-to-know",
+  "group": "core",
+  "no": "CONCEPT // 09",
+  "tag": "NUMBERS TO KNOW",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Numbers to know: what one machine can really do",
+  "dek": "Why old figures mislead, what one machine holds today, what caches, databases, app servers and queues can each take, and how to use the numbers without over-building.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Old limits ('shard at 100 GB', 'keep big objects out of memory') come from hardware a decade old. Using them makes designs over-engineered, and interviewers notice.",
+        "Cache (Redis, Memcached): around 1 lakh to several lakh simple operations a second per node, sub-millisecond, with tens to hundreds of GB of memory.",
+        "Premature sharding: do the arithmetic first. Crores of users with a few KB each is tens or hundreds of GB, which one machine holds with room to spare."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why old figures mislead"
+    },
+    {
+      "t": "h3",
+      "x": "Why the numbers you learned may be wrong"
+    },
+    {
+      "t": "p",
+      "x": "The machines our systems run on keep getting bigger. A textbook from a few years ago may still teach sound patterns while quoting limits that are off by orders of magnitude: how much a database can hold, how much memory a server has, what storage costs."
+    },
+    {
+      "t": "p",
+      "x": "Interviewers notice. One of the clearest signs that a candidate knows system design from books rather than from running systems is a scale estimate based on old hardware: worries about database size, memory limits or storage cost that made sense in 2015, or even 2020, and lead to a design far more complicated than it needs to be today."
+    },
+    {
+      "t": "p",
+      "x": "That's not a failure to study; it's studying old material. But almost every big decision in a design depends on knowing what current hardware can do: when to shard a database, whether a cache is worth it, whether large objects can live in memory, whether one machine is enough. So it is worth learning today's numbers, not yesterday's."
+    },
+    {
+      "t": "h3",
+      "x": "What one machine holds today"
+    },
+    {
+      "t": "p",
+      "x": "Figures below use AWS instance types as examples because they are public and easy to check; other clouds offer similar sizes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Compute and memory: a general-purpose m6i.32xlarge has 128 vCPUs and 512 GiB of memory. Memory-optimised machines go much further: an x1e.32xlarge has about 4 TB of memory, and the largest high-memory machines (u-24tb1.metal) have 24 TB. Many systems that once needed a cluster now fit on one machine.",
+        "Storage: an i3en.24xlarge has 60 TB of local NVMe SSD; a d3en.12xlarge has 336 TB of hard disk for bulk data. Object storage such as S3 is effectively unlimited: petabytes are routine. Storage is rarely the first constraint any more.",
+        "Network: inside a data centre, 25 Gbit/s is common for ordinary machines, and network-optimised machines offer 50 to 100 Gbit/s or more. Traffic between availability zones in a region is limited mainly by each machine's network capacity."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nm-machine",
+      "cap": "What a single cloud machine offers today: cores and memory for general work, terabytes of memory when optimised for it, tens of terabytes of local SSD, and a fast network. Limits that once forced a cluster now fit on one machine."
+    },
+    {
+      "t": "h3",
+      "x": "How long the network takes"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Within one availability zone: well under a millisecond for a round trip.",
+        "Between availability zones in the same region: about 1 to 2 ms.",
+        "Between regions: about 50 to 150 ms, depending on distance. Mumbai to Singapore is around 60 ms; India to the US east coast is around 200 ms.",
+        "These are predictable enough to design around: a chain of calls inside one region costs a few milliseconds, while one call across the world costs more than everything else in the request."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nm-latency",
+      "cap": "Round-trip times on a log scale: memory, SSD, a call in the same zone, another zone, another region. Each step is roughly ten times the one before."
+    },
+    {
+      "t": "p",
+      "x": "These are not small improvements; they change what is reasonable. When a book says to split databases at 100 GB or to keep large objects out of memory, it is describing limits that no longer exist. The part 'What one machine can do' below turns these into per-component numbers, and 'Using numbers well' covers the mistakes they prevent."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use current figures: hundreds of GB of memory and tens of TB of disk on one machine are normal.",
+        "Before proposing a cluster, check whether one large machine (plus a replica for safety) would do.",
+        "Keep the latency ladder in mind: same zone under 1 ms, same region 1–2 ms, another region tens to hundreds of ms."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What one machine can do"
+    },
+    {
+      "t": "h3",
+      "x": "Caches"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Throughput: a single Redis node handles around 1 lakh simple operations a second, and several lakh with pipelining or on newer multi-threaded versions. A cluster multiplies that by the number of shards.",
+        "Latency: well under a millisecond on the server; about half a millisecond to a millisecond as seen by an app server in the same zone, mostly network.",
+        "Memory: nodes with tens to hundreds of GB are normal; a terabyte of cache across a small cluster is not unusual.",
+        "So: a cache is justified by a hot read path or an expensive computation, not by 'the database might be slow'. One node often covers a large product's hot data."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Databases"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Data size: a single PostgreSQL or MySQL instance comfortably holds several terabytes, and tens of terabytes with care; managed versions such as Aurora go to 128–256 TiB. Size alone is rarely the reason to shard below that.",
+        "Reads: simple indexed reads run at tens of thousands a second on one large primary, and read replicas multiply that. A read served from memory takes well under a millisecond inside the database; one that goes to SSD takes about a millisecond or a few.",
+        "Writes: on fast NVMe storage, a well-tuned primary handles around 10,000 simple transactional writes a second, and more with batching. Heavy indexes, large rows or many writes per transaction lower it.",
+        "Connections: each connection costs memory, so a few hundred active connections per instance is typical; use a pooler (PgBouncer) in front of many app servers.",
+        "Older rules of thumb use deliberately conservative figures for a mid-sized database (writes in the thousands a second); a large modern machine goes several times higher. Use the conservative figure when you want headroom, the larger one when deciding whether to shard."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Application servers"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Throughput: a modern server with 16 to 64 cores handles thousands to tens of thousands of simple requests a second, such as reading a cached object and returning JSON. Heavy work (image resizing, large JSON, complex templates) cuts that to hundreds.",
+        "Memory: 32 to 512 GB, so an in-process cache of a few GB is cheap.",
+        "Most of a request's time is usually spent waiting on databases and other services, not on the CPU; that's why a server can hold thousands of requests open at once with asynchronous I/O.",
+        "Scale them out freely: keep them stateless and add more behind a load balancer."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Message queues and logs"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Kafka: one broker handles hundreds of MB a second of writes and lakhs of small messages a second; a cluster scales by adding brokers and partitions. End-to-end latency is a few milliseconds, and retention can be days or weeks of data on each broker's disks.",
+        "Managed queues such as SQS: standard queues scale to very high rates without planning; FIFO queues have lower per-queue limits (hundreds to thousands of messages a second, more in high-throughput mode).",
+        "So: a queue is rarely the bottleneck. It's chosen for decoupling, buffering bursts and retrying, not because a database can't take a few thousand writes a second."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "nm-capacity",
+      "cap": "Rough operations a second for one well-provisioned instance of each component, on a log scale. Each bar is an order of magnitude to remember, not a benchmark."
+    },
+    {
+      "t": "h3",
+      "x": "Cheat sheet"
+    },
+    {
+      "t": "table",
+      "label": "Numbers to know (one modern instance, simple operations)",
+      "head": [
+        "Component",
+        "Throughput",
+        "Latency",
+        "Size",
+        "Split or scale when"
+      ],
+      "rows": [
+        [
+          "Cache node (Redis)",
+          "1 lakh to several lakh ops/s",
+          "< 1 ms",
+          "tens to hundreds of GB",
+          "memory or ops/s exceed one node"
+        ],
+        [
+          "Relational database",
+          "tens of thousands reads/s; ~10,000 writes/s",
+          "~1 ms indexed read",
+          "several to tens of TB",
+          "writes or data clearly exceed one primary"
+        ],
+        [
+          "App server",
+          "thousands to tens of thousands req/s",
+          "a few ms of own work",
+          "32–512 GB memory",
+          "CPU busy; just add servers"
+        ],
+        [
+          "Kafka broker",
+          "hundreds of MB/s; lakhs of msgs/s",
+          "a few ms end to end",
+          "TBs of retention",
+          "throughput or retention per broker"
+        ],
+        [
+          "Object storage (S3)",
+          "very high, per prefix limits",
+          "tens of ms per request",
+          "effectively unlimited",
+          "rarely; use a CDN in front for reads"
+        ],
+        [
+          "Network",
+          "25–100+ Gbit/s per machine",
+          "< 1 ms same zone; 1–2 ms cross zone",
+          "not the limit",
+          "cross-region calls in a hot path"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Quote an order of magnitude and say it's approximate: 'one Postgres primary can take around ten thousand simple writes a second'.",
+        "Compare your peak numbers with the table before adding a component: if one instance covers it with room to spare, say so and keep the design simple.",
+        "When a number is close to a limit, add headroom (a replica, a cache) rather than a whole new architecture."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Using numbers well"
+    },
+    {
+      "t": "h3",
+      "x": "Premature sharding"
+    },
+    {
+      "t": "p",
+      "x": "The most common mistake is splitting the database before the numbers call for it. Work it out: Zotato with 5 crore users at 5 KB each is 250 GB of user data. Even at 50 crore users it is 2.5 TB, well within one large machine with SSD. Orders at 2 KB, 50 lakh a day, are about 3.6 TB a year, so a few years fit before archiving or sharding is needed."
+    },
+    {
+      "t": "fig",
+      "id": "nm-shard-math",
+      "cap": "Data sizes against what one machine holds: Zotato's users and a year of orders fit on one large database many times over. Sharding starts to make sense only for many years of history or far higher write rates."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Shard when the arithmetic shows one primary can't take the writes, or the data clearly outgrows one machine even after archiving, not because the user count sounds big.",
+        "Read load alone is usually solved with replicas and a cache, not sharding.",
+        "When you do shard, say which number forced it. The Sharding concept covers the how."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Overestimating latency"
+    },
+    {
+      "t": "p",
+      "x": "The second mistake is treating ordinary calls as slow. A call to another service in the same region takes about a millisecond; a Redis read about the same; an indexed database read a millisecond or a few. A request that makes five such calls spends perhaps 10 ms on them, while the user's phone network costs 50 to 100 ms."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Don't add a cache just to save a millisecond on a read that already takes a few; add it when reads are heavy or a computation is expensive.",
+        "Don't merge services or invent clever protocols to remove one in-region hop. Do avoid long chains of calls one after another, and calls across regions on the hot path, where the milliseconds really add up.",
+        "Measure where the time goes: the network to the user, a slow query or a cross-region call usually dwarfs everything else."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Over-engineering for writes"
+    },
+    {
+      "t": "p",
+      "x": "The third mistake is building a large write pipeline for a modest write rate. A product taking 1,000 writes a second at peak, even 5,000, is well within one primary database. Adding Kafka, a stream processor and a separate store for that load adds moving parts, failure modes and delay without a real need."
+    },
+    {
+      "t": "fig",
+      "id": "nm-writes",
+      "cap": "Write rates against one primary's comfortable range. Most features sit well inside it; only the extreme cases need batching, a log in front, or sharding."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A queue in front of the database earns its place for other reasons: smoothing short bursts (a sale, a cricket final), decoupling slow work (sending notifications, resizing images), or retries.",
+        "Very high write rates do need different tools: rider locations at lakhs a second suit an LSM-based store or in-memory aggregation; click and view counts suit batching and stream processing.",
+        "Say the number first, then the tool: '2,000 order writes a second fit one Postgres primary; rider pings at 2 lakh a second go to Cassandra'."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "What about cost?"
+    },
+    {
+      "t": "p",
+      "x": "Interviews rarely ask for exact prices, but showing you think about cost helps, and it usually points the same way as the numbers above: big machines are cheaper than they used to be, and complexity is expensive."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A large database server costs a few thousand dollars a month in the cloud; a team spending weeks building and running a sharded design costs far more.",
+        "Memory in the cloud costs a few dollars per GB per month; object storage costs about two cents per GB per month (S3 Standard), and colder tiers much less.",
+        "Data transfer out to the internet is often the surprise, around nine cents per GB from S3 or EC2; a CDN in front of media usually costs less than serving it directly.",
+        "Managed services cost more per unit than running your own, but save operational time; for most teams that's the cheaper choice."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Prefer the simple design until a number says otherwise",
+      "head": [
+        "Proposal",
+        "Check this number first",
+        "Usually enough instead"
+      ],
+      "rows": [
+        [
+          "Shard the database",
+          "Data size and peak writes",
+          "One large primary, replicas, archiving"
+        ],
+        [
+          "Add a cache",
+          "Reads per second, or the cost of the computation",
+          "Indexes and a read replica"
+        ],
+        [
+          "Put Kafka before the database",
+          "Peak writes and bursts",
+          "Direct writes; a queue only for bursts or slow work"
+        ],
+        [
+          "Go multi-region",
+          "Where users are; recovery needs",
+          "One region with several zones and backups elsewhere"
+        ]
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Do the arithmetic before naming a technique, and say the number that justifies it.",
+        "Prefer one large machine with a replica over a cluster until the numbers clearly demand more.",
+        "Mention cost once, briefly: simple is usually cheapest to build and run."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,401 @@
+{
+  "section": "concepts",
+  "slug": "consistent-hashing",
+  "group": "core",
+  "no": "CONCEPT // 06",
+  "tag": "CONSISTENT HASHING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Consistent hashing: adding a server without moving everything",
+  "dek": "When to name it and when to explain it, the hash ring step by step, and rings in practice: hot keys, replication and fixed slots.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "The problem it solves: with hash(key) % N, changing the number of servers N moves almost every key. Consistent hashing moves only about 1/N of them.",
+        "Modulo hashing (hash(id) % 3) is simple and even, but going to % 4 or % 2 changes the home of almost every key.",
+        "Consistent hashing spreads keys evenly, not traffic. A key that is far busier than the rest (the final's tickets) still lands on one server. Fix it with replicas of the hot key, key salting or automatic rebalancing."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Consistent hashing in an interview"
+    },
+    {
+      "t": "h3",
+      "x": "The problem, in one picture"
+    },
+    {
+      "t": "p",
+      "x": "Once data is split across several servers, every request must work out which server holds its key. The obvious rule is hash(key) % N, where N is the number of servers. It spreads keys evenly, until N changes. Add a fifth server to four and the rule becomes % 5: almost every key now maps to a different server, so almost all the data has to move at once, and the databases spend the next hours copying instead of serving. Losing a server causes the same reshuffle."
+    },
+    {
+      "t": "fig",
+      "id": "hash-move",
+      "cap": "Twenty keys on four servers, then five. With % N most keys change server; on a ring, only the keys the new server takes over move."
+    },
+    {
+      "t": "p",
+      "x": "Consistent hashing fixes this by placing servers and keys on a circle and giving each key to the next server clockwise. Adding a server takes over a slice of one neighbour's keys; removing one hands its keys to its neighbour; everything else stays put. The next part, 'The hash ring', walks through it step by step."
+    },
+    {
+      "t": "h3",
+      "x": "Most interviews: name it and move on"
+    },
+    {
+      "t": "p",
+      "x": "Most modern databases and caches spread data for you. When the design uses DynamoDB, Cassandra or a managed Redis cluster, you don't need to explain the algorithm; say that the system uses consistent hashing, or something like it, under the hood, so it can add capacity and survive failures without reshuffling all the data. Then spend your time on the shard key and the queries."
+    },
+    {
+      "t": "h3",
+      "x": "Infrastructure interviews: go deep"
+    },
+    {
+      "t": "p",
+      "x": "It becomes central when the question is to build the distributed part yourself:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Design a distributed database or key-value store.",
+        "Design a distributed cache.",
+        "Design a distributed message broker or log."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "In those, be ready to explain:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Why consistent hashing beats hash % N: how much data moves when a server joins or leaves.",
+        "How virtual nodes even out the load and spread a failed server's keys across all the others.",
+        "What happens when a server fails, and when one is added.",
+        "How hot keys arise even when keys are spread evenly, and how replication and key salting deal with them.",
+        "How replication works on the ring, so a failure doesn't mean moving data at all."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "The parts 'The hash ring' and 'Rings in practice' below cover each of these."
+    },
+    {
+      "t": "h3",
+      "x": "The name is used loosely"
+    },
+    {
+      "t": "p",
+      "x": "Many systems said to use consistent hashing actually use a close cousin: a fixed number of hash slots or buckets, assigned to servers and moved between them in whole units. Redis Cluster's 16,384 slots and DynamoDB's internal partitions work this way. 'Designing Data-Intensive Applications' points out the same confusion. What matters is the principle they share: when servers come and go, only a bounded share of the data moves."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For most designs: one sentence, naming the database that does it.",
+        "For infrastructure designs: the ring, virtual nodes, failures, hot keys and replication, in that order.",
+        "Know the alternative: fixed slots or buckets, as Redis Cluster does, and when you'd choose them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The hash ring"
+    },
+    {
+      "t": "h3",
+      "x": "From one database to several"
+    },
+    {
+      "t": "p",
+      "x": "Picture the ticketing side of a cricket app. At first it is simple: one database holds every match, its seats and its bookings, and the app servers read from it. It works well, until the app gets popular, hosts every league and tour, and one database can't keep up. The data has to be split across several databases, which is sharding, and that raises one question: which database holds which match?"
+    },
+    {
+      "t": "fig",
+      "id": "ch-shard-events",
+      "cap": "One database for every match works until it doesn't. Split across three, every request first needs to know which database holds its match."
+    },
+    {
+      "t": "h3",
+      "x": "First try: hash % N"
+    },
+    {
+      "t": "p",
+      "x": "The obvious rule: hash the match id to a number, take it modulo the number of databases, and the result is the database."
+    },
+    {
+      "t": "code",
+      "label": "Modulo hashing over three databases",
+      "x": "database = hash(match_id) % 3\n\nmatch 1234 → hash(1234) % 3 = 1 → database 1\nmatch 5678 → hash(5678) % 3 = 0 → database 0\nmatch 9012 → hash(9012) % 3 = 2 → database 2",
+      "say": "The database is the hash of the match id modulo three. Match 1234 goes to database 1, match 5678 to database 0, and match 9012 to database 2."
+    },
+    {
+      "t": "fig",
+      "id": "ch-modulo",
+      "cap": "Each match id is hashed to a number, and the number modulo three picks one of the three databases."
+    },
+    {
+      "t": "p",
+      "x": "It spreads matches evenly and needs no lookup table. The trouble starts when the number of databases changes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Adding a fourth database: the code changes to % 4, and suddenly load rises on every database, not just the new one. Match 1234, which hashed to database 1 under % 3, now hashes to database 0 under % 4, and so do most other matches: almost all the data has to move. While it moves, reads are slow or fail.",
+        "Losing a database: if database 2 dies, the rule becomes % 2, and the same thing happens in reverse: almost every match changes home, not only the ones that lived on the failed database."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-mod-change",
+      "cap": "Six matches on three databases. Going to % 4, or down to % 2 after a failure, moves most of them, not just the ones the change concerns."
+    },
+    {
+      "t": "h3",
+      "x": "The ring"
+    },
+    {
+      "t": "p",
+      "x": "Consistent hashing arranges both the databases and the keys on a circle of hash values, the hash ring. To keep the numbers small, imagine the ring has 100 positions, 0 to 99; real systems use the whole range of a 32-bit or 64-bit hash, 0 to 2³² − 1 or more, but the idea is the same."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Place the databases on the ring. With four databases, put them at 0, 25, 50 and 75.",
+        "To find a match's database, hash its id to a position and walk clockwise until you reach a database. A match at 30 belongs to the database at 50; one at 80 walks past 99 and wraps round to the database at 0.",
+        "Each database owns the arc of the ring just before it."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-ring",
+      "cap": "Four databases at 0, 25, 50 and 75. Each match walks clockwise from its hash to the first database it meets."
+    },
+    {
+      "t": "h3",
+      "x": "Adding a database"
+    },
+    {
+      "t": "p",
+      "x": "Add a fifth database at position 90. Only matches whose hash falls between 75 and 90 change home: they used to walk on to the database at 0 and now stop at 90. Every other match stays exactly where it was."
+    },
+    {
+      "t": "fig",
+      "id": "ch-ring-add",
+      "cap": "A fifth database at 90 takes over 75–90 from the database at 0. That is 15 of its 25 positions, about 15% of all matches; nothing else moves."
+    },
+    {
+      "t": "p",
+      "x": "The database at 0 owned 25 positions (75 to 99) and hands over 15 of them, 60% of its matches, which is about 15% of all matches. With % N, adding the fifth database would have moved about 80%."
+    },
+    {
+      "t": "h3",
+      "x": "Removing a database"
+    },
+    {
+      "t": "p",
+      "x": "Now database 2, at position 25, fails. Only the matches it held, those hashing between 0 and 25, need a new home, and walking clockwise they now reach database 3 at 50. Everything else stays put."
+    },
+    {
+      "t": "fig",
+      "id": "ch-ring-remove",
+      "cap": "When the database at 25 fails, only its matches move, all to the next database clockwise, which now owns twice as much as the others."
+    },
+    {
+      "t": "p",
+      "x": "But look at the result: database 3 now owns 0 to 50, twice as much as databases 1 and 4. All of the failed database's load landed on one neighbour."
+    },
+    {
+      "t": "h3",
+      "x": "Virtual nodes"
+    },
+    {
+      "t": "p",
+      "x": "The fix is to give every database many points on the ring instead of one. Hash 'DB1-vn1', 'DB1-vn2', 'DB1-vn3' and so on to get DB1's positions, and do the same for every database. The points of different databases end up mixed all around the ring."
+    },
+    {
+      "t": "fig",
+      "id": "hash-vnodes",
+      "cap": "One point per server leaves uneven arcs, and a failed server's whole arc lands on one neighbour. Many points per server even out both."
+    },
+    {
+      "t": "list",
+      "items": [
+        "When DB2 fails, the keys at 'DB2-vn1' move to whichever database comes next after that point, perhaps DB1; those at 'DB2-vn2' move to DB3; those at 'DB2-vn3' to DB4; and so on. The failed database's load is shared by all the others instead of doubling one neighbour.",
+        "When a database is added, its many points fall all around the ring, so it takes a small slice from every existing database instead of half of one neighbour's. The cluster is balanced from the start.",
+        "The more points per database, the more even it gets. Real systems use from 16 to a few hundred per server (Cassandra's default has been 16 since version 4.0, with a smarter way of placing them). Points can also be weighted, so a bigger machine gets more of them."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-vnodes-fail",
+      "cap": "With three points per database, a failed database's three arcs go to three different neighbours, so no single database doubles its load."
+    },
+    {
+      "t": "h3",
+      "x": "Try it"
+    },
+    {
+      "t": "p",
+      "x": "The ring below holds 40 match keys, coloured by the server that owns them. Add a server, remove one, make S2 fail, or switch virtual nodes on. After each change the keys that moved are ringed in red, and when the number of servers changes the counter shows how many would have moved with hash % N instead. Watch how unevenly four single points split the keys, and how much more even six points per server make it."
+    },
+    {
+      "t": "fig",
+      "id": "ch-playground",
+      "cap": "An interactive ring: 40 keys, up to eight servers. Each change reports how many keys moved, and compares it with hash % N; the bars show how many keys each server holds."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Draw the ring, place three or four servers, and show one key walking clockwise.",
+        "Show that adding a server moves only one arc, about 1/N of the keys, and that % N would move most of them.",
+        "Then add virtual nodes, and say what they fix: even arcs, and a failure spread over every server."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Rings in practice"
+    },
+    {
+      "t": "h3",
+      "x": "Hot spots"
+    },
+    {
+      "t": "p",
+      "x": "Virtual nodes spread keys evenly, but not every key gets the same traffic. A hot spot is one server taking far more requests than the rest because a few of its keys are far more popular. When tickets for a World Cup final go on sale, that one match can get a hundred times the reads of any other, and all of them go to the server that owns its key."
+    },
+    {
+      "t": "p",
+      "x": "Consistent hashing can't fix this by itself: it balances keys, not traffic. Real systems use:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Replicas of hot keys: store the popular key on several servers and spread its reads across them. This is the most common answer.",
+        "Key salting: add a suffix to the hot key, such as final-tickets-0 to final-tickets-9, so the ten versions hash to different servers. Writes go to one version (or all), and reads go to any version or combine all of them.",
+        "Adaptive rebalancing: watch traffic and move the busiest key ranges off overloaded servers. It is complex to run, but some managed databases, DynamoDB among them, do it automatically."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-salt",
+      "cap": "One hot key all lands on one server. Salted into ten keys, it spreads across the ring, and reads are shared by many servers."
+    },
+    {
+      "t": "p",
+      "x": "The distinction to make in an interview: virtual nodes fix structural imbalance, keys spread unevenly; replication and salting fix workload imbalance, traffic spread unevenly."
+    },
+    {
+      "t": "h3",
+      "x": "Moving data in practice"
+    },
+    {
+      "t": "p",
+      "x": "The ring tells you where data should live; it doesn't move terabytes by magic when a server dies. In practice, distributed databases replicate data alongside the ring, so most failures need no data movement at all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Cassandra stores each key on the server that owns it and the next N − 1 distinct servers clockwise (N is the replication factor, often 3). If one fails, the others still have the data and keep serving reads and writes.",
+        "DynamoDB keeps every partition in three availability zones. When the node leading a partition fails, a replica takes over through a consensus protocol (Paxos-based), and no data needs to move.",
+        "Data really moves only for planned changes: adding capacity, or permanently replacing a server to restore the replication factor. Even then, the ring limits it to the keys whose owners changed, not the whole dataset."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ch-replicas",
+      "cap": "Each key is stored on three servers in a row on the ring. When one fails, the next replica answers, and nothing has to be copied before service continues."
+    },
+    {
+      "t": "h3",
+      "x": "Where it is used"
+    },
+    {
+      "t": "p",
+      "x": "The example was databases, but consistent hashing fits any cluster that must divide work among servers that come and go: caches, message brokers, even plain application servers that each keep some state."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Apache Cassandra places data on a ring of token ranges, with virtual nodes.",
+        "Amazon DynamoDB hashes each partition key to an internal partition and splits or moves partitions as they grow, a fixed-slot style rather than a visible ring; its ancestor, the Dynamo paper, is where the ring with virtual nodes became famous.",
+        "CDNs and cache clusters use it to decide which server caches which object, so adding a cache server doesn't empty all the others.",
+        "Load balancers use it to send a user's requests to the same server (sticky routing) while servers come and go."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "Fixed slots instead of a ring"
+    },
+    {
+      "t": "p",
+      "x": "Not everything uses a ring. Redis Cluster divides the key space into 16,384 fixed slots: slot = CRC16(key) mod 16384, and each node is assigned ranges of slots. Adding a node means moving some slots to it, key by key, while the cluster keeps serving."
+    },
+    {
+      "t": "fig",
+      "id": "redis-slots",
+      "cap": "The client knows which node owns each slot, so a request goes straight to it; MOVED corrects the client after slots change hands."
+    },
+    {
+      "t": "table",
+      "label": "Ring or fixed slots",
+      "head": [
+        "Compared",
+        "Hash ring with virtual nodes",
+        "Fixed slots or buckets"
+      ],
+      "rows": [
+        [
+          "Where a key lives",
+          "First server clockwise from its hash",
+          "slot = hash % (fixed number); slot → server table"
+        ],
+        [
+          "Adding a server",
+          "Its points take small arcs from everyone",
+          "Move whole slots to it, chosen by an operator or balancer"
+        ],
+        [
+          "Reasoning about it",
+          "Depends on where points happen to fall",
+          "Simple: a short table of slot ranges"
+        ],
+        [
+          "Coordination",
+          "Every client needs the ring (or asks a router)",
+          "Every client needs the slot table; moves need care"
+        ],
+        [
+          "Used by",
+          "Cassandra, Dynamo-style stores, cache clients",
+          "Redis Cluster, many sharded SQL setups, Kafka partitions"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Both keep data movement bounded when servers change. Fixed slots are easier to reason about and to move deliberately; the ring needs no table of slots and suits clusters where servers join and leave often. Naming that trade-off is a good senior-level point."
+    },
+    {
+      "t": "h3",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Separate the two imbalances: virtual nodes for uneven keys, replicas and salting for uneven traffic.",
+        "Say the ring is paired with replication, so a failure is handled by a replica, not by copying data.",
+        "Know the fixed-slot alternative and one reason to prefer each."
+      ]
+    }
+  ]
+}
