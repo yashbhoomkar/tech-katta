@@ -68,11 +68,12 @@ useEffect(()=>{const page=document.getElementById("root"),prev=document.activeEl
 const fit=()=>{const r=stage.current?.getBoundingClientRect();if(!r)return;const turn=r.height>r.width*1.15;const w=turn?Math.min(r.height,r.width*ar):Math.min(r.width,r.height*ar);setBox({w,turn})};fit();addEventListener("resize",fit);
 return()=>{document.body.style.overflow="";if(page)page.inert=false;document.removeEventListener("keydown",key);removeEventListener("resize",fit);prev?.focus?.()}},[]);
 return createPortal(<div className="fs" role="dialog" aria-modal="true" aria-label={title}><div className="fs-head"><div className="fs-title"><b>{title}</b><span className="fs-hint">Turn your phone sideways for a bigger view</span></div><button ref={close} type="button" className="r-btn" onClick={onClose}>Close ✕</button></div><div className="fs-stage" ref={stage}>{box&&<div className="fs-fig" style={{width:box.w,transform:`translate(-50%,-50%)${box.turn?" rotate(90deg)":""}`}}>{children}</div>}</div></div>,document.body)}
-// A figure that fails to draw says so in its own box; the article around it is unaffected.
+// A figure that fails to draw says so in its own box; the article around it is unaffected. The boundary is keyed
+// by the figure id: the next article reuses this block, and a working figure there must not inherit the failure.
 const FIG_FAILED=<p className="a-fig-err">This figure couldn't be drawn. The rest of the article is fine.</p>;
 function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const f=FIGS[id];if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
-return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><Part fallback={FIG_FAILED}><C still={still}/></Part></div>
-<button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
+return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><Part key={id} fallback={FIG_FAILED}><C still={still}/></Part></div>
+<button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
 
 // Share (phone share sheet where available, otherwise copy the link).
 function Share({a}){const[msg,setMsg]=useState("");const url=location.href;const flash=m=>{setMsg(m);setTimeout(()=>setMsg(""),2500)};

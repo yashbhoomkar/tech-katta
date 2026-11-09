@@ -83,6 +83,7 @@ const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design
 
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, judgeDesign = judgeInline, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
+  const judging = new Set(); // accounts with a design being judged now
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
   // the site, and (for reading only) the owner's analytics dashboard
   const readers = new Set([allowedOrigin, analyticsOrigin].filter(Boolean));
@@ -200,8 +201,15 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         // judged again here, the same way the page did, so the stored result can't be made up in a browser;
         // off the API's thread (judge-pool.js). `copied`: the Solution tab's design, copied unchanged:
         // stored, but it isn't counted in anyone's stats. The wrong designs are only for calibration.
+        // One design judged at a time per account: a second Submit while the first is being judged gets a 429,
+        // so one account can't fill the shared queue and keep everyone else's submissions from being recorded.
+        const account = String(me.id);
+        if (judging.has(account)) return send(request, response, 429, { error: 'judge_in_progress' });
         const { wrong, ...problem } = practice;
-        const { judged: j, copied } = await judgeDesign({ design, lab, practice: problem });
+        judging.add(account);
+        let judgedRun;
+        try { judgedRun = await judgeDesign({ design, lab, practice: problem }); } finally { judging.delete(account); }
+        const { judged: j, copied } = judgedRun;
         const g = gradeAnswer(cleanAnswer(b.answer), practice.rubric), sc = score(g, j, hints);
         const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(copied ? { copied: true } : {}) };
         const stats = await accounts.addSubmission(doc);
@@ -216,7 +224,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       }
       return send(request, response, 404, { error: 'not_found' });
     } catch (error) {
-      if (error instanceof JudgeError) { log.error('Judging a submission failed:', error.code); return send(request, response, 503, { error: error.code }); }
+      if (error instanceof JudgeError) { log.error('Judging a submission failed:', error.code, error.detail || ''); return send(request, response, 503, { error: error.code }); }
       if (error instanceof AuthError) {
         const status = error.code === 'too_large' ? 413 : error.code === 'bad_json' ? 400 : error.code === 'keys_unavailable' ? 503 : 401;
         return send(request, response, status, { error: error.code });

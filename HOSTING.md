@@ -20,7 +20,7 @@ Nothing here changes how the site runs today: Vercel still serves the website an
 | Routing and headers | `frontend/hosting/routes.json` | The site's rewrites, redirects and security headers, written once | Generate the new host's files from it (below) |
 | Vercel config | `frontend/vercel.json` | Generated from `routes.json` by `npm run hosting:vercel`; a test checks they match | Not needed elsewhere |
 | Cloudflare files | `frontend/hosting/adapters.js`, `emit.mjs`, `wrangler.jsonc` | `npm run build:cloudflare` adds `_redirects`, `_headers` and 404 pages to the build | Deploy that build |
-| Host analytics | `frontend/src/hostanalytics.jsx` | Vercel Web Analytics; `VITE_HOST_ANALYTICS=none` turns it off | Turn off, and change the privacy text (below) |
+| Host analytics | `frontend/src/hostanalytics.jsx` | Vercel Web Analytics; `VITE_HOST_ANALYTICS=none` turns it off (`build:cloudflare` does) | Change the privacy text (below) |
 | API base address | `VITE_API_BASE` (`frontend/src/api.js`) | Defaults to https://tech-api.katta.cc | Only if the API's address changes |
 | API settings | `backend/.env.example` | Every environment variable the API reads, with its default | Set them on the new host |
 | Visitor address for rate limits | `CLIENT_IP_HEADERS` | Default `x-real-ip,cf-connecting-ip` (Nginx on the VPS) | Name the new proxy's header |
@@ -34,7 +34,8 @@ Nothing here changes how the site runs today: Vercel still serves the website an
 Cloudflare is the planned next host: its free plan allows commercial use and has no bandwidth limit. Cloudflare
 now steers new static sites to Workers with static assets rather than Pages; `hosting/wrangler.jsonc` sets that up.
 
-1. Build: `cd frontend && VITE_HOST_ANALYTICS=none npm run build:cloudflare`. This writes `dist/_redirects`,
+1. Build: `cd frontend && npm run build:cloudflare` (it builds without Vercel Web Analytics, which only works on
+   Vercel). This writes `dist/_redirects`,
    `dist/_headers`, `dist/404.html` and `dist/dashboard/404.html`. It also prints one rule Cloudflare's files can't
    express: `analytics.katta.cc/` → `/analytics/` (307), which becomes a Redirect Rule in the Cloudflare dashboard.
 2. Check it locally in Cloudflare's own runtime: `npx wrangler dev --config hosting/wrangler.jsonc` (no account needed).

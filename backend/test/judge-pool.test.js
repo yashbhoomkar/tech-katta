@@ -67,3 +67,12 @@ test('the API thread keeps running while a slow design is judged', async () => {
     assert.ok(worstGap < 250, `the event loop was blocked for ${Math.round(worstGap)} ms`);
   } finally { pool.close(); }
 });
+
+test("a design the judge can't handle is a judge_failed error (with the reason), and the worker carries on", async () => {
+  const pool = judgePool({ size: 1 });
+  try {
+    const a = problems.find((p) => p.slug === 'url-shortener');
+    await assert.rejects(pool.run({ ...job(a.practice.reference, a), practice: null }), (e) => e instanceof JudgeError && e.code === 'judge_failed' && typeof e.detail === 'string' && e.detail.length > 0);
+    assert.equal((await pool.run(job(a.practice.reference, a))).copied, true);
+  } finally { pool.close(); }
+});
