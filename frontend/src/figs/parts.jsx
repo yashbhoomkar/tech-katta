@@ -37,3 +37,7 @@ export const Fig=({still,h,id,title,M,base,caps,g,only,last,c,top})=><svg viewBo
 {still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}{top}</svg>;
 export const X=({x,y,c=RED,r=5})=><g stroke={c} strokeWidth="2"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 export const OK=({x,y,c=BLUE})=><path d={`M${x-5} ${y} l4 4 l7 -9`} fill="none" stroke={c} strokeWidth="2"/>;
+
+// Line a plain or dashed line with an optional arrowhead · SBox a small one-line box (blue, or dashed red when `down`).
+export const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
+export const SBox=({x,y,w=110,t,blue,down})=><g><rect x={x} y={y-12} width={w} height="24" fill={down?"#fff5f4":blue?"#f8faff":"#fff"} stroke={down?RED:blue?"#2855d9":GREY} strokeDasharray={down?"4 3":undefined}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;

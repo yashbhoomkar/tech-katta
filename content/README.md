@@ -36,14 +36,13 @@ copy the paper's text or diagrams.
 
 Networking essentials (owner 11-08) is a group inside Concepts (CONCEPT // 26-36), not a tab: how machines
 reach each other, from layers and addresses to load balancers, live updates, distance and failing calls.
-Figures are `NETWORK_FIGS` in `frontend/src/figs/network.jsx`. Written through Zotato with our own figures; another
+Figures are in `frontend/src/figs/concepts/networking.jsx`. Written through Zotato with our own figures; another
 site's page on the topic was the reference for what to cover, point by point. Don't name that site on ours.
 
-API design (CONCEPT // 37-43, `API_FIGS` in `apidesign.jsx`) and Data modelling (CONCEPT // 44-48, `DM_FIGS` in
-`datamodel.jsx`) are groups built the same way: Concepts groups, our own words and figures, checked paragraph by
-paragraph against the reference for coverage. Caching (CONCEPT // 49-53, `CACHE_FIGS` in
-`caching.jsx`), Sharding (54-57, `SHARD_FIGS`), Consistent hashing (58-60, `HASH_FIGS`, including the interactive
-`ch-playground`) and CAP theorem (61-63, `CAP_FIGS`) follow the same method.
+API design (CONCEPT // 37-43) and Data modelling (CONCEPT // 44-48) are groups built the same way: Concepts groups, our own words and figures, checked paragraph by
+paragraph against the reference for coverage. Caching (CONCEPT // 49-53), Sharding (54-57),
+Consistent hashing (58-60, including the interactive `ch-playground`) and CAP theorem (61-63) follow the same method.
+Each group's figures are in `frontend/src/figs/concepts/<group>.jsx` (see `fig` below).
 
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
 locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
@@ -53,7 +52,7 @@ topics people search for, each leading into paid material. Everything else is pa
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
-- `fig {id, cap}`: `id` must be a figure the frontend can draw. Each figure module in `frontend/src/figs/` exports a map of its ids (`PAPER_FIGS` in `papers.jsx`, `COMPONENT_FIGS` in `components.jsx`, `APITYPE_FIGS` in `apitypes.jsx` for `patterns`, `choose`, `order`, `retry`, and so on), and `frontend/src/figs/index.js` gathers them into `FIGS`. A new figure goes in its module's map and in `FIGS` in `backend/src/content/validate.js`; a new module is also added to `figs/index.js`. A backend test reads every module and checks all of this matches.
+- `fig {id, cap}`: `id` must be a figure the frontend can draw. Figures are organised by sub-tab (the `group` of `dashboard.groups` in `site.json`): each sub-tab with figures has `frontend/src/figs/<tab>/<sub-tab>.jsx`, exporting `FIGS` (id → component), and `backend/src/content/figs/<tab>/<sub-tab>.js`, listing the same ids, e.g. `figs/concepts/caching.jsx` and `content/figs/concepts/caching.js`. Shared drawing parts are in `frontend/src/figs/parts.jsx`. A figure lives in the sub-tab it was made for; any article may still use it by id. A new figure goes in its sub-tab's two files; a new sub-tab adds both files and a line in each `figs/index.js`. A backend test checks the two folders, both indexes and every pair of id lists match.
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·

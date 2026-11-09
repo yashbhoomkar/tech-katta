@@ -397,22 +397,34 @@ test('subsections and "Try it in the Lab" blocks are checked', () => {
   assert.deepEqual(check(null, (a) => { labBlock(a).to = 'lab'; }), []);
 });
 
-test('the figure ids the content may use are exactly the ones the frontend draws', async () => {
+test('each sub-tab owns one figure module in the frontend and the same ids in the backend', async () => {
   const { FIGS } = await import('../src/content/validate.js');
   const { readFile, readdir } = await import('node:fs/promises');
-  // Every figure module in frontend/src/figs exports a map named <SOMETHING>_FIGS, one "id":{C:…} per line,
-  // and figs/index.js gathers them all; so the ids are read from every module, and each map must be gathered.
-  const dir = new URL('../../frontend/src/figs/', import.meta.url);
-  const index = await readFile(new URL('index.js', dir), 'utf8');
-  const ids = [];
-  for (const file of (await readdir(dir)).filter((f) => f.endsWith('.jsx')).sort()) {
-    for (const [, name, body] of (await readFile(new URL(file, dir), 'utf8')).matchAll(/export const ([A-Z]+_FIGS)=\{([\s\S]*?)\n\};/g)) {
-      assert.match(index, new RegExp(`\\.\\.\\.${name}\\b`), `figs/index.js must include ${name} from ${file}`);
-      ids.push(...[...body.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]));
-    }
+  // frontend/src/figs/<tab>/<sub-tab>.jsx exports FIGS, one "id":{C:…} per line; backend/src/content/figs/<tab>/<sub-tab>.js
+  // lists the same ids. Both folders hold the same files, each for a real sub-tab (site.json dashboard.groups),
+  // and both index files gather every one of them.
+  const fe = new URL('../../frontend/src/figs/', import.meta.url), be = new URL('../src/content/figs/', import.meta.url);
+  const site = JSON.parse(await readFile(new URL('../../content/site.json', import.meta.url), 'utf8'));
+  const subTabs = new Set(Object.entries(site.dashboard.groups).flatMap(([tab, gs]) => gs.map(([g]) => `${tab}/${g}`)));
+  const modules = async (dir, ext) => (await Promise.all((await readdir(dir, { withFileTypes: true })).filter((d) => d.isDirectory())
+    .map(async (d) => (await readdir(new URL(`${d.name}/`, dir))).filter((f) => f.endsWith(ext)).map((f) => `${d.name}/${f.slice(0, -ext.length)}`)))).flat().sort();
+  const feMods = await modules(fe, '.jsx'), beMods = await modules(be, '.js');
+  assert.deepEqual(feMods, beMods, 'the frontend and backend figure folders must hold the same sub-tabs');
+  const feIndex = await readFile(new URL('index.js', fe), 'utf8'), beIndex = await readFile(new URL('index.js', be), 'utf8');
+  const all = [];
+  for (const m of feMods) {
+    assert.ok(subTabs.has(m), `${m} is not a sub-tab in content/site.json`);
+    assert.ok(feIndex.includes(`from"./${m}.jsx"`), `frontend/src/figs/index.js must import ${m}.jsx`);
+    assert.ok(beIndex.includes(`from './${m}.js'`), `backend/src/content/figs/index.js must import ${m}.js`);
+    const reg = (await readFile(new URL(`${m}.jsx`, fe), 'utf8')).match(/export const FIGS=\{([\s\S]*?)\n\};/);
+    assert.ok(reg, `${m}.jsx must export FIGS`);
+    const ids = [...reg[1].matchAll(/^"([a-z-]+)":\{C:/gm)].map((x) => x[1]);
+    const { FIGS: listed } = await import(new URL(`${m}.js`, be));
+    assert.deepEqual([...listed].sort(), [...ids].sort(), `${m}: backend ids must match the frontend module`);
+    all.push(...ids);
   }
-  assert.equal(new Set(ids).size, ids.length, 'a figure id is defined twice');
-  assert.deepEqual(ids.sort(), [...FIGS].sort());
+  assert.equal(new Set(all).size, all.length, 'a figure id is defined in two sub-tabs');
+  assert.deepEqual(all.sort(), [...FIGS].sort());
 });
 
 test('validation checks the Problems "solve" copy the problem page reads', () => {

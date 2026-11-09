@@ -1,5 +1,6 @@
-// Figures for the "Database indexing" group in Concepts. Same conventions as sharding.jsx.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
+// Concepts › Database indexing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "indexing").
+// Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
 
 const Pg=({x,y,w,h,c=GREY,fill="#fff",t})=><g><rect x={x} y={y} width={w} height={h} fill={fill} stroke={c}/>{t&&<text x={x+w/2} y={y+h/2+4} textAnchor="middle" className="fl" style={{fill:c===GREY?INK:c}}>{t}</text>}</g>;
 
@@ -119,7 +120,7 @@ const caps=[["1 · the index finds customer 77's orders, newest first",INK],["2 
 return <Fig still={still} h={232} id={`ivt${uid}`} M={M} caps={caps} only={[1]} title="A covering index. The query wants customer 77's orders, newest first, with id, status and total. An index on customer and time finds the orders, but each one then needs another read of the table for its status and total. A covering index includes id, status and total in its entries, so the query is answered from the index alone and the table isn't read."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 
-export const INDEX_FIGS={
+export const FIGS={
 "ix-scan":{C:ScanFig,ar:640/238,title:()=>"EVERY PAGE, OR FOUR"},
 "ix-cost":{C:CostFig,ar:640/232,title:()=>"ONE INSERT, FOUR WRITES"},
 "ix-btree-find":{C:FindFig,ar:640/238,title:()=>"THREE PAGES TO ID 350"},
