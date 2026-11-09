@@ -32,7 +32,7 @@
         "Search dishes and restaurants by words, in English and Hinglish, with typos.",
         "Filters: veg only, price range, open now, delivers to me.",
         "Results ranked so the dish you meant is near the top; the first page in well under 200 ms.",
-        "Out of scope here: suggestions while typing (see the autocomplete question) and ads in results."
+        "Out of scope here: suggestions while typing, and ads in results."
       ]
     },
     {

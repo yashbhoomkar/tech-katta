@@ -13,4 +13,6 @@ export const FIGS = [
   'ca-stampede',
   'ca-stale',
   'ca-hot-key',
+  'cache-aside',
+  'cache-warm',
 ];

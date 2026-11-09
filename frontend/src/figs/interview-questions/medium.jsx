@@ -211,31 +211,6 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lnt${uid}`}><titl
 {step(.5,<text x={X+W+10} y={154} className="fl" style={{fill:BLUE}}>sent in ~2 s</text>)}
 {step(.65,<text x={0} y={200} className="fl">workers always empty the urgent lane first; the promo blast never slows an OTP</text>)}</svg>}
 
-// Autocomplete, FIG: the two halves. Reading: the phone waits a moment after each keystroke, short prefixes
-// come from a CDN, the rest from suggest servers that hold the whole prefix map in memory. Building: every
-// hour, search logs and menus are turned into a new prefix map, which the servers swap in.
-function SuggestFlowFig({still,uid=""}){const M=`sg2${uid}`,D="12s";
-return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`sgf${uid}`}><title id={`sgf${uid}`}>Reading: the phone waits a moment after each keystroke, then asks for suggestions. Short prefixes like "b" or "bi" are the same for everyone in a city, so a CDN answers them. Longer ones go to suggest servers that hold the whole prefix map in memory. Building: every hour, a builder turns search logs and menus into a new prefix map, and the servers swap it in.</title><Mark m={M}/>
-<text x={0} y={24} className="fb">Reading, on every pause in typing</text>
-<SBox x={0} y={60} w={110} t="Phone"/><SBox x={160} y={60} w={110} t="CDN"/><SBox x={320} y={60} w={160} t="Suggest servers" blue/>
-<Line x1={112} y1={60} x2={156} y2={60} m={M}/><Line x1={272} y1={60} x2={316} y2={60} m={M}/><text x={134} y={88} textAnchor="middle" className="fl">"biry"</text><text x={215} y={88} textAnchor="middle" className="fl">"b", "bi" here</text>
-<text x={380} y={88} textAnchor="middle" className="fl">prefix map in memory</text>
-<text x={0} y={140} className="fb">Building, every hour</text>
-<SBox x={0} y={180} w={110} t="Search logs"/><SBox x={0} y={220} w={110} t="Menus"/><SBox x={160} y={200} w={110} t="Builder"/><SBox x={320} y={200} w={160} t="New prefix map"/>
-<Line x1={112} y1={180} x2={156} y2={196} m={M}/><Line x1={112} y1={220} x2={156} y2={204} m={M}/><Line x1={272} y1={200} x2={316} y2={200} m={M}/>
-<Line x1={462} y1={186} x2={462} y2={76} m={M} dash/><text x={470} y={140} className="fl">swap in when checked</text>
-{!still&&<g aria-hidden="true"><Dot x1={114} x2={154} y={60} t0={.02} t1={.08} dur={D}/><Dot x1={274} x2={314} y={60} t0={.1} t1={.16} dur={D}/><Glow x={320} y={48} w={160} h={24} t0={.16} t1={.3} dur={D}/>
-<Dot x1={114} x2={154} y={180} y2={196} t0={.45} t1={.52} dur={D}/><Dot x1={274} x2={314} y={200} t0={.56} t1={.62} dur={D}/><Dot x1={462} x2={462} y={184} y2={78} t0={.7} t1={.82} dur={D}/><Glow x={320} y={48} w={160} h={24} t0={.82} t1={.95} dur={D}/></g>}</svg>}
-
-// Autocomplete, FIG: the prefix map. Each prefix already has its top suggestions worked out, so a keystroke
-// is one lookup, not a search.
-function PrefixMapFig({still,uid=""}){const D="9s";
-const rows=[["b",["burger","biryani","butter chicken"]],["bi",["biryani","bisi bele bath","biscuit cake"]],["bir",["biryani","biryani near me","birthday cake"]],["biry",["biryani","biryani family pack","biryani rice"]]];
-return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`pmt${uid}`}><title id={`pmt${uid}`}>The prefix map: every prefix already has its top suggestions worked out. "b" gives burger, biryani, butter chicken. "bi" gives biryani, bisi bele bath, biscuit cake. "bir" gives biryani, biryani near me, birthday cake. "biry" gives biryani, biryani family pack, biryani rice. Each keystroke is one lookup, not a search.</title>
-<text x={0} y={24} className="fb">Prefix</text><text x={110} y={24} className="fb">Top suggestions (worked out every hour)</text>
-{rows.map(([k,v],i)=>{const y=60+i*40,row=<g><rect x={0} y={y-16} width={80} height={28} fill="#f8faff" stroke={BLUE}/><text x={12} y={y+3} className="fb">"{k}"</text>{v.map((t,j)=><g key={t}><rect x={110+j*176} y={y-16} width={168} height={28} fill="#fff" stroke={GREY}/><text x={118+j*176} y={y+3} className="fl">{j+1}. {t}</text></g>)}</g>;return still?<g key={k}>{row}</g>:<Show key={k} t0={.05+i*.18} t1={.98} dur={D}>{row}</Show>})}
-<text x={0} y={222} className="fl">one lookup per keystroke; nothing is searched while you type</text></svg>}
-
 // Payments, FIG: the path. The order service asks the payment service for a payment for order #91. It
 // creates one with the order as its idempotency key and hands the app over to the payment gateway (UPI or
 // card). The gateway tells us the result by a signed webhook; the payment service records it in the ledger
@@ -518,8 +493,6 @@ export const FIGS={
 "chat-sync":{C:ChatSyncFig,ar:640/220,title:()=>"CATCHING UP BY NUMBER"},
 "notify-flow":{C:NotifyFlowFig,ar:640/230,title:()=>"ONE API, THREE LANES"},
 "lanes":{C:LanesFig,ar:640/220,title:()=>"THE OTP DOESN'T WAIT"},
-"suggest-flow":{C:SuggestFlowFig,ar:640/250,title:()=>"SERVED FROM MEMORY, BUILT EVERY HOUR"},
-"prefix-map":{C:PrefixMapFig,ar:640/230,title:()=>"EVERY PREFIX, ANSWERED IN ADVANCE"},
 "pay-flow":{C:PayFlowFig,ar:640/210,title:()=>"WHO TALKS TO THE GATEWAY"},
 "pay-states":{C:PayStatesFig,ar:640/220,title:()=>"UNKNOWN IS NOT FAILED"},
 "sched-flow":{C:SchedFlowFig,ar:640/240,title:()=>"DUE THIS MINUTE, CLAIMED ONCE"},

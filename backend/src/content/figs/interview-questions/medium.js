@@ -14,8 +14,6 @@ export const FIGS = [
   'chat-sync',
   'notify-flow',
   'lanes',
-  'suggest-flow',
-  'prefix-map',
   'pay-flow',
   'pay-states',
   'sched-flow',

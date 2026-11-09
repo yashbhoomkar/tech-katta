@@ -158,7 +158,7 @@
         "Per IP address, for traffic before sign-in: say 60 a minute, so a script can't hammer the login and search pages.",
         "Per endpoint, for sensitive or costly actions: at most 5 OTP requests per phone in 15 minutes, or 3 coupon attempts a minute, to stop guessing.",
         "Enforced at the API gateway or in middleware, with counters in Redis; over the limit, answer 429 Too Many Requests with a Retry-After header.",
-        "In an interview, 'rate limited per user and per IP at the gateway' is usually enough. The algorithms (token bucket, sliding window) are a separate topic; see 'Rate limiter' in Interview Questions and the API gateways component."
+        "In an interview, 'rate limited per user and per IP at the gateway' is usually enough. The algorithms (token bucket, sliding window) are a separate topic; the API gateways component covers them."
       ]
     },
     {

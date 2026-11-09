@@ -49,7 +49,7 @@
         "no": "SECTION // 01",
         "kind": "PARADIGMS",
         "title": "Concepts",
-        "desc": "How systems talk, store, copy and agree, the patterns that come up in every design, and specialised data such as maps, vectors and time series: what each idea means, and where it stops holding.",
+        "desc": "The ideas every design rests on (networking, APIs, data models, caching, sharding, CAP, indexing and the numbers to know), the patterns that come up in design after design, and specialised data such as maps, vectors and time series.",
         "foot": "FOUNDATIONS",
         "link": "Explore Concepts",
         "visual": "cap"
@@ -59,7 +59,7 @@
         "no": "SECTION // 02",
         "kind": "INFRASTRUCTURE",
         "title": "Core Components",
-        "desc": "How load balancers, caches, queues and databases work, the named tools interviewers expect (Redis, Kafka, PostgreSQL and more), and what each one costs you when you add it to a system.",
+        "desc": "The named tools interviewers expect, such as Redis, Kafka, PostgreSQL, Cassandra and DynamoDB: what each one does well, how it works inside, and what it costs you when you add it to a system.",
         "foot": "LB · CACHE · QUEUE · DB",
         "link": "Explore Components",
         "visual": "path"
@@ -245,11 +245,6 @@
         null
       ],
       [
-        "papers",
-        "Research Papers",
-        null
-      ],
-      [
         "lab",
         "Lab",
         null
@@ -257,26 +252,6 @@
     ],
     "groups": {
       "components": [
-        [
-          "edge",
-          "Edge",
-          "Getting requests in: load balancers, CDNs, API gateways."
-        ],
-        [
-          "compute",
-          "Compute",
-          "Running your code: app servers and autoscaling."
-        ],
-        [
-          "storage",
-          "Storage",
-          "Keeping data: caches, databases, sharding, object storage."
-        ],
-        [
-          "messaging",
-          "Messaging",
-          "Work that can wait: queues and event streams."
-        ],
         [
           "tools",
           "Tools by name",
@@ -371,18 +346,6 @@
           "Practice",
           "Shorter questions to try on your own with the method."
         ]
-      ],
-      "papers": [
-        [
-          "must-know",
-          "Must know",
-          "The papers behind the systems interviewers ask about. Read these first."
-        ],
-        [
-          "worth-reading",
-          "Worth reading",
-          "Shorter or more surprising papers with ideas you will meet again."
-        ]
       ]
     },
     "groupEmpty": "Coming soon."
@@ -398,10 +361,6 @@
     ]
   },
   "example": "zotato",
-  "papers": {
-    "eyebrow": "RESEARCH PAPERS",
-    "desc": "The papers behind the systems you design, explained in plain words with moving diagrams: the problem each one solved, its idea, how it works, where you see it today and how to use it in an interview."
-  },
   "tour": {
     "button": "Tour",
     "next": "Next",
@@ -413,7 +372,7 @@
       {
         "target": ".tabs",
         "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Research Papers explains the classic papers simply."
+        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise, and Quick Notes are two-minute reads."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
@@ -428,7 +387,7 @@
       {
         "target": ".tabs .tab[href=\"#components\"]",
         "title": "The building blocks",
-        "text": "Load balancers, caches, queues and databases: what each one is for and where it breaks, with figures. Concepts covers the ideas behind them."
+        "text": "The named tools interviewers expect, such as Redis, Kafka and PostgreSQL: what each one is for and where it breaks, with figures. Concepts covers the ideas behind them."
       },
       {
         "target": ".tabs .tab[href=\"#lab\"]",
@@ -620,7 +579,7 @@
       {
         "kind": "{articles} ARTICLES",
         "title": "Concepts and Components",
-        "text": "Short, plain articles on the parts every design uses: caches, queues, databases, replication, retries.",
+        "text": "Short, plain articles on the ideas every design uses, such as caching, sharding and consistency, and on the tools that put them to work.",
         "link": "Start reading",
         "href": "/dashboard/concepts/"
       }

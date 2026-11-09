@@ -12,7 +12,7 @@ test('every article and section gets a page', () => {
   const keys = pages.map((p) => p.key);
   assert.ok(keys.includes('concepts'));
   assert.ok(keys.includes('problems'));
-  assert.ok(keys.includes('components/caches'));
+  assert.ok(keys.includes('components/redis'));
   assert.equal(new Set(keys).size, keys.length);
   for (const p of pages) { assert.ok(p.title.endsWith(' | Tech Katta')); assert.ok(p.description.length > 10, p.key); }
 });

@@ -2,7 +2,7 @@
   "section": "components",
   "slug": "redis",
   "group": "tools",
-  "no": "COMPONENT // 10",
+  "no": "COMPONENT // 01",
   "tag": "IN-MEMORY STORE",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -191,7 +191,7 @@
         },
         {
           "t": "p",
-          "x": "It is not safe for correctness on its own: a worker can pause past the expiry while another takes the lock. When a duplicate would do damage, add a fencing token checked by the system you write to, as the Contention concept and the Chubby paper explain."
+          "x": "It is not safe for correctness on its own: a worker can pause past the expiry while another takes the lock. When a duplicate would do damage, add a fencing token checked by the system you write to, as the Contention concept explains."
         }
       ]
     }
