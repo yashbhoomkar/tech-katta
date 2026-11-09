@@ -64,10 +64,10 @@ test('GET /v1/site returns all site copy plus the example system, publicly cache
 });
 
 test('content responses honour If-None-Match with 304', async () => {
-  const first = await get('/v1/articles/load-balancers');
+  const first = await get('/v1/articles/how-to-answer');
   const etag = first.headers.get('etag');
   await first.arrayBuffer();
-  const second = await get('/v1/articles/load-balancers', { headers: { 'If-None-Match': etag } });
+  const second = await get('/v1/articles/how-to-answer', { headers: { 'If-None-Match': etag } });
   assert.equal(second.status, 304);
   assert.equal(await second.text(), '');
 });
@@ -75,7 +75,7 @@ test('content responses honour If-None-Match with 304', async () => {
 test('GET /v1/articles lists summaries without bodies, optionally by section', async () => {
   const all = await (await get('/v1/articles')).json();
   assert.ok(all.articles.length >= 1);
-  const summary = all.articles.find(a => a.slug === 'load-balancers');
+  const summary = all.articles.find(a => a.slug === 'how-to-answer');
   assert.ok(summary);
   for (const key of ['section', 'slug', 'no', 'tag', 'date', 'title', 'dek']) assert.ok(summary[key], key);
   assert.equal(summary.body, undefined);
@@ -88,10 +88,10 @@ test('GET /v1/articles lists summaries without bodies, optionally by section', a
 });
 
 test('GET /v1/articles/:slug returns the full article with the example system', async () => {
-  const response = await get('/v1/articles/load-balancers/');
+  const response = await get('/v1/articles/how-to-answer/');
   assert.equal(response.status, 200);
   const article = await response.json();
-  assert.equal(article.slug, 'load-balancers');
+  assert.equal(article.slug, 'how-to-answer');
   assert.ok(Array.isArray(article.body) && article.body.length > 10);
   assert.deepEqual(article.example, example);
 });
@@ -125,7 +125,7 @@ test('repo content is valid', () => {
 // Free or paid: every article says which; a problem is never free; the lists carry it.
 test('every article is free or paid, and no problem is free', async () => {
   const free = allArticles.filter((a) => a.access === 'free').map((a) => a.slug).sort();
-  assert.deepEqual(free, ['caches', 'how-to-answer', 'lamport-clocks', 'load-balancers']);
+  assert.deepEqual(free, ['how-to-answer']);
   const problem = allArticles.find((a) => a.practice);
   const check = (change) => validateContent({ site, examples, articles: allArticles.map((a) => (a === problem ? change(structuredClone(a)) : a)), lab });
   assert.ok(check((a) => ({ ...a, access: 'free' })).some((p) => p.includes('must be paid')));
@@ -271,7 +271,7 @@ test('content preflight allows If-None-Match', async () => {
 });
 
 test('validation reports typos: unknown figure, bad table, unknown section', () => {
-  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers'));
+  const article = structuredClone(allArticles.find((a) => a.slug === 'how-to-answer'));
   article.section = 'nowhere';
   article.body.push({ t: 'fig', id: 'nope', cap: 'x' }, { t: 'table', head: ['a', 'b'], rows: [['only one']] });
   const problems = validateContent({ site, examples, articles: [article] });
@@ -297,7 +297,7 @@ test('validation checks every site.json field the pages render', () => {
 });
 
 test('validation checks the optional "more" paragraphs of a type card', () => {
-  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers')); // has type cards and an analogy
+  const article = structuredClone(allArticles.find((a) => a.slug === 'how-to-answer')); // has type cards and an analogy
   const card = article.body.find((b) => b.t === 'type');
   card.more = 'not a list';
   assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
@@ -306,7 +306,7 @@ test('validation checks the optional "more" paragraphs of a type card', () => {
 });
 
 test('validation checks real-life analogies: the analogy block, type cards and Lab components', () => {
-  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers')); // has type cards and an analogy
+  const article = structuredClone(allArticles.find((a) => a.slug === 'how-to-answer')); // has type cards and an analogy
   const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a], lab }); };
   assert.ok(at((a) => { a.body.find((b) => b.t === 'analogy').x = ''; }).some((p) => p.includes('needs text x')));
   assert.ok(at((a) => { a.body.find((b) => b.t === 'type').like = 7; }).some((p) => p.includes('like must be text')));
@@ -384,13 +384,13 @@ test('without its three settings, sign-in is off: config says so, account routes
 test('subsections and "Try it in the Lab" blocks are checked', () => {
   const check = (changeSite, changeArticle) => {
     const s = structuredClone(site), arts = structuredClone(allArticles);
-    changeSite?.(s); changeArticle?.(arts.find((a) => a.slug === 'load-balancers'));
+    changeSite?.(s); changeArticle?.(arts.find((a) => a.slug === 'how-to-answer'));
     return validateContent({ site: s, examples, articles: arts, lab });
   };
   assert.deepEqual(check(), []);
   assert.match(check(null, (a) => { a.group = 'nope'; }).join(), /unknown group nope/);
   assert.match(check((s) => { s.dashboard.groups.nope = [['a', 'A', 'x']]; }).join(), /groups\.nope is not a section/);
-  assert.match(check((s) => { s.dashboard.groups.components.push(['edge', 'Again', 'x']); }).join(), /unique lowercase ids/);
+  assert.match(check((s) => { s.dashboard.groups.components.push(['tools', 'Again', 'x']); }).join(), /unique lowercase ids/);
   const labBlock = (a) => a.body.find((b) => b.t === 'lab');
   assert.match(check(null, (a) => { labBlock(a).to = 'lab/no-such-challenge'; }).join(), /unknown Lab challenge no-such-challenge/);
   assert.match(check(null, (a) => { labBlock(a).to = 'https://evil.example'; }).join(), /to must be "lab"/);
@@ -477,7 +477,7 @@ test('GET /v1/articles/:slug/solution serves the solution design only: never the
   assert.deepEqual(s, { slug: 'url-shortener', nodes: src.practice.reference.nodes, edges: src.practice.reference.edges });
   assert.ok(!JSON.stringify(s).includes('wrong'));
   // only problems have one; bad slugs and deeper paths are 404
-  for (const path of ['/v1/articles/load-balancers/solution', '/v1/articles/nope/solution', '/v1/articles/UPPER/solution', '/v1/articles/a/b/solution', '/v1/articles/url-shortener/solution/x', '/v1/articles/solution']) {
+  for (const path of ['/v1/articles/how-to-answer/solution', '/v1/articles/nope/solution', '/v1/articles/UPPER/solution', '/v1/articles/a/b/solution', '/v1/articles/url-shortener/solution/x', '/v1/articles/solution']) {
     const r = await get(path);
     assert.equal(r.status, 404, path);
   }

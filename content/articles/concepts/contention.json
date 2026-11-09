@@ -127,7 +127,7 @@
     },
     {
       "t": "p",
-      "x": "When the thing to protect isn't a database row, such as 'only one worker pays this restaurant', you need a distributed lock: a lease with an expiry in Redis, etcd or ZooKeeper. A holder can stall (a long garbage-collection pause, a slow network) past its expiry while someone else takes the lock. So hand out a fencing token, a number that grows with each new lock, pass it with every write, and have the storage refuse writes with an older token. The Chubby paper in Research Papers shows this idea."
+      "x": "When the thing to protect isn't a database row, such as 'only one worker pays this restaurant', you need a distributed lock: a lease with an expiry in Redis, etcd or ZooKeeper. A holder can stall (a long garbage-collection pause, a slow network) past its expiry while someone else takes the lock. So hand out a fencing token, a number that grows with each new lock, pass it with every write, and have the storage refuse writes with an older token. The ZooKeeper component shows how a lock service hands out these tokens."
     },
     {
       "t": "h2",

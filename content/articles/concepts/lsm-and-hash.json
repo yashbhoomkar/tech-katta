@@ -73,7 +73,7 @@
     },
     {
       "t": "p",
-      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase, and, by most accounts, DynamoDB's storage layer. The paper summary 'Bigtable' in Research Papers shows the same design."
+      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase, and, by most accounts, DynamoDB's storage layer."
     },
     {
       "t": "h2",

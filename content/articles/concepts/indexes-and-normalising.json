@@ -26,7 +26,7 @@
     },
     {
       "t": "p",
-      "x": "Without an index the database reads every row to find the ones you want, like searching a phone's contacts by scrolling through all of them instead of typing the first letters. An index is a sorted structure that jumps straight to the rows (the concept 'Indexes' explains B-trees and their costs)."
+      "x": "Without an index the database reads every row to find the ones you want, like searching a phone's contacts by scrolling through all of them instead of typing the first letters. An index is a sorted structure that jumps straight to the rows (the Database indexing concepts explain B-trees and their costs)."
     },
     {
       "t": "fig",

@@ -26,4 +26,6 @@ export const FIGS = [
   'nw-backoff',
   'nw-idem',
   'nw-breaker',
+  'lb-algos',
+  'cdn-edge',
 ];

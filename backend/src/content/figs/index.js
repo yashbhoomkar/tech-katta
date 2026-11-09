@@ -12,16 +12,10 @@ import { FIGS as concepts_cap } from './concepts/cap.js';
 import { FIGS as concepts_indexing } from './concepts/indexing.js';
 import { FIGS as concepts_numbers } from './concepts/numbers.js';
 import { FIGS as concepts_realtime } from './concepts/realtime.js';
-import { FIGS as components_edge } from './components/edge.js';
-import { FIGS as components_compute } from './components/compute.js';
-import { FIGS as components_storage } from './components/storage.js';
-import { FIGS as components_messaging } from './components/messaging.js';
 import { FIGS as components_tools } from './components/tools.js';
 import { FIGS as interview_questions_start } from './interview-questions/start.js';
 import { FIGS as interview_questions_easy } from './interview-questions/easy.js';
 import { FIGS as interview_questions_medium } from './interview-questions/medium.js';
-import { FIGS as papers_must_know } from './papers/must-know.js';
-import { FIGS as papers_worth_reading } from './papers/worth-reading.js';
 
 export const FIGS = new Set([
   ...concepts_patterns,
@@ -36,14 +30,8 @@ export const FIGS = new Set([
   ...concepts_indexing,
   ...concepts_numbers,
   ...concepts_realtime,
-  ...components_edge,
-  ...components_compute,
-  ...components_storage,
-  ...components_messaging,
   ...components_tools,
   ...interview_questions_start,
   ...interview_questions_easy,
   ...interview_questions_medium,
-  ...papers_must_know,
-  ...papers_worth_reading,
 ]);

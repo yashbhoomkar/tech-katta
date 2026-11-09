@@ -113,7 +113,7 @@
     },
     {
       "t": "p",
-      "x": "The Bloom filters paper in Research Papers explains the first one in depth. All of them are mergeable: per-server sketches combine into a cluster-wide answer, and per-hour sketches into a day."
+      "x": "All of them are mergeable: per-server sketches combine into a cluster-wide answer, and per-hour sketches into a day."
     },
     {
       "t": "h2",

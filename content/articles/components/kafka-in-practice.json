@@ -2,16 +2,17 @@
   "section": "components",
   "slug": "kafka-in-practice",
   "group": "tools",
-  "no": "COMPONENT // 12",
+  "no": "COMPONENT // 03",
   "tag": "EVENT LOG",
   "access": "paid",
   "date": "8 Nov 2026",
   "title": "Kafka in practice: topics, groups and not losing events",
-  "dek": "The Kafka paper explains the idea of a log. This is the working knowledge: choosing keys and partitions, the settings that decide whether an acknowledged event can be lost, how consumer groups share work and rebalance, and what to do when consumers fall behind.",
+  "dek": "The stream most systems reach for: how it differs from a queue, choosing keys and partitions, the settings that decide whether an acknowledged event can be lost, how consumer groups share work and rebalance, and what to do when consumers fall behind.",
   "body": [
     {
       "t": "tldr",
       "items": [
+        "Kafka is a stream: an append-only log, kept for days, that many services read at their own pace. A queue hands each job to one worker and forgets it once done.",
         "Producers append to partitions chosen by key; consumers in a group each own some partitions and track their offsets. Order holds only within a partition.",
         "For no loss: replication factor 3, `acks=all`, `min.insync.replicas=2`, and an idempotent producer. Then an acknowledged event survives one broker failing.",
         "Commit offsets after processing, so a crash means reprocessing (at least once), never skipping. Make consumers idempotent."
@@ -19,6 +20,93 @@
     },
     {
       "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Queue, stream or pub/sub"
+    },
+    {
+      "t": "fig",
+      "id": "queue-vs-stream",
+      "cap": "The same order events, two ways. On a queue each job goes to one of the workers and is deleted when done, so adding workers shares the load. On a stream the events stay in order for days; notifications, analytics and the restaurant tablet service each read every event at their own offset, so analytics can be behind, or replay last week, without touching the others."
+    },
+    {
+      "t": "type",
+      "name": "Queue",
+      "kind": "SQS, RABBITMQ",
+      "what": "Messages wait until a worker takes one. The worker deletes it when the job is done; if it doesn't, the message comes back after a timeout.",
+      "use": "Jobs: one message, one piece of work, done once. Send an SMS, resize a photo, generate an invoice, pay out a restaurant.",
+      "avoid": "Many services needing the same message, or reading old messages again: once a job is done, it's gone.",
+      "ex": "`send-sms` queue: the Order API adds a job, ten SMS workers share them.",
+      "like": "The order rail in a kitchen."
+    },
+    {
+      "t": "type",
+      "name": "Stream",
+      "kind": "KAFKA, KINESIS, PULSAR",
+      "what": "An append-only log split into partitions, kept for a set time (often 7 days). Readers track their own position and move forward.",
+      "use": "Events several services react to, high volumes, keeping order per key, and replaying history to rebuild a view or fix a bug.",
+      "avoid": "Simple one-off jobs, or teams that can't run it: a self-managed Kafka cluster is real work. Managed versions (MSK, Confluent) help.",
+      "ex": "`orders` topic: every placed, accepted, picked-up and delivered event, read by notifications, analytics, fraud and the rider app.",
+      "like": "The scorer's book at a match."
+    },
+    {
+      "t": "type",
+      "name": "Pub/sub",
+      "kind": "SNS, GOOGLE PUB/SUB",
+      "what": "A topic that copies each message to every subscriber, often into one queue per subscriber.",
+      "use": "Fan-out to a few services without running a stream: each gets its own queue and works at its own pace.",
+      "avoid": "Replay and long history: messages aren't kept once delivered.",
+      "ex": "`order-placed` topic copied into the SMS queue, the email queue and the loyalty-points queue.",
+      "like": "A WhatsApp group: everyone gets the message, nobody can scroll back past joining."
+    },
+    {
+      "t": "more",
+      "label": "Queue, stream and pub/sub compared",
+      "body": [
+        {
+          "t": "table",
+          "label": "Three ways to pass messages",
+          "head": [
+            "Feature",
+            "Queue",
+            "Stream",
+            "Pub/sub"
+          ],
+          "rows": [
+            [
+              "Who gets a message",
+              "One worker",
+              "Every reader group",
+              "Every subscriber"
+            ],
+            [
+              "After it's handled",
+              "Deleted",
+              "Kept until retention ends",
+              "Deleted per subscriber"
+            ],
+            [
+              "Order",
+              "None, or FIFO per group",
+              "Per partition",
+              "Usually none"
+            ],
+            [
+              "Replay",
+              "No",
+              "Yes, from any offset",
+              "No"
+            ],
+            [
+              "Grows by",
+              "More workers",
+              "More partitions and readers",
+              "More subscribers"
+            ]
+          ]
+        }
+      ]
     },
     {
       "t": "h2",

@@ -2,7 +2,7 @@
   "section": "components",
   "slug": "dynamodb",
   "group": "tools",
-  "no": "COMPONENT // 16",
+  "no": "COMPONENT // 07",
   "tag": "MANAGED KEY-VALUE",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -138,7 +138,7 @@
     },
     {
       "t": "p",
-      "x": "DynamoDB shares a name with the Dynamo paper in Research Papers, but works differently. The paper describes a leaderless ring with sloppy quorums and vector clocks. DynamoDB keeps each partition on a small replica group with a leader, replicated with Multi-Paxos, and offers strongly consistent reads. The paper's ideas live on more directly in Cassandra and Riak."
+      "x": "DynamoDB shares a name with Amazon's 2007 Dynamo paper, but works differently. The paper describes a leaderless ring with sloppy quorums and vector clocks. DynamoDB keeps each partition on a small replica group with a leader, replicated with Multi-Paxos, and offers strongly consistent reads. The paper's ideas live on more directly in Cassandra and Riak."
     },
     {
       "t": "h2",

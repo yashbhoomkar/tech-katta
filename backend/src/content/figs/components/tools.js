@@ -20,4 +20,7 @@ export const FIGS = [
   'flink-checkpoint',
   'zk-election',
   'zk-quorum',
+  'gw-front',
+  'rate-limit',
+  'queue-vs-stream',
 ];

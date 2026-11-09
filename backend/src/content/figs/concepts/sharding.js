@@ -9,4 +9,6 @@ export const FIGS = [
   'sh-directory',
   'sh-scatter',
   'sh-transfer',
+  'hot-shard',
+  'shard-key',
 ];

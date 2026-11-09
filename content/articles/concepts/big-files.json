@@ -29,7 +29,7 @@
       "items": [
         "A 50 MB video passing through an API server ties up a worker and its memory for the whole upload, on a phone connection that can take minutes. A thousand of those and the API does nothing but copy bytes.",
         "Databases cost much more per gigabyte than object storage, and they get slow to back up and copy when full of files. Keep files in object storage; in the database, keep the key, size, type, owner and status.",
-        "The Object storage component covers buckets, signed URLs and storage classes. This is how to use them for big files."
+        "Object storage (Amazon S3, Google Cloud Storage and others like them) keeps files in buckets, hands out signed URLs and offers cheaper storage classes for files that are rarely read. This is how to use it for big files."
       ]
     },
     {

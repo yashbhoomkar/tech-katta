@@ -1,7 +1,7 @@
 // Components › Tools by name: the figures this sub-tab's articles draw (site.json dashboard.groups.components, "tools").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // The tools: Redis, Elasticsearch, Kafka, Temporal, gateways, Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper.
-import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps}from"../parts.jsx";
+import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Mark,Line,Box,Dot,SBox}from"../parts.jsx";
 
 // Redis, FIG 1: five data types, each with one command and the Zotato job it does.
 function RedisTypesFig({still,uid=""}){
@@ -241,6 +241,72 @@ const m=[null,<g key={2}><Msg x1={X[0]} x2={X[1]} y={92} t="set /config" m={M}/>
 return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`zqt${uid}`}><title id={`zqt${uid}`}>A ZooKeeper ensemble of five servers: a leader and four followers. A client's write goes to the leader, which proposes it to every follower. Once two followers have acknowledged it, three of the five including the leader, it is committed and the client is told. Reads are answered by whichever server the client is connected to, so a read from a follower that hasn't caught up can return the old value; calling sync first makes the read see the latest committed write.</title><Mk m={M}/>
 {lanes}{still?<g>{m}<Cap t={caps[3][0]} c={RED}/></g>:<Steps caps={caps} g={m}/>}</svg>}
 
+
+// The API gateway page (merged 2026-11-09) and API security use these.
+// API gateway, FIG: one front door. The customer app's request passes the four checks and is routed
+// to Orders; a restaurant's billing system goes over its limit and gets 429 back.
+const GW_STEPS=["1  HTTPS ends here","2  Who is calling?","3  Within their limit?","4  Route by path"];
+function GwFrontFig({still,uid=""}){const M=`gwf${uid}`,D="10s",GX=200,GW=210,SX=490,SY=[70,150,230],RY=[88,132,176,220];
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`gwft${uid}`}><title id={`gwft${uid}`}>Every request to Zotato goes through one API gateway. It ends HTTPS, checks who is calling, checks that they are within their rate limit, and routes by path to the Orders, Menus or Payments service. A customer's order passes all four checks and reaches Orders. A restaurant's billing system that has sent too many requests gets 429 Too Many Requests and never reaches a service.</title><Mark m={M}/>
+<Line x1={130} y1={90} x2={GX-2} y2={90} m={M}/><Line x1={130} y1={210} x2={GX-2} y2={210} m={M}/>
+{SY.map(y=><Line key={y} x1={GX+GW} y1={220} x2={SX-2} y2={y} m={M} c={GREY}/>)}
+<Box x={0} y={90} w={130} t="Customer app"/><Box x={0} y={210} w={130} t="Restaurant billing"/><text x="65" y="241" textAnchor="middle" className="fl">partner, API key</text>
+<rect x={GX} y="44" width={GW} height="200" fill="#f8faff" stroke="#2855d9"/><text x={GX+GW/2} y="64" textAnchor="middle" className="fk">API GATEWAY</text>
+{GW_STEPS.map((t,i)=><g key={t}><rect x={GX+10} y={RY[i]-14} width={GW-20} height="28" fill="#fff" stroke="#d9dee7"/><text x={GX+20} y={RY[i]+4} className="fq">{t}</text></g>)}
+{[["Orders","/orders"],["Menus","/menus"],["Payments","/payments"]].map(([n,p],i)=><g key={n}><Box x={SX} y={SY[i]} w={150} t={n}/><text x={SX+75} y={SY[i]+31} textAnchor="middle" className="fl">{p}</text></g>)}
+{!still&&<g aria-hidden="true">
+<Dot x1={132} x2={GX-4} y={90} t0={.02} t1={.08} dur={D}/>{RY.map((y,i)=><Glow key={i} x={GX+10} y={y-14} w={GW-20} h={28} t0={+(.08+i*.06).toFixed(2)} t1={+(.14+i*.06).toFixed(2)} dur={D}/>)}<Dot x1={GX+GW+2} x2={SX-4} y={220} y2={72} t0={.32} t1={.4} dur={D}/><Glow x={SX} y={53} w={150} h={34} t0={.4} t1={.46} dur={D}/>
+<Dot x1={132} x2={GX-4} y={210} t0={.52} t1={.58} dur={D}/><Glow x={GX+10} y={RY[0]-14} w={GW-20} h={28} t0={.58} t1={.64} dur={D}/><Glow x={GX+10} y={RY[1]-14} w={GW-20} h={28} t0={.64} t1={.7} dur={D}/>
+<Show t0={.7} t1={.92} dur={D}><rect x={GX+10} y={RY[2]-14} width={GW-20} height="28" fill="#fff5f4" stroke={RED}/><text x={GX+20} y={RY[2]+4} className="fq">3  Over the limit: stop</text></Show>
+<Dot x1={GX-4} x2={132} y={222} t0={.74} t1={.82} dur={D}/><Show t0={.76} t1={.94} dur={D}><text x="165" y="200" textAnchor="middle" className="fl" style={{fill:RED}}>429</text></Show></g>}</svg>}
+// Rate limiting, FIG: the same requests through three limiters, each allowing 5 requests a second.
+// Decisions are computed, not drawn: a burst just before and just after 1 s shows the fixed window
+// letting 10 through in about 0.65 s, the sliding window holding to 5 in any second, the token
+// bucket letting most of the bursts through (it starts full) and then about one request every 0.2 s.
+const RT=[.62,.68,.74,.8,.86,.92,1.02,1.08,1.14,1.2,1.26,1.6,1.85,2.1,2.35,2.6,2.85];
+const fixedW=()=>{const n={};return RT.map(t=>{const w=Math.floor(t);n[w]=(n[w]||0)+1;return n[w]<=5})};
+const slideW=()=>{const ok=[];return RT.map(t=>{const c=ok.filter(x=>x>t-1).length;if(c<5){ok.push(t);return true}return false})};
+const bucket=()=>{let tok=5,last=0;return RT.map(t=>{tok=Math.min(5,tok+(t-last)*5);last=t;if(tok>=1){tok-=1;return true}return false})};
+const LIMITERS=[["FIXED WINDOW","5 per clock second",fixedW()],["SLIDING WINDOW","5 in any 1 second",slideW()],["TOKEN BUCKET","holds 5, refills 5 a second",bucket()]];
+function RateFig({still,uid=""}){const D="10s",x=t=>150+t*135,RY0=56;
+const dot=(t,ok,y)=>ok?<circle cx={x(t)} cy={y} r="4" fill="#2855d9"/>:<circle cx={x(t)} cy={y} r="3.5" fill="#fff" stroke={RED} strokeWidth="1.5"/>;
+const at=t=>+(t/3*.85+.03).toFixed(3);
+return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><title id={`rlt${uid}`}>The same 17 requests, a burst just before one second, a burst just after it, then one every quarter second, go through three rate limiters that each allow 5 requests a second. The fixed window lets 10 requests through within about two thirds of a second because the count resets at one second. The sliding window never lets more than 5 through in any second. The token bucket starts full and keeps refilling, so it lets most of the bursts through and then about one request every fifth of a second.</title>
+<text x="0" y="22" className="fl">filled = let through · open = rejected with 429</text>
+<text x="0" y={RY0+4} className="fk">REQUESTS</text>{RT.map((t,i)=>still?<circle key={i} cx={x(t)} cy={RY0} r="4" fill={GREY}/>:<Show key={i} t0={at(t)} t1={.98} dur={D}><circle cx={x(t)} cy={RY0} r="4" fill={GREY}/></Show>)}
+{LIMITERS.map(([n,sub,ok],r)=>{const y=RY0+58*(r+1);return <g key={n}><line x1="0" x2="640" y1={y-29} y2={y-29} stroke="#d9dee7"/><text x="0" y={y} className="fk">{n}</text><text x="0" y={y+15} className="fsub">{sub}</text>
+{r===0&&[1,2].map(w=><line key={w} x1={x(w)} x2={x(w)} y1={y-20} y2={y+12} stroke={GREY} strokeDasharray="2 3"/>)}
+{RT.map((t,i)=>still?<g key={i}>{dot(t,ok[i],y)}</g>:<Show key={i} t0={at(t)} t1={.98} dur={D}>{dot(t,ok[i],y)}</Show>)}
+<text x="640" y={y+4} textAnchor="end" className="fl">{ok.filter(Boolean).length} of {RT.length}</text></g>})}
+<line x1={x(0)} x2={x(3)} y1="268" y2="268" stroke={GREY}/>{[0,1,2,3].map(t=><g key={t}><line x1={x(t)} x2={x(t)} y1="264" y2="272" stroke={GREY}/><text x={x(t)} y="288" textAnchor="middle" className="fl">{t} s</text></g>)}
+{!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(3)} y={268} t0={.03} t1={.88} dur={D}/></g>}</svg>}
+
+
+// Kafka's opening section uses this (from the general Queues and streams article, removed 2026-11-09).
+// Messaging, FIG: the same order events through a queue and through a stream. The queue gives each
+// message to one worker, which deletes it when done. The stream keeps every event in order; three
+// services read all of it, each at its own position (offset).
+function QueueStreamFig({still,uid=""}){const M=`qs${uid}`,D="10s",Q=78,S=228;
+const cell=(x,y,t,on)=><g key={x}><rect x={x} y={y-12} width="26" height="24" fill={on?"#f8faff":"#fff"} stroke={on?"#2855d9":GREY}/><text x={x+13} y={y+4} textAnchor="middle" className="fl">{t}</text></g>;
+return <svg viewBox="0 0 640 320" role="img" aria-labelledby={`qst${uid}`}><title id={`qst${uid}`}>Top: the Order API puts jobs on a queue. Each job goes to one of two workers, which deletes it once done. Bottom: the Order API appends order events to a stream, a log that keeps them in order for seven days. Notifications, analytics and the restaurant tablet service each read every event, each from its own position, so analytics can lag behind or replay old events without affecting the others.</title><Mark m={M}/>
+<text x="0" y="22" className="fb">Queue · SQS, RabbitMQ</text><text x="0" y="38" className="fl">each job to one worker, then deleted</text>
+<Box x={0} y={Q} w={100} t="Order API"/><Line x1={102} y1={Q} x2={176} y2={Q} m={M}/>
+<rect x="180" y={Q-17} width="130" height="34" fill="#f8faff" stroke="#2855d9"/>{[0,1,2].map(i=><rect key={i} x={190+i*38} y={Q-9} width="30" height="18" fill="#fff" stroke={GREY}/>)}<text x="245" y={Q+32} textAnchor="middle" className="fl">jobs waiting</text>
+<Line x1={312} y1={Q-6} x2={426} y2={Q-30} m={M} c={GREY}/><Line x1={312} y1={Q+6} x2={426} y2={Q+30} m={M} c={GREY}/>
+<Box x={430} y={Q-34} w={130} t="Worker A"/><Box x={430} y={Q+34} w={130} t="Worker B"/><text x="572" y={Q+4} className="fl">done →</text><text x="572" y={Q+18} className="fl">deleted</text>
+<line x1="0" y1="150" x2="640" y2="150" stroke="#e6eaf0"/>
+<text x="0" y="172" className="fb">Stream · Kafka, Kinesis</text><text x="0" y="188" className="fl">kept for 7 days; every reader gets every event</text>
+<Box x={0} y={S} w={100} t="Order API"/><Line x1={102} y1={S} x2={176} y2={S} m={M}/>
+{[0,1,2,3,4,5].map(i=>cell(180+i*26,S,i,i===5))}<text x="258" y={S+28} textAnchor="middle" className="fl">offsets 0–5, never deleted early</text>
+<Line x1={338} y1={S-4} x2={426} y2={S-50} m={M} c={GREY}/><Line x1={338} y1={S} x2={426} y2={S} m={M} c={GREY}/><Line x1={338} y1={S+4} x2={426} y2={S+50} m={M} c={GREY}/>
+<SBox x={430} y={S-50} w={150} t="Notifications · at 5"/><SBox x={430} y={S} w={150} t="Analytics · at 3"/><SBox x={430} y={S+50} w={150} t="Restaurant tablet · at 5"/>
+{!still&&<g aria-hidden="true">
+<Dot x1={102} x2={186} y={Q} t0={.02} t1={.1} dur={D}/><Dot x1={312} x2={424} y={Q-6} y2={Q-30} t0={.12} t1={.22} dur={D}/><Glow x={430} y={Q-51} w={130} h={34} t0={.22} t1={.3} dur={D}/>
+<Dot x1={102} x2={186} y={Q} t0={.28} t1={.36} dur={D}/><Dot x1={312} x2={424} y={Q+6} y2={Q+30} t0={.38} t1={.48} dur={D}/><Glow x={430} y={Q+17} w={130} h={34} t0={.48} t1={.56} dur={D}/>
+<Dot x1={102} x2={332} y={S} t0={.55} t1={.66} dur={D}/>
+<Dot x1={338} x2={424} y={S-4} y2={S-50} t0={.68} t1={.78} dur={D}/><Dot x1={338} x2={424} y={S} t0={.68} t1={.78} dur={D}/><Dot x1={338} x2={424} y={S+4} y2={S+50} t0={.68} t1={.78} dur={D}/>
+<Show t0={.78} t1={.98} dur={D}><text x="258" y={S-22} textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>one event, three readers</text></Show></g>}</svg>}
+
 export const FIGS={
 "redis-types":{C:RedisTypesFig,ar:640/264,title:()=>"ONE SERVER, FIVE SHAPES OF DATA"},
 "redis-slots":{C:RedisSlotsFig,ar:640/256,title:()=>"16,384 SLOTS, THREE PRIMARIES"},
@@ -262,4 +328,7 @@ export const FIGS={
 "flink-checkpoint":{C:FlinkCkptFig,ar:640/234,title:()=>"A CHECKPOINT, THEN A CRASH"},
 "zk-election":{C:ZkElectFig,ar:640/244,title:()=>"ELECTING A LEADER WITH ZNODES"},
 "zk-quorum":{C:ZkQuorumFig,ar:640/250,title:()=>"FIVE SERVERS, WRITES NEED THREE"},
+"gw-front":{C:GwFrontFig,ar:640/300,title:n=>`ONE FRONT DOOR FOR ${n}`},
+"rate-limit":{C:RateFig,ar:640/300,title:()=>"THREE RATE LIMITERS, 5 REQUESTS A SECOND"},
+"queue-vs-stream":{C:QueueStreamFig,ar:640/320,title:()=>"A QUEUE AND A STREAM, SAME EVENTS"},
 };

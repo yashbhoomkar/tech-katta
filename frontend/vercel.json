@@ -192,12 +192,12 @@
     },
     {
       "source": "/dashboard/concepts/consensus",
-      "destination": "/dashboard/papers/raft/",
+      "destination": "/dashboard/components/zookeeper/",
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/consensus/",
-      "destination": "/dashboard/papers/raft/",
+      "destination": "/dashboard/components/zookeeper/",
       "permanent": true
     },
     {
@@ -208,6 +208,226 @@
     {
       "source": "/dashboard/concepts/distributed-transactions/",
       "destination": "/dashboard/concepts/workflows/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/load-balancers",
+      "destination": "/dashboard/concepts/spreading-load/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/load-balancers/",
+      "destination": "/dashboard/concepts/spreading-load/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/cdns",
+      "destination": "/dashboard/concepts/distance/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/cdns/",
+      "destination": "/dashboard/concepts/distance/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/gateway-products",
+      "destination": "/dashboard/components/api-gateways/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/gateway-products/",
+      "destination": "/dashboard/components/api-gateways/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/app-servers",
+      "destination": "/dashboard/concepts/numbers-components/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/app-servers/",
+      "destination": "/dashboard/concepts/numbers-components/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/caches",
+      "destination": "/dashboard/concepts/cache-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/caches/",
+      "destination": "/dashboard/concepts/cache-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/databases",
+      "destination": "/dashboard/concepts/choosing-database/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/databases/",
+      "destination": "/dashboard/concepts/choosing-database/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/sharding",
+      "destination": "/dashboard/concepts/shard-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/sharding/",
+      "destination": "/dashboard/concepts/shard-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/object-storage",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/object-storage/",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/queues-and-streams",
+      "destination": "/dashboard/components/kafka-in-practice/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/queues-and-streams/",
+      "destination": "/dashboard/components/kafka-in-practice/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/raft",
+      "destination": "/dashboard/components/zookeeper/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/raft/",
+      "destination": "/dashboard/components/zookeeper/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/chubby",
+      "destination": "/dashboard/components/zookeeper/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/chubby/",
+      "destination": "/dashboard/components/zookeeper/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/kafka",
+      "destination": "/dashboard/components/kafka-in-practice/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/kafka/",
+      "destination": "/dashboard/components/kafka-in-practice/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/dynamo",
+      "destination": "/dashboard/components/dynamodb/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/dynamo/",
+      "destination": "/dashboard/components/dynamodb/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/bigtable",
+      "destination": "/dashboard/components/cassandra/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/bigtable/",
+      "destination": "/dashboard/components/cassandra/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/memcache",
+      "destination": "/dashboard/concepts/cache-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/memcache/",
+      "destination": "/dashboard/concepts/cache-step/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/bloom-filters",
+      "destination": "/dashboard/concepts/sketches/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/bloom-filters/",
+      "destination": "/dashboard/concepts/sketches/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/gfs",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/gfs/",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/haystack",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/haystack/",
+      "destination": "/dashboard/concepts/big-files/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/spanner",
+      "destination": "/dashboard/concepts/cap-designs/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/spanner/",
+      "destination": "/dashboard/concepts/cap-designs/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/tail-at-scale",
+      "destination": "/dashboard/concepts/failing-calls/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/tail-at-scale/",
+      "destination": "/dashboard/concepts/failing-calls/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/interview-questions/autocomplete",
+      "destination": "/dashboard/interview-questions/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/interview-questions/autocomplete/",
+      "destination": "/dashboard/interview-questions/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers",
+      "destination": "/dashboard/concepts/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/papers/(.*)",
+      "destination": "/dashboard/concepts/",
       "permanent": true
     },
     {
