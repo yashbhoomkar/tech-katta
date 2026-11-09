@@ -1,11 +1,6 @@
 // Figures for the "Numbers to know" group in Concepts. Same conventions as sharding.jsx. Bars use log scales.
-import React from"react";import{Show,Bx,Caps,Cap}from"./parts.jsx";
+import React from"react";import{Show,Bx,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
-const Fig=({still,h,id,title,base,caps,g,only,last,c})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{base}
-{still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}</svg>;
 // A log-scale bar: label on the left, bar from x0 to sx(v), value text after it.
 const Bar=({y,label,v,sx,x0,t,c=BLUE})=><g><T x={10} y={y+13} t={label}/><rect x={x0} y={y} width={Math.max(2,sx(v)-x0)} height={18} fill={c===RED?LR:LB} stroke={c}/><T x={sx(v)+6} y={y+13} t={t} c={c}/></g>;
 const Axis=({sx,ticks,y})=><g>{ticks.map(([v,t])=><g key={t}><line x1={sx(v)} y1={48} x2={sx(v)} y2={y} stroke="#e3e7ec"/><T x={sx(v)} y={y+14} t={t} a="middle"/></g>)}</g>;

@@ -1,9 +1,8 @@
-// Figures for the Concepts articles (the APIs article's own figures are in dashboard.jsx). Same
+// Figures for the Concepts articles (the API types article's own figures are in apitypes.jsx). Same
 // conventions as components.jsx: 640-wide viewBox, Swiss colours, SMIL on a loop, nothing animated
 // when `still`, and a `uid` so the full-screen copy gets its own marker ids.
-import React from"react";import{Dot,Box,Glow,Show,Mark,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
+import React from"react";import{Dot,Box,Glow,Show,Mark,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
 const SBox=({x,y,w=110,t,blue,down})=><g><rect x={x} y={y-12} width={w} height="24" fill={down?"#fff5f4":blue?"#f8faff":"#fff"} stroke={down?RED:blue?BLUE:GREY} strokeDasharray={down?"4 3":undefined}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
 
@@ -189,7 +188,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`obt${uid}`}><titl
 <text x={0} y={210} className="fl">without it: save, then crash before sending, and the payment is never asked for</text>
 {!still&&<g aria-hidden="true"><Glow x={12} y={56} w={226} h={90} t0={.05} t1={.25} dur={D}/><Dot x1={242} x2={294} y={126} t0={.3} t1={.4} dur={D}/><Dot x1={394} x2={424} y={126} t0={.45} t1={.52} dur={D}/><Dot x1={514} x2={534} y={126} t0={.56} t1={.62} dur={D}/><Glow x={540} y={114} w={96} h={24} t0={.62} t1={.8} dur={D}/></g>}</svg>}
 
-// id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
+// id → {C, ar (width/height of the viewBox), title(example name)}; gathered into FIGS in figs/index.js.
 // Keep in step with FIGS in backend/src/content/validate.js.
 // From tap to server, FIG 1: the first request on a new connection. A phone on 4G in Pune asks DNS for
 // api.zotato.in, opens TCP, agrees TLS keys and then sends the HTTP request: four round trips of about 40 ms

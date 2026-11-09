@@ -1,9 +1,8 @@
 // Figures for the Interview Questions articles. Same conventions as components.jsx and concepts.jsx:
 // 640-wide viewBox, Swiss colours, SMIL on a loop, nothing animated when `still`, and a `uid` so the
 // full-screen copy gets its own marker ids.
-import React from"react";import{Dot,Box,Glow,Show,Mark}from"./parts.jsx";
+import React from"react";import{Dot,Box,Glow,Show,Mark,INK,GREY,RED,BLUE}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
 const SBox=({x,y,w=110,t,blue,down})=><g><rect x={x} y={y-12} width={w} height="24" fill={down?"#fff5f4":blue?"#f8faff":"#fff"} stroke={down?RED:blue?BLUE:GREY} strokeDasharray={down?"4 3":undefined}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
 
@@ -658,7 +657,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ivt${uid}`}><titl
 {res.map(([d,t,top],i)=><g key={d}>{step(.4+i*.15,<text x={300} y={52+i*34} className="fl" style={{fill:top?BLUE:INK}}>{i+1}. {t}</text>)}</g>)}
 <text x={0} y={200} className="fl">three short lists instead of reading every dish in Pune; most words match a tiny share</text></svg>}
 
-// id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
+// id → {C, ar (width/height of the viewBox), title(example name)}; gathered into FIGS in figs/index.js.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const QUESTION_FIGS={
 "interview-clock":{C:ClockFig,ar:640/240,title:()=>"WHERE THE 45 MINUTES GO"},

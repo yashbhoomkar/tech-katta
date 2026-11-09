@@ -399,11 +399,19 @@ test('subsections and "Try it in the Lab" blocks are checked', () => {
 
 test('the figure ids the content may use are exactly the ones the frontend draws', async () => {
   const { FIGS } = await import('../src/content/validate.js');
-  const { readFile } = await import('node:fs/promises');
-  const src = (f) => readFile(new URL(`../../frontend/src/${f}`, import.meta.url), 'utf8');
-  const dash = (await src('dashboard.jsx')).match(/const FIGS=\{(.*)\};/)[1], comp = (await src('figs/components.jsx')).match(/COMPONENT_FIGS=\{([\s\S]*?)\n\};/)[1];
-  const conc = (await src('figs/concepts.jsx')).match(/CONCEPT_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/questions.jsx')).match(/QUESTION_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/papers.jsx')).match(/PAPER_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/network.jsx')).match(/NETWORK_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/apidesign.jsx')).match(/API_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/datamodel.jsx')).match(/DM_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/caching.jsx')).match(/CACHE_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/sharding.jsx')).match(/SHARD_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/hashing.jsx')).match(/HASH_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/cap.jsx')).match(/CAP_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/indexing.jsx')).match(/INDEX_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/numbers.jsx')).match(/NUM_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/realtime.jsx')).match(/RT_FIGS=\{([\s\S]*?)\n\};/)[1] + (await src('figs/tools.jsx')).match(/TOOL_FIGS=\{([\s\S]*?)\n\};/)[1];
-  const ids = [...dash.matchAll(/(?:^|\},)"?([a-z-]+)"?:\{C:/g), ...comp.matchAll(/^"([a-z-]+)":\{C:/gm), ...conc.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]);
+  const { readFile, readdir } = await import('node:fs/promises');
+  // Every figure module in frontend/src/figs exports a map named <SOMETHING>_FIGS, one "id":{C:…} per line,
+  // and figs/index.js gathers them all; so the ids are read from every module, and each map must be gathered.
+  const dir = new URL('../../frontend/src/figs/', import.meta.url);
+  const index = await readFile(new URL('index.js', dir), 'utf8');
+  const ids = [];
+  for (const file of (await readdir(dir)).filter((f) => f.endsWith('.jsx')).sort()) {
+    for (const [, name, body] of (await readFile(new URL(file, dir), 'utf8')).matchAll(/export const ([A-Z]+_FIGS)=\{([\s\S]*?)\n\};/g)) {
+      assert.match(index, new RegExp(`\\.\\.\\.${name}\\b`), `figs/index.js must include ${name} from ${file}`);
+      ids.push(...[...body.matchAll(/^"([a-z-]+)":\{C:/gm)].map((m) => m[1]));
+    }
+  }
+  assert.equal(new Set(ids).size, ids.length, 'a figure id is defined twice');
   assert.deepEqual(ids.sort(), [...FIGS].sort());
 });
 

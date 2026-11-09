@@ -1,12 +1,8 @@
 // Figures for the "Tools by name" articles in Components (Redis, Elasticsearch, Kafka, Temporal, gateways,
 // Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper). Same conventions as concepts.jsx: 640-wide viewBox,
 // Swiss colours, four captioned steps on a loop, the last step drawn when `still`, and a `uid` for markers.
-import React from"react";import{Glow,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
+import React from"react";import{Glow,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4",FB="#dfe6fb";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-// Steps: each element of `g` appears at its step (cumulative unless `only`), the caption cycles.
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
 
 // Redis, FIG 1: five data types, each with one command and the Zotato job it does.
 function RedisTypesFig({still,uid=""}){
