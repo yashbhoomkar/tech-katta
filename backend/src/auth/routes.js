@@ -32,9 +32,20 @@ export const COOKIE = 'tk_session';
 const MAX_BODY = 2 * 1024 * 1024, SMALL_BODY = 64 * 1024;
 // JSON never needs to run as a page; this stops it if it's ever opened as one.
 export const JSON_CSP = "default-src 'none'; frame-ancestors 'none'";
-// The visitor's address. Nginx sets X-Real-IP from Cloudflare's CF-Connecting-IP, and only Cloudflare
-// can reach the VPS (UFW), so neither can be set by a visitor; the socket is always Nginx (127.0.0.1).
-export const clientIp = (request) => String(request.headers['x-real-ip'] || request.headers['cf-connecting-ip'] || request.socket?.remoteAddress || '?');
+// The visitor's address, for rate limits: the first of these request headers that is set, else the socket.
+// On the VPS (the default) Nginx sets X-Real-IP from Cloudflare's CF-Connecting-IP, and only Cloudflare can
+// reach the VPS (UFW), so neither can be set by a visitor; the socket is always Nginx (127.0.0.1).
+// On another host, CLIENT_IP_HEADERS (comma separated) names the header its own proxy sets and a visitor
+// can't, e.g. "cf-connecting-ip" when only Cloudflare is in front (see HOSTING.md).
+export const DEFAULT_IP_HEADERS = 'x-real-ip,cf-connecting-ip';
+export const ipReader = (list = DEFAULT_IP_HEADERS) => {
+  const names = String(list).split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+  return (request) => {
+    for (const name of names) { const value = request.headers[name]; if (value) return String(value); }
+    return String(request.socket?.remoteAddress || '?');
+  };
+};
+export const clientIp = ipReader(process.env.CLIENT_IP_HEADERS || DEFAULT_IP_HEADERS);
 
 // A few requests per key per window. Expired windows are swept out when the map is full. If it is
 // still full of live windows (a flood of new addresses), new keys are refused until windows expire;

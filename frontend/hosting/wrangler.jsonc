@@ -1,0 +1,16 @@
+// The site as a Cloudflare Worker with static assets: Cloudflare's home for static sites (HOSTING.md).
+// Not used while the site is on Vercel. To deploy, from frontend/:
+//   npm run build:cloudflare
+//   npx wrangler deploy --config hosting/wrangler.jsonc
+// There is no Worker script: every request is served from the build folder, which is free and unlimited.
+// "404-page" serves the nearest 404.html for a path with no file; build:cloudflare writes dashboard/404.html
+// (the dashboard app) and 404.html, so unknown dashboard addresses still open the app.
+{
+  "name": "tech-katta",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "../dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

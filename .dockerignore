@@ -1,0 +1,13 @@
+# Keeps the build context small for backend/Dockerfile (it copies only what the API needs).
+**/node_modules
+**/dist
+.git
+.github
+frontend/public
+frontend/analytics
+frontend/dashboard
+status-page
+tools
+**/.env
+**/.env.*
+!backend/.env.example
