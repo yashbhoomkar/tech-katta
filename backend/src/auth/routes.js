@@ -25,6 +25,7 @@ import { judge, gradeAnswer, score, sameDesign } from '../../../frontend/src/jud
 import { AuthError, SESSION_DAYS, errorKind } from './index.js';
 import { cleanBatch } from './events.js';
 import { audienceCsv } from './audience.js';
+import { JudgeError } from './judge-pool.js';
 
 export const COOKIE = 'tk_session';
 // Request bodies: a Lab sync can be big (many designs); everything else is a few hundred bytes.
@@ -66,7 +67,10 @@ export function cleanAnswer(a) {
 // Every path accountRoutes answers; the server sends exactly these here (and nothing else).
 export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
 
-export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
+// A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
+const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.reference, lab, 'reference')) });
+
+export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, judgeDesign = judgeInline, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
   // the site, and (for reading only) the owner's analytics dashboard
@@ -182,10 +186,12 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const design = cleanDesign(b.design, lab, 'submitted');
         if (!design) return send(request, response, 400, { error: 'bad_design' });
         const hints = Number.isInteger(b.hints) && b.hints >= 0 && b.hints <= 50 ? b.hints : 0;
-        // judged again here, the same way the page did: the stored result can't be made up in a browser
-        const j = judge(design, lab, practice), g = gradeAnswer(cleanAnswer(b.answer), practice.rubric), sc = score(g, j, hints);
-        // the Solution tab's design, copied unchanged: stored, but it isn't counted in anyone's stats
-        const copied = sameDesign(design, practice.reference && cleanDesign(practice.reference, lab, 'reference'));
+        // judged again here, the same way the page did, so the stored result can't be made up in a browser;
+        // off the API's thread (judge-pool.js). `copied`: the Solution tab's design, copied unchanged:
+        // stored, but it isn't counted in anyone's stats. The wrong designs are only for calibration.
+        const { wrong, ...problem } = practice;
+        const { judged: j, copied } = await judgeDesign({ design, lab, practice: problem });
+        const g = gradeAnswer(cleanAnswer(b.answer), practice.rubric), sc = score(g, j, hints);
         const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(copied ? { copied: true } : {}) };
         const stats = await accounts.addSubmission(doc);
         return send(request, response, 200, { verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, ...(copied ? { copied: true } : {}), ...stats });
@@ -199,6 +205,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       }
       return send(request, response, 404, { error: 'not_found' });
     } catch (error) {
+      if (error instanceof JudgeError) { log.error('Judging a submission failed:', error.code); return send(request, response, 503, { error: error.code }); }
       if (error instanceof AuthError) {
         const status = error.code === 'too_large' ? 413 : error.code === 'bad_json' ? 400 : error.code === 'keys_unavailable' ? 503 : 401;
         return send(request, response, status, { error: error.code });

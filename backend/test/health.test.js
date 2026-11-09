@@ -99,3 +99,21 @@ test('slow clients are cut off: headers must arrive within 10 s', async (t) => {
   assert.ok(waited >= 9_000 && waited < 20_000, `closed after ${waited} ms`);
   assert.match(data, /408|^$/);
 });
+
+// Found in the pre-launch audit: an absolute-form request line with a bad host or port made
+// `new URL` throw inside the request handler, and the uncaught exception stopped the whole API.
+test('malformed request lines get a 400 and never stop the server', async (t) => {
+  const running = await startServer();
+  t.after(() => running.server.kill('SIGTERM'));
+  const { connect } = await import('node:net');
+  const port = Number(new URL(running.baseUrl).port);
+  const raw = (line) => new Promise((resolve, reject) => {
+    const socket = connect(port, '127.0.0.1', () => socket.write(`${line}\r\nHost: x\r\nConnection: close\r\n\r\n`));
+    let data = ''; socket.on('data', (c) => { data += c; }); socket.on('end', () => resolve(data.split('\r\n')[0])); socket.on('error', reject);
+  });
+  for (const line of ['GET http://[bad HTTP/1.1', 'GET http://x:99999/ HTTP/1.1', 'GET http://%/ HTTP/1.1', 'GET http:/x HTTP/1.1']) {
+    assert.equal(await raw(line), 'HTTP/1.1 400 Bad Request', line);
+  }
+  assert.equal(running.server.exitCode, null);
+  assert.equal((await fetch(`${running.baseUrl}/health`)).status, 200);
+});

@@ -11,7 +11,7 @@ design, run virtual traffic against it and watch what breaks.
 | Path | What it is |
 |---|---|
 | `frontend/` | React 18 + Vite. Two pages: `index.html` → `src/main.jsx` (landing) and `dashboard/index.html` → `src/dashboard.jsx` (dashboard, articles, read aloud). The Lab is `src/lab/` (`Lab.jsx` UI, `engine.js` simulator, `store.js` saved designs) and is lazy-loaded. Article figures are in `src/figs/<tab>/<sub-tab>.jsx`, one module per sub-tab, with shared drawing parts in `parts.jsx` and every figure gathered in `index.js`; the backend mirrors each sub-tab's figure ids in `backend/src/content/figs/<tab>/<sub-tab>.js`. Deployed by Vercel (project root `frontend`). |
-| `backend/` | Node 22 HTTP server with no dependencies (`src/server.js`). Loads and validates all content at start (`src/content/`), serves it read-only with ETags and short caching, reloads on `SIGHUP`. |
+| `backend/` | Node 22 HTTP server with no dependencies (`src/server.js`). Loads and validates all content at start (`src/content/`), serves it read-only with ETags and short caching, reloads on `SIGHUP`. Sign-in and accounts are in `src/auth/`; a problem's Submit is judged again on worker threads (`src/auth/judge-pool.js`), with a time limit, so a slow design never stalls the API. A request that throws is answered with a 500 (a malformed address with a 400) and never stops the process. |
 | `content/` | Every piece of copy, every article and the Lab catalogue, as JSON. The frontend hardcodes none of it. Format: [`content/README.md`](content/README.md). |
 | `status-page/` | Separate Vercel project for `status.katta.cc`: live checks of the site and the API. |
 | `tools/` | Narration tooling (`tools/tts`, Kokoro). |
