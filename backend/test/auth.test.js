@@ -511,3 +511,11 @@ test('a problem submitted while signed in is judged again on the server and coun
   assert.equal((await call('/v1/me', { method: 'DELETE', cookie })).status, 200);
   assert.equal(await client.db('tk_test').collection('submissions').countDocuments({ slug: 'url-shortener' }), 0);
 });
+
+test('the server sends to accountRoutes exactly the paths it answers', async () => {
+  const { ACCOUNT_PATHS } = await import('../src/auth/routes.js');
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile(new URL('../src/auth/routes.js', import.meta.url), 'utf8');
+  const answered = new Set([...src.matchAll(/pathname === '([^']+)'/g)].map((m) => m[1]));
+  assert.deepEqual([...ACCOUNT_PATHS].sort(), [...answered].sort());
+});

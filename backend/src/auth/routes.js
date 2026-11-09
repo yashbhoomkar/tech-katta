@@ -63,6 +63,9 @@ export function cleanAnswer(a) {
   return { fr: str(o.fr, 4000), nfr: map(o.nfr, 10), est: map(o.est, 10), decisions, api: (Array.isArray(o.api) ? o.api : []).slice(0, 30).map((x) => ({ method: str(x?.method, 8), path: str(x?.path, 200) })) };
 }
 
+// Every path accountRoutes answers; the server sends exactly these here (and nothing else).
+export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
+
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);

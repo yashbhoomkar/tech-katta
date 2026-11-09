@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadContent, buildBodies } from './content/store.js';
 import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
-import { accountRoutes, JSON_CSP } from './auth/routes.js';
+import { accountRoutes, ACCOUNT_PATHS, JSON_CSP } from './auth/routes.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -116,7 +116,6 @@ const handleAccount = accountRoutes({
 console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
 // indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
 accounts?.warmUp().then(() => accounts.health());
-const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
 
 function handleContent(request, response, pathname, searchParams) {
   if (!['GET', 'HEAD'].includes(request.method || '')) {

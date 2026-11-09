@@ -1,12 +1,7 @@
 // Figures for the "Consistent hashing" group in Concepts. Same conventions as sharding.jsx. Ring positions run
 // 0–100 clockwise from the top, like the articles' 100-position ring.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap}from"./parts.jsx";
+import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
-const Fig=({still,h,id,title,M,base,caps,g,only,last,c,top})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{M&&<Mk m={M}/>}{base}
-{still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}{top}</svg>;
 const X=({x,y,c=RED,r=6})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
 // Ring helpers. pos 0..100 clockwise from the top.
@@ -39,7 +34,7 @@ const base=<g>{[0,1,2].map(i=>db(i))}</g>;
 const s1=<g><Bx x={10} y={88} w={100} h={40} t="match 1234"/><Ar x1={112} y1={108} x2={136} y2={108} m={M}/><Bx x={140} y={88} w={80} h={40} t="hash()"/></g>;
 const s2=<g><Ar x1={222} y1={108} x2={246} y2={108} m={M}/><Bx x={250} y={88} w={110} h={40} t="8,671,204"/></g>;
 const s3=<g><Ar x1={362} y1={108} x2={386} y2={108} m={M}/><Bx x={390} y={88} w={90} h={40} t="% 3 = 1" c={BLUE} fill={LB}/></g>;
-const s4=<g><Ar x1={482} y1={108} x2={516} y2={117} m={M} c={BLUE} w={2}/>{db(1,BLUE,LB)}<T x={10} y={196} t="even, and needs no table; but the 3 is baked into every key's home" c={INK}/></g>;
+const s4=<g><Ar x1={482} y1={108} x2={516} y2={117} m={M} c={BLUE} w={2}/>{db(1,BLUE,LB)}<T x={10} y={196} t="it spreads matches evenly and needs no table, but the 3 is baked into every key's home" c={INK}/></g>;
 const caps=[["1 · the match id goes through a hash function",INK],["2 · which turns it into a large number",INK],["3 · the number modulo the count of databases, 3, gives 1",BLUE],["4 · so match 1234 lives on database 1",BLUE]];
 return <Fig still={still} h={208} id={`cmt${uid}`} M={M} caps={caps} title="Modulo hashing. Match 1234 goes through a hash function, which turns it into a large number, 8,671,204. That number modulo 3, the number of databases, is 1, so match 1234 lives on database 1. It spreads matches evenly and needs no table, but the number of databases is baked into every key's home."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}

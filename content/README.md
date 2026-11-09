@@ -53,7 +53,7 @@ topics people search for, each leading into paid material. Everything else is pa
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
-- `fig {id, cap}`: `id` must be a figure the frontend can draw (Research Papers figures: `PAPER_FIGS` in `frontend/src/figs/papers.jsx`): `patterns`, `choose`, `order`, `retry` (`FIGS` in `frontend/src/dashboard.jsx`), `lb-spread`, `lb-algos`, `cdn-edge`, `cdn-ttl`, `gw-front`, `rate-limit`, `scale-out`, `autoscale`, `cache-aside`, `cache-warm`, `db-index`, `db-replicas` (`COMPONENT_FIGS` in `frontend/src/figs/components.jsx`). A new figure is added in both places and in `FIGS` in `backend/src/content/validate.js` (a test checks they match)
+- `fig {id, cap}`: `id` must be a figure the frontend can draw. Each figure module in `frontend/src/figs/` exports a map of its ids (`PAPER_FIGS` in `papers.jsx`, `COMPONENT_FIGS` in `components.jsx`, `APITYPE_FIGS` in `apitypes.jsx` for `patterns`, `choose`, `order`, `retry`, and so on), and `frontend/src/figs/index.js` gathers them into `FIGS`. A new figure goes in its module's map and in `FIGS` in `backend/src/content/validate.js`; a new module is also added to `figs/index.js`. A backend test reads every module and checks all of this matches.
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·

@@ -1,14 +1,7 @@
 // Figures for the "API design" group in Concepts. Same conventions as network.jsx: 640-wide viewBox, Swiss colours,
 // four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Dot,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
+import React from"react";import{Dot,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X,OK}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
-const Fig=({still,h,id,title,M,base,caps,g,only,last,c})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{M&&<Mk m={M}/>}{base}
-{still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}</svg>;
-const X=({x,y,c=RED})=><g stroke={c} strokeWidth="2"><line x1={x-5} y1={y-5} x2={x+5} y2={y+5}/><line x1={x-5} y1={y+5} x2={x+5} y2={y-5}/></g>;
-const OK=({x,y,c=BLUE})=><path d={`M${x-5} ${y} l4 4 l7 -9`} fill="none" stroke={c} strokeWidth="2"/>;
 const MONO={fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:500};
 const Big=({x,y,t,c=INK})=><text x={x} y={y} style={{...MONO,fill:c}}>{t}</text>;
 

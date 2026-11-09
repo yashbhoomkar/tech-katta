@@ -1,14 +1,8 @@
 // Figures for the "Data modelling" group in Concepts. Same conventions as apidesign.jsx: 640-wide viewBox, Swiss colours,
 // four captioned steps on a loop, the last step drawn when `still` (reduced motion), a `uid` for markers.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
+import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig,X,OK}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4",HEAD="#f3f5f8";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
-const Fig=({still,h,id,title,M,base,caps,g,only,last,c})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{M&&<Mk m={M}/>}{base}
-{still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}</svg>;
-const X=({x,y,c=RED})=><g stroke={c} strokeWidth="2"><line x1={x-5} y1={y-5} x2={x+5} y2={y+5}/><line x1={x-5} y1={y+5} x2={x+5} y2={y-5}/></g>;
-const OK=({x,y,c=BLUE})=><path d={`M${x-5} ${y} l4 4 l7 -9`} fill="none" stroke={c} strokeWidth="2"/>;
+const HEAD="#f3f5f8";
 // A table: a name bar and one mono line per column. Row i is centred near y+30+14i.
 const Tbl=({x,y,w,name,cols,c=GREY,fill="#fff"})=><g><rect x={x} y={y} width={w} height={26+cols.length*14} fill={fill} stroke={c}/><rect x={x} y={y} width={w} height={20} fill={HEAD} stroke={c}/><T x={x+8} y={y+14} t={name} b/>{cols.map((k,i)=><T key={i} x={x+8} y={y+33+i*14} t={k}/>)}</g>;
 const Tag=({x,y,i,t})=><T x={x} y={y+33+i*14} t={t} a="end" c={BLUE}/>;

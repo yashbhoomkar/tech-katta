@@ -1,11 +1,6 @@
 // Figures for the "Database indexing" group in Concepts. Same conventions as sharding.jsx.
-import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap}from"./parts.jsx";
+import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,LB,LR,T,Steps,Fig}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9",LB="#f8faff",LR="#fff5f4";
-const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
-const Fig=({still,h,id,title,M,base,caps,g,only,last,c})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{M&&<Mk m={M}/>}{base}
-{still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}</svg>;
 const Pg=({x,y,w,h,c=GREY,fill="#fff",t})=><g><rect x={x} y={y} width={w} height={h} fill={fill} stroke={c}/>{t&&<text x={x+w/2} y={y+h/2+4} textAnchor="middle" className="fl" style={{fill:c===GREY?INK:c}}>{t}</text>}</g>;
 
 // Index step, FIG 1: scanning every page versus following an index.

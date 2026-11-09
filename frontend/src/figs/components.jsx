@@ -1,9 +1,8 @@
 // Figures for the Components articles. Same conventions as the API article's figures (parts.jsx):
 // 640-wide viewBox, Swiss colours, SMIL packets on a loop, nothing animated when `still`, and a
 // `uid` so the full-screen copy gets its own marker ids.
-import React from"react";import{Dot,Box,Arr,Glow,Show,Mark}from"./parts.jsx";
+import React from"react";import{Dot,Box,Arr,Glow,Show,Mark,INK,GREY,RED}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d";
 // A straight arrow between any two points (Arr in parts.jsx is horizontal only).
 const Line=({x1,y1,x2,y2,m,dash,c=INK})=><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>;
 // A small box (24 high) centred vertically on y.
@@ -316,7 +315,7 @@ return <g key={t}><text x={x+25} y={B+18} textAnchor="middle" className="fl">{t}
 <text x={70+2*78+72} y="68" className="fl">6 partitions → at most 6 in the group</text>
 <text x="10" y="278" className="fl">at 8:10 a new order's notification waits about 7 minutes; by 8:30 it's back to real time</text></svg>}
 
-// id → {C, ar (width/height of the viewBox), title(example name)}; merged into FIGS in dashboard.jsx.
+// id → {C, ar (width/height of the viewBox), title(example name)}; gathered into FIGS in figs/index.js.
 // Keep in step with FIGS in backend/src/content/validate.js.
 export const COMPONENT_FIGS={
 "lb-spread":{C:LbSpreadFig,ar:640/300,title:n=>`ONE ADDRESS, MANY SERVERS AT ${n}`},

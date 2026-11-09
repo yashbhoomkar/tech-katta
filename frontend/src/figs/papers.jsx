@@ -1,9 +1,8 @@
 // Figures for the Research Papers articles. Same conventions as concepts.jsx: 640-wide viewBox, Swiss
 // colours, SMIL on a loop, nothing animated when `still`, and a `uid` so the full-screen copy gets its
 // own marker ids.
-import React from"react";import{Dot,Show,Mark,Mk,Bx,Ar,Caps,Cap,Life,Msg}from"./parts.jsx";
+import React from"react";import{Dot,Show,Mark,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE}from"./parts.jsx";
 
-const INK="#1c2733",GREY="#9aa5b4",RED="#c8372d",BLUE="#2855d9";
 
 // Lamport clocks, FIG 1: the counting rule. Menu server B (clock 300 ms fast) marks paneer tikka sold
 // out at count 7 and tells order server A; A takes max(3, 7) + 1 = 8, refuses an order at 9 and tells
