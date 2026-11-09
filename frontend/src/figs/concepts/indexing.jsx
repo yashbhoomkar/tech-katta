@@ -1,6 +1,6 @@
 // Concepts › Database indexing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "indexing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Mk,Cap,Caps,Glow,Show,Dot}from"../parts.jsx";
 
 const Pg=({x,y,w,h,c=GREY,fill="#fff",t})=><g><rect x={x} y={y} width={w} height={h} fill={fill} stroke={c}/>{t&&<text x={x+w/2} y={y+h/2+4} textAnchor="middle" className="fl" style={{fill:c===GREY?INK:c}}>{t}</text>}</g>;
 
@@ -120,6 +120,47 @@ const caps=[["1 · the index finds customer 77's orders, newest first",INK],["2 
 return <Fig still={still} h={232} id={`ivt${uid}`} M={M} caps={caps} only={[1]} title="A covering index. The query wants customer 77's orders, newest first, with id, status and total. An index on customer and time finds the orders, but each one then needs another read of the table for its status and total. A covering index includes id, status and total in its entries, so the query is answered from the index alone and the table isn't read."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 
+
+// Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
+// Indexes, FIG 1: a B-tree lookup. Finding Priya Nair among 6.4 crore customers: the root page sends N–S down
+// one branch, that page sends Pm–Pz to one leaf, and the leaf holds the name with the address of its row.
+// With about 400 keys a page, three levels cover 1 → 400 → 1,60,000 pages: 6.4 crore names.
+function BtreeFig({still,uid=""}){const M=`bt${uid}`,D="14s";
+const caps=[["1 · find Priya Nair among 6.4 crore customers: start at the root page",INK],["2 · the root sends N to S down one branch, and that page narrows it to Pm–Pz",BLUE],["3 · the leaf page holds the names in order, each with the address of its row",BLUE],["4 · one more read fetches the row: 4 page reads instead of 6.4 crore rows",BLUE]];
+const node=(x,y,w,ts,hi,cls="fb")=><g>{ts.map((t,i)=><g key={i}><rect x={x+i*w} y={y} width={w} height="28" fill={i===hi?"#dfe6fb":"#fff"} stroke={i===hi?BLUE:GREY}/><text x={x+i*w+w/2} y={y+18} textAnchor="middle" className={cls} style={i===hi?{fill:BLUE}:undefined}>{t}</text></g>)}</g>;
+const stub=(x,y)=><line key={x} x1={x} y1={y} x2={x} y2={y+12} stroke={GREY}/>;
+const root=<g>{node(10,50,80,["A – F","G – M","N – S","T – Z"],2)}{[0,1,3].map(i=>stub(50+80*i,78))}</g>;
+const l2=<g><Ar x1={210} y1={78} x2={200} y2={106} m={M}/>{node(40,108,64,["N","O","Pa – Pl","Pm – Pz","Q – S"],3)}{[0,1,2,4].map(i=>stub(72+64*i,136))}</g>;
+const leaf=<g><Ar x1={264} y1={136} x2={222} y2={166} m={M}/>{node(10,168,80,["Priya Menon","Priya Naik","Priya Nair","Priya Negi"],2,"fl")}</g>;
+const row=<g><Ar x1={210} y1={196} x2={210} y2={228} m={M}/><rect x="110" y="230" width="220" height="28" fill="#f8faff" stroke={BLUE}/><text x="220" y="248" textAnchor="middle" className="fl" style={{fill:BLUE}}>Priya Nair · Pune · since 2023</text><text x="10" y="248" className="fl">the table's row</text></g>;
+const side=<g><text x="400" y="62" className="fb">One box is one 8 KB page</text><text x="400" y="78" className="fl">about 400 keys in each</text>
+{[["level 1","1 page"],["level 2","400 pages"],["level 3","1,60,000 pages"]].map(([a,b],i)=><g key={a}><text x="400" y={106+i*18} className="fl">{a}</text><text x="630" y={106+i*18} textAnchor="end" className="fl">{b}</text></g>)}
+<text x="400" y="168" className="fb" style={{fill:BLUE}}>6.4 crore names in 3 levels</text><text x="400" y="198" className="fl">the top two levels stay in memory,</text><text x="400" y="214" className="fl">so a lookup reads 1–2 pages from disk</text>
+<text x="400" y="248" className="fl" style={{fill:RED}}>without it: read all 6.4 crore rows</text></g>;
+return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`btt${uid}`}><title id={`btt${uid}`}>A B-tree index on customer names, used to find Priya Nair among 6.4 crore customers. The root page splits names into A to F, G to M, N to S and T to Z, and points N to S at the next page. That page splits further and points Pm to Pz at one leaf page. The leaf holds Priya Menon, Priya Naik, Priya Nair and Priya Negi in order, each with the address of its row, and one more read fetches the row: four page reads in all. Each page is 8 kilobytes and holds about 400 keys, so three levels, 1, then 400, then 1,60,000 pages, cover 6.4 crore names. Without the index the database would read every row.</title><Mk m={M}/>
+{root}{side}{still?<g>{l2}{leaf}{row}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/><Glow x={170} y={50} w={80} h={28} t0={.04} t1={.25} dur={D}/>
+<Show t0={.25} t1={1} dur={D}>{l2}</Show><Dot x1={210} x2={201} y={80} y2={104} t0={.26} t1={.33} dur={D}/><Show t0={.5} t1={1} dur={D}>{leaf}</Show><Dot x1={264} x2={224} y={138} y2={164} t0={.51} t1={.58} dur={D}/>
+<Show t0={.75} t1={1} dur={D}>{row}</Show><Dot x1={210} x2={210} y={198} y2={226} t0={.76} t1={.83} dur={D}/></g>}</svg>}
+// Indexes, FIG 2: column order. An index on (restaurant, status, time) is a sorted list, like a phone book.
+// "Restaurant 42, preparing" is one short range; "restaurant 42, newest first" is one range in status order,
+// so it still needs a sort; "everything preparing" is scattered over the whole list, so the index can't help.
+function IndexOrderFig({still,uid=""}){const D="14s",Y=i=>78+i*21;
+const E=[[41,"delivered","18:52"],[41,"preparing","19:08"],[42,"delivered","18:40"],[42,"delivered","18:58"],[42,"preparing","19:05"],[42,"preparing","19:11"],[42,"ready","19:02"],[43,"delivered","18:47"],[43,"preparing","19:09"],[44,"preparing","19:03"]];
+const caps=[["1 · an index on (restaurant, status, time) keeps its entries sorted, like a phone book",INK],["2 · restaurant 42, preparing: the matches sit together, so it reads one short range",BLUE],["3 · restaurant 42, newest first: one range, but in status order, so it still sorts",INK],["4 · everything preparing: the matches are scattered, so the index can't narrow it",RED]];
+const Q3=[1,4,5,8,9];
+const hl=(rows,fill)=><g>{rows.map(i=><rect key={i} x="30" y={Y(i)-14} width="220" height="19" fill={fill}/>)}</g>;
+const rects=<g><text x="30" y="56" className="fk">INDEX ON (RESTAURANT, STATUS, TIME)</text>{E.map((e,i)=><rect key={i} x="30" y={Y(i)-14} width="220" height="19" fill="#fff" stroke={GREY}/>)}</g>;
+const texts=<g>{E.map(([r,s,t],i)=><g key={i}><text x="40" y={Y(i)} className="fl">{r}</text><text x="80" y={Y(i)} className="fl">{s}</text><text x="240" y={Y(i)} textAnchor="end" className="fl">{t}</text></g>)}</g>;
+const br=(x,a,b,n,c)=><g><path d={`M${x} ${Y(a)-14}h6v${Y(b)-Y(a)+19}h-6`} fill="none" stroke={c} strokeWidth="1.5"/><text x={x+11} y={(Y(a)+Y(b))/2+1} className="fb" style={{fill:c}}>{n}</text></g>;
+const q=(y,n,t,s,c)=><g><text x="320" y={y} className="fb">{n} · {t}</text><text x="320" y={y+16} className="fl" style={c!==INK?{fill:c}:undefined}>{s}</text></g>;
+const s2=<g>{br(256,4,5,"1",BLUE)}{q(96,1,"restaurant 42, preparing","side by side: one short range",BLUE)}</g>;
+const s3=<g>{br(280,2,6,"2",INK)}{q(160,2,"restaurant 42, newest first","one range, in status order: then a sort",INK)}</g>;
+const s4=<g>{Q3.map(i=><circle key={i} cx="20" cy={Y(i)-4.5} r="3.5" fill={RED}/>)}{q(224,3,"everything preparing","scattered: the index can't narrow it",RED)}<text x="320" y="278" className="fl" style={{fill:BLUE}}>an index helps from its first column onward</text></g>;
+return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`iot${uid}`}><title id={`iot${uid}`}>An index on restaurant, status and order time, shown as a sorted list of ten entries, sorted first by restaurant, then by status, then by time. Query one, restaurant 42 with status preparing, finds its two matches side by side: one short range. Query two, restaurant 42 newest first, finds one range of five entries, but they are in status order, not time order, so the database still sorts them. Query three, every order that is preparing at any restaurant, finds matches scattered through the whole list, so the index can't narrow the search. An index helps from its first column onward.</title>
+{rects}{still?<g>{texts}{s2}{s3}{s4}<Cap t={caps[3][0]} c={RED}/></g>:<g><g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={.5} dur={D}>{hl([4,5],"#dfe6fb")}</Show><Show t0={.5} t1={.75} dur={D}>{hl([2,3,4,5,6],"#eef1f5")}</Show><Show t0={.75} t1={1} dur={D}>{hl(Q3,"#fff5f4")}</Show></g>{texts}
+<g aria-hidden="true"><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g></g>}</svg>}
+
 export const FIGS={
 "ix-scan":{C:ScanFig,ar:640/238,title:()=>"EVERY PAGE, OR FOUR"},
 "ix-cost":{C:CostFig,ar:640/232,title:()=>"ONE INSERT, FOUR WRITES"},
@@ -130,4 +171,6 @@ export const FIGS={
 "ix-hash":{C:HashFig,ar:640/238,title:()=>"ONE STEP, BUT ONLY FOR EXACT KEYS"},
 "ix-geo-band":{C:GeoBandFig,ar:640/250,title:()=>"A BAND ACROSS THE MAP, OR NINE CELLS"},
 "ix-covering":{C:CoveringFig,ar:640/232,title:()=>"ANSWERED FROM THE INDEX ALONE"},
+"btree-path":{C:BtreeFig,ar:640/270,title:()=>"FOUR READS TO ONE CUSTOMER"},
+"index-order":{C:IndexOrderFig,ar:640/290,title:()=>"COLUMN ORDER DECIDES"},
 };

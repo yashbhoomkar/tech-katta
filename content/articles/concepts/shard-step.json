@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "shard-step",
   "group": "sharding",
-  "no": "CONCEPT // 54",
+  "no": "CONCEPT // 29",
   "tag": "SHARDING",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -59,7 +59,7 @@
     },
     {
       "t": "p",
-      "x": "The formula: name the bottleneck, explain why one database can't handle it, then propose sharding. The concept 'Back-of-envelope maths' has the numbers for what one database can do."
+      "x": "The formula: name the bottleneck, explain why one database can't handle it, then propose sharding. The Numbers to know concepts have the numbers for what one database can do."
     },
     {
       "t": "p",

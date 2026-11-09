@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "numbers-mistakes",
   "group": "numbers",
-  "no": "CONCEPT // 70",
+  "no": "CONCEPT // 45",
   "tag": "NUMBERS TO KNOW",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -54,7 +54,7 @@
       "items": [
         "Don't add a cache just to save a millisecond on a read that already takes a few; add it when reads are heavy or a computation is expensive.",
         "Don't merge services or invent clever protocols to remove one in-region hop. Do avoid long chains of calls one after another, and calls across regions on the hot path, where the milliseconds really add up.",
-        "Measure where the time goes: the network to the user, a slow query or a cross-region call usually dwarfs everything else (the figure in 'Back-of-envelope maths' shows a typical budget)."
+        "Measure where the time goes: the network to the user, a slow query or a cross-region call usually dwarfs everything else."
       ]
     },
     {

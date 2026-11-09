@@ -9,4 +9,5 @@ export const FIGS = [
   'ad-errors',
   'ad-jwt',
   'ad-authz',
+  'api-pages',
 ];

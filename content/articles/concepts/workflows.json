@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "workflows",
   "group": "patterns",
-  "no": "CONCEPT // 16",
+  "no": "CONCEPT // 52",
   "tag": "WORKFLOWS",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -43,7 +43,7 @@
         "Keep the state on the record (`orders.status`) and change it with a conditional update: `SET status = 'accepted' WHERE id = 9051 AND status = 'placed'`. A move that isn't allowed changes no rows.",
         "Keep the table of allowed moves in one place in the code, and record every change with its time and reason. That history answers most support questions.",
         "Timers belong to the design: 'no answer in 5 minutes', 'not picked up in 30'. Store a due time with the state, and let a scheduler pick up overdue records every few seconds.",
-        "A move often triggers work, such as a charge, a message or a refund. Save the state change and the message together with the outbox, described in 'Transactions across services'."
+        "A move often triggers work, such as a charge, a message or a refund. Save the state change and the message together with an outbox: write the message to an outbox table in the same transaction, and let a separate process send it. The Change data capture concept shows how."
       ]
     },
     {

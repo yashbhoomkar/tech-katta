@@ -1,7 +1,7 @@
 // Concepts › Consistent hashing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "consistent-hashing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // Ring positions run 0–100 clockwise from the top, like the articles' 100-position ring.
-import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
+import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Cap,Caps,Show}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=6})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
@@ -175,6 +175,43 @@ return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><ti
 {st.servers.map((s,i)=><g key={s}><text x="310" y={196+i*13} className="fl">{`S${s}`}</text><rect x={336} y={188+i*13} width={Math.max(1,count(s)*7)} height={9} fill={PAL[s-1]}/><text x={342+count(s)*7} y={196+i*13} className="fl">{count(s)}</text></g>)}
 </svg>;}
 
+
+// Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
+// Hash rings, FIG 1: going from 4 servers to 5. With hash % N, 16 of 20 carts change server; on a ring with
+// servers at 10, 35, 60 and 85, a fifth server at 72 takes only the hashes from 61 to 72 from D: 4 of 20.
+function HashMoveFig({still,uid=""}){const D="14s",K=[2,4,9,10,11,13,28,36,42,44,50,53,56,63,65,69,70,76,77,83],L="ABCDE",x=i=>20+i*30;
+const ring=k=>k<=10||k>85?"A":k<=35?"B":k<=60?"C":"D",ring5=k=>k>60&&k<=72?"E":ring(k);
+const caps=[["1 · 20 carts hashed to 0–99; with 4 servers, each cart lives on server hash % 4",INK],["2 · a fifth server, so hash % 5: 16 of the 20 carts now belong somewhere else",RED],["3 · on a ring, each server owns the hashes up to its point: 10, 35, 60 and 85",INK],["4 · E joins at 72 and takes only 61–72 from D: 4 carts move, the other 16 stay",BLUE]];
+const cells=(y,f,cls="fb")=><g>{K.map((k,i)=>{const[t,c]=f(k);return <g key={i}><rect x={x(i)} y={y} width="26" height="24" fill={c===RED?"#fff5f4":c===BLUE?"#f8faff":"#fff"} stroke={c||GREY} strokeWidth={c?1.5:1}/><text x={x(i)+13} y={y+16} textAnchor="middle" className={cls} style={c?{fill:c}:undefined}>{t}</text></g>})}</g>;
+const lab=(y,t,r,c)=><g><text x="20" y={y} className="fl">{t}</text>{r&&<text x="616" y={y} textAnchor="end" className="fl" style={{fill:c}}>{r}</text>}</g>;
+const r01=<g>{lab(50,"20 carts, each hashed to a number from 0 to 99")}{cells(58,k=>[k],"fl")}{lab(104,"4 servers · hash % 4")}{cells(112,k=>[L[k%4]])}</g>;
+const r2=<g>{lab(158,"5 servers · hash % 5","16 of 20 move",RED)}{cells(166,k=>[L[k%5],k%5!==k%4?RED:null])}</g>;
+const r3a=<g>{lab(212,"on a ring · A owns up to 10, B to 35, C to 60, D to 85")}{cells(220,k=>[ring(k)])}</g>;
+const r3b=<g>{lab(212,"on a ring · A owns up to 10, B to 35, C to 60, D to 85","E joins at 72 · 4 of 20 move",BLUE)}{cells(220,k=>[ring5(k),ring5(k)!==ring(k)?BLUE:null])}</g>;
+return <svg viewBox="0 0 640 256" role="img" aria-labelledby={`hmt${uid}`}><title id={`hmt${uid}`}>Twenty shopping carts, each hashed to a number from 0 to 99, spread over servers. With 4 servers, a cart lives on server hash modulo 4. Adding a fifth server and switching to hash modulo 5 sends 16 of the 20 carts to a different server. On a ring, servers sit at points 10, 35, 60 and 85, and each owns the hashes up to its point. A fifth server, E, joining at 72 takes only the hashes from 61 to 72 from server D: 4 carts move and the other 16 stay where they are.</title>
+{r01}{still?<g>{r2}{r3b}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={1} dur={D}>{r2}</Show><Show t0={.5} t1={.75} dur={D}>{r3a}</Show><Show t0={.75} t1={1} dur={D}>{r3b}</Show></g>}</svg>}
+// Hash rings, FIG 2: virtual nodes. With one point per server the arcs are uneven (C holds 39%), and when B
+// fails all of its keys land on C (50%). With six points per server, mixed around the ring, every share is
+// near 25%, and B's six small arcs go to A, C and D, which end up with about a third each.
+function VnodesFig({still,uid=""}){const D="14s",R=62,CY=160;
+const at=(cx,a,r=R)=>[cx+r*Math.sin(a*Math.PI/180),CY-r*Math.cos(a*Math.PI/180)];
+const arc=(cx,a1,a2,c)=>{const[x1,y1]=at(cx,a1),[x2,y2]=at(cx,a2);return <path d={`M${x1} ${y1}A${R} ${R} 0 ${a2-a1>180?1:0} 1 ${x2} ${y2}`} fill="none" stroke={c} strokeWidth="6" strokeOpacity=".45"/>};
+const P1=[[20,"A"],[60,"B"],[200,"C"],[290,"D"]];
+const P2=[[0,"C"],[12,"A"],[30,"B"],[42,"C"],[63,"A"],[75,"C"],[90,"D"],[105,"B"],[117,"A"],[132,"C"],[147,"B"],[165,"A"],[177,"B"],[192,"D"],[207,"C"],[222,"D"],[240,"A"],[255,"D"],[267,"A"],[288,"D"],[300,"B"],[318,"C"],[333,"B"],[348,"D"]];
+const big=(cx,[a,n],down)=>{const[x,y]=at(cx,a);return <g key={a}><circle cx={x} cy={y} r="11" fill={down?"#fff5f4":"#fff"} stroke={down?RED:INK} strokeDasharray={down?"3 2":undefined}/><text x={x} y={y+4} textAnchor="middle" className="fb" style={down?{fill:RED}:undefined}>{n}</text></g>};
+const small=(cx,[a,n],down)=>{const[x,y]=at(cx,a),[lx,ly]=at(cx,a,R+13);return <g key={a}><circle cx={x} cy={y} r="3.5" fill={down?"#fff":INK} stroke={down?RED:INK}/><text x={lx} y={ly+3.5} textAnchor="middle" className="fl" style={down?{fill:RED}:undefined}>{n}</text></g>};
+const table=(x0,S)=><g><text x={x0+174} y="96" className="fl">share</text>{"ABCD".split("").map((n,i)=><g key={n}><text x={x0+160} y={120+i*22} className="fb">{n}</text><rect x={x0+174} y={111+i*22} width={S[i]} height="10" fill="#eef1f5" stroke={GREY}/><text x={x0+230} y={120+i*22} className="fl">{S[i]}%</text></g>)}</g>;
+const after=(x0,Sb,c)=><g><text x={x0+262} y="96" className="fl" style={{fill:c}}>B down</text>{Sb.map((v,i)=><text key={i} x={x0+262} y={120+i*22} className="fl" style={{fill:v==null?RED:c}}>{v==null?"—":v+"%"}</text>)}</g>;
+const left=<g><text x="10" y="52" className="fb">One point per server</text><text x="10" y="68" className="fl">each owns the arc up to its point</text><circle cx="75" cy={CY} r={R} fill="none" stroke={GREY}/>{arc(75,60,200,BLUE)}{P1.map(p=>big(75,p))}{table(0,[25,11,39,25])}</g>;
+const right=<g><text x="340" y="52" className="fb">Six points per server</text><text x="340" y="68" className="fl">the same four servers, mixed</text><circle cx="405" cy={CY} r={R} fill="none" stroke={GREY}/>{P2.map(p=>small(405,p))}{table(330,[26,24,23,27])}</g>;
+const s2=<g>{arc(75,20,60,RED)}{big(75,P1[1],true)}{after(0,[25,null,50,25],RED)}<text x="10" y="258" className="fl" style={{fill:RED}}>all of B's keys land on C</text></g>;
+const s4=<g>{P2.filter(p=>p[1]==="B").map(p=>small(405,p,true))}{after(330,[34,null,32,34],BLUE)}<text x="340" y="258" className="fl" style={{fill:BLUE}}>B's keys spread over A, C and D</text></g>;
+const caps=[["1 · one point per server: the arcs come out uneven, and C holds 39% of the keys",INK],["2 · B fails: all it held passes to the next point clockwise, C, now at 50%",RED],["3 · six points per server, mixed around the ring: every share lands near 25%",BLUE],["4 · B fails: its six small arcs go to A, C and D, which take about a third each",BLUE]];
+return <svg viewBox="0 0 640 272" role="img" aria-labelledby={`vnt${uid}`}><title id={`vnt${uid}`}>Two hash rings with the same four servers, A to D. On the left each server has one point on the ring and owns the arc up to it; the arcs are uneven: A 25 percent, B 11, C 39 and D 25. When B fails, everything it held passes to the next point clockwise, C, which rises to 50 percent. On the right each server has six points, mixed around the ring, and the shares are close: A 26, B 24, C 23 and D 27 percent. When B fails, its six small arcs go to A, C and D, which end up with 34, 32 and 34 percent.</title>
+{left}{still?<g>{right}{s2}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{right}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+
 export const FIGS={
 "ch-shard-events":{C:ShardEventsFig,ar:640/236,title:()=>"WHICH DATABASE HOLDS THIS MATCH?"},
 "ch-modulo":{C:ModuloFig,ar:640/208,title:()=>"HASH, THEN MODULO"},
@@ -186,4 +223,6 @@ export const FIGS={
 "ch-salt":{C:SaltFig,ar:640/262,title:()=>"ONE HOT KEY, SALTED INTO TEN"},
 "ch-replicas":{C:ReplicasFig,ar:640/250,title:()=>"COPIES ROUND THE RING"},
 "ch-playground":{C:PlaygroundFig,ar:640/300,title:()=>"TRY IT: A RING YOU CAN CHANGE"},
+"hash-move":{C:HashMoveFig,ar:640/256,title:()=>"A FIFTH SERVER: WHO MOVES"},
+"hash-vnodes":{C:VnodesFig,ar:640/272,title:()=>"ONE POINT PER SERVER, OR SIX"},
 };

@@ -136,7 +136,7 @@
     },
     {
       "t": "p",
-      "x": "The same pages hold a bigger idea. If every copy of a service runs the same commands in the same order, every copy ends in the same state. That is state machine replication, the base of replicated databases and of consensus protocols such as Raft (see the Consensus concept)."
+      "x": "The same pages hold a bigger idea. If every copy of a service runs the same commands in the same order, every copy ends in the same state. That is state machine replication, the base of replicated databases and of consensus protocols such as Raft (see the Raft paper)."
     },
     {
       "t": "h2",
@@ -146,7 +146,7 @@
       "t": "list",
       "items": [
         "Sequence numbers on chat messages, so everyone in a conversation sees the same order (the Chat problem).",
-        "Terms in leader election: a message from a newer term always wins over an older one (the Consensus concept).",
+        "Terms in leader election: a message from a newer term always wins over an older one (see the Raft paper).",
         "Version numbers on database rows, so a write based on an old version is refused instead of silently overwriting a newer one.",
         "Vector clocks in key-value stores that accept writes on several machines, to find conflicting edits (the Key-value store problem).",
         "Hybrid clocks in globally spread databases: wall-clock time plus a counter, so numbers stay close to real time but never go backwards."

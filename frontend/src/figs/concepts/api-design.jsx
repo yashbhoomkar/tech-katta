@@ -1,6 +1,6 @@
 // Concepts › API design: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "api-design").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK}from"../parts.jsx";
+import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Cap,Caps}from"../parts.jsx";
 
 // The API step, FIG 1: three questions pick the style.
 function ChooseFig({still,uid=""}){const M=`ac${uid}`;
@@ -107,6 +107,21 @@ const caps=[["1 · every request is checked twice: first who is calling",BLUE],[
 return <Fig still={still} h={262} id={`azt${uid}`} M={M} caps={caps} title="Authentication then authorisation. Priya, user 77, asks to cancel order 9101. First check: who is it? Her token is valid, so she is user 77. Second check: may she? The order's owner is user 77, so the cancellation goes through with 200. Then user 88 sends the same request for Priya's order with a valid token of their own. The first check passes, but the order's owner is 77, not 88, so the answer is 403 Forbidden: a valid token is not permission."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
+
+// Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
+// Shaping an API, FIG 1: offset or cursor. Page 1 shows orders 50 to 46; order 51 arrives; ?offset=5 then
+// returns 46 to 42, repeating 46; ?before=46 returns 45 to 41, with nothing repeated or missed.
+function ApiPagesFig({still,uid=""}){const D="14s",X=[20,240,460],Y=i=>96+i*30;
+const caps=[["1 · page 1 of a restaurant's orders, newest first: 50 down to 46",INK],["2 · a new order, 51, arrives before the next page is loaded",INK],["3 · ?offset=5 skips five rows of the new list, so order 46 shows up twice",RED],["4 · ?before=46 asks for orders older than the last one seen: no repeats, no gaps",BLUE]];
+const row=(x,i,n,c=GREY,fill="#fff")=><g key={x+"-"+n}><rect x={x} y={Y(i)-14} width="160" height="26" fill={fill} stroke={c}/><text x={x+12} y={Y(i)+4} className="fl">order {n}</text></g>;
+const col=(i,t)=><text x={X[i]} y="72" className="fb">{t}</text>;
+const p1=<g>{col(0,"page 1")}{[50,49,48,47,46].map((n,i)=>row(X[0],i,n))}</g>;
+const s2=<g>{row(X[0],-1,51,BLUE,"#f8faff")}<text x={X[0]+170} y={Y(-1)+4} className="fl" style={{fill:BLUE}}>new</text></g>;
+const s3=<g>{col(1,"page 2 · ?offset=5")}{[46,45,44,43,42].map((n,i)=>row(X[1],i,n,n===46?RED:GREY,n===46?"#fff5f4":"#fff"))}<text x={X[1]} y="262" className="fl" style={{fill:RED}}>46 again: the list moved under it</text></g>;
+const s4=<g>{col(2,"page 2 · ?before=46")}{[45,44,43,42,41].map((n,i)=>row(X[2],i,n,BLUE,"#f8faff"))}<text x={X[2]} y="262" className="fl" style={{fill:BLUE}}>picks up right after 46</text></g>;
+return <svg viewBox="0 0 640 276" role="img" aria-labelledby={`apt${uid}`}><title id={`apt${uid}`}>Offset pagination against cursor pagination on a restaurant's order list, newest first. Page 1 shows orders 50 down to 46. A new order, 51, arrives before the next page is loaded. Asking for page 2 with offset 5 skips five rows of the new list, so it returns orders 46 to 42 and order 46 appears twice. Asking for orders before 46, a cursor, returns 45 to 41: nothing is repeated or missed.</title>
+{p1}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+
 export const FIGS={
 "ad-choose":{C:ChooseFig,ar:640/272,title:()=>"PICKING AN API STYLE IN THREE QUESTIONS"},
 "ad-retry-methods":{C:RetryMethodsFig,ar:640/252,title:()=>"THE SAME REQUEST, SENT TWICE"},
@@ -117,4 +132,5 @@ export const FIGS={
 "ad-errors":{C:ErrorsFig,ar:640/240,title:()=>"THE APP READS THE CODE, NOT THE MESSAGE"},
 "ad-jwt":{C:JwtFig,ar:640/266,title:()=>"A SIGNED TOKEN, CHECKED WITHOUT A LOOKUP"},
 "ad-authz":{C:AuthzFig,ar:640/262,title:()=>"WHO ARE YOU, AND MAY YOU?"},
+"api-pages":{C:ApiPagesFig,ar:640/276,title:()=>"OFFSET OR CURSOR"},
 };

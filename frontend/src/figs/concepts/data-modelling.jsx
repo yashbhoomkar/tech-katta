@@ -1,6 +1,6 @@
 // Concepts › Data modelling: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "data-modelling").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK}from"../parts.jsx";
+import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Mk,Cap,Caps,Show,Dot}from"../parts.jsx";
 
 const HEAD="#f3f5f8";
 
@@ -120,6 +120,45 @@ const caps=[["1 · orders are sharded by city: each city's orders live on one sh
 return <Fig still={still} h={272} id={`dst${uid}`} M={M} caps={caps} title="Orders sharded by city across three shards: Mumbai, Pune and Delhi. A restaurant's live orders, for restaurant 42 in Mumbai, include the shard key, so one shard answers. User 77's history has orders in all three cities, so every shard has to be asked and the app merges the answers. That is fine if it's rare; if not, keep a second copy of orders keyed by user."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
+
+// Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
+// Modelling data, FIG 1: one order stored two ways. As four tables each fact is stored once and the order
+// screen joins them; as one document a single read returns the whole screen. When the restaurant renames
+// itself, the table changes in one row, and the copy inside old order documents keeps the old name.
+function ModelShapesFig({still,uid=""}){const M=`ms${uid}`,D="14s";
+const caps=[["1 · the order screen needs the order, its dishes, the customer and the restaurant",INK],["2 · as tables, each fact is stored once, and the screen joins four tables to show it",BLUE],["3 · as one document, everything the screen shows comes back in a single read",BLUE],["4 · the restaurant renames itself: one row changes, but copies in old orders don't",RED]];
+const tb=(x,y,w,t,rows)=><g><rect x={x} y={y} width={w} height={24+rows.length*16} fill="#fff" stroke={GREY}/><rect x={x} y={y} width={w} height="20" fill="#eef1f5" stroke={GREY}/><text x={x+8} y={y+14} className="fb">{t}</text>{rows.map((r,i)=><text key={i} x={x+8} y={y+35+i*16} className="fl">{r}</text>)}</g>;
+const doc=['{ order: 9051,','  customer: { id: 77, name: "Asha" },','  restaurant: { id: 42,','    name: "Udupi Corner" },','  items: [','    { dish: "masala dosa", qty: 2 },','    { dish: "filter coffee", qty: 1 } ],','  total: 255 }'];
+const line=(l,i,c)=><text key={i} x={362+(l.length-l.trimStart().length)*6} y={78+i*17} className="fl" style={c?{fill:c}:undefined}>{l.trim()}</text>;
+const base=<g><text x="10" y="46" className="fk">AS FOUR TABLES</text><text x="350" y="46" className="fk">AS ONE DOCUMENT</text>
+{tb(10,56,145,"orders",["id 9051","customer_id 77","restaurant_id 42","total 255"])}{tb(175,56,155,"order_items",["9051 · masala dosa ×2","9051 · filter coffee ×1"])}
+{tb(10,180,145,"customers",["id 77 · Asha"])}{tb(175,180,155,"restaurants",["id 42 · Udupi Corner"])}
+<Ar x1={60} y1={144} x2={60} y2={177} m={M}/><Ar x1={120} y1={144} x2={228} y2={177} m={M}/><Ar x1={175} y1={84} x2={158} y2={84} m={M}/>
+<rect x="350" y="56" width="280" height="154" fill="#fff" stroke={GREY}/>{doc.map((l,i)=>line(l,i))}</g>;
+const s2=<text x="10" y="246" className="fl" style={{fill:BLUE}}>one query, three joins</text>;
+const s3=<g><rect x="350" y="56" width="280" height="154" fill="none" stroke={BLUE} strokeWidth="2"/><text x="350" y="246" className="fl" style={{fill:BLUE}}>one read</text></g>;
+const s4=<g><rect x="177" y="204" width="151" height="15" fill="#fff"/><text x="183" y="215" className="fl" style={{fill:BLUE}}>id 42 · Udupi Café</text><text x="10" y="266" className="fl" style={{fill:BLUE}}>renamed in one place</text>
+<rect x="384" y="118" width="200" height="15" fill="#fff"/>{line(doc[3],3,RED)}<text x="350" y="266" className="fl" style={{fill:RED}}>old orders keep the old name</text></g>;
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`mst${uid}`}><title id={`mst${uid}`}>One food order stored two ways. As four tables: orders, order items, customers and restaurants, each fact stored once and linked by IDs, so the order screen needs one query that joins all four. As one document: the order holds a copy of the customer's name, the restaurant's name and the dishes, so the screen needs a single read. When the restaurant renames itself from Udupi Corner to Udupi Café, the tables change in one row, while old order documents keep the old name in their copy.</title><Mk m={M}/>
+{base}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]} c={RED}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={1} dur={D}>{s2}</Show><Dot x1={60} x2={60} y={144} y2={176} t0={.28} t1={.36} dur={D}/><Dot x1={120} x2={226} y={144} y2={176} t0={.36} t1={.44} dur={D}/><Dot x1={175} x2={160} y={84} t0={.44} t1={.5} dur={D}/>
+<Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+// Modelling data, FIG 2: pay when reading or when writing. The restaurant page shows an average rating and
+// is opened 2,000 times a minute. Working it out on each view reads 48,000 reviews every time; keeping the
+// rating on the restaurant's row means one row per view, and one extra update, in the same transaction, per review.
+function ModelCopyFig({still,uid=""}){const M=`mc${uid}`,D="14s";
+const caps=[["1 · the restaurant page shows its average rating; 2,000 people open it a minute",INK],["2 · working it out on each view reads all 48,000 reviews, every single time",RED],["3 · keep the rating on the restaurant's row instead: each view reads one row",BLUE],["4 · each new review updates that row in the same transaction: a bit more work per write",BLUE]];
+const top=<g><text x="10" y="50" className="fk">WORK IT OUT ON EVERY VIEW</text><Bx x={10} y={62} w={150} h={40} t="Restaurant page" s="2,000 views a minute"/><Ar x1={162} y1={82} x2={296} y2={82} m={M}/><Bx x={300} y={62} w={180} h={40} t="reviews" s="48,000 rows for this place"/></g>;
+const s2=<g><text x="229" y="74" textAnchor="middle" className="fl" style={{fill:RED}}>average, every time</text><text x="496" y="78" className="fl" style={{fill:RED}}>≈ 9.6 crore rows</text><text x="496" y="94" className="fl" style={{fill:RED}}>read a minute</text></g>;
+const s3=<g><text x="10" y="150" className="fk">KEEP THE ANSWER ON THE RESTAURANT ROW</text><Bx x={10} y={162} w={150} h={40} t="Restaurant page" s="2,000 views a minute"/><Ar x1={162} y1={182} x2={296} y2={182} m={M}/><text x="229" y="174" textAnchor="middle" className="fl" style={{fill:BLUE}}>read 1 row</text>
+<Bx x={300} y={162} w={180} h={40} t="restaurants · id 42" s="rating 4.3 · 48,000 reviews" c={BLUE} fill="#f8faff"/><text x="496" y="178" className="fl" style={{fill:BLUE}}>2,000 rows read</text><text x="496" y="194" className="fl" style={{fill:BLUE}}>a minute</text></g>;
+const s4=<g><Bx x={10} y={222} w={150} h={40} t="Review API" s="a new review"/><Ar x1={162} y1={236} x2={330} y2={205} m={M}/><text x="172" y="262" className="fl">adds the review and updates the rating, together</text><text x="496" y="238" className="fl" style={{fill:BLUE}}>+1 update</text><text x="496" y="254" className="fl" style={{fill:BLUE}}>per review</text></g>;
+return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`mct${uid}`}><title id={`mct${uid}`}>Two ways to show a restaurant's average rating on a page opened 2,000 times a minute. Working it out on every view averages all 48,000 reviews each time, about 9.6 crore rows read a minute. Keeping the rating on the restaurant's own row means each view reads one row, 2,000 rows a minute. The price is paid on writes: each new review is added and the restaurant's rating updated in the same transaction.</title><Mk m={M}/>
+{top}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
+<Show t0={.25} t1={1} dur={D}>{s2}</Show>{[0,1,2].map(i=><Dot key={i} x1={164} x2={294} y={82} t0={.27+i*.07} t1={.33+i*.07} dur={D}/>)}
+<Show t0={.5} t1={1} dur={D}>{s3}</Show><Dot x1={164} x2={294} y={182} t0={.53} t1={.6} dur={D}/>
+<Show t0={.75} t1={1} dur={D}>{s4}</Show><Dot x1={164} x2={326} y={236} y2={206} t0={.78} t1={.86} dur={D}/></g>}</svg>}
+
 export const FIGS={
 "dm-whiteboard":{C:WhiteboardFig,ar:640/316,title:()=>"THE DATA MODEL ON THE WHITEBOARD"},
 "dm-kv-cache":{C:KvCacheFig,ar:640/296,title:()=>"A KEY-VALUE CACHE IN FRONT OF THE DATABASE"},
@@ -130,4 +169,6 @@ export const FIGS={
 "dm-endpoint-index":{C:EndpointIndexFig,ar:640/272,title:()=>"FROM ENDPOINT TO INDEX"},
 "dm-anomaly":{C:AnomalyFig,ar:640/240,title:()=>"ONE RENAME: ONE ROW, OR MANY"},
 "dm-cross-shard":{C:CrossShardFig,ar:640/272,title:()=>"ONE SHARD, OR ALL OF THEM"},
+"model-shapes":{C:ModelShapesFig,ar:640/280,title:()=>"ONE ORDER, TWO SHAPES"},
+"model-copy":{C:ModelCopyFig,ar:640/270,title:()=>"WORK IT OUT, OR KEEP THE ANSWER"},
 };

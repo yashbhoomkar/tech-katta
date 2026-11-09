@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "cap-designs",
   "group": "cap",
-  "no": "CONCEPT // 62",
+  "no": "CONCEPT // 37",
   "tag": "CAP THEOREM",
   "access": "paid",
   "date": "9 Nov 2026",
@@ -109,7 +109,7 @@
     },
     {
       "t": "p",
-      "x": "Even with a healthy network, waiting for copies to agree costs time. PACELC names that everyday half of the trade-off: if there's a Partition, Availability or Consistency; Else, Latency or Consistency. The concept 'CAP and PACELC in practice' covers it."
+      "x": "Even with a healthy network, waiting for copies to agree costs time. PACELC names that everyday half of the trade-off: if there's a Partition, Availability or Consistency; Else, Latency or Consistency."
     },
     {
       "t": "h2",

@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "distance",
   "group": "networking",
-  "no": "CONCEPT // 35",
+  "no": "CONCEPT // 10",
   "tag": "IN PRACTICE",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -39,7 +39,7 @@
     },
     {
       "t": "p",
-      "x": "Cloud providers group data centres into regions (Mumbai, Hyderabad, Singapore) and, inside each, into availability zones: separate buildings with separate power and network, a millisecond or two apart. Running in two or three zones of one region survives a building failing without paying the cost of distance. Running in several regions brings servers closer to users far away, and survives a whole region failing, but data must then be copied between regions, slowly and with care (see 'Replication' in Concepts)."
+      "x": "Cloud providers group data centres into regions (Mumbai, Hyderabad, Singapore) and, inside each, into availability zones: separate buildings with separate power and network, a millisecond or two apart. Running in two or three zones of one region survives a building failing without paying the cost of distance. Running in several regions brings servers closer to users far away, and survives a whole region failing, but data must then be copied between regions, slowly and with care (see 'Designing for consistency or for availability' in the CAP theorem concepts)."
     },
     {
       "t": "p",

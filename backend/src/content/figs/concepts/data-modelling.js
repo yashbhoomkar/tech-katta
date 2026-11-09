@@ -9,4 +9,6 @@ export const FIGS = [
   'dm-endpoint-index',
   'dm-anomaly',
   'dm-cross-shard',
+  'model-shapes',
+  'model-copy',
 ];

@@ -64,10 +64,10 @@ test('GET /v1/site returns all site copy plus the example system, publicly cache
 });
 
 test('content responses honour If-None-Match with 304', async () => {
-  const first = await get('/v1/articles/api-types');
+  const first = await get('/v1/articles/load-balancers');
   const etag = first.headers.get('etag');
   await first.arrayBuffer();
-  const second = await get('/v1/articles/api-types', { headers: { 'If-None-Match': etag } });
+  const second = await get('/v1/articles/load-balancers', { headers: { 'If-None-Match': etag } });
   assert.equal(second.status, 304);
   assert.equal(await second.text(), '');
 });
@@ -75,7 +75,7 @@ test('content responses honour If-None-Match with 304', async () => {
 test('GET /v1/articles lists summaries without bodies, optionally by section', async () => {
   const all = await (await get('/v1/articles')).json();
   assert.ok(all.articles.length >= 1);
-  const summary = all.articles.find(a => a.slug === 'api-types');
+  const summary = all.articles.find(a => a.slug === 'load-balancers');
   assert.ok(summary);
   for (const key of ['section', 'slug', 'no', 'tag', 'date', 'title', 'dek']) assert.ok(summary[key], key);
   assert.equal(summary.body, undefined);
@@ -88,10 +88,10 @@ test('GET /v1/articles lists summaries without bodies, optionally by section', a
 });
 
 test('GET /v1/articles/:slug returns the full article with the example system', async () => {
-  const response = await get('/v1/articles/api-types/');
+  const response = await get('/v1/articles/load-balancers/');
   assert.equal(response.status, 200);
   const article = await response.json();
-  assert.equal(article.slug, 'api-types');
+  assert.equal(article.slug, 'load-balancers');
   assert.ok(Array.isArray(article.body) && article.body.length > 10);
   assert.deepEqual(article.example, example);
 });
@@ -125,7 +125,7 @@ test('repo content is valid', () => {
 // Free or paid: every article says which; a problem is never free; the lists carry it.
 test('every article is free or paid, and no problem is free', async () => {
   const free = allArticles.filter((a) => a.access === 'free').map((a) => a.slug).sort();
-  assert.deepEqual(free, ['api-types', 'caches', 'cap-pacelc', 'how-to-answer', 'lamport-clocks', 'load-balancers']);
+  assert.deepEqual(free, ['caches', 'how-to-answer', 'lamport-clocks', 'load-balancers']);
   const problem = allArticles.find((a) => a.practice);
   const check = (change) => validateContent({ site, examples, articles: allArticles.map((a) => (a === problem ? change(structuredClone(a)) : a)), lab });
   assert.ok(check((a) => ({ ...a, access: 'free' })).some((p) => p.includes('must be paid')));
@@ -271,7 +271,7 @@ test('content preflight allows If-None-Match', async () => {
 });
 
 test('validation reports typos: unknown figure, bad table, unknown section', () => {
-  const article = structuredClone(allArticles[0]);
+  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers'));
   article.section = 'nowhere';
   article.body.push({ t: 'fig', id: 'nope', cap: 'x' }, { t: 'table', head: ['a', 'b'], rows: [['only one']] });
   const problems = validateContent({ site, examples, articles: [article] });
@@ -297,7 +297,7 @@ test('validation checks every site.json field the pages render', () => {
 });
 
 test('validation checks the optional "more" paragraphs of a type card', () => {
-  const article = structuredClone(allArticles[0]);
+  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers')); // has type cards and an analogy
   const card = article.body.find((b) => b.t === 'type');
   card.more = 'not a list';
   assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('more must be a list')));
@@ -306,8 +306,8 @@ test('validation checks the optional "more" paragraphs of a type card', () => {
 });
 
 test('validation checks real-life analogies: the analogy block, type cards and Lab components', () => {
-  const article = structuredClone(allArticles[0]);
-  const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a] }); };
+  const article = structuredClone(allArticles.find((a) => a.slug === 'load-balancers')); // has type cards and an analogy
+  const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a], lab }); };
   assert.ok(at((a) => { a.body.find((b) => b.t === 'analogy').x = ''; }).some((p) => p.includes('needs text x')));
   assert.ok(at((a) => { a.body.find((b) => b.t === 'type').like = 7; }).some((p) => p.includes('like must be text')));
   assert.deepEqual(at((a) => { a.body = a.body.filter((b) => b.t !== 'analogy'); for (const b of a.body) delete b.like; }), [], 'both optional');
@@ -362,7 +362,7 @@ test('CONTENT_DIR serves content from another directory, and SIGHUP reloads it (
 test('the API refuses to start on invalid content', async (t) => {
   const dir = await copyContent();
   t.after(() => rm(dir, { recursive: true, force: true }));
-  await editJson(path.join(dir, 'articles', 'concepts', 'api-types.json'), (a) => { a.body.push({ t: 'fig', id: 'missing', cap: 'x' }); });
+  await editJson(path.join(dir, 'articles', 'concepts', 'network-layers.json'), (a) => { a.body.push({ t: 'fig', id: 'missing', cap: 'x' }); });
   const port = await getFreePort();
   const child = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(port), CONTENT_DIR: dir }, stdio: ['ignore', 'ignore', 'pipe'] });
   let stderr = '';
@@ -477,7 +477,7 @@ test('GET /v1/articles/:slug/solution serves the solution design only: never the
   assert.deepEqual(s, { slug: 'url-shortener', nodes: src.practice.reference.nodes, edges: src.practice.reference.edges });
   assert.ok(!JSON.stringify(s).includes('wrong'));
   // only problems have one; bad slugs and deeper paths are 404
-  for (const path of ['/v1/articles/api-types/solution', '/v1/articles/nope/solution', '/v1/articles/UPPER/solution', '/v1/articles/a/b/solution', '/v1/articles/url-shortener/solution/x', '/v1/articles/solution']) {
+  for (const path of ['/v1/articles/load-balancers/solution', '/v1/articles/nope/solution', '/v1/articles/UPPER/solution', '/v1/articles/a/b/solution', '/v1/articles/url-shortener/solution/x', '/v1/articles/solution']) {
     const r = await get(path);
     assert.equal(r.status, 404, path);
   }

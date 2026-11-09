@@ -2,7 +2,7 @@
   "section": "concepts",
   "slug": "data-step",
   "group": "data-modelling",
-  "no": "CONCEPT // 44",
+  "no": "CONCEPT // 19",
   "tag": "DATA MODELLING",
   "access": "paid",
   "date": "8 Nov 2026",
@@ -93,7 +93,7 @@
     },
     {
       "t": "p",
-      "x": "The other articles in this group go through each step: choosing a database model, keys and relationships, indexes and normalisation, and sharding. The older concept 'Modelling data: start from the screens' covers the same ground from the angle of access patterns."
+      "x": "The other articles in this group go through each step: choosing a database model, keys and relationships, indexes and normalisation, and sharding."
     },
     {
       "t": "h2",
