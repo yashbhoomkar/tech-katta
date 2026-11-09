@@ -1,0 +1,136 @@
+{
+  "section": "concepts",
+  "slug": "special-indexes",
+  "group": "indexing",
+  "no": "CONCEPT // 67",
+  "tag": "DATABASE INDEXING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Indexes for special data, and indexes that do more: geospatial, inverted, composite, covering",
+  "dek": "Some data doesn't fit a single sorted list: points on a map, or words inside text. They need indexes built for them. And ordinary B-tree indexes become much more useful when they cover several columns in the right order, or carry enough columns to answer a query on their own. These four ideas account for most of the index questions in a design interview after 'which column?'.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Geospatial: a B-tree on latitude, then longitude, still scans a whole band of the map. Geohashes, quadtrees and R-trees index two dimensions so 'restaurants within 3 km' reads only nearby cells.",
+        "Inverted index: maps each word to the documents that contain it, so text search doesn't scan every document. It's what Elasticsearch and full-text search are built on.",
+        "Composite indexes serve queries on a leading prefix of their columns, so order matters: equality columns first, then the range or sort column. Covering indexes include every column a query needs, so the table isn't read at all."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Geospatial indexes"
+    },
+    {
+      "t": "p",
+      "x": "'Restaurants within 3 km of me' is a question about two dimensions at once. An ordinary index sorts by one value: index latitude, and the query 'latitude between A and B' finds a whole band stretching across the country, which then has to be filtered by longitude row by row. A composite index on (latitude, longitude) has the same problem, because longitude is only sorted within a single latitude."
+    },
+    {
+      "t": "fig",
+      "id": "ix-geo-band",
+      "cap": "A B-tree on latitude narrows the search to a band across the whole map; most of it is far away. A spatial index narrows it to the few cells around the user."
+    },
+    {
+      "t": "p",
+      "x": "Spatial indexes group nearby points so a search reads only the area around the user:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Geohash: divide the world into a grid of cells, each named by a string; nearby places share a prefix, so an ordinary B-tree on the geohash string finds a cell's places with a prefix search. Search the user's cell and its neighbours, because a place just across a cell border has a different prefix.",
+        "Quadtree: split the map into four squares, and keep splitting squares that hold too many places. Busy city centres get small cells and empty land gets big ones.",
+        "R-tree: group nearby points or shapes into bounding rectangles, and rectangles into bigger rectangles, like a B-tree for shapes. PostGIS uses it (through GiST indexes) and it handles polygons such as delivery zones as well as points."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "prox-quadtree",
+      "cap": "A fixed grid wastes cells on empty land and overloads the busy centre. A quadtree splits only where the restaurants are."
+    },
+    {
+      "t": "p",
+      "x": "The concept 'Finding what's nearby' covers cell sizes, hexagon grids and places that move."
+    },
+    {
+      "t": "h2",
+      "x": "Inverted indexes"
+    },
+    {
+      "t": "p",
+      "x": "A B-tree on dish names can find names that start with 'Butter', but not names that contain 'paneer' somewhere in the middle: a LIKE '%paneer%' query has to read every row. An inverted index turns the data around: for every word, it keeps the list of documents that contain it. Searching for 'paneer tikka' looks up two short lists and intersects them."
+    },
+    {
+      "t": "fig",
+      "id": "es-inverted",
+      "cap": "Each word keeps the list of dishes that contain it, so a search reads only the lists for its own words. That is why searching crores of dishes takes milliseconds."
+    },
+    {
+      "t": "p",
+      "x": "Inverted indexes power full-text search: Elasticsearch and OpenSearch (built on Lucene), and PostgreSQL's GIN indexes for full-text and array search. They also store word positions and frequencies, which is what lets search engines rank results. The component 'Elasticsearch' covers how they are built and kept in sync."
+    },
+    {
+      "t": "h2",
+      "x": "Composite indexes"
+    },
+    {
+      "t": "p",
+      "x": "A composite index covers several columns, sorted by the first, then by the second within each value of the first, and so on, like a phone book sorted by surname and then first name. That order decides which queries it can serve."
+    },
+    {
+      "t": "fig",
+      "id": "index-order",
+      "cap": "A composite index is sorted by its first column, then by the second within it. A query can use it from the left; skipping the first column means scanning it all."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It serves queries that use its leading columns: an index on (restaurant_id, status, placed_at) serves 'restaurant 42's orders', 'restaurant 42's preparing orders', and 'restaurant 42's preparing orders, oldest first'.",
+        "It does little for queries that skip the first column: 'all preparing orders' can't use it, just as a phone book sorted by surname can't find everyone named Rahul.",
+        "Order the columns: equality filters first, then the column used for a range or for sorting. (restaurant_id, status, placed_at) serves 'WHERE restaurant_id = 42 AND status = 'preparing' ORDER BY placed_at' straight from the index; putting placed_at first would not.",
+        "One composite index often replaces several single-column ones, saving write cost."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Covering indexes"
+    },
+    {
+      "t": "p",
+      "x": "Normally an index finds the matching entries and then the database fetches each row from the table to read the other columns it needs, one more page read per row. If the index already contains every column the query uses, the database can answer from the index alone (an index-only scan) and never touch the table."
+    },
+    {
+      "t": "fig",
+      "id": "ix-covering",
+      "cap": "The order list needs id, status and total. An index on (customer_id, placed_at) INCLUDE (id, status, total) answers it alone; without the included columns, each of the 20 orders costs another read of the table."
+    },
+    {
+      "t": "code",
+      "label": "A covering index for 'my orders'",
+      "x": "CREATE INDEX orders_by_customer\n  ON orders (customer_id, placed_at DESC)\n  INCLUDE (id, status, total_paise);\n\n-- answered from the index alone:\nSELECT id, placed_at, status, total_paise\nFROM orders\nWHERE customer_id = 77\nORDER BY placed_at DESC\nLIMIT 20;",
+      "say": "Create an index on orders by customer id and placed-at time, newest first, and include the id, status and total. The query for customer 77's latest twenty orders, reading id, time, status and total, is answered from the index alone, without reading the table."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It makes the most common reads much faster, at the cost of a bigger index and more work on writes to the included columns.",
+        "Use it for one or two hot queries, not everywhere. PostgreSQL and SQL Server have INCLUDE; in MySQL, adding the columns to the index key does the same, and InnoDB secondary indexes always carry the primary key.",
+        "In PostgreSQL an index-only scan also needs the table's visibility map to be up to date (vacuum keeps it so); on a table with many recent changes it still checks some rows."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For location search, name a spatial index (geohash with a B-tree, or PostGIS) instead of indexing latitude and longitude.",
+        "For text search, name an inverted index, usually Elasticsearch kept in sync from the database.",
+        "For the main queries, give the composite index with its column order and why, and mention a covering index for the hottest one."
+      ]
+    }
+  ]
+}

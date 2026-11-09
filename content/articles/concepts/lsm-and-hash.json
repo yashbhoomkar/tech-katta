@@ -1,0 +1,158 @@
+{
+  "section": "concepts",
+  "slug": "lsm-and-hash",
+  "group": "indexing",
+  "no": "CONCEPT // 66",
+  "tag": "DATABASE INDEXING",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "LSM trees and hash indexes: when writes or exact lookups dominate",
+  "dek": "B-trees are a balanced choice. Two other structures win at the extremes. An LSM tree turns a flood of writes into fast sequential appends, at the cost of slower reads; it powers Cassandra, RocksDB and the Bigtable family. A hash index answers 'exactly this key' in one step and can't answer anything else. Both come up in interviews for write-heavy and key-lookup systems.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "LSM tree: writes go to a log and an in-memory table, which is flushed to sorted, immutable files on disk; background compaction merges the files. Writes are cheap and sequential.",
+        "The cost is on reads: a key may be in memory or in any of several files, so reads check several places. Bloom filters and compaction keep this manageable.",
+        "Hash index: hash the key to find its location directly. Excellent for exact lookups; useless for ranges, sorting or prefixes. Most databases default to B-trees because they do both reasonably well."
+      ]
+    },
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "When writes pour in"
+    },
+    {
+      "t": "p",
+      "x": "Picture Zotato's rider tracking: every active rider's phone sends a location every few seconds, lakhs of writes a second at dinner. Or a metrics system taking millions of measurements a second from thousands of servers. With a B-tree, each insert lands somewhere in the tree and updates pages at random places on disk; at these rates the random writes become the bottleneck."
+    },
+    {
+      "t": "h2",
+      "x": "How an LSM tree works"
+    },
+    {
+      "t": "p",
+      "x": "A log-structured merge tree, LSM tree, never updates data in place. It collects writes in memory and writes them to disk in large sorted batches:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each write is first appended to a write-ahead log on disk, which is sequential and fast and lets the write survive a crash.",
+        "It is then inserted into the memtable, a sorted structure in memory. The write is complete: no disk page was searched or rewritten.",
+        "When the memtable fills (tens of megabytes), it is written out in one go as an SSTable, a sorted, immutable file, and a fresh memtable starts.",
+        "In the background, compaction merges SSTables into larger ones, keeping only the newest version of each key and dropping deleted ones, so the number of files stays bounded."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-lsm-write",
+      "cap": "A write is appended to the log and inserted into the memtable in memory. When the memtable fills, it is written to disk as one sorted file; compaction later merges small files into bigger ones."
+    },
+    {
+      "t": "h2",
+      "x": "The cost: reads look in several places"
+    },
+    {
+      "t": "p",
+      "x": "Because a key's latest value might be in the memtable or in any SSTable, a read checks the memtable first, then the SSTables from newest to oldest until it finds the key. A key that doesn't exist at all would mean checking every file. LSM stores fight this in three ways:"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A Bloom filter per SSTable answers 'is this key definitely not in this file?' in memory, so most files are skipped without a disk read.",
+        "Each SSTable has a small sparse index, so finding a key inside a file takes one or two reads.",
+        "Compaction keeps the number of files small, at the price of extra background writing (write amplification): the same data is rewritten several times as files are merged."
+      ]
+    },
+    {
+      "t": "fig",
+      "id": "ix-lsm-read",
+      "cap": "Reading a key: check the memtable, then each file's Bloom filter. Files that can't hold the key are skipped; only one is actually read."
+    },
+    {
+      "t": "p",
+      "x": "So an LSM tree trades read speed and background work for very fast writes. It suits write-heavy data, especially time-ordered data such as metrics, logs, messages and locations. It is used by Cassandra and ScyllaDB, RocksDB and LevelDB (and the many systems built on RocksDB), Bigtable and HBase, and, by most accounts, DynamoDB's storage layer. The paper summary 'Bigtable' in Research Papers shows the same design."
+    },
+    {
+      "t": "h2",
+      "x": "Hash indexes"
+    },
+    {
+      "t": "p",
+      "x": "A hash index is a hash table: it hashes the key and stores, at that position, where the row lives. A lookup hashes the key and goes straight there, in one step on average, however big the table."
+    },
+    {
+      "t": "fig",
+      "id": "ix-hash",
+      "cap": "A hash index jumps straight to 'phone = 98200 00001' in one step. But 'phones starting 98200' or 'orders after 8 pm' can't use it: hashing scrambles the order."
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is excellent for exact matches: 'the session for this token', 'the user with this id'.",
+        "It is useless for anything else. Hashing scatters neighbouring values, so there is no order to scan: no ranges, no ORDER BY, no prefix search.",
+        "Where you meet them: Redis and Memcached are essentially huge hash tables; PostgreSQL offers hash indexes (crash-safe since version 10) but they are rarely chosen; MySQL's MEMORY engine uses them by default; and databases build temporary hash tables internally to join tables."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "In practice, a B-tree does exact lookups almost as fast and handles ranges too, which is why it stays the default. Choose a hash index only when the access is exact-match only and every bit of speed counts, which in a design usually means an in-memory key-value store, not a database index."
+    },
+    {
+      "t": "table",
+      "label": "B-tree, LSM tree or hash",
+      "head": [
+        "Compared",
+        "B-tree",
+        "LSM tree",
+        "Hash index"
+      ],
+      "rows": [
+        [
+          "Writes",
+          "Update pages in place: moderate",
+          "Append and flush: very fast",
+          "Fast"
+        ],
+        [
+          "Exact lookups",
+          "A few page reads",
+          "Memtable plus a few files, helped by Bloom filters",
+          "One step"
+        ],
+        [
+          "Ranges and sorting",
+          "Yes",
+          "Yes, within the sorted files",
+          "No"
+        ],
+        [
+          "Background work",
+          "Little",
+          "Compaction",
+          "Resizing"
+        ],
+        [
+          "Typical home",
+          "PostgreSQL, MySQL, MongoDB",
+          "Cassandra, RocksDB, HBase, Bigtable",
+          "Redis, Memcached, MEMORY tables"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "For a write-heavy store (locations, metrics, chat messages), name an LSM-based database and say why: sequential writes, compaction later.",
+        "Name the cost: slower reads and compaction work, and how Bloom filters soften it.",
+        "Use hash indexes only for exact-match lookups; a B-tree is fine for most."
+      ]
+    }
+  ]
+}
