@@ -61,6 +61,7 @@
     { "from": "/dashboard/concepts/hash-rings/", "to": "/dashboard/concepts/hash-ring/", "permanent": true },
     { "from": "/dashboard/concepts/timeouts-retries", "to": "/dashboard/concepts/failing-calls/", "permanent": true },
     { "from": "/dashboard/concepts/timeouts-retries/", "to": "/dashboard/concepts/failing-calls/", "permanent": true },
+<<<<<<< HEAD
     { "from": "/dashboard/concepts/consensus", "to": "/dashboard/components/zookeeper/", "permanent": true },
     { "from": "/dashboard/concepts/consensus/", "to": "/dashboard/components/zookeeper/", "permanent": true },
     { "from": "/dashboard/concepts/distributed-transactions", "to": "/dashboard/concepts/workflows/", "permanent": true },
@@ -109,6 +110,12 @@
     { "from": "/dashboard/interview-questions/autocomplete/", "to": "/dashboard/interview-questions/", "permanent": true },
     { "from": "/dashboard/papers", "to": "/dashboard/concepts/", "permanent": true },
     { "from": "/dashboard/papers/*", "to": "/dashboard/concepts/", "permanent": true },
+=======
+    { "from": "/dashboard/concepts/consensus", "to": "/dashboard/papers/raft/", "permanent": true },
+    { "from": "/dashboard/concepts/consensus/", "to": "/dashboard/papers/raft/", "permanent": true },
+    { "from": "/dashboard/concepts/distributed-transactions", "to": "/dashboard/concepts/workflows/", "permanent": true },
+    { "from": "/dashboard/concepts/distributed-transactions/", "to": "/dashboard/concepts/workflows/", "permanent": true },
+>>>>>>> origin/ccr-26f78085-ymb3p0
     { "host": "analytics.katta.cc", "from": "/", "to": "/analytics/", "permanent": false }
   ]
 }

@@ -192,12 +192,20 @@
     },
     {
       "source": "/dashboard/concepts/consensus",
+<<<<<<< HEAD
       "destination": "/dashboard/components/zookeeper/",
+=======
+      "destination": "/dashboard/papers/raft/",
+>>>>>>> origin/ccr-26f78085-ymb3p0
       "permanent": true
     },
     {
       "source": "/dashboard/concepts/consensus/",
+<<<<<<< HEAD
       "destination": "/dashboard/components/zookeeper/",
+=======
+      "destination": "/dashboard/papers/raft/",
+>>>>>>> origin/ccr-26f78085-ymb3p0
       "permanent": true
     },
     {
@@ -211,6 +219,7 @@
       "permanent": true
     },
     {
+<<<<<<< HEAD
       "source": "/dashboard/components/load-balancers",
       "destination": "/dashboard/concepts/spreading-load/",
       "permanent": true
@@ -431,6 +440,8 @@
       "permanent": true
     },
     {
+=======
+>>>>>>> origin/ccr-26f78085-ymb3p0
       "source": "/",
       "has": [
         {

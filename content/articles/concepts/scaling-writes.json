@@ -65,7 +65,11 @@
     },
     {
       "t": "p",
+<<<<<<< HEAD
       "x": "When even the steady rate is more than one primary can take, split the data by a key so each shard takes a share of the writes: orders by customer, messages by chat. The Sharding concepts cover choosing the key, and the Consistent hashing concepts cover adding shards later. The key has to spread the writes, not just the data: sharding by date puts all of today's writes on one shard."
+=======
+      "x": "When even the steady rate is more than one primary can take, split the data by a key so each shard takes a share of the writes: orders by customer, messages by chat. The Sharding component covers choosing the key, and the Consistent hashing concepts cover adding shards later. The key has to spread the writes, not just the data: sharding by date puts all of today's writes on one shard."
+>>>>>>> origin/ccr-26f78085-ymb3p0
     },
     {
       "t": "h2",

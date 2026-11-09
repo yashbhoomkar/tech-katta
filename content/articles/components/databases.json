@@ -1,0 +1,94 @@
+{
+  "section": "components",
+  "slug": "databases",
+  "group": "storage",
+  "no": "COMPONENT // 06",
+  "tag": "STORAGE",
+  "access": "paid",
+  "date": "4 Nov 2026",
+  "title": "Databases: choosing one, making it fast, keeping it up",
+  "dek": "Relational or NoSQL and how to decide, why transactions matter for an order, what an index does, and how replicas and a standby share the work of reads and failures.",
+  "body": [
+    {"t": "tldr", "items": [
+      "The database is the source of truth. Caches, replicas and search indexes are copies of it.",
+      "Start with a relational database (PostgreSQL or MySQL). Choose a NoSQL store when you can name the access pattern it serves better, not just because of \"scale\".",
+      "Transactions make a group of changes happen together or not at all. Orders and payments need them.",
+      "Indexes turn a scan of crores of rows into a few page reads. Add one for each main query, and no more, because each one slows writes.",
+      "Read replicas spread reads but lag behind. A Multi-AZ standby keeps you up when the primary fails. Backups undo mistakes, which replicas copy faithfully."
+    ]},
+    {"t": "example"},
+    {"t": "h2", "x": "What a database is for"},
+    {"t": "p", "x": "Everything Zotato must not lose lives in its database: customers, restaurants, menus, orders, payments. Other parts of the system can be rebuilt from it: a cache can be emptied, a search index rebuilt, a server replaced. The database is the one place where the latest true value of each thing is kept, and where it survives a crash."},
+    {"t": "analogy", "x": "The shop's ledger. It is the one record everyone trusts, so every change is written into it carefully. Photocopies of the ledger can answer questions, but only the ledger itself takes new entries."},
+    {"t": "h2", "x": "Relational or NoSQL"},
+    {"t": "p", "x": "The question is not which kind is better but how the data will be read and written. Write down the main queries first; the right store usually follows. The Data modelling concepts show how."},
+    {"t": "type", "name": "Relational", "kind": "THE DEFAULT · POSTGRESQL, MYSQL", "what": "Tables with a fixed set of columns, linked by keys, queried with SQL. Transactions across many rows.", "use": "The core of most products: users, orders, payments, inventory. Anything with relations and rules that must always hold.", "avoid": "A single table taking more writes than the largest machine can handle, or data with no fixed shape.", "ex": "Orders, order items, payments and restaurants, joined to answer \"what did this restaurant sell today?\"", "like": "A school register: same columns for every student, and the roll number links it to the marks register.", "more": ["SQL can answer questions you did not plan for, which matters because products change. You can add an index or a report later without moving the data.", "PostgreSQL also stores JSON in a column (`jsonb`) and can index inside it, which covers many cases people reach for a document database for. PostgreSQL, DynamoDB and Cassandra each have their own page in Tools by name."]},
+    {"t": "type", "name": "Key-value", "kind": "DYNAMODB, REDIS", "what": "Get and put a value by its key, very fast, at almost any scale.", "use": "Lookups by one known key: sessions, carts, feature flags, the latest state of something.", "avoid": "Questions you do not know in advance; you can only ask by key (or a few indexes you set up beforehand).", "ex": "Each rider's last known location, keyed by rider ID, overwritten every few seconds and read by the tracking screen.", "like": "Lockers at a railway station: hand over the token, get your bag. You cannot ask for \"all blue bags\".", "more": ["DynamoDB spreads keys across partitions for you and answers in single-digit milliseconds at any size, but you must design the keys around your queries up front."]},
+    {"t": "type", "name": "Document", "kind": "MONGODB", "what": "Each record is a JSON-like document that can have its own shape, with indexes on any field.", "use": "Records whose fields vary a lot, read and written as one piece.", "avoid": "Data with many relations you need to join and keep consistent across documents.", "ex": "Restaurant profiles: one has table booking and opening hours per weekday, another a halal certificate and a cloud kitchen flag.", "like": "A file folder per customer: everything about them in one place, each folder with different papers."},
+    {"t": "type", "name": "Wide-column", "kind": "CASSANDRA, SCYLLADB", "what": "Rows grouped by a partition key and sorted inside it, spread across many machines, built for heavy writes.", "use": "Huge append-mostly data read by key and time range: events, messages, sensor readings.", "avoid": "Ad hoc queries, joins, or transactions across partitions.", "ex": "Location history: 1 lakh riders sending a point every 5 seconds is 20,000 writes a second, read back as \"rider 9's route for order 123\".", "like": "A diary per rider, pages in date order. Easy to add today's page, easy to read last Tuesday."},
+    {"t": "more", "label": "Compare the four, and where search fits", "body": [
+      {"t": "table", "label": "Database kinds compared", "head": ["Kind", "Data looks like", "You ask by", "Grows by", "Zotato uses it for"], "rows": [
+        ["Relational", "Tables and keys", "Anything SQL can say", "Bigger machine, replicas, then sharding", "Orders, payments, restaurants"],
+        ["Key-value", "Key → value", "The key", "Partitions, automatically", "Rider's latest location, carts"],
+        ["Document", "JSON documents", "Any indexed field", "Shards", "Restaurant profiles"],
+        ["Wide-column", "Rows per partition, sorted", "Partition key + range", "Adding nodes", "Location history"]
+      ]},
+      {"t": "p", "x": "Search (\"biryani near me, open now\") needs a search index such as Elasticsearch or OpenSearch. Treat it as a copy fed from the database, not as the source of truth: if it is lost, rebuild it."}
+    ]},
+    {"t": "h2", "x": "Transactions"},
+    {"t": "p", "x": "Placing an order changes several things: a new order row, a row for each item, the coupon's use count, the payment's status. If the server crashes halfway, Zotato must not end up with an order that has no items, or a used coupon with no order. A transaction groups the changes: they all commit, or none do. That is the A (atomic) in ACID; the rest says the rules you defined always hold (C), concurrent transactions don't see each other's half-done work (I), and once committed the change survives a crash (D)."},
+    {"t": "more", "label": "Two people, one last coupon", "body": [
+      {"t": "p", "x": "The coupon FIRST50 allows 1,000 uses and 999 are gone. Two customers apply it at the same moment. Both read \"999 used\", both think one is left, both succeed: 1,001 uses. This is a race, and transactions alone at the default isolation level do not stop it."},
+      {"t": "p", "x": "Fixes, from simplest. Make the check part of the update: `UPDATE coupons SET used = used + 1 WHERE code = 'FIRST50' AND used < 1000`, then check that one row changed. Or lock the row while deciding (`SELECT … FOR UPDATE`). Or run the transaction as `SERIALIZABLE` and retry when the database aborts one of them."}
+    ]},
+    {"t": "h2", "x": "Indexes"},
+    {"t": "fig", "id": "db-index", "cap": "\"My orders\" runs `WHERE customer_id = 77 ORDER BY created_at DESC LIMIT 20` on a table of 5 crore orders. Without an index the database reads every row to find a few matches: seconds. With an index on `(customer_id, created_at)` it walks a small tree, three or four page reads, and the 20 newest orders are already in order: about a millisecond."},
+    {"t": "list", "items": [
+      "An index is a sorted copy of some columns with pointers to the rows. Most are B-trees: even a table of crores of rows is only three or four levels deep.",
+      "Column order matters. `(customer_id, created_at)` serves \"this customer's orders, newest first\" and \"this customer's orders\", but not \"all orders since 8 pm\".",
+      "Each index costs on every write, because it must be updated too, and takes space. Index the queries you actually run, not every column.",
+      "Check, don't guess: `EXPLAIN ANALYZE` shows whether a query used an index or scanned the table, and how long it took. The Database indexing concepts go further: B-trees, column order, covering indexes and the other kinds."
+    ]},
+    {"t": "h2", "x": "More reads: replicas"},
+    {"t": "fig", "id": "db-replicas", "cap": "Writes go to the primary. Each write is copied to the Multi-AZ standby before it is confirmed, and to two read replicas a moment later. A customer places an order, then opens \"My orders\" from a replica about 100 ms behind, and the new order is not there yet. A few hundred milliseconds later it is."},
+    {"t": "p", "x": "A read replica is a copy that applies the primary's changes as they stream in and answers reads. Send it queries that can be slightly old and would otherwise load the primary: order history, restaurant dashboards, reports. Replicas don't help with writes, because every replica replays every write."},
+    {"t": "list", "items": [
+      "Replicas lag, usually by milliseconds, sometimes seconds under heavy writes. Watch the lag and stop sending reads to a replica that falls far behind.",
+      "Read your own writes: right after a user changes something, read it from the primary (or return it in the write's response), so they never see their own change missing.",
+      "Cache or replica? A cache is for the same answers asked for again and again; a replica is for many different queries that still need SQL."
+    ]},
+    {"t": "h2", "x": "Staying up"},
+    {"t": "p", "x": "A Multi-AZ standby is a copy in another availability zone that receives every write before it is confirmed. It serves no reads; its only job is to take over. When the primary fails, the database's address moves to the standby in one to two minutes, and the app's connections must reconnect and retry. Without a standby, recovering a crashed database can take half an hour or more. In the Lab, a database pushed past 120% of its capacity for 5 minutes crashes: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30."},
+    {"t": "p", "x": "Replicas and standbys copy mistakes instantly. A `DELETE` without a `WHERE` reaches every copy in milliseconds. Backups are what undo it: daily snapshots plus the change log give point-in-time recovery to any second in the last week or so. Test restoring, not just backing up."},
+    {"t": "more", "label": "How much data can you lose, and for how long can you be down", "body": [
+      {"t": "p", "x": "Two numbers frame every failure plan. How much recent data you can afford to lose (the recovery point): with a synchronous standby, nothing; with an asynchronous replica in another region, the last few seconds; with only nightly backups, up to a day. And how long you can be down (the recovery time): a standby takes a minute or two, a restore from backup takes tens of minutes to hours, depending on size."},
+      {"t": "p", "x": "Orders and payments usually need both close to zero. Analytics can often accept hours."}
+    ]},
+    {"t": "more", "label": "When writes outgrow one machine", "body": [
+      {"t": "list", "items": [
+        "Move to a bigger instance first. It is one change, and large instances go very far.",
+        "Write less: batch updates, move work that can wait onto a queue, and don't store what you can compute.",
+        "Move write-heavy data that doesn't need joins to a store built for it, such as location history to a wide-column database.",
+        "Only then split the main data across several databases by a key, which is sharding, the next article. The concept 'When writes outrun one database' covers batching, queues and hot keys."
+      ]},
+      {"t": "p", "x": "Watch connections too. Each PostgreSQL connection is a separate process using memory, and a few hundred are already a lot. With many app servers, put a pooler (PgBouncer, RDS Proxy) between them and the database."}
+    ]},
+    {"t": "h2", "x": "What it costs you"},
+    {"t": "list", "items": [
+      "Money: a managed database is billed per hour plus storage and I/O. A Multi-AZ standby doubles the instance price, and each read replica costs another full instance.",
+      "Schema changes on big tables can lock them. Add columns that may be empty, fill them in batches, and use online migration tools for large changes.",
+      "Replica lag bugs: the screen that shows old data right after a change.",
+      "The data model is the hardest thing to change later, so spend time on the main tables and keys early."
+    ]},
+    {"t": "h2", "x": "In an interview"},
+    {"t": "list", "items": [
+      "Start relational for the core entities. Sketch two or three tables with their keys.",
+      "If you choose NoSQL for something, name the access pattern: \"location history, written 20,000 times a second, read by rider and time\".",
+      "Name the index each main query needs.",
+      "Do the read/write maths. Reads: cache, then replicas. Writes: bigger instance, then sharding.",
+      "Mention Multi-AZ and backups, and read-your-writes when you add replicas.",
+      "Use a transaction, or a conditional update, wherever two people can race for the same thing."
+    ]},
+    {"t": "lab", "x": "Load the example design, raise the Clients until the database crashes, and see how long the outage lasts. Then turn on Multi-AZ and run it again.", "to": "lab", "go": "Open the Lab"}
+  ]
+}

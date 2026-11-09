@@ -61,6 +61,18 @@
     "concepts/time-series",
     "concepts/sketches",
     "concepts/change-capture",
+<<<<<<< HEAD
+=======
+    "components/load-balancers",
+    "components/cdns",
+    "components/api-gateways",
+    "components/app-servers",
+    "components/caches",
+    "components/databases",
+    "components/sharding",
+    "components/object-storage",
+    "components/queues-and-streams",
+>>>>>>> origin/ccr-26f78085-ymb3p0
     "components/redis",
     "components/elasticsearch",
     "components/kafka-in-practice",

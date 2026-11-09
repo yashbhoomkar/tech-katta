@@ -1,0 +1,71 @@
+{
+  "section": "components",
+  "slug": "load-balancers",
+  "group": "edge",
+  "no": "COMPONENT // 01",
+  "tag": "EDGE",
+  "access": "free",
+  "date": "4 Nov 2026",
+  "title": "Load balancers: one address in front of many servers",
+  "dek": "How a load balancer spreads requests, notices a dead server and lets you deploy without downtime, and what it costs you to add one.",
+  "body": [
+    {"t": "tldr", "items": [
+      "A load balancer gives your servers one address and passes each request to one healthy server behind it.",
+      "It is what lets you scale out: add servers behind it and clients never notice.",
+      "Layer 7 (HTTP) is the usual choice for web APIs. Layer 4 (TCP) is for raw speed or protocols that are not HTTP.",
+      "Round robin is fine when requests cost the same. Use least connections when they don't. Hash on a key when the same user must reach the same server.",
+      "Health checks take a dead server out within seconds. Keep servers stateless so you don't need sticky sessions."
+    ]},
+    {"t": "example"},
+    {"t": "fig", "id": "lb-spread", "cap": "Every Zotato app talks to one address, `api.zotato.in`. The load balancer behind it hands each request to an Order API server in turn. Server 3 stopped answering its health check, so it gets nothing until it passes again. The apps never find out."},
+    {"t": "h2", "x": "What it does"},
+    {"t": "p", "x": "One server can only handle so many requests a second. When Zotato's dinner rush needs four Order API servers, the apps still need a single address to call. The load balancer is that address. It accepts every connection and passes each request to one of the servers behind it."},
+    {"t": "p", "x": "That one job gives you three things. You can add or remove servers without telling any client (scaling). A crashed server stops getting traffic (availability). And you can update servers one at a time while the others keep serving (deploys without downtime)."},
+    {"t": "analogy", "x": "A bank's token machine. You take a token and the display sends you to whichever counter is free. When a cashier goes on a break, the display stops sending people to that counter, and nobody in the queue has to know which cashier is which."},
+    {"t": "h2", "x": "Layer 4 or layer 7"},
+    {"t": "p", "x": "Load balancers differ in how much of the request they read before deciding where it goes."},
+    {"t": "type", "name": "Layer 7 (HTTP)", "kind": "READS THE REQUEST", "what": "Ends the HTTPS connection, reads the method, path, headers and cookies, then picks a server.", "use": "Web and mobile APIs: routing by path or host, HTTPS in one place, retries, per-route rules.", "avoid": "Protocols that are not HTTP, or the last bit of latency at millions of connections.", "ex": "`/orders/*` goes to the Order servers and `/menus/*` to the Menu servers, all behind `api.zotato.in`. The certificate for that address lives on the load balancer only.", "like": "A receptionist who reads why you came and sends you to the right department.", "more": ["Examples: AWS Application Load Balancer, Google Cloud's HTTP(S) load balancer, Nginx, HAProxy and Envoy in HTTP mode.", "Because it ends the HTTPS connection, it decrypts every request. That costs CPU on the load balancer but saves every server from doing it. Traffic to the servers can be encrypted again if your security rules require it."]},
+    {"t": "type", "name": "Layer 4 (TCP/UDP)", "kind": "READS ONLY ADDRESSES", "what": "Looks at IP addresses and ports only and forwards the connection without opening it.", "use": "Very high connection counts, non-HTTP protocols (databases, MQTT, game traffic), fixed IP addresses.", "avoid": "Anything that needs the path, a header or a cookie to decide.", "ex": "Zotato's rider app keeps a long-lived connection open to Dispatch. A layer 4 balancer spreads those connections and stays out of the way.", "like": "A building guard who checks which floor you are going to and waves you through without reading your papers.", "more": ["Examples: AWS Network Load Balancer, Google Cloud's network load balancer, HAProxy and Envoy in TCP mode, LVS.", "It balances connections, not requests. A client that keeps one connection open for an hour stays on one server for that hour, however many requests it sends."]},
+    {"t": "h2", "x": "How it picks a server"},
+    {"t": "fig", "id": "lb-algos", "cap": "Round robin goes A, B, C, A, B, C. Least connections sends the next three requests to B, which has the fewest still open. Hashing on the user ID sends user 42 to server C every time."},
+    {"t": "list", "items": [
+      "Round robin: each server in turn. Simple and fair when every request costs about the same. Weighted round robin gives a bigger server a bigger share.",
+      "Least connections (or least outstanding requests): send to the server with the fewest requests still open. Better when some requests take 10 ms and others 2 seconds, like Zotato's search next to its order history export.",
+      "Hash on a key: the same key (user ID, restaurant ID, client IP) always lands on the same server. Useful when that server keeps something in memory for that key. Consistent hashing keeps most keys in place when a server is added or removed; the Consistent hashing concepts show how.",
+      "Random choice of two: pick two servers at random and send to the less busy one. Nearly as good as least connections, and it needs no shared count, so it suits many balancers working at once."
+    ]},
+    {"t": "h2", "x": "Health checks and deploys"},
+    {"t": "p", "x": "The load balancer calls each server's health endpoint every few seconds (Zotato's is `GET /health`). After a few failures in a row the server is marked unhealthy and gets no new requests. After a few passes it comes back. Many balancers also watch real traffic and pull a server that keeps returning errors."},
+    {"t": "p", "x": "For a deploy, a server is first taken out of rotation. The load balancer stops sending it new requests but lets the ones in progress finish (connection draining). Then the server is updated and put back. Do that one server at a time and nobody sees an error."},
+    {"t": "more", "label": "Writing a good health check", "body": [
+      {"t": "list", "items": [
+        "Check what the server needs to do its job. An Order API that cannot reach its database is not healthy, even if the process is running.",
+        "Keep it cheap and fast. It runs every few seconds on every server, so it must never run a heavy query.",
+        "Be careful with shared dependencies. If every server reports unhealthy because the database is slow, the balancer takes them all out and a slow site becomes a dead one. Many teams check the database in a separate readiness check and keep the health check to \"the process is alive and can serve\".",
+        "Set thresholds on purpose: checks every 10 seconds with 3 failures needed means a dead server can get traffic for up to 30 seconds. Retries at the load balancer or in the client cover that gap."
+      ]}
+    ]},
+    {"t": "h2", "x": "Sticky sessions, and why to avoid them"},
+    {"t": "p", "x": "A sticky session sends a user back to the same server every time, usually with a cookie. Apps that keep the logged-in user or the cart in a server's memory need it. It has costs: load gets uneven, and when that server dies its users lose their session. The better fix is to keep servers stateless and put the session in a shared store such as Redis. Then any server can answer any request, and scaling is just adding servers."},
+    {"t": "h2", "x": "What it costs you"},
+    {"t": "list", "items": [
+      "One more hop: about a millisecond inside one data centre, more if it ends HTTPS for every new connection.",
+      "Money: managed load balancers charge per hour plus for usage (connections, requests, data). Small next to the servers, but not free.",
+      "A new single point of failure, unless it is redundant. Managed load balancers run across several availability zones for you. If you run your own (Nginx, HAProxy), run two with a shared floating IP so one can take over.",
+      "Limits of its own: a sudden spike can arrive faster than a managed balancer scales. Some providers let you pre-warm before a known event, like a big match or a sale."
+    ]},
+    {"t": "more", "label": "Load balancing across regions", "body": [
+      {"t": "p", "x": "A load balancer usually lives in one region. To spread users across regions, the layer in front is DNS or anycast. GeoDNS answers `api.zotato.in` with the address of the nearest healthy region. Anycast announces one IP address from many places so the network itself routes users to the closest one; CDNs and Cloudflare-style edges work this way."},
+      {"t": "p", "x": "So a full path often has three levels: DNS picks the region, a regional load balancer picks a service, and a service mesh or client-side balancing picks the instance for calls between services."}
+    ]},
+    {"t": "h2", "x": "In an interview"},
+    {"t": "list", "items": [
+      "Draw it early: clients → load balancer → a group of stateless app servers. It is the usual first step from one server to many.",
+      "Say which layer and why: layer 7 for an HTTP API, layer 4 for long-lived connections or non-HTTP traffic.",
+      "Mention health checks and that the load balancer itself is redundant, so it is not your single point of failure.",
+      "If the interviewer brings up sessions, keep them out of the servers (a shared store or a token) rather than using sticky sessions.",
+      "Reach for consistent hashing only when the same key must hit the same server, such as a cache node."
+    ]},
+    {"t": "lab", "x": "Zotato's order API runs on one server and 2,000 requests a second are arriving. Put a load balancer in front, add servers, and keep orders flowing for six hours.", "to": "lab/one-server", "go": "Try \"Too much for one server\""}
+  ]
+}
