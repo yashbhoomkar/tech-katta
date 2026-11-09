@@ -1,7 +1,7 @@
 // The owner's analytics dashboard (analytics.katta.cc). Reads /v1/admin/summary, which only admin
 // accounts may read; the session is the one from signing in on tech.katta.cc (same site, so the API's
 // cookie comes along). Mobile-first: tiles, one daily chart, a funnel, then tables.
-import React,{useEffect,useMemo,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{API}from"./api.js";import"./admin.css";
+import"./fonts.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{API}from"./api.js";import"./admin.css";
 
 const RANGES=[[1,"24 hours"],[7,"7 days"],[30,"30 days"],[90,"90 days"]];
 const SITE="https://tech.katta.cc";
