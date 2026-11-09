@@ -36,7 +36,9 @@ test('a worker judges exactly like the API used to, for every problem and its re
 });
 
 test('a design over the time limit is stopped, and the next one is judged on a fresh worker', async () => {
-  const pool = judgePool({ size: 1, timeoutMs: 200 });
+  // 2 s: the slow design needs 5-10 s, while the next job must start a fresh worker and judge within the same
+  // limit, which a busy CI machine couldn't do in the 200 ms this test first used
+  const pool = judgePool({ size: 1, timeoutMs: 2000 });
   try {
     const a = problems.find((p) => p.slug === 'url-shortener');
     await assert.rejects(pool.run(job(slowDesign(), a)), (e) => e instanceof JudgeError && e.code === 'judge_timeout');
