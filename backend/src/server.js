@@ -205,7 +205,8 @@ function route(request, response) {
 // One request must never take the process (and every other visitor) down: anything a handler throws,
 // or an account handler's promise rejecting, is logged and answered with a 500 if nothing was sent yet.
 function failed(request, response, error) {
-  console.error(`Request failed: ${request.method} ${String(request.url).slice(0, 200)}\n`, error?.stack || error);
+  // the address is the visitor's text: data for a fixed format, never the format itself
+  console.error('Request failed: %s %s\n%s', String(request.method), String(request.url).slice(0, 200), error?.stack || error);
   if (response.headersSent) { response.destroy(); return; }
   try { sendJson(request, response, 500, { status: 'error', error: 'internal_error' }); } catch { response.destroy(); }
 }
