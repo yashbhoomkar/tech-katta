@@ -20,7 +20,7 @@ const R=[["GET /orders/9101","order 9101 shown","order 9101 shown",0],["PUT /use
 const head=<g><T x={10} y={52} t="request, sent twice" b/><T x={300} y={52} t="after the first" b/><T x={470} y={52} t="after the second" b/></g>;
 const row=i=>{const [r,a,b,bad]=R[i],y=66+i*30;return <g key={i}><T x={10} y={y+15} t={r}/><Bx x={300} y={y} w={150} h={24} t={a}/><Bx x={470} y={y} w={160} h={24} t={b} c={bad?RED:BLUE} fill={bad?LR:LB}/></g>};
 const caps=[["1 · reads, full replacements and deletes end in the same state, however often they're sent",BLUE],["2 · a PATCH that sets a value is safe to repeat too",BLUE],["3 · a PATCH that adds to something is not: the cart now has two",RED],["4 · neither is POST: a retried order becomes two orders, which is why it needs a key",RED]];
-const g=[<g>{row(0)}{row(1)}{row(2)}</g>,row(3),row(4),row(5)];
+const g=[<g key="first">{row(0)}{row(1)}{row(2)}</g>,row(3),row(4),row(5)];
 return <Fig still={still} h={252} id={`arm${uid}`} caps={caps} title="The same request sent twice, as on a retry. GET of order 9101, PUT of an address, and DELETE of a cart item all end in the same state after the second send; the delete answers 404 the second time but the item is still gone. A PATCH that sets an order's status to cancelled is also safe to repeat. A PATCH that adds one dish to the cart is not: the cart ends with two. And POST /orders creates a second order, 9102, which is why placing an order needs an idempotency key."
 base={head} g={g} last={<g>{g}</g>}/>}
 

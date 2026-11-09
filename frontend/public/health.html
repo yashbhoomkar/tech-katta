@@ -9,6 +9,7 @@
 </head>
 <body><div class="wrap">
 <nav class="top"><a class="brand" href="/"><span class="mark">tk</span><span>tech.katta</span></a><span class="mono">SYSTEM STATUS / HEALTH</span></nav>
+<main>
 <header><div class="eyebrow">Operations · Live checks</div><h1>Service health</h1><p>Live status for the Tech Katta frontend and backend API.<br>API results depend on service availability and browser CORS access.</p></header>
 <section class="overall" aria-live="polite"><span id="overall-orb" class="orb"></span><div class="main"><div id="overall-title" class="title">Checking services…</div><div id="overall-sub" class="sub">Running initial health checks</div></div><span id="overall-pill" class="pill">CHECKING</span></section>
 <section class="grid" aria-label="Service checks">
@@ -17,6 +18,7 @@
 </section>
 <section class="details"><div class="details-head"><h2>Latest API response</h2><span id="response-code">WAITING</span></div><div id="response-body" class="body">Waiting for the first check…</div></section>
 <div class="actions"><p>LAST CHECK · <span id="last-check">Starting…</span> · AUTO-REFRESH EVERY 30S</p><button id="refresh" type="button">Refresh checks ↻</button></div>
+</main>
 <footer class="mono"><span>TECH KATTA / HEALTH</span><span id="build-info">Path: /health</span></footer>
 </div>
 <script src="/health.js"></script></body></html>

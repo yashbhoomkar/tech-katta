@@ -19,7 +19,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s2}{s3}{s4}</g>}/>}
 
 // Index step, FIG 2: one insert, several writes.
 function CostFig({still,uid=""}){const M=`ic${uid}`;
-const tgt=(i,t,s,c=BLUE)=><g key={t}><Ar x1={182} y1={118} x2={346} y2={62+i*44} m={M} c={c}/><Bx x={350} y={44+i*44} w={280} h={36} t={t} s={s} c={c} fill={LB}/></g>;
+const tgt=(i,t,s,c=BLUE)=><g key={i}><Ar x1={182} y1={118} x2={346} y2={62+i*44} m={M} c={c}/><Bx x={350} y={44+i*44} w={280} h={36} t={t} s={s} c={c} fill={LB}/></g>;
 const base=<Bx x={10} y={96} w={170} h={44} t="INSERT order 9105" s="one new row"/>;
 const s1=tgt(0,"orders table","the row itself");
 const s2=tgt(1,"primary key index","(id)");
