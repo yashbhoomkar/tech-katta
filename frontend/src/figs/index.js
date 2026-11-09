@@ -9,12 +9,15 @@
 import manifest from"virtual:fig-manifest";
 const modules=import.meta.glob("./*/*.jsx");
 const drawn={},loading={};
-const load=m=>loading[m]||=modules[`./${m}.jsx`]().then(x=>{Object.assign(drawn,x.FIGS)},e=>{delete loading[m];throw e});
+// A module that can't be fetched fails with figs:true. The browser remembers a failed module and won't fetch
+// it again in this page, so the page's "Try again" reloads the page instead (dashboard.jsx, solve.jsx).
+const load=m=>loading[m]||=modules[`./${m}.jsx`]().then(x=>{if(!x?.FIGS)throw new Error("no FIGS");Object.assign(drawn,x.FIGS)})
+.catch(e=>{delete loading[m];throw Object.assign(new Error(`couldn't load the figures in ${m}`),{figs:true,cause:e})});
 // a figure id some module draws
 export const knownFig=id=>Object.hasOwn(manifest,id);
 // the figure, once its module has loaded (loadFigs)
 export const figOf=id=>drawn[id];
-// load the modules for these figure ids; rejects if one can't be loaded (the page offers "Try again")
+// load the modules for these figure ids; rejects (figs:true) if one can't be loaded
 export const loadFigs=ids=>Promise.all([...new Set(ids.filter(knownFig).map(id=>manifest[id]))].map(load));
 // start loading a sub-tab's figures early, while its article is still on its way
 export const prefetchFigs=(tab,subTab)=>{if(modules[`./${tab}/${subTab}.jsx`])load(`${tab}/${subTab}`).catch(()=>{})};

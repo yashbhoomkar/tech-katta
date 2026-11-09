@@ -132,8 +132,8 @@ const knownFigs=a=>a.body.some(x=>x.t==="fig"&&!knownFig(x.id))?{...a,body:a.bod
 // the article, once the modules that draw its figures have loaded (figs/index.js), so it shows complete
 const withFigs=a=>{const k=knownFigs(a);return loadFigs(k.body.filter(x=>x.t==="fig").map(x=>x.id)).then(()=>k)};
 // A late answer for the article the visitor has already left is dropped (cur), so it never replaces the one on screen.
-function ArticlePage({s}){const[st,set]=useState({});const cur=useRef(s.slug);cur.current=s.slug;const load=()=>{const want=s.slug;set({});prefetchFigs(s.section,s.group);getJSON(`/v1/articles/${want}`).then(withFigs).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":"failed"})})};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
-return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
+function ArticlePage({s}){const[st,set]=useState({});const cur=useRef(s.slug);cur.current=s.slug;const load=()=>{const want=s.slug;set({});prefetchFigs(s.section,s.group);getJSON(`/v1/articles/${want}`).then(withFigs).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":e.figs?"figs":"failed"})})};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
+return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={st.err==="figs"?()=>location.reload():load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
 
 // The dashboard's start page (no tab selected): the three library cards. A card opens its section
 // (tab selected in the sidebar and top bar) and that section's first article, or the section itself

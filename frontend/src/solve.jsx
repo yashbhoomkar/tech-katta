@@ -38,7 +38,7 @@ const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useSt
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
 // a late answer for a problem the visitor has already left is dropped (cur): its starting design would otherwise open on this one
-const cur=useRef(slug);cur.current=slug;const load=()=>{const want=slug;set({});getJSON(`/v1/articles/${want}`).then(prep).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":"failed"})})};useEffect(load,[slug]);
+const cur=useRef(slug);cur.current=slug;const load=()=>{const want=slug;set({});getJSON(`/v1/articles/${want}`).then(prep).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":e.figs?"figs":"failed"})})};useEffect(load,[slug]);
 useEffect(()=>{getJSON("/v1/lab").then(setLab,()=>{})},[]);
 const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]);
 useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
@@ -67,7 +67,7 @@ const copySolution=()=>{if(!sol)return;setUndo(mine());put(sol);const all=read(S
 const undoCopy=()=>{if(!undo)return;put(undo);setUndo(null)};
 const drag=e=>{e.preventDefault();const x0=e.clientX,w0=w;const mv=ev=>setW(Math.min(maxW(),Math.max(MIN,w0+ev.clientX-x0)));const up=()=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up)};addEventListener("pointermove",mv);addEventListener("pointerup",up)};
 const key=e=>{const d=e.key==="ArrowLeft"?-24:e.key==="ArrowRight"?24:0;if(d){e.preventDefault();setW(v=>Math.min(maxW(),Math.max(MIN,v+d)))}};
-if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="d-desc">{s.missing} <a href="#problems">{s.back}</a></p>:<LoadError what="this problem" retry={load}/>}</section>;
+if(st.err)return <section className="d-panel">{st.err==="missing"?<p className="d-desc">{s.missing} <a href="#problems">{s.back}</a></p>:<LoadError what="this problem" retry={st.err==="figs"?()=>location.reload():load}/>}</section>;
 if(!st.a)return <section className="d-panel"><Loading label={qs[i]?.title}/></section>;
 const a=st.a,P=a.practice,body=statement(a.body),ch=a.body.find(b=>b.t==="lab"&&/^lab\/./.test(b.to));const showLab=!narrow||canvas;
 // Run: the example tests. Submit: every test, the written steps, a score, a saved submission.
