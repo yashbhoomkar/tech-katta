@@ -12,7 +12,14 @@ export class JudgeError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 
-export function judgePool({ size = Math.max(1, Math.min(2, os.availableParallelism() - 1)), timeoutMs = 10_000, maxQueue = 20, workerUrl = new URL('./judge-worker.js', import.meta.url) } = {}) {
+// How many designs are judged at once: JUDGE_WORKERS (1-8) when set, e.g. 1 on a host with one shared
+// CPU; otherwise one fewer than the CPUs, at most 2 (the VPS default).
+export const defaultSize = (env = process.env.JUDGE_WORKERS, cpus = os.availableParallelism()) => {
+  const n = Number(env);
+  return Number.isInteger(n) && n >= 1 && n <= 8 ? n : Math.max(1, Math.min(2, cpus - 1));
+};
+
+export function judgePool({ size = defaultSize(), timeoutMs = 10_000, maxQueue = 20, workerUrl = new URL('./judge-worker.js', import.meta.url) } = {}) {
   const idle = [], queue = [];
   let workers = 0, nextId = 1, closed = false;
 

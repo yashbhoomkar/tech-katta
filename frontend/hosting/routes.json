@@ -1,0 +1,44 @@
+{
+  "_about": [
+    "The site's routing and response headers, written once for any host (see HOSTING.md at the repository root).",
+    "node hosting/emit.mjs vercel      writes frontend/vercel.json from this file (a test checks the two match).",
+    "node hosting/emit.mjs cloudflare  writes _redirects, _headers and 404 fallbacks into a build (npm run build:cloudflare).",
+    "Paths: '*' matches the rest of a path; ':splat' in 'to' puts that part back.",
+    "rewrites: serve 'to' when no file exists at 'from' (the address bar keeps 'from').",
+    "redirects: send the browser to 'to'; permanent is 308, otherwise 307; 'host' limits a rule to one domain.",
+    "headers: added to every response whose path matches."
+  ],
+  "rewrites": [
+    { "from": "/health", "to": "/health.html" },
+    { "from": "/health/", "to": "/health.html" },
+    { "from": "/dashboard", "to": "/dashboard/index.html" },
+    { "from": "/dashboard/*", "to": "/dashboard/index.html" },
+    { "from": "/analytics", "to": "/analytics/index.html" }
+  ],
+  "headers": [
+    {
+      "path": "/*",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; media-src 'self'; connect-src 'self' https://tech-api.katta.cc https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+      }
+    },
+    {
+      "path": "/analytics/*",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow",
+        "Cache-Control": "no-store"
+      }
+    }
+  ],
+  "redirects": [
+    { "from": "/dashboard/networking", "to": "/dashboard/concepts/", "permanent": true },
+    { "from": "/dashboard/networking/*", "to": "/dashboard/concepts/:splat", "permanent": true },
+    { "host": "analytics.katta.cc", "from": "/", "to": "/analytics/", "permanent": false }
+  ]
+}

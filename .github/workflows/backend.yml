@@ -5,7 +5,7 @@ name: Backend
 # also imports the Lab, store and judge code from frontend/src, so those paths count too.
 on:
   pull_request:
-    paths: ['backend/**', 'content/**', 'frontend/src/lab/**', 'frontend/src/judge/**', 'frontend/src/figs/**', '.github/workflows/backend.yml']
+    paths: ['backend/**', 'content/**', 'frontend/src/**', 'frontend/package.json', '.dockerignore', '.github/workflows/backend.yml']
 
 permissions:
   contents: read
@@ -34,3 +34,26 @@ jobs:
         run: node --check src/server.js
       - name: Check content
         run: node scripts/check-content.mjs ../content
+
+  # The API's container image (backend/Dockerfile), for hosts other than the VPS (HOSTING.md). Production
+  # doesn't use it yet, so this keeps it working: build it, start it, and check it serves the content.
+  container:
+    name: Build and run API container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build image
+        run: docker build -f backend/Dockerfile -t tech-katta-api:ci .
+      - name: Run and check it
+        run: |
+          set -eu
+          docker run -d --name api -p 8080:8080 -e JUDGE_WORKERS=1 tech-katta-api:ci
+          for attempt in $(seq 1 30); do curl --fail --silent http://127.0.0.1:8080/health >/tmp/health.json && break; sleep 1; done
+          cat /tmp/health.json; echo
+          grep -q '"status":"ok"' /tmp/health.json
+          for path in /v1/site /v1/articles /v1/lab /v1/auth/config; do curl --fail --silent --show-error -o /dev/null "http://127.0.0.1:8080$path"; echo "$path ok"; done
+          test "$(docker inspect -f '{{.Config.User}}' api)" = node
+      - name: Logs
+        if: always()
+        run: docker logs api || true
