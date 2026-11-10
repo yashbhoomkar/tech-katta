@@ -128,6 +128,15 @@ export function analyse(compiled, practice, lab, sims = []) {
       push({ code: 'F_DUAL_WRITE', severity: op.durable || op.effect === 'once' ? 'fail' : 'warn', op: op.id, nodes: [b.node, dual.node], ...FIND.dualWrite(name(handlerOf(plan)), s.entity, name(b.node), name(dual.node)), concept: 'consistency' });
       break;
     }
+    // messages pushed to people who are connected (§9.3, §10.2): through pub/sub nothing is kept, so a durable call must
+    // also store the event for someone who is offline; order over pub/sub is not guaranteed
+    for (const s of steps) {
+      if (s.op !== 'publish') continue;
+      const b = plan.steps[s.id];
+      if (op.durable && !steps.some(isWrite)) push({ code: 'F_NO_CATCH_UP', severity: 'fail', op: op.id, nodes: [b.node], ...FIND.noCatchUp(opName(op)) });
+      if (op.ordered?.by && b.viaKind === 'pubsub') push({ code: 'F_ORDER', severity: 'warn', op: op.id, nodes: [b.via], ...FIND.orderPubsub(name(b.via)) });
+      if (op.ordered?.by && b.viaKind === 'stream' && !(cfg(b.via).keyField || []).some((f) => match(op.ordered.by, f) || f === op.ordered.by)) push({ code: 'F_ORDER', severity: 'fail', op: op.id, nodes: [b.via], ...FIND.orderStream(name(b.via), op.ordered.by) });
+    }
     // a call to another company before anything is written (§10.5)
     const ci = steps.findIndex((s) => s.op === 'call' && plan.steps[s.id]?.sync);
     if (ci >= 0 && steps.slice(ci + 1).some((s) => isWrite(s) && plan.steps[s.id]?.sync) && !steps.slice(0, ci).some(isWrite))
@@ -138,6 +147,9 @@ export function analyse(compiled, practice, lab, sims = []) {
       if (!b || b.sync || !isWrite(s) || (s.cond && Object.keys(s.cond).length)) continue;
       const q = (qs[s.id] || []).find((id) => node(id)?.type === 'queue' && cfg(id).kind !== 'fifo');
       if (q) { push({ code: 'F_ORDER', severity: 'fail', op: op.id, nodes: [q], ...FIND.order(name(q), op.ordered.by), concept: 'ordering' }); break; }
+      // a stream keeps order per partition: only when it is partitioned by the field the order is about
+      const st = (qs[s.id] || []).find((id) => node(id)?.type === 'stream' && !(cfg(id).keyField || []).some((f) => match(op.ordered.by, f) || f === op.ordered.by));
+      if (st) { push({ code: 'F_ORDER', severity: 'fail', op: op.id, nodes: [st], ...FIND.orderStream(name(st), op.ordered.by), concept: 'ordering' }); break; }
     }
   }
 
@@ -170,6 +182,13 @@ export function analyse(compiled, practice, lab, sims = []) {
   }
 
   // ---- §10.8 things that grow -------------------------------------------------------------------------------------------
+  // events kept for less time than their readers take: gone before they are read (§8.7)
+  const seenR = new Set();
+  for (const { sim } of sims) for (const q of sim.queues || []) {
+    if (node(q.node)?.type !== 'stream' || seenR.has(q.node)) continue;
+    const keep = (cfg(q.node).retentionHours || 24) * 3600;
+    if (q.waitWorst > keep) { seenR.add(q.node); push({ code: 'F_RETENTION', severity: 'fail', op: q.op, nodes: [q.node], ...FIND.retention(name(q.node), Math.round(q.waitWorst / 3600), cfg(q.node).retentionHours || 24) }); }
+  }
   const seenQ = new Set();
   for (const { sim } of sims) for (const q of sim.queues || []) {
     if (!q.growing || seenQ.has(q.node)) continue;

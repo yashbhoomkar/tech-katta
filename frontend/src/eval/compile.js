@@ -65,7 +65,7 @@ export function compile(design, lab, practice) {
       for (const to of flowOut(id, op)) {
         if (path.includes(to)) continue;
         const t = type(to);
-        if (t === 'queue' && depth <= MAX_QUEUES) {
+        if ((t === 'queue' || t === 'stream') && depth <= MAX_QUEUES) {
           for (const w of flowOut(to, op)) {
             if (type(w) !== 'server' || path.includes(w)) continue;
             const pre = [...path, to, w];
@@ -157,6 +157,23 @@ export function compile(design, lab, practice) {
     return { step, call: true, store: e.store, table: { name: step.preset }, path: e.path, async: !!e.queue, queue: e.queue, worker: e.worker, qi: e.qi, a: { how: 'call', work: lab.eval.work.pass, rows: 1, query: `call ${name(e.store)}` } };
   }
 
+  // Publishing to people who are connected (§9.3): from the handler through a pub/sub channel or an event stream to a
+  // real-time gateway (or straight to one), and that gateway must hold the connections of a "connect" call.
+  const connected = () => new Set(ops.filter((o) => o.kind === 'connect').flatMap((o) => { const p = result.plans[o.id]; const out = []; const walk = (x) => { if (x.kind === 'handle' && type(x.node) === 'realtime') out.push(x.node); x.children.forEach(walk); }; (p?.roots || []).forEach(walk); return out; }));
+  function bindPublish(op, h, step) {
+    const routes = [];
+    for (const via of flowOut(h, op)) {
+      const t = type(via);
+      if (t === 'realtime') routes.push({ via: null, gw: via, kind: 'direct' });
+      else if (t === 'pubsub' || t === 'stream') for (const gw of flowOut(via, op)) if (type(gw) === 'realtime') routes.push({ via, gw, kind: t });
+    }
+    if (!routes.length) return { error: err('E_NO_PUBLISH', PLAN.E_NO_PUBLISH(step.label || 'Sending to connected people'), { step: step.id }) };
+    const live = connected(), ok = routes.filter((r) => live.has(r.gw));
+    if (!ok.length) return { error: err('E_NO_CONNECTION', PLAN.E_NO_CONNECTION(name(routes[0].gw)), { node: routes[0].gw, step: step.id }) };
+    const best = ok.find((r) => r.kind === 'stream') || ok.find((r) => r.kind === 'pubsub') || ok[0];
+    return { step, publish: true, ...best, store: best.gw, table: { name: best.kind }, a: { how: 'publish', work: W.pass, rows: 1, query: '' } };
+  }
+
   // Every step of op from handler h. Memoised per (op, h). → { ok, bindings, error?, unbound }
   const bindMemo = new Map();
   function bindAll(op, h) {
@@ -171,7 +188,7 @@ export function compile(design, lab, practice) {
         const at = worker || h;
         b = step.isolated && !configOf(node(at), lab).sandbox ? { error: err('E_NO_SANDBOX', PLAN.E_NO_SANDBOX(name(at), step.label || 'This step'), { node: at, step: step.id }) } : { step, compute: true, node: at, async: !!worker };
       } else if (step.op === 'call') b = bindCall(op, h, step, sR, aR);
-      else if (step.op === 'publish') b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.label || 'Sending to connected people'), { step: step.id }) };
+      else if (step.op === 'publish') b = bindPublish(op, h, step);
       else if (step.op === 'tx') b = bindTx(op, h, step, sR, aR);
       else if (isWrite(step)) b = bindWrite(op, h, step, sR, aR);
       else if (isRead(step)) b = bindRead(op, h, step, sR, aR);
@@ -254,12 +271,15 @@ export function compile(design, lab, practice) {
       return at;
     };
     const queues = new Map();   // deferred steps through the same queue share one message (§7.5)
+    const enqueues = new Map();
     const consumeHop = (handleHop, b) => {
       const k = b.path.slice(0, b.qi + 2).join('\u0000');
       if (queues.has(k)) return queues.get(k);
       const pre = b.path.slice(1, b.qi + 1); // nodes from after h up to the queue
-      const enq = mk(b.queue, 'enqueue', { work: W.enqueue });
-      chain(handleHop, pre, enq, null);
+      // a stream's message is stored once and read by every consumer; a queue's goes to one of its workers
+      const ek = b.path.slice(0, b.qi + 1).join('\u0000');
+      let enq = type(b.queue) === 'stream' ? enqueues.get(ek) : null;
+      if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); }
       const con = mk(b.worker, 'consume', { work: W.consume + W.handle, sync: false, cpuMs: 0 });
       enq.children.push(con);
       queues.set(k, con);
@@ -273,6 +293,14 @@ export function compile(design, lab, practice) {
         let at = handleHop;
         if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }); }
         at.work += units * per; at.cpuMs = (at.cpuMs || 0) + (step.cpuMs || 0) * per;
+        return;
+      }
+      if (b.publish) {
+        const per = (step.times || 1) * (step.audience?.avg || 1) * (step.online ?? 1);
+        const deliver = mk(b.gw, 'deliver', { step: step.id, work: W.pass, sync: false, per, via: b.kind });
+        if (b.via) { const enq = mk(b.via, 'enqueue', { step: step.id, work: W.enqueue }); handleHop.children.push(enq); enq.children.push(deliver); }
+        else handleHop.children.push(deliver);
+        plan.steps[step.id] = { node: b.gw, table: b.kind, how: 'publish', work: W.pass, rows: 1, query: '', sync: false, via: b.via, viaKind: b.kind };
         return;
       }
       const write = isWrite(step);
@@ -358,7 +386,9 @@ export function compile(design, lab, practice) {
     return plan;
   }
 
-  for (const op of ops) result.plans[op.id] = buildPlan(op);
+  // connect calls first (a publish needs to know which gateways hold connections), then kept in the problem's order
+  for (const op of [...ops.filter((o) => o.kind === 'connect'), ...ops.filter((o) => o.kind !== 'connect')]) result.plans[op.id] = buildPlan(op);
+  { const built = result.plans; result.plans = Object.create(null); for (const op of ops) result.plans[op.id] = built[op.id]; }
 
   // ---- feeds (§7.6): every store a read uses must be written by something ------------------------------------
   const writers = Object.values(result.plans).flatMap((p) => p.writers || []);
