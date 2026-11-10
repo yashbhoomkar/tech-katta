@@ -1,4 +1,4 @@
-// Problems: every Interview Question and Lab challenge in one list, with what this visitor has done
+// Problems: every Interview Question and challenge in one list, with what this visitor has done
 // (a question practised against the clock or designed on the canvas, stars earned in a challenge).
 // Copy in site.json "problems"; progress from progress.js, kept up to date by its "tk-progress" event;
 // challenges from GET /v1/lab. The question list is a LeetCode-style table (QuestionTable), also used by
@@ -20,7 +20,7 @@ const[stats,setStats]=useState({});useEffect(()=>{getJSON("/v1/problems/stats").
 const designed=new Set();if(lab){let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}for(const d of Object.values(readStore(raw,lab).designs))if(d.problem&&d.nodes.length>1)designed.add(d.problem)}
 return{prog,lab,err,designed,tick,stats}}
 
-// The question list: status, number, title, difficulty, the Lab challenge's stars; filters by difficulty.
+// The question list: status, number, title, difficulty, its related challenge's stars; filters by difficulty.
 export function QuestionTable({p,qs,groups,base,data,todo}){
 const s=p.solve||{cols:["","#","","","",""],designed:"",solved:""},[level,setLevel]=useState("all");const{prog,lab,designed,stats}=data;
 const levels=(groups||[]).filter(g=>qs.some(a=>a.group===g[0]));
@@ -37,7 +37,7 @@ return <div className="qt">
 <td className="c3"><em className={"pb-tag "+a.group}>{a.tag}</em></td>
 <td className="c6">{stats[a.slug]?.submissions?<span className="qt-acc" title={`${stats[a.slug].accepted} of ${stats[a.slug].submissions} submissions accepted`}>{Math.round(100*stats[a.slug].accepted/stats[a.slug].submissions)}%</span>:<span className="qt-none">—</span>}</td>
 <td className="c5">{best!=null?<b className="qt-score">{best}</b>:<span className="qt-none">—</span>}</td>
-<td className="c4">{ch?<a href={`#lab/${ch.id}`} title={ch.title}><Stars n={prog.stars[ch.id]||0} max={ch.stars.length} label={fill(p.starsLabel,{n:prog.stars[ch.id]||0,max:ch.stars.length})}/></a>:""}</td></tr>)}
+<td className="c4">{ch?<a href={`#problems/challenge/${ch.id}`} title={ch.title}><Stars n={prog.stars[ch.id]||0} max={ch.stars.length} label={fill(p.starsLabel,{n:prog.stars[ch.id]||0,max:ch.stars.length})}/></a>:""}</td></tr>)}
 </tbody></table>:<p className="pb-none">{p.allDone}</p>}</div>}
 
 // Interview Questions tab: the method page ("Start here") as a card, then every question in the table.
@@ -61,5 +61,5 @@ return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebr
 <section className="pb-group" aria-labelledby="pb-q"><h2 id="pb-q">{p.questions}</h2><p>{p.questionsDesc}</p>
 <QuestionTable p={p} qs={qs} groups={groups} base="problems" data={data} todo={todo}/></section>
 <section className="pb-group" aria-labelledby="pb-c"><h2 id="pb-c">{p.challenges}</h2><p>{p.challengesDesc}</p>
-{err?<p className="pb-none">{p.labError}</p>:!lab?<p className="pb-none">…</p>:showC.length?<ol>{showC.map(({ch,n,max})=><li key={ch.id}><a href={`#lab/${ch.id}`}><span className="pb-meta"><small>{levels[ch.level]||ch.level}</small></span><b>{ch.title}</b><Stars n={n} max={max} label={fill(p.starsLabel,{n,max})}/></a></li>)}</ol>:<p className="pb-none">{p.allDone}</p>}</section>
+{err?<p className="pb-none">{p.labError}</p>:!lab?<p className="pb-none">…</p>:showC.length?<ol>{showC.map(({ch,n,max})=><li key={ch.id}><a href={`#problems/challenge/${ch.id}`}><span className="pb-meta"><small>{levels[ch.level]||ch.level}</small></span><b>{ch.title}</b><Stars n={n} max={max} label={fill(p.starsLabel,{n,max})}/></a></li>)}</ol>:<p className="pb-none">{p.allDone}</p>}</section>
 </section>}

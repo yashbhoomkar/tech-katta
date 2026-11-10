@@ -71,6 +71,21 @@
   ],
   "redirects": [
     {
+      "source": "/dashboard/lab",
+      "destination": "/dashboard/problems/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/lab/ind-vs-pak",
+      "destination": "/dashboard/problems/ind-vs-pak/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/lab/(.*)",
+      "destination": "/dashboard/problems/challenge/$1",
+      "permanent": true
+    },
+    {
       "source": "/dashboard/networking",
       "destination": "/dashboard/concepts/",
       "permanent": true

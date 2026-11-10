@@ -221,7 +221,7 @@
     {
       "t": "lab",
       "x": "\"The menu everyone reads\" is the same shape as the 8 pm home screen: a flood of identical reads. Put a cache in front and watch the database calm down.",
-      "to": "lab/read-heavy",
+      "to": "problems/challenge/read-heavy",
       "go": "Try the read-heavy challenge"
     }
   ],

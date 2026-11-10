@@ -101,7 +101,7 @@
     {
       "t": "lab",
       "x": "On Monday at 10 am, 30 lakh laptops sync at once and 3,000 files a second land in storage, each needing 8 database queries. No database takes that, but the work can wait: let a queue hold the burst.",
-      "to": "lab/monday-sync",
+      "to": "problems/challenge/monday-sync",
       "go": "Try \"Monday 10 am: every laptop syncs\""
     },
     {

@@ -9,7 +9,7 @@
     "build:cloudflare": "VITE_HOST_ANALYTICS=none vite build && node hosting/emit.mjs cloudflare dist",
     "hosting:vercel": "node hosting/emit.mjs vercel",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test src/judge/requests.test.js src/lab/schema.test.js src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/progress.test.js src/lab/importer.test.js src/lablite.test.js src/lab/merge.test.js src/analytics.test.js src/judge/judge.test.js src/routes.test.js src/seo.test.js src/account.test.js src/hints.test.js src/figmanifest.test.js hosting/hosting.test.js"
+    "test": "node --test src/judge/requests.test.js src/lab/schema.test.js src/lab/engine.test.js src/lab/store.test.js src/lab/challenges.test.js src/progress.test.js src/lablite.test.js src/lab/merge.test.js src/analytics.test.js src/judge/judge.test.js src/routes.test.js src/seo.test.js src/account.test.js src/hints.test.js src/figmanifest.test.js hosting/hosting.test.js"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

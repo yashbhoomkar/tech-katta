@@ -216,7 +216,7 @@
             "\"The same long URL is shortened twice: same code?\" Optional: keep an index on `long_url` per account and return the existing code, at the cost of one more lookup per create.",
             "\"Can a custom alias clash with a generated code?\" Yes, if they share a format: an alias `2Bj` is a code the counter will reach. Give them separate spaces: aliases of 8 or more characters, or with a `-`.",
             "\"How do you count clicks without slowing redirects?\" Write a click event to a stream (Kafka) and count in a separate consumer; the redirect never waits for it.",
-            "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the \"cache restarts at dinner\" Lab challenge.",
+            "\"What if Redis goes down?\" Redirects fall through to the database replicas; size them for a cold cache at the busiest hour, as in the \"cache restarts at dinner\" challenge.",
             "\"Links in two regions?\" Give each region its own range of IDs, so codes stay unique without talking across regions."
           ]
         }
@@ -224,13 +224,13 @@
     },
     {
       "t": "lab",
-      "x": "The same flood in the Lab: a promo SMS at 8 pm sends 30,000 taps a second at short links for 15 minutes. Keep redirects up without paying for a database that size.",
-      "to": "lab/sms-link",
+      "x": "The same flood as a challenge: a promo SMS at 8 pm sends 30,000 taps a second at short links for 15 minutes. Keep redirects up without paying for a database that size.",
+      "to": "problems/challenge/sms-link",
       "go": "Try the SMS link challenge"
     }
   ],
   "practice": {
-    "brief": "The tests send redirects and new links in the mix the article works out: about 99 redirects for every new link. Every redirect makes one lookup; a cache in front of the database answers 9 in 10 of them. Your Clients' own rate is ignored: each test sends its own traffic. The tests send one region's share of the traffic: 35,000 redirects a second at the evening peak, a tenth of the 3.5 lakh the article works out for all of India, so the Lab's numbers stay small. At full size the design is the same, with more of everything.",
+    "brief": "The tests send redirects and new links in the mix the article works out: about 99 redirects for every new link. Every redirect makes one lookup; a cache in front of the database answers 9 in 10 of them. Your Clients' own rate is ignored: each test sends its own traffic. The tests send one region's share of the traffic: 35,000 redirects a second at the evening peak, a tenth of the 3.5 lakh the article works out for all of India, so the numbers on the canvas stay small. At full size the design is the same, with more of everything.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,

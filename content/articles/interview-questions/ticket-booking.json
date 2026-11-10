@@ -232,9 +232,9 @@
     },
     {
       "t": "lab",
-      "x": "The same match night from the other side: 3.5 crore people watching the stream. See how a CDN and enough servers keep up when everyone arrives at the toss.",
-      "to": "lab/ind-vs-pak",
-      "go": "Try the IND vs PAK challenge"
+      "x": "The same match night from the other side: 3.5 crore people watching the stream. See how a CDN, and servers started before the toss, keep up when everyone arrives at once.",
+      "to": "problems/ind-vs-pak",
+      "go": "Try the IND vs PAK problem"
     }
   ],
   "practice": {

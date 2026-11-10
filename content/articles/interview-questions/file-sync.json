@@ -239,7 +239,7 @@
     {
       "t": "lab",
       "x": "The work after an upload (previews, scans, search) doesn't have to happen the moment the file lands. Try holding a Monday-morning burst in a queue and clearing it by evening.",
-      "to": "lab/monday-sync",
+      "to": "problems/challenge/monday-sync",
       "go": "Try the Monday sync challenge"
     }
   ],
@@ -475,7 +475,7 @@
         "name": "Store a changed chunk",
         "sample": true,
         "async": true,
-        "desc": "The changed 4 MB chunk is stored in object storage under its hash. (In the real system the phone sends it there itself, with a signed URL; the Lab sends every call through a server, so read this as: where does a chunk end up?)",
+        "desc": "The changed 4 MB chunk is stored in object storage under its hash. (In the real system the phone sends it there itself, with a signed URL; the canvas sends every call through a server, so read this as: where does a chunk end up?)",
         "request": {
           "method": "PUT",
           "path": "/v1/chunks/9f2c"

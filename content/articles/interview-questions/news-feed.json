@@ -218,7 +218,7 @@
     {
       "t": "lab",
       "x": "A feed is read far more than it's written. The read-heavy challenge shows the same lesson: a cache in front keeps the database calm.",
-      "to": "lab/read-heavy",
+      "to": "problems/challenge/read-heavy",
       "go": "Try the read-heavy challenge"
     }
   ],

@@ -213,7 +213,7 @@
     {
       "t": "lab",
       "x": "Like a payment, a saved order is a promise: it must not vanish when a part crashes. The lost-orders challenge practises keeping that promise.",
-      "to": "lab/lost-orders",
+      "to": "problems/challenge/lost-orders",
       "go": "Try the lost-orders challenge"
     }
   ],

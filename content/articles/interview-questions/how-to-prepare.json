@@ -62,7 +62,7 @@
       "items": [
         "Read the recurring patterns: real-time updates, contention, processes with many steps, scaling reads, scaling writes, big files and long jobs.",
         "For each question you practise, name the patterns it uses before you design. Most questions are two or three patterns in a new setting.",
-        "Do the Lab challenges: they make you size the parts, survive failures and keep the bill down, which is what deep dives are about."
+        "Do the challenges on the Problems page: they make you size the parts, survive failures and keep the bill down, which is what deep dives are about."
       ]
     },
     {

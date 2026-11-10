@@ -1,0 +1,2094 @@
+{
+  "section": "interview-questions",
+  "slug": "ind-vs-pak",
+  "group": "hard",
+  "no": "QUESTION // 22",
+  "tag": "HARD",
+  "access": "paid",
+  "date": "10 Nov 2026",
+  "title": "Design live streaming for IND vs PAK",
+  "dek": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Design the service that sends them the match: the crowd arrives at the toss within minutes, the last over is the busiest moment, and a stall of a few seconds is seen by crores.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "A CDN carries the match. No server farm takes 87.5 lakh requests a second; the edges answer 99 in 100 near the viewers, so your servers see 87,500.",
+        "Live is harder than recorded video: every 4-second segment is new, so the edges fetch it from your origin first, and an origin failure reaches every viewer within seconds.",
+        "The crowd arrives at the toss in minutes, faster than servers boot. Start the capacity before 7 pm, sized from past matches; keep autoscaling for surprises.",
+        "Plan to degrade, not to fall over: drop the highest quality, switch off the extras, keep the picture going."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "1. Requirements"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Stream one match to every viewer as it happens, on phones, TVs and laptops, from the toss to the presentation.",
+        "Several qualities, from 240p to 1080p; the player picks one to suit its network and switches as the network changes.",
+        "Viewers are only a few seconds behind the real match, never minutes.",
+        "Show how many people are watching right now.",
+        "Out of scope: sign-up and payments, ads inserted into the stream, commentary in other languages, replays after the match."
+      ]
+    },
+    {
+      "t": "table",
+      "label": "Qualities to aim for",
+      "head": [
+        "Quality",
+        "Target"
+      ],
+      "rows": [
+        [
+          "Scale",
+          "3.5 crore watching at once at the peak"
+        ],
+        [
+          "Smooth",
+          "Stalls rare, even at the toss and in the last over; quality drops before the picture stops"
+        ],
+        [
+          "Delay",
+          "About 10 to 30 seconds behind the stadium"
+        ],
+        [
+          "Uptime",
+          "The stream never stops for everyone at once"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "2. The numbers that matter"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Viewers: 3.5 crore at the peak, in the last over at 10:18 pm (the real record, India v Pakistan, 14 October 2023, as reported by the broadcaster). At the 7 pm toss the audience jumps from about 10 lakh to 1.4 crore within 15 minutes.",
+        "Requests: a player fetches a 4-second segment every 4 seconds, so 3.5 crore players make 87.5 lakh requests a second. Playlists, refreshed as often, are a few hundred bytes and almost always answered at the edge.",
+        "Bandwidth: at about 1.5 Mbps each (most watch on phones, at 480p or 720p), 3.5 crore players pull about 50 Tbps. That is more than one CDN carries in India; big broadcasters split it across several.",
+        "Origin: if the edges answer 99 in 100, your servers see 87,500 requests a second at the peak. At 2,500 a second per server that is 35 servers flat out; plan for 40, in two groups.",
+        "Writes: one camera feed in 6 sizes makes 6 new segments and 6 updated playlists every 4 seconds. Writes are tiny; this is the most read-heavy system in the library."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "3. Entities and API"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Stream: `id` (ind-vs-pak), `status` (scheduled, live, ended), the qualities on offer.",
+        "Segment: `stream_id`, `quality`, `seq` (one every 4 seconds), the bytes. A file, written once and never changed.",
+        "Playlist: `stream_id`, `quality`, the newest few segment numbers. Rewritten every 4 seconds.",
+        "Viewer count: `stream_id`, an estimate updated every few seconds."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "API",
+      "x": "GET /live/ind-vs-pak/master.m3u8          → the qualities on offer\nGET /live/ind-vs-pak/720p/playlist.m3u8   → the newest segments in 720p (asked for every 4 s)\nGET /live/ind-vs-pak/720p/1834.ts         → segment 1834: 4 seconds of the match\nGET /live/ind-vs-pak/viewers              → { \"watching\": 35000000 }",
+      "say": "A master playlist lists the qualities. Each quality's playlist lists its newest segments, and the player asks for it every 4 seconds. The player then fetches segments by number. One more call returns how many people are watching."
+    },
+    {
+      "t": "h2",
+      "x": "4. High-level design"
+    },
+    {
+      "t": "fig",
+      "id": "live-pipe",
+      "cap": "The stadium feed is encoded into six sizes and cut into 4-second segments, which the packager writes to storage with the playlists. Players fetch both through CDN edges; only what an edge doesn't have yet reaches the origin servers."
+    },
+    {
+      "t": "p",
+      "x": "Two flows of very different sizes. Getting video in is one feed and small: encoders and a packager, in two places, writing every segment to storage. Getting video out is everything: the CDN answers almost every request, and your origin servers answer only what the edges ask for, about once per edge per segment."
+    },
+    {
+      "t": "h2",
+      "x": "5. Deep dives"
+    },
+    {
+      "t": "h2",
+      "x": "Everyone arrives at the toss"
+    },
+    {
+      "t": "fig",
+      "id": "toss-rush",
+      "cap": "Autoscaling adds servers after the load has arrived, and each takes minutes to start, so at the toss it is always behind and players buffer. Servers started before 7 pm are ready when the crowd is."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Autoscaling reacts to load that has already arrived, and a new server takes minutes to boot and warm up. At the toss that is too late: the first servers overload and crash, and their viewers pile onto the rest.",
+        "A match has a start time and a peak you can predict from past matches; India v Pakistan on a weekend night is the biggest of the year. Start the capacity an hour before, sized for that peak, and keep autoscaling only for surprises.",
+        "Tell the CDNs the expected traffic in advance, and rehearse at a fraction of the load a few days before, with the same players and the same playlists.",
+        "Sign-ins arrive in the same minutes. Keep them cheap: a signed token the edge can check, entitlements cached, no database read per viewer."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Live is harder than recorded"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A recorded film's segments sit at the edge for days. A live segment is new every 4 seconds: each edge fetches it from the origin the first time a player asks for it.",
+        "So the origin must never stop. Run it in two groups, ideally in two regions, each able to carry most of the peak alone; one group failing must not take the stream with it.",
+        "Request collapsing: when 10,000 players at one edge ask for segment 1834 at once, the edge sends one request to the origin and answers them all from that copy. An origin shield, a middle layer of caches, does the same for all the edges in a region.",
+        "Playlists change every 4 seconds: let the edge keep one for a second or two, not more, or players fall behind the match."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Degrade, don't fall over"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Drop the highest quality first. Without 1080p, players step down to 720p, which the edges already hold; everyone keeps playing and the bandwidth falls by a third.",
+        "Switch off the extras: chat, emoji reactions, recommendations, the animated scorecard. They can wait; the picture can't.",
+        "Use two or more CDNs. If one struggles in a region, send new players to another, from the player or through DNS.",
+        "Run encoders and packagers in two places, both writing every segment. If one fails, the playlists keep pointing at the other's segments."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Counting 3.5 crore viewers"
+    },
+    {
+      "t": "p",
+      "x": "The number on screen is an estimate. The origin can't count viewers: it sees about 1 request in 100. Instead each player sends a small heartbeat every 30 seconds, or each edge reports how many players it served in the last minute, and a job adds up a few hundred numbers every few seconds and rounds to the nearest lakh. An exact count would mean crores of writes to one table for no gain; 'Counting the uncountable' in Concepts covers the sketches that make such counts cheap."
+    },
+    {
+      "t": "h2",
+      "x": "What's expected at each level"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Junior / mid: a CDN in front, segments and playlists, servers behind it, and the 87.5 lakh a second sum.",
+        "Senior: why live is harder than recorded and what an origin failure means, request collapsing and an origin shield, adaptive quality, capacity started before the toss.",
+        "Lead: several CDNs and how to split traffic between them, degrading by quality and by feature, rehearsals and a capacity plan from past matches, the viewer count as an estimate."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Follow-ups an interviewer may ask",
+      "body": [
+        {
+          "t": "list",
+          "items": [
+            "\"How far behind the stadium is the stream?\" Encoding and packaging take a few seconds, and players keep about 3 segments buffered (12 seconds). Shorter segments, or low-latency HLS with parts of a second, bring it under 10 seconds at the cost of many more requests.",
+            "\"Ads in the over breaks?\" Insert them on the server side, as segments in the playlist, so every player behaves the same and ad blockers don't break playback.",
+            "\"One region's internet link is congested?\" Players there drop quality by themselves; route new players in that region to the CDN with room.",
+            "\"Replays after the match?\" The same segments, now unchanging, become a recorded video: see 'Design video streaming'."
+          ]
+        }
+      ]
+    }
+  ],
+  "practice": {
+    "brief": "Each test sends what 3.5 crore players ask for: a 4-second segment of the match every 4 seconds, following the match night (quiet all day, a jump at the 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm, 87.5 lakh requests a second). A CDN answers 99 in 100 at the edge, but this is live: every new segment comes from your servers first, so their failures reach every viewer. What the CDN doesn't answer reaches your servers, which make one lookup each, mostly answered by a cache. Your Clients' own rate is ignored.",
+    "fixed": {
+      "queriesPerRequest": 1,
+      "cdnHitPct": 99,
+      "cdnLive": true,
+      "hitPct": 95,
+      "writePct": 1
+    },
+    "start": {
+      "nodes": [
+        {
+          "id": "viewers",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 8750000,
+            "pattern": "match"
+          },
+          "name": "Viewers"
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 260,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "origin",
+          "type": "server",
+          "x": 520,
+          "y": 0,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 10,
+            "queriesPerRequest": 1
+          },
+          "name": "Origin"
+        }
+      ],
+      "edges": [
+        {
+          "from": "viewers",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "origin"
+        }
+      ]
+    },
+    "tests": [
+      {
+        "id": "toss",
+        "name": "The toss",
+        "sample": true,
+        "desc": "7 pm: the crowd arrives within minutes, from 3 lakh to 1.4 crore players by 7:15.",
+        "hours": 1,
+        "startHour": 19,
+        "traffic": {
+          "rps": 8750000,
+          "pattern": "match"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.95,
+            "from": 5,
+            "to": 35,
+            "label": "No buffering around the toss (7:05 to 7:35 pm): 99.95% of requests work"
+          },
+          {
+            "kind": "has",
+            "type": "cdn",
+            "label": "The video goes out through a CDN"
+          }
+        ]
+      },
+      {
+        "id": "last-over",
+        "name": "The last over",
+        "sample": true,
+        "desc": "10 pm to 11 pm: the peak, 3.5 crore players at 10:18 pm, then everyone leaves within minutes.",
+        "hours": 1,
+        "startHour": 22,
+        "traffic": {
+          "rps": 8750000,
+          "pattern": "match"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.95,
+            "from": 10,
+            "to": 35,
+            "label": "No buffering in the last over (10:10 to 10:35 pm): 99.95% of requests work"
+          },
+          {
+            "kind": "noCrash",
+            "type": "server",
+            "label": "No server crashes from overload"
+          },
+          {
+            "kind": "p99",
+            "max": 300,
+            "label": "p99 under 300 ms"
+          }
+        ]
+      },
+      {
+        "id": "whole-match",
+        "name": "The whole match",
+        "desc": "7 pm to 11 pm, toss to presentation.",
+        "hours": 4,
+        "startHour": 19,
+        "traffic": {
+          "rps": 8750000,
+          "pattern": "match"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests work over the evening"
+          },
+          {
+            "kind": "noCrash",
+            "label": "Nothing crashes from overload"
+          },
+          {
+            "kind": "role",
+            "role": "objects",
+            "any": true,
+            "label": "Segments and playlists are kept in storage built for files"
+          }
+        ]
+      },
+      {
+        "id": "origin-dies",
+        "name": "An origin group dies",
+        "desc": "At 8:10 pm, in the first innings, the busiest group of origin servers crashes; it is back 5 minutes later.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 8750000,
+          "pattern": "match"
+        },
+        "chaos": [
+          {
+            "minute": 10,
+            "type": "server"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.5,
+            "label": "At least 99.5% of requests still work"
+          },
+          {
+            "kind": "redundant",
+            "type": "server",
+            "label": "No origin group that every viewer depends on (no single point of failure)"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A day without a match: 20,000 people watching replays, 5,000 requests a second all day. Paying for far more than the traffic needs fails, like a memory limit.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 5000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "availability",
+            "min": 99.9,
+            "label": "At least 99.9% of requests work"
+          },
+          {
+            "kind": "cost",
+            "max": 30000,
+            "label": "Costs at most $30,000 a month"
+          }
+        ]
+      },
+      {
+        "id": "api-segment",
+        "name": "Play the next segment",
+        "sample": true,
+        "desc": "A player asks for segment 1834 of the match in 720p.",
+        "request": {
+          "method": "GET",
+          "path": "/live/ind-vs-pak/720p/1834.ts"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "get",
+            "entity": "segments",
+            "key": {
+              "stream_id": "ind-vs-pak",
+              "quality": "720p",
+              "seq": "1834"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "seq": "1834",
+            "found": "$s1.ok"
+          }
+        }
+      },
+      {
+        "id": "api-playlist",
+        "name": "What's new in the stream",
+        "desc": "Every 4 seconds a player asks for the 720p playlist, which lists the newest segments.",
+        "request": {
+          "method": "GET",
+          "path": "/live/ind-vs-pak/720p/playlist.m3u8"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "get",
+            "entity": "playlists",
+            "key": {
+              "stream_id": "ind-vs-pak",
+              "quality": "720p"
+            },
+            "field": "bytes"
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "quality": "720p",
+            "found": "$s1.ok"
+          }
+        }
+      }
+    ],
+    "data": {
+      "fields": [
+        "stream_id",
+        "quality",
+        "seq",
+        "bytes"
+      ],
+      "aliases": {
+        "stream_id": [
+          "match_id",
+          "stream",
+          "channel_id",
+          "event_id"
+        ],
+        "seq": [
+          "segment",
+          "sequence",
+          "chunk",
+          "segment_no",
+          "part"
+        ],
+        "quality": [
+          "rendition",
+          "resolution",
+          "bitrate",
+          "variant"
+        ],
+        "bytes": [
+          "file",
+          "data",
+          "content",
+          "body"
+        ]
+      },
+      "entities": {
+        "segments": {
+          "rows": 30000000,
+          "sample": [
+            {
+              "stream_id": "ind-vs-pak",
+              "quality": "720p",
+              "seq": "1834",
+              "bytes": "<bytes>"
+            },
+            {
+              "stream_id": "ind-vs-pak",
+              "quality": "360p",
+              "seq": "1834",
+              "bytes": "<bytes>"
+            }
+          ]
+        },
+        "playlists": {
+          "rows": 2000,
+          "sample": [
+            {
+              "stream_id": "ind-vs-pak",
+              "quality": "720p",
+              "bytes": "<playlist>"
+            },
+            {
+              "stream_id": "ind-vs-pak",
+              "quality": "360p",
+              "bytes": "<playlist>"
+            }
+          ]
+        }
+      }
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "viewers",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {
+            "rps": 8750000,
+            "pattern": "match"
+          },
+          "name": "Viewers"
+        },
+        {
+          "id": "cdn",
+          "type": "cdn",
+          "x": 240,
+          "y": 0,
+          "config": {
+            "hitPct": 99,
+            "live": true
+          }
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 480,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "origin1",
+          "type": "server",
+          "x": 720,
+          "y": -75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 20,
+            "queriesPerRequest": 1
+          },
+          "name": "Origin"
+        },
+        {
+          "id": "origin2",
+          "type": "server",
+          "x": 720,
+          "y": 75,
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 20,
+            "queriesPerRequest": 1
+          }
+        },
+        {
+          "id": "cache1",
+          "type": "cache",
+          "x": 960,
+          "y": -75,
+          "config": {
+            "size": "cache.r5.large",
+            "hitPct": 95,
+            "writePct": 1,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "cache2",
+          "type": "cache",
+          "x": 960,
+          "y": 75,
+          "config": {
+            "size": "cache.r5.large",
+            "hitPct": 95,
+            "writePct": 1,
+            "onDown": "database"
+          }
+        },
+        {
+          "id": "store",
+          "type": "database",
+          "x": 1200,
+          "y": 0,
+          "config": {
+            "role": "objects",
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "segments",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "seq",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality",
+                    "seq"
+                  ]
+                },
+                {
+                  "name": "playlists",
+                  "fields": [
+                    {
+                      "name": "stream_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "stream_id",
+                    "quality"
+                  ]
+                }
+              ]
+            }
+          },
+          "name": "Segments"
+        }
+      ],
+      "edges": [
+        {
+          "from": "viewers",
+          "to": "cdn"
+        },
+        {
+          "from": "cdn",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "origin1"
+        },
+        {
+          "from": "origin1",
+          "to": "cache1"
+        },
+        {
+          "from": "origin1",
+          "to": "cache2"
+        },
+        {
+          "from": "lb",
+          "to": "origin2"
+        },
+        {
+          "from": "origin2",
+          "to": "cache1"
+        },
+        {
+          "from": "origin2",
+          "to": "cache2"
+        },
+        {
+          "from": "cache1",
+          "to": "store"
+        },
+        {
+          "from": "cache2",
+          "to": "store"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No CDN",
+        "why": "Every player's request reaches your own load balancer and servers: 87.5 lakh a second at the peak, far past what any server farm takes.",
+        "fails": "toss",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Autoscaling from a few",
+        "why": "Two groups that start with 3 servers each and grow with the load. The crowd arrives at the toss in minutes; new servers take 4 minutes to boot, and the first ones crash under the rush.",
+        "fails": "toss",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 1,
+              "maxCount": 25,
+              "autoscale": true
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "queriesPerRequest": 1,
+              "maxCount": 25,
+              "autoscale": true
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Just enough servers",
+        "why": "30 servers take 75,000 requests a second. The last over needs 87,500 at the origin: too few, and they crash at the peak.",
+        "fails": "last-over",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "One origin group",
+        "why": "40 servers in one group behind the load balancer. When it crashes, every new segment stops reaching the edge and all 1.7 crore viewers buffer.",
+        "fails": "origin-dies",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 40,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "Two groups of 50 servers, running all day: it survives every match, but pays for far more than the traffic needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "role": "objects",
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Right sizes, general parts",
+        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
+        "fails": "whole-match",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 20,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 20,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      },
+      {
+        "name": "Segments in the database",
+        "why": "Video segments are stored as rows in a relational database: huge rows, slow reads and a database bill instead of cheap file storage.",
+        "fails": "api-segment",
+        "nodes": [
+          {
+            "id": "viewers",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {
+              "rps": 8750000,
+              "pattern": "match"
+            },
+            "name": "Viewers"
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {
+              "hitPct": 99,
+              "live": true
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "origin1",
+            "type": "server",
+            "x": 720,
+            "y": -75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 20,
+              "queriesPerRequest": 1
+            },
+            "name": "Origin"
+          },
+          {
+            "id": "origin2",
+            "type": "server",
+            "x": 720,
+            "y": 75,
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 20,
+              "queriesPerRequest": 1
+            }
+          },
+          {
+            "id": "cache1",
+            "type": "cache",
+            "x": 960,
+            "y": -75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "cache2",
+            "type": "cache",
+            "x": 960,
+            "y": 75,
+            "config": {
+              "size": "cache.r5.large",
+              "hitPct": 95,
+              "writePct": 1,
+              "onDown": "database"
+            }
+          },
+          {
+            "id": "store",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "config": {
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "seq",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality",
+                      "seq"
+                    ]
+                  },
+                  {
+                    "name": "playlists",
+                    "fields": [
+                      {
+                        "name": "stream_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "stream_id",
+                      "quality"
+                    ]
+                  }
+                ]
+              }
+            },
+            "name": "Segments"
+          }
+        ],
+        "edges": [
+          {
+            "from": "viewers",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "origin1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache1"
+          },
+          {
+            "from": "origin1",
+            "to": "cache2"
+          },
+          {
+            "from": "lb",
+            "to": "origin2"
+          },
+          {
+            "from": "origin2",
+            "to": "cache1"
+          },
+          {
+            "from": "origin2",
+            "to": "cache2"
+          },
+          {
+            "from": "cache1",
+            "to": "store"
+          },
+          {
+            "from": "cache2",
+            "to": "store"
+          }
+        ]
+      }
+    ],
+    "hints": [
+      {
+        "step": "requirements",
+        "x": "One match, one camera feed, crores of people at the same moment. What do they all ask for, and how often?"
+      },
+      {
+        "step": "estimates",
+        "x": "3.5 crore players each fetch a 4-second segment every 4 seconds. Divide; then take the 1% the CDN can't answer."
+      },
+      {
+        "step": "api",
+        "x": "A player reads a playlist that lists the newest segments, then fetches the segments themselves: two GETs on files."
+      },
+      {
+        "step": "design",
+        "x": "No server farm takes 87.5 lakh requests a second. Put a CDN in front: it answers 99 in 100 near the viewers, so size your servers for the rest."
+      },
+      {
+        "step": "design",
+        "x": "Size the origin for the last over: 1% of 87.5 lakh is 87,500 a second, and a c5.2xlarge takes 2,500. Leave room, and split the servers into two groups so one can fail."
+      },
+      {
+        "step": "design",
+        "x": "Everyone arrives at the toss within minutes, faster than new servers boot (4 minutes). Start them all before 7 pm instead of autoscaling from a few."
+      },
+      {
+        "step": "deep",
+        "x": "Segments and playlists are files that change every 4 seconds: keep them in object storage, with a cache in front, not in database rows."
+      }
+    ],
+    "referenceNote": "The canvas counts requests, not bandwidth: at the peak the real stream is about 50 Tbps, carried by several CDNs. The encoders that turn the stadium feed into segments aren't drawn; every 4 seconds they write a new segment in each size to storage and update the playlists.",
+    "rubric": {
+      "fr": [
+        {
+          "label": "Stream the match to every viewer as it happens",
+          "keys": [
+            "stream",
+            "broadcast",
+            "as it happens",
+            "watch the match",
+            "watch it live",
+            "match live"
+          ]
+        },
+        {
+          "label": "Several qualities; the player picks one to suit its network",
+          "keys": [
+            "adaptive",
+            "abr",
+            "bitrate",
+            "qualit",
+            "resolution",
+            "240p",
+            "360p",
+            "480p",
+            "720p",
+            "1080p",
+            "rendition"
+          ]
+        },
+        {
+          "label": "Only a few seconds behind the real match",
+          "keys": [
+            "delay",
+            "behind",
+            "latency",
+            "lag",
+            "glass to glass",
+            "glass-to-glass"
+          ]
+        },
+        {
+          "label": "Show how many people are watching right now",
+          "keys": [
+            "how many",
+            "viewer count",
+            "concurren",
+            "watching now",
+            "number of viewers",
+            "people watching",
+            "viewers count"
+          ]
+        }
+      ],
+      "nfr": {
+        "availability": [
+          99.9,
+          99.99
+        ],
+        "p99": [
+          100,
+          2000
+        ],
+        "consistency": "eventual",
+        "readsPerWrite": [
+          1000,
+          100000000
+        ]
+      },
+      "est": [
+        {
+          "id": "peak",
+          "label": "Requests a second at the peak",
+          "unit": "req/s",
+          "answer": 8750000,
+          "tol": 3,
+          "how": "3.5 crore players ÷ 4 s"
+        },
+        {
+          "id": "origin",
+          "label": "Requests reaching your servers at the peak",
+          "unit": "req/s",
+          "answer": 87500,
+          "tol": 3,
+          "how": "the 1% the CDN can't answer"
+        },
+        {
+          "id": "bandwidth",
+          "label": "Video sent at the peak",
+          "unit": "Tbps",
+          "answer": 50,
+          "tol": 3,
+          "how": "3.5 crore × about 1.5 Mbps"
+        }
+      ],
+      "api": [
+        {
+          "label": "Get the playlist for one quality",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/.*\\.m3u8$"
+        },
+        {
+          "label": "Get one segment",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/.+\\.(ts|m4s|mp4|aac)$"
+        },
+        {
+          "label": "Get how many are watching",
+          "method": "GET",
+          "path": "^/(api/)?(v\\d+/)?(live|streams?|matches|events?)/[^/]+/(viewers|viewer-count|concurrency|count|watching|stats)"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "prewarm-2",
+          "q": "Everyone arrives within minutes of the 7 pm toss. How do you have enough origin servers?",
+          "options": [
+            "Autoscale on load and let new servers catch up with the crowd",
+            "Start them all before 7 pm, sized for the expected peak",
+            "Watch the dashboards and add servers by hand as load grows"
+          ],
+          "answer": 1,
+          "why": "New servers take minutes to boot and warm up, and the crowd arrives faster than that, so autoscaling is always behind at the toss. A match has a known start time and a peak you can predict from past matches: start the capacity before it, and keep autoscaling only for surprises."
+        },
+        {
+          "id": "live-origin-2",
+          "q": "Why does an origin failure hurt more for live video than for a recorded film?",
+          "options": [
+            "Live viewers watch in higher quality, so each failure costs more",
+            "Live video can't be cached at all, so the CDN plays no part",
+            "Each new segment must come from the origin before any edge has it"
+          ],
+          "answer": 2,
+          "why": "A recorded film's segments sit at the edge for days, so a broken origin goes unnoticed for popular videos. A live segment is new every 4 seconds: the edges fetch it from the origin first, so when the origin stops, every viewer runs out of video within seconds. The CDN still matters: it turns crores of requests for each segment into one per edge."
+        },
+        {
+          "id": "viewers-2",
+          "q": "How do you show '3.5 crore watching' without slowing the stream?",
+          "options": [
+            "Edges count their own players; a small job adds the counts up",
+            "Each player adds a row to one table when it starts and stops",
+            "The origin servers count the requests reaching them each second"
+          ],
+          "answer": 0,
+          "why": "Most requests never reach your origin (the edges answer them), so it can't count viewers, and a row per player is crores of writes to one table in a few minutes. Counts per edge, or from a sample of player heartbeats, add up to an estimate in seconds, and the screen only shows it to the nearest lakh."
+        }
+      ]
+    }
+  }
+}

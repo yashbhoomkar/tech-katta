@@ -10,7 +10,8 @@ export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const list = (v) => (Array.isArray(v) ? v : []);
 const isText = (value) => typeof value === 'string' && value.trim() !== '';
 
-function checkBlocks(blocks, where, problems, challenges = new Set()) {
+// targets: the challenge ids and the problem slugs (articles with practice) a card may open.
+function checkBlocks(blocks, where, problems, targets = { challenges: new Set(), problems: new Set() }) {
   if (!Array.isArray(blocks) || blocks.length === 0) { problems.push(`${where}: body must be a non-empty array`); return; }
   blocks.forEach((b, i) => {
     const at = `${where}[${i}]`;
@@ -30,15 +31,16 @@ function checkBlocks(blocks, where, problems, challenges = new Set()) {
       else if (!b.rows.every((r) => r.every(isText))) problems.push(`${at}: every cell needs text`);
     }
     if (b.t === 'table' && b.label !== undefined && !isText(b.label)) problems.push(`${at}: label must be text`);
-    // "Try it in the Lab": to is "lab" or "lab/<challenge id>"
+    // "Try it on the canvas": to is "problems/<problem slug>" or "problems/challenge/<challenge id>" (dashboard routes)
     if (b.t === 'lab') {
       if (!isText(b.x)) problems.push(`${at}: needs text x`);
       if (b.go !== undefined && !isText(b.go)) problems.push(`${at}: go must be text`);
-      const m = /^lab(?:\/([a-z0-9-]+))?$/.exec(typeof b.to === 'string' ? b.to : '');
-      if (!m) problems.push(`${at}: to must be "lab" or "lab/<challenge id>"`);
-      else if (m[1] && !challenges.has(m[1])) problems.push(`${at}: unknown Lab challenge ${m[1]}`);
+      const m = /^problems\/(?:challenge\/([a-z0-9-]+)|([a-z0-9][a-z0-9-]*))$/.exec(typeof b.to === 'string' ? b.to : '');
+      if (!m) problems.push(`${at}: to must be "problems/<problem slug>" or "problems/challenge/<challenge id>"`);
+      else if (m[1] && !targets.challenges.has(m[1])) problems.push(`${at}: unknown challenge ${m[1]}`);
+      else if (m[2] && !targets.problems.has(m[2])) problems.push(`${at}: unknown problem ${m[2]}`);
     }
-    if (b.t === 'more') { if (!isText(b.label)) problems.push(`${at}: needs label`); checkBlocks(b.body, `${at}.body`, problems, challenges); }
+    if (b.t === 'more') { if (!isText(b.label)) problems.push(`${at}: needs label`); checkBlocks(b.body, `${at}.body`, problems, targets); }
   });
 }
 
@@ -74,16 +76,17 @@ const SITE = {
   brand: { name: 'text', descriptor: 'text', footer: 'text', footerNote: 'text' },
   nav: [{ tuple: ['text', 'text'] }],
   hero: { eyebrow: 'text', title: 'text', description: 'text', primary: 'text', 'primaryHref?': 'text', secondary: 'text', 'secondaryHref?': 'text', figure: 'text', status: 'text', caption: 'text' },
-  // The IND vs PAK Lab on the landing page (a Lab challenge) and the "did you know" dashboard tab.
-  'landingLab?': { eyebrow: 'text', title: 'text', desc: 'text', challenge: 'text', loading: 'text', open: 'text', openHref: 'text', note: 'text',
+  // IND vs PAK on the landing page: a problem (an article with practice) on a canvas, judged by its example
+  // traffic tests; phones get three controls instead of the canvas (lite).
+  'landingLab?': { eyebrow: 'text', title: 'text', desc: 'text', problem: 'text', loading: 'text', run: 'text', running: 'text', pass: 'text', fail: 'text', open: 'text', openHref: 'text', note: 'text',
     'lock?': { title: 'text', text: 'text' },
-    'lite?': Object.fromEntries(['diagram', 'viewers', 'viewersSub', 'cdnBox', 'cdnSub', 'lbBox', 'lbSub', 'lbSubCdn', 'serversBox', 'prewarmShort', 'autoShort', 'cdn', 'cdnHelp', 'servers', 'serversHelp', 'fewer', 'more', 'scaling', 'prewarm', 'auto', 'score', 'needCdn', 'allStars', 'someStars', 'noStars', 'best', 'full'].map((k) => [k, 'text'])) },
+    'lite?': Object.fromEntries(['diagram', 'viewers', 'viewersSub', 'cdnBox', 'cdnSub', 'lbBox', 'lbSub', 'lbSubCdn', 'serversBox', 'prewarmShort', 'autoShort', 'cdn', 'cdnHelp', 'servers', 'serversHelp', 'fewer', 'more', 'scaling', 'prewarm', 'auto', 'run', 'needCdn', 'full'].map((k) => [k, 'text'])) },
   'account?': { ...Object.fromEntries(['signedIn', 'saved', 'syncing', 'syncFailed', 'signInFailed', 'signOut', 'delete', 'deleteConfirm', 'privacy', 'menu'].map((k) => [k, 'text'])), 'keepStars?': 'text', 'googleBlocked?': 'text', 'signOutAll?': 'text', 'signOutAllConfirm?': 'text', 'adsMenu?': 'text', 'termsLink?': 'text', 'privacyLink?': 'text', 'agree?': 'text', 'and?': 'text', 'agreeFirst?': 'text', 'signIn?': 'text', 'pageLock?': { title: 'text', text: 'text' } },
   'privacy?': { eyebrow: 'text', title: 'text', updated: 'text', sections: [{ tuple: ['text', 'text'] }] },
   'terms?': { eyebrow: 'text', title: 'text', updated: 'text', sections: [{ tuple: ['text', 'text'] }] },
-  'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', 'close?': 'text', dashboard: [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], 'problem?': [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], lab: [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }] },
+  'tour?': { button: 'text', next: 'text', back: 'text', skip: 'text', done: 'text', 'close?': 'text', dashboard: [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], 'problem?': [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }], 'lab?': [{ target: 'text', title: 'text', text: 'text', 'click?': 'text', 'cta?': { label: 'text', href: 'text' } }] },
   'inside?': { eyebrow: 'text', title: 'text', desc: 'text', items: [{ kind: 'text', title: 'text', text: 'text', link: 'text', href: 'text' }], cta: 'text', ctaHref: 'text' },
-  'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
+  'problems?': { ...Object.fromEntries(['label', 'eyebrow', 'title', 'desc', 'summary', 'filterLabel', 'all', 'todo', 'questions', 'questionsDesc', 'challenges', 'challengesDesc', 'practised', 'notYet', 'starsLabel', 'allDone', 'labError', 'lab?', 'next?', 'allProblems?', 'backToProblems?'].map((k) => [k, 'text'])), 'solve?': { ...Object.fromEntries(['eyebrow', 'button', 'how', 'answer', 'scored', 'next', 'back', 'hide', 'show', 'missing', 'designed', 'solved', 'tabQ', 'tabA', 'tabCanvas', 'resize'].map((k) => [k, 'text'])), cols: ['text'] } },
   topics: { eyebrow: 'text', title: 'text', index: 'text', cards: [{ id: 'text', no: 'text', kind: 'text', title: 'text', desc: 'text', foot: 'text', link: 'text', visual: { oneOf: VISUALS } }] },
   notes: { eyebrow: 'text', title: 'text', desc: 'text', items: [{ tuple: ['text', 'text', 'text', 'text'] }], all: 'text' },
   numbers: { eyebrow: 'text', title: 'text', desc: 'text', figure: 'text', items: [{ tuple: ['text', 'text', 'number', 'text'] }], ticks: [{ tuple: ['text', 'number'] }], notice: 'number', noticeLabel: 'text', rulesTitle: 'text', rules: [{ tuple: ['text', 'text'] }], exampleTitle: 'text', example: [{ tuple: ['text', 'text', 'text'] }], note: 'text' },
@@ -318,7 +321,7 @@ export function validateDesign(design, lab, at, problems = []) {
 export function validateContent({ site, examples, articles, lab }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
-  if (site && site.landingLab && lab && Array.isArray(lab.challenges) && !lab.challenges.some((c) => c && c.id === site.landingLab.challenge)) problems.push(`site.json: landingLab.challenge ${site.landingLab.challenge} is not a Lab challenge`);
+  if (site && site.landingLab && !list(articles).some((a) => a && a.slug === site.landingLab.problem && a.practice)) problems.push(`site.json: landingLab.problem ${site.landingLab.problem} is not a problem (an article with practice)`);
   validateSite(site, examples, problems);
   const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
   // Subsections: dashboard.groups = {section: [[id, label, desc], …]}; an article's "group" must be one of its section's.
@@ -333,7 +336,7 @@ export function validateContent({ site, examples, articles, lab }) {
       groupIds.set(sec, new Set(ids));
     }
   }
-  const challenges = new Set(list(lab?.challenges).map((c) => c && c.id));
+  const targets = { challenges: new Set(list(lab?.challenges).map((c) => c && c.id)), problems: new Set(list(articles).filter((a) => a && a.practice).map((a) => a.slug)) };
   const slugs = new Set();
   for (const a of list(articles)) {
     if (!a || typeof a !== 'object') { problems.push('articles: an article file is not a JSON object'); continue; }
@@ -348,7 +351,7 @@ export function validateContent({ site, examples, articles, lab }) {
     // problems), the Lab and the videos are for subscribers
     if (a.access !== 'free' && a.access !== 'paid') problems.push(`${at}: access must be "free" or "paid"`);
     else if (a.access === 'free' && a.practice !== undefined) problems.push(`${at}: a problem (an article with practice) must be paid`);
-    checkBlocks(a.body, at, problems, challenges);
+    checkBlocks(a.body, at, problems, targets);
     // practice designs are checked against the Lab catalogue, so only when it is given
     if (a.practice !== undefined && lab) validatePractice(a.practice, lab, `${at} practice`, problems);
   }

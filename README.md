@@ -1,9 +1,10 @@
 # Tech Katta
 
-System design, explained: short structured articles and a System Design Lab where you build a
-design, run virtual traffic against it and watch what breaks.
+System design, explained: short structured articles, and interview problems you design on a canvas, run
+virtual traffic against and have judged by tests (plus a few challenges with stars). There is no separate Lab
+tab: the canvas opens inside a problem, a challenge or the landing page's IND vs PAK.
 
-- Site: https://tech.katta.cc (landing) and https://tech.katta.cc/dashboard/ (articles and the Lab)
+- Site: https://tech.katta.cc (landing) and https://tech.katta.cc/dashboard/ (articles, problems and challenges)
 - API: https://tech-api.katta.cc (`/health`, `/v1/site`, `/v1/articles`, `/v1/articles/:slug`, `/v1/lab`)
 
 ## Layout

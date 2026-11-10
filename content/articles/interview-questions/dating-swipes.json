@@ -229,7 +229,7 @@
     {
       "t": "lab",
       "x": "Swipes pile up in the evening, like dinner orders. The lunch and dinner rush challenge is practice for sizing servers for a daily peak.",
-      "to": "lab/first-rush",
+      "to": "problems/challenge/first-rush",
       "go": "Try the lunch and dinner rush challenge"
     }
   ],

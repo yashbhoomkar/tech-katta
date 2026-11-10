@@ -235,33 +235,40 @@ test('lab validation checks levels and challenges, which are optional', () => {
   assert.ok(check((l) => { C(l, 'one-server').hours = 0; }).some((p) => p.includes('hours must be')));
   assert.ok(check((l) => { delete C(l, 'one-server').hint; }).some((p) => p.includes('needs hint')));
   assert.ok(check((l) => { C(l, 'one-server').requires = ['rocket']; }).some((p) => p.includes('requires must list')));
-  assert.ok(check((l) => { C(l, 'ind-vs-pak').stars[1].from = 7; }).some((p) => p.includes("star's window")));
-  assert.ok(check((l) => { C(l, 'ind-vs-pak').stars[2].to = 9999; }).some((p) => p.includes("star's window")));
+  // availability windows: multiples of 5 minutes inside the run (flash-sale runs 3 hours)
+  assert.deepEqual(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 5, to: 35 }); }).filter((p) => p.startsWith('lab.json')), []);
+  assert.ok(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 7, to: 35 }); }).some((p) => p.includes("star's window")));
+  assert.ok(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 5, to: 9999 }); }).some((p) => p.includes("star's window")));
   assert.ok(check((l) => { C(l, 'one-server').stars[1].from = 0; C(l, 'one-server').stars[1].to = 30; }).some((p) => p.includes("star's window")), 'windows only on availability goals');
 });
 
-test('lab validation checks import aliases and copy, which are optional', () => {
+test('lab validation checks aliases, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }).filter((p) => p.startsWith('lab.json')); };
-  assert.deepEqual(check((l) => { delete l.import; for (const c of l.components) delete c.aliases; }), []);
+  assert.deepEqual(check((l) => { for (const c of l.components) delete c.aliases; }), []);
   assert.ok(check((l) => { l.components[0].aliases = []; }).some((p) => p.includes('aliases must be')));
   assert.ok(check((l) => { l.components[I.cache].aliases.push('DB'); }).some((p) => p.includes('names both cache and database')));
-  assert.ok(check((l) => { delete l.import.placeholder; }).some((p) => p.includes('import.placeholder')));
 });
 
-test('validation checks the CDN, the landing Lab and the IND vs PAK challenge settings', () => {
+test('validation checks the CDN, CDN settings a challenge fixes, and the landing page problem', () => {
   const labCheck = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const siteCheck = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
-  const cdn = (l) => l.components.find((c) => c.type === 'cdn'), ivp = (l) => l.challenges.find((c) => c.id === 'ind-vs-pak');
+  const cdn = (l) => l.components.find((c) => c.type === 'cdn'), ch = (l) => l.challenges.find((c) => c.id === 'flash-sale');
   assert.ok(labCheck((l) => { cdn(l).hitPct.max = 120; }).some((p) => p.includes('hitPct is missing or malformed')));
   assert.ok(labCheck((l) => { delete cdn(l).pricePer10k; }).some((p) => p.includes('pricePer10k')));
   assert.ok(labCheck((l) => { cdn(l).live.default = 'no'; }).some((p) => p.includes('live is missing or malformed')));
-  assert.ok(labCheck((l) => { ivp(l).fixed.cdnHitPct = 100; }).some((p) => p.includes('fixed.cdnHitPct')));
-  assert.ok(labCheck((l) => { ivp(l).fixed.cdnLive = 'yes'; }).some((p) => p.includes('fixed.cdnLive')));
-  assert.ok(labCheck((l) => { ivp(l).start.nodes.push({ id: 'c2', type: 'cdn', x: 0, y: 0, config: { live: 1 } }); }).some((p) => p.includes('live must be true or false')));
-  assert.ok(labCheck((l) => { ivp(l).stars[2] = { kind: 'spend', max: 0, label: 'x' }; }).some((p) => p.includes('spend max must be above 0')));
-  assert.ok(siteCheck((s) => { s.landingLab.challenge = 'world-cup'; }).some((p) => p.includes('landingLab.challenge world-cup')));
+  assert.deepEqual(labCheck((l) => { ch(l).fixed = { cdnHitPct: 99, cdnLive: true }; }).filter((p) => p.startsWith('lab.json')), []);
+  assert.ok(labCheck((l) => { ch(l).fixed = { cdnHitPct: 100 }; }).some((p) => p.includes('fixed.cdnHitPct')));
+  assert.ok(labCheck((l) => { ch(l).fixed = { cdnLive: 'yes' }; }).some((p) => p.includes('fixed.cdnLive')));
+  assert.ok(labCheck((l) => { ch(l).start.nodes.push({ id: 'c2', type: 'cdn', x: 0, y: 0, config: { live: 1 } }); }).some((p) => p.includes('live must be true or false')));
+  assert.ok(labCheck((l) => { ch(l).stars[2] = { kind: 'spend', max: 0, label: 'x' }; }).some((p) => p.includes('spend max must be above 0')));
+  // IND vs PAK on the landing page is a problem: an article with practice
+  assert.ok(siteCheck((s) => { s.landingLab.problem = 'world-cup'; }).some((p) => p.includes('landingLab.problem world-cup')));
+  assert.ok(siteCheck((s) => { s.landingLab.problem = 'how-to-answer'; }).some((p) => p.includes('landingLab.problem how-to-answer')), 'a guide is not a problem');
   assert.ok(siteCheck((s) => { delete s.landingLab.note; }).some((p) => p.includes('landingLab.note')));
+  assert.ok(siteCheck((s) => { s.landingLab.challenge = 'ind-vs-pak'; delete s.landingLab.problem; }).some((p) => p.includes('landingLab.problem')));
   assert.deepEqual(siteCheck((s) => { delete s.landingLab; delete s.fact; }), []);
+  // there is no Lab tab: its tour is optional
+  assert.deepEqual(siteCheck((s) => { delete s.tour.lab; }), []);
 });
 
 test('content preflight allows If-None-Match', async () => {
@@ -309,7 +316,8 @@ test('validation checks the optional "more" paragraphs of a type card', () => {
 
 test('validation checks real-life analogies: the analogy block, type cards and Lab components', () => {
   const article = structuredClone(allArticles.find((a) => a.slug === 'how-to-answer')); // has type cards and an analogy
-  const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a], lab }); };
+  // the other articles come too: this one's card opens a problem
+  const at = (change) => { const a = structuredClone(article); change(a); return validateContent({ site, examples, articles: [a, ...allArticles.filter((x) => x.slug !== a.slug)], lab }); };
   assert.ok(at((a) => { a.body.find((b) => b.t === 'analogy').x = ''; }).some((p) => p.includes('needs text x')));
   assert.ok(at((a) => { a.body.find((b) => b.t === 'type').like = 7; }).some((p) => p.includes('like must be text')));
   assert.deepEqual(at((a) => { a.body = a.body.filter((b) => b.t !== 'analogy'); for (const b of a.body) delete b.like; }), [], 'both optional');
@@ -383,7 +391,7 @@ test('without its three settings, sign-in is off: config says so, account routes
   assert.equal((await (await get('/v1/site')).json()).brand.name, site.brand.name, 'content is unaffected');
 });
 
-test('subsections and "Try it in the Lab" blocks are checked', () => {
+test('subsections and "Try it on the canvas" cards are checked', () => {
   const check = (changeSite, changeArticle) => {
     const s = structuredClone(site), arts = structuredClone(allArticles);
     changeSite?.(s); changeArticle?.(arts.find((a) => a.slug === 'how-to-answer'));
@@ -394,9 +402,13 @@ test('subsections and "Try it in the Lab" blocks are checked', () => {
   assert.match(check((s) => { s.dashboard.groups.nope = [['a', 'A', 'x']]; }).join(), /groups\.nope is not a section/);
   assert.match(check((s) => { s.dashboard.groups.components.push(['tools', 'Again', 'x']); }).join(), /unique lowercase ids/);
   const labBlock = (a) => a.body.find((b) => b.t === 'lab');
-  assert.match(check(null, (a) => { labBlock(a).to = 'lab/no-such-challenge'; }).join(), /unknown Lab challenge no-such-challenge/);
-  assert.match(check(null, (a) => { labBlock(a).to = 'https://evil.example'; }).join(), /to must be "lab"/);
-  assert.deepEqual(check(null, (a) => { labBlock(a).to = 'lab'; }), []);
+  // a card opens a problem or a challenge, both on the Problems tab (there is no Lab tab)
+  assert.deepEqual(check(null, (a) => { labBlock(a).to = 'problems/challenge/one-server'; }), []);
+  assert.deepEqual(check(null, (a) => { labBlock(a).to = 'problems/ind-vs-pak'; }), []);
+  assert.match(check(null, (a) => { labBlock(a).to = 'problems/challenge/no-such-challenge'; }).join(), /unknown challenge no-such-challenge/);
+  assert.match(check(null, (a) => { labBlock(a).to = 'problems/no-such-problem'; }).join(), /unknown problem no-such-problem/);
+  assert.match(check(null, (a) => { labBlock(a).to = 'problems/system-design-interviews'; }).join(), /unknown problem system-design-interviews/, 'a guide is not a problem');
+  for (const old of ['lab', 'lab/one-server', 'https://evil.example']) assert.match(check(null, (a) => { labBlock(a).to = old; }).join(), /to must be "problems\//);
 });
 
 test('each figure module belongs to a sub-tab or an article, with the same ids in the frontend and the backend', async () => {

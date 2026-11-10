@@ -6,11 +6,11 @@ Everything tech.katta.cc shows comes from these JSON files. The API (`backend/`)
 content/
 ├── site.json                    landing page, dashboard chrome, footer   → GET /v1/site
 │                                ("example": id of the example system below)
-├── lab.json                     System Design Lab catalogue and example design → GET /v1/lab
+├── lab.json                     the design canvas's catalogue, challenges and example design → GET /v1/lab
 ├── examples/
 │   └── zotato.json              the example system articles explain things through
 └── articles/
-    ├── index.json               which articles exist, in site order: ["concepts/api-types", …]
+    ├── index.json               which articles exist, in site order: ["concepts/networking-essentials", …]
     └── <section>/<slug>.json    one article                               → GET /v1/articles/<slug>
                                  (GET /v1/articles lists summaries; ?section= filters)
 ```
@@ -29,25 +29,23 @@ A release is validated (`node backend/scripts/check-content.mjs <dir>`) before `
 
 ## Article blocks
 
-Research Papers (`papers/`, owner 11-08) replace "Did you know": one classic paper per article, in plain words with
-animated figures: the paper (title, author, venue, year), the problem it solved, the idea, how it works, what it
-promises, where you see it today and how to use it in an interview. Write it in our own words and figures; never
-copy the paper's text or diagrams.
-
-Networking essentials (owner 11-08) is a group inside Concepts (CONCEPT // 26-36), not a tab: how machines
-reach each other, from layers and addresses to load balancers, live updates, distance and failing calls.
-Figures are in `frontend/src/figs/concepts/networking.jsx`. Written through Zotato with our own figures; another
-site's page on the topic was the reference for what to cover, point by point. Don't name that site on ours.
-
-API design (CONCEPT // 37-43) and Data modelling (CONCEPT // 44-48) are groups built the same way: Concepts groups, our own words and figures, checked paragraph by
-paragraph against the reference for coverage. Caching (CONCEPT // 49-53), Sharding (54-57),
-Consistent hashing (58-60, including the interactive `ch-playground`) and CAP theorem (61-63) follow the same method.
-Each group's figures are in `frontend/src/figs/concepts/<group>.jsx` (see `fig` below).
+What there is (owner, 2026-11-09 and 2026-11-10): the technical articles follow the reference site's system design
+library, no more and no less, in our own words, figures and examples (don't name that site on ours).
+- **Sections** (`site.json` `dashboard.sections`): Concepts (Core concepts, Recurring patterns, Specialised data),
+  Components (Tools by name), Interview Questions (Start here: seven guides; then the problems), Quick Notes, Real
+  systems (case studies, each retelling one company's public engineering post and citing it). The Problems tab is
+  added by the frontend from `site.json` `problems`. **There is no Lab tab** (removed 2026-11-10): the design canvas
+  opens inside a problem's workspace, in a challenge opened from Problems (`/dashboard/problems/challenge/<id>/`),
+  and in the landing page's IND vs PAK.
+- **Interview Questions**: the reference's 32 problem breakdowns plus IND vs PAK (QUESTION // 22, group `hard`),
+  each with `practice` (below). On 2026-11-10, 21 of the 32 are written; the other 11 are being added.
+- A section without a library card gets its header from `dashboard.heads[<section>]` = `{eyebrow, desc}`.
+- A topic with several parts keeps them as `h2` parts with `h3` sections. Figures live in one module per sub-tab or,
+  for a long article, per article: `frontend/src/figs/<section>/<name>.jsx` (see `fig` below).
 
 `access` is `"free"` or `"paid"`: who can read it once subscriptions start. It is data only for now (nothing is
-locked and nothing shows it). Free: How to answer, APIs, CAP and PACELC, Load balancers and Caches, the entry
-topics people search for, each leading into paid material. Everything else is paid, and an article with
-`practice` (a problem) must be paid (the validator checks it). The Lab and videos are paid too.
+locked and nothing shows it). Free: only How to answer, until the owner picks more. Everything else is paid, and an article with
+`practice` (a problem) must be paid (the validator checks it). The challenges and videos are paid too.
 
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
@@ -56,7 +54,7 @@ An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` 
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
-- `lab {x, to, go?}` "Try it in the Lab" card: `to` is `lab` or `lab/<challenge id>` (checked against `lab.json`), `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+- `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
 
 ## Problems: tests for an Interview Question (`practice`)
 

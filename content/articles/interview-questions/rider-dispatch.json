@@ -206,7 +206,7 @@
     {
       "t": "lab",
       "x": "Dispatch has a dinner rush every day. The lunch and dinner rush challenge practises sizing for two daily peaks.",
-      "to": "lab/first-rush",
+      "to": "problems/challenge/first-rush",
       "go": "Try the lunch and dinner rush challenge"
     }
   ],

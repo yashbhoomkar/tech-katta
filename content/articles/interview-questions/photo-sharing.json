@@ -217,9 +217,9 @@
     },
     {
       "t": "lab",
-      "x": "Serving photos is a CDN problem at heart. The IND vs PAK challenge shows how much a CDN takes off your servers when everyone wants the same thing at once.",
-      "to": "lab/ind-vs-pak",
-      "go": "Try the IND vs PAK challenge"
+      "x": "Serving photos is a CDN problem at heart. The IND vs PAK problem shows how much a CDN takes off your servers when everyone wants the same thing at once.",
+      "to": "problems/ind-vs-pak",
+      "go": "Try the IND vs PAK problem"
     }
   ],
   "practice": {
