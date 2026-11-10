@@ -1,0 +1,130 @@
+{
+  "v": 2,
+  "about": "The v2 evaluator's catalogue (tech-katta-context/evaluator.md §5.4). It adds to lab.json: sizes, hourly prices, base latencies, crash policies, engines' schema vocabulary and traffic patterns stay in lab.json.",
+  "tickMinutes": 1,
+  "longTickMinutes": 5,
+  "retries": 1,
+  "clientTimeoutMs": 10000,
+  "limits": { "nodes": 200, "hopsPerOperation": 400, "operations": 12, "ticks": 1500 },
+  "work": {
+    "pass": 1, "handle": 1, "enqueue": 1, "consume": 1,
+    "get": 1, "put": 2, "update": 2, "incr": 1, "rank": 2,
+    "indexRead": 2, "indexWrite": 1, "geo": 5, "text": 5,
+    "rowsPerUnit": 100, "scanRowsPerUnit": 1000,
+    "txFactor": 1.5, "casFactorCassandra": 4,
+    "blobPerMB": 1, "cpuMsPerUnit": 10
+  },
+  "scanLimit": 50000,
+  "sortLimit": 10000,
+  "egressPerGb": 0.09,
+  "engines": {
+    "postgres":   { "caps": ["get", "range", "index", "unique", "cas", "tx", "geo", "text", "agg", "scan", "counter", "cdc", "durable"], "storagePerGbMonth": 0.115, "maxStorageGb": 65536, "replicaLagSec": 1 },
+    "mysql":      { "caps": ["get", "range", "index", "unique", "cas", "tx", "geo", "text", "agg", "scan", "counter", "cdc", "durable"], "storagePerGbMonth": 0.115, "maxStorageGb": 65536, "replicaLagSec": 1 },
+    "dynamodb":   { "caps": ["get", "range", "index", "cas", "tx", "ttl", "counter", "cdc", "durable"], "storagePerGbMonth": 0.25, "maxStorageGb": null, "uniqueOnKey": true },
+    "mongodb":    { "caps": ["get", "range", "index", "unique", "cas", "tx", "geo", "text", "agg", "scan", "ttl", "counter", "cdc", "durable"], "storagePerGbMonth": 0.10, "maxStorageGb": 4096, "replicaLagSec": 1 },
+    "cassandra":  { "caps": ["get", "range", "cas", "ttl", "counter", "durable"], "storagePerGbMonth": 0.25, "maxStorageGb": null, "uniqueOnKey": true },
+    "opensearch": { "caps": ["get", "range", "index", "geo", "text", "agg", "scan", "durable"], "storagePerGbMonth": 0.135, "maxStorageGb": 3072, "refreshSec": 1 },
+    "s3":         { "caps": ["get", "blob", "ttl", "durable"], "storagePerGbMonth": 0.023, "maxStorageGb": null },
+    "timeseries": { "caps": ["get", "range", "agg", "ttl", "durable"], "storagePerGbMonth": 0.10, "maxStorageGb": 16384 },
+    "graph":      { "caps": ["get", "index", "tx", "durable"], "storagePerGbMonth": 0.10, "maxStorageGb": 65536 }
+  },
+  "components": [
+    {
+      "type": "client", "group": "Edge", "managed": true,
+      "to": ["cdn", "apigw", "lb", "server", "database"],
+      "toIf": { "database": { "engine": ["s3"] } },
+      "settings": []
+    },
+    {
+      "type": "cdn", "group": "Edge", "managed": true, "egressPerGb": 0.08,
+      "to": ["apigw", "lb", "server", "database"],
+      "toIf": { "database": { "engine": ["s3"] } },
+      "settings": []
+    },
+    {
+      "type": "apigw", "group": "Edge", "managed": true,
+      "to": ["lb", "server"],
+      "settings": [
+        { "key": "rateLimit", "label": "Rate limit", "kind": "choice", "default": "off", "options": [
+          { "id": "off", "label": "Off", "desc": "Every call goes through." },
+          { "id": "perClient", "label": "Per client", "desc": "Each client may send at most the number below a second; the rest is refused here." } ] },
+        { "key": "perClientRps", "label": "Calls a second per client", "kind": "number", "min": 1, "max": 10000, "default": 100 },
+        { "key": "auth", "label": "Check sign-in here", "kind": "bool", "default": false, "help": "Adds 2 ms to every call." }
+      ]
+    },
+    {
+      "type": "lb", "group": "Edge", "managed": true,
+      "to": ["server", "apigw"],
+      "settings": [
+        { "key": "sticky", "label": "Sticky sessions", "kind": "bool", "default": false, "help": "A client keeps going to the same instance. Needed for long-lived connections." }
+      ]
+    },
+    {
+      "type": "server", "group": "Compute",
+      "to": ["server", "cache", "database", "queue"],
+      "settings": [
+        { "key": "size", "label": "Size", "kind": "size" },
+        { "key": "count", "label": "Instances", "kind": "number", "min": 1, "max": 50, "default": 2, "step": 1 },
+        { "key": "autoscale", "label": "Autoscale", "kind": "bool", "default": false },
+        { "key": "maxCount", "label": "At most", "kind": "number", "min": 1, "max": 50, "default": 10, "step": 1 },
+        { "key": "zones", "label": "Availability zones", "kind": "number", "min": 1, "max": 3, "default": 1, "step": 1, "help": "Instances are spread evenly over this many zones. Losing a zone loses its share." },
+        { "key": "timeoutMs", "label": "Timeout for calls it makes (ms)", "kind": "number", "min": 100, "max": 30000, "default": 1000, "step": 1 },
+        { "key": "callRetries", "label": "Retries of a failed call", "kind": "number", "min": 0, "max": 3, "default": 0, "step": 1 },
+        { "key": "breaker", "label": "Circuit breaker", "kind": "bool", "default": false },
+        { "key": "sandbox", "label": "Runs untrusted code (sandboxed)", "kind": "bool", "default": false, "help": "Isolation costs about a fifth of the capacity." }
+      ]
+    },
+    {
+      "type": "database", "group": "Data",
+      "to": ["queue"],
+      "toCdc": true,
+      "settings": [
+        { "key": "engine", "label": "Engine", "kind": "engine" },
+        { "key": "size", "label": "Size", "kind": "size" },
+        { "key": "multiAz", "label": "Standby in another zone (Multi-AZ)", "kind": "bool", "default": false },
+        { "key": "replicas", "label": "Read replicas", "kind": "number", "min": 0, "max": 5, "default": 0, "step": 1 },
+        { "key": "readFrom", "label": "Reads go to", "kind": "choice", "default": "primary", "options": [
+          { "id": "primary", "label": "The primary (and replicas share reads)", "desc": "Always fresh." },
+          { "id": "replicas", "label": "Only the replicas", "desc": "The primary takes only writes; reads can be a moment behind." } ] },
+        { "key": "replication", "label": "Replication", "kind": "choice", "default": "async", "options": [
+          { "id": "async", "label": "Asynchronous", "desc": "Writes return at once; replicas can lag about a second." },
+          { "id": "sync", "label": "Synchronous", "desc": "Each write waits for a replica (+2 ms); replicas are never behind." } ] },
+        { "key": "shards", "label": "Shards", "kind": "number", "min": 1, "max": 64, "default": 1, "step": 1 },
+        { "key": "schema", "label": "Schema", "kind": "schema" }
+      ]
+    },
+    {
+      "type": "cache", "group": "Data",
+      "to": ["database"],
+      "sizeExtras": { "cache.t3.medium": { "memoryGb": 3 }, "cache.m5.large": { "memoryGb": 6 }, "cache.r5.large": { "memoryGb": 13 } },
+      "settings": [
+        { "key": "size", "label": "Size", "kind": "size" },
+        { "key": "nodes", "label": "Nodes (shards)", "kind": "number", "min": 1, "max": 10, "default": 1, "step": 1 },
+        { "key": "replica", "label": "Replica in another zone", "kind": "bool", "default": false },
+        { "key": "ttlSec", "label": "Keep items for (seconds)", "kind": "number", "min": 1, "max": 604800, "default": 300, "step": 1 },
+        { "key": "onDown", "label": "When it is down", "kind": "choice", "default": "database", "options": [
+          { "id": "database", "label": "Go to the database", "desc": "Callers read the database directly until it is back." },
+          { "id": "fail", "label": "Fail", "desc": "Calls that needed it fail." } ] },
+        { "key": "writePolicy", "label": "Writes", "kind": "choice", "default": "through", "options": [
+          { "id": "through", "label": "Write-through", "desc": "Writes go to the database at once." },
+          { "id": "back", "label": "Write-back", "desc": "The cache answers and saves to the database later; a crash loses what was not saved." } ] },
+        { "key": "persistence", "label": "Persistence", "kind": "choice", "default": "none", "options": [
+          { "id": "none", "label": "None", "desc": "A restart empties it." },
+          { "id": "aof", "label": "Append-only file", "desc": "Survives a restart with what it acknowledged." } ] },
+        { "key": "structures", "label": "Data kept here", "kind": "structures" }
+      ]
+    },
+    {
+      "type": "queue", "group": "Messaging", "managed": true,
+      "to": ["server"],
+      "settings": [
+        { "key": "kind", "label": "Kind", "kind": "choice", "default": "standard", "options": [
+          { "id": "standard", "label": "Standard", "desc": "Any order; a message can arrive twice." },
+          { "id": "fifo", "label": "FIFO", "desc": "In order per group, duplicates removed within 5 minutes; at most 3,000 a second." } ] },
+        { "key": "dlq", "label": "Dead-letter queue", "kind": "bool", "default": false },
+        { "key": "maxReceives", "label": "Tries before the dead-letter queue", "kind": "number", "min": 1, "max": 20, "default": 5, "step": 1 },
+        { "key": "visibilitySec", "label": "Visibility timeout (seconds)", "kind": "number", "min": 1, "max": 43200, "default": 30, "step": 1 }
+      ]
+    }
+  ]
+}

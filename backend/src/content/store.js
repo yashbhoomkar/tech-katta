@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { validateContent } from './validate.js';
+import { existsSync } from 'node:fs';
 
 const readJson = async (file) => {
   try { return JSON.parse(await readFile(file, 'utf8')); }
@@ -21,11 +22,16 @@ export async function loadContent(dir) {
     if (!/^[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/.test(entry)) throw new Error(`articles/index.json: bad entry ${entry}`);
     articles.push(await readJson(path.join(dir, 'articles', `${entry}.json`)));
   }
-  const lab = await readJson(path.join(dir, 'lab.json'));
-  const problems = validateContent({ site, examples, articles, lab });
+  let lab = await readJson(path.join(dir, 'lab.json'));
+  // The v2 evaluator's catalogue (tech-katta-context/evaluator.md §5.4): optional, served inside the Lab
+  // catalogue as lab.eval, so the frontend and the judge worker get it with everything else they already read.
+  const evalPath = path.join(dir, 'eval.json');
+  const evalCat = existsSync(evalPath) ? await readJson(evalPath) : undefined;
+  const problems = validateContent({ site, examples, articles, lab, evalCat });
   if (problems.length) throw new Error(`Invalid content in ${dir}:\n- ${problems.join('\n- ')}`);
   let release = path.basename(dir);
   try { release = path.basename(realpathSync(dir)); } catch {}
+  if (evalCat !== undefined) lab = { ...lab, eval: evalCat };
   return { site, examples, articles, lab, release };
 }
 

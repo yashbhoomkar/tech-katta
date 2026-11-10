@@ -509,3 +509,48 @@ test('a design in content may give its database an engine and a schema, which mu
   assert.ok(validateDesign(d({ engine: 'dynamodb', schema: { tables: [{ name: 'p', fields: [{ name: 'id', type: 'string' }, { name: 'loc', type: 'geo' }], key: ['id'], indexes: [{ kind: 'geo', fields: ['loc'] }] }] } }), lab, 'test', []).some((p) => /geohash/.test(p)));
   assert.ok(validateDesign(d({ schema: { tables: [{ name: 'bad name', fields: [] }] } }), lab, 'test', []).some((p) => /schema is malformed/.test(p)));
 });
+
+// ---- the v2 evaluator's catalogue (content/eval.json; tech-katta-context/evaluator.md §5.4) ----
+test('eval.json is loaded, valid, and served inside the Lab catalogue', async () => {
+  assert.equal(lab.eval?.v, 2, 'loadContent puts eval.json on lab.eval');
+  const { eval: evalCat, ...labOnly } = lab;
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly, evalCat }), []);
+  // without eval.json the content is still valid (v1 only)
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), []);
+  const { server, baseUrl } = await startServer();
+  try { const body = await (await fetch(baseUrl + '/v1/lab')).json(); assert.equal(body.eval.v, 2); assert.equal(body.eval.components.length, lab.eval.components.length); }
+  finally { server.kill(); }
+});
+
+test('eval.json validation catches every kind of mistake', () => {
+  const { eval: good, ...labOnly } = lab;
+  const check = (change) => { const bad = structuredClone(good); change(bad); return validateContent({ site, examples, articles: allArticles, lab: labOnly, evalCat: bad }).filter((p) => p.startsWith('eval.json')); };
+  const has = (change, text) => { const p = check(change); assert.ok(p.some((x) => x.includes(text)), `expected "${text}" in ${JSON.stringify(p)}`); };
+  const C = (e, type) => e.components.find((c) => c.type === type);
+  const S = (e, type, key) => C(e, type).settings.find((s) => s.key === key);
+  assert.deepEqual(check(() => {}), []);
+  has((e) => { e.v = 1; }, 'v must be 2');
+  has((e) => { e.tickMinutes = 7; }, 'tickMinutes');
+  has((e) => { e.retries = 9; }, 'retries');
+  has((e) => { e.limits.nodes = 0; }, 'limits.nodes');
+  has((e) => { delete e.work.get; }, 'work.get');
+  has((e) => { e.work.put = -2; }, 'work.put');
+  has((e) => { delete e.engines.s3; }, 'engines.s3 is missing');
+  has((e) => { e.engines.oracle = { caps: ['get'], storagePerGbMonth: 1, maxStorageGb: null }; }, 'engines.oracle is not an engine');
+  has((e) => { e.engines.postgres.caps.push('teleport'); }, 'engines.postgres.caps');
+  has((e) => { e.engines.postgres.maxStorageGb = 0; }, 'maxStorageGb');
+  has((e) => { e.components.push(structuredClone(e.components[0])); }, 'duplicate type');
+  has((e) => { e.components.push({ type: 'rocket', group: 'X', to: [], settings: [] }); }, 'not a component in lab.json');
+  has((e) => { C(e, 'client').to.push('rocket'); }, 'to must list known types');
+  has((e) => { C(e, 'client').toIf.queue = { engine: ['s3'] }; }, 'toIf.queue is not in to');
+  has((e) => { C(e, 'server').toCdc = true; }, 'toCdc is only for the database');
+  has((e) => { S(e, 'server', 'zones').default = 7; }, 'min ≤ default ≤ max');
+  has((e) => { S(e, 'server', 'zones').step = 2; }, 'step can only be 1');
+  has((e) => { S(e, 'server', 'breaker').default = 'no'; }, 'true or false default');
+  has((e) => { S(e, 'cache', 'onDown').default = 'explode'; }, 'default must be one of the options');
+  has((e) => { S(e, 'cache', 'onDown').options.push({ id: 'database', label: 'Again' }); }, 'unique ids');
+  has((e) => { S(e, 'server', 'zones').kind = 'slider'; }, 'kind must be one of');
+  has((e) => { C(e, 'server').settings.push({ key: 'zones', label: 'Again', kind: 'bool', default: true }); }, 'same key');
+  has((e) => { delete C(e, 'cache').sizeExtras['cache.m5.large']; }, 'memoryGb is needed');
+  has((e) => { C(e, 'cache').sizeExtras['cache.huge'] = { memoryGb: 99 }; }, 'not a size of cache');
+});

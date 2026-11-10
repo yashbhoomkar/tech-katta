@@ -7,6 +7,7 @@ content/
 ├── site.json                    landing page, dashboard chrome, footer   → GET /v1/site
 │                                ("example": id of the example system below)
 ├── lab.json                     the design canvas's catalogue, challenges and example design → GET /v1/lab
+├── eval.json                    the v2 evaluator's catalogue (served inside /v1/lab as `eval`); see below
 ├── examples/
 │   └── zotato.json              the example system articles explain things through
 └── articles/
@@ -205,3 +206,15 @@ settings inside their ranges, and edges that never point into Clients or out of 
 1. Edit the JSON (new article: add the file and its entry in `articles/index.json`).
 2. `cd backend && npm test` (includes the same validation the deploy runs).
 3. Open a PR. Merging to `main` runs the backend deploy, which publishes a new release; the site shows it within about a minute (API responses are cached for 60 s).
+
+## The v2 evaluator's catalogue (`eval.json`)
+
+Being built (tech-katta-context `evaluator.md`; phase 0 on 2026-11-10). It adds to `lab.json` what the next
+evaluator needs and changes nothing for today's problems: tick lengths, retries, limits, the work units each kind
+of step costs, each database engine's capabilities and storage price, and for each component type its settings
+(`number`, `choice`, `bool`, `size`, `fields`, `engine`, `schema`, `structures`), the arrows it may draw (`to`,
+`toIf` for conditions on the target, `toCdc` for a database's change stream) and extra size numbers
+(`sizeExtras`, e.g. a cache's `memoryGb`). Sizes, prices, latencies and crash policies stay in `lab.json`.
+`backend/src/content/validate-eval.js` checks it; a problem uses the v2 evaluator only when its `practice.v` is 2
+(none does yet).
+
