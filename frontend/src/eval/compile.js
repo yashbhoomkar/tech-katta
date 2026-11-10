@@ -1,0 +1,379 @@
+// Stage 1: compile (design + problem → plans), evaluator.md §7.
+//
+//   compile(design, lab, practice) → { ok, design, graph, plans: {opId: Plan}, system: [], copies, errors, warnings }
+//
+// `ok` is false only when nothing can be simulated (no Clients, a loop…). An operation that can't be planned gets a
+// plan with ok: false and an error; its tests fail with that message. Pure: no randomness, no clock, input order.
+//
+// Phase 1 scope (§15): the 8 component types; no publish, call or change-data-capture plans yet.
+import { cleanDesign2, configOf, evalCatalogue } from './design.js';
+import { buildGraph } from './graph.js';
+import { accessPath, fieldMatcher, fitOf, tablesOf, holds, stepFields, isRead, isWrite } from './access.js';
+import { PLAN, cap1 } from './words.js';
+import { monthlyCost } from '../lab/engine.js';
+
+const PASS = new Set(['cdn', 'apigw', 'lb']);
+const MAX_SERVICES = 4, MAX_QUEUES = 3;
+
+export function prefer(op) {
+  if (op.kind === 'connect') return ['lb', 'apigw', 'realtime'];
+  if (op.cacheable || op.live) return ['cdn', 'apigw', 'lb', 'server'];
+  return ['apigw', 'lb', 'server', 'cdn'];
+}
+// Does an arrow carry this operation? (§7.3)
+export const carries = (edge, op) => !edge?.carries || edge.carries.includes(op.id) || (edge.carries.includes('reads') && op.kind === 'read') || (edge.carries.includes('writes') && op.kind === 'write');
+
+const err = (code, message, extra = {}) => ({ code, message, ...extra });
+
+export function compile(design, lab, practice) {
+  const ops = Array.isArray(practice?.operations) ? practice.operations : [];
+  const d = cleanDesign2(design, lab, ops.map((o) => o.id));
+  const g = buildGraph(d, lab);
+  const cat = evalCatalogue(lab), W = lab.eval.work, limits = lab.eval.limits;
+  const result = { ok: true, design: d, graph: g, plans: Object.create(null), system: [], copies: [], errors: [], warnings: [] };
+  if (g.errors.length) { result.ok = false; result.errors = g.errors; return result; }
+
+  const match = fieldMatcher(practice);
+  const order = new Map(d.nodes.map((n, i) => [n.id, i]));
+  const node = (id) => g.byId.get(id), type = (id) => g.byId.get(id)?.type;
+  const name = (id) => { const n = node(id); return n?.name || cat[n?.type]?.name || n?.type || id; };
+  const edgeOf = new Map(d.edges.map((e) => [`${e.from}\u0000${e.to}`, e]));
+  const flowOut = (id, op) => (type(id) === 'database' ? [] : g.out.get(id).filter((to) => carries(edgeOf.get(`${id}\u0000${to}`), op)));
+
+  // ---- what a handler reaches (§7.5) ----------------------------------------------------------------------
+  // sync: h → (server | cache)* → store, at most 4 Services deep. A cache is a store only through its structures,
+  // and also a step on the way to a database (look-aside).
+  function syncReach(h, op) {
+    const out = [];
+    const walk = (id, path, services) => {
+      for (const to of flowOut(id, op)) {
+        if (path.includes(to)) continue;
+        const t = type(to), p = [...path, to];
+        if (t === 'database') out.push({ store: to, path: p });
+        else if (t === 'cache') { out.push({ store: to, path: p }); walk(to, p, services); }
+        else if (t === 'server' && services < MAX_SERVICES) walk(to, p, services + 1);
+      }
+    };
+    walk(h, [h], 1);
+    return out;
+  }
+  // async: h → … → queue → worker, then the worker's sync reach (and its own queues, at most 3 deep).
+  function asyncReach(h, op, depth = 1) {
+    const out = [];
+    const walk = (id, path, services) => {
+      for (const to of flowOut(id, op)) {
+        if (path.includes(to)) continue;
+        const t = type(to);
+        if (t === 'queue' && depth <= MAX_QUEUES) {
+          for (const w of flowOut(to, op)) {
+            if (type(w) !== 'server' || path.includes(w)) continue;
+            const pre = [...path, to, w];
+            for (const r of syncReach(w, op)) out.push({ store: r.store, path: [...pre, ...r.path.slice(1)], queue: to, worker: w, qi: path.length });
+            for (const r of asyncReach(w, op, depth + 1)) out.push({ ...r, path: [...pre, ...r.path.slice(1)], queue: to, worker: w, qi: path.length });
+          }
+        } else if (t === 'server' && services < MAX_SERVICES) walk(to, [...path, to], services + 1);
+      }
+    };
+    walk(h, [h], 1);
+    return out;
+  }
+  const viaCache = (path) => (path.length >= 3 && type(path.at(-1)) === 'database' && type(path.at(-2)) === 'cache' ? path.at(-2) : null);
+  const better = (a, b) => (a.a.work - b.a.work) || (a.e.path.length - b.e.path.length) || (order.get(a.e.store) - order.get(b.e.store)) || (a.ti - b.ti);
+
+  // Candidates for a step among reach entries: [{e, t, ti, a, miss}] split by whether the path works.
+  function candidates(step, entries) {
+    const ok = [], partial = [], fails = [];
+    for (const e of entries) tablesOf(node(e.store), lab).forEach((t, ti) => {
+      const fit = fitOf(t, step, match);
+      if (!fit.have.length) return;
+      const a = accessPath(node(e.store), t, step, practice, lab, match);
+      const c = { e, t, ti, a, miss: fit.miss };
+      if (!a.ok) fails.push(c); else (fit.miss.length ? partial : ok).push(c);
+    });
+    return { ok: ok.sort(better), partial: partial.sort(better), fails: fails.sort((x, y) => (x.miss.length - y.miss.length) || better({ ...x, a: { work: 0 } }, { ...y, a: { work: 0 } })) };
+  }
+  const queueOf = (entries) => entries.find((e) => e.queue)?.queue;
+  function nothingFound(step, h, sR) {
+    const fields = stepFields(step);
+    const dbs = sR.filter((e) => type(e.store) === 'database' || tablesOf(node(e.store), lab).length);
+    if (!dbs.length) return err('E_NO_DATABASE', PLAN.E_NO_DATABASE(name(h), step.entity));
+    if (!dbs.some((e) => tablesOf(node(e.store), lab).length)) return err('E_NO_SCHEMA', PLAN.E_NO_SCHEMA(step.entity, fields));
+    return err('E_NO_STORE', PLAN.E_NO_STORE(name(h), step.entity, fields));
+  }
+
+  // ---- binding one step from handler h (§7.5) --------------------------------------------------------------
+  function bindRead(op, h, step, sR, aR) {
+    const c = candidates(step, sR);
+    const best = c.ok[0] || c.partial[0];
+    if (!best) {
+      const behind = candidates(step, aR);
+      if (behind.ok.length || behind.partial.length) return { error: err('E_READ_BEHIND_QUEUE', PLAN.E_READ_BEHIND_QUEUE(step.entity, name((behind.ok[0] || behind.partial[0]).e.queue)), { step: step.id }) };
+      if (c.fails.length) return { error: err('E_NO_PATH', c.fails[0].a.why, { node: c.fails[0].e.store, step: step.id }) };
+      return { error: { ...nothingFound(step, h, sR), step: step.id } };
+    }
+    // the same store may be reached directly and through a look-aside cache (§7.5 rule 3)
+    const paths = sR.filter((e) => e.store === best.e.store).sort((x, y) => x.path.length - y.path.length);
+    const direct = paths.find((e) => !viaCache(e.path)), cached = paths.find((e) => viaCache(e.path));
+    const e = op.consistency === 'strong' ? (direct || cached) : (cached || direct);
+    return { step, store: e.store, table: best.t, a: best.a, path: e.path, viaCache: viaCache(e.path), missing: best.miss.length ? best.miss : undefined };
+  }
+  function bindWrite(op, h, step, sR, aR) {
+    const defer = step.timing === 'defer';
+    const sync = candidates(step, sR), later = candidates(step, aR);
+    const pool = defer ? [...later.ok, ...sync.ok] : sync.ok;
+    const best = pool[0];
+    if (!best) {
+      if (!defer && (later.ok.length)) { const b = later.ok[0]; return { error: err('E_SYNC_BEHIND_QUEUE', PLAN.E_SYNC_BEHIND_QUEUE(`${step.op === 'put' ? 'Storing' : 'Changing'} ${step.entity}`, name(b.e.store), name(b.e.queue)), { step: step.id }) }; }
+      const partial = defer ? (later.partial[0] || sync.partial[0]) : sync.partial[0];
+      if (partial) return { error: err('E_MISSING_FIELDS', PLAN.E_MISSING_FIELDS(partial.t.name, partial.miss), { node: partial.e.store, step: step.id }) };
+      const fail = (defer ? [...later.fails, ...sync.fails] : sync.fails)[0];
+      if (fail) return { error: err('E_NO_PATH', fail.a.why, { node: fail.e.store, step: step.id }) };
+      return { error: { ...nothingFound(step, h, defer ? [...sR, ...aR] : sR), step: step.id } };
+    }
+    return { step, store: best.e.store, table: best.t, a: best.a, path: best.e.path, viaCache: viaCache(best.e.path), async: !!best.e.queue, queue: best.e.queue, worker: best.e.worker, qi: best.e.qi };
+  }
+  function bindTx(op, h, step, sR, aR) {
+    const parts = (step.steps || []).map((s) => bindWrite(op, h, { ...s, timing: step.timing }, sR, aR));
+    const bad = parts.find((p) => p.error); if (bad) return bad;
+    const other = parts.find((p) => p.store !== parts[0].store);
+    if (other) return { error: err('E_TX_SPLIT', PLAN.E_TX_SPLIT(name(parts[0].store), name(other.store)), { step: step.id }) };
+    const store = node(parts[0].store);
+    if (!lab.eval.engines?.[configOf(store, lab).engine]?.caps?.includes('tx') || store.type !== 'database') return { error: err('E_NO_TX', PLAN.E_NO_TX(name(store.id)), { node: store.id, step: step.id }) };
+    const work = parts.reduce((s, p) => s + p.a.work, 0) * W.txFactor;
+    return { ...parts[0], step, parts, a: { ...parts[0].a, how: 'transaction', work, query: parts.map((p) => p.a.query).join('\n') } };
+  }
+
+  // Every step of op from handler h. Memoised per (op, h). → { ok, bindings, error?, unbound }
+  const bindMemo = new Map();
+  function bindAll(op, h) {
+    const k = `${op.id}\u0000${h}`;
+    if (bindMemo.has(k)) return bindMemo.get(k);
+    const sR = syncReach(h, op), aR = asyncReach(h, op), bindings = [];
+    let error = null, unbound = 0;
+    for (const step of op.steps || []) {
+      let b;
+      if (step.op === 'compute') {
+        const defer = step.timing === 'defer', worker = defer ? aR.find((e) => e.worker)?.worker || flowOut(h, op).flatMap((q) => (type(q) === 'queue' ? flowOut(q, op).filter((w) => type(w) === 'server') : []))[0] : null;
+        const at = worker || h;
+        b = step.isolated && !configOf(node(at), lab).sandbox ? { error: err('E_NO_SANDBOX', PLAN.E_NO_SANDBOX(name(at), step.label || 'This step'), { node: at, step: step.id }) } : { step, compute: true, node: at, async: !!worker };
+      } else if (step.op === 'call' || step.op === 'publish') b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.label || (step.op === 'call' ? 'Calling another company' : 'Sending to connected people')), { step: step.id }) };
+      else if (step.op === 'tx') b = bindTx(op, h, step, sR, aR);
+      else if (isWrite(step)) b = bindWrite(op, h, step, sR, aR);
+      else if (isRead(step)) b = bindRead(op, h, step, sR, aR);
+      else b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.op), { step: step.id }) };
+      if (b.error) { unbound++; error = error || b.error; } else bindings.push(b);
+    }
+    const r = { ok: !error, bindings, error, unbound, sR, aR };
+    bindMemo.set(k, r);
+    return r;
+  }
+
+  // ---- routing (§7.3) --------------------------------------------------------------------------------------
+  // → { ok: true, kids: [{ node, weight, next | null, store? }] } | { ok: false, error, unbound }
+  function route(op, id, seen) {
+    const outs = flowOut(id, op);
+    let failure = null;
+    const remember = (f) => { if (f && (!failure || f.unbound < failure.unbound)) failure = f; };
+    const handler = op.kind === 'connect' ? 'realtime' : 'server';
+    for (const t of prefer(op)) {
+      const targets = outs.filter((x) => type(x) === t && !seen.has(x));
+      if (!targets.length) continue;
+      if (t === handler) {
+        const good = targets.filter((x) => bindAll(op, x).ok);
+        if (good.length) return { ok: true, kids: good.map((x) => ({ node: x, weight: 1 / good.length, next: null })) };
+        for (const x of targets) { const b = bindAll(op, x); remember({ ok: false, error: b.error, unbound: b.unbound }); }
+      } else if (PASS.has(t)) {
+        const found = [];
+        for (const x of targets) { const r = route(op, x, new Set([...seen, x])); if (r.ok) found.push({ node: x, next: r.kids }); else remember(r); }
+        if (found.length) return { ok: true, kids: found.map((f) => ({ ...f, weight: 1 / found.length })) };
+      }
+    }
+    // straight to object storage: one blob step, the source (or a CDN) points at an S3 store
+    const real = (op.steps || []).filter((s) => s.op !== 'compute');
+    if (real.length === 1 && real[0].op === 'blob') {
+      const s3 = (from) => flowOut(from, op).filter((x) => type(x) === 'database' && configOf(node(x), lab).engine === 's3');
+      const viaHere = s3(id).map((x) => ({ x, b: directBlob(op, real[0], x) })).filter((y) => y.b);
+      if (viaHere.length) return { ok: true, kids: viaHere.map((y) => ({ node: y.x, weight: 1 / viaHere.length, next: null, store: y.b })) };
+      if (type(id) === 'client') {
+        const cdns = outs.filter((x) => type(x) === 'cdn').map((c) => ({ c, s: s3(c).map((x) => ({ x, b: directBlob(op, real[0], x) })).filter((y) => y.b) })).filter((y) => y.s.length);
+        if (cdns.length) return { ok: true, kids: cdns.map((y) => ({ node: y.c, weight: 1 / cdns.length, next: y.s.map((z) => ({ node: z.x, weight: 1 / y.s.length, next: null, store: z.b })) })) };
+      }
+    }
+    return failure || { ok: false, error: err('E_NO_HANDLER', PLAN.E_NO_HANDLER(op.name || op.id)), unbound: Infinity };
+  }
+  function directBlob(op, step, s3) {
+    for (const [ti, t] of tablesOf(node(s3), lab).entries()) {
+      const fit = fitOf(t, step, match); if (fit.miss.length) continue;
+      const a = accessPath(node(s3), t, step, practice, lab, match);
+      if (a.ok) return { step, store: s3, table: t, ti, a, path: [s3] };
+    }
+    return null;
+  }
+
+  // ---- the hop tree (§7.7) ---------------------------------------------------------------------------------
+  function buildPlan(op) {
+    const plan = { op: op.id, ok: true, root: null, roots: [], staleness: [], steps: Object.create(null), bindings: [] };
+    const fail = (e) => ({ ...plan, ok: false, error: e });
+    const source = op.source || 'clients';
+    const sources = source === 'clients' ? d.nodes.filter((n) => n.type === 'client').map((n) => n.id) : [];
+    if (!sources.length) return fail(err('E_NO_SOURCE', PLAN.E_NO_SOURCE(op.name || op.id)));
+    const routes = sources.map((s) => route(op, s, new Set([s])));
+    const bad = routes.find((r) => !r.ok);
+    if (bad) return fail(bad.error);
+
+    const mk = (n, kind, extra = {}) => ({ id: '', node: n, kind, sync: true, per: 1, share: 1, work: 0, write: false, children: [], ...extra });
+    const splitShare = (count, weight, parent, kid) => (count > 1 ? { kind: 'split', group: `${parent}:${type(kid)}`, weight } : 1);
+    // a chain of hops for the nodes of `path` after its first (the hop already made for it), ending in `last`
+    const chain = (parentHop, nodes, last, sharesForCache) => {
+      let at = parentHop;
+      nodes.forEach((n, i) => {
+        if (i === nodes.length - 1) { at.children.push(last); at = last; return; }
+        const t = type(n);
+        const hop = t === 'cache' ? mk(n, 'cache', { work: sharesForCache ? W.get : W.put, step: last?.step }) : mk(n, 'handle', { work: W.handle, step: last?.step });
+        at.children.push(hop); at = hop;
+      });
+      if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
+      return at;
+    };
+    const queues = new Map();   // deferred steps through the same queue share one message (§7.5)
+    const consumeHop = (handleHop, b) => {
+      const k = b.path.slice(0, b.qi + 2).join('\u0000');
+      if (queues.has(k)) return queues.get(k);
+      const pre = b.path.slice(1, b.qi + 1); // nodes from after h up to the queue
+      const enq = mk(b.queue, 'enqueue', { work: W.enqueue });
+      chain(handleHop, pre, enq, null);
+      const con = mk(b.worker, 'consume', { work: W.consume + W.handle, sync: false });
+      enq.children.push(con);
+      queues.set(k, con);
+      return con;
+    };
+    const writers = [];  // for feeds: {entity, store, table, kind}
+    const addStep = (handleHop, h, b) => {
+      const step = b.step, per = step.times || 1;
+      if (b.compute) {
+        const units = (step.cpuMs || 0) / W.cpuMsPerUnit;
+        if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }).work += units * per; else handleHop.work += units * per; } else handleHop.work += units * per;
+        return;
+      }
+      const write = isWrite(step);
+      const storeHop = mk(b.store, 'store', { step: step.id, work: b.a.work, write, per });
+      let from = handleHop, nodes = b.path.slice(1);
+      if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
+      if (!nodes.length) nodes = [b.store];
+      chain(from, nodes, storeHop, write ? null : step.entity);
+      plan.steps[step.id] = { node: b.store, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: !b.async, viaCache: b.viaCache || null, ...(b.missing ? { missing: b.missing } : {}) };
+      if (!write) { plan.bindings.push({ step: step.id, entity: step.entity, store: b.store, table: b.table.name, viaCache: b.viaCache || null }); return; }
+      // writes: the primary, invalidations of look-aside caches, then every other copy (§7.5 rule 5, §7.6)
+      const inner = step.op === 'tx' ? b.parts.map((p) => ({ entity: p.step.entity, step: p.step })) : [{ entity: step.entity, step }];
+      const copies = [];
+      for (const { entity, step: s } of inner) {
+        writers.push({ entity, store: b.store, table: b.table.name, kind: b.async ? 'async' : 'primary', op: op.id });
+        const reach = bindAll(op, h);
+        const all = [...reach.sR.map((e) => ({ ...e, sync: true })), ...reach.aR.map((e) => ({ ...e, sync: false }))];
+        const seenCache = new Set();
+        for (const e of all) {
+          const c = viaCache(e.path);
+          if (!c || e.store !== b.store || seenCache.has(c) || b.path.includes(c)) continue;
+          seenCache.add(c);
+          const inv = mk(c, 'invalidate', { step: step.id, work: W.get, per });
+          if (e.sync) chain(handleHop, e.path.slice(1, -1), inv, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2, -1), inv, null);
+          writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
+        }
+        const done = new Set([`${b.store}\u0000${b.table.name}`]);
+        for (const e of all) tablesOf(node(e.store), lab).forEach((t) => {
+          const key = `${e.store}\u0000${t.name}`;
+          if (done.has(key) || !holds(t, entity, practice, match)) return;
+          const a = accessPath(node(e.store), t, s, practice, lab, match);
+          if (!a.ok) return;
+          done.add(key);
+          const hop = mk(e.store, 'store', { step: step.id, work: a.work, write: true, per, copy: true, table: t.name });
+          if (e.sync) chain(handleHop, e.path.slice(1), hop, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2), hop, null);
+          const kind = e.sync ? 'dual' : 'async';
+          copies.push({ node: e.store, table: t.name, feed: kind });
+          writers.push({ entity, store: e.store, table: t.name, kind, op: op.id });
+        });
+      }
+      if (copies.length) plan.steps[step.id].copies = copies;
+    };
+
+    const buildKids = (parentHop, kids) => {
+      for (const k of kids) {
+        let share = splitShare(kids.length, k.weight, parentHop, k.node);
+        if (type(parentHop.node) === 'cdn') share = share === 1 ? { kind: 'cdnMiss' } : { ...share, cdnMiss: true };
+        if (k.next) { const hop = mk(k.node, 'pass', { work: W.pass, share }); parentHop.children.push(hop); buildKids(hop, k.next); }
+        else if (k.store) {
+          const b = k.store, hop = mk(k.node, 'store', { step: b.step.id, work: b.a.work, write: b.step.mode === 'put', share, per: b.step.times || 1 });
+          parentHop.children.push(hop);
+          plan.steps[b.step.id] = { node: k.node, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: true, viaCache: null };
+          if (b.step.mode === 'put') writers.push({ entity: b.step.entity, store: k.node, table: b.table.name, kind: 'primary', op: op.id });
+          else plan.bindings.push({ step: b.step.id, entity: b.step.entity, store: k.node, table: b.table.name, viaCache: null });
+        } else {
+          const hop = mk(k.node, 'handle', { work: W.handle, share });
+          parentHop.children.push(hop);
+          for (const b of bindAll(op, k.node).bindings) addStep(hop, k.node, b);
+        }
+      }
+    };
+    sources.forEach((s, i) => {
+      const root = mk(s, 'source', { share: sources.length > 1 ? { kind: 'split', group: 'sources', weight: 1 / sources.length } : 1 });
+      buildKids(root, routes[i].kids);
+      plan.roots.push(root);
+    });
+    plan.root = plan.roots[0];
+    // ids in pre-order; split groups named after their parent's id
+    let n = 0, count = 0;
+    const number = (hop, parent) => {
+      hop.id = `${op.id}#${n++}`; count++;
+      if (parent && hop.share?.kind === 'split' && hop.share.group !== 'sources') hop.share = { ...hop.share, group: `${parent.id}:${type(hop.node)}` };
+      hop.children.forEach((c) => number(c, hop));
+    };
+    plan.roots.forEach((r) => number(r, null));
+    plan.writers = writers;
+    if (count > limits.hopsPerOperation) return fail(err('E_TOO_TANGLED', PLAN.E_TOO_TANGLED()));
+    return plan;
+  }
+
+  for (const op of ops) result.plans[op.id] = buildPlan(op);
+
+  // ---- feeds (§7.6): every store a read uses must be written by something ------------------------------------
+  const writers = Object.values(result.plans).flatMap((p) => p.writers || []);
+  const written = new Set(ops.flatMap((o) => (o.steps || []).flatMap((s) => (s.op === 'tx' ? s.steps || [] : [s])).filter(isWrite).map((s) => s.entity)));
+  const unplanned = new Set(ops.filter((o) => !result.plans[o.id].ok).flatMap((o) => (o.steps || []).flatMap((s) => (s.op === 'tx' ? s.steps || [] : [s])).filter(isWrite).map((s) => s.entity)));
+  for (const op of ops) {
+    const plan = result.plans[op.id];
+    if (!plan.ok) continue;
+    for (const b of plan.bindings) {
+      const w = writers.filter((x) => x.entity === b.entity && x.store === b.store && x.table === b.table);
+      const feed = w.find((x) => x.kind === 'primary') ? 'primary' : w.find((x) => x.kind === 'dual') ? 'dual' : w.find((x) => x.kind === 'async') ? 'async'
+        : !written.has(b.entity) || unplanned.has(b.entity) ? 'primary' : null;
+      if (!feed) {
+        const primary = writers.find((x) => x.entity === b.entity && (x.kind === 'primary' || x.kind === 'async'));
+        Object.assign(plan, { ok: false, error: err('E_UNFED', PLAN.E_UNFED(b.entity, name(b.store), op.name || op.id, primary ? name(primary.store) : null), { node: b.store, step: b.step }) });
+        break;
+      }
+      plan.steps[b.step].feed = feed;
+      plan.staleness.push({ store: b.store, feed });
+      result.copies.push({ store: b.store, table: b.table, entity: b.entity, feed });
+      if (b.viaCache) {
+        const invalidated = writers.some((x) => x.kind === 'invalidate' && x.store === b.viaCache && x.db === b.store && x.entity === b.entity);
+        plan.staleness.push({ store: b.viaCache, feed: 'lookAside', cacheTtlSec: invalidated ? 1 : configOf(node(b.viaCache), lab).ttlSec });
+      }
+    }
+  }
+  for (const w of writers) if (w.table && !result.copies.some((c) => c.store === w.store && c.table === w.table && c.entity === w.entity)) result.copies.push({ store: w.store, table: w.table, entity: w.entity, feed: w.kind });
+
+  // ---- warnings: nodes no plan uses ----------------------------------------------------------------------------
+  const used = new Set();
+  const visit = (hop) => { used.add(hop.node); hop.children.forEach(visit); };
+  for (const p of Object.values(result.plans)) (p.roots || []).forEach(visit);
+  // only when every operation was planned: a failed route would make every node look unused
+  const allPlanned = Object.values(result.plans).every((p) => p.ok);
+  if (allPlanned) for (const n of d.nodes) if (!used.has(n.id) && n.type !== 'client') {
+    const comp = cat[n.type];
+    let cost = 0;
+    try { cost = monthlyCost(comp, configOf(n, lab), 0); } catch { cost = 0; }
+    result.warnings.push({ code: 'W_UNUSED', message: PLAN.W_UNUSED(cap1(name(n.id)), Number.isFinite(cost) ? cost : 0), node: n.id });
+  }
+  return result;
+}
+

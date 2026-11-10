@@ -3,6 +3,9 @@
 // evaluate() answers with an error instead of a verdict.
 export { evalCatalogue, settingsOf, configOf, allowedEdge, capsOf, cleanDesign2 } from './design.js';
 export { buildGraph } from './graph.js';
+export { accessPath, fieldMatcher, holds } from './access.js';
+export { compile } from './compile.js';
+export { runTrace, expected } from './trace.js';
 
 export const NOT_READY = 'This problem needs a newer version of the site. Refresh the page.';
 
