@@ -214,201 +214,65 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends notification requests. Each one checks the person's preferences and records the delivery: 2 queries. Sending to push, SMS and email can happen just after. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 2
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 2000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends notifications from the company's other services: OTPs by SMS (a person is waiting), order updates by push, and a few status checks. At 8 pm a promotion goes to 5 crore phones. Every notification is recorded first, then sent by the SMS or push provider just after.",
+    "entities": {
+      "notifications": {
+        "rows": 10000000000,
+        "rowBytes": 400,
+        "growthPerDay": 60000000,
+        "fields": {
+          "notification_id": "string",
+          "user_id": "string",
+          "channel": "string",
+          "body": "text",
+          "status": "string",
+          "sent_at": "time"
+        },
+        "sample": [
+          {
+            "notification_id": "n0",
+            "user_id": "u2",
+            "channel": "push",
+            "body": "Your order is on its way",
+            "status": "sent",
+            "sent_at": "2026-11-10T19:58:00Z"
+          },
+          {
+            "notification_id": "n7",
+            "user_id": "u3",
+            "channel": "sms",
+            "body": "OTP 1100",
+            "status": "sent",
+            "sent_at": "2026-11-10T19:59:00Z"
           }
-        }
+        ]
+      }
+    },
+    "aliases": {
+      "body": [
+        "text",
+        "message",
+        "content"
       ],
-      "edges": []
+      "channel": [
+        "type",
+        "via",
+        "medium"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
+        "id": "otp",
+        "name": "Send an OTP by SMS",
+        "kind": "write",
+        "share": 0.25,
         "sample": true,
-        "desc": "700 notifications a second: order updates and OTPs.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 700,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of notifications succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
-          },
-          {
-            "kind": "role",
-            "role": "sender",
-            "behind": "queue",
-            "label": "Notifications are sent, and retried, by workers taking them from a queue"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "The dinner peak",
-        "sample": true,
-        "desc": "2,000 a second for an hour from 8 pm, the dinner peak.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 2000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of notifications succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "The Diwali promotion",
-        "desc": "At 8 pm marketing sends a promotion to 5 crore people: 14,000 notifications a second for 15 minutes, on top of dinner. OTPs still have to go out.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 14000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of notifications succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          },
-          {
-            "kind": "has",
-            "type": "queue",
-            "label": "Promotions wait in a queue (the bulk lane)"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (2,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 2000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of notifications still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 2000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of notifications still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (700 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 700,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of notifications succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 15000,
-            "label": "Costs at most $15,000 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-send",
-        "name": "Send an OTP",
-        "sample": true,
-        "async": true,
-        "desc": "An OTP by SMS for u1; the delivery workers send it.",
         "request": {
           "method": "POST",
           "path": "/v1/notifications",
           "body": {
+            "notification_id": "n1",
             "user_id": "u1",
             "channel": "sms",
             "body": "OTP 4821"
@@ -419,23 +283,1688 @@
             "id": "s1",
             "op": "put",
             "entity": "notifications",
+            "unique": [
+              "notification_id"
+            ],
             "values": {
               "notification_id": "n1",
               "user_id": "u1",
               "channel": "sms",
               "body": "OTP 4821",
-              "status": "queued"
+              "status": "queued",
+              "sent_at": null
             }
+          },
+          {
+            "id": "s2",
+            "op": "call",
+            "preset": "sms",
+            "label": "Sending the SMS",
+            "timing": "defer",
+            "withinSec": 60
           }
         ],
         "respond": {
           "status": 202,
           "body": {
-            "notification_id": "$s1.notification_id"
+            "notification_id": "$s1.notification_id",
+            "status": "$s1.status"
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "notification_id"
+      },
+      {
+        "id": "push",
+        "name": "Send a push notification",
+        "kind": "write",
+        "share": 0.7,
+        "request": {
+          "method": "POST",
+          "path": "/v1/notifications",
+          "body": {
+            "notification_id": "n2",
+            "user_id": "u1",
+            "channel": "push",
+            "body": "Your biryani is out for delivery"
+          }
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "notifications",
+            "unique": [
+              "notification_id"
+            ],
+            "values": {
+              "notification_id": "n2",
+              "user_id": "u1",
+              "channel": "push",
+              "body": "Your biryani is out for delivery",
+              "status": "queued",
+              "sent_at": null
+            }
+          },
+          {
+            "id": "s2",
+            "op": "call",
+            "preset": "push",
+            "label": "Sending the push",
+            "timing": "defer",
+            "withinSec": 1800
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "notification_id": "$s1.notification_id",
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "notification_id"
+      },
+      {
+        "id": "status",
+        "name": "What happened to a notification",
+        "kind": "read",
+        "share": 0.05,
+        "request": {
+          "method": "GET",
+          "path": "/v1/notifications/n7"
+        },
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "notifications",
+            "by": {
+              "notification_id": "n7"
+            },
+            "fields": [
+              "status",
+              "sent_at"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "status": "$s1.status",
+            "sent_at": "$s1.sent_at"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
         }
       }
     ],
+    "tests": [
+      {
+        "id": "api-otp",
+        "name": "An OTP by SMS",
+        "desc": "An OTP for u1 is recorded and queued; the response comes back at once and the SMS goes out just after.",
+        "sample": true,
+        "op": "otp"
+      },
+      {
+        "id": "api-push",
+        "name": "An order update by push",
+        "desc": "An order update for u1 is recorded and queued for the push provider.",
+        "op": "push"
+      },
+      {
+        "id": "api-status",
+        "name": "What happened to n7",
+        "desc": "The caller asks what happened to notification n7.",
+        "op": "status"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "700 notifications a second: order updates and OTPs.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 700,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "desc": "2,000 a second for an hour from 8 pm. Nothing may be sent twice or lost.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "promo",
+        "name": "A promotion to 5 crore people",
+        "desc": "At 8 pm marketing sends a promotion: 14,000 notifications a second for 15 minutes. OTPs still have to arrive within a minute; the promotion may take up to 15 minutes. The push provider takes at most 8,000 a second.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 14000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "completes",
+            "op": "otp",
+            "withinSec": 60
+          },
+          {
+            "kind": "completes",
+            "op": "push",
+            "withinSec": 900
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "sms-down",
+        "name": "The SMS provider goes down",
+        "desc": "At 8:10 pm the SMS provider stops answering for 10 minutes. The OTPs wait and go out when it is back; nothing else slows down.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "externalDown",
+            "preset": "sms",
+            "minutes": 10
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes",
+            "op": "otp",
+            "withinSec": 900
+          },
+          {
+            "kind": "completes",
+            "op": "push",
+            "withinSec": 120
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Notifications may slow down; none may be lost.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (700 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 700,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 21000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        },
+        {
+          "id": "sms",
+          "type": "external",
+          "x": 1200,
+          "y": -160,
+          "name": "SMS provider",
+          "config": {
+            "preset": "sms",
+            "latencyMs": 800,
+            "limitRps": 6000,
+            "errorPct": 1,
+            "pricePerCall": 0
+          }
+        },
+        {
+          "id": "pushp",
+          "type": "external",
+          "x": 1200,
+          "y": 160,
+          "name": "Push provider",
+          "config": {
+            "preset": "push",
+            "latencyMs": 200,
+            "limitRps": 8000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "locked": [
+      "sms",
+      "pushp"
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Notification API",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 8,
+            "zones": 2
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 160,
+          "name": "Notifications DB",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 4,
+            "schema": {
+              "tables": [
+                {
+                  "name": "notifications",
+                  "fields": [
+                    {
+                      "name": "notification_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "channel",
+                      "type": "string"
+                    },
+                    {
+                      "name": "body",
+                      "type": "text"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "sent_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "notification_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "qo",
+          "type": "queue",
+          "x": 720,
+          "y": -160,
+          "name": "OTPs to send",
+          "config": {}
+        },
+        {
+          "id": "qp",
+          "type": "queue",
+          "x": 720,
+          "y": 0,
+          "name": "Pushes to send",
+          "config": {}
+        },
+        {
+          "id": "wo",
+          "type": "server",
+          "x": 960,
+          "y": -160,
+          "name": "OTP senders",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 4,
+            "zones": 2
+          }
+        },
+        {
+          "id": "wp",
+          "type": "server",
+          "x": 960,
+          "y": 0,
+          "name": "Push senders",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 6,
+            "zones": 2
+          }
+        },
+        {
+          "id": "sms",
+          "type": "external",
+          "x": 1200,
+          "y": -160,
+          "name": "SMS provider",
+          "config": {
+            "preset": "sms",
+            "latencyMs": 800,
+            "limitRps": 6000,
+            "errorPct": 1,
+            "pricePerCall": 0
+          }
+        },
+        {
+          "id": "pushp",
+          "type": "external",
+          "x": 1200,
+          "y": 160,
+          "name": "Push provider",
+          "config": {
+            "preset": "push",
+            "latencyMs": 200,
+            "limitRps": 8000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "qo",
+          "carries": [
+            "otp"
+          ]
+        },
+        {
+          "from": "app",
+          "to": "qp",
+          "carries": [
+            "push"
+          ]
+        },
+        {
+          "from": "qo",
+          "to": "wo"
+        },
+        {
+          "from": "qp",
+          "to": "wp"
+        },
+        {
+          "from": "wo",
+          "to": "sms"
+        },
+        {
+          "from": "wp",
+          "to": "pushp"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Notifications without an id",
+        "why": "The table is keyed by the user, so a retried request can't be recognised and a notification can't be found.",
+        "fails": "api-otp",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "qo",
+            "type": "queue",
+            "x": 720,
+            "y": -160,
+            "name": "OTPs to send",
+            "config": {}
+          },
+          {
+            "id": "qp",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "name": "Pushes to send",
+            "config": {}
+          },
+          {
+            "id": "wo",
+            "type": "server",
+            "x": 960,
+            "y": -160,
+            "name": "OTP senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "wp",
+            "type": "server",
+            "x": 960,
+            "y": 0,
+            "name": "Push senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "qo",
+            "carries": [
+              "otp"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "qp",
+            "carries": [
+              "push"
+            ]
+          },
+          {
+            "from": "qo",
+            "to": "wo"
+          },
+          {
+            "from": "qp",
+            "to": "wp"
+          },
+          {
+            "from": "wo",
+            "to": "sms"
+          },
+          {
+            "from": "wp",
+            "to": "pushp"
+          }
+        ]
+      },
+      {
+        "name": "No queue",
+        "why": "The API calls the providers before answering: a promotion makes everyone wait, and a provider outage fails the calls.",
+        "fails": "promo",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "sms"
+          },
+          {
+            "from": "app",
+            "to": "pushp"
+          }
+        ]
+      },
+      {
+        "name": "One queue for everything",
+        "why": "OTPs wait behind the promotion in the same queue.",
+        "fails": "promo",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "qo",
+            "type": "queue",
+            "x": 720,
+            "y": -160,
+            "name": "OTPs to send",
+            "config": {}
+          },
+          {
+            "id": "wo",
+            "type": "server",
+            "x": 960,
+            "y": -160,
+            "name": "Senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 10,
+              "zones": 2
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "qo"
+          },
+          {
+            "from": "qo",
+            "to": "wo"
+          },
+          {
+            "from": "wo",
+            "to": "sms"
+          },
+          {
+            "from": "wo",
+            "to": "pushp"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "qo",
+            "type": "queue",
+            "x": 720,
+            "y": -160,
+            "name": "OTPs to send",
+            "config": {}
+          },
+          {
+            "id": "qp",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "name": "Pushes to send",
+            "config": {}
+          },
+          {
+            "id": "wo",
+            "type": "server",
+            "x": 960,
+            "y": -160,
+            "name": "OTP senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "wp",
+            "type": "server",
+            "x": 960,
+            "y": 0,
+            "name": "Push senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "qo",
+            "carries": [
+              "otp"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "qp",
+            "carries": [
+              "push"
+            ]
+          },
+          {
+            "from": "qo",
+            "to": "wo"
+          },
+          {
+            "from": "qp",
+            "to": "wp"
+          },
+          {
+            "from": "wo",
+            "to": "sms"
+          },
+          {
+            "from": "wp",
+            "to": "pushp"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "The database has no standby: when it crashes, notifications can't be recorded for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "qo",
+            "type": "queue",
+            "x": 720,
+            "y": -160,
+            "name": "OTPs to send",
+            "config": {}
+          },
+          {
+            "id": "qp",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "name": "Pushes to send",
+            "config": {}
+          },
+          {
+            "id": "wo",
+            "type": "server",
+            "x": 960,
+            "y": -160,
+            "name": "OTP senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "wp",
+            "type": "server",
+            "x": 960,
+            "y": 0,
+            "name": "Push senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "qo",
+            "carries": [
+              "otp"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "qp",
+            "carries": [
+              "push"
+            ]
+          },
+          {
+            "from": "qo",
+            "to": "wo"
+          },
+          {
+            "from": "qp",
+            "to": "wp"
+          },
+          {
+            "from": "wo",
+            "to": "sms"
+          },
+          {
+            "from": "wp",
+            "to": "pushp"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Notification API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 160,
+            "name": "Notifications DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 8,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "notifications",
+                    "fields": [
+                      {
+                        "name": "notification_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "channel",
+                        "type": "string"
+                      },
+                      {
+                        "name": "body",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "sent_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "notification_id"
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          },
+          {
+            "id": "qo",
+            "type": "queue",
+            "x": 720,
+            "y": -160,
+            "name": "OTPs to send",
+            "config": {}
+          },
+          {
+            "id": "qp",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "name": "Pushes to send",
+            "config": {}
+          },
+          {
+            "id": "wo",
+            "type": "server",
+            "x": 960,
+            "y": -160,
+            "name": "OTP senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 2
+            }
+          },
+          {
+            "id": "wp",
+            "type": "server",
+            "x": 960,
+            "y": 0,
+            "name": "Push senders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 20,
+              "zones": 2
+            }
+          },
+          {
+            "id": "sms",
+            "type": "external",
+            "x": 1200,
+            "y": -160,
+            "name": "SMS provider",
+            "config": {
+              "preset": "sms",
+              "latencyMs": 800,
+              "limitRps": 6000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "pushp",
+            "type": "external",
+            "x": 1200,
+            "y": 160,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 8000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "qo",
+            "carries": [
+              "otp"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "qp",
+            "carries": [
+              "push"
+            ]
+          },
+          {
+            "from": "qo",
+            "to": "wo"
+          },
+          {
+            "from": "qp",
+            "to": "wp"
+          },
+          {
+            "from": "wo",
+            "to": "sms"
+          },
+          {
+            "from": "wp",
+            "to": "pushp"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "engine:db:dynamodb",
+      "engine:db:cassandra"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The company's services may call the API group directly in this model.",
+      "engine:db:dynamodb": "DynamoDB is an equally good store for delivery records.",
+      "engine:db:cassandra": "Cassandra is an equally good store for delivery records."
+    },
     "rubric": {
       "fr": [
         {
@@ -607,1690 +2136,8 @@
       },
       {
         "step": "design",
-        "x": "Two groups of API servers and workers, a Multi-AZ database for the delivery records."
+        "x": "Spread the API servers and the workers over two zones and give the database a Multi-AZ standby. Give OTPs their own queue and workers, so a promotion never sits in front of them."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 2000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 4,
-            "queriesPerRequest": 2
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 4,
-            "queriesPerRequest": 2
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 720,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "m5.xlarge",
-            "count": 3,
-            "queriesPerRequest": 2,
-            "role": "sender"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "m5.xlarge",
-            "count": 3,
-            "queriesPerRequest": 2,
-            "role": "sender"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1200,
-          "y": -75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "notifications",
-                  "fields": [
-                    {
-                      "name": "notification_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "user_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "channel",
-                      "type": "string"
-                    },
-                    {
-                      "name": "body",
-                      "type": "text"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "sent_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "notification_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "user_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db2",
-          "type": "database",
-          "x": 1200,
-          "y": 75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "notifications",
-                  "fields": [
-                    {
-                      "name": "notification_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "user_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "channel",
-                      "type": "string"
-                    },
-                    {
-                      "name": "body",
-                      "type": "text"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "sent_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "notification_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "user_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work1",
-          "to": "db1"
-        },
-        {
-          "from": "work1",
-          "to": "db2"
-        },
-        {
-          "from": "work2",
-          "to": "db1"
-        },
-        {
-          "from": "work2",
-          "to": "db2"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
-        "fails": "spike",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 50,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 50,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -2475,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -2325,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -2175,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": -2025,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": -1875,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": -1725,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": -1575,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db8",
-            "type": "database",
-            "x": 1200,
-            "y": -1425,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db9",
-            "type": "database",
-            "x": 1200,
-            "y": -1275,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db10",
-            "type": "database",
-            "x": 1200,
-            "y": -1125,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db11",
-            "type": "database",
-            "x": 1200,
-            "y": -975,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db12",
-            "type": "database",
-            "x": 1200,
-            "y": -825,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db13",
-            "type": "database",
-            "x": 1200,
-            "y": -675,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db14",
-            "type": "database",
-            "x": 1200,
-            "y": -525,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db15",
-            "type": "database",
-            "x": 1200,
-            "y": -375,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db16",
-            "type": "database",
-            "x": 1200,
-            "y": -225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db17",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db18",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db19",
-            "type": "database",
-            "x": 1200,
-            "y": 225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db20",
-            "type": "database",
-            "x": 1200,
-            "y": 375,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db21",
-            "type": "database",
-            "x": 1200,
-            "y": 525,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db22",
-            "type": "database",
-            "x": 1200,
-            "y": 675,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db23",
-            "type": "database",
-            "x": 1200,
-            "y": 825,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db24",
-            "type": "database",
-            "x": 1200,
-            "y": 975,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db25",
-            "type": "database",
-            "x": 1200,
-            "y": 1125,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db26",
-            "type": "database",
-            "x": 1200,
-            "y": 1275,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db27",
-            "type": "database",
-            "x": 1200,
-            "y": 1425,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db28",
-            "type": "database",
-            "x": 1200,
-            "y": 1575,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db29",
-            "type": "database",
-            "x": 1200,
-            "y": 1725,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db30",
-            "type": "database",
-            "x": 1200,
-            "y": 1875,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db31",
-            "type": "database",
-            "x": 1200,
-            "y": 2025,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db32",
-            "type": "database",
-            "x": 1200,
-            "y": 2175,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db33",
-            "type": "database",
-            "x": 1200,
-            "y": 2325,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db34",
-            "type": "database",
-            "x": 1200,
-            "y": 2475,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work1",
-            "to": "db8"
-          },
-          {
-            "from": "work1",
-            "to": "db9"
-          },
-          {
-            "from": "work1",
-            "to": "db10"
-          },
-          {
-            "from": "work1",
-            "to": "db11"
-          },
-          {
-            "from": "work1",
-            "to": "db12"
-          },
-          {
-            "from": "work1",
-            "to": "db13"
-          },
-          {
-            "from": "work1",
-            "to": "db14"
-          },
-          {
-            "from": "work1",
-            "to": "db15"
-          },
-          {
-            "from": "work1",
-            "to": "db16"
-          },
-          {
-            "from": "work1",
-            "to": "db17"
-          },
-          {
-            "from": "work1",
-            "to": "db18"
-          },
-          {
-            "from": "work1",
-            "to": "db19"
-          },
-          {
-            "from": "work1",
-            "to": "db20"
-          },
-          {
-            "from": "work1",
-            "to": "db21"
-          },
-          {
-            "from": "work1",
-            "to": "db22"
-          },
-          {
-            "from": "work1",
-            "to": "db23"
-          },
-          {
-            "from": "work1",
-            "to": "db24"
-          },
-          {
-            "from": "work1",
-            "to": "db25"
-          },
-          {
-            "from": "work1",
-            "to": "db26"
-          },
-          {
-            "from": "work1",
-            "to": "db27"
-          },
-          {
-            "from": "work1",
-            "to": "db28"
-          },
-          {
-            "from": "work1",
-            "to": "db29"
-          },
-          {
-            "from": "work1",
-            "to": "db30"
-          },
-          {
-            "from": "work1",
-            "to": "db31"
-          },
-          {
-            "from": "work1",
-            "to": "db32"
-          },
-          {
-            "from": "work1",
-            "to": "db33"
-          },
-          {
-            "from": "work1",
-            "to": "db34"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db8"
-          },
-          {
-            "from": "work2",
-            "to": "db9"
-          },
-          {
-            "from": "work2",
-            "to": "db10"
-          },
-          {
-            "from": "work2",
-            "to": "db11"
-          },
-          {
-            "from": "work2",
-            "to": "db12"
-          },
-          {
-            "from": "work2",
-            "to": "db13"
-          },
-          {
-            "from": "work2",
-            "to": "db14"
-          },
-          {
-            "from": "work2",
-            "to": "db15"
-          },
-          {
-            "from": "work2",
-            "to": "db16"
-          },
-          {
-            "from": "work2",
-            "to": "db17"
-          },
-          {
-            "from": "work2",
-            "to": "db18"
-          },
-          {
-            "from": "work2",
-            "to": "db19"
-          },
-          {
-            "from": "work2",
-            "to": "db20"
-          },
-          {
-            "from": "work2",
-            "to": "db21"
-          },
-          {
-            "from": "work2",
-            "to": "db22"
-          },
-          {
-            "from": "work2",
-            "to": "db23"
-          },
-          {
-            "from": "work2",
-            "to": "db24"
-          },
-          {
-            "from": "work2",
-            "to": "db25"
-          },
-          {
-            "from": "work2",
-            "to": "db26"
-          },
-          {
-            "from": "work2",
-            "to": "db27"
-          },
-          {
-            "from": "work2",
-            "to": "db28"
-          },
-          {
-            "from": "work2",
-            "to": "db29"
-          },
-          {
-            "from": "work2",
-            "to": "db30"
-          },
-          {
-            "from": "work2",
-            "to": "db31"
-          },
-          {
-            "from": "work2",
-            "to": "db32"
-          },
-          {
-            "from": "work2",
-            "to": "db33"
-          },
-          {
-            "from": "work2",
-            "to": "db34"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Notifications without a channel",
-        "why": "Nothing records whether a message goes by SMS, push or email.",
-        "fails": "api-send",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.xlarge",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sender"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "notifications",
-                    "fields": [
-                      {
-                        "name": "notification_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "user_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "body",
-                        "type": "text"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "notification_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "notifications",
-                    "fields": [
-                      {
-                        "name": "notification_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "user_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "body",
-                        "type": "text"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "notification_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "notification_id",
-        "user_id",
-        "channel",
-        "body",
-        "status",
-        "sent_at"
-      ],
-      "aliases": {
-        "body": [
-          "text",
-          "message",
-          "content"
-        ],
-        "channel": [
-          "type",
-          "via",
-          "medium"
-        ]
-      },
-      "entities": {
-        "notifications": {
-          "rows": 10000000000,
-          "sample": []
-        }
-      }
-    }
+    ]
   }
 }
