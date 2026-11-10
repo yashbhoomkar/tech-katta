@@ -12,7 +12,9 @@ const num = (n) => Math.round(n).toLocaleString('en-US');
 const KIND_WORDS = { kv: 'key–value', counter: 'counters', zset: 'sorted set (ranking)', geo: 'locations (geo set)', set: 'set' };
 
 // Palette entries for a v2 problem: the catalogue's types, grouped by their v2 group.
-export const paletteV2 = (lab) => Object.values(evalCatalogue(lab));
+// palette: false hides a type the learner doesn't add (an external service is placed by the problem) or that isn't
+// simulated yet
+export const paletteV2 = (lab) => Object.values(evalCatalogue(lab)).filter((c) => c.palette !== false);
 
 function Field({ label, help, children }) {
   return <label className="lab-f"><span>{label}</span>{children}{help && <small className="lab-note lab-note-tight">{help}</small>}</label>;

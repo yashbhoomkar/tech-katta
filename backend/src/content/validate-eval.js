@@ -75,6 +75,7 @@ export function validateEval(ev, lab, problems = []) {
     const w = `${at}: components[${i}]${c && c.type ? ` (${c.type})` : ''}`;
     if (!obj(c)) { problems.push(`${w}: must be an object`); return; }
     if (c.v2only !== undefined && c.v2only !== true) problems.push(`${w}: v2only must be true when given`);
+    if (c.palette !== undefined && typeof c.palette !== 'boolean') problems.push(`${w}: palette must be true or false`);
     if (c.v2only && labTypes.has(c.type)) { problems.push(`${w}: v2only, but lab.json has this type`); return; }
     // a v2-only type brings its own name, description and numbers (it is its own lab.json entry)
     const lc = c.v2only ? c : labTypes.get(c.type);

@@ -127,7 +127,7 @@
       ]
     },
     {
-      "type": "external", "v2only": true, "group": "Edge", "managed": true,
+      "type": "external", "v2only": true, "palette": false, "group": "Edge", "managed": true,
       "name": "External service", "latencyMs": 300, "limitRps": 500,
       "desc": "A third party you call or that calls you: a payment provider, an SMS or push provider, a partner's system. Slow, rate-limited, sometimes down, and not yours to scale.",
       "to": ["apigw", "lb", "server"],
@@ -146,7 +146,7 @@
       ]
     },
     {
-      "type": "realtime", "v2only": true, "group": "Compute",
+      "type": "realtime", "v2only": true, "palette": false, "group": "Compute",
       "name": "Real-time gateway", "latencyMs": 5, "defaultSize": "m5.large",
       "desc": "Servers that hold open connections (WebSocket, server-sent events) and push messages down them as soon as something happens.",
       "crash": { "above": 1.5, "minutes": 10, "downMinutes": 5 },
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "type": "stream", "v2only": true, "group": "Messaging", "managed": true,
+      "type": "stream", "v2only": true, "palette": false, "group": "Messaging", "managed": true,
       "name": "Event stream", "latencyMs": 5, "brokerHourly": 0.21, "storagePerGbMonth": 0.10,
       "desc": "A durable, ordered, partitioned log (Kafka, Kinesis). Every consumer gets every event, in order per key, and can read it again later.",
       "to": ["server", "realtime"],
@@ -174,7 +174,7 @@
       ]
     },
     {
-      "type": "pubsub", "v2only": true, "group": "Messaging", "managed": true,
+      "type": "pubsub", "v2only": true, "palette": false, "group": "Messaging", "managed": true,
       "name": "Pub/sub channel", "latencyMs": 1, "limitRps": 100000, "pricePerMillion": 0.4,
       "desc": "Fire-and-forget fan-out (Redis pub/sub, SNS): whoever is subscribed right now gets the message; nothing is kept for later.",
       "to": ["realtime", "server"],
