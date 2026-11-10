@@ -122,3 +122,35 @@ test('hot keys: one item lands on one shard; a cache in front absorbs it', () =>
   const hc = sim(cached, p, hot).s;
   assert.ok(!hc.hotParts.some((x) => x.node === 'db' && x.lost));
 });
+
+test('a step done 20 times makes 20 calls to the cache in front, and only the misses reach the database', () => {
+  const read = { id: 'read', name: 'Read posts', kind: 'read', share: 1, keys: { entity: 'posts', skew: 'zipf', active: 1e5 }, steps: [{ id: 's1', op: 'get', entity: 'posts', by: { id: 'p1' }, times: 20 }], respond: { status: 200, body: {} } };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 4 }), N('ca', 'cache', { size: 'cache.r5.large', ttlSec: 300 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: POSTS() })], edges: E(['c', 'app'], ['app', 'ca'], ['ca', 'db']) };
+  const c = compile(d, lab, P(read)), cacheHop = c.plans.read.root.children[0].children[0];
+  assert.deepEqual([cacheHop.kind, cacheHop.per, cacheHop.children[0].per], ['cache', 20, 1]);
+  const { s } = sim(d, P(read), { traffic: { rps: 1000, pattern: 'steady' } });
+  assert.ok(s.nodes.ca.rhoMax > 0.3, `the cache takes 20,000 gets a second: ${s.nodes.ca.rhoMax}`);
+  assert.ok(s.nodes.db.rhoMax < 0.2, `the database only the misses: ${s.nodes.db.rhoMax}`);
+});
+
+test('workers back off while what they write to is overloaded, so a backlog does not knock the database over', () => {
+  const post = { id: 'post', name: 'Post', kind: 'write', share: 1, steps: [{ id: 'a', op: 'put', entity: 'posts', values: { id: 'p9', author: 'u1', title: 'x', body: 'y' }, times: 50, timing: 'defer', withinSec: 900 }], respond: { status: 202, body: {} } };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('q', 'queue'), N('w', 'server', { size: 'c5.2xlarge', count: 4 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', multiAz: true, schema: POSTS() })],
+    edges: E(['c', 'app'], ['app', 'q'], ['q', 'w'], ['w', 'db']) };
+  // 40 posts a second × 50 writes × 3 units = 6,000 of the database's 12,000; the workers could pull far more
+  const { s } = sim(d, P(post), { traffic: { rps: 40, pattern: 'steady' }, faults: [{ minute: 10, kind: 'crash', type: 'database' }] });
+  assert.equal(s.nodes.db.crashes, 0, 'the drain after the failover does not crash it again');
+  assert.ok(s.nodes.db.rhoMax <= 10 && s.ops.post.deferred.a.notDone === 0, 'and the backlog is cleared by the end');
+});
+
+test('a queue two calls share is one line: a slow kind of message makes the other wait too', () => {
+  const put = (id, ent, ext) => ({ id, name: id, kind: 'write', share: 0.5, steps: [{ id: 'a', op: 'put', entity: 'posts', values: { id: 'p9', author: 'u1', title: 'x', body: 'y' } }, { id: 'b', op: 'call', preset: ext, timing: 'defer', withinSec: 60 }], respond: { status: 202, body: {} } });
+  const p = P(put('otp', 'posts', 'sms'), put('promo', 'posts', 'push'));
+  const X = (id, preset, limitRps) => N(id, 'external', { preset, latencyMs: 200, limitRps, errorPct: 0, pricePerCall: 0 });
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: POSTS() }), N('q', 'queue'), N('w', 'server', { size: 'c5.2xlarge', count: 4 }), X('sms', 'sms', 5000), X('push', 'push', 300)],
+    edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'sms'], ['w', 'push']) };
+  const { s } = sim(d, p, { traffic: { rps: 1000, pattern: 'steady' } });
+  // the push provider takes 300 of the 500 promotions a second: the line grows, and OTPs are in it
+  assert.ok(s.ops.otp.deferred.b.worstDelaySec > 60, `OTPs wait behind promotions: ${s.ops.otp.deferred.b.worstDelaySec}`);
+  assert.ok(Math.abs(s.ops.otp.deferred.b.worstDelaySec - s.ops.promo.deferred.b.worstDelaySec) < 2);
+});

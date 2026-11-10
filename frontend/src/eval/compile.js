@@ -268,13 +268,16 @@ export function compile(design, lab, practice) {
     const splitShare = (count, weight, parent, kid) => (count > 1 ? { kind: 'split', group: `${parent}:${type(kid)}`, weight } : 1);
     // a chain of hops for the nodes of `path` after its first (the hop already made for it), ending in `last`
     const chain = (parentHop, nodes, last, sharesForCache) => {
-      let at = parentHop;
+      let at = parentHop, first = null;
       nodes.forEach((n, i) => {
         if (i === nodes.length - 1) { at.children.push(last); at = last; return; }
         const t = type(n);
         const hop = t === 'cache' ? mk(n, 'cache', { work: sharesForCache ? W.get : W.put, step: last?.step, entity: last?.entity, write: !sharesForCache }) : mk(n, 'handle', { work: W.handle, step: last?.step, cpuMs: 0 });
+        if (!first) first = hop;
         at.children.push(hop); at = hop;
       });
+      // a step done `times` times makes that many calls from the handler: the first hop on its path takes them all
+      if (first && last && (last.per || 1) > 1) { first.per = last.per; last.per = 1; }
       if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
       return at;
     };
@@ -335,6 +338,7 @@ export function compile(design, lab, practice) {
         for (const e of all) {
           const c = viaCache(e.path);
           if (!c || e.store !== b.store || seenCache.has(c) || b.path.includes(c)) continue;
+          if (b.async && e.sync) continue;   // a write behind a queue: only what the worker reaches can clear a cache
           seenCache.add(c);
           const inv = mk(c, 'invalidate', { step: step.id, work: W.get, per, entity });
           if (e.sync) chain(handleHop, e.path.slice(1, -1), inv, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2, -1), inv, null);

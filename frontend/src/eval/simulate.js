@@ -92,6 +92,14 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const r of recs) if (r.hop.kind !== 'source') hopsAt[r.node].push(r);
   const nodeOrder = g.topo.filter((id) => hopsAt[id]?.length);
   const enqRecs = recs.filter((r) => r.hop.kind === 'enqueue');
+  // consumers back off while what they call is overloaded (§8.7): each consume hop keeps a throttle from the last
+  // tick, rescaled so the busiest node below it would be at about 80% whenever it is above 85% or below 70%
+  const below = (r) => { const out = new Set(); const walk = (x) => { for (const c of x.units.flatMap((u) => u.one ? [u.one] : u.group)) { if (c.hop.kind === 'store' || c.hop.kind === 'call' || c.hop.kind === 'cache') out.add(c.node); walk(c); } }; walk(r); return [...out]; };
+  // one throttle per worker group and queue: the workers take messages without knowing which call sent them
+  const tkey = (r) => `${r.parent?.node}|${r.node}`;
+  const throttle = dict(), throttleNodes = dict();
+  for (const r of recs) if (r.hop.kind === 'consume') { const k = tkey(r); throttle[k] = 1; throttleNodes[k] = [...new Set([...(throttleNodes[k] || []), ...below(r)])]; }
+  const thr = (r) => throttle[tkey(r)] ?? 1;
   const opIndex = new Map(ops.map((o, i) => [o.id, i]));
 
   // ---- caches: what fits, per entity (§8.6) -------------------------------------------------------------------
@@ -206,6 +214,7 @@ export function simulateTest(compiled, lab, practice, test) {
             const wgt = sum > 0 ? capacityNow(r.node) / sum : 1 / cons.length;
             r.in = (e.out + backlog[e.hop.id] / secs) * wgt;
           }
+          r.in *= thr(r);
         } else { r.p = shareNow(r); r.in = r.parent.out * r.p * r.hop.per; }
       }
       const cap = capacityNow(id), down = isDown(id);
@@ -477,7 +486,8 @@ export function simulateTest(compiled, lab, practice, test) {
         for (const c of e.async) {
           const d = c.out * c.Sb;
           groupBacklog[c.hop.id] = Math.max(0, groupBacklog[c.hop.id] + (e.out - d) * secs);
-          const w = d > 1e-12 ? groupBacklog[c.hop.id] / d : groupBacklog[c.hop.id] > 0.5 ? (waitSec[e.hop.id] || 0) + secs : 0;
+          // while the consumer backs off its rate says little about how soon the backlog clears: age the wait instead
+          const est = groupBacklog[c.hop.id] / d, w = d > 1e-12 ? (thr(c) < 1 ? Math.min(est, (waitSec[e.hop.id] || 0) + secs) : est) : groupBacklog[c.hop.id] > 0.5 ? (waitSec[e.hop.id] || 0) + secs : 0;
           if (groupBacklog[c.hop.id] >= worstB) { worstB = groupBacklog[c.hop.id]; }
           if (w > worstW) worstW = w;
           sumDone += d;
@@ -489,11 +499,23 @@ export function simulateTest(compiled, lab, practice, test) {
       const done = e.async.reduce((a, c) => a + c.out * c.Sb, 0);
       backlog[e.hop.id] = Math.max(0, backlog[e.hop.id] + (e.out - done) * secs);
       // nothing taken this tick (the workers' calls all fail): the oldest message waits a tick longer
-      waitSec[e.hop.id] = done > 1e-12 ? backlog[e.hop.id] / done : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0;
+      // (and while the workers back off, their rate says little about how soon it clears: age the wait instead)
+      const backing = e.async.some((c) => thr(c) < 1);
+      waitSec[e.hop.id] = done > 1e-12 ? (backing ? Math.min(backlog[e.hop.id] / done, waitSec[e.hop.id] + secs) : backlog[e.hop.id] / done) : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0;
       lastDone[e.hop.id] = done;
       if (waitSec[e.hop.id] > waitWorst[e.hop.id]) waitWorst[e.hop.id] = waitSec[e.hop.id];
       if (backlog[e.hop.id] > 0.5 && !e.backlogged) { e.backlogged = true; st.events.push({ t, node: e.node, kind: 'backlog' }); }
       else if (backlog[e.hop.id] <= 0.5 && e.backlogged) { e.backlogged = false; st.events.push({ t, node: e.node, kind: 'drained' }); }
+    }
+    // a queue several calls send to is one line: every message in it waits as long (standard queues: about in order)
+    const byQueue = new Map();
+    for (const e of enqRecs) if (!isStream(e)) { if (!byQueue.has(e.node)) byQueue.set(e.node, []); byQueue.get(e.node).push(e); }
+    for (const es of byQueue.values()) {
+      if (es.length < 2) continue;
+      const B = es.reduce((a, e) => a + backlog[e.hop.id], 0), Dn = es.reduce((a, e) => a + (lastDone[e.hop.id] || 0), 0);
+      const w = Math.max(...es.map((e) => waitSec[e.hop.id]));
+      const shared = Dn > 1e-12 ? Math.min(B / Dn, es.some((e) => e.async.some((c) => thr(c) < 1)) ? w : Infinity) : B > 0.5 ? w : 0;
+      for (const e of es) { waitSec[e.hop.id] = shared; if (shared > waitWorst[e.hop.id]) waitWorst[e.hop.id] = shared; }
     }
     for (const r of deliverRecs) {
       const dd = opT[r.op.id]?.deferred[r.hop.step];
@@ -508,6 +530,10 @@ export function simulateTest(compiled, lab, practice, test) {
       if (dd && !r.hop.copy && delay > dd.worstDelaySec) dd.worstDelaySec = delay;
       const key = `${r.node}|${r.hop.entity}`;
       if (r.hop.write && delay > (feedDelay[key] || 0)) feedDelay[key] = delay;
+    }
+    for (const k in throttle) {
+      const worst = Math.max(0, ...throttleNodes[k].map((id) => (Number.isFinite(rho[id]) ? rho[id] || 0 : 10)));
+      if (worst > 0.85 || worst < 0.7) throttle[k] = Math.min(1, Math.max(0.05, (throttle[k] * 0.8) / Math.max(worst, 1e-6)));
     }
     // the writes each database took this tick become its change events next tick
     for (const o of sysOps) cdcPrev[o.id] = recs.reduce((a, r) => a + (r.node === o.db && r.hop.kind === 'store' && r.hop.write && r.hop.entity === o.entity && !r.op.system ? r.out : 0), 0);

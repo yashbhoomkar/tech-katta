@@ -223,195 +223,95 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends feed loads and posts. A feed load makes 3 queries (the feed list and the posts); feeds kept in a cache answer 95% of them; 10% of queries are writes (new posts fanned out to feeds). Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 3,
-      "hitPct": 95,
-      "writePct": 10
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 3000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends what the app does: open the home feed (the newest 20 entries of the person's feed, then those 20 posts), and now and then write a post, which goes into the feeds of the author's 200 followers within a minute. A few posts are read far more than others: the newest ones.",
+    "entities": {
+      "feed_items": {
+        "rows": 20000000000,
+        "rowBytes": 40,
+        "growthPerDay": 400000000,
+        "fields": {
+          "user_id": "string",
+          "post_id": "string",
+          "created_at": "time"
+        },
+        "sample": [
+          {
+            "user_id": "u1",
+            "post_id": "p3",
+            "created_at": "2026-11-07T09:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "post_id": "p1",
+            "created_at": "2026-11-06T20:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "post_id": "p2",
+            "created_at": "2026-11-07T08:00:00Z"
+          },
+          {
+            "user_id": "u2",
+            "post_id": "p9",
+            "created_at": "2026-11-07T09:30:00Z"
           }
-        }
+        ]
+      },
+      "posts": {
+        "rows": 5000000000,
+        "rowBytes": 500,
+        "growthPerDay": 2000000,
+        "fields": {
+          "post_id": "string",
+          "author_id": "string",
+          "text": "text",
+          "created_at": "time"
+        },
+        "sample": [
+          {
+            "post_id": "p1",
+            "author_id": "a1",
+            "text": "Monsoon chai",
+            "created_at": "2026-11-06T20:00:00Z"
+          },
+          {
+            "post_id": "p3",
+            "author_id": "a2",
+            "text": "Diwali sweets",
+            "created_at": "2026-11-07T09:00:00Z"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "text": [
+        "body",
+        "content",
+        "caption"
       ],
-      "edges": []
+      "user_id": [
+        "follower_id",
+        "reader_id",
+        "owner_id"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
-        "sample": true,
-        "desc": "1,500 requests a second: feed loads, posts and follows.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 1500,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of feed loads succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 200,
-            "label": "p99 under 200 ms"
-          },
-          {
-            "kind": "role",
-            "role": "feed",
-            "label": "Opening the app reads a feed that was put together before the user asked"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "The dinner peak",
-        "sample": true,
-        "desc": "3,000 requests a second at 8 pm.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 3000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of feed loads succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 200,
-            "label": "p99 under 200 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "A food blogger posts",
-        "desc": "At 8 pm a blogger with 50 lakh followers posts, and they all open the app: 12,000 requests a second for 15 minutes.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 12000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of feed loads succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (3,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 3000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of feed loads still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 3000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of feed loads still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (1,500 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 1500,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of feed loads succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 6000,
-            "label": "Costs at most $6,000 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-feed",
+        "id": "feed",
         "name": "Open the home feed",
+        "kind": "read",
+        "share": 0.99,
         "sample": true,
-        "desc": "The newest two posts in u1's feed (a feed holds up to 20,000 entries).",
         "request": {
           "method": "GET",
-          "path": "/v1/feed?user=u1&limit=2"
+          "path": "/v1/feed?user=u1&limit=20"
+        },
+        "bytesOut": 20000,
+        "keys": {
+          "entity": "posts",
+          "skew": "zipf",
+          "active": 20000000
         },
         "steps": [
           {
@@ -425,25 +325,47 @@
               "field": "created_at",
               "desc": true
             },
-            "limit": 2,
+            "limit": 20,
             "fields": [
               "post_id",
               "created_at"
             ],
             "matches": 20000
+          },
+          {
+            "id": "s2",
+            "op": "get",
+            "entity": "posts",
+            "by": {
+              "post_id": "p1"
+            },
+            "times": 20,
+            "fields": [
+              "post_id",
+              "author_id",
+              "text",
+              "created_at"
+            ],
+            "label": "Reading the 20 posts"
           }
         ],
         "respond": {
           "status": 200,
           "body": {
-            "items": "$s1"
+            "items": "$s1",
+            "posts": "$s2"
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
         }
       },
       {
-        "id": "api-post",
+        "id": "post",
         "name": "Write a post",
-        "desc": "A user posts; spreading it to followers' feeds can follow.",
+        "kind": "write",
+        "share": 0.01,
         "request": {
           "method": "POST",
           "path": "/v1/posts",
@@ -452,6 +374,7 @@
             "text": "Weekend trek"
           }
         },
+        "bytesOut": 200,
         "steps": [
           {
             "id": "s1",
@@ -463,6 +386,20 @@
               "text": "Weekend trek",
               "created_at": "2026-11-07T10:00:00Z"
             }
+          },
+          {
+            "id": "s2",
+            "op": "put",
+            "entity": "feed_items",
+            "values": {
+              "user_id": "u7",
+              "post_id": "p10",
+              "created_at": "2026-11-07T10:00:00Z"
+            },
+            "times": 200,
+            "timing": "defer",
+            "withinSec": 60,
+            "label": "Adding it to 200 followers' feeds"
           }
         ],
         "respond": {
@@ -471,9 +408,1350 @@
             "post_id": "$s1.post_id"
           }
         },
-        "sample": false
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "durable": true
       }
     ],
+    "tests": [
+      {
+        "id": "api-feed",
+        "name": "Open the home feed",
+        "desc": "The newest 20 entries of u1's feed (a feed holds up to 20,000), newest first, and those posts.",
+        "sample": true,
+        "op": "feed"
+      },
+      {
+        "id": "api-post",
+        "name": "Write a post",
+        "desc": "A user posts; adding it to the followers' feeds follows within a minute.",
+        "op": "post"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "1,500 requests a second.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "desc": "3,000 requests a second at 8 pm. Every post reaches its followers within a minute.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "A food blogger posts",
+        "desc": "At 8:10 pm a blogger with 50 lakh followers posts, and they all open the app: feed loads triple for 15 minutes, and one post in ten read is that one.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "spike",
+            "op": "feed",
+            "factor": 3,
+            "minutes": 15
+          },
+          {
+            "minute": 10,
+            "kind": "hotKey",
+            "op": "feed",
+            "share": 0.1,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "feed",
+            "availability": 99.9,
+            "p99Ms": 500
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Feeds may slow down; posts may not be lost.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "post",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (1,500 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 1500,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 30000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Feed API",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 8,
+            "zones": 2
+          }
+        },
+        {
+          "id": "cache",
+          "type": "cache",
+          "x": 720,
+          "y": 0,
+          "name": "Post cache",
+          "config": {
+            "size": "cache.m5.large",
+            "nodes": 6,
+            "ttlSec": 300,
+            "replica": true
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 960,
+          "y": 0,
+          "name": "Feeds and posts",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 4,
+            "replicas": 1,
+            "schema": {
+              "tables": [
+                {
+                  "name": "feed_items",
+                  "fields": [
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "post_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "user_id",
+                    "post_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "user_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                },
+                {
+                  "name": "posts",
+                  "fields": [
+                    {
+                      "name": "post_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "text",
+                      "type": "text"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "post_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 200,
+          "name": "Posts to fan out",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 200,
+          "name": "Fan-out workers",
+          "config": {
+            "size": "t3.medium",
+            "count": 2,
+            "zones": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "cache"
+        },
+        {
+          "from": "cache",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Feed without its order",
+        "why": "The feed table is keyed by user and post with no index on time: the newest 20 of 20,000 entries means sorting them all.",
+        "fails": "api-feed",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Post cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 6,
+              "ttlSec": 300,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "replicas": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Posts to fan out",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fan-out workers",
+            "config": {
+              "size": "t3.medium",
+              "count": 2,
+              "zones": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "No cache",
+        "why": "Every feed load reads 20 posts from the database: at the peak that is 60,000 reads a second.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "replicas": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Posts to fan out",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fan-out workers",
+            "config": {
+              "size": "t3.medium",
+              "count": 2,
+              "zones": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Fan-out inside the request",
+        "why": "The post waits while it is written into 200 feeds, so writing a post is slow and the database takes the burst at once.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Post cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 6,
+              "ttlSec": 300,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "replicas": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 1
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Post cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 6,
+              "ttlSec": 300,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "replicas": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Posts to fan out",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fan-out workers",
+            "config": {
+              "size": "t3.medium",
+              "count": 2,
+              "zones": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "The database has no standby: when it crashes, feeds can't load for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Post cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 6,
+              "ttlSec": 300,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 4,
+              "replicas": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Posts to fan out",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fan-out workers",
+            "config": {
+              "size": "t3.medium",
+              "count": 2,
+              "zones": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Feed API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 24,
+              "zones": 2
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Post cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 10,
+              "ttlSec": 300,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Feeds and posts",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 8,
+              "replicas": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "feed_items",
+                    "fields": [
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "user_id",
+                      "post_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "user_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "posts",
+                    "fields": [
+                      {
+                        "name": "post_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "text",
+                        "type": "text"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "post_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Posts to fan out",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fan-out workers",
+            "config": {
+              "size": "t3.medium",
+              "count": 10,
+              "zones": 2
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "ttl:cache"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "Phones may reach the API group directly in this model.",
+      "ttl:cache": "How long a post stays cached only changes how soon an edited post shows; no test asks for that."
+    },
     "rubric": {
       "fr": [
         {
@@ -639,1033 +1917,12 @@
       },
       {
         "step": "design",
-        "x": "With feeds cached, 95% of queries never reach the database. The blogger spike quadruples traffic; size servers for it."
+        "x": "Keep the posts people read most in a cache, so a feed load reads 20 posts from memory. When a blogger posts, feed loads triple and one post gets a tenth of the reads: spread the cache over enough nodes that the one holding it keeps up."
       },
       {
         "step": "design",
-        "x": "Two server groups and a Multi-AZ database so the feed always opens."
+        "x": "Spread the API servers and the fan-out workers over two zones, and give the database a Multi-AZ standby, so the feed always opens."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 3000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 3,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 3,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "cache1",
-          "type": "cache",
-          "x": 720,
-          "y": -75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 95,
-            "writePct": 10,
-            "onDown": "database",
-            "role": "feed"
-          }
-        },
-        {
-          "id": "cache2",
-          "type": "cache",
-          "x": 720,
-          "y": 75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 95,
-            "writePct": 10,
-            "onDown": "database",
-            "role": "feed"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 960,
-          "y": 0,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "feed_items",
-                  "fields": [
-                    {
-                      "name": "user_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "post_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "created_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "user_id",
-                    "post_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "user_id",
-                        "created_at"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                },
-                {
-                  "name": "posts",
-                  "fields": [
-                    {
-                      "name": "post_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "text",
-                      "type": "text"
-                    },
-                    {
-                      "name": "created_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "post_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "author_id",
-                        "created_at"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 720,
-          "y": 225,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "name": "Fan-out workers",
-          "x": 960,
-          "y": 165,
-          "config": {
-            "size": "m5.large",
-            "count": 3,
-            "queriesPerRequest": 1,
-            "role": "fanout"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 295,
-          "config": {
-            "size": "m5.large",
-            "count": 3,
-            "queriesPerRequest": 1,
-            "role": "fanout"
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "cache1"
-        },
-        {
-          "from": "app1",
-          "to": "cache2"
-        },
-        {
-          "from": "app2",
-          "to": "cache1"
-        },
-        {
-          "from": "app2",
-          "to": "cache2"
-        },
-        {
-          "from": "cache1",
-          "to": "db1"
-        },
-        {
-          "from": "cache2",
-          "to": "db1"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "work1",
-          "to": "cache1"
-        },
-        {
-          "from": "work1",
-          "to": "cache2"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work2",
-          "to": "cache1"
-        },
-        {
-          "from": "work2",
-          "to": "cache2"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "No cache",
-        "why": "Every read goes to the database, which can't take the peak.",
-        "fails": "peak",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "db.m5.large",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Feed without its order",
-        "why": "Feed entries are found by user but not kept in time order: 20,000 entries would be sorted on every open.",
-        "fails": "api-feed",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 3,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 10,
-              "onDown": "database",
-              "role": "feed"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "feed_items",
-                    "fields": [
-                      {
-                        "name": "user_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "post_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "created_at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "user_id",
-                      "post_id"
-                    ],
-                    "indexes": [
-                      {
-                        "fields": [
-                          "user_id"
-                        ],
-                        "kind": "btree"
-                      }
-                    ]
-                  },
-                  {
-                    "name": "posts",
-                    "fields": [
-                      {
-                        "name": "post_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "text",
-                        "type": "text"
-                      },
-                      {
-                        "name": "created_at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "post_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "user_id",
-        "post_id",
-        "author_id",
-        "text",
-        "created_at"
-      ],
-      "aliases": {
-        "text": [
-          "body",
-          "content",
-          "caption"
-        ],
-        "user_id": [
-          "follower_id",
-          "reader_id",
-          "owner_id"
-        ]
-      },
-      "entities": {
-        "feed_items": {
-          "rows": 20000000000,
-          "sample": [
-            {
-              "user_id": "u1",
-              "post_id": "p3",
-              "created_at": "2026-11-07T09:00:00Z"
-            },
-            {
-              "user_id": "u1",
-              "post_id": "p1",
-              "created_at": "2026-11-06T20:00:00Z"
-            },
-            {
-              "user_id": "u1",
-              "post_id": "p2",
-              "created_at": "2026-11-07T08:00:00Z"
-            },
-            {
-              "user_id": "u2",
-              "post_id": "p9",
-              "created_at": "2026-11-07T09:30:00Z"
-            }
-          ]
-        },
-        "posts": {
-          "rows": 5000000000,
-          "sample": [
-            {
-              "post_id": "p1",
-              "author_id": "a1",
-              "text": "Monsoon chai",
-              "created_at": "2026-11-06T20:00:00Z"
-            }
-          ]
-        }
-      }
-    }
+    ]
   }
 }
