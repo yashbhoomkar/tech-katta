@@ -38,6 +38,7 @@
 import { simulate, advance, newRun, runOptions, crashNow, catalogue, replicasOf, roleOf, displayName, standby, engineOf } from '../lab/engine.js';
 import { applyChallenge, chaosTarget, missingOnPath } from '../lab/challenges.js';
 import { runRequest } from './requests.js';
+import { evaluate } from '../eval/index.js';
 
 export const STEP = 5; // simulated minutes per step
 const P99 = Math.log(100);
@@ -102,6 +103,8 @@ function rule(c, d, cat) {
 
 // Plays one test. `problem` gives the fixed settings; `test` the scenario and its checks.
 export function runTest(design, lab, problem, test) {
+  // a v2 problem is judged by the v2 evaluator (tech-katta-context/evaluator.md §12.1)
+  if (problem?.v === 2) { const r = evaluate(design, lab, { ...problem, tests: [test] }); return r.results[0] || { id: test.id, ok: false, error: r.first?.error || 'Not judged.', checks: [] }; }
   // a request test: the request through the design, the response compared (judge/requests.js)
   if (test.request) return runRequest(design, lab, problem, test);
   const cat = catalogue(lab), nm = names(design, lab);
@@ -178,6 +181,7 @@ export function runTest(design, lab, problem, test) {
 
 // Runs the sample tests (Run) or all of them (Submit). Stops nothing early: every result is shown.
 export function judge(design, lab, problem, { sample = false } = {}) {
+  if (problem?.v === 2) return evaluate(design, lab, problem, { sample });
   const tests = problem.tests.filter((t) => !sample || t.sample);
   const results = tests.map((t) => ({ test: t, ...runTest(design, lab, problem, t) }));
   const passed = results.filter((r) => r.ok).length, first = results.find((r) => !r.ok);
@@ -233,7 +237,7 @@ export const sameDesign = (a, b) => !!(a && b && a.nodes?.length && b.nodes?.len
 export const WEIGHTS = { fr: 10, nfr: 5, est: 10, api: 10, dec: 15, design: 50 };
 export function score(graded, judged, hints = 0) {
   const p = graded?.parts || { fr: 0, nfr: 0, est: 0, api: 0, dec: 0 };
-  const parts = { fr: p.fr * WEIGHTS.fr, nfr: p.nfr * WEIGHTS.nfr, est: p.est * WEIGHTS.est, api: p.api * WEIGHTS.api, dec: (p.dec || 0) * WEIGHTS.dec, design: judged && judged.total ? WEIGHTS.design * judged.passed / judged.total : 0 };
+  const parts = { fr: p.fr * WEIGHTS.fr, nfr: p.nfr * WEIGHTS.nfr, est: p.est * WEIGHTS.est, api: p.api * WEIGHTS.api, dec: (p.dec || 0) * WEIGHTS.dec, design: judged && Number.isFinite(judged.designPoints) ? Math.min(WEIGHTS.design, Math.max(0, judged.designPoints)) : judged && judged.total ? WEIGHTS.design * judged.passed / judged.total : 0 };
   const penalty = Math.min(15, 3 * hints);
   const raw = Object.values(parts).reduce((a, b) => a + b, 0);
   return { total: Math.max(0, Math.round(raw - penalty)), parts, penalty };

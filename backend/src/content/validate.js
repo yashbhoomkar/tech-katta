@@ -1,4 +1,5 @@
 import { cleanSchema, schemaIssues } from '../../../frontend/src/lab/schema.js';
+import { validateEval } from './validate-eval.js';
 import { FIGS } from './figs/index.js';
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
@@ -318,9 +319,11 @@ export function validateDesign(design, lab, at, problems = []) {
   return problems;
 }
 
-export function validateContent({ site, examples, articles, lab }) {
+export function validateContent({ site, examples, articles, lab, evalCat }) {
   const problems = [];
   if (lab !== undefined) validateLab(lab, problems);
+  // the v2 evaluator's catalogue (content/eval.json), when there is one
+  if (evalCat !== undefined) validateEval(evalCat, lab, problems);
   if (site && site.landingLab && !list(articles).some((a) => a && a.slug === site.landingLab.problem && a.practice)) problems.push(`site.json: landingLab.problem ${site.landingLab.problem} is not a problem (an article with practice)`);
   validateSite(site, examples, problems);
   const sections = new Set(list(site?.dashboard?.sections).map((s) => s && s[0]));
