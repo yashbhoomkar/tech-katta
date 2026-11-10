@@ -19,6 +19,8 @@ export const PLAN = {
   E_NO_TX: (store) => `${store} can't make these writes happen together (no transactions).`,
   E_NO_SANDBOX: (node, label) => `${label} runs code from users: turn on "Runs untrusted code (sandboxed)" on ${node}.`,
   E_NO_EXTERNAL: (what, preset) => `${cap1(what)} needs an arrow from a Service to the ${preset} service.`,
+  E_NO_PUBLISH: (what) => `${cap1(what)} needs a way to people who are connected: an arrow from the Service to a pub/sub channel or an event stream that reaches a real-time gateway (or to the gateway itself).`,
+  E_NO_CONNECTION: (gw) => `Nobody is connected to ${gw}: Clients need an arrow to it, through a load balancer.`,
   E_NOT_YET: (what) => `${cap1(what)} needs components that are not on the canvas yet.`,
   E_UNFED: (entity, store, op, primary) => `Nothing ever writes ${entity} into ${store}: ${op} would find it empty.${primary ? ` Feed it from ${primary} (a worker behind a queue, or change data capture).` : ''}`,
   E_TOO_TANGLED: () => 'This operation fans out over too many paths to follow.',
@@ -85,6 +87,10 @@ export const FIND = {
   dualWrite: (svc, entity, a, b) => ({ title: `${cap1(entity)} is written to two stores without a transaction`, story: `${svc} writes ${entity} to ${a}, then to ${b}. If it crashes between the two, ${b} never hears about it, and nothing repairs it.`, fix: `Write once, to ${a}, and let ${b} follow it: change data capture into a stream, or an outbox table read by a worker.` }),
   callThenWrite: (svc, ext) => ({ title: 'A call to another company before anything is saved', story: `If ${svc} crashes after ${ext} answers, the other company has done it (a payment, a message) but your records don't know.`, fix: 'Save the request first (with its id), then call, then record the answer.' }),
   order: (queue, by) => ({ title: 'Changes can be applied out of order', story: `${queue} hands messages to whichever worker is free. Two messages for the same ${by} can be applied the wrong way round.`, fix: `Use an event stream partitioned by ${by}, a FIFO queue, or number the changes and let the store refuse one that is out of turn.` }),
+  orderStream: (stream, by) => ({ title: 'Changes can be applied out of order', story: `${stream} keeps order only inside a partition, and it is not partitioned by ${by}: events for one ${by} land in different partitions, and two workers apply them in whichever order they finish.`, fix: `Partition ${stream} by ${by} ("Partition by" in its settings).` }),
+  orderPubsub: (ch) => ({ title: 'Order is not guaranteed', story: `${ch} usually delivers in order, but nothing guarantees it: a message can overtake another.`, fix: 'Use an event stream partitioned by the conversation, or number the messages so the app can sort them.' }),
+  noCatchUp: (op) => ({ title: 'A message sent while someone is offline is never seen', story: `${op} pushes the message to whoever is connected right now, and nothing stores it: a phone that is offline for a moment never sees it.`, fix: 'Store the message too (in a database the app reads when it reconnects), then push it.' }),
+  retention: (stream, hours, keep) => ({ title: `${stream} drops events before they are read`, story: `Events waited up to ${hours} hours to be read, but ${stream} keeps them for ${keep}: the oldest were gone first.`, fix: 'Add consumers (or partitions), or keep events longer.' }),
   oversized: (name, pct) => ({ title: `${name} is larger than it needs to be`, story: `${name} never went above ${pct}% load: a smaller one would do.`, fix: 'Try a smaller size or fewer instances.' }),
 };
 

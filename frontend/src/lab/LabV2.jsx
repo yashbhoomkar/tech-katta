@@ -43,6 +43,8 @@ function Setting({ s, comp, cfg, set, node, fieldHints, title }) {
       {fam.map((f) => <optgroup key={f} label={f}>{comp.engines.filter((x) => x.family === f).map((x) => <option key={x.id} value={x.id}>{x.aws.startsWith(x.label) ? x.aws : `${x.label} · ${x.aws}`}</option>)}</optgroup>)}</select></Field>
       <p className="lab-note lab-note-tight">{e.desc}</p></>;
   }
+  // a few field names, typed with commas (an event stream's "Partition by")
+  if (s.kind === 'fields') return <Field label={s.label} help={s.help}><input type="text" value={(cfg[k] || []).join(', ')} placeholder="field name" onChange={(e) => set({ [k]: e.target.value.split(',').map((x) => x.trim()).filter((x) => /^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(x)).slice(0, 4) })} /></Field>;
   if (s.kind === 'schema') return <SchemaBox key={node.id} comp={comp} cfg={cfg} set={set} title={title} suggest={fieldHints || []} />;
   if (s.kind === 'structures') return <StructuresBox key={node.id} cfg={cfg} set={set} title={title} suggest={fieldHints || []} />;
   return null;
