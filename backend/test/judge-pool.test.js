@@ -12,6 +12,11 @@ const lab = content.lab;
 const problems = content.articles.filter((a) => a.practice);
 // cleaned as the API cleans a submission: a v2 problem's design keeps its v2 settings
 const v2 = (d, a) => (a.practice.v === 2 ? { ...d, v: 2 } : d);
+// the v1 problem with the most simulated hours: the slow design must stay slow whatever is converted to v2
+const heavyV1 = () => problems.filter((p) => p.practice.v !== 2).map((p) => [p, p.practice.tests.reduce((h, t) => h + (t.hours || 0), 0)]).sort((x, y) => y[1] - x[1])[0][0];
+// the slow design against the problem's load tests five times over: seconds on any machine (a fast CI runner judged
+// it once in under the 2 s limit)
+const slowJob = (a) => { const j = job(slowDesign(), a), load = j.practice.tests.filter((t) => !t.request && !t.op); return { ...j, practice: { ...j.practice, tests: [...j.practice.tests, ...load, ...load, ...load, ...load].map((t, i) => ({ ...t, id: `${t.id}-${i}` })) } }; };
 const job = (design, a) => { const { wrong, ...practice } = a.practice; return { design: cleanDesign(v2(design, a), lab, 'submitted'), lab, practice }; };
 // A long chain of components with every setting at its maximum: built to be slow (seconds).
 function slowDesign(n = 200) {
@@ -42,8 +47,8 @@ test('a design over the time limit is stopped, and the next one is judged on a f
   // limit, which a busy CI machine couldn't do in the 200 ms this test first used
   const pool = judgePool({ size: 1, timeoutMs: 2000 });
   try {
-    const a = problems.find((p) => p.practice.v !== 2);
-    await assert.rejects(pool.run(job(slowDesign(), a)), (e) => e instanceof JudgeError && e.code === 'judge_timeout');
+    const a = heavyV1();
+    await assert.rejects(pool.run(slowJob(a)), (e) => e instanceof JudgeError && e.code === 'judge_timeout');
     const ok = await pool.run(job(a.practice.reference, a));
     assert.equal(ok.copied, true);
   } finally { pool.close(); }
@@ -52,7 +57,7 @@ test('a design over the time limit is stopped, and the next one is judged on a f
 test('when the queue is full a new design is refused at once', async () => {
   const pool = judgePool({ size: 1, maxQueue: 1, timeoutMs: 300 });
   try {
-    const a = problems.find((p) => p.practice.v !== 2), slow = job(slowDesign(), a);
+    const a = heavyV1(), slow = slowJob(a);
     const first = pool.run(slow), second = pool.run(slow);
     await assert.rejects(pool.run(slow), (e) => e.code === 'judge_busy');
     await assert.rejects(first, (e) => e.code === 'judge_timeout');
@@ -63,10 +68,10 @@ test('when the queue is full a new design is refused at once', async () => {
 test('the API thread keeps running while a slow design is judged', async () => {
   const pool = judgePool({ size: 1, timeoutMs: 1500 });
   try {
-    const a = problems.find((p) => p.practice.v !== 2);
+    const a = heavyV1();
     let worstGap = 0, last = performance.now();
     const tick = setInterval(() => { const t = performance.now(); worstGap = Math.max(worstGap, t - last); last = t; }, 10);
-    await pool.run(job(slowDesign(), a)).catch(() => {});
+    await pool.run(slowJob(a)).catch(() => {});
     clearInterval(tick);
     assert.ok(worstGap < 250, `the event loop was blocked for ${Math.round(worstGap)} ms`);
   } finally { pool.close(); }
@@ -75,7 +80,7 @@ test('the API thread keeps running while a slow design is judged', async () => {
 test("a design the judge can't handle is a judge_failed error (with the reason), and the worker carries on", async () => {
   const pool = judgePool({ size: 1 });
   try {
-    const a = problems.find((p) => p.practice.v !== 2);
+    const a = heavyV1();
     await assert.rejects(pool.run({ ...job(a.practice.reference, a), practice: null }), (e) => e instanceof JudgeError && e.code === 'judge_failed' && typeof e.detail === 'string' && e.detail.length > 0);
     assert.equal((await pool.run(job(a.practice.reference, a))).copied, true);
   } finally { pool.close(); }
