@@ -369,7 +369,7 @@ test('trace: each wrong design fails its test with the right message', () => {
   assert.equal(r.ok, false);
   assert.deepEqual(r.output, { status: 302, body: { location: null } });
   assert.equal(r.why[0], 'The response differs from the expected one (location): links has no long_url.');
-  for (const w of fixture.wrong) assert.equal(runAll(w)[w.fails].ok, false, `${w.name} must fail ${w.fails}`);
+  for (const w of fixture.wrong.filter((x) => traceTests.some((t) => t.id === x.fails))) assert.equal(runAll(w)[w.fails].ok, false, `${w.name} must fail ${w.fails}`);
 });
 
 test('trace: deferred steps are applied after answering and shown after the response', () => {

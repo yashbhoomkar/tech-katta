@@ -48,3 +48,48 @@ export const ACCESS = {
   rank: (t, f) => `Ranking ${t} by ${f} needs a sorted set in a cache, or an index on ${f}.`,
   cacheOnly: (t) => `${t} in a cache is found only by its key.`,
 };
+
+// Findings (§10): { title, story, fix } in plain words, with this design's names and numbers.
+const plural = (n, one, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+export const FIND = {
+  notDurableCache: (entity, cache) => ({ title: `${cap1(entity)} lives only in a cache's memory`, story: `${cap1(entity)} lives only in ${cache}'s memory. When it restarts, every ${entity} acknowledged since is lost.`, fix: 'Write it to a database too (the cache can still serve reads), or turn on its append-only file.' }),
+  writeBack: (cache, entity, sec, n) => ({ title: `${cache} saves writes later`, story: `${cache} acknowledges writes and saves them later. A crash loses the last ${sec} seconds of ${entity}${n > 0 ? `: about ${n.toLocaleString('en-US')} at this test's rate` : ''}.`, fix: 'Use write-through for data that must not be lost.' }),
+  singleZone: (db, minutes) => ({ title: `${db} has no standby`, story: `${db} has no standby. It keeps its data through a crash, but nothing can be written for ${minutes} minutes.`, fix: 'Give it a standby in another zone (Multi-AZ).' }),
+  stale: (op, req, entity, store, how, sec) => ({ title: `${op} can read old data`, story: `${op} must be ${req}, but it reads ${entity} from ${store}, which is ${how}: up to ${plural(sec, 'second')} behind.` }),
+  staleInfo: (op, sec) => ({ title: `${op} can show data up to ${plural(sec, 'second')} old.`, story: `${op} can show data up to ${plural(sec, 'second')} old.`, fix: 'Nothing to do unless that is too old for this call.' }),
+  fixCache: (cache) => `Shorten ${cache}'s time to keep items, or delete the item when it is written.`,
+  fixReplica: () => 'Read from the primary, or make replication synchronous.',
+  fixQueue: () => 'Add workers behind the queue, or write the copy before answering.',
+  fixCdn: () => 'Shorten how long the CDN keeps the answer, or do not cache this call.',
+  spof: (name, ops, type, cfg) => ({ title: `${name} is a single point of failure`, story: `If ${name} is lost, every ${list(ops)} call fails: nothing else can take its calls.`,
+    fix: type === 'server' ? 'Spread it over two or three zones.' : type === 'database' ? 'Give it a standby in another zone (Multi-AZ).' : cfg?.onDown === 'fail' ? 'Let callers go to the database while the cache is down.' : 'Add a second one.' }),
+  backlog: (queue, n) => ({ title: `${queue} was still filling when the test ended`, story: `${queue} was still filling when the test ended, with ${n.toLocaleString('en-US')} messages waiting: its workers take fewer a second than arrive.`, fix: 'Add workers, or make each message cheaper to handle.' }),
+  storage: (db, gb, engine, max) => ({ title: `${db} runs out of space`, story: `${db} needs ${gb.toLocaleString('en-US')} GB; one ${engine} holds at most ${max.toLocaleString('en-US')}.`, fix: 'Split it over shards, or choose a store that grows by itself.' }),
+  cacheFull: (cache, what, need, have) => ({ title: `${cache} is too small for ${what}`, story: `${cap1(what)} needs about ${need} GB of memory, but ${cache} has ${have} GB.`, fix: 'A larger size or more nodes, or keep it in a database.' }),
+  noTtl: (entity, store) => ({ title: `${cap1(entity)} is never removed`, story: `${cap1(entity)} is never removed from ${store}: it grows for ever.`, fix: 'Give the table an expiry field (TTL), or delete the rows with a job.' }),
+  oversized: (name, pct) => ({ title: `${name} is larger than it needs to be`, story: `${name} never went above ${pct}% load: a smaller one would do.`, fix: 'Try a smaller size or fewer instances.' }),
+};
+
+// Why a load-test check failed (§11.4).
+export const WHY = {
+  sloAvail: (clock, culprit, state, pct, op, allowed) => `At ${clock} ${culprit} ${state}; ${pct}% of ${op} calls failed (the test allows ${allowed}%).`,
+  sloSlow: (clock, culprit, state, pct, op, ms) => `At ${clock} ${culprit} ${state}; ${pct}% of ${op} calls took longer than ${ms} ms (the test allows 1%).`,
+  trigger: (what) => ` It began when ${what}.`,
+  serverOver: (warm) => `Add instances or a larger size. New instances take ${warm} minutes, so a sudden rush needs them started beforehand.`,
+  serverZone: () => 'Spread it over two or three zones.',
+  dbReads: (step, work, how) => `${cap1(step)} costs ${work} units through ${how}. Put a cache in front, add read replicas, or give it a key or index.`,
+  dbWrites: () => "Replicas don't help writes. A larger size, shards, or a queue in front to smooth the burst.",
+  dbDown: (fo, down) => `Give it a standby in another zone (Multi-AZ): it is back in ${fo} minutes instead of ${down}.`,
+  cacheOver: () => 'A larger size or more nodes.',
+  cacheCold: (db) => `While it refills, its misses land on ${db}. Size the database for that, or keep a replica so the cache survives.`,
+  limit: (limit) => `It refuses what is over ${limit.toLocaleString('en-US')} a second. Put a CDN in front for what can be cached, or split the traffic over two.`,
+  path: (n, steps) => `The time is the path itself: ${n} steps one after another (${steps}). Cut a step, cache a read, or defer what can wait.`,
+  backlog: (consumer, x, y) => `${consumer} takes ${x.toLocaleString('en-US')} a second and ${y.toLocaleString('en-US')} arrive: more workers, or cheaper work per message.`,
+  completes: (step, sec, within) => `${cap1(step)} was done up to ${sec.toLocaleString('en-US')} seconds after the call (allowed ${within}).`,
+  notDone: (n) => ` ${n.toLocaleString('en-US')} were still waiting when the test ended.`,
+  cost: (bill, max, top) => `The bill is $${Math.round(bill).toLocaleString('en-US')} a month (allowed $${max.toLocaleString('en-US')}). Most of it: ${top}.`,
+  crash: (name, clock) => `${name} crashed from overload at ${clock}.`,
+  has: (type) => `The design has no ${type} that any call goes through.`,
+  planError: (op, msg) => `${op} can't run: ${msg}`,
+  finding: (f) => `${f.story}${f.fix ? ` ${f.fix}` : ''}`,
+};
