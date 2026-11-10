@@ -120,6 +120,34 @@ Scoring (out of 100): functional requirements 10 (keywords), non-functional 5 (r
 opened −3, at most −15. Known limit: two queues feeding the same workers each hand them their full
 capacity, so suites keep to one queue per worker pool.
 
+### v2 problems (`practice.v: 2`)
+
+A problem with `"v": 2` is judged by the v2 evaluator (`frontend/src/eval/`; the full format is in
+tech-katta-context `evaluator.md` §6, and the URL shortener fixture `frontend/src/eval/fixtures/url-shortener.v2.json`
+is a worked example).
+
+- **What goes away from v1:** `fixed`, `data`, roles, and the checks `availability`, `p99`, `requires`,
+  `redundant`, `multiAz` and `role`.
+- **`entities`:** `{name: {rows, rowBytes, fields: {field: type}, sample: [≥ 2 rows], growthPerDay?, expires?}}`.
+- **`aliases`:** other names a learner may give a field.
+- **`operations`:** each has an `id`, `name`, `kind` (read / write), `request`, a `share` of traffic, `steps`, `respond`,
+  and optionally `keys`, `cacheable`, `slo`, `consistency`, `durable`, `effect`.
+  - The Clients' shares add up to 1.
+  - A read operation may only read.
+- **`tests`:**
+  - A **trace** test is `{id, name, desc, op, sample?}`. Every operation has one.
+  - A **load** test is `{hours, startHour, traffic, faults?, checks}`. Its checks are `slo`, `completes`, `fresh`,
+    `noCrash`, `noLostWrites`, `noDuplicates`, `ordered`, `atomic`, `fits`, `cost` and `has`.
+  - At least one test of each kind is `sample`.
+  - Fault minutes are multiples of the tick: 1 minute up to 6 hours, else 5.
+- **Designs:** `start`, `reference` and `wrong` designs come out of the v2 cleaning unchanged. The reference's
+  schemas have no errors.
+- **Mutation testing:** `mutantsAllowed` (with a reason for each in `mutantsAllowedWhy`) lists the reference's
+  mutants that are rightly still accepted. Like `reference` and `wrong`, these lists are never served with the
+  article.
+- **Calibration:** run `node tools/eval/calibrate.mjs <article.json>`. The design score is split by area:
+  function 15, scale 15, resilience 10, correctness 5, cost 5.
+
 ## Subsections
 
 `site.json` `dashboard.groups` maps a section to its subsections, in order: `{"components": [[id, label,

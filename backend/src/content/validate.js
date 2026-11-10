@@ -1,5 +1,6 @@
 import { cleanSchema, schemaIssues } from '../../../frontend/src/lab/schema.js';
 import { validateEval } from './validate-eval.js';
+import { validatePractice2 } from './validate-practice2.js';
 import { FIGS } from './figs/index.js';
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
@@ -356,7 +357,7 @@ export function validateContent({ site, examples, articles, lab, evalCat }) {
     else if (a.access === 'free' && a.practice !== undefined) problems.push(`${at}: a problem (an article with practice) must be paid`);
     checkBlocks(a.body, at, problems, targets);
     // practice designs are checked against the Lab catalogue, so only when it is given
-    if (a.practice !== undefined && lab) validatePractice(a.practice, lab, `${at} practice`, problems);
+    if (a.practice !== undefined && lab) validatePractice(a.practice, evalCat ? { ...lab, eval: evalCat } : lab, `${at} practice`, problems);
   }
   return problems;
 }
@@ -397,6 +398,9 @@ function validateRequestTest(t, entities, w, problems, p) {
 }
 export function validatePractice(p, lab, at, problems) {
   if (!p || typeof p !== 'object' || Array.isArray(p)) { problems.push(`${at}: needs an object`); return; }
+  // a problem judged by the v2 evaluator (tech-katta-context/evaluator.md §6)
+  if (p.v === 2) { validatePractice2(p, lab, at, problems, validateRubricHints); return; }
+  if (p.v !== undefined) { problems.push(`${at}: v must be 2 (or left out for v1)`); return; }
   const byType = Object.fromEntries(list(lab?.components).map((c) => [c && c.type, c]));
   const patterns = new Set(list(byType.client?.patterns).map((x) => x && x.id));
   if (!isText(p.brief)) problems.push(`${at}: needs brief`);
@@ -455,6 +459,16 @@ export function validatePractice(p, lab, at, problems) {
       if (c.kind === 'requires' && !(Array.isArray(c.types) && c.types.length && c.types.every((x) => byType[x]))) problems.push(`${w}: requires must list component types`);
     }
   }
+  validateRubricHints(p, at, problems);
+  for (const [i, w] of list(p.wrong).entries()) {
+    if (!w || !isText(w.name) || !isText(w.why) || !ids.has(w.fails)) { problems.push(`${at} wrong design ${i}: needs name, why and fails (a test id)`); continue; }
+    validateDesign({ ...w }, lab, `${at} wrong design ${w.name}`, problems);
+  }
+  if (!list(p.wrong).length) problems.push(`${at}: needs at least one wrong design to calibrate the tests`);
+}
+
+// The written steps (rubric) and the hints: the same for v1 and v2 problems.
+export function validateRubricHints(p, at, problems) {
   const r = p.rubric;
   if (!r || typeof r !== 'object') problems.push(`${at}: needs rubric`);
   else {
@@ -471,9 +485,4 @@ export function validatePractice(p, lab, at, problems) {
     if (!list(r.api).length || !r.api.every((x) => x && isText(x.label) && typeof x.method === 'string' && x.method.split('|').every((m) => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(m)) && isText(x.path) && (() => { try { new RegExp(x.path); return true; } catch { return false; } })())) problems.push(`${at}: rubric.api needs [{label, method, path (a regular expression)}]`);
   }
   if (!list(p.hints).length || !p.hints.every((h) => h && HINT_STEPS.has(h.step) && isText(h.x))) problems.push(`${at}: hints need [{step, x}] with step one of ${[...HINT_STEPS].join(', ')}`);
-  for (const [i, w] of list(p.wrong).entries()) {
-    if (!w || !isText(w.name) || !isText(w.why) || !ids.has(w.fails)) { problems.push(`${at} wrong design ${i}: needs name, why and fails (a test id)`); continue; }
-    validateDesign({ ...w }, lab, `${at} wrong design ${w.name}`, problems);
-  }
-  if (!list(p.wrong).length) problems.push(`${at}: needs at least one wrong design to calibrate the tests`);
 }

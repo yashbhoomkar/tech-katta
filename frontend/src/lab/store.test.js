@@ -107,3 +107,19 @@ test("a database's schema is cleaned and kept; other components get none",()=>{
   const d=cleanDesign({nodes:[{id:"a",type:"database",config:{engine:"dynamodb",schema:{tables:[{name:"links",fields:[{name:"code",type:"string"}],key:["code"]}]}}},{id:"b",type:"server",config:{schema:{tables:[{name:"x",fields:[]}]}}}],edges:[]},lab,"x");
   assert.deepEqual(d.nodes[0].config.schema,{tables:[{name:"links",fields:[{name:"code",type:"string"}],key:["code"]}]});assert.equal(d.nodes[1].config.schema,undefined);
 });
+
+// A design of a v2 problem (v: 2) keeps its v2 settings and arrow carries (evaluator.md §12.1 point 5).
+import{readFileSync as rf2}from"node:fs";
+test("v2 designs keep v2 settings; old v1 designs are unchanged",()=>{
+  const lab2={...JSON.parse(rf2(new URL("../../../content/lab.json",import.meta.url))),eval:JSON.parse(rf2(new URL("../../../content/eval.json",import.meta.url)))};
+  const d={name:"q",v:2,problem:"url-shortener",nodes:[{id:"c",type:"client",x:0,y:0,config:{}},{id:"app",type:"server",x:1,y:2,config:{size:"m5.large",count:3,zones:3,timeoutMs:500}},{id:"k",type:"cache",x:3,y:4,config:{ttlSec:60,structures:[{name:"top",kind:"zset",fields:[{name:"id",type:"string"}],key:["id"]}]}}],edges:[{from:"c",to:"app",carries:["reads","redirect"]},{from:"app",to:"k"}]};
+  const c=cleanDesign(d,lab2,"x");
+  assert.equal(c.v,2);assert.equal(c.nodes[1].config.zones,3);assert.equal(c.nodes[1].config.timeoutMs,500);assert.equal(c.nodes[2].config.structures[0].kind,"zset");
+  assert.deepEqual(c.edges[0].carries,["reads","redirect"]);
+  // read back from the store, unchanged
+  const st=readStore(JSON.stringify({version:1,current:"x",designs:{x:c}}),lab2);assert.deepEqual(st.designs.x.nodes,c.nodes);assert.deepEqual(st.designs.x.edges,c.edges);
+  // without the v2 catalogue it is cleaned as v1 but keeps its mark
+  const v1=cleanDesign(d,{...lab2,eval:undefined},"x");assert.equal(v1.v,2);assert.equal(v1.nodes[1].config.zones,undefined);
+  // a v1 design is cleaned exactly as before
+  const old={name:"o",nodes:[{id:"c",type:"client",x:0,y:0,config:{rps:500}}],edges:[]};assert.deepEqual(cleanDesign(old,lab2,"o").nodes,cleanDesign(old,{...lab2,eval:undefined},"o").nodes);
+});
