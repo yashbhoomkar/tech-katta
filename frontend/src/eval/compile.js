@@ -285,10 +285,12 @@ export function compile(design, lab, practice) {
       if (b.call) return;
       if (!write) { plan.bindings.push({ step: step.id, entity: step.entity, store: b.store, table: b.table.name, viaCache: b.viaCache || null }); return; }
       // writes: the primary, invalidations of look-aside caches, then every other copy (§7.5 rule 5, §7.6)
-      const inner = step.op === 'tx' ? b.parts.map((p) => ({ entity: p.step.entity, step: p.step })) : [{ entity: step.entity, step }];
+      // a transaction's parts each write their own table (all in one store): each is a primary, none a copy
+      const inner = step.op === 'tx' ? b.parts.map((p) => ({ entity: p.step.entity, step: p.step, table: p.table.name })) : [{ entity: step.entity, step, table: b.table.name }];
+      const own = new Set(inner.map((x) => `${b.store}\u0000${x.table}`));
       const copies = [];
-      for (const { entity, step: s } of inner) {
-        writers.push({ entity, store: b.store, table: b.table.name, kind: b.async ? 'async' : 'primary', op: op.id });
+      for (const { entity, step: s, table } of inner) {
+        writers.push({ entity, store: b.store, table, kind: b.async ? 'async' : 'primary', op: op.id });
         // a write-through cache on the write path is updated by the write itself
         for (const c of b.path) if (type(c) === 'cache' && c !== b.store) writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         const reach = bindAll(op, h);
@@ -302,7 +304,7 @@ export function compile(design, lab, practice) {
           if (e.sync) chain(handleHop, e.path.slice(1, -1), inv, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2, -1), inv, null);
           writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         }
-        const done = new Set([`${b.store}\u0000${b.table.name}`]);
+        const done = new Set(own);
         for (const e of all) tablesOf(node(e.store), lab).forEach((t) => {
           const key = `${e.store}\u0000${t.name}`;
           if (done.has(key) || !holds(t, entity, practice, match)) return;

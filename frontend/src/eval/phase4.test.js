@@ -105,3 +105,24 @@ test('webhooks start at the other company and follow the test traffic; a conditi
   const none = base(); none.nodes = none.nodes.filter((n) => n.id !== 'psp'); none.edges = none.edges.filter((e) => e.to !== 'psp');
   assert.equal(compile(none, lab, { ...p, operations: [paid] }).plans.paid.error.message, 'Payment confirmed comes from another company: connect its service (it is on the canvas already) to your design.');
 });
+
+test('a transaction writes each part to its own table (no false dual write); calls behind a queue are timed; an outage ages the wait', () => {
+  const LEDGER = { tables: [...ORDERS().tables, { name: 'ledger', fields: F('id order_id amount:int'), key: ['id'] }] };
+  const tx = { id: 't', op: 'tx', steps: [put(), { id: 'l', op: 'put', entity: 'ledger', values: { id: 'l1', order_id: 'o9', amount: 3 } }] };
+  const p = { v: 2, entities: { ...ent, ledger: { rows: 1e6, rowBytes: 100, fields: { id: 'string', order_id: 'string', amount: 'int' }, sample: [{ id: 'l0', order_id: 'o1', amount: 5 }, { id: 'l2', order_id: 'o2', amount: 7 }] } },
+    operations: [{ id: 'pay', name: 'Pay', kind: 'write', share: 1, durable: true, steps: [tx], respond: { status: 200, body: {} } }] };
+  const d = base({ schema: LEDGER });
+  assert.ok(!findings(d, p).some((x) => x.code === 'F_DUAL_WRITE'));
+  assert.equal(compile(d, lab, p).plans.pay.steps.t.copies, undefined);
+  // a charge made after answering, through a queue: its delay is measured, and an outage makes it grow tick by tick
+  const q = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge' }), N('q', 'queue'), N('w', 'server', { size: 'c5.2xlarge', count: 2 }), N('db', 'database', { engine: 'postgres', multiAz: true, schema: ORDERS() }), N('psp', 'external', { preset: 'payments', errorPct: 0.5 })],
+    edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'psp']) };
+  const pp = PAY([put(), charge({ timing: 'defer', withinSec: 120 })]);
+  const c = compile(q, lab, pp);
+  let s = simulateTest(c, lab, pp, { hours: 1, startHour: 12, traffic: { rps: 100, pattern: 'steady' } });
+  assert.ok(s.ops.pay.deferred.c1.worstDelaySec < 10, `normally the charge is made within seconds (${s.ops.pay.deferred.c1.worstDelaySec})`);
+  assert.equal(s.ops.pay.deferred.c1.notDone, 0, 'a few retried calls in flight are not left undone');
+  s = simulateTest(c, lab, pp, { hours: 1, startHour: 12, traffic: { rps: 100, pattern: 'steady' }, faults: [{ minute: 10, kind: 'externalDown', preset: 'payments', minutes: 10 }] });
+  const worst = s.ops.pay.deferred.c1.worstDelaySec;
+  assert.ok(worst >= 600 && worst < 1000, `a 10-minute outage: the oldest charge waits about 10 minutes (${worst})`);
+});

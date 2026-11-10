@@ -113,7 +113,7 @@ export function simulateTest(compiled, lab, practice, test) {
     lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(),
   };
   for (const id of order) { st.lostInst[id] = []; st.pending[id] = []; st.writeRate[id] = 0; if (info[id].type === 'server') st.inst[id] = info[id].cfg.count || 1; }
-  const backlog = dict(), waitSec = dict(), waitWorst = dict();
+  const backlog = dict(), waitSec = dict(), waitWorst = dict(), lastDone = dict();
   for (const e of enqRecs) { backlog[e.hop.id] = 0; waitSec[e.hop.id] = 0; waitWorst[e.hop.id] = 0; }
   const hitNow = dict(); for (const id in cacheFit) hitNow[id] = dict();
   const rho = dict(), offered = dict(), served = dict(), readsAt = dict(), writesAt = dict();
@@ -286,7 +286,8 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const op of ops) timeline.ops[op.id] = { rate: [], ok: [], p99: [] };
   for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [] };
   const feedDelay = dict();   // "store|entity" → worst seconds behind (async copies)
-  const deferredSteps = recs.filter((r) => r.hop.kind === 'store' && r.enq.length);
+  // work done after answering: writes and calls behind a queue (their delay and what is left undone)
+  const deferredSteps = recs.filter((r) => (r.hop.kind === 'store' || r.hop.kind === 'call') && r.enq.length);
   let costTotal = 0, transferTotal = 0;
   const byNode = dict(); for (const id of order) byNode[id] = 0;
 
@@ -399,7 +400,9 @@ export function simulateTest(compiled, lab, practice, test) {
     for (const e of enqRecs) {
       const done = e.async.reduce((a, c) => a + c.out * c.Sb, 0);
       backlog[e.hop.id] = Math.max(0, backlog[e.hop.id] + (e.out - done) * secs);
-      waitSec[e.hop.id] = done > 1e-12 ? backlog[e.hop.id] / done : backlog[e.hop.id] > 0.5 ? hours * 3600 : 0;
+      // nothing taken this tick (the workers' calls all fail): the oldest message waits a tick longer
+      waitSec[e.hop.id] = done > 1e-12 ? backlog[e.hop.id] / done : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0;
+      lastDone[e.hop.id] = done;
       if (waitSec[e.hop.id] > waitWorst[e.hop.id]) waitWorst[e.hop.id] = waitSec[e.hop.id];
       if (backlog[e.hop.id] > 0.5 && !e.backlogged) { e.backlogged = true; st.events.push({ t, node: e.node, kind: 'backlog' }); }
       else if (backlog[e.hop.id] <= 0.5 && e.backlogged) { e.backlogged = false; st.events.push({ t, node: e.node, kind: 'drained' }); }
@@ -440,7 +443,8 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const op of ops) {
     const x = opT[op.id];
     for (const sid in x.deferred) {
-      const left = deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy).flatMap((r) => r.enq).reduce((a, e) => a + backlog[e.hop.id], 0);
+      // what one more tick of the workers would clear is in flight (retries of a few failed calls), not left undone
+      const left = deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy).flatMap((r) => r.enq).reduce((a, e) => a + (backlog[e.hop.id] > (lastDone[e.hop.id] || 0) * secs + 0.5 ? backlog[e.hop.id] : 0), 0);
       x.deferred[sid].notDone = Math.round(left);
     }
     out[op.id] = {
