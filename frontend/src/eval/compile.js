@@ -302,7 +302,17 @@ export function compile(design, lab, practice) {
       if (b.compute) {
         const units = (step.cpuMs || 0) / W.cpuMsPerUnit;
         let at = handleHop;
-        if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }); }
+        if (b.async) {
+          // through the queue to the worker (which may reach no store at all: it only computes)
+          const e = bindAll(op, h).aR.find((x) => x.worker === b.node);
+          const q = e ? null : flowOut(h, op).find((x) => type(x) === 'queue' && flowOut(x, op).includes(b.node));
+          if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker });
+          else if (q) at = consumeHop(handleHop, { path: [h, q, b.node], qi: 1, queue: q, worker: b.node });
+          if (at !== handleHop) {
+            at.computeSteps = [...(at.computeSteps || []), step.id];
+            plan.steps[step.id] = { node: b.node, table: null, how: 'compute', work: units * per, rows: 0, query: '', sync: false };
+          }
+        }
         at.work += units * per; at.cpuMs = (at.cpuMs || 0) + (step.cpuMs || 0) * per;
         return;
       }

@@ -366,6 +366,7 @@ export function simulateTest(compiled, lab, practice, test) {
   // work done after answering: writes and calls behind a queue (their delay and what is left undone)
   const deferredSteps = recs.filter((r) => (r.hop.kind === 'store' || r.hop.kind === 'call') && r.enq.length);
   const deliverRecs = recs.filter((r) => r.hop.kind === 'deliver');
+  const computeRecs = recs.filter((r) => r.hop.kind === 'consume' && r.hop.computeSteps?.length);   // work done by a worker only
   let costTotal = 0, transferTotal = 0;
   const byNode = dict(); for (const id of order) byNode[id] = 0;
 
@@ -524,6 +525,10 @@ export function simulateTest(compiled, lab, practice, test) {
       const delay = r.enq.reduce((a, e) => a + waitSec[e.hop.id], 0) + ((r.L?.F || 0) + (r.L?.M || 0)) / 1000;
       if (delay > dd.worstDelaySec) dd.worstDelaySec = delay;
     }
+    for (const r of computeRecs) {
+      const delay = r.enq.reduce((a, e) => a + waitSec[e.hop.id] + 1, 0);
+      for (const sid of r.hop.computeSteps) { const dd = opT[r.op.id]?.deferred[sid]; if (dd && delay > dd.worstDelaySec) dd.worstDelaySec = delay; }
+    }
     for (const r of deferredSteps) {
       const delay = r.enq.reduce((a, e) => a + waitSec[e.hop.id] + 1, 0);
       const dd = opT[r.op.id]?.deferred[r.hop.step];
@@ -567,7 +572,7 @@ export function simulateTest(compiled, lab, practice, test) {
     const x = opT[op.id];
     for (const sid in x.deferred) {
       // what one more tick of the workers would clear is in flight (retries of a few failed calls), not left undone
-      const left = deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy).flatMap((r) => r.enq).reduce((a, e) => a + (backlog[e.hop.id] > (lastDone[e.hop.id] || 0) * secs + 0.5 ? backlog[e.hop.id] : 0), 0);
+      const left = [...deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy), ...computeRecs.filter((r) => r.op === op && r.hop.computeSteps.includes(sid))].flatMap((r) => r.enq).reduce((a, e) => a + (backlog[e.hop.id] > (lastDone[e.hop.id] || 0) * secs + 0.5 ? backlog[e.hop.id] : 0), 0);
       // deliveries the channel or a gateway could not make are lost: left undone too
       x.deferred[sid].notDone = Math.round(left + (x.deferred[sid].lost || 0));
       delete x.deferred[sid].lost;

@@ -154,3 +154,16 @@ test('a queue two calls share is one line: a slow kind of message makes the othe
   assert.ok(s.ops.otp.deferred.b.worstDelaySec > 60, `OTPs wait behind promotions: ${s.ops.otp.deferred.b.worstDelaySec}`);
   assert.ok(Math.abs(s.ops.otp.deferred.b.worstDelaySec - s.ops.promo.deferred.b.worstDelaySec) < 2);
 });
+
+test('work done after answering: a worker behind a queue that only computes', () => {
+  const post = { id: 'post', name: 'Post', kind: 'write', share: 1, steps: [{ id: 'a', op: 'put', entity: 'posts', values: { id: 'p9', author: 'u1', title: 'x', body: 'y' } }, { id: 'b', op: 'compute', cpuMs: 200, timing: 'defer', withinSec: 300, label: 'Resizing' }], respond: { status: 202, body: {} } };
+  const d = (workers) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: POSTS() }), N('q', 'queue'), N('w', 'server', { size: 'c5.2xlarge', count: workers })],
+    edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w']) });
+  const c = compile(d(2), lab, P(post));
+  assert.deepEqual([c.plans.post.steps.b.node, c.plans.post.steps.b.sync], ['w', false], 'bound to the worker, after answering');
+  // 200 posts a second × 20 units = 4,000 of two workers' 5,000: done in time; with one worker (2,500) it falls behind
+  assert.ok(sim(d(2), P(post), { traffic: { rps: 200, pattern: 'steady' } }).s.ops.post.deferred.b.worstDelaySec < 10);
+  const slow = sim(d(1), P(post), { traffic: { rps: 200, pattern: 'steady' } }).s;
+  assert.ok(slow.ops.post.deferred.b.worstDelaySec > 300 && slow.ops.post.deferred.b.notDone > 0);
+  assert.ok(slow.ops.post.p99Worst < 200, 'the call itself stays fast');
+});
