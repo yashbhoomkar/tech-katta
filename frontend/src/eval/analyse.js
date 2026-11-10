@@ -58,6 +58,7 @@ export function analyse(compiled, practice, lab, sims = []) {
       const e = engine(b.node), c = cfg(b.node), broken = [];
       let sec = 0, how = 'the primary copy';
       if (b.feed === 'async') { sec = (worstFeed(b.node, step.entity) || 1) + (ev.engines?.[c.engine]?.refreshSec || 0); how = 'fed through a queue'; broken.push('async'); }
+      if (b.feed === 'cdc') { sec = (worstFeed(b.node, step.entity) || 1) + 1 + (ev.engines?.[c.engine]?.refreshSec || 0); how = 'fed by change data capture'; broken.push('async'); }
       if (node(b.node)?.type === 'database' && c.readFrom === 'replicas' && (c.replicas || 0) >= 1 && c.replication !== 'sync') { sec += ev.engines?.[c.engine]?.replicaLagSec || 1; how = 'a read replica'; broken.push('replica'); }
       const la = (plan.staleness || []).find((s) => s.feed === 'lookAside' && s.store === b.viaCache);
       if (la) { sec += la.cacheTtlSec; how = la.cacheTtlSec > 1 ? `a cache that keeps items for ${la.cacheTtlSec} seconds` : 'a cache that writers clear'; if (la.cacheTtlSec > 1) broken.push('cache'); }
@@ -183,17 +184,36 @@ export function analyse(compiled, practice, lab, sims = []) {
 
   // ---- §10.8 things that grow -------------------------------------------------------------------------------------------
   // events kept for less time than their readers take: gone before they are read (§8.7)
+  const realOp = (id) => (ops.some((o) => o.id === id) ? id : undefined);   // change-data-capture plans are not calls
   const seenR = new Set();
   for (const { sim } of sims) for (const q of sim.queues || []) {
     if (node(q.node)?.type !== 'stream' || seenR.has(q.node)) continue;
     const keep = (cfg(q.node).retentionHours || 24) * 3600;
-    if (q.waitWorst > keep) { seenR.add(q.node); push({ code: 'F_RETENTION', severity: 'fail', op: q.op, nodes: [q.node], ...FIND.retention(name(q.node), Math.round(q.waitWorst / 3600), cfg(q.node).retentionHours || 24) }); }
+    if (q.waitWorst > keep) { seenR.add(q.node); push({ code: 'F_RETENTION', severity: 'fail', op: realOp(q.op), nodes: [q.node], ...FIND.retention(name(q.node), Math.round(q.waitWorst / 3600), cfg(q.node).retentionHours || 24) }); }
   }
   const seenQ = new Set();
   for (const { sim } of sims) for (const q of sim.queues || []) {
     if (!q.growing || seenQ.has(q.node)) continue;
     seenQ.add(q.node);
-    push({ code: 'F_BACKLOG', severity: 'warn', op: q.op, nodes: [q.node], ...FIND.backlog(name(q.node), Math.round(q.backlogEnd)) });
+    push({ code: 'F_BACKLOG', severity: 'warn', op: realOp(q.op), nodes: [q.node], ...FIND.backlog(name(q.node), Math.round(q.backlogEnd)) });
+  }
+  // poison messages (§8.7): without a dead-letter queue they are retried for ever, or block the rest behind them
+  const seenP = new Set();
+  for (const { sim } of sims) for (const [q, p] of Object.entries(sim.poison || {})) {
+    if (seenP.has(q) || (p.dlq && p.kind === 'standard')) continue;
+    seenP.add(q);
+    push({ code: 'F_POISON', severity: 'warn', nodes: [q], ...FIND.poison(name(q), p.kind, Math.round(p.share * 1000) / 10) });
+  }
+
+  // ---- §10.9 hot spots ----------------------------------------------------------------------------------------------------
+  const seenH = new Set();
+  for (const { sim } of sims) for (const h of [...(sim.hotParts || [])].sort((a, b) => b.rhoHot - a.rhoHot)) {
+    if (seenH.has(h.node)) continue;
+    seenH.add(h.node);
+    const op = ops.find((o) => o.id === h.op), t = node(h.node)?.type;
+    const part = t === 'stream' ? 'partition' : t === 'cache' ? 'cache node' : 'shard';
+    const item = op?.keys?.entity ? (practice.entities?.[op.keys.entity] ? op.keys.entity.replace(/s$/, '') : op.keys.entity) : 'item';
+    push({ code: 'F_HOT', severity: h.lost ? 'fail' : 'warn', op: op?.id, nodes: [h.node], ...FIND.hot(item, Math.round(h.share * 100), op ? opName(op) : 'its calls', part, name(h.node), Math.round(h.rhoHot * 100), t), concept: 'sharding' });
   }
   for (const n of compiled.design.nodes) {
     if (n.type === 'database') {

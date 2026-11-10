@@ -23,6 +23,7 @@ export const PLAN = {
   E_NO_CONNECTION: (gw) => `Nobody is connected to ${gw}: Clients need an arrow to it, through a load balancer.`,
   E_NOT_YET: (what) => `${cap1(what)} needs components that are not on the canvas yet.`,
   E_UNFED: (entity, store, op, primary) => `Nothing ever writes ${entity} into ${store}: ${op} would find it empty.${primary ? ` Feed it from ${primary} (a worker behind a queue, or change data capture).` : ''}`,
+  CDC_NAME: (db, entity) => `Changes of ${entity} in ${db}`,
   E_TOO_TANGLED: () => 'This operation fans out over too many paths to follow.',
   W_UNUSED: (name, cost) => `${name} is not used by any operation: connect it or remove it.${cost > 0 ? ` It still costs $${Math.round(cost).toLocaleString('en-US')} a month.` : ''}`,
 };
@@ -90,6 +91,11 @@ export const FIND = {
   orderStream: (stream, by) => ({ title: 'Changes can be applied out of order', story: `${stream} keeps order only inside a partition, and it is not partitioned by ${by}: events for one ${by} land in different partitions, and two workers apply them in whichever order they finish.`, fix: `Partition ${stream} by ${by} ("Partition by" in its settings).` }),
   orderPubsub: (ch) => ({ title: 'Order is not guaranteed', story: `${ch} usually delivers in order, but nothing guarantees it: a message can overtake another.`, fix: 'Use an event stream partitioned by the conversation, or number the messages so the app can sort them.' }),
   noCatchUp: (op) => ({ title: 'A message sent while someone is offline is never seen', story: `${op} pushes the message to whoever is connected right now, and nothing stores it: a phone that is offline for a moment never sees it.`, fix: 'Store the message too (in a database the app reads when it reconnects), then push it.' }),
+  poison: (queue, kind, pct) => (kind === 'standard'
+    ? { title: `${queue} retries bad messages for ever`, story: `${pct}% of the messages could never be processed. Without a dead-letter queue, ${queue} hands them out again and again, and the workers spend their time on them.`, fix: `Turn on the dead-letter queue: after a few tries the bad message is set aside for a person to look at.` }
+    : { title: `Bad messages block ${queue}`, story: `${pct}% of the messages could never be processed. ${queue} keeps order, so everything behind a bad message in its ${kind === 'stream' ? 'partition' : 'group'} waits.`, fix: kind === 'stream' ? 'Have the consumer set a message it cannot process aside (to a dead-letter topic) and move on.' : 'Turn on the dead-letter queue so a bad message leaves its group after a few tries.' }),
+  hot: (item, share, op, part, node, pct, type) => ({ title: `One ${item} overloads one ${part} of ${node}`, story: `One ${item} gets ${share}% of ${op}. All of it lands on one ${part} of ${node}, which reached ${pct}% while the others sat idle.`,
+    fix: type === 'stream' ? 'Add a suffix to the key so the hot item spreads over several partitions.' : type === 'cache' ? 'Keep a copy of the hot item on every cache node, or in the Service.' : `Put a cache in front of it, or choose a shard key that does not put a whole celebrity in one place.` }),
   retention: (stream, hours, keep) => ({ title: `${stream} drops events before they are read`, story: `Events waited up to ${hours} hours to be read, but ${stream} keeps them for ${keep}: the oldest were gone first.`, fix: 'Add consumers (or partitions), or keep events longer.' }),
   oversized: (name, pct) => ({ title: `${name} is larger than it needs to be`, story: `${name} never went above ${pct}% load: a smaller one would do.`, fix: 'Try a smaller size or fewer instances.' }),
 };

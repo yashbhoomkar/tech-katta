@@ -212,202 +212,101 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends playback requests: segments and playlists, which the edge can answer 98% of the time; the rest reach your servers, making one query each, mostly answered by a cache. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 1,
-      "cdnHitPct": 98,
-      "hitPct": 90,
-      "writePct": 1
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 25000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends what players do: fetch video segments (about 500 KB each, the same popular videos again and again), read a video's details and playlist, and now and then a chef uploads a video: its parts go straight to storage, and it is transcoded into every quality within half an hour.",
+    "entities": {
+      "segments": {
+        "rows": 5000000000,
+        "rowBytes": 500000,
+        "growthPerDay": 20000000,
+        "fields": {
+          "video_id": "string",
+          "quality": "string",
+          "segment": "string",
+          "bytes": "blob"
+        },
+        "sample": [
+          {
+            "video_id": "v1",
+            "quality": "720p",
+            "segment": "0042",
+            "bytes": "<bytes>"
+          },
+          {
+            "video_id": "v1",
+            "quality": "360p",
+            "segment": "0042",
+            "bytes": "<bytes>"
           }
-        }
+        ]
+      },
+      "videos": {
+        "rows": 20000000,
+        "rowBytes": 400,
+        "growthPerDay": 20000,
+        "fields": {
+          "video_id": "string",
+          "chef_id": "string",
+          "title": "string",
+          "status": "string",
+          "duration_s": "int",
+          "views": "int",
+          "created_at": "time"
+        },
+        "sample": [
+          {
+            "video_id": "v1",
+            "chef_id": "c1",
+            "title": "Hyderabadi biryani",
+            "status": "ready",
+            "duration_s": 600,
+            "views": 120000,
+            "created_at": "2026-11-01T10:00:00Z"
+          },
+          {
+            "video_id": "v2",
+            "chef_id": "c2",
+            "title": "Masala dosa",
+            "status": "ready",
+            "duration_s": 480,
+            "views": 9000,
+            "created_at": "2026-11-03T10:00:00Z"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "segment": [
+        "seq",
+        "chunk",
+        "part",
+        "segment_no"
       ],
-      "edges": []
+      "bytes": [
+        "file",
+        "data",
+        "content"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
-        "sample": true,
-        "desc": "8,000 requests a second: video segments, playlists and thumbnails.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 8000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of segment requests succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "role",
-            "role": "objects",
-            "label": "Video segments come from storage built for big files",
-            "any": true
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "Dinner time",
-        "sample": true,
-        "desc": "25,000 requests a second at 8 pm.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 25000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of segment requests succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          },
-          {
-            "kind": "has",
-            "type": "cdn",
-            "label": "Video segments come from the edge (CDN)"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "A viral recipe",
-        "desc": "At 8 pm a chef's 10-minute biryani video goes viral: 1 lakh requests a second for 15 minutes.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 100000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of segment requests succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (25,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 25000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of segment requests still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 25000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of segment requests still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (8,000 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 8000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of segment requests succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 35000,
-            "label": "Costs at most $35,000 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-segment",
+        "id": "segment",
         "name": "Play the next segment",
+        "kind": "read",
+        "share": 0.9,
         "sample": true,
-        "desc": "The player asks for segment 42 of video v1 in 720p.",
         "request": {
           "method": "GET",
           "path": "/v1/videos/v1/720p/0042.ts"
+        },
+        "bytesOut": 500000,
+        "cacheable": {
+          "ttlSec": 86400
+        },
+        "keys": {
+          "entity": "segments",
+          "skew": "zipf",
+          "active": 5000000
         },
         "steps": [
           {
@@ -420,7 +319,8 @@
               "quality": "720p",
               "segment": "0042"
             },
-            "field": "bytes"
+            "field": "bytes",
+            "bytes": 500000
           }
         ],
         "respond": {
@@ -429,40 +329,1822 @@
             "segment": "0042",
             "found": "$s1.ok"
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
         }
       },
       {
-        "id": "api-segment-low",
-        "name": "Drop to 360p",
-        "desc": "The network slows; the player asks for the same segment in 360p.",
+        "id": "details",
+        "name": "Open a video",
+        "kind": "read",
+        "share": 0.09,
         "request": {
           "method": "GET",
-          "path": "/v1/videos/v1/360p/0042.ts"
+          "path": "/v1/videos/v1"
+        },
+        "bytesOut": 3000,
+        "keys": {
+          "entity": "videos",
+          "skew": "zipf",
+          "active": 100000
         },
         "steps": [
           {
             "id": "s1",
-            "op": "blob",
-            "mode": "get",
-            "entity": "segments",
-            "key": {
-              "video_id": "v1",
-              "quality": "360p",
-              "segment": "0042"
+            "op": "get",
+            "entity": "videos",
+            "by": {
+              "video_id": "v1"
             },
-            "field": "bytes"
+            "fields": [
+              "title",
+              "status",
+              "duration_s",
+              "views"
+            ]
           }
         ],
         "respond": {
           "status": 200,
           "body": {
-            "segment": "0042",
-            "found": "$s1.ok"
+            "title": "$s1.title",
+            "status": "$s1.status"
           }
         },
-        "sample": false
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        }
+      },
+      {
+        "id": "chef",
+        "name": "A chef's videos",
+        "kind": "read",
+        "share": 0.0083,
+        "request": {
+          "method": "GET",
+          "path": "/v1/chefs/c1/videos"
+        },
+        "bytesOut": 4000,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "videos",
+            "where": {
+              "chef_id": "c1"
+            },
+            "order": {
+              "field": "created_at",
+              "desc": true
+            },
+            "limit": 20,
+            "matches": 300,
+            "fields": [
+              "video_id",
+              "title",
+              "views"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "videos": "$s1"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        }
+      },
+      {
+        "id": "upload",
+        "name": "Upload a part",
+        "kind": "write",
+        "share": 0.0015,
+        "request": {
+          "method": "PUT",
+          "path": "/uploads/v9/part-3"
+        },
+        "bytesOut": 100,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "blob",
+            "mode": "put",
+            "entity": "segments",
+            "key": {
+              "video_id": "v9",
+              "quality": "raw",
+              "segment": "0003"
+            },
+            "field": "bytes",
+            "bytes": 5000000
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {}
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 3000
+        },
+        "durable": true
+      },
+      {
+        "id": "create",
+        "name": "Publish a video",
+        "kind": "write",
+        "share": 0.0002,
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "body": {
+            "chef_id": "c1",
+            "title": "Weekend biryani"
+          }
+        },
+        "bytesOut": 200,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "videos",
+            "values": {
+              "video_id": "v9",
+              "chef_id": "c1",
+              "title": "Weekend biryani",
+              "status": "processing",
+              "duration_s": 540,
+              "views": 0,
+              "created_at": "2026-11-10T19:00:00Z"
+            },
+            "unique": [
+              "video_id"
+            ]
+          },
+          {
+            "id": "s2",
+            "op": "compute",
+            "cpuMs": 20000,
+            "timing": "defer",
+            "withinSec": 1800,
+            "label": "Transcoding into every quality"
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "video_id": "$s1.video_id",
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "video_id"
       }
     ],
+    "tests": [
+      {
+        "id": "api-segment",
+        "name": "Play the next segment",
+        "desc": "The player asks for segment 42 of video v1 in 720p.",
+        "sample": true,
+        "op": "segment"
+      },
+      {
+        "id": "api-details",
+        "name": "Open video v1",
+        "desc": "The player reads v1's title, status and length.",
+        "op": "details"
+      },
+      {
+        "id": "api-upload",
+        "name": "Upload a part",
+        "desc": "The chef's app sends part 3 of a new video straight to object storage with a signed link.",
+        "op": "upload"
+      },
+      {
+        "id": "api-chef",
+        "name": "Chef c1's videos",
+        "desc": "The newest 20 of c1's videos, newest first.",
+        "op": "chef"
+      },
+      {
+        "id": "api-create",
+        "name": "Publish a video",
+        "desc": "The chef publishes video v9: it is recorded at once and transcoded after.",
+        "sample": true,
+        "op": "create"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "8,000 requests a second: video segments and video pages.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 8000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "Dinner time",
+        "desc": "25,000 requests a second at 8 pm.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "A viral recipe",
+        "desc": "At 8:10 pm a chef's 10-minute biryani video goes viral: segment requests quadruple for 15 minutes.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "spike",
+            "op": "segment",
+            "factor": 4,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "segment"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Things may slow down, and new videos may take up to 10 minutes to be ready; nothing may be lost.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "create",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (8,000 a second), storage and data transfer included: video's bill is mostly bandwidth. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 8000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 852000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "cdn",
+          "type": "cdn",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 480,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 720,
+          "y": 0,
+          "name": "Video API",
+          "config": {
+            "size": "m5.xlarge",
+            "count": 3,
+            "zones": 3
+          }
+        },
+        {
+          "id": "cache",
+          "type": "cache",
+          "x": 960,
+          "y": 0,
+          "name": "Details cache",
+          "config": {
+            "size": "cache.t3.medium",
+            "nodes": 1,
+            "ttlSec": 60,
+            "replica": true
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 1200,
+          "y": 0,
+          "name": "Video details",
+          "config": {
+            "engine": "postgres",
+            "size": "db.t3.medium",
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "videos",
+                  "fields": [
+                    {
+                      "name": "video_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "chef_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "title",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "duration_s",
+                      "type": "int"
+                    },
+                    {
+                      "name": "views",
+                      "type": "int"
+                    },
+                    {
+                      "name": "created_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "video_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "chef_id",
+                        "created_at"
+                      ],
+                      "kind": "btree"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "s3",
+          "type": "database",
+          "x": 480,
+          "y": -200,
+          "name": "Segments",
+          "config": {
+            "engine": "s3",
+            "schema": {
+              "tables": [
+                {
+                  "name": "segments",
+                  "fields": [
+                    {
+                      "name": "video_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "quality",
+                      "type": "string"
+                    },
+                    {
+                      "name": "segment",
+                      "type": "string"
+                    },
+                    {
+                      "name": "bytes",
+                      "type": "blob"
+                    }
+                  ],
+                  "key": [
+                    "video_id",
+                    "quality",
+                    "segment"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 960,
+          "y": 200,
+          "name": "Videos to transcode",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 1200,
+          "y": 200,
+          "name": "Transcoders",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 9,
+            "zones": 3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "cdn"
+        },
+        {
+          "from": "cdn",
+          "to": "lb"
+        },
+        {
+          "from": "cdn",
+          "to": "s3"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "cache"
+        },
+        {
+          "from": "cache",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Segments in the database",
+        "why": "Video segments go into the rows of a table: a database is not built for big files.",
+        "fails": "api-segment",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 200,
+            "name": "Videos to transcode",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 200,
+            "name": "Transcoders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          }
+        ]
+      },
+      {
+        "name": "No CDN",
+        "why": "Every segment comes from object storage: when a video goes viral, it gets more requests a second than it takes.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "s3",
+            "type": "database",
+            "x": 480,
+            "y": -200,
+            "name": "Segments",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 200,
+            "name": "Videos to transcode",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 200,
+            "name": "Transcoders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "s3"
+          }
+        ]
+      },
+      {
+        "name": "Transcoding while you wait",
+        "why": "The API transcodes the video before answering: publishing takes minutes and the API servers run out.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "s3",
+            "type": "database",
+            "x": 480,
+            "y": -200,
+            "name": "Segments",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "cdn",
+            "to": "s3"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, videos don't open.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "zones": 1
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "s3",
+            "type": "database",
+            "x": 480,
+            "y": -200,
+            "name": "Segments",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 200,
+            "name": "Videos to transcode",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 200,
+            "name": "Transcoders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "cdn",
+            "to": "s3"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "The database has no standby: when it crashes, videos can't be opened for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "multiAz": false,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "s3",
+            "type": "database",
+            "x": 480,
+            "y": -200,
+            "name": "Segments",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 200,
+            "name": "Videos to transcode",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 200,
+            "name": "Transcoders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 9,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "cdn",
+            "to": "s3"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at a bill well above what it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "cdn",
+            "type": "cdn",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 480,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 720,
+            "y": 0,
+            "name": "Video API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 16,
+              "zones": 3
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 960,
+            "y": 0,
+            "name": "Details cache",
+            "config": {
+              "size": "cache.r5.large",
+              "nodes": 4,
+              "ttlSec": 60,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Video details",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "videos",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "chef_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "title",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "duration_s",
+                        "type": "int"
+                      },
+                      {
+                        "name": "views",
+                        "type": "int"
+                      },
+                      {
+                        "name": "created_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "video_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "chef_id",
+                          "created_at"
+                        ],
+                        "kind": "btree"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          },
+          {
+            "id": "s3",
+            "type": "database",
+            "x": 480,
+            "y": -200,
+            "name": "Segments",
+            "config": {
+              "engine": "s3",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "segments",
+                    "fields": [
+                      {
+                        "name": "video_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "quality",
+                        "type": "string"
+                      },
+                      {
+                        "name": "segment",
+                        "type": "string"
+                      },
+                      {
+                        "name": "bytes",
+                        "type": "blob"
+                      }
+                    ],
+                    "key": [
+                      "video_id",
+                      "quality",
+                      "segment"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 960,
+            "y": 200,
+            "name": "Videos to transcode",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 1200,
+            "y": 200,
+            "name": "Transcoders",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "cdn"
+          },
+          {
+            "from": "cdn",
+            "to": "lb"
+          },
+          {
+            "from": "cdn",
+            "to": "s3"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "ttl:cache",
+      "engine:db:dynamodb",
+      "engine:db:mongodb"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The CDN may reach the API group directly in this model.",
+      "ttl:cache": "How long video details stay cached only changes how soon a new title shows; no test asks for that.",
+      "engine:db:dynamodb": "DynamoDB is an equally good store for video details keyed by video.",
+      "engine:db:mongodb": "MongoDB is an equally good store for video details keyed by video."
+    },
     "rubric": {
       "fr": [
         {
@@ -622,1028 +2304,12 @@
       },
       {
         "step": "design",
-        "x": "A viral video quadruples traffic, but with the CDN in front your servers barely notice."
+        "x": "A viral video quadruples segment requests, but with the CDN in front object storage and your servers barely notice."
       },
       {
         "step": "design",
-        "x": "Behind the CDN: two server groups, a cache for video details, a Multi-AZ database."
+        "x": "Behind the CDN: API servers in more than one zone, a cache for video details, a Multi-AZ database, and transcoders behind a queue."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 25000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "cdn",
-          "type": "cdn",
-          "x": 240,
-          "y": 0,
-          "config": {
-            "hitPct": 98
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 480,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 720,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 1
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 720,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 1
-          }
-        },
-        {
-          "id": "cache1",
-          "type": "cache",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 90,
-            "writePct": 1,
-            "onDown": "database"
-          }
-        },
-        {
-          "id": "cache2",
-          "type": "cache",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 90,
-            "writePct": 1,
-            "onDown": "database"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1200,
-          "y": 0,
-          "config": {
-            "role": "objects",
-            "engine": "s3",
-            "schema": {
-              "tables": [
-                {
-                  "name": "segments",
-                  "fields": [
-                    {
-                      "name": "video_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "quality",
-                      "type": "string"
-                    },
-                    {
-                      "name": "segment",
-                      "type": "string"
-                    },
-                    {
-                      "name": "bytes",
-                      "type": "blob"
-                    }
-                  ],
-                  "key": [
-                    "video_id",
-                    "quality",
-                    "segment"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db2",
-          "type": "database",
-          "name": "Video details",
-          "x": 1200,
-          "y": 130,
-          "config": {
-            "size": "db.m5.large",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "videos",
-                  "fields": [
-                    {
-                      "name": "video_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "chef_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "title",
-                      "type": "string"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "duration_s",
-                      "type": "int"
-                    },
-                    {
-                      "name": "views",
-                      "type": "int"
-                    }
-                  ],
-                  "key": [
-                    "video_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "chef_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 960,
-          "y": 225,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "name": "Transcoders",
-          "x": 1200,
-          "y": 165,
-          "config": {
-            "size": "m5.large",
-            "count": 1,
-            "queriesPerRequest": 1,
-            "role": "transcoder"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 1200,
-          "y": 295,
-          "config": {
-            "size": "m5.large",
-            "count": 1,
-            "queriesPerRequest": 1,
-            "role": "transcoder"
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "cdn"
-        },
-        {
-          "from": "cdn",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "cache1"
-        },
-        {
-          "from": "app1",
-          "to": "cache2"
-        },
-        {
-          "from": "app2",
-          "to": "cache1"
-        },
-        {
-          "from": "app2",
-          "to": "cache2"
-        },
-        {
-          "from": "cache1",
-          "to": "db1"
-        },
-        {
-          "from": "cache2",
-          "to": "db1"
-        },
-        {
-          "from": "cache1",
-          "to": "db2"
-        },
-        {
-          "from": "cache2",
-          "to": "db2"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "work1",
-          "to": "db1"
-        },
-        {
-          "from": "work1",
-          "to": "db2"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work2",
-          "to": "db1"
-        },
-        {
-          "from": "work2",
-          "to": "db2"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 25000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "cdn",
-            "type": "cdn",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "hitPct": 98
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 480,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.t3.medium",
-              "multiAz": true,
-              "role": "objects"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "cdn"
-          },
-          {
-            "from": "cdn",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 25000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "cdn",
-            "type": "cdn",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "hitPct": 98
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 480,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.t3.medium",
-              "multiAz": false,
-              "role": "objects"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "cdn"
-          },
-          {
-            "from": "cdn",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 25000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "cdn",
-            "type": "cdn",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "hitPct": 98
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 480,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 720,
-            "y": -150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app3",
-            "type": "server",
-            "x": 720,
-            "y": 150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.t3.medium",
-              "multiAz": true,
-              "role": "objects"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "cdn"
-          },
-          {
-            "from": "cdn",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "lb",
-            "to": "app3"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "app3",
-            "to": "cache1"
-          },
-          {
-            "from": "app3",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 25000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "cdn",
-            "type": "cdn",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "hitPct": 98
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 480,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.t3.medium",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "cdn"
-          },
-          {
-            "from": "cdn",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Segments in the database",
-        "why": "Video segments are stored as database rows: huge rows, slow reads and a database bill instead of cheap storage.",
-        "fails": "api-segment",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 25000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "cdn",
-            "type": "cdn",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "hitPct": 98
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 480,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 90,
-              "writePct": 1,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "role": "objects",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "segments",
-                    "fields": [
-                      {
-                        "name": "video_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "quality",
-                        "type": "string"
-                      },
-                      {
-                        "name": "segment",
-                        "type": "string"
-                      },
-                      {
-                        "name": "bytes",
-                        "type": "blob"
-                      }
-                    ],
-                    "key": [
-                      "video_id",
-                      "quality",
-                      "segment"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "cdn"
-          },
-          {
-            "from": "cdn",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "video_id",
-        "quality",
-        "segment",
-        "bytes"
-      ],
-      "aliases": {
-        "segment": [
-          "seq",
-          "chunk",
-          "part",
-          "segment_no"
-        ],
-        "bytes": [
-          "file",
-          "data",
-          "content"
-        ]
-      },
-      "entities": {
-        "segments": {
-          "rows": 50000000000,
-          "sample": [
-            {
-              "video_id": "v1",
-              "quality": "720p",
-              "segment": "0042",
-              "bytes": "<bytes>"
-            },
-            {
-              "video_id": "v1",
-              "quality": "360p",
-              "segment": "0042",
-              "bytes": "<bytes>"
-            }
-          ]
-        }
-      }
-    }
+    ]
   }
 }

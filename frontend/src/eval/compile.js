@@ -5,7 +5,7 @@
 // `ok` is false only when nothing can be simulated (no Clients, a loop…). An operation that can't be planned gets a
 // plan with ok: false and an error; its tests fail with that message. Pure: no randomness, no clock, input order.
 //
-// Phase 1 scope (§15): the 8 component types; no publish, call or change-data-capture plans yet.
+// System plans (change data capture) are in `system`: [{ op, plan }], simulated like operations with no clients.
 import { cleanDesign2, configOf, evalCatalogue } from './design.js';
 import { buildGraph } from './graph.js';
 import { accessPath, fieldMatcher, fitOf, tablesOf, holds, stepFields, isRead, isWrite } from './access.js';
@@ -78,6 +78,14 @@ export function compile(design, lab, practice) {
     walk(h, [h], 1);
     return out;
   }
+  // stores the consumers of a database's change stream reach: a copy there is fed by change data capture (§7.6),
+  // so the handler that writes the database does not write it as well
+  const cdcReach = (D) => {
+    const out = new Set();
+    if (type(D) !== 'database') return out;
+    for (const q of g.out.get(D)) if (type(q) === 'queue' || type(q) === 'stream') for (const w of g.out.get(q)) if (type(w) === 'server') for (const r of syncReach(w, {})) if (r.store !== D) out.add(r.store);
+    return out;
+  };
   const viaCache = (path) => (path.length >= 3 && type(path.at(-1)) === 'database' && type(path.at(-2)) === 'cache' ? path.at(-2) : null);
   const better = (a, b) => (a.a.work - b.a.work) || (a.e.path.length - b.e.path.length) || (order.get(a.e.store) - order.get(b.e.store)) || (a.ti - b.ti);
 
@@ -260,13 +268,16 @@ export function compile(design, lab, practice) {
     const splitShare = (count, weight, parent, kid) => (count > 1 ? { kind: 'split', group: `${parent}:${type(kid)}`, weight } : 1);
     // a chain of hops for the nodes of `path` after its first (the hop already made for it), ending in `last`
     const chain = (parentHop, nodes, last, sharesForCache) => {
-      let at = parentHop;
+      let at = parentHop, first = null;
       nodes.forEach((n, i) => {
         if (i === nodes.length - 1) { at.children.push(last); at = last; return; }
         const t = type(n);
         const hop = t === 'cache' ? mk(n, 'cache', { work: sharesForCache ? W.get : W.put, step: last?.step, entity: last?.entity, write: !sharesForCache }) : mk(n, 'handle', { work: W.handle, step: last?.step, cpuMs: 0 });
+        if (!first) first = hop;
         at.children.push(hop); at = hop;
       });
+      // a step done `times` times makes that many calls from the handler: the first hop on its path takes them all
+      if (first && last && (last.per || 1) > 1) { first.per = last.per; last.per = 1; }
       if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
       return at;
     };
@@ -291,7 +302,17 @@ export function compile(design, lab, practice) {
       if (b.compute) {
         const units = (step.cpuMs || 0) / W.cpuMsPerUnit;
         let at = handleHop;
-        if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }); }
+        if (b.async) {
+          // through the queue to the worker (which may reach no store at all: it only computes)
+          const e = bindAll(op, h).aR.find((x) => x.worker === b.node);
+          const q = e ? null : flowOut(h, op).find((x) => type(x) === 'queue' && flowOut(x, op).includes(b.node));
+          if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker });
+          else if (q) at = consumeHop(handleHop, { path: [h, q, b.node], qi: 1, queue: q, worker: b.node });
+          if (at !== handleHop) {
+            at.computeSteps = [...(at.computeSteps || []), step.id];
+            plan.steps[step.id] = { node: b.node, table: null, how: 'compute', work: units * per, rows: 0, query: '', sync: false };
+          }
+        }
         at.work += units * per; at.cpuMs = (at.cpuMs || 0) + (step.cpuMs || 0) * per;
         return;
       }
@@ -318,7 +339,7 @@ export function compile(design, lab, practice) {
       const own = new Set(inner.map((x) => `${b.store}\u0000${x.table}`));
       const copies = [];
       for (const { entity, step: s, table } of inner) {
-        writers.push({ entity, store: b.store, table, kind: b.async ? 'async' : 'primary', op: op.id });
+        writers.push({ entity, store: b.store, table, kind: b.async ? 'async' : 'primary', op: op.id, step: s });
         // a write-through cache on the write path is updated by the write itself
         for (const c of b.path) if (type(c) === 'cache' && c !== b.store) writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         const reach = bindAll(op, h);
@@ -327,13 +348,15 @@ export function compile(design, lab, practice) {
         for (const e of all) {
           const c = viaCache(e.path);
           if (!c || e.store !== b.store || seenCache.has(c) || b.path.includes(c)) continue;
+          if (b.async && e.sync) continue;   // a write behind a queue: only what the worker reaches can clear a cache
           seenCache.add(c);
           const inv = mk(c, 'invalidate', { step: step.id, work: W.get, per, entity });
           if (e.sync) chain(handleHop, e.path.slice(1, -1), inv, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2, -1), inv, null);
           writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         }
-        const done = new Set(own);
+        const done = new Set(own), byCdc = cdcReach(b.store);
         for (const e of all) tablesOf(node(e.store), lab).forEach((t) => {
+          if (byCdc.has(e.store)) return;
           const key = `${e.store}\u0000${t.name}`;
           if (done.has(key) || !holds(t, entity, practice, match)) return;
           const a = accessPath(node(e.store), t, s, practice, lab, match);
@@ -343,7 +366,7 @@ export function compile(design, lab, practice) {
           if (e.sync) chain(handleHop, e.path.slice(1), hop, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2), hop, null);
           const kind = e.sync ? 'dual' : 'async';
           copies.push({ node: e.store, table: t.name, feed: kind });
-          writers.push({ entity, store: e.store, table: t.name, kind, op: op.id });
+          writers.push({ entity, store: e.store, table: t.name, kind, op: op.id, step: s });
         });
       }
       if (copies.length) plan.steps[step.id].copies = copies;
@@ -358,7 +381,7 @@ export function compile(design, lab, practice) {
           const b = k.store, hop = mk(k.node, 'store', { step: b.step.id, work: b.a.work, write: b.step.mode === 'put', share, per: b.step.times || 1, entity: b.step.entity, how: b.a.how, rows: b.a.rows, bytes: b.step.bytes });
           parentHop.children.push(hop);
           plan.steps[b.step.id] = { node: k.node, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: true, viaCache: null };
-          if (b.step.mode === 'put') writers.push({ entity: b.step.entity, store: k.node, table: b.table.name, kind: 'primary', op: op.id });
+          if (b.step.mode === 'put') writers.push({ entity: b.step.entity, store: k.node, table: b.table.name, kind: 'primary', op: op.id, step: b.step });
           else plan.bindings.push({ step: b.step.id, entity: b.step.entity, store: k.node, table: b.table.name, viaCache: null });
         } else {
           const hop = mk(k.node, 'handle', { work: W.handle, share, cpuMs: 0 });
@@ -390,8 +413,54 @@ export function compile(design, lab, practice) {
   for (const op of [...ops.filter((o) => o.kind === 'connect'), ...ops.filter((o) => o.kind !== 'connect')]) result.plans[op.id] = buildPlan(op);
   { const built = result.plans; result.plans = Object.create(null); for (const op of ops) result.plans[op.id] = built[op.id]; }
 
+  // ---- change data capture (§7.6 system plans) ---------------------------------------------------------------------
+  // For each database D whose arrows carry its changes, and each entity written into D: one plan "cdc:D:E" whose
+  // calls are D's writes of E in the previous tick. Hops: the queue or stream, each consumer, and every copy of E the
+  // consumer reaches. Writing back into D itself is left out (it would feed itself).
+  const opWriters = Object.values(result.plans).flatMap((p) => p.writers || []);
+  const cdcByDb = new Map();
+  for (const e of g.cdcEdges) { if (!cdcByDb.has(e.from)) cdcByDb.set(e.from, []); cdcByDb.get(e.from).push(e.to); }
+  for (const [D, targets] of cdcByDb) {
+    const ents = [...new Map(opWriters.filter((w) => w.store === D && w.table && w.kind !== 'invalidate' && w.step).map((w) => [w.entity, w])).values()];
+    for (const w0 of ents) {
+      const E = w0.entity, id = `cdc:${D}:${E}`;
+      const sop = { id, name: PLAN.CDC_NAME(name(D), E), system: true, db: D, entity: E, steps: [] };
+      const mk = (n, kind, extra = {}) => ({ id: '', node: n, kind, sync: true, per: 1, share: 1, work: 0, write: false, children: [], ...extra });
+      const root = mk(D, 'source'), writes = [];
+      for (const q of targets) {
+        if (type(q) !== 'queue' && type(q) !== 'stream') continue;
+        const enq = mk(q, 'enqueue', { work: W.enqueue });
+        root.children.push(enq);
+        const consumers = g.out.get(q).filter((x) => type(x) === 'server');
+        consumers.forEach((wk) => {
+          const con = mk(wk, 'consume', { work: W.consume + W.handle, sync: false, cpuMs: 0 });
+          enq.children.push(con);
+          const done = new Set();
+          for (const r of syncReach(wk, sop)) {
+            if (r.store === D) continue;
+            tablesOf(node(r.store), lab).forEach((t) => {
+              const key = `${r.store}\u0000${t.name}`;
+              if (done.has(key) || !holds(t, E, practice, match)) return;
+              const a = accessPath(node(r.store), t, w0.step, practice, lab, match);
+              if (!a.ok) return;
+              done.add(key);
+              const hop = mk(r.store, 'store', { step: `cdc`, work: a.work, write: true, per: 1, copy: true, table: t.name, entity: E, how: a.how, rows: a.rows, bytes: w0.step.bytes });
+              let at = con;
+              for (const n of r.path.slice(1, -1)) { const h = type(n) === 'cache' ? mk(n, 'cache', { work: W.put, entity: E, write: true }) : mk(n, 'handle', { work: W.handle, cpuMs: 0 }); at.children.push(h); at = h; }
+              at.children.push(hop);
+              writes.push({ entity: E, store: r.store, table: t.name, kind: 'cdc', op: id, step: w0.step, via: q });
+            });
+          }
+        });
+      }
+      if (!root.children.length) continue;
+      let n = 0; const number = (h) => { h.id = `${id}#${n++}`; h.children.forEach(number); }; number(root);
+      result.system.push({ op: sop, plan: { op: id, ok: true, system: true, root, roots: [root], staleness: [], steps: Object.create(null), bindings: [], writers: writes } });
+    }
+  }
+
   // ---- feeds (§7.6): every store a read uses must be written by something ------------------------------------
-  const writers = Object.values(result.plans).flatMap((p) => p.writers || []);
+  const writers = [...opWriters, ...result.system.flatMap((s) => s.plan.writers)];
   const written = new Set(ops.flatMap((o) => (o.steps || []).flatMap((s) => (s.op === 'tx' ? s.steps || [] : [s])).filter(isWrite).map((s) => s.entity)));
   const unplanned = new Set(ops.filter((o) => !result.plans[o.id].ok).flatMap((o) => (o.steps || []).flatMap((s) => (s.op === 'tx' ? s.steps || [] : [s])).filter(isWrite).map((s) => s.entity)));
   for (const op of ops) {
@@ -399,7 +468,7 @@ export function compile(design, lab, practice) {
     if (!plan.ok) continue;
     for (const b of plan.bindings) {
       const w = writers.filter((x) => x.entity === b.entity && x.store === b.store && x.table === b.table);
-      const feed = w.find((x) => x.kind === 'primary') ? 'primary' : w.find((x) => x.kind === 'dual') ? 'dual' : w.find((x) => x.kind === 'async') ? 'async'
+      const feed = w.find((x) => x.kind === 'primary') ? 'primary' : w.find((x) => x.kind === 'dual') ? 'dual' : w.find((x) => x.kind === 'async') ? 'async' : w.find((x) => x.kind === 'cdc') ? 'cdc'
         : !written.has(b.entity) || unplanned.has(b.entity) ? 'primary' : null;
       if (!feed) {
         const primary = writers.find((x) => x.entity === b.entity && (x.kind === 'primary' || x.kind === 'async'));
@@ -420,7 +489,7 @@ export function compile(design, lab, practice) {
   // ---- warnings: nodes no plan uses ----------------------------------------------------------------------------
   const used = new Set();
   const visit = (hop) => { used.add(hop.node); hop.children.forEach(visit); };
-  for (const p of Object.values(result.plans)) (p.roots || []).forEach(visit);
+  for (const p of [...Object.values(result.plans), ...result.system.map((s) => s.plan)]) (p.roots || []).forEach(visit);
   // only when every operation was planned: a failed route would make every node look unused
   const allPlanned = Object.values(result.plans).every((p) => p.ok);
   if (allPlanned) for (const n of d.nodes) if (!used.has(n.id) && n.type !== 'client') {

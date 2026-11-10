@@ -1,9 +1,9 @@
-// Faults a load test injects (evaluator.md §8.13). Phase 2: crash, instanceCrash, groupDown, zoneDown, slow, spike,
-// cacheFlush. A fault names a component **type**; "busiest" is the node of that type with the highest load in the
+// Faults a load test injects (evaluator.md §8.13): crash, instanceCrash, groupDown, zoneDown, slow, spike,
+// cacheFlush (phase 2); externalDown, poison, hotKey (phase 4). A fault names a component **type**; "busiest" is the node of that type with the highest load in the
 // previous tick (ties: design order). Each function changes the simulator's state `st` and pushes events.
 
 export const PHASE2_FAULTS = ['crash', 'instanceCrash', 'groupDown', 'zoneDown', 'slow', 'spike', 'cacheFlush'];
-export const PHASE4_FAULTS = ['externalDown'];
+export const PHASE4_FAULTS = ['externalDown', 'poison', 'hotKey'];
 
 // v1's `chaos: [{minute, type}]` is an alias of crash faults (§6.5).
 export function faultsOf(test) {
@@ -73,6 +73,14 @@ export function startFault(f, st, t) {
   } else if (f.kind === 'externalDown') {
     // every external service of that kind (or of any kind) stops answering for a while
     for (const id of st.order) { const n = st.info[id]; if (n.type === 'external' && (!f.preset || n.cfg.preset === f.preset)) takeDown(st, id, t, t + (f.minutes ?? 10), 'crashed', true); }
+  } else if (f.kind === 'poison') {
+    // a share of the messages can never be processed (§8.7)
+    st.poison = { share: Math.min(1, Math.max(0, f.share ?? 0.01)), until: t + (f.minutes ?? 30) };
+    st.events.push({ t, node: null, kind: 'poison', share: st.poison.share });
+  } else if (f.kind === 'hotKey') {
+    // one item gets a share of an operation's calls (§8.11)
+    st.hot.push({ op: f.op || null, share: Math.min(1, Math.max(0, f.share ?? 0.3)), until: t + (f.minutes ?? 15) });
+    st.events.push({ t, node: null, kind: 'hotKey', op: f.op || null });
   } else if (f.kind === 'cacheFlush') {
     for (const id of st.order) if (st.info[id].type === 'cache' && st.down[id] === undefined) { st.cold[id] = t; st.events.push({ t, node: id, kind: 'cold', forced: true }); }
   }
@@ -86,4 +94,6 @@ export function endFaults(st, t) {
     const li = st.lostInst[id]; if (li.length) st.lostInst[id] = li.filter((x) => x.until > t);
   }
   st.spikes = st.spikes.filter((s) => s.until > t);
+  if (st.poison && st.poison.until <= t) st.poison = null;
+  if (st.hot?.length) st.hot = st.hot.filter((h) => h.until > t);
 }

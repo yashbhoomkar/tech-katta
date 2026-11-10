@@ -108,6 +108,7 @@ export function validatePractice2(p, lab, at, problems, validateRubricHints) {
     else if (!o.source || o.source === 'clients') shares += o.share;
     for (const k of ['bytesIn', 'bytesOut']) if (o[k] !== undefined && !(num(o[k]) && o[k] > 0)) problems.push(`${w}: ${k} must be above 0`);
     if (o.keys !== undefined && !(obj(o.keys) && Object.hasOwn(entities, o.keys.entity) && ['zipf', 'uniform'].includes(o.keys.skew) && (o.keys.active === undefined || (num(o.keys.active) && o.keys.active > 0)))) problems.push(`${w}: keys needs a known entity, skew zipf or uniform, and active above 0`);
+    if (obj(o.keys) && o.keys.hot !== undefined && !(num(o.keys.hot) && o.keys.hot > 0 && o.keys.hot <= 1)) problems.push(`${w}: keys.hot (the share of calls for one item) must be above 0 and at most 1`);
     if (o.cacheable !== undefined && !(obj(o.cacheable) && num(o.cacheable.ttlSec) && o.cacheable.ttlSec > 0)) problems.push(`${w}: cacheable needs ttlSec above 0`);
     if (o.slo !== undefined && !(obj(o.slo) && (o.slo.availability === undefined || (num(o.slo.availability) && o.slo.availability > 0 && o.slo.availability <= 100)) && (o.slo.p99Ms === undefined || (num(o.slo.p99Ms) && o.slo.p99Ms > 0)))) problems.push(`${w}: slo needs availability (0–100] and p99Ms above 0`);
     if (o.consistency !== undefined && o.consistency !== 'strong' && !(obj(o.consistency) && num(o.consistency.maxStalenessSec) && o.consistency.maxStalenessSec > 0)) problems.push(`${w}: consistency is "strong" or {maxStalenessSec}`);
@@ -146,6 +147,7 @@ export function validatePractice2(p, lab, at, problems, validateRubricHints) {
       if (['crash', 'groupDown'].includes(f.kind) && f.type === undefined) problems.push(`${w}: fault ${f.kind} needs a type`);
       if (['slow', 'spike'].includes(f.kind) && f.factor !== undefined && !(num(f.factor) && f.factor > 0)) problems.push(`${w}: fault ${f.kind}: factor must be above 0`);
       if (f.op !== undefined && !opIds.has(f.op)) problems.push(`${w}: fault ${f.kind}: op ${f.op} is not an operation`);
+      if (['hotKey', 'poison'].includes(f.kind) && f.share !== undefined && !(num(f.share) && f.share > 0 && f.share <= 1)) problems.push(`${w}: fault ${f.kind}: share must be above 0 and at most 1`);
     }
     for (const c of list(t.chaos)) if (!(obj(c) && inside(c.minute) && types.has(c.type))) problems.push(`${w}: a chaos event needs a minute (a multiple of ${tick} inside the test) and a component type`);
     if (!list(t.checks).length) problems.push(`${w}: checks must be a non-empty list`);
