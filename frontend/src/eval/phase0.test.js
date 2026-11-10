@@ -16,9 +16,11 @@ const near = (a, b, tol = 0.005, msg) => assert.ok(Math.abs(a - b) <= tol, `${ms
 const N = (id, type, config = {}, extra = {}) => ({ id, type, x: 0, y: 0, config, ...extra });
 
 // ---- catalogue -------------------------------------------------------------------------------------------
-test('the v2 catalogue has the 8 v1 types, merged with lab.json', () => {
+test('the v2 catalogue has the 8 v1 types merged with lab.json, and the v2-only types (phase 4)', () => {
   const cat = evalCatalogue(lab);
-  assert.deepEqual(Object.keys(cat), ['client', 'cdn', 'apigw', 'lb', 'server', 'database', 'cache', 'queue']);
+  assert.deepEqual(Object.keys(cat), ['client', 'cdn', 'apigw', 'lb', 'server', 'database', 'cache', 'queue', 'external', 'realtime', 'stream', 'pubsub']);
+  assert.equal(cat.stream.name, 'Event stream', 'a v2-only type carries its own name');
+  assert.ok(!lab.components.some((c) => c.type === 'stream'), "v1's catalogue doesn't have it");
   assert.equal(cat.server.latencyMs, 20, 'numbers from lab.json');
   assert.ok(cat.server.settings.some((s) => s.key === 'zones'), 'settings from eval.json');
   assert.equal(evalCatalogue({ ...lab, eval: undefined }).server, undefined, 'no eval.json, no v2 types');

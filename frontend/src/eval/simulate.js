@@ -113,7 +113,7 @@ export function simulateTest(compiled, lab, practice, test) {
     lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(),
   };
   for (const id of order) { st.lostInst[id] = []; st.pending[id] = []; st.writeRate[id] = 0; if (info[id].type === 'server') st.inst[id] = info[id].cfg.count || 1; }
-  const backlog = dict(), waitSec = dict(), waitWorst = dict();
+  const backlog = dict(), waitSec = dict(), waitWorst = dict(), lastDone = dict();
   for (const e of enqRecs) { backlog[e.hop.id] = 0; waitSec[e.hop.id] = 0; waitWorst[e.hop.id] = 0; }
   const hitNow = dict(); for (const id in cacheFit) hitNow[id] = dict();
   const rho = dict(), offered = dict(), served = dict(), readsAt = dict(), writesAt = dict();
@@ -132,6 +132,7 @@ export function simulateTest(compiled, lab, practice, test) {
     if (n.type === 'cache') return (n.size?.ops || 0) * (n.cfg.nodes || 1);
     if (n.type === 'database') return n.perRequest ? n.engine.limitQps : (n.size?.qps || 0) * (n.cfg.shards || 1);
     if (n.type === 'queue') return n.cfg.kind === 'fifo' ? 3000 : n.comp.limitRps;
+    if (n.type === 'external') return n.cfg.limitRps ?? n.comp.limitRps;
     return n.comp?.limitRps ?? Infinity;
   };
 
@@ -199,8 +200,10 @@ export function simulateTest(compiled, lab, practice, test) {
         const spare = Math.max(0, cap - Math.min(sync, cap));
         phiPull = pull <= spare ? 1 : spare > 0 ? spare / pull : 0;
       }
+      // an external service also fails a share of the calls it accepts (errorPct)
+      const errShare = n.type === 'external' ? Math.min(1, Math.max(0, (n.cfg.errorPct ?? 0) / 100)) : 0;
       for (const r of list) {
-        r.phi = free(r) ? 1 : n.type === 'cache' && down ? 0 : r.hop.kind === 'consume' ? phiPull : r.hop.write ? phiW : phiR;
+        r.phi = (free(r) ? 1 : n.type === 'cache' && down ? 0 : r.hop.kind === 'consume' ? phiPull : r.hop.write ? phiW : phiR) * (r.hop.kind === 'call' ? 1 - errShare : 1);
         r.out = r.in * r.phi;
       }
       rho[id] = rr; offered[id] = sync + pull; served[id] = calls; readsAt[id] = 0; writesAt[id] = 0;
@@ -228,6 +231,7 @@ export function simulateTest(compiled, lab, practice, test) {
     if (k === 'pass' || k === 'enqueue') b = (n.comp.latencyMs || 0) + (n.type === 'apigw' && n.cfg.auth ? 2 : 0);
     else if (k === 'handle' || k === 'consume') b = (n.comp.latencyMs || 0) + (r.hop.cpuMs || 0);
     else if (k === 'cache' || k === 'invalidate') b = n.comp.latencyMs || 1;
+    else if (k === 'call') b = n.cfg.latencyMs ?? n.comp.latencyMs ?? 300;
     else if (k === 'store') {
       const lat = n.type === 'database' ? n.engine?.latencyMs ?? n.comp.latencyMs : n.comp.latencyMs;
       b = (lat || 1) * pathFactor(r.hop) + (r.hop.write && n.type === 'database' && n.replicas > 0 && n.cfg.replication === 'sync' ? 2 : 0);
@@ -282,7 +286,8 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const op of ops) timeline.ops[op.id] = { rate: [], ok: [], p99: [] };
   for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [] };
   const feedDelay = dict();   // "store|entity" → worst seconds behind (async copies)
-  const deferredSteps = recs.filter((r) => r.hop.kind === 'store' && r.enq.length);
+  // work done after answering: writes and calls behind a queue (their delay and what is left undone)
+  const deferredSteps = recs.filter((r) => (r.hop.kind === 'store' || r.hop.kind === 'call') && r.enq.length);
   let costTotal = 0, transferTotal = 0;
   const byNode = dict(); for (const id of order) byNode[id] = 0;
 
@@ -314,6 +319,8 @@ export function simulateTest(compiled, lab, practice, test) {
       if (n.perRequest) return ((readsAt[id] || 0) * n.engine.readPerMillion + (writesAt[id] || 0) * n.engine.writePerMillion) / 1e6 * SECONDS_PER_MONTH;
       return (n.size?.hourly || 0) * HOURS_PER_MONTH * ((n.cfg.multiAz && n.engine?.multiAz === 'option' ? n.comp.multiAz?.priceFactor ?? 2 : 1) + n.replicas) * (n.cfg.shards || 1);
     }
+    if (n.type === 'external') return (n.cfg.pricePerCall || 0) * (served[id] || 0) * SECONDS_PER_MONTH;
+    if (n.comp?.v2only) return 0;
     return monthlyCost(n.comp, n.cfg, served[id] || 0);
   };
 
@@ -342,7 +349,8 @@ export function simulateTest(compiled, lab, practice, test) {
     const base = dict();
     for (const op of ops) {
       let f = 1; for (const s of st.spikes) if (!s.op || s.op === op.id) f *= s.factor;
-      base[op.id] = (op.source && op.source !== 'clients' ? 0 : rps * m * share(op)) * f;
+      // webhooks follow the test's traffic too (their share of it); scheduled jobs come in phase 6
+      base[op.id] = (op.source === 'schedule' ? 0 : rps * m * share(op)) * f;
     }
     // 3. the retry loop
     const factor = dict(), s = dict();
@@ -392,7 +400,9 @@ export function simulateTest(compiled, lab, practice, test) {
     for (const e of enqRecs) {
       const done = e.async.reduce((a, c) => a + c.out * c.Sb, 0);
       backlog[e.hop.id] = Math.max(0, backlog[e.hop.id] + (e.out - done) * secs);
-      waitSec[e.hop.id] = done > 1e-12 ? backlog[e.hop.id] / done : backlog[e.hop.id] > 0.5 ? hours * 3600 : 0;
+      // nothing taken this tick (the workers' calls all fail): the oldest message waits a tick longer
+      waitSec[e.hop.id] = done > 1e-12 ? backlog[e.hop.id] / done : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0;
+      lastDone[e.hop.id] = done;
       if (waitSec[e.hop.id] > waitWorst[e.hop.id]) waitWorst[e.hop.id] = waitSec[e.hop.id];
       if (backlog[e.hop.id] > 0.5 && !e.backlogged) { e.backlogged = true; st.events.push({ t, node: e.node, kind: 'backlog' }); }
       else if (backlog[e.hop.id] <= 0.5 && e.backlogged) { e.backlogged = false; st.events.push({ t, node: e.node, kind: 'drained' }); }
@@ -433,7 +443,8 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const op of ops) {
     const x = opT[op.id];
     for (const sid in x.deferred) {
-      const left = deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy).flatMap((r) => r.enq).reduce((a, e) => a + backlog[e.hop.id], 0);
+      // what one more tick of the workers would clear is in flight (retries of a few failed calls), not left undone
+      const left = deferredSteps.filter((r) => r.op === op && r.hop.step === sid && !r.hop.copy).flatMap((r) => r.enq).reduce((a, e) => a + (backlog[e.hop.id] > (lastDone[e.hop.id] || 0) * secs + 0.5 ? backlog[e.hop.id] : 0), 0);
       x.deferred[sid].notDone = Math.round(left);
     }
     out[op.id] = {

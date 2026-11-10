@@ -7,7 +7,7 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";import SchemaEditor from"./SchemaEditor.jsx";import{schemaIssues,schemaSummary,vocab}from"./schema.js";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow,replicasOf,roleOf,displayName,MAX_NAME,engineOf,sizesOf,sizeOf,perRequest}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";import{InspectorV2,ArrowV2,paletteV2}from"./LabV2.jsx";import{allowedEdge}from"../eval/design.js";
+import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";import{InspectorV2,ArrowV2,paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
 const deletedIds=()=>{try{return new Set(Object.keys(JSON.parse(localStorage.getItem(DELETED_KEY)||"{}")||{}))}catch{return new Set()}};
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
@@ -25,6 +25,8 @@ const usd=n=>"$"+Math.round(n).toLocaleString("en-US");
 const num=n=>Math.round(n).toLocaleString("en-US");
 const newId=p=>`${p}-${Math.random().toString(36).slice(2,8)}`;
 const Ctx=createContext(null);
+// a v2 problem runs no simulation on the canvas: what the parts of the page read from it
+const V2_IDLE={nodes:{},total:{monthlyCost:0,burnPerHour:0,sentRps:0,successPct:100,latencyMs:0,retryRps:0,down:[],clients:0,bottleneck:null},problems:[]};
 
 // Designs live in localStorage (store.js); what is read back is checked and repaired first.
 const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}return readStore(raw,lab)};
@@ -36,7 +38,7 @@ const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),...(n.data.name?{name:n.data.name}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target,...(e.data?.carries?{carries:e.data.carries}:{})}))});
 const edge=(source,target,carries)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"},...(carries?{data:{carries}}:{})});
 
-const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
+const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",external:"M3 10h9M9 6l4 4-4 4M14 4h3v12h-3",realtime:"M4 10a6 6 0 0 1 12 0M7 10a3 3 0 0 1 6 0M10 10v7M7 17h6",stream:"M2 6h16M2 10h16M2 14h16M15 4l3 2-3 2",pubsub:"M10 4v4M10 8l-6 6M10 8l6 6M10 8v6M3 14h2v2H3zM9 14h2v2H9zM15 14h2v2h-2z",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
 const level=u=>u>1+1e-9?"over":u>=0.7?"warn":"ok";
 
@@ -90,10 +92,10 @@ return <div className="lab-sch"><div className="lab-h">{(comp.schemaLabel||"Sche
 {iss.length>0&&<p className={"lab-note lab-note-tight "+(errs?"lab-warn":"")}>{errs?`${errs} problem${errs>1?"s":""}`:""}{errs&&iss.length>errs?" · ":""}{iss.length>errs?`${iss.length-errs} warning${iss.length-errs>1?"s":""}`:""}: open the schema to see them.</p>}
 <button type="button" className="lab-btn ghost" onClick={()=>setOpen(true)}>{cfg.schema?.tables?.length?"Edit schema":`Add ${v.tables}`}</button>
 {open&&<SchemaEditor engine={e} schema={cfg.schema} title={title} suggest={suggest} save={schema=>set({schema})} close={()=>setOpen(false)}/>}</div>}
-function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn,fieldHints,hl=2,v2,ops,setCarries}){
+function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn,fieldHints,hl=2,v2,ops,setCarries,lockedIds}){
 // hl: the level of its headings, one below the Lab's own title (h1 on its own page, h3 inside the landing page's section)
 const H="h"+hl;
-if(v2){if(!node&&edge)return <ArrowV2 edge={edge} ops={ops||[]} labelOf={labelOf} removeEdge={removeEdge} setCarries={setCarries} H={H}/>;if(node)return <InspectorV2 lab={lab} node={node} update={update} rename={rename} remove={remove} conn={conn&&{...conn,removeEdge}} labelOf={labelOf} fieldHints={fieldHints} H={H} Glyph={Glyph} maxName={MAX_NAME}/>;
+if(v2){if(!node&&edge)return <ArrowV2 edge={edge} ops={ops||[]} labelOf={labelOf} removeEdge={removeEdge} setCarries={setCarries} H={H}/>;if(node)return <InspectorV2 locked={lockedIds?.has(node.id)} lab={lab} node={node} update={update} rename={rename} remove={remove} conn={conn&&{...conn,removeEdge}} labelOf={labelOf} fieldHints={fieldHints} H={H} Glyph={Glyph} maxName={MAX_NAME}/>;
 return <aside className="lab-ins" tabIndex={0} aria-label="Details"><div className="lab-h">DESIGN</div><p className="lab-desc">Select a component to change its settings, or an arrow to choose which calls it carries.</p><p className="lab-note">Run tries the example tests; Submit runs every test. After either, ▶ Replay a load test to watch it minute by minute here.</p><p className="lab-note">Prices are approximate AWS on-demand list prices for Mumbai, for learning only. The bill includes storage and data transfer.</p></aside>}
 // Settings a challenge fixes are shown at the challenge's value and can't be changed (QA M4).
 const fx=ch?.fixed||{},lockOf=t=>t==="server"?{queriesPerRequest:fx.queriesPerRequest}:t==="cache"?{hitPct:fx.hitPct,writePct:fx.writePct}:t==="cdn"?{hitPct:fx.cdnHitPct,live:fx.cdnLive}:{};
@@ -154,7 +156,7 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.chaos?.length?", with the crash the challenge causes":""}.</p></>}
 <div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 
-function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const cat=useMemo(()=>catalogue(lab),[lab]);const v2=problem?.v===2&&!!lab.eval;const v2Ref=useRef(v2);v2Ref.current=v2;
+function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const v2=problem?.v===2&&!!lab.eval;const cat=useMemo(()=>v2?{...catalogue(lab),...evalCatalogue(lab)}:catalogue(lab),[lab,v2]);const locked=useMemo(()=>new Set(v2?problem.locked||[]:[]),[v2,problem?.locked]);const v2Ref=useRef(v2);v2Ref.current=v2;
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
@@ -214,7 +216,7 @@ const progress=useProgress();const ch=(lab.challenges||[]).find(c=>c.id===store.
 const design=useMemo(()=>{const d=fromFlow(nodes,edges);return ch?applyChallenge(d,ch):d},[nodes,edges,ch]);const downKey=Object.keys(run.down).sort().join();
 // What the design is doing now: crashed parts, queue backlogs, autoscaled instances, and the Clients'
 // traffic at the simulated time of day.
-const result=useMemo(()=>simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours]);const designRef=useRef(design);designRef.current=design;const nodesRef=useRef(nodes);nodesRef.current=nodes;const chRef=useRef(ch);chRef.current=ch;
+const result=useMemo(()=>v2?V2_IDLE:simulate(design,lab,runOptions(run,credit.hours*60,lab)),[design,lab,run,credit.hours,v2]);const designRef=useRef(design);designRef.current=design;const nodesRef=useRef(nodes);nodesRef.current=nodes;const chRef=useRef(ch);chRef.current=ch;
 const names=useMemo(()=>Object.fromEntries(nodes.map(n=>[n.id,{kind:n.data.kind,label:displayName(cat[n.data.kind],{name:n.data.name,config:n.data.config})}])),[nodes,cat]);
 const selected=nodes.find(n=>n.selected);const selEdge=selected?null:edges.find(e=>e.selected);
 const labelOf=id=>{const n=nodes.find(x=>x.id===id);return n?displayName(cat[n.data.kind],{name:n.data.name,config:n.data.config,type:n.data.kind}):"?"};const removeEdge=id=>setEdges(es=>es.filter(e=>e.id!==id));
@@ -228,7 +230,7 @@ const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;
 setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:v2Ref.current?{}:defaultConfig(comp)}}])},[cat,rf,setNodes]);
 const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data,config}}:n));
 const rename=(id,name)=>setNodes(ns=>ns.map(n=>{if(n.id!==id)return n;const{name:_,...data}=n.data;return{...n,data:name?{...data,name}:data}}));
-const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
+const remove=id=>{if(locked.has(id))return;setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
 const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);if(!s||!t||c.source===c.target||edges.some(e=>e.source===c.source&&e.target===c.target))return false;
 // v2: the arrows eval.json allows (a database may point at a queue for change data capture, the Clients at S3)
 if(v2){const as=n=>({id:n.id,type:n.data.kind,config:n.data.config});return allowedEdge(as(s),as(t),lab)}return t.data.kind!=="client"&&s.data.kind!=="database"};
@@ -264,11 +266,11 @@ return <Ctx.Provider value={{cat,result,running,run,trace,replay:v2?replay:null}
 :<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>
 <Palette lab={lab} comps={v2?paletteV2(lab):lab.components} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
-<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
+<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} v2={v2} ops={problem?.ops} setCarries={setCarries}/>
+<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} v2={v2} ops={problem?.ops} setCarries={setCarries} lockedIds={locked}/>
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={embedded?.next&&nextCh?(()=>{location.hash=`problems/challenge/${nextCh.id}`}):null} more={embedded?.next?null:embedded}/>}
 </div></Ctx.Provider>}
 

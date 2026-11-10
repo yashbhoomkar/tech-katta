@@ -6,7 +6,8 @@ const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', '
 export const cap1 = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 export const PLAN = {
-  E_NO_SOURCE: (op) => `${op} has nowhere to start: add the Clients.`,
+  E_NO_SOURCE: (op, source) => (source === 'external' ? `${op} comes from another company: connect its service (it is on the canvas already) to your design.` : `${op} has nowhere to start: add the Clients.`),
+  E_NO_WEBHOOK: (op, from) => `${op} starts at ${from}, but never reaches a Service: draw an arrow from ${from} to the load balancer or Service that takes it.`,
   E_NO_HANDLER: (op) => `${op} never reaches a Service: follow the arrows from the Clients.`,
   E_NO_DATABASE: (handler, entity) => `${handler} reaches no database: draw an arrow from it to the store that keeps ${entity}.`,
   E_NO_SCHEMA: (entity, fields) => `No database has a schema yet: open a database's settings and add the ${entity} it needs (${list(fields)}).`,
@@ -17,6 +18,7 @@ export const PLAN = {
   E_TX_SPLIT: (a, b) => `These writes must happen together, but they land in ${a} and ${b}; no transaction spans two stores.`,
   E_NO_TX: (store) => `${store} can't make these writes happen together (no transactions).`,
   E_NO_SANDBOX: (node, label) => `${label} runs code from users: turn on "Runs untrusted code (sandboxed)" on ${node}.`,
+  E_NO_EXTERNAL: (what, preset) => `${cap1(what)} needs an arrow from a Service to the ${preset} service.`,
   E_NOT_YET: (what) => `${cap1(what)} needs components that are not on the canvas yet.`,
   E_UNFED: (entity, store, op, primary) => `Nothing ever writes ${entity} into ${store}: ${op} would find it empty.${primary ? ` Feed it from ${primary} (a worker behind a queue, or change data capture).` : ''}`,
   E_TOO_TANGLED: () => 'This operation fans out over too many paths to follow.',
@@ -67,6 +69,22 @@ export const FIND = {
   storage: (db, gb, engine, max) => ({ title: `${db} runs out of space`, story: `${db} needs ${gb.toLocaleString('en-US')} GB; one ${engine} holds at most ${max.toLocaleString('en-US')}.`, fix: 'Split it over shards, or choose a store that grows by itself.' }),
   cacheFull: (cache, what, need, have) => ({ title: `${cache} is too small for ${what}`, story: `${cap1(what)} needs about ${need} GB of memory, but ${cache} has ${have} GB.`, fix: 'A larger size or more nodes, or keep it in a database.' }),
   noTtl: (entity, store) => ({ title: `${cap1(entity)} is never removed`, story: `${cap1(entity)} is never removed from ${store}: it grows for ever.`, fix: 'Give the table an expiry field (TTL), or delete the rows with a job.' }),
+  double: (way, op, store, queue, timeoutSec, idf) => ({
+    title: `${op} can happen twice`,
+    story: way === 'call'
+      ? `A customer starts ${op}. The other company's answer is slow and the app retries after ${timeoutSec} seconds. Nothing remembers the first attempt, so the other company is called again: a second charge, a second message.`
+      : way === 'retry'
+        ? `The answer to ${op} is lost on the way back and the app retries after ${timeoutSec} seconds. ${store} accepts the same write again, so it happens twice.`
+        : way === 'fifo'
+          ? `${queue} removes duplicate messages only within 5 minutes; a message delivered again later is written to ${store} a second time.`
+          : `${queue} delivers each message at least once: a worker that crashes after writing but before saying it is done gets the message again, and ${store} accepts it again.`,
+    fix: way === 'call'
+      ? `Write the request with its id first, in a table that refuses a second row with the same id, and call the other company only for a new row (or use its idempotency key).`
+      : `Give every request an id from the client and make the store refuse a second row with the same id (a unique index on ${idf}).`,
+  }),
+  dualWrite: (svc, entity, a, b) => ({ title: `${cap1(entity)} is written to two stores without a transaction`, story: `${svc} writes ${entity} to ${a}, then to ${b}. If it crashes between the two, ${b} never hears about it, and nothing repairs it.`, fix: `Write once, to ${a}, and let ${b} follow it: change data capture into a stream, or an outbox table read by a worker.` }),
+  callThenWrite: (svc, ext) => ({ title: 'A call to another company before anything is saved', story: `If ${svc} crashes after ${ext} answers, the other company has done it (a payment, a message) but your records don't know.`, fix: 'Save the request first (with its id), then call, then record the answer.' }),
+  order: (queue, by) => ({ title: 'Changes can be applied out of order', story: `${queue} hands messages to whichever worker is free. Two messages for the same ${by} can be applied the wrong way round.`, fix: `Use an event stream partitioned by ${by}, a FIFO queue, or number the changes and let the store refuse one that is out of turn.` }),
   oversized: (name, pct) => ({ title: `${name} is larger than it needs to be`, story: `${name} never went above ${pct}% load: a smaller one would do.`, fix: 'Try a smaller size or fewer instances.' }),
 };
 

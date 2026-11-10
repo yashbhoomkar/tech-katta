@@ -69,13 +69,24 @@ export function validateEval(ev, lab, problems = []) {
   if (!Array.isArray(ev.components) || !ev.components.length) { problems.push(`${at}: components must be a non-empty list`); return problems; }
   const types = ev.components.map((c) => c && c.type);
   if (new Set(types).size !== types.length) problems.push(`${at}: components has a duplicate type`);
-  const known = new Set(types.filter((t) => labTypes.has(t)));
+  // a type is known when lab.json has it, or eval.json defines it on its own (v2only: phase 4's new types)
+  const known = new Set(ev.components.filter((c) => c && (labTypes.has(c.type) || c.v2only === true)).map((c) => c.type));
   ev.components.forEach((c, i) => {
     const w = `${at}: components[${i}]${c && c.type ? ` (${c.type})` : ''}`;
     if (!obj(c)) { problems.push(`${w}: must be an object`); return; }
-    const lc = labTypes.get(c.type);
-    // phase 0 (evaluator.md §15): only the types lab.json already has; new types bring their own numbers later
-    if (!lc) { problems.push(`${w}: type is not a component in lab.json`); return; }
+    if (c.v2only !== undefined && c.v2only !== true) problems.push(`${w}: v2only must be true when given`);
+    if (c.palette !== undefined && typeof c.palette !== 'boolean') problems.push(`${w}: palette must be true or false`);
+    if (c.v2only && labTypes.has(c.type)) { problems.push(`${w}: v2only, but lab.json has this type`); return; }
+    // a v2-only type brings its own name, description and numbers (it is its own lab.json entry)
+    const lc = c.v2only ? c : labTypes.get(c.type);
+    if (!lc) { problems.push(`${w}: type is not a component in lab.json (mark a new type v2only and give its numbers)`); return; }
+    if (c.v2only) {
+      if (!text(c.name) || !text(c.desc)) problems.push(`${w}: a v2only type needs a name and a desc`);
+      if (!(num(c.latencyMs) && c.latencyMs >= 0)) problems.push(`${w}: a v2only type needs latencyMs (0 or more)`);
+      if (c.limitRps !== undefined && !pos(c.limitRps)) problems.push(`${w}: limitRps must be above 0`);
+      if (c.sizes !== undefined && !(Array.isArray(c.sizes) && c.sizes.length && c.sizes.every((z) => obj(z) && text(z.id) && text(z.label) && num(z.hourly) && z.hourly >= 0))) problems.push(`${w}: sizes need id, label and hourly`);
+      if (c.sizes && !c.sizes.some((z) => z.id === c.defaultSize)) problems.push(`${w}: defaultSize must be one of its sizes`);
+    }
     if (!text(c.group)) problems.push(`${w}: needs a group`);
     if (c.managed !== undefined && typeof c.managed !== 'boolean') problems.push(`${w}: managed must be true or false`);
     if (!Array.isArray(c.to) || !c.to.every((t) => known.has(t)) || new Set(c.to).size !== c.to.length) problems.push(`${w}: to must list known types once each`);
