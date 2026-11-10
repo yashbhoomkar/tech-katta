@@ -218,220 +218,105 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends payment requests. Each one writes the payment and its ledger entries: 4 queries, most of them writes. A confirmed payment must never be lost. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 4,
-      "hitPct": 50,
-      "writePct": 60
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends payments and the app's retries from the phones (60 : 40), and the payment provider sends one webhook for every payment it confirms. A confirmed payment must never be lost, and no one may be charged twice.",
+    "entities": {
+      "payments": {
+        "rows": 10000000000,
+        "rowBytes": 300,
+        "growthPerDay": 30000000,
+        "fields": {
+          "payment_id": "string",
+          "order_id": "string",
+          "idempotency_key": "string",
+          "amount": "int",
+          "status": "string"
+        },
+        "sample": [
+          {
+            "payment_id": "pay_1",
+            "order_id": "o77",
+            "idempotency_key": "o77",
+            "amount": 48000,
+            "status": "succeeded"
+          },
+          {
+            "payment_id": "pay_3",
+            "order_id": "o90",
+            "idempotency_key": "o90",
+            "amount": 32000,
+            "status": "pending"
           }
-        }
+        ]
+      },
+      "ledger_entries": {
+        "rows": 30000000000,
+        "rowBytes": 150,
+        "growthPerDay": 90000000,
+        "fields": {
+          "entry_id": "string",
+          "payment_id": "string",
+          "account": "string",
+          "debit": "int",
+          "credit": "int",
+          "at": "time"
+        },
+        "sample": [
+          {
+            "entry_id": "le_0",
+            "payment_id": "pay_1",
+            "account": "gateway_receivable",
+            "debit": 48000,
+            "credit": 0,
+            "at": "2026-11-07T19:02:00Z"
+          },
+          {
+            "entry_id": "le_00",
+            "payment_id": "pay_1",
+            "account": "order:o77",
+            "debit": 0,
+            "credit": 48000,
+            "at": "2026-11-07T19:02:00Z"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "idempotency_key": [
+        "idem_key",
+        "request_id",
+        "dedupe_key",
+        "idempotency"
       ],
-      "edges": []
+      "amount": [
+        "value",
+        "paise",
+        "amount_paise"
+      ],
+      "entry_id": [
+        "id",
+        "ledger_id"
+      ],
+      "account": [
+        "account_id",
+        "ledger_account"
+      ],
+      "debit": [
+        "dr",
+        "debit_paise"
+      ],
+      "credit": [
+        "cr",
+        "credit_paise"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
+        "id": "pay",
+        "name": "Pay for an order",
+        "kind": "write",
+        "share": 0.6,
         "sample": true,
-        "desc": "300 payment requests a second (payments, status checks and refunds).",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 300,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of payments succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
-          },
-          {
-            "kind": "role",
-            "role": "ledger",
-            "label": "Every money movement is recorded in an append-only record that balances"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "The dinner peak",
-        "sample": true,
-        "desc": "1,000 requests a second at 8 pm.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of payments succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "The Diwali sale",
-        "desc": "At 8 pm a sale starts: 3,000 requests a second for 15 minutes.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 3000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of payments succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "cache-crash",
-        "name": "A cache crashes",
-        "desc": "At the dinner peak a cache crashes. Any payment it had acknowledged but not yet written to the database is gone, which means money on the customer's statement and nothing in your books.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "cache"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99,
-            "label": "At least 99% of payments still go through"
-          },
-          {
-            "kind": "noLostWrites",
-            "label": "No confirmed payment is lost"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (1,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of payments still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99,
-            "label": "At least 99% of payments still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (300 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 300,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of payments succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 6500,
-            "label": "Costs at most $6,500 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-pay",
-        "name": "Pay ₹480 for order #91",
-        "sample": true,
-        "desc": "The app asks to pay for order #91 by UPI. The payment is created once, keyed by the order, with the amount taken from the order (48,000 paise), never from the app.",
         "request": {
           "method": "POST",
           "path": "/v1/payments",
@@ -440,6 +325,11 @@
             "method": "upi",
             "idempotency_key": "o91"
           }
+        },
+        "bytesOut": 300,
+        "keys": {
+          "entity": "payments",
+          "skew": "uniform"
         },
         "steps": [
           {
@@ -452,7 +342,18 @@
               "idempotency_key": "o91",
               "amount": 48000,
               "status": "pending"
-            }
+            },
+            "unique": [
+              "idempotency_key"
+            ]
+          },
+          {
+            "id": "s2",
+            "op": "call",
+            "preset": "payments",
+            "label": "Asking the payment provider to collect",
+            "timing": "defer",
+            "withinSec": 120
           }
         ],
         "respond": {
@@ -462,13 +363,20 @@
             "status": "pending",
             "amount": 48000
           }
-        }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "idempotency_key"
       },
       {
-        "id": "api-retry",
+        "id": "retry",
         "name": "The app retries",
-        "sample": true,
-        "desc": "A timeout makes the app send order #77's payment again: it finds the first payment by its key and returns it, instead of charging a second time.",
+        "kind": "read",
+        "share": 0.4,
         "request": {
           "method": "POST",
           "path": "/v1/payments",
@@ -477,6 +385,11 @@
             "method": "upi",
             "idempotency_key": "o77"
           }
+        },
+        "bytesOut": 200,
+        "keys": {
+          "entity": "payments",
+          "skew": "uniform"
         },
         "steps": [
           {
@@ -498,12 +411,20 @@
             "payment_id": "$s1.payment_id",
             "status": "$s1.status"
           }
-        }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "consistency": "strong"
       },
       {
-        "id": "api-paid",
-        "name": "The gateway says it's paid",
-        "desc": "The gateway's signed webhook says pay_3 (₹320) succeeded. In one transaction the payment is marked paid and two ledger entries are added that balance; nothing is edited in place.",
+        "id": "paid",
+        "name": "The provider confirms a payment",
+        "kind": "write",
+        "source": "external",
+        "preset": "payments",
+        "share": 0.6,
         "request": {
           "method": "POST",
           "path": "/v1/webhooks/gateway",
@@ -512,6 +433,7 @@
             "status": "succeeded"
           }
         },
+        "bytesOut": 100,
         "steps": [
           {
             "id": "s1",
@@ -567,9 +489,2094 @@
           "body": {
             "recorded": "$s1.ok"
           }
-        }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 1000
+        },
+        "durable": true,
+        "effect": "once"
       }
     ],
+    "tests": [
+      {
+        "id": "api-pay",
+        "name": "Pay ₹480 for order #91",
+        "desc": "The app asks to pay for order #91 by UPI. The payment is created once, keyed by the order, with the amount taken from the order (48,000 paise), never from the app.",
+        "sample": true,
+        "op": "pay"
+      },
+      {
+        "id": "api-retry",
+        "name": "The app retries",
+        "desc": "A timeout makes the app send order #77's payment again: it finds the first payment by its key and returns it, instead of charging a second time.",
+        "sample": true,
+        "op": "retry"
+      },
+      {
+        "id": "api-paid",
+        "name": "The gateway says it's paid",
+        "desc": "The gateway's signed webhook says pay_3 (₹320) succeeded. In one transaction the payment is marked paid and two ledger entries are added that balance; nothing is edited in place.",
+        "op": "paid"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "300 requests a second from the phones, and the provider's webhooks.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "desc": "1,000 requests a second at 8 pm. Nothing may be charged twice or lost.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "atomic"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "The Diwali sale",
+        "desc": "At 8 pm a sale starts: 3,000 requests a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 3000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "provider-down",
+        "name": "The payment provider goes down",
+        "desc": "At 8:10 pm the provider stops answering for 10 minutes. Customers can still pay; the charges go through when it is back.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "externalDown",
+            "preset": "payments",
+            "minutes": 10
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 900
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Payments may slow down; none may be lost.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "pay",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (300 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 16000
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        },
+        {
+          "id": "psp",
+          "type": "external",
+          "x": 0,
+          "y": 240,
+          "name": "Payment provider",
+          "config": {
+            "preset": "payments",
+            "latencyMs": 400,
+            "limitRps": 5000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "locked": [
+      "psp"
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Payments service",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 3,
+            "zones": 3
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 0,
+          "name": "Payments DB",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 4,
+            "schema": {
+              "tables": [
+                {
+                  "name": "payments",
+                  "fields": [
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "order_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "idempotency_key",
+                      "type": "string"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "int"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "payment_id"
+                  ],
+                  "indexes": [
+                    {
+                      "fields": [
+                        "idempotency_key"
+                      ],
+                      "kind": "unique"
+                    }
+                  ]
+                },
+                {
+                  "name": "ledger_entries",
+                  "fields": [
+                    {
+                      "name": "entry_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "payment_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "account",
+                      "type": "string"
+                    },
+                    {
+                      "name": "debit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "credit",
+                      "type": "int"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "entry_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 240,
+          "name": "Charges to make",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 240,
+          "name": "Charge workers",
+          "config": {
+            "size": "m5.large",
+            "count": 4,
+            "zones": 2
+          }
+        },
+        {
+          "id": "psp",
+          "type": "external",
+          "x": 0,
+          "y": 240,
+          "name": "Payment provider",
+          "config": {
+            "preset": "payments",
+            "latencyMs": 400,
+            "limitRps": 5000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "psp"
+        },
+        {
+          "from": "psp",
+          "to": "lb"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No unique key on the request",
+        "why": "Nothing stops a second payment for the same request.",
+        "fails": "api-pay",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "The ledger in another database",
+        "why": "The payment and its ledger entries land in two databases: no transaction spans them.",
+        "fails": "api-paid",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "ledger",
+            "type": "database",
+            "x": 720,
+            "y": -240,
+            "name": "Ledger DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "ledger"
+          }
+        ]
+      },
+      {
+        "name": "Webhooks never arrive",
+        "why": "Nothing connects the provider to the Service, so no payment is ever confirmed.",
+        "fails": "api-paid",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          }
+        ]
+      },
+      {
+        "name": "The customer waits for the provider",
+        "why": "The Service calls the provider before answering: when the provider is down, nobody can pay.",
+        "fails": "provider-down",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "psp"
+          }
+        ]
+      },
+      {
+        "name": "Sized for the average only",
+        "why": "One database shard is enough for the evening, not for the Diwali sale.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 1,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every Service is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "The database has no standby: when it crashes, payments stop for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      },
+      {
+        "name": "Write-back cache in front of the ledger",
+        "why": "The cache confirms payments and writes them later: a crash loses money the customers already paid.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 600,
+            "y": -160,
+            "name": "Cache",
+            "config": {
+              "size": "cache.m5.large",
+              "writePolicy": "back",
+              "replica": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 8,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 6,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "The phones and the provider may call the Service group directly in this model."
+    },
     "rubric": {
       "fr": [
         {
@@ -752,1084 +2759,8 @@
       },
       {
         "step": "design",
-        "x": "Multi-AZ on the database, two server groups. Unknown payments get settled by a background check, never by charging again."
+        "x": "Spread the Service over two or three zones and give the database a Multi-AZ standby. Don't make the customer wait for the provider: save the payment, answer, and charge from a queue; unknown payments get settled by a background check, never by charging again."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 4
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 4
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 720,
-          "y": -75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "ledger",
-            "schema": {
-              "tables": [
-                {
-                  "name": "payments",
-                  "fields": [
-                    {
-                      "name": "payment_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "order_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "idempotency_key",
-                      "type": "string"
-                    },
-                    {
-                      "name": "amount",
-                      "type": "int"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "payment_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "idempotency_key"
-                      ],
-                      "kind": "unique"
-                    }
-                  ]
-                },
-                {
-                  "name": "ledger_entries",
-                  "fields": [
-                    {
-                      "name": "entry_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "payment_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "account",
-                      "type": "string"
-                    },
-                    {
-                      "name": "debit",
-                      "type": "int"
-                    },
-                    {
-                      "name": "credit",
-                      "type": "int"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "entry_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "payment_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db2",
-          "type": "database",
-          "x": 720,
-          "y": 75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "ledger",
-            "schema": {
-              "tables": [
-                {
-                  "name": "payments",
-                  "fields": [
-                    {
-                      "name": "payment_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "order_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "idempotency_key",
-                      "type": "string"
-                    },
-                    {
-                      "name": "amount",
-                      "type": "int"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "payment_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "idempotency_key"
-                      ],
-                      "kind": "unique"
-                    }
-                  ]
-                },
-                {
-                  "name": "ledger_entries",
-                  "fields": [
-                    {
-                      "name": "entry_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "payment_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "account",
-                      "type": "string"
-                    },
-                    {
-                      "name": "debit",
-                      "type": "int"
-                    },
-                    {
-                      "name": "credit",
-                      "type": "int"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "entry_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "payment_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "db1"
-        },
-        {
-          "from": "app1",
-          "to": "db2"
-        },
-        {
-          "from": "app2",
-          "to": "db1"
-        },
-        {
-          "from": "app2",
-          "to": "db2"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "ledger"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "ledger"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Write-back cache in front of the ledger",
-        "why": "Fast, until the cache crashes and takes acknowledged payments with it.",
-        "fails": "cache-crash",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 50,
-              "writePct": 60,
-              "onDown": "database",
-              "writePolicy": "back"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 50,
-              "writePct": 60,
-              "onDown": "database",
-              "writePolicy": "back"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Retries not found quickly",
-        "why": "Payments are only found by their id, so a retry can't find the first payment by its key without reading every row: it would charge again or time out.",
-        "fails": "api-retry",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 4
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "payments",
-                    "fields": [
-                      {
-                        "name": "payment_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "order_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "idempotency_key",
-                        "type": "string"
-                      },
-                      {
-                        "name": "amount",
-                        "type": "int"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "payment_id"
-                    ]
-                  },
-                  {
-                    "name": "ledger_entries",
-                    "fields": [
-                      {
-                        "name": "entry_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "payment_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "account",
-                        "type": "string"
-                      },
-                      {
-                        "name": "debit",
-                        "type": "int"
-                      },
-                      {
-                        "name": "credit",
-                        "type": "int"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "entry_id"
-                    ],
-                    "indexes": [
-                      {
-                        "fields": [
-                          "payment_id"
-                        ],
-                        "kind": "btree"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "ledger",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "payments",
-                    "fields": [
-                      {
-                        "name": "payment_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "order_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "idempotency_key",
-                        "type": "string"
-                      },
-                      {
-                        "name": "amount",
-                        "type": "int"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "payment_id"
-                    ]
-                  },
-                  {
-                    "name": "ledger_entries",
-                    "fields": [
-                      {
-                        "name": "entry_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "payment_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "account",
-                        "type": "string"
-                      },
-                      {
-                        "name": "debit",
-                        "type": "int"
-                      },
-                      {
-                        "name": "credit",
-                        "type": "int"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "entry_id"
-                    ],
-                    "indexes": [
-                      {
-                        "fields": [
-                          "payment_id"
-                        ],
-                        "kind": "btree"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "payment_id",
-        "order_id",
-        "idempotency_key",
-        "amount",
-        "status",
-        "entry_id",
-        "account",
-        "debit",
-        "credit",
-        "at"
-      ],
-      "aliases": {
-        "idempotency_key": [
-          "idem_key",
-          "request_id",
-          "dedupe_key",
-          "idempotency"
-        ],
-        "amount": [
-          "value",
-          "paise",
-          "amount_paise"
-        ],
-        "entry_id": [
-          "id",
-          "ledger_id"
-        ],
-        "account": [
-          "account_id",
-          "ledger_account"
-        ],
-        "debit": [
-          "dr",
-          "debit_paise"
-        ],
-        "credit": [
-          "cr",
-          "credit_paise"
-        ]
-      },
-      "entities": {
-        "payments": {
-          "rows": 10000000000,
-          "sample": [
-            {
-              "payment_id": "pay_1",
-              "order_id": "o77",
-              "idempotency_key": "o77",
-              "amount": 48000,
-              "status": "succeeded"
-            },
-            {
-              "payment_id": "pay_3",
-              "order_id": "o90",
-              "idempotency_key": "o90",
-              "amount": 32000,
-              "status": "pending"
-            }
-          ]
-        },
-        "ledger_entries": {
-          "rows": 30000000000,
-          "sample": []
-        }
-      }
-    }
+    ]
   }
 }
