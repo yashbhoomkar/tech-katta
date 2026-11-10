@@ -206,7 +206,7 @@
     {
       "t": "lab",
       "x": "Gateways are servers behind a load balancer, and the first lesson is the same as any server's: one isn't enough.",
-      "to": "lab/one-server",
+      "to": "problems/challenge/one-server",
       "go": "Try the one-server challenge"
     }
   ],

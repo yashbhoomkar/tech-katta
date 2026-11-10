@@ -180,14 +180,14 @@
       "items": [
         "Take a question from this section, set a 45-minute timer, and say your answer out loud or on paper before reading ours.",
         "Compare: which requirements did you miss, which deep dive did you skip?",
-        "Build the design in the Lab and push traffic through it: you'll see which box gives out first."
+        "Build the design on the canvas and run the tests: you'll see which box gives out first."
       ]
     },
     {
       "t": "lab",
-      "x": "Before your first question, try a Lab challenge: it's the high-level-design and deep-dive steps with numbers attached.",
-      "to": "lab",
-      "go": "Open the Lab"
+      "x": "Before your first question, try one on the canvas: the high-level design and deep-dive steps with numbers attached, judged by tests.",
+      "to": "problems/url-shortener",
+      "go": "Try the first problem"
     }
   ]
 }

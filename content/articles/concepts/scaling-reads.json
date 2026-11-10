@@ -135,8 +135,8 @@
     },
     {
       "t": "lab",
-      "x": "5,000 people a second open restaurant menus, 4 queries each, and no database in the Lab takes 20,000 queries a second. Put a cache in front and watch where the reads go.",
-      "to": "lab/read-heavy",
+      "x": "5,000 people a second open restaurant menus, 4 queries each, and no database on the canvas takes 20,000 queries a second. Put a cache in front and watch where the reads go.",
+      "to": "problems/challenge/read-heavy",
       "go": "Try \"The menu everyone reads\""
     },
     {

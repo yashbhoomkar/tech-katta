@@ -211,7 +211,7 @@
     {
       "t": "lab",
       "x": "The contest's last 15 minutes are a burst a queue can hold, if the workers behind it keep up. The Monday sync challenge is the same lesson.",
-      "to": "lab/monday-sync",
+      "to": "problems/challenge/monday-sync",
       "go": "Try the Monday sync challenge"
     }
   ],
@@ -1809,6 +1809,6 @@
         }
       }
     },
-    "referenceNote": "In the Lab a judge worker's capacity is counted in test runs a second, so this pool looks small. Real judging is CPU time: about 3 seconds per submission, so the last 15 minutes need around 85 eight-core machines, as the worked answer below works out."
+    "referenceNote": "On the canvas a judge worker's capacity is counted in test runs a second, so this pool looks small. Real judging is CPU time: about 3 seconds per submission, so the last 15 minutes need around 85 eight-core machines, as the worked answer below works out."
   }
 }

@@ -21,10 +21,6 @@
     [
       "Problems",
       "/dashboard/problems/"
-    ],
-    [
-      "Lab",
-      "/dashboard/lab/"
     ]
   ],
   "hero": {
@@ -248,11 +244,6 @@
         "real-systems",
         "Real systems",
         null
-      ],
-      [
-        "lab",
-        "Lab",
-        null
       ]
     ],
     "groups": {
@@ -330,7 +321,7 @@
       "Concepts",
       "Components",
       "Interview Questions",
-      "Lab"
+      "Problems"
     ]
   },
   "example": "zotato",
@@ -345,12 +336,12 @@
       {
         "target": ".tabs",
         "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems and the Lab are where you practise. Quick Notes are two-minute reads, and Real systems retells how real teams solved hard problems."
+        "text": "Concepts, Components and Interview Questions teach. Problems is where you practise: design on a canvas, run the tests, get a score. Quick Notes are two-minute reads, and Real systems retells how real teams solved hard problems."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
         "title": "Problems: practise against tests",
-        "text": "Interview problems, each with its own test suite. Design it on a canvas, Run the example tests, then Submit for a score out of 100."
+        "text": "Interview problems, each with its own test suite, plus eight challenges with stars. Design it on a canvas, Run the example tests, then Submit for a score out of 100."
       },
       {
         "target": ".tabs .tab[href=\"#interview-questions\"]",
@@ -361,11 +352,6 @@
         "target": ".tabs .tab[href=\"#components\"]",
         "title": "The building blocks",
         "text": "The named tools interviewers expect, such as Redis, Kafka and PostgreSQL: what each one is for and where it breaks, with figures. Concepts covers the ideas behind them."
-      },
-      {
-        "target": ".tabs .tab[href=\"#lab\"]",
-        "title": "The Lab: free play",
-        "text": "Build any system from cloud parts, send traffic through it and watch what breaks. Challenges give up to three stars each."
       },
       {
         "target": ".d-head .acct",
@@ -463,14 +449,9 @@
         "text": "Every design starts with virtual AWS credit, spent at its hourly cost while traffic runs."
       },
       {
-        "target": ".lab-ch-btn",
-        "title": "Challenges",
-        "text": "Scenarios with goals and up to three stars each, from one overloaded server to a cache that crashes at dinner."
-      },
-      {
-        "target": ".lab-designs-btn",
-        "title": "Your designs",
-        "text": "Start new designs, duplicate one with fresh credit, import your own architecture as text, or export a design as JSON."
+        "target": ".lab-score-top",
+        "title": "Score it",
+        "text": "Plays the challenge's evening at once and gives up to three stars: staying up first, then no crashes and keeping to the budget."
       }
     ]
   },
@@ -478,21 +459,21 @@
     "label": "Problems",
     "eyebrow": "PRACTISE",
     "title": "Problems",
-    "desc": "Every problem in one place, LeetCode-style: design it on the canvas, run the tests, submit for a score. Plus the Lab challenges, with stars.",
-    "summary": "{q} of {qt} problems solved · {s} of {st} Lab stars",
+    "desc": "Every problem in one place, LeetCode-style: design it on the canvas, run the tests, submit for a score. Plus eight challenges, with stars.",
+    "summary": "{q} of {qt} problems solved · {s} of {st} challenge stars",
     "filterLabel": "Show",
     "all": "All",
     "todo": "Not done yet",
     "questions": "Interview Questions",
     "questionsDesc": "Each problem has a test suite: traffic peaks, spikes, crashes and a budget. Your design passes when every test does.",
-    "challenges": "Lab challenges",
-    "challengesDesc": "Build a design and run the traffic. Stars for staying up, not crashing and keeping to the budget.",
+    "challenges": "Challenges",
+    "challengesDesc": "Build a design and run an evening's traffic through it. Stars for staying up, not crashing and keeping to the budget.",
     "practised": "✓ Practised",
     "notYet": "Not yet",
     "starsLabel": "{n} of {max} stars",
     "allDone": "All done here. Try them again, or come back for new ones.",
-    "labError": "The Lab challenges couldn't load. Refresh to try again.",
-    "lab": "Lab",
+    "labError": "The challenges couldn't load. Refresh to try again.",
+    "lab": "Challenge",
     "next": "Next problem",
     "allProblems": "All problems and your progress →",
     "solve": {
@@ -500,7 +481,7 @@
       "button": "Solve it on the canvas",
       "how": "Design it on the canvas: add parts from the left, join them with arrows, and give each part its job under \"What it does\" in its settings (a geo index, a WebSocket gateway…), and give each database its engine and tables (\"Schema\" in its settings). Run checks your design against the example tests, including API calls followed through your design (▶ Watch shows the trip); Submit runs every test and checks your written answer and key decisions, for a score out of 100.",
       "answer": "Read the worked answer",
-      "scored": "Scored challenge in the Lab",
+      "scored": "A related challenge, with stars",
       "next": "NEXT PROBLEM",
       "back": "Problems",
       "hide": "◀ Hide the problem",
@@ -511,7 +492,7 @@
         "#",
         "Problem",
         "Difficulty",
-        "Lab",
+        "Challenge",
         "Best score",
         "Acceptance"
       ],
@@ -521,12 +502,13 @@
       "tabCanvas": "Canvas",
       "resize": "Drag to resize the panes",
       "solved": "Solved"
-    }
+    },
+    "backToProblems": "All problems"
   },
   "inside": {
     "eyebrow": "WHAT'S INSIDE",
     "title": "Practise system design the way interviews test it",
-    "desc": "Problems with test suites, a Lab that scores your design, and short articles to learn from. Sign in with Google to start.",
+    "desc": "Problems with test suites, challenges that score your design, and short articles to learn from. Sign in with Google to start.",
     "items": [
       {
         "kind": "{questions} QUESTIONS",
@@ -544,10 +526,10 @@
       },
       {
         "kind": "{challenges} CHALLENGES",
-        "title": "The Lab",
+        "title": "Challenges",
         "text": "Build a design, send it a real evening's traffic, and earn up to three stars for staying up, not crashing and keeping to the budget.",
-        "link": "Open the Lab",
-        "href": "/dashboard/lab/"
+        "link": "See the challenges",
+        "href": "/dashboard/problems/"
       },
       {
         "kind": "{articles} ARTICLES",
@@ -563,11 +545,15 @@
   "landingLab": {
     "eyebrow": "TRY IT NOW",
     "title": "Can your design survive IND vs PAK?",
-    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Here is the real Lab with that match loaded. Add what's missing, press Score, and see if the stream holds from the toss to the last over.",
-    "challenge": "ind-vs-pak",
-    "loading": "Loading the Lab",
-    "open": "Open in the full Lab",
-    "openHref": "/dashboard/lab/ind-vs-pak/",
+    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Here is that match as a problem, on a real canvas. Add what's missing, press Run, and see if the stream holds at the toss and in the last over.",
+    "problem": "ind-vs-pak",
+    "loading": "Loading the canvas",
+    "run": "▶ Run the tests",
+    "running": "Running…",
+    "pass": "Both tests pass. That is how the big apps survive match night. The full problem has five more tests, an answer to write and a score out of 100.",
+    "fail": "Not yet. Read why, change the design, and run again.",
+    "open": "Open the full problem",
+    "openHref": "/dashboard/problems/ind-vs-pak/",
     "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
     "lite": {
       "diagram": "Your design, from the viewers down to your servers",
@@ -590,22 +576,18 @@
       "scaling": "Scaling",
       "prewarm": "Start them all before the toss",
       "auto": "Autoscale from 5",
-      "score": "Play the match and score",
       "needCdn": "Without a CDN every request lands on your servers. No farm takes 87.5 lakh requests a second: put a CDN in front.",
-      "allStars": "All three stars. That is how the big apps survive match night.",
-      "someStars": "Close. Look at which goal failed and change one thing.",
-      "noStars": "The stream went down. Start with the CDN.",
-      "best": "Your best",
-      "full": "Build it yourself in the full Lab (on a laptop)"
+      "full": "Build it yourself in the full problem (best on a laptop)",
+      "run": "▶ Play the match"
     },
     "lock": {
       "title": "Sign in to play",
-      "text": "Sign in with Google to try the IND vs PAK challenge. It's free, and your stars and designs are saved to your account."
+      "text": "Sign in with Google to try the IND vs PAK problem. It's free, and your designs are saved to your account."
     }
   },
   "account": {
     "signedIn": "Signed in",
-    "saved": "Your Lab designs and challenge stars are saved to your account, so they are the same on every device.",
+    "saved": "Your designs and challenge stars are saved to your account, so they are the same on every device.",
     "syncing": "Saving…",
     "syncFailed": "Couldn't reach your account just now; your work is safe in this browser and will be saved next time.",
     "signInFailed": "Sign-in didn't work. Try again.",
@@ -616,7 +598,7 @@
     "deleteConfirm": "Delete your account? Your designs and stars are removed from your account for good. This browser keeps its own copy.",
     "privacy": "Privacy",
     "menu": "Account",
-    "keepStars": "Sign in to keep your stars and Lab designs on every device.",
+    "keepStars": "Sign in to keep your designs and stars on every device.",
     "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser.",
     "adsMenu": "Tech Katta updates on Facebook and Instagram",
     "termsLink": "Terms and conditions",
@@ -627,21 +609,21 @@
     "signIn": "Sign in",
     "pageLock": {
       "title": "Sign in to open this",
-      "text": "Articles, notes and the Lab are free with a Google account. Sign in once and everything opens, on every device."
+      "text": "Articles, problems and notes are free with a Google account. Sign in once and everything opens, on every device."
     }
   },
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 7 November 2026",
+    "updated": "Last updated 10 November 2026",
     "sections": [
       [
         "Signing in",
-        "The home page, this Privacy policy and the Terms and conditions are open to everyone. The articles, notes and the Lab ask you to sign in with Google first. Before you sign in, your Lab designs and challenge stars stay in this browser's storage and nowhere else."
+        "The home page, this Privacy policy and the Terms and conditions are open to everyone. The articles, notes and problems ask you to sign in with Google first. Before you sign in, your designs and challenge stars stay in this browser's storage and nowhere else."
       ],
       [
         "What is kept",
-        "When you sign in with Google: your Google account ID, name (first and last), email address, the link to your profile picture, the country you signed in from, and when you signed in. Your Lab designs and challenge stars, so they follow you to other devices. When you accepted the Terms and conditions, and whether (and when) you turned on Tech Katta updates on Facebook and Instagram. Your Google password is never seen by this site."
+        "When you sign in with Google: your Google account ID, name (first and last), email address, the link to your profile picture, the country you signed in from, and when you signed in. Your designs and challenge stars, so they follow you to other devices. When you accepted the Terms and conditions, and whether (and when) you turned on Tech Katta updates on Facebook and Instagram. Your Google password is never seen by this site."
       ],
       [
         "Where it is kept",
@@ -653,7 +635,7 @@
       ],
       [
         "How the site is used",
-        "To learn which articles and Lab challenges help, the site records what you do on it: pages and articles you open, how far you read, components you add, runs, scores, and signing in or out. Each browser gets a random ID kept in its own storage, not a cookie. When you're signed in, these records are linked to your account. They stay in the same database, are never shared, and are deleted after 13 months. If your browser asks sites not to track you (Global Privacy Control or Do Not Track), nothing is recorded."
+        "To learn which articles, problems and challenges help, the site records what you do on it: pages and articles you open, how far you read, components you add, runs, scores, and signing in or out. Each browser gets a random ID kept in its own storage, not a cookie. When you're signed in, these records are linked to your account. They stay in the same database, are never shared, and are deleted after 13 months. If your browser asks sites not to track you (Global Privacy Control or Do Not Track), nothing is recorded."
       ],
       [
         "Ads on Facebook and Instagram",
@@ -672,11 +654,11 @@
   "terms": {
     "eyebrow": "TERMS",
     "title": "Terms and conditions",
-    "updated": "Last updated 5 November 2026",
+    "updated": "Last updated 10 November 2026",
     "sections": [
       [
         "Using Tech Katta",
-        "Tech Katta is free to use for learning system design. The articles, figures and Lab are explanations, not professional advice; the Lab's prices and numbers are estimates. Please don't overload the site, copy it wholesale, or try to break into it."
+        "Tech Katta is free to use for learning system design. The articles, figures and the design canvas are explanations, not professional advice; the canvas's prices and numbers are estimates. Please don't overload the site, copy it wholesale, or try to break into it."
       ],
       [
         "Your account",
@@ -684,7 +666,7 @@
       ],
       [
         "Your designs",
-        "Designs you make in the Lab are yours. They are kept in your account only so they show up on every device you use."
+        "Designs you make on the canvas are yours. They are kept in your account only so they show up on every device you use."
       ],
       [
         "Updates on Facebook and Instagram",

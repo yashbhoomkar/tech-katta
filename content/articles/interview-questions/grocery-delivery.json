@@ -218,7 +218,7 @@
     {
       "t": "lab",
       "x": "Rain at 8 pm is a flash sale you didn't plan: everyone orders at once. See how a fixed number of servers copes with five times the usual load.",
-      "to": "lab/flash-sale",
+      "to": "problems/challenge/flash-sale",
       "go": "Try the flash sale challenge"
     }
   ],

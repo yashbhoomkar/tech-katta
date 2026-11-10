@@ -210,7 +210,7 @@
     {
       "t": "lab",
       "x": "Doc servers hold open connections, like chat gateways. The first lesson is the same as any server's: one isn't enough.",
-      "to": "lab/one-server",
+      "to": "problems/challenge/one-server",
       "go": "Try the one-server challenge"
     }
   ],
@@ -629,7 +629,7 @@
       },
       {
         "step": "design",
-        "x": "Each document's edits get one order in a log. In the Lab, a Queue between the edit servers and the workers that persist."
+        "x": "Each document's edits get one order in a log. On the canvas, a Queue between the edit servers and the workers that persist."
       },
       {
         "step": "design",

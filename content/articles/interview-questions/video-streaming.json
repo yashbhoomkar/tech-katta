@@ -206,9 +206,9 @@
     },
     {
       "t": "lab",
-      "x": "Video lives or dies by the CDN. The IND vs PAK challenge is the live version of the same idea.",
-      "to": "lab/ind-vs-pak",
-      "go": "Try the IND vs PAK challenge"
+      "x": "Video lives or dies by the CDN. The IND vs PAK problem is the live version of the same idea.",
+      "to": "problems/ind-vs-pak",
+      "go": "Try the IND vs PAK problem"
     }
   ],
   "practice": {

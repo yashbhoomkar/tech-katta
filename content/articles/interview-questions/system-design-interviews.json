@@ -15,7 +15,7 @@
         "A system design interview is 45 to 60 minutes on one open question, such as 'design a URL shortener'. There is no single right answer; the interviewer scores how you reach yours.",
         "Four things are scored: how you pin down the problem, whether the design works end to end, how deep you go where it matters, and how clearly you explain the trade-offs.",
         "The more senior the role, the more you are expected to lead: find the hard parts without being steered, and go deeper into them.",
-        "Use this site in order: these guides, then Concepts and Components, then the Interview Questions in the workspace, then the Lab."
+        "Use this site in order: these guides, then Concepts and Components, then the Interview Questions in the workspace, then the challenges on the Problems page."
       ]
     },
     {
@@ -103,7 +103,7 @@
         "Concepts: 21 articles on the ideas every design leans on (networking, API design, data modelling, caching, sharding, consistent hashing, CAP, indexing and the numbers to know), the patterns that keep coming back, and specialised data such as maps and time series.",
         "Components: 10 articles on the technologies interviewers expect you to know by name, from Redis and Kafka to PostgreSQL, Cassandra and DynamoDB.",
         "Interview Questions: worked answers. Open one in the workspace first: write your own requirements, numbers and API, build the design on the canvas, run its tests, and only then read ours.",
-        "Lab: challenges where your design meets real traffic, failures and a monthly bill."
+        "Challenges: scenarios where your design meets real traffic, failures and a monthly bill."
       ]
     },
     {

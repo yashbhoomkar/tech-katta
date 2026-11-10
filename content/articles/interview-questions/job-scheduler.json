@@ -206,7 +206,7 @@
     {
       "t": "lab",
       "x": "9 pm is a spike at a known time, like a flash sale. The flash-sale challenge is practice for surviving one.",
-      "to": "lab/flash-sale",
+      "to": "problems/challenge/flash-sale",
       "go": "Try the flash-sale challenge"
     }
   ],
@@ -297,7 +297,7 @@
       {
         "id": "spike",
         "name": "Everything due at 9 pm",
-        "desc": "At 9 pm 3 lakh restaurants' payouts and the evening's reminder batches all come due. The Lab counts in 5-minute steps, so the article's 5-second wall of 60,000 a second shows here as 15,000 jobs a second for 15 minutes.",
+        "desc": "At 9 pm 3 lakh restaurants' payouts and the evening's reminder batches all come due. The tests count in 5-minute steps, so the article's 5-second wall of 60,000 a second shows here as 15,000 jobs a second for 15 minutes.",
         "hours": 3,
         "startHour": 20,
         "traffic": {

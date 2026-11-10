@@ -204,7 +204,7 @@
     {
       "t": "lab",
       "x": "Ad views follow the lunch and dinner rush. The lunch and dinner rush challenge practises sizing for a day with two peaks.",
-      "to": "lab/first-rush",
+      "to": "problems/challenge/first-rush",
       "go": "Try the lunch and dinner rush challenge"
     }
   ],

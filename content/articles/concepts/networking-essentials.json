@@ -1241,8 +1241,8 @@
     {
       "t": "lab",
       "x": "Too much for one server: add servers behind a load balancer and watch the queue drain.",
-      "to": "lab/one-server",
-      "go": "Try it in the Lab"
+      "to": "problems/challenge/one-server",
+      "go": "Try the challenge"
     },
     {
       "t": "h3",

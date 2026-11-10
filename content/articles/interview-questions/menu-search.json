@@ -217,7 +217,7 @@
     {
       "t": "lab",
       "x": "Search is read far more than it's written, so it's served from its own index, never the database. The read-heavy challenge practises the same idea.",
-      "to": "lab/read-heavy",
+      "to": "problems/challenge/read-heavy",
       "go": "Try the read-heavy challenge"
     }
   ],

@@ -209,7 +209,7 @@
     {
       "t": "lab",
       "x": "A promotion blast is a burst a queue can hold, if what's behind it drains at a steady rate. The Monday sync challenge is the same idea.",
-      "to": "lab/monday-sync",
+      "to": "problems/challenge/monday-sync",
       "go": "Try the Monday sync challenge"
     }
   ],

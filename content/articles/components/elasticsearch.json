@@ -181,9 +181,9 @@
     },
     {
       "t": "lab",
-      "x": "In the Lab, add a search engine to a design and open its schema: OpenSearch indexes every field by its type, and a problem's request tests use it for text and 'near me' queries.",
-      "to": "lab",
-      "go": "Open the Lab"
+      "x": "On the canvas, add a search engine to a design and open its schema: OpenSearch indexes every field by its type, and the menu search problem's request tests use it for text and 'near me' queries.",
+      "to": "problems/menu-search",
+      "go": "Solve 'Design menu search'"
     },
     {
       "t": "more",

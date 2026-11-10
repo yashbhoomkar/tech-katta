@@ -206,12 +206,12 @@
     {
       "t": "lab",
       "x": "A confirmed write must survive a crash. The lost-orders challenge is about exactly that promise.",
-      "to": "lab/lost-orders",
+      "to": "problems/challenge/lost-orders",
       "go": "Try the lost-orders challenge"
     }
   ],
   "practice": {
-    "brief": "Each test sends gets and puts: one storage operation each, 10% of them writes. Hot keys stay in memory (90% of reads). Your Clients' own rate is ignored. The tests send a slice of the full load (60,000 a second at the evening peak, against the article's 2.2 lakh), so the Lab's numbers stay small; the full cluster is the same design with more nodes.",
+    "brief": "Each test sends gets and puts: one storage operation each, 10% of them writes. Hot keys stay in memory (90% of reads). Your Clients' own rate is ignored. The tests send a slice of the full load (60,000 a second at the evening peak, against the article's 2.2 lakh), so the numbers on the canvas stay small; the full cluster is the same design with more nodes.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,

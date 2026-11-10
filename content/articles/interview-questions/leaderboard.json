@@ -194,13 +194,13 @@
     },
     {
       "t": "lab",
-      "x": "A leaderboard during a match is a spike at moments you know in advance. The IND vs PAK challenge is the same night, for video.",
-      "to": "lab/ind-vs-pak",
-      "go": "Try the IND vs PAK challenge"
+      "x": "A leaderboard during a match is a spike at moments you know in advance. The IND vs PAK problem is the same night, for video.",
+      "to": "problems/ind-vs-pak",
+      "go": "Try the IND vs PAK problem"
     }
   ],
   "practice": {
-    "brief": "Each test sends answers and leaderboard reads. Each request is one query against the sorted sets, which a cache keeps (90% of reads); 40% of queries are score updates. Scoring can follow a moment after the answer. Your Clients' own rate is ignored. The tests send a slice of the quiz traffic (up to 70,000 answers and reads a second, against the full 2.5 lakh), so the Lab's numbers stay small; at full size it is the same design with more shards.",
+    "brief": "Each test sends answers and leaderboard reads. Each request is one query against the sorted sets, which a cache keeps (90% of reads); 40% of queries are score updates. Scoring can follow a moment after the answer. Your Clients' own rate is ignored. The tests send a slice of the quiz traffic (up to 70,000 answers and reads a second, against the full 2.5 lakh), so the numbers on the canvas stay small; at full size it is the same design with more shards.",
     "fixed": {
       "queriesPerRequest": 1,
       "hitPct": 90,
@@ -589,7 +589,7 @@
       },
       {
         "step": "design",
-        "x": "Scores live in sorted sets in memory (a Cache in the Lab); the top 100 is the same for everyone, so it's read from the cache."
+        "x": "Scores live in sorted sets in memory (a Cache on the canvas); the top 100 is the same for everyone, so it's read from the cache."
       },
       {
         "step": "design",

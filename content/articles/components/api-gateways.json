@@ -333,7 +333,7 @@
     {
       "t": "lab",
       "x": "A full day of Zotato traffic goes through an API Gateway. Keep every request flowing at the 8:30 pm peak, and watch what the gateway costs at this traffic.",
-      "to": "lab/first-rush",
+      "to": "problems/challenge/first-rush",
       "go": "Try \"Lunch and dinner rush\""
     }
   ]

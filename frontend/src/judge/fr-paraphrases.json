@@ -43,6 +43,12 @@
   "the store packs it and a delivery partner takes it",
   "show where my order is and an ETA"
  ],
+ "ind-vs-pak": [
+  "broadcast India vs Pakistan to crores of phones",
+  "adaptive bitrate so the video adapts to a slow connection",
+  "keep the delay low, close to the stadium",
+  "display the viewer count on screen"
+ ],
  "job-scheduler": [
   "run a job once at a time, or every day at 9 pm",
   "start jobs at their time and retry failed ones",
