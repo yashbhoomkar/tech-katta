@@ -12,7 +12,7 @@ const num = (n) => Math.round(n).toLocaleString('en-US');
 const KIND_WORDS = { kv: 'key–value', counter: 'counters', zset: 'sorted set (ranking)', geo: 'locations (geo set)', set: 'set' };
 
 // Palette entries for a v2 problem: the catalogue's types, grouped by their v2 group.
-export const paletteV2 = (lab) => { const cat = evalCatalogue(lab); return (lab.components || []).filter((c) => cat[c.type]).map((c) => ({ ...c, group: cat[c.type].group })); };
+export const paletteV2 = (lab) => Object.values(evalCatalogue(lab));
 
 function Field({ label, help, children }) {
   return <label className="lab-f"><span>{label}</span>{children}{help && <small className="lab-note lab-note-tight">{help}</small>}</label>;
@@ -33,7 +33,7 @@ function Setting({ s, comp, cfg, set, node, fieldHints, title }) {
   if (s.kind === 'size') {
     const [list, def] = sizesOf(comp, cfg);
     if (!Array.isArray(list) || !list.length || (comp.type === 'database' && comp.engines?.find((e) => e.id === cfg.engine)?.capacity === 'request')) return null;
-    return <Field label={s.label}><select value={list.some((z) => z.id === cfg[k]) ? cfg[k] : def} onChange={(e) => set({ [k]: e.target.value })}>{list.map((z) => <option key={z.id} value={z.id}>{z.label} · {num(z.rps || z.qps || z.ops)} units/s · ${z.hourly}/h</option>)}</select></Field>;
+    return <Field label={s.label}><select value={list.some((z) => z.id === cfg[k]) ? cfg[k] : def} onChange={(e) => set({ [k]: e.target.value })}>{list.map((z) => <option key={z.id} value={z.id}>{z.label} · {z.connections ? `${num(z.connections)} connections, ${num(z.messagesPerSec)} messages/s` : `${num(z.rps || z.qps || z.ops)} units/s`} · ${z.hourly}/h</option>)}</select></Field>;
   }
   if (s.kind === 'engine') {
     const fam = [...new Set(comp.engines.map((x) => x.family))], e = comp.engines.find((x) => x.id === cfg.engine) || comp.engines[0];
@@ -69,11 +69,14 @@ function StructuresBox({ cfg, set, title, suggest }) {
 }
 
 // The settings panel of one component in a v2 problem.
-export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName }) {
+export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName, locked }) {
   const cat = evalCatalogue(lab), comp = cat[node.data.kind];
   if (!comp) return null;
   const raw = node.data.config || {}, cfg = configOf({ id: node.id, type: node.data.kind, config: raw }, lab), set = (patch) => update(node.id, { ...raw, ...patch });
   const title = node.data.name || comp.name, settings = settingsOf(comp.type, lab);
+  // set by the problem (another company's service): shown, not changed
+  if (locked) return <aside className="lab-ins" tabIndex={0} aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H><p className="lab-desc">{comp.desc}</p><p className="lab-like"><b>SET BY THE PROBLEM</b>Not yours to change: you design around it.</p>
+    <dl className="lab-kv">{settings.map((s) => <React.Fragment key={s.key}><dt>{s.label}</dt><dd>{s.kind === 'choice' ? s.options.find((o) => o.id === cfg[s.key])?.label : String(cfg[s.key] ?? '')}</dd></React.Fragment>)}</dl></aside>;
   return <aside className="lab-ins" tabIndex={0} aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H>
     {node.data.name && <p className="lab-note lab-note-tight">{comp.name}</p>}
     <Field label="Name"><input type="text" maxLength={maxName} value={node.data.name || ''} placeholder={comp.name} onChange={(e) => rename(node.id, e.target.value.slice(0, maxName))} onBlur={(e) => { const v = e.target.value.replace(/\s+/g, ' ').trim(); if (v !== (node.data.name || '')) rename(node.id, v); }} /></Field>

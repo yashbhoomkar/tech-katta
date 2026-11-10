@@ -27,7 +27,9 @@ export function evalCatalogue(lab) {
   const v1 = Object.create(null);
   for (const c of lab.components || []) if (c && typeof c.type === 'string') v1[c.type] = c;
   const out = Object.create(null);
-  for (const e of lab.eval.components || []) if (e && own(v1, e.type)) out[e.type] = { ...v1[e.type], ...e };
+  // types lab.json also has are merged with it; v2-only types (phase 4: external, stream, pubsub, realtime) carry
+  // their own name, description and numbers in eval.json. v1's Lab never sees them (it reads lab.components).
+  for (const e of lab.eval.components || []) if (e && typeof e.type === 'string' && (own(v1, e.type) || e.v2only)) out[e.type] = { ...(own(v1, e.type) ? v1[e.type] : {}), ...e };
   catCache.set(lab, out);
   return out;
 }

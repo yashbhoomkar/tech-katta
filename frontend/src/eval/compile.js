@@ -51,6 +51,7 @@ export function compile(design, lab, practice) {
         const t = type(to), p = [...path, to];
         if (t === 'database') out.push({ store: to, path: p });
         else if (t === 'cache') { out.push({ store: to, path: p }); walk(to, p, services); }
+        else if (t === 'external') out.push({ store: to, path: p });
         else if (t === 'server' && services < MAX_SERVICES) walk(to, p, services + 1);
       }
     };
@@ -143,6 +144,19 @@ export function compile(design, lab, practice) {
     return { ...parts[0], step, parts, a: { ...parts[0].a, how: 'transaction', work, query: parts.map((p) => p.a.query).join('\n') } };
   }
 
+  // A call to another company (§7.5): an arrow, from the handler or a Service it reaches, to an external service of
+  // that kind. A call that can wait may go through a queue.
+  function bindCall(op, h, step, sR, aR) {
+    const fits = (e) => type(e.store) === 'external' && configOf(node(e.store), lab).preset === step.preset;
+    const defer = step.timing === 'defer', now = sR.filter(fits), later = aR.filter(fits);
+    const e = (defer ? [...later, ...now] : now).sort((x, y) => x.path.length - y.path.length)[0];
+    if (!e) {
+      if (!defer && later.length) return { error: err('E_SYNC_BEHIND_QUEUE', PLAN.E_SYNC_BEHIND_QUEUE(step.label || 'The call', name(later[0].store), name(later[0].queue)), { step: step.id }) };
+      return { error: err('E_NO_EXTERNAL', PLAN.E_NO_EXTERNAL(step.label || 'This call', step.preset), { step: step.id }) };
+    }
+    return { step, call: true, store: e.store, table: { name: step.preset }, path: e.path, async: !!e.queue, queue: e.queue, worker: e.worker, qi: e.qi, a: { how: 'call', work: lab.eval.work.pass, rows: 1, query: `call ${name(e.store)}` } };
+  }
+
   // Every step of op from handler h. Memoised per (op, h). → { ok, bindings, error?, unbound }
   const bindMemo = new Map();
   function bindAll(op, h) {
@@ -156,7 +170,8 @@ export function compile(design, lab, practice) {
         const defer = step.timing === 'defer', worker = defer ? aR.find((e) => e.worker)?.worker || flowOut(h, op).flatMap((q) => (type(q) === 'queue' ? flowOut(q, op).filter((w) => type(w) === 'server') : []))[0] : null;
         const at = worker || h;
         b = step.isolated && !configOf(node(at), lab).sandbox ? { error: err('E_NO_SANDBOX', PLAN.E_NO_SANDBOX(name(at), step.label || 'This step'), { node: at, step: step.id }) } : { step, compute: true, node: at, async: !!worker };
-      } else if (step.op === 'call' || step.op === 'publish') b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.label || (step.op === 'call' ? 'Calling another company' : 'Sending to connected people')), { step: step.id }) };
+      } else if (step.op === 'call') b = bindCall(op, h, step, sR, aR);
+      else if (step.op === 'publish') b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.label || 'Sending to connected people'), { step: step.id }) };
       else if (step.op === 'tx') b = bindTx(op, h, step, sR, aR);
       else if (isWrite(step)) b = bindWrite(op, h, step, sR, aR);
       else if (isRead(step)) b = bindRead(op, h, step, sR, aR);
@@ -215,10 +230,13 @@ export function compile(design, lab, practice) {
     const plan = { op: op.id, ok: true, root: null, roots: [], staleness: [], steps: Object.create(null), bindings: [] };
     const fail = (e) => ({ ...plan, ok: false, error: e });
     const source = op.source || 'clients';
-    const sources = source === 'clients' ? d.nodes.filter((n) => n.type === 'client').map((n) => n.id) : [];
-    if (!sources.length) return fail(err('E_NO_SOURCE', PLAN.E_NO_SOURCE(op.name || op.id)));
+    // webhooks (source external) start at the external services (of the operation's preset, when it names one)
+    const sources = source === 'clients' ? d.nodes.filter((n) => n.type === 'client').map((n) => n.id)
+      : source === 'external' ? d.nodes.filter((n) => n.type === 'external' && (!op.preset || configOf(n, lab).preset === op.preset)).map((n) => n.id) : [];
+    if (!sources.length) return fail(err('E_NO_SOURCE', PLAN.E_NO_SOURCE(op.name || op.id, source)));
     const routes = sources.map((s) => route(op, s, new Set([s])));
     const bad = routes.find((r) => !r.ok);
+    if (bad && bad.error.code === 'E_NO_HANDLER' && source === 'external') return fail(err('E_NO_HANDLER', PLAN.E_NO_WEBHOOK(op.name || op.id, name(sources[0]))));
     if (bad) return fail(bad.error);
 
     const mk = (n, kind, extra = {}) => ({ id: '', node: n, kind, sync: true, per: 1, share: 1, work: 0, write: false, children: [], ...extra });
@@ -258,12 +276,13 @@ export function compile(design, lab, practice) {
         return;
       }
       const write = isWrite(step);
-      const storeHop = mk(b.store, 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
+      const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
       let from = handleHop, nodes = b.path.slice(1);
       if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];
       chain(from, nodes, storeHop, write ? null : step.entity);
       plan.steps[step.id] = { node: b.store, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: !b.async, viaCache: b.viaCache || null, ...(b.missing ? { missing: b.missing } : {}) };
+      if (b.call) return;
       if (!write) { plan.bindings.push({ step: step.id, entity: step.entity, store: b.store, table: b.table.name, viaCache: b.viaCache || null }); return; }
       // writes: the primary, invalidations of look-aside caches, then every other copy (§7.5 rule 5, §7.6)
       const inner = step.op === 'tx' ? b.parts.map((p) => ({ entity: p.step.entity, step: p.step })) : [{ entity: step.entity, step }];

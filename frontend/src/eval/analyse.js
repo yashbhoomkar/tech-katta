@@ -6,7 +6,7 @@
 // that is acknowledged but not safe, a read that is older than allowed, a component whose loss stops everything.
 // Phase 2 rules: §10.2 durability, §10.3 freshness, §10.7 single points of failure, §10.8 things that grow.
 import { configOf, evalCatalogue } from './design.js';
-import { engineOfNode, isWrite, isRead } from './access.js';
+import { engineOfNode, isWrite, isRead, fieldMatcher, userField } from './access.js';
 import { FIND } from './words.js';
 
 const SEV = { fail: 0, warn: 1, info: 2 };
@@ -73,6 +73,72 @@ export function analyse(compiled, practice, lab, sims = []) {
       const fix = why.broken.includes('cache') ? FIND.fixCache(name(why.cache)) : why.broken.includes('replica') ? FIND.fixReplica() : why.broken.includes('async') ? FIND.fixQueue() : FIND.fixCdn();
       push({ code: 'F_STALE', severity: 'fail', op: op.id, nodes: [why.store], ...FIND.stale(opName(op), req === 'strong' ? 'up to date' : `at most ${req.maxStalenessSec} seconds old`, why.step.entity, name(why.store), why.how, Math.round(worst)), fix, concept: 'consistency' });
     } else if (!req && worst > 0) push({ code: 'F_STALE_INFO', severity: 'info', op: op.id, nodes: [why.store], ...FIND.staleInfo(opName(op), Math.round(worst)) });
+  }
+
+  // ---- §10.4 doing something twice, §10.5 two stores, §10.6 order ---------------------------------------------------------
+  const match = fieldMatcher(practice);
+  // the queue (or stream) nodes each step's hops pass through, from the plan's hop tree
+  const queuesOf = (plan) => {
+    const out = Object.create(null);
+    const walk = (h, qs) => { const here = h.kind === 'enqueue' ? [...qs, h.node] : qs; if (h.step) out[h.step] = [...new Set([...(out[h.step] || []), ...here])]; h.children.forEach((c) => walk(c, here)); };
+    (plan.roots || []).forEach((r) => walk(r, []));
+    return out;
+  };
+  const tableOf = (b) => { const n = node(b.node); if (!n) return null; const c = cfg(b.node); return (n.type === 'database' ? c.schema?.tables : c.structures)?.find((t) => t.name === b.table) || null; };
+  // does the store refuse a second copy of this write? (a unique key or index on the call's id, or the step's own rule)
+  const refusesRepeat = (op, s, b) => {
+    // a transaction is repeat-safe when one of its writes refuses the repeat ("only if still pending")
+    if (s.op === 'tx') return (s.steps || []).some((x) => (Array.isArray(x.unique) && x.unique.length) || (x.cond && Object.keys(x.cond).length));
+    if ((Array.isArray(s.unique) && s.unique.length) || s.cond) return true;
+    const t = op.idempotencyField && tableOf(b), f = t && userField(match, t, op.idempotencyField)?.name;
+    return !!f && ((t.key?.length === 1 && t.key[0] === f) || (t.indexes || []).some((i) => i.kind === 'unique' && i.fields.length === 1 && i.fields[0] === f));
+  };
+  // the Service that runs the call (the first handle hop)
+  const handlerOf = (plan) => { let found = null; const walk = (h) => { if (!found && h.kind === 'handle') found = h.node; h.children.forEach(walk); }; (plan.roots || []).forEach(walk); return found; };
+  const flat = (steps) => (steps || []).flatMap((s) => (s.op === 'tx' ? [s, ...(s.steps || [])] : [s]));
+  for (const op of ops) {
+    const plan = compiled.plans[op.id];
+    if (!plan?.ok) continue;
+    const qs = queuesOf(plan), steps = op.steps || [];
+    if (op.effect === 'once') {
+      let found = null;
+      steps.forEach((s, i) => {
+        if (found) return;
+        const b = plan.steps[s.id];
+        if (!b) return;
+        if (s.op === 'call') {
+          const recorded = steps.slice(0, i).some((x) => isWrite(x) && ((Array.isArray(x.unique) && x.unique.length) || x.cond || refusesRepeat(op, x, plan.steps[x.id] || {})));
+          if (!s.idempotent && !recorded && (ev.retries > 0 || !b.sync)) found = { way: 'call', s, b };
+        } else if (isWrite(s)) {
+          if (refusesRepeat(op, s, b)) return;
+          if (b.sync && ev.retries > 0) found = { way: 'retry', s, b };
+          else if (!b.sync) { const q = (qs[s.id] || [])[0]; found = { way: cfg(q)?.kind === 'fifo' ? 'fifo' : 'redelivery', s, b, q }; }
+        }
+      });
+      if (found) {
+        const words = FIND.double(found.way, opName(op), name(found.b.node), found.q ? name(found.q) : '', Math.round(ev.clientTimeoutMs / 1000), op.idempotencyField || 'request_id');
+        push({ code: 'F_DOUBLE', severity: found.way === 'fifo' ? 'warn' : 'fail', op: op.id, nodes: [found.b.node, ...(found.q ? [found.q] : [])], ...words, concept: 'idempotency' });
+      }
+    }
+    // the same Service writes two stores one after the other (§10.5)
+    for (const s of flat(steps)) {
+      const b = plan.steps[s.id];
+      const dual = (b?.copies || []).find((c) => c.feed === 'dual');
+      if (!dual) continue;
+      push({ code: 'F_DUAL_WRITE', severity: op.durable || op.effect === 'once' ? 'fail' : 'warn', op: op.id, nodes: [b.node, dual.node], ...FIND.dualWrite(name(handlerOf(plan)), s.entity, name(b.node), name(dual.node)), concept: 'consistency' });
+      break;
+    }
+    // a call to another company before anything is written (§10.5)
+    const ci = steps.findIndex((s) => s.op === 'call' && plan.steps[s.id]?.sync);
+    if (ci >= 0 && steps.slice(ci + 1).some((s) => isWrite(s) && plan.steps[s.id]?.sync) && !steps.slice(0, ci).some(isWrite))
+      push({ code: 'F_CALL_THEN_WRITE', severity: 'warn', op: op.id, nodes: [plan.steps[steps[ci].id].node], ...FIND.callThenWrite(name(handlerOf(plan)), name(plan.steps[steps[ci].id].node)) });
+    // order (§10.6): deferred writes through a queue that hands messages to whichever worker is free
+    if (op.ordered?.by) for (const s of flat(steps)) {
+      const b = plan.steps[s.id];
+      if (!b || b.sync || !isWrite(s) || (s.cond && Object.keys(s.cond).length)) continue;
+      const q = (qs[s.id] || []).find((id) => node(id)?.type === 'queue' && cfg(id).kind !== 'fifo');
+      if (q) { push({ code: 'F_ORDER', severity: 'fail', op: op.id, nodes: [q], ...FIND.order(name(q), op.ordered.by), concept: 'ordering' }); break; }
+    }
   }
 
   // ---- §10.7 single points of failure ---------------------------------------------------------------------------------

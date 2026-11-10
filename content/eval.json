@@ -31,7 +31,7 @@
   "components": [
     {
       "type": "client", "group": "Edge", "managed": true,
-      "to": ["cdn", "apigw", "lb", "server", "database"],
+      "to": ["cdn", "apigw", "lb", "server", "database", "realtime"],
       "toIf": { "database": { "engine": ["s3"] } },
       "settings": []
     },
@@ -43,7 +43,7 @@
     },
     {
       "type": "apigw", "group": "Edge", "managed": true,
-      "to": ["lb", "server"],
+      "to": ["lb", "server", "realtime"],
       "settings": [
         { "key": "rateLimit", "label": "Rate limit", "kind": "choice", "default": "off", "options": [
           { "id": "off", "label": "Off", "desc": "Every call goes through." },
@@ -54,14 +54,14 @@
     },
     {
       "type": "lb", "group": "Edge", "managed": true,
-      "to": ["server", "apigw"],
+      "to": ["server", "apigw", "realtime"],
       "settings": [
         { "key": "sticky", "label": "Sticky sessions", "kind": "bool", "default": false, "help": "A client keeps going to the same instance. Needed for long-lived connections." }
       ]
     },
     {
       "type": "server", "group": "Compute",
-      "to": ["server", "cache", "database", "queue"],
+      "to": ["server", "cache", "database", "queue", "stream", "pubsub", "realtime", "external"],
       "settings": [
         { "key": "size", "label": "Size", "kind": "size" },
         { "key": "count", "label": "Instances", "kind": "number", "min": 1, "max": 50, "default": 2, "step": 1 },
@@ -76,7 +76,7 @@
     },
     {
       "type": "database", "group": "Data",
-      "to": ["queue"],
+      "to": ["queue", "stream"],
       "toCdc": true,
       "settings": [
         { "key": "engine", "label": "Engine", "kind": "engine" },
@@ -124,6 +124,64 @@
         { "key": "dlq", "label": "Dead-letter queue", "kind": "bool", "default": false },
         { "key": "maxReceives", "label": "Tries before the dead-letter queue", "kind": "number", "min": 1, "max": 20, "default": 5, "step": 1 },
         { "key": "visibilitySec", "label": "Visibility timeout (seconds)", "kind": "number", "min": 1, "max": 43200, "default": 30, "step": 1 }
+      ]
+    },
+    {
+      "type": "external", "v2only": true, "group": "Edge", "managed": true,
+      "name": "External service", "latencyMs": 300, "limitRps": 500,
+      "desc": "A third party you call or that calls you: a payment provider, an SMS or push provider, a partner's system. Slow, rate-limited, sometimes down, and not yours to scale.",
+      "to": ["apigw", "lb", "server"],
+      "settings": [
+        { "key": "preset", "label": "Kind", "kind": "choice", "default": "payments", "options": [
+          { "id": "payments", "label": "Payments", "desc": "A card or UPI provider." },
+          { "id": "push", "label": "Push notifications", "desc": "Apple and Google push." },
+          { "id": "sms", "label": "SMS", "desc": "An SMS gateway." },
+          { "id": "email", "label": "Email", "desc": "An email sending service." },
+          { "id": "partner", "label": "Partner system", "desc": "Another company's API." },
+          { "id": "web", "label": "The web", "desc": "Other people's websites." } ] },
+        { "key": "latencyMs", "label": "Answers in (ms)", "kind": "number", "min": 10, "max": 5000, "default": 300, "step": 1 },
+        { "key": "limitRps", "label": "Calls a second it allows", "kind": "number", "min": 1, "max": 1000000, "default": 500, "step": 1 },
+        { "key": "errorPct", "label": "Calls that fail (%)", "kind": "number", "min": 0, "max": 50, "default": 0.5 },
+        { "key": "pricePerCall", "label": "Price per call ($)", "kind": "number", "min": 0, "max": 1, "default": 0 }
+      ]
+    },
+    {
+      "type": "realtime", "v2only": true, "group": "Compute",
+      "name": "Real-time gateway", "latencyMs": 5, "defaultSize": "m5.large",
+      "desc": "Servers that hold open connections (WebSocket, server-sent events) and push messages down them as soon as something happens.",
+      "crash": { "above": 1.5, "minutes": 10, "downMinutes": 5 },
+      "sizes": [
+        { "id": "t3.medium", "label": "t3.medium · 2 vCPU, 4 GB", "connections": 10000, "messagesPerSec": 5000, "hourly": 0.0448 },
+        { "id": "m5.large", "label": "m5.large · 2 vCPU, 8 GB", "connections": 25000, "messagesPerSec": 12000, "hourly": 0.101 },
+        { "id": "m5.xlarge", "label": "m5.xlarge · 4 vCPU, 16 GB", "connections": 50000, "messagesPerSec": 25000, "hourly": 0.202 },
+        { "id": "c5.2xlarge", "label": "c5.2xlarge · 8 vCPU, 16 GB", "connections": 100000, "messagesPerSec": 50000, "hourly": 0.34 } ],
+      "to": ["server", "cache", "database", "queue", "stream", "pubsub"],
+      "settings": [
+        { "key": "size", "label": "Size", "kind": "size" },
+        { "key": "count", "label": "Instances", "kind": "number", "min": 1, "max": 50, "default": 2, "step": 1 },
+        { "key": "zones", "label": "Availability zones", "kind": "number", "min": 1, "max": 3, "default": 1, "step": 1, "help": "Instances are spread evenly over this many zones. Losing a zone drops its connections; those clients reconnect to the rest." }
+      ]
+    },
+    {
+      "type": "stream", "v2only": true, "group": "Messaging", "managed": true,
+      "name": "Event stream", "latencyMs": 5, "brokerHourly": 0.21, "storagePerGbMonth": 0.10,
+      "desc": "A durable, ordered, partitioned log (Kafka, Kinesis). Every consumer gets every event, in order per key, and can read it again later.",
+      "to": ["server", "realtime"],
+      "settings": [
+        { "key": "partitions", "label": "Partitions", "kind": "number", "min": 1, "max": 200, "default": 6, "step": 1, "help": "Each takes 10,000 messages a second. A consumer reads with at most one instance per partition." },
+        { "key": "retentionHours", "label": "Keep events for (hours)", "kind": "number", "min": 1, "max": 720, "default": 24, "step": 1 },
+        { "key": "keyField", "label": "Partition by", "kind": "fields", "help": "Events with the same value of this field go to the same partition, so they stay in order." }
+      ]
+    },
+    {
+      "type": "pubsub", "v2only": true, "group": "Messaging", "managed": true,
+      "name": "Pub/sub channel", "latencyMs": 1, "limitRps": 100000, "pricePerMillion": 0.4,
+      "desc": "Fire-and-forget fan-out (Redis pub/sub, SNS): whoever is subscribed right now gets the message; nothing is kept for later.",
+      "to": ["realtime", "server"],
+      "settings": [
+        { "key": "channels", "label": "Channels", "kind": "choice", "default": "perKey", "options": [
+          { "id": "perKey", "label": "One per key", "desc": "Only the subscribers of that key (a chat, a user) get it." },
+          { "id": "global", "label": "One for everything", "desc": "Every subscriber gets every message." } ] }
       ]
     }
   ]

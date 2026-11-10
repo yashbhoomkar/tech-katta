@@ -23,7 +23,9 @@ export function buildGraph(design, lab = null) {
   for (const e of edges) {
     if (!byId.has(e.from) || !byId.has(e.to)) continue;
     out.get(e.from).push(e.to); inn.get(e.to).push(e.from);
-    (byId.get(e.from).type === 'database' ? cdcEdges : flowEdges).push(e);
+    // a database's arrows carry its changes; an external service's arrows start webhooks (their calls begin there):
+    // neither is part of the request flow's order, so a call out and a webhook back are not a loop
+    if (byId.get(e.from).type === 'database') cdcEdges.push(e); else if (byId.get(e.from).type !== 'external') flowEdges.push(e);
   }
   // Kahn's algorithm over the flow edges; the ready list is kept in node order, so the result is stable
   const deg = new Map(nodes.map((n) => [n.id, 0]));

@@ -3,6 +3,7 @@
 // previous tick (ties: design order). Each function changes the simulator's state `st` and pushes events.
 
 export const PHASE2_FAULTS = ['crash', 'instanceCrash', 'groupDown', 'zoneDown', 'slow', 'spike', 'cacheFlush'];
+export const PHASE4_FAULTS = ['externalDown'];
 
 // v1's `chaos: [{minute, type}]` is an alias of crash faults (§6.5).
 export function faultsOf(test) {
@@ -69,6 +70,9 @@ export function startFault(f, st, t) {
     if (id) st.slow[id] = { factor: f.factor ?? 5, until: t + (f.minutes ?? 10) };
   } else if (f.kind === 'spike') {
     st.spikes.push({ factor: f.factor ?? 2, op: f.op || null, until: t + (f.minutes ?? 10) });
+  } else if (f.kind === 'externalDown') {
+    // every external service of that kind (or of any kind) stops answering for a while
+    for (const id of st.order) { const n = st.info[id]; if (n.type === 'external' && (!f.preset || n.cfg.preset === f.preset)) takeDown(st, id, t, t + (f.minutes ?? 10), 'crashed', true); }
   } else if (f.kind === 'cacheFlush') {
     for (const id of st.order) if (st.info[id].type === 'cache' && st.down[id] === undefined) { st.cold[id] = t; st.events.push({ t, node: id, kind: 'cold', forced: true }); }
   }

@@ -304,7 +304,7 @@ test('compile: transactions, sandboxes, steps not built yet, too many paths', ()
   const d = { nodes: [N('c', 'client'), app(), DB('db', 'postgres', [LINKS])], edges: E(['c', 'app'], ['app', 'db']) };
   r = compile(d, lab, prob(OPS.find, OPS.make, run, call));
   assert.equal(r.plans.run.error.code, 'E_NO_SANDBOX');
-  assert.equal(r.plans.charge.error.code, 'E_NOT_YET');
+  assert.equal(r.plans.charge.error.code, 'E_NO_EXTERNAL');
   d.nodes[1].config.sandbox = true;
   r = compile(d, lab, prob(run));
   assert.equal(r.plans.run.ok, true);
