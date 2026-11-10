@@ -9,7 +9,9 @@ parentPort.on('message', ({ id, design, lab, practice }) => {
     const j = judge(design, lab, practice);
     const copied = sameDesign(design, practice.reference && cleanDesign(practice.reference, lab, 'reference'));
     const metrics = j.metrics ? { avgMonthly: j.metrics.avgMonthly, p99: j.metrics.p99 } : null;
-    parentPort.postMessage({ id, ok: true, judged: { verdict: j.verdict, passed: j.passed, total: j.total, metrics }, copied });
+    // a v2 problem's design score (evaluator.md §11.3); the timeline and the rest stay on this thread
+    const designPoints = Number.isFinite(j.designPoints) ? { designPoints: j.designPoints } : {};
+    parentPort.postMessage({ id, ok: true, judged: { verdict: j.verdict, passed: j.passed, total: j.total, metrics, ...designPoints }, copied });
   } catch (error) {
     parentPort.postMessage({ id, ok: false, error: String(error?.message || error) });
   }

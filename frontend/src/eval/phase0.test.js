@@ -7,7 +7,7 @@ import { evalCatalogue, settingsOf, configOf, allowedEdge, capsOf, cleanDesign2,
 import { buildGraph } from './graph.js';
 import { phi, gammaQ, gammaTail, hopTime, summarise, slowShare, mix, harmonic, harmonic2 } from './latency.js';
 import { hitCap, expiryMiss, cacheHit, cdnHit, itemsThatFit } from './hits.js';
-import { evaluate, NOT_READY } from './index.js';
+import { evaluate } from './index.js';
 import { judge, runTest, score } from '../judge/judge.js';
 
 const content = new URL('../../../content/', import.meta.url);
@@ -160,10 +160,10 @@ test('CDN hit rates', () => {
 });
 
 // ---- the dispatch -------------------------------------------------------------------------------------------
-test('a v2 problem goes to the v2 evaluator; until it is built it answers with an error, never a verdict', () => {
+test('a v2 problem goes to the v2 evaluator; a design it cannot read is an error, never a verdict', () => {
   const problem = { v: 2, tests: [{ id: 'a', sample: true, op: 'x' }, { id: 'b', hours: 1, traffic: { rps: 1 }, checks: [] }] };
   const r = judge({ nodes: [], edges: [] }, lab, problem);
-  assert.equal(r.verdict, 'error'); assert.equal(r.total, 2); assert.equal(r.results[0].error, NOT_READY);
+  assert.equal(r.verdict, 'error'); assert.equal(r.total, 2); assert.equal(r.results[0].error, 'Add the Clients: tests send their traffic from there.');
   assert.equal(judge({ nodes: [], edges: [] }, lab, problem, { sample: true }).total, 1);
   assert.equal(runTest({ nodes: [], edges: [] }, lab, problem, problem.tests[1]).id, 'b');
   assert.deepEqual(evaluate(null, lab, null).results, []);

@@ -229,7 +229,7 @@ export function compile(design, lab, practice) {
       nodes.forEach((n, i) => {
         if (i === nodes.length - 1) { at.children.push(last); at = last; return; }
         const t = type(n);
-        const hop = t === 'cache' ? mk(n, 'cache', { work: sharesForCache ? W.get : W.put, step: last?.step }) : mk(n, 'handle', { work: W.handle, step: last?.step });
+        const hop = t === 'cache' ? mk(n, 'cache', { work: sharesForCache ? W.get : W.put, step: last?.step, entity: last?.entity, write: !sharesForCache }) : mk(n, 'handle', { work: W.handle, step: last?.step, cpuMs: 0 });
         at.children.push(hop); at = hop;
       });
       if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
@@ -242,7 +242,7 @@ export function compile(design, lab, practice) {
       const pre = b.path.slice(1, b.qi + 1); // nodes from after h up to the queue
       const enq = mk(b.queue, 'enqueue', { work: W.enqueue });
       chain(handleHop, pre, enq, null);
-      const con = mk(b.worker, 'consume', { work: W.consume + W.handle, sync: false });
+      const con = mk(b.worker, 'consume', { work: W.consume + W.handle, sync: false, cpuMs: 0 });
       enq.children.push(con);
       queues.set(k, con);
       return con;
@@ -252,11 +252,13 @@ export function compile(design, lab, practice) {
       const step = b.step, per = step.times || 1;
       if (b.compute) {
         const units = (step.cpuMs || 0) / W.cpuMsPerUnit;
-        if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }).work += units * per; else handleHop.work += units * per; } else handleHop.work += units * per;
+        let at = handleHop;
+        if (b.async) { const e = bindAll(op, h).aR.find((x) => x.worker === b.node); if (e) at = consumeHop(handleHop, { path: e.path, qi: e.qi, queue: e.queue, worker: e.worker }); }
+        at.work += units * per; at.cpuMs = (at.cpuMs || 0) + (step.cpuMs || 0) * per;
         return;
       }
       const write = isWrite(step);
-      const storeHop = mk(b.store, 'store', { step: step.id, work: b.a.work, write, per });
+      const storeHop = mk(b.store, 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
       let from = handleHop, nodes = b.path.slice(1);
       if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];
@@ -268,6 +270,8 @@ export function compile(design, lab, practice) {
       const copies = [];
       for (const { entity, step: s } of inner) {
         writers.push({ entity, store: b.store, table: b.table.name, kind: b.async ? 'async' : 'primary', op: op.id });
+        // a write-through cache on the write path is updated by the write itself
+        for (const c of b.path) if (type(c) === 'cache' && c !== b.store) writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         const reach = bindAll(op, h);
         const all = [...reach.sR.map((e) => ({ ...e, sync: true })), ...reach.aR.map((e) => ({ ...e, sync: false }))];
         const seenCache = new Set();
@@ -275,7 +279,7 @@ export function compile(design, lab, practice) {
           const c = viaCache(e.path);
           if (!c || e.store !== b.store || seenCache.has(c) || b.path.includes(c)) continue;
           seenCache.add(c);
-          const inv = mk(c, 'invalidate', { step: step.id, work: W.get, per });
+          const inv = mk(c, 'invalidate', { step: step.id, work: W.get, per, entity });
           if (e.sync) chain(handleHop, e.path.slice(1, -1), inv, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2, -1), inv, null);
           writers.push({ entity, store: c, table: null, kind: 'invalidate', db: b.store, op: op.id });
         }
@@ -286,7 +290,7 @@ export function compile(design, lab, practice) {
           const a = accessPath(node(e.store), t, s, practice, lab, match);
           if (!a.ok) return;
           done.add(key);
-          const hop = mk(e.store, 'store', { step: step.id, work: a.work, write: true, per, copy: true, table: t.name });
+          const hop = mk(e.store, 'store', { step: step.id, work: a.work, write: true, per, copy: true, table: t.name, entity, how: a.how, rows: a.rows, bytes: s.bytes });
           if (e.sync) chain(handleHop, e.path.slice(1), hop, null); else chain(consumeHop(handleHop, e), e.path.slice(e.qi + 2), hop, null);
           const kind = e.sync ? 'dual' : 'async';
           copies.push({ node: e.store, table: t.name, feed: kind });
@@ -302,13 +306,13 @@ export function compile(design, lab, practice) {
         if (type(parentHop.node) === 'cdn') share = share === 1 ? { kind: 'cdnMiss' } : { ...share, cdnMiss: true };
         if (k.next) { const hop = mk(k.node, 'pass', { work: W.pass, share }); parentHop.children.push(hop); buildKids(hop, k.next); }
         else if (k.store) {
-          const b = k.store, hop = mk(k.node, 'store', { step: b.step.id, work: b.a.work, write: b.step.mode === 'put', share, per: b.step.times || 1 });
+          const b = k.store, hop = mk(k.node, 'store', { step: b.step.id, work: b.a.work, write: b.step.mode === 'put', share, per: b.step.times || 1, entity: b.step.entity, how: b.a.how, rows: b.a.rows, bytes: b.step.bytes });
           parentHop.children.push(hop);
           plan.steps[b.step.id] = { node: k.node, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: true, viaCache: null };
           if (b.step.mode === 'put') writers.push({ entity: b.step.entity, store: k.node, table: b.table.name, kind: 'primary', op: op.id });
           else plan.bindings.push({ step: b.step.id, entity: b.step.entity, store: k.node, table: b.table.name, viaCache: null });
         } else {
-          const hop = mk(k.node, 'handle', { work: W.handle, share });
+          const hop = mk(k.node, 'handle', { work: W.handle, share, cpuMs: 0 });
           parentHop.children.push(hop);
           for (const b of bindAll(op, k.node).bindings) addStep(hop, k.node, b);
         }

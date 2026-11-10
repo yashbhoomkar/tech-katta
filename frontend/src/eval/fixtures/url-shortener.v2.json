@@ -61,7 +61,8 @@
    "bytesOut": 500,
    "keys": {
     "entity": "links",
-    "skew": "zipf"
+    "skew": "zipf",
+    "active": 50000000
    },
    "steps": [
     {
@@ -225,7 +226,7 @@
   {
    "id": "zone",
    "name": "A zone goes dark",
-   "desc": "At 8:10 pm one availability zone is lost for 15 minutes.",
+   "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Links may open more slowly, but they must open, and no new link may be lost.",
    "hours": 1,
    "startHour": 20,
    "traffic": {
@@ -242,7 +243,15 @@
    "checks": [
     {
      "kind": "slo",
-     "availability": 99.5
+     "op": "redirect",
+     "availability": 99,
+     "p99Ms": 2000
+    },
+    {
+     "kind": "slo",
+     "op": "create",
+     "availability": 95,
+     "p99Ms": 2000
     },
     {
      "kind": "noLostWrites"
@@ -323,9 +332,9 @@
     "y": 0,
     "name": "Link service",
     "config": {
-     "size": "m5.large",
-     "count": 4,
-     "zones": 2
+     "size": "c5.2xlarge",
+     "count": 24,
+     "zones": 3
     }
    },
    {
@@ -335,8 +344,9 @@
     "y": -120,
     "name": "Hot links",
     "config": {
-     "size": "cache.r5.large",
-     "ttlSec": 3600
+     "size": "cache.m5.large",
+     "ttlSec": 3600,
+     "replica": true
     }
    },
    {
@@ -347,7 +357,7 @@
     "name": "Links DB",
     "config": {
      "engine": "postgres",
-     "size": "db.m5.xlarge",
+     "size": "db.r5.2xlarge",
      "multiAz": true,
      "schema": {
       "tables": [
@@ -384,7 +394,8 @@
         ]
        }
       ]
-     }
+     },
+     "replicas": 2
     }
    }
   ],
@@ -761,6 +772,365 @@
      "to": "db"
     }
    ]
+  },
+  {
+   "name": "Too few servers",
+   "why": "8 Services take 20,000 units a second; the evening peak sends 35,000.",
+   "fails": "peak",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "c5.2xlarge",
+      "count": 8,
+      "zones": 3
+     }
+    },
+    {
+     "id": "cache",
+     "type": "cache",
+     "x": 720,
+     "y": -120,
+     "name": "Hot links",
+     "config": {
+      "size": "cache.m5.large",
+      "ttlSec": 3600,
+      "replica": true
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.r5.2xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "long_url",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "code"
+         ]
+        }
+       ]
+      },
+      "replicas": 2
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "cache"
+    },
+    {
+     "from": "cache",
+     "to": "db"
+    },
+    {
+     "from": "app",
+     "to": "db"
+    }
+   ]
+  },
+  {
+   "name": "One zone",
+   "why": "Every Service is in one zone: when it goes dark, nothing answers.",
+   "fails": "zone",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "c5.2xlarge",
+      "count": 24,
+      "zones": 1
+     }
+    },
+    {
+     "id": "cache",
+     "type": "cache",
+     "x": 720,
+     "y": -120,
+     "name": "Hot links",
+     "config": {
+      "size": "cache.m5.large",
+      "ttlSec": 3600,
+      "replica": true
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.r5.2xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "long_url",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "code"
+         ]
+        }
+       ]
+      },
+      "replicas": 2
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "cache"
+    },
+    {
+     "from": "cache",
+     "to": "db"
+    },
+    {
+     "from": "app",
+     "to": "db"
+    }
+   ]
+  },
+  {
+   "name": "Write-back cache",
+   "why": "New links are written to the cache, which saves them to the database later; a crash loses them.",
+   "fails": "zone",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "c5.2xlarge",
+      "count": 24,
+      "zones": 3
+     }
+    },
+    {
+     "id": "cache",
+     "type": "cache",
+     "x": 720,
+     "y": -120,
+     "name": "Hot links",
+     "config": {
+      "size": "cache.m5.large",
+      "ttlSec": 3600,
+      "replica": true,
+      "writePolicy": "back"
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.r5.2xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "long_url",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "code"
+         ]
+        }
+       ]
+      },
+      "replicas": 2
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "cache"
+    },
+    {
+     "from": "cache",
+     "to": "db"
+    }
+   ]
   }
- ]
+ ],
+ "mutantsAllowed": [
+  "remove:lb",
+  "ttl:cache",
+  "engine:db:dynamodb",
+  "engine:db:cassandra",
+  "cut:app-db"
+ ],
+ "mutantsAllowedWhy": {
+  "remove:lb": "The Clients may call a group of Service instances directly in this model.",
+  "ttl:cache": "Writers clear the cache, so a longer TTL changes nothing.",
+  "engine:db:dynamodb": "DynamoDB is an equally good store for links.",
+  "engine:db:cassandra": "Cassandra is an equally good store for links.",
+  "cut:app-db": "Writes still reach the database through the write-through cache."
+ }
 }
