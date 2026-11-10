@@ -26,10 +26,12 @@ export const pathFor = (key) => {
 };
 
 // Old Lab addresses (the Lab tab was removed on 2026-11-10): "lab" → "problems", "lab/<id>" → the challenge's canvas,
-// "problems/challenge/<id>", except a challenge that became a problem (IND vs PAK), which opens as that problem.
+// "problems/challenge/<id>", except a challenge that became a problem (IND vs PAK), which opens as that problem,
+// also when an old link has already been sent to "problems/challenge/<that slug>".
 // `problems`: the slugs of the problems (articles with tests).
 export const fromLab = (key, problems = []) => {
-  const [sec, id] = key.split("/");
+  const [sec, id, more] = key.split("/");
+  if (sec === "problems" && id === "challenge" && problems.includes(more)) return `problems/${more}`;
   if (sec !== "lab") return key;
   return !id ? "problems" : problems.includes(id) ? `problems/${id}` : `problems/challenge/${id}`;
 };

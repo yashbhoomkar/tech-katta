@@ -38,7 +38,9 @@
   ],
   "redirects": [
     { "from": "/dashboard/lab", "to": "/dashboard/problems/", "permanent": true },
+    { "from": "/dashboard/lab/", "to": "/dashboard/problems/", "permanent": true },
     { "from": "/dashboard/lab/ind-vs-pak", "to": "/dashboard/problems/ind-vs-pak/", "permanent": true },
+    { "from": "/dashboard/lab/ind-vs-pak/", "to": "/dashboard/problems/ind-vs-pak/", "permanent": true },
     { "from": "/dashboard/lab/*", "to": "/dashboard/problems/challenge/:splat", "permanent": true },
     { "from": "/dashboard/networking", "to": "/dashboard/concepts/", "permanent": true },
     { "from": "/dashboard/networking/*", "to": "/dashboard/concepts/:splat", "permanent": true },
