@@ -211,7 +211,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         try { judgedRun = await judgeDesign({ design, lab, practice: problem }); } finally { judging.delete(account); }
         const { judged: j, copied } = judgedRun;
         const g = gradeAnswer(cleanAnswer(b.answer), practice.rubric), sc = score(g, j, hints);
-        const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(copied ? { copied: true } : {}) };
+        const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(practice.v === 2 ? { engine: 2 } : {}), ...(copied ? { copied: true } : {}) };
         const stats = await accounts.addSubmission(doc);
         return send(request, response, 200, { verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, ...(copied ? { copied: true } : {}), ...stats });
       }

@@ -52,7 +52,7 @@ export function buildBodies({ site, examples, articles, lab }) {
   // A problem's reference and wrong designs calibrate its tests (frontend judge.test.js). They aren't in
   // the article: the reference design is served on its own (GET /v1/articles/<slug>/solution), only when
   // someone opens the Solution tab; the wrong designs are never served.
-  const served = (a) => (a.practice ? { ...a, practice: (({ reference, wrong, ...rest }) => rest)(a.practice) } : a);
+  const served = (a) => (a.practice ? { ...a, practice: (({ reference, wrong, mutantsAllowed, mutantsAllowedWhy, ...rest }) => rest)(a.practice) } : a);
   const full = new Map(articles.map((a) => [a.slug, { ...served(a), example }]));
   const solutions = new Map(articles.filter((a) => a.practice?.reference).map((a) => [a.slug, { slug: a.slug, nodes: a.practice.reference.nodes, edges: a.practice.reference.edges }]));
   return {

@@ -2,7 +2,7 @@
 // format, a half-written value or a hand-edited one must never crash the Lab. readStore() keeps
 // every design it can repair against the current catalogue and drops what it cannot.
 // Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges,credit}}}.
-import{cleanSchema}from"./schema.js";
+import{cleanSchema}from"./schema.js";import{cleanDesign2}from"../eval/design.js";
 export const STORE_KEY="tk-lab-v1";
 export const STORE_VERSION=1;
 // A design has at most this many components: more is never a real design and makes the canvas crawl.
@@ -18,6 +18,12 @@ const clamp=(v,r)=>fin(v)&&r?Math.min(r.max,Math.max(r.min,v)):undefined;
 // One design checked against the catalogue (lab.components). Returns a clean copy, or null.
 export function cleanDesign(d,lab,id){
   if(!obj(d))return null;
+  // A design of a v2 problem (v: 2) keeps the v2 settings (evaluator.md §12.1 point 5): it is cleaned against
+  // the v2 catalogue. Without that catalogue it is cleaned as v1 and keeps its v: 2 mark.
+  const v2=d.v===2&&!!lab?.eval;
+  // the store doesn't know the problem's operations: any well-formed id in an arrow's carries is kept (the judge
+  // cleans again with the real ones)
+  if(v2){const ids=(Array.isArray(d.edges)?d.edges:[]).flatMap(e=>obj(e)&&Array.isArray(e.carries)?e.carries:[]);const c=cleanDesign2(d,lab,ids);d={...d,nodes:c.nodes,edges:c.edges}}
   const cat=Object.fromEntries((lab.components||[]).map(c=>[c.type,c]));
   const nodes=[],seen=new Set();
   for(const n of Array.isArray(d.nodes)?d.nodes:[]){
@@ -37,18 +43,19 @@ export function cleanDesign(d,lab,id){
       if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas));if(c.writePct&&clamp(src.writePct,c.writePct)!==undefined)config.writePct=clamp(src.writePct,c.writePct)}
     seen.add(n.id);const name=cleanName(n.name);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,...(name?{name}:{}),config});
   }
+  if(v2){nodes.length=0;nodes.push(...d.nodes.slice(0,MAX_NODES))}
   const kind=Object.fromEntries(nodes.map(n=>[n.id,n.type])),edges=[],links=new Set();
   for(const e of Array.isArray(d.edges)?d.edges:[]){
     if(!obj(e)||!has(kind,e.from)||!has(kind,e.to)||e.from===e.to)continue;
     if(kind[e.to]==="client"||kind[e.from]==="database")continue;
-    const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to});
+    const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to,...(v2&&Array.isArray(e.carries)?{carries:e.carries}:{})});
   }
   const cr=obj(d.credit)?d.credit:{};
   // a design started from a Lab challenge remembers which one (only if the catalogue still has it)
   const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
   // a design opened from Problems remembers the question (its article slug)
   const problem=typeof d.problem==="string"&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.problem)?{problem:d.problem}:{};
-  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,
+  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{}),
     credit:{spent:fin(cr.spent)&&cr.spent>0?Math.min(cr.spent,lab.budget):0,hours:fin(cr.hours)&&cr.hours>0?cr.hours:0}};
 }
 
