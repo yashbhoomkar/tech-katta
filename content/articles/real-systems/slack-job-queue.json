@@ -1,0 +1,144 @@
+{
+  "section": "real-systems",
+  "slug": "slack-job-queue",
+  "group": "case-studies",
+  "no": "CASE // 03",
+  "tag": "JOB QUEUE",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Slack: putting Kafka in front of a Redis job queue",
+  "dek": "Slack's job queue runs every message post, push notification and link preview, up to 33,000 jobs a second. When Redis filled up during an outage, nothing could be queued or even taken off the queue. The fix wasn't a rewrite: Kafka went in front of Redis as a buffer on disk, with a relay that feeds Redis at a safe rate.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Jobs went straight into Redis. When workers slowed, Redis hit its memory limit, and because taking a job off the queue also needs a little memory, the queue stayed stuck even after the cause was fixed.",
+        "Rather than replace Redis, Slack put Kafka in front of it. The web app writes jobs to Kafka through a small service, and a relay moves them into Redis under a rate limit that can be changed on the fly.",
+        "It rolled out with double writes, counts compared at every hop, a test job through every partition each minute, and job types switched over one at a time."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The queue, and the outage"
+    },
+    {
+      "t": "p",
+      "x": "Slack sends work that is too slow for a web request to a job queue: every message post, push notification, link preview (an unfurl), calendar reminder and billing calculation. On its busiest days that was over 1.4 billion jobs, peaking at 33,000 a second, each taking anywhere from a few milliseconds to minutes."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The web app makes a job ID from the job's type and arguments, and hashes it to pick one of the Redis hosts.",
+        "If a job with the same ID is already queued, the new one is dropped. That was the queue's limited deduplication.",
+        "Workers poll Redis, move a job from the pending list to an in-flight list, and run it. Failed jobs go to a retry queue, and after enough failures to a list that people inspect and repair by hand."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Then contention in the database layer made jobs run slowly. Jobs kept arriving faster than they finished, Redis reached its memory limit, and no new jobs could be queued, so everything that relied on the queue failed. Worse, moving a job to the in-flight list needs a little free memory, so even after the database recovered the queue stayed jammed, and clearing it took a lot of manual work."
+    },
+    {
+      "t": "h2",
+      "x": "What was wrong with the design"
+    },
+    {
+      "t": "list",
+      "items": [
+        "No headroom: if jobs arrive faster than they run for long enough, memory runs out, and then even taking jobs off the queue stops.",
+        "Every client connected to every Redis host, so every client needed an up-to-date list of all of them.",
+        "Workers couldn't scale on their own: each extra worker polled Redis more, adding load to the part that was already overloaded.",
+        "With the data structures chosen, taking a job off the queue cost work in proportion to the queue's length, so a long queue got slower to drain.",
+        "The guarantees were unclear, so engineers were wary of using the queue, and features like deduplication were risky to change because so many jobs relied on them."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Kafka in front, not instead"
+    },
+    {
+      "t": "fig",
+      "id": "slack-kafka-buffer",
+      "cap": "Kafka takes jobs as fast as the web app sends them and keeps the backlog on disk. The relay passes jobs to Redis only as fast as its rate limit allows, so Redis stays within its memory however long the backlog grows."
+    },
+    {
+      "t": "p",
+      "x": "Replacing Redis with Kafka outright would have meant rewriting how jobs are scheduled, run and deduplicated. Adding Kafka in front kept the web app's enqueue interface and the workers' dequeue interface as they were, and fixed the most urgent problem: accepting jobs while a backlog builds."
+    },
+    {
+      "t": "h3",
+      "x": "Kafkagate: writing jobs to Kafka"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A stateless Go service with one simple HTTP POST: a topic, a partition and the job. The PHP and Hack web app needs no Kafka client.",
+        "It holds long-lived connections to the brokers and follows changes of partition leader.",
+        "It waits for the partition leader to acknowledge a write, not for copies on other brokers. That is the fastest option, with a small risk of losing a job if a broker dies before copying it; Slack judged that right for most jobs.",
+        "The write is synchronous, so the web app gets a clear success or error.",
+        "Requests go to a Kafkagate in the same availability zone when possible, which is faster and avoids charges for traffic between zones, with failover to the other zones."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "JQRelay: from Kafka to Redis"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A stateless Go service. Each instance takes a Consul lock on a topic and relays all its partitions; if it loses the lock it restarts. So every topic has exactly one relay, and a failed machine is replaced automatically.",
+        "It moves its Kafka offset forward only after a job is safely in Redis. If Redis is down, it retries until Redis is back, and the jobs wait in Kafka.",
+        "A job that fails for its own reasons is put back into Kafka rather than dropped, so one bad job doesn't block its queue and can still be looked at.",
+        "It obeys rate limits kept in Consul, and picks up a change as soon as it is made.",
+        "A surprise: Go and PHP encode JSON differently. Go escapes <, > and & by default and PHP escapes /, so a job the relay decoded and encoded again no longer matched the original."
+      ]
+    },
+    {
+      "t": "h3",
+      "x": "The Kafka cluster"
+    },
+    {
+      "t": "p",
+      "x": "16 brokers on i3.2xlarge machines, 32 partitions per topic, three copies of each partition spread across availability zones, and two days of retention. Load tests sized it to cope with brokers going down, and they killed brokers on purpose (one, two in the same zone, then all three holding a partition) to see what the application would see."
+    },
+    {
+      "t": "h2",
+      "x": "Rolling it out"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Double writes: every job went to both Redis and Kafka, and the relay read from Kafka and threw the jobs away. The new path ran on real traffic without doing anything.",
+        "Counting at every hop: web app to Kafkagate, Kafkagate to Kafka, Kafka to Redis, compared to catch any job that went missing.",
+        "Heartbeat canaries: a test job into each of the 1,600 partitions (50 topics × 32 partitions) every minute, with alerts on whether and how fast it came out the other end.",
+        "Slack's own workspace first, for a few weeks; then customers, one job type at a time."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What it bought"
+    },
+    {
+      "t": "p",
+      "x": "Now, if jobs arrive faster than workers finish them, the web app keeps writing to Kafka, which keeps days of jobs on disk. The relay's rate limit is turned down to match how fast jobs are being run, or paused, and Redis never fills up. Engineers got clearer guarantees, and the team got a base for later work on how jobs are scheduled and run."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A queue held only in memory has a hard ceiling. Say what happens when producers outrun consumers for an hour.",
+        "Put a durable log in front to absorb bursts, and control the rate out of it.",
+        "Prefer the smallest change that removes the risk: keep the interfaces, change what's behind them.",
+        "Move a consumer's offset only after the work is safely done, and set failing items aside instead of letting them block the queue.",
+        "Roll out in shadow mode, count at every hop, and send canaries end to end.",
+        "Related: 'Jobs that run for minutes' and 'When writes outrun one database' in Concepts, 'Kafka in practice' and 'Redis' in Components, and 'Design a job scheduler' in Interview Questions."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Slack Engineering's post 'Scaling Slack's Job Queue' (December 2017). The numbers are Slack's; the explanations and the diagram are ours."
+    }
+  ]
+}

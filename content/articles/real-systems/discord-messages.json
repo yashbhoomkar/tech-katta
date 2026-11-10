@@ -1,0 +1,153 @@
+{
+  "section": "real-systems",
+  "slug": "discord-messages",
+  "group": "case-studies",
+  "no": "CASE // 02",
+  "tag": "MESSAGE STORAGE",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Discord: trillions of messages, from Cassandra to ScyllaDB",
+  "dek": "Discord's message store had grown to 177 Cassandra nodes that kept paging the on-call team. The fix was a service in front of the database that merges identical reads, a move to ScyllaDB, and a copy of trillions of messages that took nine days.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Messages were partitioned by channel and a window of time. A busy channel made its partition hot, and because reads and writes waited for a quorum of replicas, one hot spot slowed queries across the cluster.",
+        "Before changing databases, Discord put data services in front of it: thin Rust services that merge identical requests into one database query, with every request for a channel routed to the same instance.",
+        "Then it moved to ScyllaDB, a Cassandra-compatible database with no garbage collector. 177 nodes became 72, and the p99 for reading old messages fell from 40–125 ms to 15 ms."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How messages were stored"
+    },
+    {
+      "t": "p",
+      "x": "Every ID at Discord is a Snowflake, which sorts by time. Messages are partitioned by channel ID plus a bucket, a fixed window of time, so one partition holds one channel's messages for one window, kept on three replicas. The cluster grew from 12 nodes holding billions of messages in 2017 to 177 nodes holding trillions at the start of 2022."
+    },
+    {
+      "t": "code",
+      "label": "THE MESSAGES TABLE, SIMPLIFIED (OUR SKETCH)",
+      "x": "CREATE TABLE messages (\n  channel_id bigint,\n  bucket     int,      -- a fixed window of time\n  message_id bigint,   -- a Snowflake: sorts by time\n  author_id  bigint,\n  content    text,\n  PRIMARY KEY ((channel_id, bucket), message_id)\n);",
+      "say": "A simplified messages table. The partition key is the channel ID and a time bucket together. Inside a partition, rows are sorted by message ID, which sorts by time. Each message also has its author and its text."
+    },
+    {
+      "t": "h2",
+      "x": "Why it became hard to run"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Channels are uneven. A server for a few friends sends a tiny fraction of the messages a server with hundreds of thousands of members does, and when thousands of people open one busy channel at once, they all read the same partition.",
+        "Reads cost more than writes. In Cassandra a write goes to a commit log and an in-memory table; a read may have to check that table and several files on disk (SSTables).",
+        "One hot partition hurt everyone. Reads and writes used quorum consistency, so every query that touched the nodes holding the hot partition waited behind it.",
+        "Maintenance fell behind. Compaction, which merges the disk files so reads stay cheap, lagged; the team took nodes out of service to let them compact and brought them back, again and again.",
+        "Garbage collection. Cassandra runs on the JVM, and long GC pauses caused latency spikes, sometimes bad enough that someone had to restart a node and nurse it back by hand."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "A service that merges identical reads"
+    },
+    {
+      "t": "fig",
+      "id": "discord-coalesce",
+      "cap": "Routing by channel sends every request for channel 42 to the same data service instance. There the first request starts one database query and the rest wait for its answer, so a burst of identical reads becomes one query."
+    },
+    {
+      "t": "p",
+      "x": "Discord suspected that a new database alone wouldn't fix hot partitions, which can happen in ScyllaDB too. So first it built data services between its API and the database: small Rust services with roughly one gRPC endpoint per query and no business logic."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Request coalescing: when many users ask for the same row at the same moment, the first request starts a task that queries the database, and the others subscribe to that task and get the same answer.",
+        "Routing by channel: each request carries a routing key, the channel ID, and consistent hashing sends every request for a channel to the same data service instance, so identical requests meet in one place.",
+        "The case it was built for: an @everyone announcement in a huge server. Everyone opens the app and reads the same new message at once. Without coalescing that is a hot partition; with it, mostly one query."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "It didn't cure Cassandra, but hot partitions became less frequent, which bought time to prepare the new cluster."
+    },
+    {
+      "t": "h2",
+      "x": "Why ScyllaDB"
+    },
+    {
+      "t": "p",
+      "x": "ScyllaDB speaks the same query language as Cassandra but is written in C++, so there is no garbage collector, and it runs one shard per CPU core, which keeps work better isolated. Discord had moved every other database to it by 2020. The messages cluster went last because it was the biggest, and because the team wanted production experience first. One blocker was reverse queries, reading a partition in the opposite order to how it's sorted, which were too slow for them; the ScyllaDB team made them fast before the move."
+    },
+    {
+      "t": "h2",
+      "x": "Moving trillions of messages"
+    },
+    {
+      "t": "list",
+      "items": [
+        "The new cluster used local SSDs for speed, mirrored with RAID to persistent disks for durability.",
+        "First plan: write new messages to both databases from a cut-over time, and copy the old ones behind it with ScyllaDB's Spark migrator. Estimate: three months.",
+        "Instead, they extended their Rust data-service library into a migrator in an afternoon. It read token ranges from Cassandra, recorded progress in a local SQLite file so it could resume, and wrote up to 3.2 million messages a second. New estimate: nine days, fast enough to drop the cut-over plan and move everything at once.",
+        "It stalled at 99.9999%: the last token ranges held huge runs of tombstones, deleted data never compacted away. Compacting that range let it finish within seconds.",
+        "To check the copy, a small share of reads went to both databases and the answers were compared. In May 2022 ScyllaDB became the primary."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "What changed"
+    },
+    {
+      "t": "table",
+      "label": "Before and after, as Discord reported them",
+      "head": [
+        "Measure",
+        "Cassandra",
+        "ScyllaDB"
+      ],
+      "rows": [
+        [
+          "Nodes",
+          "177",
+          "72"
+        ],
+        [
+          "Disk per node",
+          "about 4 TB on average",
+          "9 TB"
+        ],
+        [
+          "p99, reading old messages",
+          "40–125 ms",
+          "15 ms"
+        ],
+        [
+          "p99, inserting a message",
+          "5–70 ms",
+          "5 ms"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "During the 2022 World Cup final, every goal showed up as a spike in messages sent, and the database took each one without trouble."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Choose a partition key that spreads the load, and bound each partition with a time bucket. Then say what happens when one channel is far busier than the rest.",
+        "For many identical reads at once, coalesce them, and route by key so the duplicates reach the same coalescer.",
+        "With quorum reads, one slow replica slows every query that needs it, so a hot spot spreads.",
+        "For a big migration: write new data to both, copy old data with checkpoints so the copy can resume, compare reads between old and new, then switch.",
+        "Related: 'Cassandra' in Components, 'Sharding' and 'When reads outnumber writes' in Concepts, and 'Design a chat app' in Interview Questions."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Discord's engineering post 'How Discord Stores Trillions of Messages' (March 2023). The numbers are Discord's; the explanations and the diagram are ours."
+    }
+  ]
+}

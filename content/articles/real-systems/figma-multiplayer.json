@@ -1,0 +1,123 @@
+{
+  "section": "real-systems",
+  "slug": "figma-multiplayer",
+  "group": "case-studies",
+  "no": "CASE // 04",
+  "tag": "COLLABORATION",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Figma: many people editing one design at once",
+  "dek": "Figma lets several people edit the same file live. It skipped operational transforms, the usual approach for shared text, and borrowed simpler ideas from CRDTs, made simpler again because its server decides the order: the last write wins for each property, objects point to their parents, and positions are fractions.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "Each open file has one process on the server, and every editor connects to it over a WebSocket. Because the server puts all changes in one order, Figma needs far less machinery than a system with no central server.",
+        "A file is a map from object ID to properties. Two people changing different properties never conflict; when they change the same property, the change that reaches the server last wins.",
+        "The hard cases get simple rules: clients make their own object IDs, an object stores its parent and position as one property, the server rejects moves that would make a loop, and a position is a fraction between its neighbours."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The setup"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Clients are web pages that talk to the servers over WebSockets. The server runs a separate process for each file being edited, and everyone editing that file connects to it.",
+        "Opening a file downloads a copy of it; after that, changes flow both ways over the WebSocket.",
+        "You can edit offline for as long as you like. On reconnecting, the client downloads a fresh copy, reapplies its offline edits on top, and carries on, so connecting and reconnecting stay simple.",
+        "Only the design itself syncs this way. Comments, users, teams and projects live in Postgres and sync through a separate system.",
+        "Before touching the real code, the team built a playground page that simulated three clients and a server and showed the whole state, so they could try offline clients and slow connections quickly."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Why not operational transforms"
+    },
+    {
+      "t": "p",
+      "x": "Operational transforms (OT), which Google Docs uses, adjust each edit for the others made at the same time, such as shifting where an insert goes because someone typed earlier in the line. They suit long text but have a great many cases and are hard to get right. Figma isn't a text editor, so it looked at CRDTs instead: data structures that copies can update independently and that always end up the same, such as a set you can only add to, or a register where the last write wins."
+    },
+    {
+      "t": "p",
+      "x": "Figma doesn't use true CRDTs either. They are built for systems with no central authority, and that costs memory and speed. Figma's server is the authority, so it keeps the ideas and drops the overhead."
+    },
+    {
+      "t": "h2",
+      "x": "Properties: the last write wins"
+    },
+    {
+      "t": "fig",
+      "id": "figma-lww",
+      "cap": "Changes to different properties never conflict. When two edits change the same property, the one that reaches the server last wins. Until the server confirms a client's own change, that client ignores incoming values for the property, so its screen doesn't flicker back."
+    },
+    {
+      "t": "p",
+      "x": "A Figma file is a tree of objects: the document, its pages, and the layers on each page. Each object has an ID and a set of properties, so the whole file is like a two-level map, from object ID to property to value, or a table of (object, property, value) rows. Most new features are just new properties."
+    },
+    {
+      "t": "list",
+      "items": [
+        "The server keeps the latest value any client has sent for each property of each object.",
+        "Two people changing different properties of one object, or the same property of different objects, never conflict.",
+        "If two people change the same property of the same object, the value that reached the server last wins. No timestamps are needed, because the server's order is the order.",
+        "Values are never merged. If a text property is 'B' and one person makes it 'AB' while another makes it 'BC', the result is 'AB' or 'BC', never 'ABC'. In a design tool that's acceptable.",
+        "A client shows its own edits immediately. While its change hasn't been confirmed, it ignores incoming values for that same property; otherwise an older value would briefly replace the newer one, a flicker."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Creating and deleting objects"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Creating and deleting are explicit actions. Writing a property to an ID nobody created doesn't create an object.",
+        "Deleting removes the object and all its properties from the server. The client that deleted it keeps them in its undo history, so it can restore them, and long-lived files don't keep growing.",
+        "Clients make their own object IDs, with the client's unique ID inside each one, so two clients can never pick the same ID, and objects can be created offline."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping the layers a tree"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each object stores a link to its parent, rather than each parent storing a list of its children. Moving an object changes one property, so it keeps its identity, doesn't clash with someone changing its colour, and can't end up with two parents.",
+        "Parent links alone could form a loop: one person puts A inside B while another puts B inside A. The server rejects any change of parent that would make a loop.",
+        "A client can briefly hold such a loop, made of its own unconfirmed change and one from the server. It hides those objects until the server rejects its change: a rare, short glitch the team chose to accept.",
+        "The order of siblings uses fractional indexing. Each child's position is a fraction between 0 and 1, children are sorted by it, and an object inserted between two others gets the average of their positions.",
+        "The parent link and the position are stored as one property, so they always change together. A position from the old parent means nothing under the new one."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Undo, with other people editing"
+    },
+    {
+      "t": "p",
+      "x": "Undo is clear when you work alone and confusing when others are editing too. Figma's rule: if you undo several times, copy something, and redo back to the present, the document should end up unchanged. So an undo rewrites the redo history at the moment of the undo, and a redo rewrites the undo history, instead of blindly putting old values back over other people's later changes."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Say who decides the order of edits. With one server per document, the last write winning for each field is often enough.",
+        "Choose how small a conflict can be: the document, the object, or the property. The smaller it is, the rarer conflicts are.",
+        "OT for long shared text; CRDT ideas when values are replaced whole. Mention offline editing and how a client catches up.",
+        "Let clients make IDs (a client ID plus a counter) so creating things never waits for the server.",
+        "For lists many people reorder, store fractional positions rather than array indexes.",
+        "Related: 'Real-time updates' in Concepts, and 'Design a shared document editor' in Interview Questions."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Figma's blog post 'How Figma's multiplayer technology works' by Evan Wallace (October 2019). The explanations and the diagram are ours."
+    }
+  ]
+}

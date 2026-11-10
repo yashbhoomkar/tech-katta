@@ -16,6 +16,7 @@ import { FIGS as components_tools } from './components/tools.js';
 import { FIGS as interview_questions_start } from './interview-questions/start.js';
 import { FIGS as interview_questions_easy } from './interview-questions/easy.js';
 import { FIGS as interview_questions_medium } from './interview-questions/medium.js';
+import { FIGS as real_systems_case_studies } from './real-systems/case-studies.js';
 
 export const FIGS = new Set([
   ...concepts_patterns,
@@ -34,4 +35,5 @@ export const FIGS = new Set([
   ...interview_questions_start,
   ...interview_questions_easy,
   ...interview_questions_medium,
+  ...real_systems_case_studies,
 ]);

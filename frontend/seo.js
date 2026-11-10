@@ -18,7 +18,7 @@ export function pagesOf(site, articles) {
   const pages = sections.map(([id, label, card]) => ({
     key: id,
     title: `${label} | Tech Katta`,
-    description: cards[card]?.desc || `${label} on Tech Katta, the system design library.`,
+    description: cards[card]?.desc || site.dashboard?.heads?.[id]?.desc || `${label} on Tech Katta, the system design library.`,
   }));
   for (const id of ["privacy", "terms"]) if (site[id]?.title) pages.push({ key: id, title: `${site[id].title} | Tech Katta`, description: `${site[id].title} for Tech Katta.` });
   for (const a of articles) {

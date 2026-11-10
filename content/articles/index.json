@@ -58,6 +58,12 @@
     "interview-questions/shared-editor",
     "interview-questions/rider-dispatch",
     "interview-questions/video-streaming",
-    "interview-questions/menu-search"
+    "interview-questions/menu-search",
+    "real-systems/shopify-reservations",
+    "real-systems/discord-messages",
+    "real-systems/slack-job-queue",
+    "real-systems/figma-multiplayer",
+    "real-systems/spotify-data-lake",
+    "real-systems/meta-zgateway"
   ]
 }

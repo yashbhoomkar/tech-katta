@@ -1,0 +1,149 @@
+{
+  "section": "real-systems",
+  "slug": "meta-zgateway",
+  "group": "case-studies",
+  "no": "CASE // 06",
+  "tag": "PROXY",
+  "access": "paid",
+  "date": "9 Nov 2026",
+  "title": "Meta ZGateway: a proxy in front of a key-value store",
+  "dek": "ZippyDB, Meta's most used key-value store, had more than a million client hosts, each connecting straight to the database hosts it needed. ZGateway, a stateless proxy tier, cut each host's connections by about 97%, and gave Meta one place to batch requests, merge duplicate reads, shed load per tenant and steer traffic.",
+  "body": [
+    {
+      "t": "tldr",
+      "items": [
+        "With direct access, a typical client held tens of thousands of connections and a typical database host accepted tens of thousands, a number that grew with every new client. A storm of reconnections once sent database hosts into a reboot loop.",
+        "ZGateway sits between the clients and the database. Each client keeps a few connections to its regional gateways, and database hosts see only the gateway fleet, whose size Meta controls.",
+        "Sitting in the path of many clients, it can do what no client library could: batch and merge requests from different clients, shed load per tenant, cache with invalidation from change data capture, and be switched on or off by configuration."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "The problem: a mesh of connections"
+    },
+    {
+      "t": "p",
+      "x": "ZippyDB holds product metadata, counters and configuration, and serves billions of operations a second. Its clients run on more than a million hosts owned by hundreds of teams, and Meta can't change them quickly."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each client connected directly to every database host it needed. One client could touch tens of thousands of shards in a short window, spread across hundreds of thousands of hosts.",
+        "So a typical client held tens of thousands of outgoing TLS connections, and a typical database host accepted tens of thousands of incoming ones. Each costs memory, CPU and a file descriptor at both ends, mostly while idle.",
+        "Incoming connections grow with the number of clients, so every new group of clients made every database host worse.",
+        "Each client managed its own pooling and failover, so when many restarted at once, during a deploy for example, the database was hit by a storm of new connections. In one incident a routing bug made every client open a connection per shard; hosts ran out of file descriptors and fell into a reboot loop."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Direct access was right while there were a few thousand clients. At this size it had become a limit on reliability."
+    },
+    {
+      "t": "h2",
+      "x": "What ZGateway is"
+    },
+    {
+      "t": "fig",
+      "id": "meta-zgateway",
+      "cap": "Without a proxy, every client connects to every database host it uses, so each host's connections grow with the number of clients. With ZGateway, clients connect to their regional gateways and database hosts see only the gateway fleet, so both numbers stay bounded."
+    },
+    {
+      "t": "list",
+      "items": [
+        "A stateless proxy tier between the clients and the database servers, run in each region and found through Meta's service mesh, so every client is near its gateway.",
+        "It handles over a billion operations a second, about 40% of ZippyDB's traffic and growing, for about 6% extra compute in an average case.",
+        "A request's path: over the client's sticky connection to a regional gateway, where TLS ends; checked against the use case's access rules, admission control and validation; the gateway finds the shard, checks its cache on a caching tier, batches the request with others for the same shard and sends it to the right replicas. Answers are split back out to each caller.",
+        "Some jobs stay where they were: TLS in the RPC stack, mapping keys to shards in the shard locator, and choosing replicas and hedging requests in the embedded client. The gateway manages traffic; it isn't a rewrite of the database client."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Connections: bounded instead of growing"
+    },
+    {
+      "t": "p",
+      "x": "Meta's model with round numbers (20 regions, 500,000 database hosts, 30,000 proxy hosts, a million clients, 50,000 shards per client) puts the drop in connections per host at about 97–98%. The connections don't disappear; they move to the gateway tier, which is built to hold them. Even so, the total number of persistent connections falls about 19 times, because each gateway connection carries many clients' requests."
+    },
+    {
+      "t": "p",
+      "x": "The bigger change is how it scales. Before, a database host's incoming connections grew in step with the number of clients. Now they depend on the number of regions and the shards on each host, which Meta controls, and not on how many clients there are."
+    },
+    {
+      "t": "h2",
+      "x": "Batching and merging across clients"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A batcher on each gateway host groups requests going to the same shard for the same use case and sends them as one backend call. Every call has fixed costs (encoding, finding the shard, checking access, system calls), so fewer, bigger calls save CPU and smooth out bursts.",
+        "If many callers ask for the same key at the same moment, the gateway reads it once and gives everyone the answer. A hot key can't become a stampede on one replica.",
+        "A batch is sent when a short wait runs out, when it gets big enough, or when it holds enough requests, so the delay it adds has a limit.",
+        "Holding requests in memory risks running out of it, so idle entries are cleared, and a cap refuses new batches when the backend slows and too many are already in flight.",
+        "Teams that used to batch with client libraries, fragile and a steady source of incidents, could drop them.",
+        "Use cases are charged by queries a second, so batching also stretches each team's rate limit."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "One place for shared work"
+    },
+    {
+      "t": "h3",
+      "x": "Switching traffic over safely"
+    },
+    {
+      "t": "p",
+      "x": "Whether a client goes through the gateway is set by configuration, per service and per shard prefix: a percentage dial to ramp traffic up, a region filter to limit the blast radius, and a global kill switch to undo it at once. No client code changes."
+    },
+    {
+      "t": "h3",
+      "x": "One noisy tenant can't starve the rest"
+    },
+    {
+      "t": "p",
+      "x": "Every request goes into a bucket for its use case and priority, and the buckets are served in turn. A tenant that floods the tier fills only its own bucket and has its excess shed. In a test at over 90% CPU with about 1,350 active buckets, only 6, the real noisy neighbours, were shedding; the rest ran 99.9% of their requests with no rejections."
+    },
+    {
+      "t": "h3",
+      "x": "A cache that stays fresh"
+    },
+    {
+      "t": "p",
+      "x": "On caching tiers, hot reads are served from memory. On a miss, a lock per key lets one request fetch while the others wait. A change-data-capture stream of writes invalidates or refreshes entries within a stated limit on staleness, and consistent hashing gives each host its own slice of the keys."
+    },
+    {
+      "t": "h3",
+      "x": "Balancing uneven hosts"
+    },
+    {
+      "t": "p",
+      "x": "Gateway hosts range from about 26 to about 126 cores, so equal shares would overload the small ones. A control loop reads each host's CPU and nudges its routing weight against its load, in small, limited steps, moving only the most unbalanced hosts each round."
+    },
+    {
+      "t": "h3",
+      "x": "Help from the next region"
+    },
+    {
+      "t": "p",
+      "x": "If a whole region's gateways are under pressure, routing can spill over to healthy regions, nearby ones first, in proportions declared in advance. It is triggered by a sharper signal than average CPU, so it fires before the region tips over."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "When a huge, varied set of clients talks directly to a shared backend, count the connections. If they grow with the number of clients, put a proxy tier in between.",
+        "A proxy costs an extra network hop and a tier to run. It pays off when the clients are many, varied and not yours to change.",
+        "In the proxy you can batch and merge requests across clients, and add per-tenant admission control, caching and gradual rollouts, all in one place.",
+        "Shed load per tenant, not for everyone, so one noisy neighbour can't take the others down.",
+        "Related: 'API gateways' in Components; 'Caching', 'When reads outnumber writes' and 'Change data capture' in Concepts; and 'Design a distributed key-value store' in Interview Questions."
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Based on Engineering at Meta's post 'ZGateway: Learnings from Putting a Proxy in Front of ZippyDB' (September 2026). The numbers are Meta's; the explanations and the diagram are ours."
+    }
+  ]
+}
