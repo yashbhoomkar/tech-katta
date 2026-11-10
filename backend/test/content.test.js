@@ -610,6 +610,8 @@ test('a v2 problem is validated by its own rules, and every rule catches its mis
   has((p) => { T(p, 'peak').startHour = 24; }, 'startHour must be from 0');
   has((p) => { T(p, 'peak').traffic.pattern = 'weekend'; }, 'traffic needs rps above 0 and a Clients pattern');
   has((p) => { T(p, 'zone').faults[0].kind = 'meteor'; }, 'unknown fault meteor');
+  has((p) => { T(p, 'zone').faults.push({ minute: 5, kind: 'poison', share: 2 }); }, 'fault poison: share must be above 0 and at most 1');
+  has((p) => { p.operations.find((o) => o.keys).keys.hot = 0; }, 'keys.hot (the share of calls for one item) must be above 0 and at most 1');
   has((p) => { T(p, 'zone').faults[0].minute = 90; }, 'minute must be a multiple of 1 inside the test');
   has((p) => { T(p, 'budget').checks.push({ kind: 'slo', from: 7, to: 60 }); }, 'a window needs from < to, multiples of 5');
   has((p) => { T(p, 'zone').faults.push({ minute: 5, kind: 'crash' }); }, 'fault crash needs a type');

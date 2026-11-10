@@ -4,7 +4,7 @@
 //
 // A fluid model: each tick it computes the calls a second flowing along every hop of every plan, how loaded each
 // node is, and what that does to success and latency. Deterministic: no randomness, no clock, input order only.
-// Phase 2 scope: no timeouts / concurrency / breakers (§8.9), no hot keys (§8.11), no change data capture.
+// Not yet: timeouts / concurrency / breakers (§8.9, phase 5).
 import { configOf, evalCatalogue } from './design.js';
 import { hopTime, summarise, slowShare, mix, harmonic, harmonic2 } from './latency.js';
 import { cacheHit, cdnHit, CACHE_OVERHEAD } from './hits.js';
@@ -83,6 +83,10 @@ export function simulateTest(compiled, lab, practice, test) {
     roots[op.id] = (plan.roots || [plan.root]).map((h) => add(h, op, null));
     const rs = roots[op.id]; if (rs.length > 1) for (const r of rs) r.siblings = rs;
   }
+  // change data capture (§7.6): each system plan's calls are its database's writes of the entity last tick
+  const sysOps = (compiled.system || []).map((x) => { roots[x.op.id] = [add(x.plan.root, x.op, null)]; return x.op; });
+  const cdcPrev = dict();
+  for (const o of sysOps) cdcPrev[o.id] = 0;
   const hopsAt = dict();
   for (const id of order) hopsAt[id] = [];
   for (const r of recs) if (r.hop.kind !== 'source') hopsAt[r.node].push(r);
@@ -110,7 +114,7 @@ export function simulateTest(compiled, lab, practice, test) {
   // ---- state (§8.2) -------------------------------------------------------------------------------------------------
   const st = {
     order, info, events: [], crashes: dict(), down: dict(), keepData: dict(), over: dict(), inst: dict(), pending: dict(), low: dict(),
-    lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(),
+    lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(), hot: [], poison: null,
   };
   for (const id of order) { st.lostInst[id] = []; st.pending[id] = []; st.writeRate[id] = 0; if (info[id].type === 'server' || info[id].type === 'realtime') st.inst[id] = info[id].cfg.count || 1; }
   const backlog = dict(), waitSec = dict(), waitWorst = dict(), lastDone = dict();
@@ -119,7 +123,7 @@ export function simulateTest(compiled, lab, practice, test) {
   const isStream = (e) => info[e.node]?.type === 'stream', groupBacklog = dict();
   for (const e of enqRecs) if (isStream(e)) for (const c of e.async) groupBacklog[c.hop.id] = 0;
   const hitNow = dict(); for (const id in cacheFit) hitNow[id] = dict();
-  const rho = dict(), offered = dict(), served = dict(), readsAt = dict(), writesAt = dict();
+  const rho = dict(), busy = dict(), offered = dict(), served = dict(), readsAt = dict(), writesAt = dict();
   const isDown = (id) => st.down[id] !== undefined;
 
   const instancesNow = (id) => {
@@ -161,9 +165,30 @@ export function simulateTest(compiled, lab, practice, test) {
     return w * (sh.cdnMiss ? cdnMissNow[r.op.id] ?? 1 : 1);
   }
 
+  // ---- poison messages (§8.7) and hot keys (§8.11) ---------------------------------------------------------------------
+  // A consume hop under poison: a standard queue retries the bad messages (with a dead-letter queue, maxReceives
+  // times; without, for ever, about 20 tries each); a FIFO queue or a stream stops behind them (that share stays).
+  const poisonOf = (r) => {
+    const x = st.poison?.share || 0;
+    if (!(x > 0) || r.hop.kind !== 'consume') return { work: 1, blocked: 0 };
+    const q = info[r.parent.node];
+    if (q.type === 'queue' && q.cfg.kind !== 'fifo') return { work: q.cfg.dlq ? 1 + x * ((q.cfg.maxReceives || 5) - 1) : 1 + 20 * x, blocked: 0 };
+    return { work: 1, blocked: x };
+  };
+  const poisonSeen = dict();   // queue id → { dlq, kind, share }
+  const hotShare = (op) => { let x = op.keys?.hot || 0; for (const h of st.hot) if (!h.op || h.op === op.id) x = Math.max(x, h.share); return x; };
+  const partsOf = (id) => {
+    const n = info[id];
+    if (n.type === 'database') return ['dynamodb', 'cassandra'].includes(n.cfg.engine) ? 10 : n.cfg.shards || 1;
+    if (n.type === 'cache') return n.cfg.nodes || 1;
+    if (n.type === 'stream') return n.cfg.partitions || 6;
+    return 1;
+  };
+  const hotParts = dict();     // "node|op" → { node, op, share, parts, rhoHot, lost }
+
   // ---- one flow pass (§8.4) -----------------------------------------------------------------------------------------
   function flowPass(rate, t) {
-    for (const op of planned) {
+    for (const op of [...planned, ...sysOps]) {
       const c = op.cacheable && op.cacheable.ttlSec > 0;
       const K = op.keys?.active ?? practice.entities?.[op.keys?.entity]?.rows ?? 1000;
       cdnMissNow[op.id] = c ? 1 - cdnHit({ K, R: rate[op.id], tau: op.cacheable.ttlSec, zipf: op.keys?.skew === 'zipf' }) : 1;
@@ -189,7 +214,7 @@ export function simulateTest(compiled, lab, practice, test) {
       for (const r of list) {
         calls += r.in;
         if (free(r)) continue;
-        const u = r.in * r.hop.work;
+        const u = r.in * r.hop.work * (r.hop.kind === 'consume' ? poisonOf(r).work : 1);
         if (r.hop.kind === 'consume') pull += u; else { sync += u; if (r.hop.write) Wr += u; else R += u; }
       }
       let phiR = 1, phiW = 1, phiPull = 1, rr = 0;
@@ -223,9 +248,32 @@ export function simulateTest(compiled, lab, practice, test) {
       const errShare = n.type === 'external' ? Math.min(1, Math.max(0, (n.cfg.errorPct ?? 0) / 100)) : 0;
       for (const r of list) {
         r.phi = (free(r) ? 1 : n.type === 'cache' && down ? 0 : r.hop.kind === 'consume' ? phiPull : r.hop.write ? phiW : phiR) * (r.hop.kind === 'call' ? 1 - errShare : 1);
+        if (r.hop.kind === 'consume') {
+          const pz = poisonOf(r);
+          if (pz.work > 1 || pz.blocked > 0) { const q = info[r.parent.node]; poisonSeen[q.id] = { dlq: !!q.cfg.dlq, kind: q.type === 'stream' ? 'stream' : q.cfg.kind || 'standard', share: st.poison.share }; }
+          r.phi *= 1 - pz.blocked;
+        }
         r.out = r.in * r.phi;
       }
+      // a hot item: the part (shard, partition, cache node) that holds it takes more than its share
+      const P = partsOf(id);
+      if (P > 1 && !down && st.hot.length + planned.some((o) => o.keys?.hot) > 0) {
+        const capN = capacityNow(id), tot = n.type === 'database' && !n.perRequest ? Wr + R : sync;
+        for (const r of list) {
+          if (!['store', 'cache', 'enqueue'].includes(r.hop.kind) || r.hop.share?.kind === 'miss' || r.op.system) continue;
+          const x = hotShare(r.op); if (!(x > 0) || !(capN > 0)) continue;
+          const u = r.in * r.hop.work, f = x + (1 - x) / P, rh = (u * f + Math.max(0, tot - u) / P) / (capN / P);
+          const k = `${id}|${r.op.id}`, prev = hotParts[k];
+          if (rh > 0.8 && (!prev || rh > prev.rhoHot)) {
+            if (!prev) st.events.push({ t, node: id, kind: 'hotPart', op: r.op.id });
+            hotParts[k] = { node: id, op: r.op.id, share: x, parts: P, rhoHot: rh, lost: (prev?.lost || false) || rh > 1 };
+          }
+          if (rh > 1) { r.phi *= 1 - f * (1 - 1 / rh); r.out = r.in * r.phi; }
+        }
+      }
       rho[id] = rr; offered[id] = sync + pull; served[id] = calls; readsAt[id] = 0; writesAt[id] = 0;
+      // how busy it is, counting the messages it pulls from queues (they do not slow its own answers or crash it)
+      busy[id] = n.type === 'server' && pull > 0 && cap > 0 ? (sync + pull * phiPull) / cap : rr;
       for (const r of list) if (r.hop.kind === 'store') { if (r.hop.write) writesAt[id] += r.in; else readsAt[id] += r.in; }
       if (n.type === 'cache') {
         let wr = 0;
@@ -381,6 +429,7 @@ export function simulateTest(compiled, lab, practice, test) {
     for (const op of planned) factor[op.id] = 1;
     for (let k = 0; k < 4; k++) {
       const rate = dict(); for (const op of planned) rate[op.id] = base[op.id] * factor[op.id];
+      for (const o of sysOps) rate[o.id] = cdcPrev[o.id];
       flowPass(rate, t); solve();
       let done = true;
       for (const op of planned) {
@@ -411,7 +460,7 @@ export function simulateTest(compiled, lab, practice, test) {
       timeline.ops[op.id].rate.push(r3(base[op.id])); timeline.ops[op.id].ok.push(r3(calls > 0 ? ok / calls : 1)); timeline.ops[op.id].p99.push(r3(p99));
     }
     for (const id of order) {
-      const nt = nodeT[id], rv = rho[id] === undefined ? 0 : Number.isFinite(rho[id]) ? rho[id] : 10;
+      const nt = nodeT[id], rb = Math.max(rho[id] ?? 0, busy[id] ?? 0), rv = Number.isFinite(rb) ? rb : 10;
       if (rv > nt.rhoMax) { nt.rhoMax = rv; nt.rhoMaxAt = t; }
       if (isDown(id)) nt.downMinutes += D;
       const tl = timeline.nodes[id];
@@ -447,7 +496,7 @@ export function simulateTest(compiled, lab, practice, test) {
       else if (backlog[e.hop.id] <= 0.5 && e.backlogged) { e.backlogged = false; st.events.push({ t, node: e.node, kind: 'drained' }); }
     }
     for (const r of deliverRecs) {
-      const dd = opT[r.op.id].deferred[r.hop.step];
+      const dd = opT[r.op.id]?.deferred[r.hop.step];
       if (!dd) continue;
       dd.lost = (dd.lost || 0) + Math.max(0, r.in - r.out) * secs;
       const delay = r.enq.reduce((a, e) => a + waitSec[e.hop.id], 0) + ((r.L?.F || 0) + (r.L?.M || 0)) / 1000;
@@ -455,11 +504,13 @@ export function simulateTest(compiled, lab, practice, test) {
     }
     for (const r of deferredSteps) {
       const delay = r.enq.reduce((a, e) => a + waitSec[e.hop.id] + 1, 0);
-      const dd = opT[r.op.id].deferred[r.hop.step];
+      const dd = opT[r.op.id]?.deferred[r.hop.step];
       if (dd && !r.hop.copy && delay > dd.worstDelaySec) dd.worstDelaySec = delay;
       const key = `${r.node}|${r.hop.entity}`;
       if (r.hop.write && delay > (feedDelay[key] || 0)) feedDelay[key] = delay;
     }
+    // the writes each database took this tick become its change events next tick
+    for (const o of sysOps) cdcPrev[o.id] = recs.reduce((a, r) => a + (r.node === o.db && r.hop.kind === 'store' && r.hop.write && r.hop.entity === o.entity && !r.op.system ? r.out : 0), 0);
     // crash timers, autoscaling, warm-up (§8.11)
     for (const id of order) {
       const n = info[id];
@@ -518,6 +569,6 @@ export function simulateTest(compiled, lab, practice, test) {
   return {
     ops: out, nodes: nodeT, events: st.events, timeline, ticks: perTick, tickMinutes: D, T, hours,
     cost: { monthly: nodeCosts + storageMonthly + transfer, byNode: Object.fromEntries(order.map((id) => [id, nodeT[id].cost])), storage: storageMonthly, transfer },
-    storageGb, lost: st.lost, duplicates: 0, queues, feedDelay,
+    storageGb, lost: st.lost, duplicates: 0, queues, feedDelay, hotParts: Object.values(hotParts), poison: poisonSeen,
   };
 }
