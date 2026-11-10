@@ -1,0 +1,766 @@
+{
+ "v": 2,
+ "brief": "The tests send one region's share of the traffic: 35,000 requests a second at the evening peak, 99 opens for every new link. Popular links are opened far more often than the rest.",
+ "entities": {
+  "links": {
+   "rows": 5000000000,
+   "rowBytes": 500,
+   "growthPerDay": 100000000,
+   "fields": {
+    "code": "string",
+    "long_url": "string",
+    "user_id": "string",
+    "created_at": "time",
+    "expires_at": "time",
+    "clicks": "int"
+   },
+   "sample": [
+    {
+     "code": "ab12x",
+     "long_url": "https://zotato.in/menu/123",
+     "user_id": "u7",
+     "created_at": "2026-11-01T08:00:00Z",
+     "expires_at": null,
+     "clicks": 41
+    },
+    {
+     "code": "q9Lp",
+     "long_url": "https://katta.cc/a",
+     "user_id": "u2",
+     "created_at": "2026-11-02T08:00:00Z",
+     "expires_at": null,
+     "clicks": 3
+    }
+   ]
+  }
+ },
+ "aliases": {
+  "long_url": [
+   "url",
+   "target_url",
+   "destination",
+   "original_url"
+  ],
+  "code": [
+   "short_code",
+   "slug",
+   "short_id"
+  ]
+ },
+ "operations": [
+  {
+   "id": "redirect",
+   "name": "Open a short link",
+   "kind": "read",
+   "share": 0.99,
+   "sample": true,
+   "request": {
+    "method": "GET",
+    "path": "/ab12x"
+   },
+   "bytesOut": 500,
+   "keys": {
+    "entity": "links",
+    "skew": "zipf"
+   },
+   "steps": [
+    {
+     "id": "s1",
+     "op": "get",
+     "entity": "links",
+     "by": {
+      "code": "ab12x"
+     },
+     "fields": [
+      "long_url"
+     ]
+    }
+   ],
+   "respond": {
+    "status": 302,
+    "body": {
+     "location": "$s1.long_url"
+    }
+   },
+   "slo": {
+    "availability": 99.9,
+    "p99Ms": 200
+   },
+   "consistency": {
+    "maxStalenessSec": 300
+   }
+  },
+  {
+   "id": "create",
+   "name": "Make a short link",
+   "kind": "write",
+   "share": 0.01,
+   "request": {
+    "method": "POST",
+    "path": "/links",
+    "body": {
+     "long_url": "https://zotato.in/offers"
+    }
+   },
+   "steps": [
+    {
+     "id": "s1",
+     "op": "put",
+     "entity": "links",
+     "unique": [
+      "code"
+     ],
+     "values": {
+      "code": "zx81q",
+      "long_url": "https://zotato.in/offers",
+      "user_id": "u7",
+      "created_at": "2026-11-10T10:00:00Z",
+      "expires_at": null,
+      "clicks": 0
+     }
+    }
+   ],
+   "respond": {
+    "status": 201,
+    "body": {
+     "code": "$s1.code"
+    }
+   },
+   "slo": {
+    "availability": 99.9,
+    "p99Ms": 500
+   },
+   "durable": true
+  }
+ ],
+ "start": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "app",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "config": {
+     "size": "m5.large",
+     "count": 2
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "app"
+   }
+  ]
+ },
+ "tests": [
+  {
+   "id": "api-redirect",
+   "name": "Open a short link",
+   "desc": "A phone opens /ab12x and must be sent to the long address.",
+   "sample": true,
+   "op": "redirect"
+  },
+  {
+   "id": "api-create",
+   "name": "Make a short link",
+   "desc": "A new link is stored and its code returned.",
+   "op": "create"
+  },
+  {
+   "id": "normal",
+   "name": "A normal afternoon",
+   "desc": "20,000 requests a second for an hour at 3 pm.",
+   "sample": true,
+   "hours": 1,
+   "startHour": 15,
+   "traffic": {
+    "rps": 20000,
+    "pattern": "steady"
+   },
+   "checks": [
+    {
+     "kind": "slo"
+    }
+   ]
+  },
+  {
+   "id": "peak",
+   "name": "The evening peak",
+   "desc": "35,000 requests a second for an hour at 8 pm.",
+   "sample": true,
+   "hours": 1,
+   "startHour": 20,
+   "traffic": {
+    "rps": 35000,
+    "pattern": "steady"
+   },
+   "checks": [
+    {
+     "kind": "slo"
+    },
+    {
+     "kind": "noCrash"
+    }
+   ]
+  },
+  {
+   "id": "zone",
+   "name": "A zone goes dark",
+   "desc": "At 8:10 pm one availability zone is lost for 15 minutes.",
+   "hours": 1,
+   "startHour": 20,
+   "traffic": {
+    "rps": 35000,
+    "pattern": "steady"
+   },
+   "faults": [
+    {
+     "minute": 10,
+     "kind": "zoneDown",
+     "minutes": 15
+    }
+   ],
+   "checks": [
+    {
+     "kind": "slo",
+     "availability": 99.5
+    },
+    {
+     "kind": "noLostWrites"
+    }
+   ]
+  },
+  {
+   "id": "cold",
+   "name": "The cache restarts at the peak",
+   "desc": "At 8:10 pm the cache is emptied.",
+   "hours": 1,
+   "startHour": 20,
+   "traffic": {
+    "rps": 35000,
+    "pattern": "steady"
+   },
+   "faults": [
+    {
+     "minute": 10,
+     "kind": "cacheFlush"
+    }
+   ],
+   "checks": [
+    {
+     "kind": "slo",
+     "availability": 99.5
+    },
+    {
+     "kind": "noCrash",
+     "type": "database"
+    }
+   ]
+  },
+  {
+   "id": "budget",
+   "name": "A sensible bill",
+   "desc": "A whole day at the normal rate.",
+   "hours": 24,
+   "startHour": 0,
+   "traffic": {
+    "rps": 20000,
+    "pattern": "steady"
+   },
+   "checks": [
+    {
+     "kind": "slo"
+    },
+    {
+     "kind": "cost",
+     "max": 30000
+    }
+   ]
+  }
+ ],
+ "rubric": {},
+ "hints": [],
+ "referenceNote": "Fixture for the v2 evaluator's tests (evaluator.md §15 phase 1); not content. Load-test numbers are calibrated in phase 2.",
+ "reference": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "app",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Link service",
+    "config": {
+     "size": "m5.large",
+     "count": 4,
+     "zones": 2
+    }
+   },
+   {
+    "id": "cache",
+    "type": "cache",
+    "x": 720,
+    "y": -120,
+    "name": "Hot links",
+    "config": {
+     "size": "cache.r5.large",
+     "ttlSec": 3600
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 960,
+    "y": 0,
+    "name": "Links DB",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.xlarge",
+     "multiAz": true,
+     "schema": {
+      "tables": [
+       {
+        "name": "links",
+        "fields": [
+         {
+          "name": "code",
+          "type": "string"
+         },
+         {
+          "name": "long_url",
+          "type": "string"
+         },
+         {
+          "name": "user_id",
+          "type": "string"
+         },
+         {
+          "name": "created_at",
+          "type": "time"
+         },
+         {
+          "name": "expires_at",
+          "type": "time"
+         },
+         {
+          "name": "clicks",
+          "type": "int"
+         }
+        ],
+        "key": [
+         "code"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "app"
+   },
+   {
+    "from": "app",
+    "to": "cache"
+   },
+   {
+    "from": "cache",
+    "to": "db"
+   },
+   {
+    "from": "app",
+    "to": "db"
+   }
+  ]
+ },
+ "wrong": [
+  {
+   "name": "No database",
+   "why": "The service has nowhere to keep the links.",
+   "fails": "api-redirect",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "m5.large",
+      "count": 4,
+      "zones": 2
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    }
+   ]
+  },
+  {
+   "name": "Code is not the key",
+   "why": "Links are keyed by user, so finding one by its code reads the whole table.",
+   "fails": "api-redirect",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "m5.large",
+      "count": 4,
+      "zones": 2
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.m5.xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "long_url",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "user_id"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "db"
+    }
+   ]
+  },
+  {
+   "name": "Reads behind a queue",
+   "why": "The database is only reached through a queue and a worker; nobody can wait for that to answer a redirect.",
+   "fails": "api-redirect",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "m5.large",
+      "count": 4,
+      "zones": 2
+     }
+    },
+    {
+     "id": "q",
+     "type": "queue",
+     "x": 720,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "worker",
+     "type": "server",
+     "x": 840,
+     "y": 0,
+     "name": "Worker",
+     "config": {
+      "size": "t3.medium",
+      "count": 2
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.m5.xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "long_url",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "code"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "q"
+    },
+    {
+     "from": "q",
+     "to": "worker"
+    },
+    {
+     "from": "worker",
+     "to": "db"
+    }
+   ]
+  },
+  {
+   "name": "The table has no long address",
+   "why": "links keeps codes but not where they lead.",
+   "fails": "api-redirect",
+   "nodes": [
+    {
+     "id": "clients",
+     "type": "client",
+     "x": 0,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "lb",
+     "type": "lb",
+     "x": 240,
+     "y": 0,
+     "config": {}
+    },
+    {
+     "id": "app",
+     "type": "server",
+     "x": 480,
+     "y": 0,
+     "name": "Link service",
+     "config": {
+      "size": "m5.large",
+      "count": 4,
+      "zones": 2
+     }
+    },
+    {
+     "id": "db",
+     "type": "database",
+     "x": 960,
+     "y": 0,
+     "name": "Links DB",
+     "config": {
+      "engine": "postgres",
+      "size": "db.m5.xlarge",
+      "multiAz": true,
+      "schema": {
+       "tables": [
+        {
+         "name": "links",
+         "fields": [
+          {
+           "name": "code",
+           "type": "string"
+          },
+          {
+           "name": "user_id",
+           "type": "string"
+          },
+          {
+           "name": "created_at",
+           "type": "time"
+          },
+          {
+           "name": "expires_at",
+           "type": "time"
+          },
+          {
+           "name": "clicks",
+           "type": "int"
+          }
+         ],
+         "key": [
+          "code"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "edges": [
+    {
+     "from": "clients",
+     "to": "lb"
+    },
+    {
+     "from": "lb",
+     "to": "app"
+    },
+    {
+     "from": "app",
+     "to": "db"
+    }
+   ]
+  }
+ ]
+}
