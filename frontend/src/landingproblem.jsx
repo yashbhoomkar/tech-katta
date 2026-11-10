@@ -12,5 +12,5 @@ if(narrow&&l.lite)return <LabLite l={l} lab={st.lab} P={P} account={account}/>;
 // judged a moment later, so the button shows "Running…" first (a 4-hour scenario takes a few hundred ms)
 const run=()=>{setBusy(true);setRes(null);setTimeout(()=>{setRes(runLanding(design.current||P.start,st.lab,P,l.problem,false));setBusy(false)},20)};
 return <div className="lp-prob"><div className="lp-run"><button type="button" className="ll-score" onClick={run} disabled={busy}>{busy?l.running:l.run}</button><span>{landingTests(P).tests.map(t=>t.name).join(" · ")}</span></div>
-<Lab problem={{id:l.problem,name:st.a.title,start:P.start,fields:P.data?.fields}} embedded={{open:l.open,href:l.openHref}} onDesign={d=>{design.current=d;setRes(null)}}/>
+<Lab problem={{id:l.problem,name:st.a.title,start:P.start,fields:P.v===2?[...new Set(Object.values(P.entities||{}).flatMap(e=>Object.keys(e.fields||{})))]:P.data?.fields,v:P.v,locked:P.v===2?P.locked:undefined,ops:P.v===2?P.operations.map(o=>({id:o.id,name:o.name})):undefined}} embedded={{open:l.open,href:l.openHref}} onDesign={d=>{design.current=d;setRes(null)}}/>
 {res&&<div className="ll-res lp-res" role="status"><LandingResults r={res} l={l}/></div>}</div>}

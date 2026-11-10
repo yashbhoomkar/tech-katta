@@ -1,14 +1,16 @@
 // IND vs PAK on phones (landing page below 900 px): the same problem and judge as the full workspace, but driven
 // by three controls instead of a canvas, which can't be used with a thumb (QA H5, H6). The design it builds:
-// Viewers → (CDN) → Load Balancer → Servers. It runs the problem's example traffic tests (landingTests): the ones a
-// design without storage can pass. The full problem adds storage, request tests, an answer and a score.
+// Viewers → (CDN) → Load Balancer → Servers → the problem's own cache and segment store (taken from its starting design, so
+// every call can be answered). It runs the problem's example load tests (landingTests). The full problem adds the
+// tests of single calls, a zone failure and the bill, an answer and a score.
 // The landing page's laptop canvas (landingproblem.jsx) shows its results with LandingResults too.
 import React,{useEffect,useMemo,useState}from"react";import{judge}from"./judge/judge.js";import{markStep}from"./progress.js";import"./lablite.css";import{KeepStars}from"./accountui.jsx";import{track}from"./analytics.js";
 const N=(id,type,config={})=>({id,type,x:0,y:0,config});
-export function liteDesign({cdn,servers,prewarm}){const ns=[N("viewers","client"),...(cdn?[N("cdn","cdn")]:[]),N("lb","lb"),N("origin","server",{size:"c5.2xlarge",count:prewarm?servers:Math.min(5,servers),maxCount:servers,autoscale:!prewarm,queriesPerRequest:1})];
+const behind=P=>(P?.start?.nodes||[]).filter(n=>n.type==="cache"||n.type==="database").map(n=>({...n,config:{...n.config}}));
+export function liteDesign({cdn,servers,prewarm},P){const ns=[N("viewers","client"),...(cdn?[N("cdn","cdn")]:[]),N("lb","lb"),N("origin","server",{size:"c5.2xlarge",count:prewarm?servers:Math.min(5,servers),maxCount:servers,autoscale:!prewarm}),...behind(P)];
 return{nodes:ns,edges:ns.slice(1).map((n,i)=>({from:ns[i].id,to:n.id}))}}
-// The example tests the landing page runs: traffic only (a request test needs storage, which the phone controls don't build).
-export const landingTests=P=>({...P,tests:P.tests.filter(t=>t.sample&&!t.request)});
+// The example tests the landing page runs: the load tests (not the tests of single calls, v1 `request` or v2 `op`).
+export const landingTests=P=>({...P,tests:P.tests.filter(t=>t.sample&&!t.request&&!t.op)});
 // Judge a design on them. Analytics keeps counting landing attempts as "score" events (as when IND vs PAK was a
 // challenge with stars): stars = tests passed, max = tests run, challenge = the problem's slug.
 export function runLanding(design,lab,P,slug,lite){const r=judge(design,lab,landingTests(P),{sample:true});
@@ -19,7 +21,7 @@ export function LandingResults({r,l}){return <><p className="ll-verdict"><b>{r.p
 <p>{r.passed===r.total?l.pass:l.fail}</p></>}
 export default function LabLite({l,lab,P,account}){const t=l.lite;
 const[cdn,setCdn]=useState(false),[servers,setServers]=useState(10),[prewarm,setPrewarm]=useState(true),[res,setRes]=useState(null);
-const design=useMemo(()=>liteDesign({cdn,servers,prewarm}),[cdn,servers,prewarm]);
+const design=useMemo(()=>liteDesign({cdn,servers,prewarm},P),[cdn,servers,prewarm,P]);
 useEffect(()=>setRes(null),[cdn,servers,prewarm]);
 const box=(k,label,sub,on=true)=><div className={"ll-box"+(on?"":" off")} key={k}><b>{label}</b><small>{sub}</small></div>;
 return <div className="ll">
