@@ -35,5 +35,6 @@ test('old Lab links open the challenge on Problems, or the problem it became', (
   assert.equal(fromLab('lab', problems), 'problems');
   assert.equal(fromLab('lab/one-server', problems), 'problems/challenge/one-server');
   assert.equal(fromLab('lab/ind-vs-pak', problems), 'problems/ind-vs-pak');
+  assert.equal(fromLab('problems/challenge/ind-vs-pak', problems), 'problems/ind-vs-pak', 'a challenge that became a problem');
   for (const k of ['', 'concepts/caching', 'problems/url-shortener', 'problems/challenge/one-server', 'labs']) assert.equal(fromLab(k, problems), k);
 });
