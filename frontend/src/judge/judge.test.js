@@ -3,7 +3,7 @@
 import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";import path from "node:path";import{fileURLToPath}from"node:url";
 import{judge,runTest,gradeAnswer,score,WEIGHTS,roleOnPath,names,sameDesign}from"./judge.js";import{cleanDesign}from"../lab/store.js";
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),"..","..","..","content");
-const lab=JSON.parse(fs.readFileSync(path.join(root,"lab.json"),"utf8"));
+const lab={...JSON.parse(fs.readFileSync(path.join(root,"lab.json"),"utf8")),eval:JSON.parse(fs.readFileSync(path.join(root,"eval.json"),"utf8"))};
 const index=JSON.parse(fs.readFileSync(path.join(root,"articles","index.json"),"utf8")).articles;
 const problems=index.map(e=>JSON.parse(fs.readFileSync(path.join(root,"articles",e+".json"),"utf8"))).filter(a=>a.practice);
 
@@ -21,7 +21,8 @@ for(const a of problems){
     const t=a.practice.tests.find(x=>x.id===w.fails);const r=runTest(w,lab,a.practice,t);
     assert.equal(r.ok,false,`${w.name} passed ${w.fails}`);
   });
-  test(`${a.slug}: has request tests (one shown), and a wrong design fails one`,()=>{
+  // v1 problems only: a v2 problem's trace tests and calibration are checked in eval/calibration.test.js
+  if(a.practice.v!==2)test(`${a.slug}: has request tests (one shown), and a wrong design fails one`,()=>{
     const rq=a.practice.tests.filter(t=>t.request);
     assert.ok(rq.length>0&&rq.some(t=>t.sample),"request tests with a sample");
     assert.ok(a.practice.wrong.some(w=>rq.some(t=>t.id===w.fails)),"a wrong design that fails a request test");

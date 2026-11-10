@@ -10,7 +10,9 @@ import { judge, sameDesign } from '../../frontend/src/judge/judge.js';
 const content = await loadContent(new URL('../../content', import.meta.url).pathname);
 const lab = content.lab;
 const problems = content.articles.filter((a) => a.practice);
-const job = (design, a) => { const { wrong, ...practice } = a.practice; return { design: cleanDesign(design, lab, 'submitted'), lab, practice }; };
+// cleaned as the API cleans a submission: a v2 problem's design keeps its v2 settings
+const v2 = (d, a) => (a.practice.v === 2 ? { ...d, v: 2 } : d);
+const job = (design, a) => { const { wrong, ...practice } = a.practice; return { design: cleanDesign(v2(design, a), lab, 'submitted'), lab, practice }; };
 // A long chain of components with every setting at its maximum: built to be slow (seconds).
 function slowDesign(n = 200) {
   const types = lab.components.map((c) => c.type).filter((t) => t !== 'client' && t !== 'database');
@@ -28,8 +30,8 @@ test('a worker judges exactly like the API used to, for every problem and its re
     for (const a of problems) {
       for (const design of [a.practice.reference, a.practice.wrong[0]]) {
         const j = job(design, a), got = await pool.run(j), want = judge(j.design, lab, j.practice);
-        assert.deepEqual(got.judged, { verdict: want.verdict, passed: want.passed, total: want.total, metrics: want.metrics ? { avgMonthly: want.metrics.avgMonthly, p99: want.metrics.p99 } : null }, a.slug);
-        assert.equal(got.copied, sameDesign(j.design, cleanDesign(a.practice.reference, lab, 'reference')), a.slug);
+        assert.deepEqual(got.judged, { verdict: want.verdict, passed: want.passed, total: want.total, metrics: want.metrics ? { avgMonthly: want.metrics.avgMonthly, p99: want.metrics.p99 } : null, ...(Number.isFinite(want.designPoints) ? { designPoints: want.designPoints } : {}) }, a.slug);
+        assert.equal(got.copied, sameDesign(j.design, cleanDesign(v2(a.practice.reference, a), lab, 'reference')), a.slug);
       }
     }
   } finally { pool.close(); }
@@ -40,7 +42,7 @@ test('a design over the time limit is stopped, and the next one is judged on a f
   // limit, which a busy CI machine couldn't do in the 200 ms this test first used
   const pool = judgePool({ size: 1, timeoutMs: 2000 });
   try {
-    const a = problems.find((p) => p.slug === 'url-shortener');
+    const a = problems.find((p) => p.practice.v !== 2);
     await assert.rejects(pool.run(job(slowDesign(), a)), (e) => e instanceof JudgeError && e.code === 'judge_timeout');
     const ok = await pool.run(job(a.practice.reference, a));
     assert.equal(ok.copied, true);
@@ -50,7 +52,7 @@ test('a design over the time limit is stopped, and the next one is judged on a f
 test('when the queue is full a new design is refused at once', async () => {
   const pool = judgePool({ size: 1, maxQueue: 1, timeoutMs: 300 });
   try {
-    const a = problems.find((p) => p.slug === 'url-shortener'), slow = job(slowDesign(), a);
+    const a = problems.find((p) => p.practice.v !== 2), slow = job(slowDesign(), a);
     const first = pool.run(slow), second = pool.run(slow);
     await assert.rejects(pool.run(slow), (e) => e.code === 'judge_busy');
     await assert.rejects(first, (e) => e.code === 'judge_timeout');
@@ -61,7 +63,7 @@ test('when the queue is full a new design is refused at once', async () => {
 test('the API thread keeps running while a slow design is judged', async () => {
   const pool = judgePool({ size: 1, timeoutMs: 1500 });
   try {
-    const a = problems.find((p) => p.slug === 'url-shortener');
+    const a = problems.find((p) => p.practice.v !== 2);
     let worstGap = 0, last = performance.now();
     const tick = setInterval(() => { const t = performance.now(); worstGap = Math.max(worstGap, t - last); last = t; }, 10);
     await pool.run(job(slowDesign(), a)).catch(() => {});
@@ -73,7 +75,7 @@ test('the API thread keeps running while a slow design is judged', async () => {
 test("a design the judge can't handle is a judge_failed error (with the reason), and the worker carries on", async () => {
   const pool = judgePool({ size: 1 });
   try {
-    const a = problems.find((p) => p.slug === 'url-shortener');
+    const a = problems.find((p) => p.practice.v !== 2);
     await assert.rejects(pool.run({ ...job(a.practice.reference, a), practice: null }), (e) => e instanceof JudgeError && e.code === 'judge_failed' && typeof e.detail === 'string' && e.detail.length > 0);
     assert.equal((await pool.run(job(a.practice.reference, a))).copied, true);
   } finally { pool.close(); }

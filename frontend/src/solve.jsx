@@ -11,7 +11,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,sameDesign,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,SOLUTIONS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore,cleanDesign}from"./lab/store.js";import SolutionDesign from"./SolutionDesign.jsx";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,sameDesign,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,SOLUTIONS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore,cleanDesign}from"./lab/store.js";import SolutionDesign from"./SolutionDesign.jsx";import{expected as expected2}from"./eval/trace.js";import{checkLabel}from"./eval/words.js";import{evalCatalogue}from"./eval/design.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -40,7 +40,7 @@ useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("res
 // a late answer for a problem the visitor has already left is dropped (cur): its starting design would otherwise open on this one
 const cur=useRef(slug);cur.current=slug;const load=()=>{const want=slug;set({});getJSON(`/v1/articles/${want}`).then(prep).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":e.figs?"figs":"failed"})})};useEffect(load,[slug]);
 useEffect(()=>{getJSON("/v1/lab").then(setLab,()=>{})},[]);
-const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]);
+const[watch,setWatch]=useState(null);useEffect(()=>setWatch(null),[res,slug,gen]);const[rep,setRep]=useState(null);useEffect(()=>setRep(null),[res,slug,gen]);
 useEffect(()=>{setAns(read(ANSWERS)[slug]||{});setGraded(null);setRes(null);setHints(usedHints(slug));setSubs(readSubs(slug))},[slug]);
 useEffect(()=>{setView(tab==="a"?"solution":"description")},[tab,slug]);
 useEffect(()=>{if(view==="solution")return readArticle("interview-questions",slug)},[view,slug]);
@@ -97,11 +97,11 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 :<>
 <nav className="crumbs" aria-label="Breadcrumb"><a href="#problems">{s.back}</a><span aria-hidden="true">/</span><span>{a.no.replace(/^QUESTION\s*\/\/\s*/,"Q")}</span></nav>
 <label>{s.eyebrow} · {a.tag}{readProgress().steps["solved:"+slug]&&<span className="sv-solved"> · ✓ {s.solved||"Solved"}</span>}</label><h1 id="sv-title">{a.title}</h1><p className="sv-dek">{a.dek}</p>
-<p className="sv-how">{s.how}</p>
+<p className="sv-how">{P?.v===2&&s.howV2?s.howV2:s.how}</p>
 <div className="sv-body">{body.map((b,k)=><Block key={k} b={b} i={k}/>)}</div>
-{P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>
-{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p>{t.request?<div className="sv-io"><Json label="Request" v={reqOf(t)}/><Json label="Expected response" v={expected(P,t)}/></div>:<ul>{t.checks.map(c=><li key={c.label}>{c.label}</li>)}</ul>}</div>)}
-<p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: {P.tests.some(t=>t.request&&!t.sample)?"more API calls, ":""}spikes, failures and the bill.</p></section>}
+{P?.v===2&&<Ops P={P}/>}{P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>
+{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p>{P.v===2&&t.op?(()=>{const o=P.operations.find(x=>x.id===t.op);return o&&<div className="sv-io"><Json label="Request" v={reqOf(o)}/><Json label="Expected response" v={expected2(P,o)}/></div>})():t.request?<div className="sv-io"><Json label="Request" v={reqOf(t)}/><Json label="Expected response" v={expected(P,t)}/></div>:<ul>{t.checks.map((c,ci)=><li key={ci}>{c.label||checkLabel(c,P,lab?evalCatalogue(lab):{})}</li>)}</ul>}</div>)}
+<p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: {P.tests.some(t=>(t.request||t.op)&&!t.sample)?"more API calls, ":""}spikes, failures and the bill.</p></section>}
 <div className="sv-links">
 {ch&&<a href={`#${ch.to}`}>{s.scored} →</a>}
 {next&&<a href={`#problems/${next.slug}`}><small>{s.next}</small> {next.title} →</a>}</div></>}
@@ -111,8 +111,8 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
 <span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
 <span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
-{showLab&&<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.data?.fields,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null}/></Suspense>}
-{watch?<Player w={watch} set={setWatch}/>:(busy||res)&&<Console busy={busy} res={res} close={()=>setRes(null)} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
+{showLab&&<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.v===2?fieldsOf(P):P?.data?.fields,v:P?.v,ops:P?.v===2?P.operations.map(o=>({id:o.id,name:o.name})):undefined,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null} replay={rep?replayAt(rep,P):null}/></Suspense>}
+{watch?<Player w={watch} set={setWatch}/>:rep?<ReplayBar rep={rep} set={setRep} P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}}/>:(busy||res)&&<Console P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}} busy={busy} res={res} close={()=>setRes(null)} replay={r=>{if(narrow)setCanvas(true);setRep({r,i:0,play:false})}} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}
 
@@ -123,13 +123,13 @@ function Player({w,set}){const{hops,i,play,r}=w,h=hops[i],last=i===hops.length-1
 useEffect(()=>{if(!play)return;if(last){set(x=>({...x,play:false}));return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,x.hops.length-1)}),1300);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
 useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null);else if(e.key==="ArrowRight")set(x=>({...x,play:false,i:Math.min(x.i+1,x.hops.length-1)}));else if(e.key==="ArrowLeft")set(x=>({...x,play:false,i:Math.max(x.i-1,0)}))};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
 return <section className="sv-console sv-player" aria-label="The request travelling through your design">
-<header className={"sv-v "+(r.ok?"good":"bad")}><div><b>{r.test.request.method} {r.test.request.path}</b><small>Step {i+1} of {hops.length} · {r.ok?"the design answers as expected":"the design doesn't answer as expected"}</small></div>
+<header className={"sv-v "+(r.ok?"good":"bad")}><div><b>{(r.request||r.test.request).method} {(r.request||r.test.request).path}</b><small>Step {i+1} of {hops.length} · {r.ok?"the design answers as expected":"the design doesn't answer as expected"}</small></div>
 <span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.max(0,x.i-1)}))} disabled={i===0} aria-label="Previous step">‹</button><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.min(x.hops.length-1,x.i+1)}))} disabled={last} aria-label="Next step">›</button><button type="button" onClick={()=>set(null)} aria-label="Close">✕</button></span></header>
 <div className="sv-trace"><ol>{hops.map((x,k)=><li key={k} className={k===i?"on":k<i?"done":""}><button type="button" onClick={()=>set(y=>({...y,play:false,i:k}))}>{x.title}</button></li>)}</ol>
 <div className="sv-hop" aria-live="polite"><b>{h.title}</b>{h.json!=null?<pre>{typeof h.json==="string"?h.json:JSON.stringify(h.json,null,2)}</pre>:<p className="sv-tdesc">{last?"":"Passing it along…"}</p>}{last&&!r.ok&&r.why?.[0]&&<p className="sv-whyline">{r.why[0]}</p>}</div></div></section>}
 
 // ---- Results under the canvas ----
-function Console({busy,res,close,hint,answer,watch}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+function Console({busy,res,close,hint,answer,watch,replay,P,nameOf}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
 const{kind,j,g,sc,crash}=res;
 if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
@@ -144,10 +144,13 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
-{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:r.test.request&&r.output?`${r.test.request.method} ${r.test.request.path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
+{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:(r.request||r.test.request)&&r.output?`${(r.request||r.test.request).method} ${(r.request||r.test.request).path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
-{r.test.request&&<><div className="sv-io"><Json label="Request" v={reqOf(r.test)}/><Json label="Expected" v={r.expect}/>{r.output&&<Json label="Your design's response" v={r.output} bad={!r.ok}/>}</div>{r.trace?.length>1&&<button type="button" className="sv-watch" onClick={()=>watch(r)}>▶ Watch the request travel</button>}</>}
-<ul className="sv-checks">{r.checks.map(c=><li key={c.label} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul></details></li>)}</ol>}
+{(r.request||r.test.request)&&<><div className="sv-io"><Json label="Request" v={r.request||reqOf(r.test)}/><Json label="Expected" v={r.expect}/>{r.output&&<Json label="Your design's response" v={r.output} bad={!r.ok}/>}</div>{r.trace?.length>1&&<button type="button" className="sv-watch" onClick={()=>watch(r)}>▶ Watch the request travel</button>}</>}
+<ul className="sv-checks">{r.checks.map((c,ci)=><li key={ci} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul>
+{r.ops&&<ul className="sv-opres">{Object.entries(r.ops).map(([id,o])=><li key={id}><b>{P?.operations?.find(x=>x.id===id)?.name||id}</b> {o.planned?<>{pct(o.availability)} · p50 {fmt(o.p50)} ms · p99 {fmt(o.p99Worst)} ms{Object.entries(o.deferred||{}).map(([sid,d])=><span key={sid}> · done later within {fmt(d.worstDelaySec)} s{d.notDone>0?`, ${fmt(d.notDone)} left`:""}</span>)}</>:"can't run"}</li>)}</ul>}
+{r.timeline&&<button type="button" className="sv-watch" onClick={()=>replay(r)}>▶ Replay this test</button>}</details></li>)}</ol>}
+{!err&&j.findings?.length>0&&<Findings f={j.findings} more={j.allFindings}/>}{!err&&j.plans&&Object.keys(j.plans).length>0&&<HowRead plans={j.plans} P={P} nameOf={nameOf}/>}
 {!acc&&!err&&<p className="sv-nudge">Stuck? <button type="button" className="sv-linkbtn" onClick={hint}>Open a hint</button> (3 points each).</p>}</>}
 </section>}
 
@@ -180,7 +183,7 @@ return <div className="sv-ans">
 {r.decisions.map((x,qi)=>{const d=g?.dec?.find(y=>y.id===x.id),pick=ans.decisions?.[x.id];return <fieldset key={x.id} className="sv-dec"><legend>{d&&mark(d.ok)}{qi+1}. {x.q}</legend>
 {x.options.map((o,i)=><label key={i} className={d?(i===x.answer?"right":i===d.chosen?"wrong":""):""}><input type="radio" name={"dec-"+x.id} checked={pick===i} onChange={()=>setIn("decisions",x.id,i)}/><span>{o}</span></label>)}
 {d&&<p className="sv-why">{d.ok?"Right: ":"The better choice: "+x.options[x.answer]+". "}{x.why}</p>}</fieldset>})}</section>}
-<section><h2>{r.decisions?.length?6:5}. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test. Give each part its job under "What it does" in its settings.</p></section>
+<section><h2>{r.decisions?.length?6:5}. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test.{P.v===2?" Give each database the tables the calls need, in its schema.":" Give each part its job under \"What it does\" in its settings."}</p></section>
 </div>}
 
 function Hints({P,used,open}){
@@ -193,3 +196,31 @@ if(!subs.length)return <p className="sv-brief">No submissions yet. Build your de
 return <table className="sv-subs"><thead><tr><th>When</th><th>Result</th><th>Tests</th><th>Score</th></tr></thead><tbody>
 {subs.map(x=><tr key={x.at}><td>{when(x.at)}</td><td className={x.verdict==="accepted"?"ok":"no"}>{x.verdict==="accepted"?"Accepted":x.verdict==="error"?"Can't run":"Wrong design"}{x.copied&&<small className="sv-cp"> · copied solution</small>}</td><td>{x.passed}/{x.total}</td><td>{x.score}</td></tr>)}
 </tbody></table>}
+
+// ---- v2 problems (tech-katta-context/evaluator.md §12.1): what the system must do, findings, how the design was
+// read, and a test replayed on the canvas ----
+const fieldsOf=P=>[...new Set(Object.values(P.entities||{}).flatMap(e=>Object.keys(e.fields||{})))];
+const clockOf=m=>{const x=((Math.round(m)%1440)+1440)%1440,h=Math.floor(x/60);return `${h%12||12}:${String(x%60).padStart(2,"0")} ${h<12?"am":"pm"}`};
+const targetsOf=o=>[o.slo?.availability!==undefined?`${o.slo.availability}%`:null,o.slo?.p99Ms?`p99 ${fmt(o.slo.p99Ms)} ms`:null,o.consistency==="strong"?"always fresh":o.consistency?.maxStalenessSec?`at most ${fmt(o.consistency.maxStalenessSec)} s old`:null,o.durable?"never lost":null,o.effect==="once"?"never twice":null].filter(Boolean).join(" · ")||"—";
+function Ops({P}){return <section className="sv-tests" aria-labelledby="sv-ops"><h2 id="sv-ops">What the system must do</h2>
+<div className="sv-tablewrap"><table className="sv-subs sv-optable"><thead><tr><th>Call</th><th>Request</th><th>Share</th><th>Targets</th></tr></thead><tbody>
+{P.operations.map(o=><tr key={o.id}><td>{o.name}</td><td><code>{o.request.method} {o.request.path}</code></td><td>{!o.source||o.source==="clients"?pct(o.share*100):"—"}</td><td>{targetsOf(o)}</td></tr>)}</tbody></table></div></section>}
+function Findings({f,more}){return <section className="sv-findings" aria-label="Findings"><h3>Findings</h3><ol>{f.map((x,k)=><li key={k} className={x.severity}><details><summary><b>{x.severity==="fail"?"Problem":x.severity==="warn"?"Warning":"Note"}</b> {x.title}</summary><p>{x.story}</p>{x.fix&&<p className="sv-fix">Try: {x.fix}</p>}</details></li>)}</ol>{more>f.length&&<p className="sv-tdesc">{more-f.length} more not shown.</p>}</section>}
+const HOW={key:"by its key",index:"through an index",scan:"by reading the whole table","key-range":"in key order","index-range":"in index order",geo:"near a point",text:"by words",agg:"adding up rows",zset:"from a sorted set",write:"writes",blob:"a file",transaction:"in one transaction"};
+function HowRead({plans,P,nameOf}){return <details className="sv-read"><summary>How your design was read</summary>{Object.entries(plans).map(([id,p])=><div key={id}><b>{P?.operations?.find(o=>o.id===id)?.name||id}</b>{!p.ok?<p className="sv-whyline">{p.error?.message}</p>:<ol className="sv-hops">{p.hops.filter(h=>h.kind!=="source").map((h,k)=>{const st=h.step?p.steps[h.step]:null;return <li key={k} style={{marginLeft:(h.depth-1)*14}}>{h.share==="miss"?"on a miss: ":h.share==="cdnMiss"?"not cached at the edge: ":""}{!h.sync?"after answering: ":""}{nameOf(h.node)}{h.kind==="store"&&st?h.copy?" (keeps a copy)":` · ${HOW[st.how]||st.how} on ${st.table}`:h.kind==="cache"?" (look-aside cache)":h.kind==="invalidate"?" (drops the old copy)":h.kind==="enqueue"?" (holds the message)":""}</li>})}</ol>}</div>)}</details>}
+// the canvas's view of a replayed test at tick i
+function replayAt(rep,P){const{r,i}=rep,tl=r.timeline,nodes={};for(const[id,n]of Object.entries(tl.nodes))nodes[id]={rho:n.rho[i]??0,up:n.up[i]??1,inst:n.instances[i]??0,backlog:n.backlog[i]??0};
+const ops=Object.entries(tl.ops).map(([id,o])=>`${P?.operations?.find(x=>x.id===id)?.name||id} ${fmt(o.rate[i]??0)}/s, ${pct(100*(o.ok[i]??1))} ok`).join(" · ");
+return{nodes,status:`${clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)} · ${ops}`}}
+function ReplayBar({rep,set,P,nameOf}){const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
+useEffect(()=>{if(!play)return;if(last){set(x=>x&&{...x,play:false});return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,n-1)}),180);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
+useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null)};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
+const t0=i*tl.tickMinutes,ev=(r.events||[]).filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes*3).slice(-3);
+return <section className="sv-console sv-player" aria-label={`Replay of ${r.test.name}`}>
+<header className={"sv-v "+(r.ok?"good":"bad")}><div><b>▶ Replay: {r.test.name}</b><small>{clockOf((r.test.startHour||0)*60+t0)} · minute {t0} of {fmt(r.test.hours*60)}</small></div>
+<span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
+<input type="range" className="sv-scrub" min={0} max={n-1} value={i} onChange={e=>set(x=>({...x,play:false,i:+e.target.value}))} aria-label="Minute of the test"/>
+<ul className="sv-opres">{Object.entries(tl.ops).map(([id,o])=><li key={id}><b>{P?.operations?.find(x=>x.id===id)?.name||id}</b> {fmt(o.rate[i]??0)} calls/s · {pct(100*(o.ok[i]??1))} succeed · p99 {fmt(o.p99[i]??0)} ms</li>)}</ul>
+{ev.length>0&&<ul className="sv-why">{ev.map((e,k)=><li key={k}>{eventWords(e,nameOf)}</li>)}</ul>}</section>}
+const EVENT={crashed:"crashed",failover:"failed over to its standby",recovered:"is back",cold:"came back empty: its misses go to the database",warm:"is warm again",scaledOut:"started more instances",scaledIn:"stopped some instances",backlog:"began to fill: messages arrive faster than they are taken",drained:"has caught up",writesLost:"lost writes it had not saved"};
+const eventWords=(e,nameOf)=>e.kind==="zoneDown"?"A zone went dark.":e.kind==="zoneBack"?"The zone is back.":`${nameOf?nameOf(e.node):e.node} ${EVENT[e.kind]||e.kind}${e.n&&e.kind!=="cold"?` (${fmt(e.n)})`:""}.`;

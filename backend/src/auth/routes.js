@@ -79,7 +79,7 @@ export function cleanAnswer(a) {
 export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
 
 // A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
-const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.reference, lab, 'reference')) });
+const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.v === 2 ? { ...practice.reference, v: 2 } : practice.reference, lab, 'reference')) });
 
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, judgeDesign = judgeInline, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
@@ -195,7 +195,8 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const practice = slug && practiceFor(slug);
         if (!practice) return send(request, response, 404, { error: 'no_such_problem' });
         const lab = labCatalogue();
-        const design = cleanDesign(b.design, lab, 'submitted');
+        // a v2 problem's design keeps its v2 settings (zones, TTL, structures, arrows' carries) when cleaned
+        const design = cleanDesign(practice.v === 2 && b.design && typeof b.design === 'object' ? { ...b.design, v: 2 } : b.design, lab, 'submitted');
         if (!design) return send(request, response, 400, { error: 'bad_design' });
         const hints = Number.isInteger(b.hints) && b.hints >= 0 && b.hints <= 50 ? b.hints : 0;
         // judged again here, the same way the page did, so the stored result can't be made up in a browser;

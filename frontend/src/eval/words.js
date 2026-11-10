@@ -93,3 +93,28 @@ export const WHY = {
   planError: (op, msg) => `${op} can't run: ${msg}`,
   finding: (f) => `${f.story}${f.fix ? ` ${f.fix}` : ''}`,
 };
+
+// A load-test check in words, for the results list (a check may carry its own `label`).
+export function checkLabel(c, practice, cat = {}) {
+  const ops = practice?.operations || [], op = c.op ? ops.find((o) => o.id === c.op) : null, name = op?.name || 'Every call';
+  const type = (t) => (cat[t]?.name || t || '').toLowerCase();
+  const win = c.from !== undefined || c.to !== undefined ? ` (minutes ${c.from ?? 0}–${c.to ?? 'end'})` : '';
+  switch (c.kind) {
+    case 'slo': {
+      const a = c.availability ?? op?.slo?.availability, p = c.p99Ms ?? op?.slo?.p99Ms;
+      if (!op && c.availability === undefined && c.p99Ms === undefined) return `Every call meets its targets${win}`;
+      return `${name}: ${[a !== undefined ? `at least ${a}% succeed` : null, p !== undefined ? `99% within ${p.toLocaleString('en-US')} ms` : null].filter(Boolean).join(' · ')}${win}`;
+    }
+    case 'completes': return `${op ? `${name}: work` : 'Work'} done after answering finishes${c.withinSec ? ` within ${c.withinSec} s` : ' in time'}`;
+    case 'fresh': return `${op ? `${name}: reads` : 'Reads'} are as fresh as required`;
+    case 'noCrash': return c.type ? `No ${type(c.type)} crashes from overload` : 'Nothing crashes from overload';
+    case 'noLostWrites': return 'No acknowledged write is lost';
+    case 'noDuplicates': return `${op ? `${name} never` : 'Nothing'} happens twice`;
+    case 'ordered': return `${op ? `${name}: changes` : 'Changes'} are applied in order`;
+    case 'atomic': return 'Writes that belong together happen together';
+    case 'fits': return 'The data fits where it is kept';
+    case 'cost': return `The bill stays under $${(c.max || 0).toLocaleString('en-US')} a month`;
+    case 'has': return `Calls go through a ${type(c.type)}`;
+    default: return c.kind;
+  }
+}
