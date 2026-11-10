@@ -7,7 +7,7 @@ import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerTyp
 import"@xyflow/react/dist/style.css";import"./lab.css";import SchemaEditor from"./SchemaEditor.jsx";import{schemaIssues,schemaSummary,vocab}from"./schema.js";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
 import{simulate,defaultConfig,summary,catalogue,advance,newRun,runOptions,crashNow,trafficAt,patternOf,autoscaled,scaleRange,cacheFlow,replicasOf,roleOf,displayName,MAX_NAME,engineOf,sizesOf,sizeOf,perRequest}from"./engine.js";
-import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";
+import{readStore,STORE_KEY,STORE_VERSION,MAX_NODES}from"./store.js";import{runChallenge,applyChallenge,chaosTarget}from"./challenges.js";import{readProgress,recordStars}from"../progress.js";import{syncLab,noteDeleted,useCatalogue,DELETED_KEY}from"../account.js";import{track}from"../analytics.js";import{InspectorV2,ArrowV2,paletteV2}from"./LabV2.jsx";import{allowedEdge}from"../eval/design.js";
 const deletedIds=()=>{try{return new Set(Object.keys(JSON.parse(localStorage.getItem(DELETED_KEY)||"{}")||{}))}catch{return new Set()}};
 
 // Credits: every design starts with lab.budget and spends it while traffic runs, at its hourly cost,
@@ -32,15 +32,17 @@ const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:S
 // Add a new design to what is stored now (and make it the one the full Lab opens, unless current is null).
 const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
 const savedSpeed=()=>{let v=NaN;try{v=+localStorage.getItem("tk-lab-speed")}catch{}return SPEEDS.some(s=>s[1]===v)?v:1/60};
-const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{},...(n.name?{name:n.name}:{})}})),edges:d.edges.map(e=>edge(e.from,e.to))});
-const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),...(n.data.name?{name:n.data.name}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target}))});
-const edge=(source,target)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"}});
+const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{},...(n.name?{name:n.name}:{})}})),edges:d.edges.map(e=>edge(e.from,e.to,e.carries))});
+const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),...(n.data.name?{name:n.data.name}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target,...(e.data?.carries?{carries:e.data.carries}:{})}))});
+const edge=(source,target,carries)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"},...(carries?{data:{carries}}:{})});
 
 const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
 const level=u=>u>1+1e-9?"over":u>=0.7?"warn":"ok";
 
-function CompNode({id,data,selected}){const{cat,result,running,run,trace}=useContext(Ctx);const comp=cat[data.kind];const r=result.nodes[id];
+function CompNode({id,data,selected}){const{cat,result,running,run,trace,replay}=useContext(Ctx);const comp=cat[data.kind];const r=result.nodes[id];
+const rp=replay?.nodes?.[id];if(replay&&data.kind!=="client"){const rst=rp?(rp.up?level(rp.rho):"down"):"";return <div className={"ln"+(selected?" sel":"")+(rst?" "+rst:"")}>{<Handle type="target" position={Position.Left}/>}<div className="ln-head"><Glyph kind={data.kind}/><small>{comp.group.toUpperCase()}</small></div><b>{displayName(comp,{name:data.name,config:data.config})}</b>
+{!rp?<span className="ln-m">not used</span>:!rp.up?<span className="ln-m ln-down">DOWN</span>:<><div className="ln-bar"><i style={{width:Math.min(100,rp.rho*100)+"%"}}/></div><span className="ln-m">{Math.round(rp.rho*100)}%{rp.inst?` · ${rp.inst} instance${rp.inst>1?"s":""}`:""}</span></>}{rp?.backlog>0&&<span className="ln-m ln-q">backlog {num(rp.backlog)}</span>}{data.kind!=="database"&&<Handle type="source" position={Position.Right}/>}</div>}
 const back=run.down[id];const st=back!==undefined?"down":running&&r&&data.kind!=="client"?level(r.utilisation):"";
 return <div className={"ln"+(selected?" sel":"")+(st?" "+st:"")+(trace?.at===id?" ln-trace":"")}>
 {data.kind!=="client"&&<Handle type="target" position={Position.Left}/>}
@@ -63,13 +65,13 @@ const edgeTypes={arrow:Arrow};
 // drag-and-drop, which Firefox does not start from buttons and touch screens do not support.
 // A press that moves less than 6 px is a tap/click and adds the component at a free spot; a drag
 // shows a ghost under the pointer and drops the component where it is released over the canvas.
-function Palette({lab,onAdd,onDropAt,setDragging}){const groups=[...new Set(lab.components.map(c=>c.group))];const[ghost,setGhost]=useState(null);
+function Palette({lab,comps=lab.components,onAdd,onDropAt,setDragging}){const groups=[...new Set(comps.map(c=>c.group))];const[ghost,setGhost]=useState(null);
 const press=(e,c)=>{if(e.pointerType==="mouse"&&e.button!==0)return;e.preventDefault();const sx=e.clientX,sy=e.clientY;let moved=false;
 const move=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;if(!moved){moved=true;setDragging(true)}setGhost({c,x:ev.clientX,y:ev.clientY})};
 const end=ok=>ev=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",cancel);setGhost(null);setDragging(false);if(!ok)return;if(moved)onDropAt(c.type,ev.clientX,ev.clientY);else onAdd(c.type)};
 const up=end(true),cancel=end(false);addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",cancel)};
 return <aside className="lab-pal" aria-label="Components"><div className="lab-h">COMPONENTS</div>
-{groups.map(g=><div key={g}><div className="lab-g">{g}</div>{lab.components.filter(c=>c.group===g).map(c=>
+{groups.map(g=><div key={g}><div className="lab-g">{g}</div>{comps.filter(c=>c.group===g).map(c=>
 <button key={c.type} type="button" className="lab-item" onPointerDown={e=>press(e,c)} onClick={e=>{if(e.detail===0)onAdd(c.type)}} title={`${c.desc} Drag onto the canvas, or tap to add.`}>
 <Glyph kind={c.type}/><span>{c.name}</span></button>)}</div>)}
 {ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Glyph kind={ghost.c.type}/>{ghost.c.name}</div>}
@@ -88,9 +90,11 @@ return <div className="lab-sch"><div className="lab-h">{(comp.schemaLabel||"Sche
 {iss.length>0&&<p className={"lab-note lab-note-tight "+(errs?"lab-warn":"")}>{errs?`${errs} problem${errs>1?"s":""}`:""}{errs&&iss.length>errs?" · ":""}{iss.length>errs?`${iss.length-errs} warning${iss.length-errs>1?"s":""}`:""}: open the schema to see them.</p>}
 <button type="button" className="lab-btn ghost" onClick={()=>setOpen(true)}>{cfg.schema?.tables?.length?"Edit schema":`Add ${v.tables}`}</button>
 {open&&<SchemaEditor engine={e} schema={cfg.schema} title={title} suggest={suggest} save={schema=>set({schema})} close={()=>setOpen(false)}/>}</div>}
-function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn,fieldHints,hl=2}){
+function Inspector({lab,cat,node,edge,result,running,update,rename,remove,removeEdge,run,names,hours,labelOf,ch,best,goals,score,conn,fieldHints,hl=2,v2,ops,setCarries}){
 // hl: the level of its headings, one below the Lab's own title (h1 on its own page, h3 inside the landing page's section)
 const H="h"+hl;
+if(v2){if(!node&&edge)return <ArrowV2 edge={edge} ops={ops||[]} labelOf={labelOf} removeEdge={removeEdge} setCarries={setCarries} H={H}/>;if(node)return <InspectorV2 lab={lab} node={node} update={update} rename={rename} remove={remove} conn={conn&&{...conn,removeEdge}} labelOf={labelOf} fieldHints={fieldHints} H={H} Glyph={Glyph} maxName={MAX_NAME}/>;
+return <aside className="lab-ins" tabIndex={0} aria-label="Details"><div className="lab-h">DESIGN</div><p className="lab-desc">Select a component to change its settings, or an arrow to choose which calls it carries.</p><p className="lab-note">Run tries the example tests; Submit runs every test. After either, ▶ Replay a load test to watch it minute by minute here.</p><p className="lab-note">Prices are approximate AWS on-demand list prices for Mumbai, for learning only. The bill includes storage and data transfer.</p></aside>}
 // Settings a challenge fixes are shown at the challenge's value and can't be changed (QA M4).
 const fx=ch?.fixed||{},lockOf=t=>t==="server"?{queriesPerRequest:fx.queriesPerRequest}:t==="cache"?{hitPct:fx.hitPct,writePct:fx.writePct}:t==="cdn"?{hitPct:fx.cdnHitPct,live:fx.cdnLive}:{};
 const chBox=ch&&<div className="lab-ch"><div className="lab-h">CHALLENGE · {lab.levels.find(l=>l.id===ch.level)?.label.toUpperCase()}</div><H>{ch.title}</H><p className="lab-desc">{ch.brief}</p>
@@ -150,7 +154,7 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.chaos?.length?", with the crash the challenge causes":""}.</p></>}
 <div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 
-function Canvas({lab,start,embedded,problem,onDesign,trace}){const cat=useMemo(()=>catalogue(lab),[lab]);
+function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const cat=useMemo(()=>catalogue(lab),[lab]);const v2=problem?.v===2&&!!lab.eval;const v2Ref=useRef(v2);v2Ref.current=v2;
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
@@ -172,8 +176,8 @@ const[store,setStore]=useState(()=>{const s=load(lab);const sc=start&&(lab.chall
 // this one; credit is kept unless load.credit says otherwise.
 if(problem){const pid="q-"+problem.id;const mine=s.designs[pid]?pid:Object.values(s.designs).filter(d=>d.problem===problem.id).sort((a,b)=>b.updated-a.updated)[0]?.id;
 const L=problem.load,put=d=>L?{...d,...structuredClone({nodes:L.nodes,edges:L.edges}),...(L.credit?{credit:{...L.credit}}:{}),updated:Date.now()}:d;
-if(mine){s.current=mine;if(L){s.designs[mine]=put(s.designs[mine]);persistNew(lab,s.designs[mine],mine)}return s}
-const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]=put({id,name:problem.name,updated:fresh?1:Date.now(),...(problem.start?structuredClone({nodes:problem.start.nodes,edges:problem.start.edges}):{nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[]}),credit:{spent:0,hours:0},problem:problem.id});s.current=id;persistNew(lab,s.designs[id],id);return s}
+if(mine){s.current=mine;if(problem.v===2&&s.designs[mine].v!==2)s.designs[mine]={...s.designs[mine],v:2};if(L||problem.v===2){if(L)s.designs[mine]=put(s.designs[mine]);persistNew(lab,s.designs[mine],mine)}return s}
+const fresh=!deletedIds().has(pid),id=fresh?pid:newId("design");s.designs[id]=put({id,name:problem.name,updated:fresh?1:Date.now(),...(problem.start?structuredClone({nodes:problem.start.nodes,edges:problem.start.edges}):{nodes:[{id:"clients",type:"client",x:0,y:160,config:defaultConfig(cat.client)}],edges:[]}),credit:{spent:0,hours:0},problem:problem.id,...(problem.v===2?{v:2}:{})});s.current=id;persistNew(lab,s.designs[id],id);return s}
 // Opened on a challenge (the landing page, #lab/<id>): open this browser's latest design for it, or make
 // one from its start, without creating the example design too (QA H7).
 if(sc){const mine=Object.values(s.designs).filter(d=>d.challenge===start).sort((a,b)=>b.updated-a.updated)[0];if(mine){s.current=mine.id;return s}/* A challenge's untouched starting design has the same id on every device and the oldest possible
@@ -190,10 +194,10 @@ useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.cur
 // saves at once. The embedded Lab (landing page) never changes which design the full Lab opens.
 const snap=useRef(null);snap.current={nodes,edges,name,credit};const storeRef=useRef(store);storeRef.current=store;
 const writeDesign=useCallback(id=>{const mem=storeRef.current.designs[id];if(!id||!mem)return;const latest=load(lab),cur=snap.current;
-const base=latest.designs[id]||mem,next={name:cur.name.trim()||"Untitled design",...fromFlow(cur.nodes,cur.edges),credit:cur.credit};
+const base=latest.designs[id]||mem,next={name:cur.name.trim()||"Untitled design",...fromFlow(cur.nodes,cur.edges),credit:cur.credit,...(base.v===2||v2Ref.current?{v:2}:{})};
 // Unchanged designs aren't re-saved: a save stamps "updated", and a needless stamp would make an old
 // copy look newer than a deletion or edit synced from another device.
-const same=k=>JSON.stringify(base[k]??null)===JSON.stringify(next[k]??null);if(latest.designs[id]&&["name","nodes","edges","credit"].every(same))return;
+const same=k=>JSON.stringify(base[k]??null)===JSON.stringify(next[k]??null);if(latest.designs[id]&&["name","nodes","edges","credit","v"].every(same))return;
 const d={...base,...next,updated:Date.now()};
 latest.designs[id]=d;if(!embedded)latest.current=storeRef.current.current;save(latest);setStore(s=>({...s,designs:{...latest.designs,[id]:d}}))},[lab,embedded]);
 useEffect(()=>{const id=loaded.current;const t=setTimeout(()=>writeDesign(id),400);return()=>clearTimeout(t)},[nodes,edges,name]);// eslint-disable-line
@@ -221,11 +225,14 @@ useEffect(()=>{if(!running)return;const iv=setInterval(()=>{setRun(r=>{let n=adv
 if(c.spent+cost>=lab.budget)return{spent:lab.budget,hours:c.hours+(cost>0?hours*(lab.budget-c.spent)/cost:hours)};return{spent:c.spent+cost,hours:c.hours+hours}})},TICK);return()=>clearInterval(iv)},[running,speed,lab.budget,lab]);
 useEffect(()=>{if(running&&credit.spent>=lab.budget){setRunning(false);setEnded(true)}},[credit,running,lab.budget]);
 const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;track("component_add",{type:kind});const comp=cat[kind];const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
-setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:defaultConfig(comp)}}])},[cat,rf,setNodes]);
+setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:v2Ref.current?{}:defaultConfig(comp)}}])},[cat,rf,setNodes]);
 const update=(id,config)=>setNodes(ns=>ns.map(n=>n.id===id?{...n,data:{...n.data,config}}:n));
 const rename=(id,name)=>setNodes(ns=>ns.map(n=>{if(n.id!==id)return n;const{name:_,...data}=n.data;return{...n,data:name?{...data,name}:data}}));
 const remove=id=>{setNodes(ns=>ns.filter(n=>n.id!==id));setEdges(es=>es.filter(e=>e.source!==id&&e.target!==id))};
-const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);return !!s&&!!t&&c.source!==c.target&&t.data.kind!=="client"&&s.data.kind!=="database"&&!edges.some(e=>e.source===c.source&&e.target===c.target)};
+const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);if(!s||!t||c.source===c.target||edges.some(e=>e.source===c.source&&e.target===c.target))return false;
+// v2: the arrows eval.json allows (a database may point at a queue for change data capture, the Clients at S3)
+if(v2){const as=n=>({id:n.id,type:n.data.kind,config:n.data.config});return allowedEdge(as(s),as(t),lab)}return t.data.kind!=="client"&&s.data.kind!=="database"};
+const setCarries=(id,carries)=>setEdges(es=>es.map(e=>e.id===id?{...e,data:carries?{...e.data,carries}:Object.fromEntries(Object.entries(e.data||{}).filter(([k])=>k!=="carries"))}:e));
 const onConnect=useCallback(c=>setEdges(es=>addEdge(edge(c.source,c.target),es)),[setEdges]);
 const[dragging,setDragging]=useState(false);
 // Drop from the palette: only when released over the canvas.
@@ -244,29 +251,29 @@ const refill=()=>{setRunning(false);setEnded(false);setRun(newRun());setCredit({
 const t=result.total,blocking=result.problems.filter(p=>!p.includes("no traffic")),left=Math.max(0,lab.budget-credit.spent),pct=left/lab.budget*100,out=left<=0;
 const lasts=t.burnPerHour>0?left/t.burnPerHour:Infinity;
 const flowEdges=useMemo(()=>edges.map(e=>{const dead=run.down[e.source]!==undefined||run.down[e.target]!==undefined;return{...e,animated:running&&!dead,className:dead?"dead":running?"live":""}}),[edges,running,downKey]);// eslint-disable-line
-return <Ctx.Provider value={{cat,result,running,run,trace}}><div className={"lab"+(trace?" lab-watch":"")}>
+return <Ctx.Provider value={{cat,result,running,run,trace,replay:v2?replay:null}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
-<div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{cents(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
+{!v2&&<><div className={"lab-budget"+(out||lasts<24*30?" over":"")} title={lab.priceNote}><span>{cents(left)} <small>credit left of {usd(lab.budget)}</small></span><div className="lab-meter"><i style={{width:pct+"%"}}/></div><small className="lab-burn">burns {usd(t.burnPerHour)}/hour · {usd(t.monthlyCost)}/month</small></div>
 <label className="lab-speed"><span className="sr">Simulation speed</span><select value={speed} onChange={e=>setSpeed(+e.target.value)}>{SPEEDS.map(([l,h])=><option key={l} value={h}>{l}</option>)}</select></label>
-<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){track("run_start",{nodes:nodes.length,challenge:ch?.id||""});if(run.t===0){let h=credit.hours;if(ch){const day=Math.floor(h/24+1e-9);h=day*24+ch.startHour;if(h<credit.hours-1e-6)h+=24;setCredit(c=>({...c,hours:h}))}setRun({...newRun(),start:h})}}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button>
+<button type="button" className="lab-btn run" disabled={!running&&(blocking.length>0||out)} onClick={()=>{setEnded(false);if(!running){track("run_start",{nodes:nodes.length,challenge:ch?.id||""});if(run.t===0){let h=credit.hours;if(ch){const day=Math.floor(h/24+1e-9);h=day*24+ch.startHour;if(h<credit.hours-1e-6)h+=24;setCredit(c=>({...c,hours:h}))}setRun({...newRun(),start:h})}}setRunning(r=>!r)}}>{running?"■ Stop":"▶ Run traffic"}</button></>}
 </header>
-<div className="lab-status" aria-live="polite">{badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<><span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."}</span><button type="button" className="lab-btn ghost lab-refill" onClick={refill}>Start again with a fresh {usd(lab.budget)}</button></>
+<div className="lab-status" aria-live="polite">{v2?(replay?<span>{replay.status}</span>:<span className="lab-muted">Run or Submit to test this design; then ▶ Replay a load test to watch it here.</span>):badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:blocking.length?<span className="lab-warn">{blocking[0]}</span>:out?<><span className="lab-warn">{ended?`Credit used up after ${duration(credit.hours)} of traffic.`:"This design has no credit left."}</span><button type="button" className="lab-btn ghost lab-refill" onClick={refill}>Start again with a fresh {usd(lab.budget)}</button></>
 :running||run.t>0?<>{!running&&<span className="lab-muted">Stopped ·</span>}<span><b>{simTime(credit.hours)}</b></span><span><b>{num(t.sentRps)}</b> req/s sent{t.clients>1?` by ${t.clients} Clients`:""}</span><span className={t.successPct<99.9?"bad":""}><b>{t.successPct>=99.95?"100":t.successPct.toFixed(1)}%</b> served</span>{t.successPct>=0.05&&<span><b>{Math.round(t.latencyMs)} ms</b> average latency</span>}{t.retryRps>0.5&&<span>+<b>{num(t.retryRps)}</b> retries/s</span>}{run.sent>0&&<span className={run.served/run.sent<0.999?"bad":""}>availability <b>{(100*run.served/run.sent).toFixed(2)}%</b></span>}{t.down.length>0&&<span className="lab-warn"><b>{t.down.length}</b> crashed</span>}{t.bottleneck&&<span>Busiest: <b>{cat[nodes.find(n=>n.id===t.bottleneck)?.data.kind]?.name}</b> at {Math.round(result.nodes[t.bottleneck].utilisation*100)}%</span>}{result.problems[0]&&<span className="lab-warn">{result.problems[0]}</span>}</>
 :<span className="lab-muted">{result.problems[0]||`Press Run traffic to send the Clients' requests through your design. Credit is spent while it runs: at this design's cost ${usd(left)} lasts ${lasts===Infinity?"indefinitely":duration(lasts)}.`}</span>}</div>
-<Palette lab={lab} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
+<Palette lab={lab} comps={v2?paletteV2(lab):lab.components} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
 <ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt}/>
+<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} cat={cat} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} result={result} running={running} update={update} remove={remove} run={run} names={names} hours={credit.hours} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} v2={v2} ops={problem?.ops} setCarries={setCarries}/>
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={embedded?.next&&nextCh?(()=>{location.hash=`problems/challenge/${nextCh.id}`}):null} more={embedded?.next?null:embedded}/>}
 </div></Ctx.Provider>}
 
 // Signed in, the account's designs are merged in before the Lab opens (at most 4 s), so a stale copy
 // in this browser is never what gets edited.
-export default function Lab({challenge,embedded,problem,onDesign,trace}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge,embedded,problem,onDesign,trace,replay}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the canvas" retry={go}/>;if(!st.lab)return <Loading label="Loading the canvas"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas trace={trace} lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas trace={trace} replay={replay} lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}

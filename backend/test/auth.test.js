@@ -480,11 +480,11 @@ test('a problem submitted while signed in is judged again on the server and coun
   // that was the Solution tab's design, unchanged: stored and judged, but kept out of the stats
   assert.equal(j.copied, true); assert.equal(j.submissions, 1); assert.equal(j.accepted, 0); assert.equal(j.cheaperThan, null);
   // the visitor's own design (one more server than the solution's) counts
-  const own = structuredClone(a.practice.reference); own.nodes.find((n) => n.id === 'app1').config.count += 1;
+  const own = structuredClone(a.practice.reference); own.nodes.find((n) => n.id === 'app').config.count += 1;
   j = await (await submit({ slug: 'url-shortener', design: own, answer: {} })).json();
   assert.equal(j.verdict, 'accepted'); assert.equal(j.copied, undefined); assert.equal(j.submissions, 2); assert.equal(j.accepted, 1); assert.equal(j.cheaperThan, null);
   // a pricier accepted design: the own one is now cheaper than 100% of the others
-  const pricey = structuredClone(a.practice.reference); pricey.nodes.find((n) => n.id === 'app1').config.count = 20;
+  const pricey = structuredClone(a.practice.reference); pricey.nodes.find((n) => n.id === 'app').config.count = 50;
   j = await (await submit({ slug: 'url-shortener', design: pricey, answer: {} })).json();
   assert.equal(j.verdict, 'accepted'); assert.equal(j.cheaperThan, 0);
   j = await (await submit({ slug: 'url-shortener', design: own, answer: {} })).json();

@@ -8,10 +8,11 @@ import { simulateTest } from './simulate.js';
 import { analyse } from './analyse.js';
 import { faultsOf } from './faults.js';
 import { configOf, evalCatalogue } from './design.js';
-import { WHY } from './words.js';
+import { WHY, checkLabel } from './words.js';
 import { slowShare } from './latency.js';
 
 export const AREAS = { function: 15, scale: 15, resilience: 10, correctness: 5, cost: 5 };
+export const NOT_READY = 'This problem needs a newer version of the site. Refresh the page.';
 const CORRECTNESS = new Set(['noLostWrites', 'noDuplicates', 'ordered', 'atomic', 'fresh']);
 const MAX_FINDINGS = 12;
 
@@ -157,8 +158,24 @@ function explain(test, checks, sim, findings, compiled, practice, lab) {
 
 export function evaluate(design, lab, practice, { sample = false } = {}) {
   const tests = (practice?.tests || []).filter((t) => !sample || t.sample);
+  // a catalogue without eval.json (an old API) cannot judge a v2 problem: say so, never throw
+  if (!lab?.eval) {
+    const results = tests.map((t) => ({ test: t, id: t.id, ok: false, error: NOT_READY, checks: [], why: [] }));
+    return { verdict: 'error', passed: 0, total: results.length, results, first: results[0] || null, metrics: null, designPoints: 0, findings: [], plans: {} };
+  }
   const compiled = compile(design, lab, practice);
-  const plansOut = Object.fromEntries(Object.entries(compiled.plans || {}).map(([id, p]) => [id, { ok: p.ok, ...(p.error ? { error: p.error } : {}), steps: p.steps }]));
+  // each operation's hops for "How your design was read" (§12.1): the first member of each split group, in order
+  const hopsOf = (p) => {
+    const out = [];
+    const walk = (h, depth) => {
+      out.push({ node: h.node, kind: h.kind, depth, sync: h.sync, ...(h.step ? { step: h.step } : {}), ...(h.share && typeof h.share === 'object' ? { share: h.share.kind } : {}), ...(h.copy ? { copy: true } : {}) });
+      const seen = new Set();
+      for (const c of h.children) { const g = c.share?.kind === 'split' ? c.share.group : null; if (g) { if (seen.has(g)) continue; seen.add(g); } walk(c, depth + 1); }
+    };
+    if (p.root) walk(p.root, 0);
+    return out;
+  };
+  const plansOut = Object.fromEntries(Object.entries(compiled.plans || {}).map(([id, p]) => [id, { ok: p.ok, ...(p.error ? { error: p.error } : {}), steps: p.steps, hops: p.ok ? hopsOf(p) : [] }]));
   if (!compiled.ok) {
     const msg = compiled.errors[0]?.message || 'This design could not be read.';
     const results = tests.map((t) => ({ test: t, id: t.id, ok: false, error: msg, checks: [], why: [] }));
@@ -172,12 +189,17 @@ export function evaluate(design, lab, practice, { sample = false } = {}) {
     return { test: t, id: t.id, sim };
   });
   const findings = analyse(compiled, practice, lab, sims);
+  const blocked = (practice.operations || []).filter((o) => (!o.source || o.source === 'clients') && (o.share || 0) > 0 && !compiled.plans[o.id]?.ok);
   for (const r of results) {
     if (!r.sim) continue;
     const { sim } = r;
-    r.checks = loadChecks(r.test, sim, findings, compiled, practice, lab);
+    r.checks = loadChecks(r.test, sim, findings, compiled, practice, lab).map((c) => ({ ...c, label: c.label || checkLabel(c, practice, evalCatalogue(lab)) }));
+    // a call the tests send that the design can't run at all fails every check of the test: a system that can't
+    // serve a call has no bill or durability worth scoring (evaluator.md §18, phase 3)
+    if (blocked.length) r.checks = r.checks.map((c) => (c.ok ? { ...c, ok: false, blocked: true } : c));
     r.ok = r.checks.every((c) => c.ok);
     r.why = r.ok ? [] : explain(r.test, r.checks, sim, findings, compiled, practice, lab);
+    if (blocked.length && !r.why.length) r.why = [WHY.planError(blocked[0].name || blocked[0].id, compiled.plans[blocked[0].id]?.error?.message || '')];
     for (const c of r.checks) delete c.failing;
     const planned = Object.values(sim.ops).filter((o) => o.calls > 0);
     r.metrics = { availability: planned.length ? Math.min(...planned.map((o) => o.availability)) : 100, p99: Math.max(0, ...planned.map((o) => o.p99Worst)), avgMonthly: sim.cost.monthly };

@@ -462,7 +462,7 @@ test('the account sync keeps the problem a saved design was opened for', async (
 
 test('validation checks practice suites: tests, checks, rubric, hints, calibration designs', async () => {
   const lab = JSON.parse(await readFile(path.join(repoContent, 'lab.json'), 'utf8'));
-  const q = structuredClone(allArticles.find((a) => a.practice));
+  const q = structuredClone(allArticles.find((a) => a.practice && a.practice.v !== 2)); // a v1 problem (v2 rules: the v2 test below)
   assert.ok(q, 'an Interview Question has practice tests');
   q.practice.tests[0].checks.push({ kind: 'teleport', label: 'x' });
   q.practice.tests[1].traffic.pattern = 'nope';
@@ -515,8 +515,8 @@ test('eval.json is loaded, valid, and served inside the Lab catalogue', async ()
   assert.equal(lab.eval?.v, 2, 'loadContent puts eval.json on lab.eval');
   const { eval: evalCat, ...labOnly } = lab;
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly, evalCat }), []);
-  // without eval.json the content is still valid (v1 only)
-  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), []);
+  // without eval.json the v1 content is still valid; a v2 problem says it needs it
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), allArticles.filter((a) => a.practice?.v === 2).map((a) => `articles/${a.section}/${a.slug}.json practice: v 2 needs content/eval.json`));
   const { server, baseUrl } = await startServer();
   try { const body = await (await fetch(baseUrl + '/v1/lab')).json(); assert.equal(body.eval.v, 2); assert.equal(body.eval.components.length, lab.eval.components.length); }
   finally { server.kill(); }
