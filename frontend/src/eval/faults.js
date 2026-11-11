@@ -1,9 +1,10 @@
 // Faults a load test injects (evaluator.md §8.13): crash, instanceCrash, groupDown, zoneDown, slow, spike,
-// cacheFlush (phase 2); externalDown, poison, hotKey (phase 4). A fault names a component **type**; "busiest" is the node of that type with the highest load in the
+// cacheFlush (phase 2); externalDown, poison, hotKey (phase 4); abuse (phase 5). A fault names a component **type**; "busiest" is the node of that type with the highest load in the
 // previous tick (ties: design order). Each function changes the simulator's state `st` and pushes events.
 
 export const PHASE2_FAULTS = ['crash', 'instanceCrash', 'groupDown', 'zoneDown', 'slow', 'spike', 'cacheFlush'];
 export const PHASE4_FAULTS = ['externalDown', 'poison', 'hotKey'];
+export const PHASE5_FAULTS = ['abuse'];
 
 // v1's `chaos: [{minute, type}]` is an alias of crash faults (§6.5).
 export function faultsOf(test) {
@@ -66,7 +67,8 @@ export function startFault(f, st, t) {
       }
     }
   } else if (f.kind === 'slow') {
-    const id = busiest(st, f.type || 'database');
+    // an external provider can be named by its kind (preset); otherwise the busiest node of the type
+    const id = f.preset ? st.order.find((x) => st.info[x].type === 'external' && st.info[x].cfg.preset === f.preset) : busiest(st, f.type || 'database');
     if (id) st.slow[id] = { factor: f.factor ?? 5, until: t + (f.minutes ?? 10) };
   } else if (f.kind === 'spike') {
     st.spikes.push({ factor: f.factor ?? 2, op: f.op || null, until: t + (f.minutes ?? 10) });
@@ -81,6 +83,10 @@ export function startFault(f, st, t) {
     // one item gets a share of an operation's calls (§8.11)
     st.hot.push({ op: f.op || null, share: Math.min(1, Math.max(0, f.share ?? 0.3)), until: t + (f.minutes ?? 15) });
     st.events.push({ t, node: null, kind: 'hotKey', op: f.op || null });
+  } else if (f.kind === 'abuse') {
+    // one client sends `factor` × the normal traffic on top (§8.13)
+    st.abuse = { factor: Math.max(0, f.factor ?? 5), until: t + (f.minutes ?? 15) };
+    st.events.push({ t, node: null, kind: 'abuse', factor: st.abuse.factor });
   } else if (f.kind === 'cacheFlush') {
     for (const id of st.order) if (st.info[id].type === 'cache' && st.down[id] === undefined) { st.cold[id] = t; st.events.push({ t, node: id, kind: 'cold', forced: true }); }
   }
@@ -95,5 +101,6 @@ export function endFaults(st, t) {
   }
   st.spikes = st.spikes.filter((s) => s.until > t);
   if (st.poison && st.poison.until <= t) st.poison = null;
+  if (st.abuse && st.abuse.until <= t) st.abuse = null;
   if (st.hot?.length) st.hot = st.hot.filter((h) => h.until > t);
 }
