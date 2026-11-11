@@ -112,6 +112,18 @@ test('work after a step done behind a queue is done behind the queue too, even w
   assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op] }).plans.add.ok, false);
 });
 
+test('a composite primary key works as an index on its first fields; a sort key is part of what is unique', () => {
+  const ent = { ops: { rows: 1e9, rowBytes: 100, fields: { doc_id: 'string', version: 'int', op: 'json' }, sample: [{ doc_id: 'd1', version: 1, op: {} }, { doc_id: 'd1', version: 2, op: {} }] } };
+  const open = { id: 'open', name: 'Open', kind: 'read', share: 1, respond: { status: 200, body: {} }, steps: [{ id: 's1', op: 'query', entity: 'ops', where: { doc_id: 'd1' }, order: { field: 'version' }, limit: 100, matches: 100 }] };
+  const save = { id: 'save', name: 'Save', kind: 'write', share: 0, respond: { status: 200, body: {} }, steps: [{ id: 's1', op: 'put', entity: 'ops', values: { doc_id: 'd1', version: 3, op: {} }, unique: ['doc_id', 'version'] }] };
+  const d = (db) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'm5.large', count: 2 }), N('db', 'database', db)], edges: E(['c', 'app'], ['app', 'db']) });
+  const pg = compile(d({ engine: 'postgres', size: 'db.m5.large', schema: { tables: [{ name: 'ops', fields: F('doc_id version:int op:json'), key: ['doc_id', 'version'] }] } }), lab, { v: 2, entities: ent, operations: [open, save] });
+  assert.equal(pg.plans.open.steps.s1.how, 'index-range');
+  assert.equal(pg.plans.save.ok, true, pg.plans.save.error?.message);
+  const cs = compile(d({ engine: 'cassandra', schema: { tables: [{ name: 'ops', fields: F('doc_id version:int op:json'), key: ['doc_id'], sortKey: 'version' }] } }), lab, { v: 2, entities: ent, operations: [open, save] });
+  assert.equal(cs.plans.save.ok, true, cs.plans.save.error?.message);
+});
+
 // ---- shards ---------------------------------------------------------------------------------------------------
 test('a step that names the shard key goes to one shard; one that does not asks every shard', () => {
   const users = { orders: { rows: 1e8, rowBytes: 200, fields: { order_id: 'string', user_id: 'string', total: 'int' }, sample: [{ order_id: 'o1', user_id: 'u1', total: 5 }, { order_id: 'o2', user_id: 'u1', total: 9 }] } };

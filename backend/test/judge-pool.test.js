@@ -1,6 +1,7 @@
 // The worker-thread judge (src/auth/judge-pool.js): same results as judging in place, a time limit,
 // a bounded queue, and an API thread that stays free while a slow design is judged.
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { judgePool, JudgeError } from '../src/auth/judge-pool.js';
 import { loadContent } from '../src/content/store.js';
@@ -12,8 +13,10 @@ const lab = content.lab;
 const problems = content.articles.filter((a) => a.practice);
 // cleaned as the API cleans a submission: a v2 problem's design keeps its v2 settings
 const v2 = (d, a) => (a.practice.v === 2 ? { ...d, v: 2 } : d);
-// the v1 problem with the most simulated hours: the slow design must stay slow whatever is converted to v2
-const heavyV1 = () => problems.filter((p) => p.practice.v !== 2).map((p) => [p, p.practice.tests.reduce((h, t) => h + (t.hours || 0), 0)]).sort((x, y) => y[1] - x[1])[0][0];
+// a v1 problem (every Interview Question is on v2 now: file sync before its conversion, kept as a fixture until v1
+// is removed): the slow design is built for the v1 judge
+const v1Problem = JSON.parse(readFileSync(new URL('./fixtures/v1-problem.json', import.meta.url), 'utf8'));
+const heavyV1 = () => v1Problem;
 // the slow design against the problem's load tests five times over: seconds on any machine (a fast CI runner judged
 // it once in under the 2 s limit)
 const slowJob = (a) => { const j = job(slowDesign(), a), load = j.practice.tests.filter((t) => !t.request && !t.op); return { ...j, practice: { ...j.practice, tests: [...j.practice.tests, ...load, ...load, ...load, ...load].map((t, i) => ({ ...t, id: `${t.id}-${i}` })) } }; };

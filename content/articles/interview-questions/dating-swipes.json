@@ -903,8 +903,8 @@
       },
       {
         "name": "Matches without an index",
-        "why": "Listing a user's matches sorts every pair they ever swiped on.",
-        "fails": "api-matches",
+        "why": "Listing a user's matches reads and sorts every pair they ever swiped on: at the evening peak that is more than the databases take.",
+        "fails": "peak",
         "nodes": [
           {
             "id": "clients",

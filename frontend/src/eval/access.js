@@ -90,7 +90,8 @@ export function accessPath(node, table, step, practice, lab, match = fieldMatche
   const F = Object.keys(lookupOf(step)).map(uf), by = F.join(', ') || 'this';
   const key = table.key || [], sk = table.sortKey || null;
   const ixs = cache ? [] : (table.indexes || []).filter((i) => v.indexKinds.includes(i.kind));
-  const btree = caps.has('index') ? ixs.filter((i) => i.kind === 'btree' || i.kind === 'unique') : [];
+  // an engine with B-tree indexes keeps its primary key as one too: a query on the key's first fields uses it
+  const btree = caps.has('index') ? [...(key.length > 1 ? [{ fields: key, kind: 'btree', primary: true }] : []), ...ixs.filter((i) => i.kind === 'btree' || i.kind === 'unique')] : [];
   // an index whose first fields are F (any order), then `then`
   const prefixIx = (fields, then) => (fields.length || then ? btree.find((i) => i.fields.length >= fields.length + (then ? 1 : 0) && same(i.fields.slice(0, fields.length), fields) && (!then || i.fields[fields.length] === then)) : null);
   const allIx = !cache && !!v.allIndexed;
@@ -173,7 +174,8 @@ export function accessPath(node, table, step, practice, lab, match = fieldMatche
     if (missingKey.length) return no(ACCESS.putKey(table.name, keyWord, missingKey));
     if (Array.isArray(step.unique) && step.unique.length) {
       const U = step.unique.map(uf);
-      const onKey = key.length && same(U, key) && (caps.has('cas') || !!lab.eval.engines?.[id]?.uniqueOnKey || cache);
+      // the primary key of a store with a sort key is the key and the sort key together
+      const onKey = key.length && (same(U, key) || (sk && same(U, [...key, sk]))) && (caps.has('cas') || !!lab.eval.engines?.[id]?.uniqueOnKey || cache);
       const onIx = caps.has('unique') && ixs.some((i) => i.kind === 'unique' && same(i.fields, U));
       if (!onKey && !onIx) return no(caps.has('cas') || caps.has('unique') ? ACCESS.uniqueWhere(table.name, U.join(', ')) : ACCESS.unique(label));
     }
