@@ -104,6 +104,9 @@ test('work after a step done behind a queue is done behind the queue too, even w
   const c = compile(d, lab, { v: 2, entities: ent, operations: [op] });
   assert.equal(c.plans.add.ok, true, c.plans.add.error?.message);
   assert.deepEqual([c.plans.add.steps.s1.sync, c.plans.add.steps.s2.sync, c.plans.add.steps.s3.sync], [true, false, false]);
+  // a read that can wait is done behind the queue too, when the worker reaches the store
+  const op2 = { ...op, steps: [op.steps[0], { id: 's2', op: 'get', entity: 'pages', by: { url: 'a' }, timing: 'defer', withinSec: 600 }] };
+  assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op2] }).plans.add.steps.s2.sync, false);
   // the fetchers can't reach the store: the page can't be saved after the fetch
   d.edges = d.edges.filter((e) => !(e.from === 'w' && e.to === 'db'));
   assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op] }).plans.add.ok, false);

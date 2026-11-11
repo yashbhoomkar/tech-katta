@@ -128,6 +128,11 @@ export function compile(design, lab, practice) {
 
   // ---- binding one step from handler h (§7.5) --------------------------------------------------------------
   function bindRead(op, h, step, sR, aR) {
+    // a read that can wait (phase 6) is done by the worker behind a queue when one reaches the store
+    if (step.timing === 'defer') {
+      const later = candidates(step, aR).ok[0];
+      if (later) return { step, store: later.e.store, table: later.t, a: later.a, path: later.e.path, viaCache: viaCache(later.e.path), async: true, queue: later.e.queue, worker: later.e.worker, qi: later.e.qi };
+    }
     const c = candidates(step, sR);
     const best = c.ok[0] || c.partial[0];
     if (!best) {
