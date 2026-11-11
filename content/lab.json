@@ -337,17 +337,7 @@
       ],
       "latencyMs": 5,
       "limitRps": 20000000,
-      "pricePer10k": 0.009,
-      "hitPct": {
-        "label": "Requests answered from the edge (%)",
-        "default": 95,
-        "min": 0,
-        "max": 99
-      },
-      "live": {
-        "label": "Live content: every chunk is new (live video)",
-        "default": false
-      }
+      "pricePer10k": 0.009
     },
     {
       "type": "apigw",
@@ -422,12 +412,6 @@
         "max": 50
       },
       "defaultSize": "m5.large",
-      "queriesPerRequest": {
-        "label": "Database queries per request",
-        "default": 2,
-        "min": 1,
-        "max": 10
-      },
       "crash": {
         "above": 1.5,
         "minutes": 10,
@@ -455,63 +439,6 @@
         "worker",
         "workers",
         "ec2"
-      ],
-      "roles": [
-        {
-          "id": "websocket",
-          "label": "WebSocket gateway",
-          "desc": "Keeps a connection open to every online user, so the server can push a message the moment it arrives."
-        },
-        {
-          "id": "fanout",
-          "label": "Fan-out workers",
-          "desc": "Copy one event into many people's inboxes or feeds."
-        },
-        {
-          "id": "aggregator",
-          "label": "Stream aggregator",
-          "desc": "Counts events as they stream in, per key and time window: clicks per ad per minute, points per player."
-        },
-        {
-          "id": "matcher",
-          "label": "Matching service",
-          "desc": "Pairs one side with the other: a rider with a nearby driver, two people who liked each other."
-        },
-        {
-          "id": "sandbox",
-          "label": "Sandboxed runners",
-          "desc": "Run code nobody has checked in a sealed box, with limits on time, memory and network."
-        },
-        {
-          "id": "fetcher",
-          "label": "Crawl fetchers",
-          "desc": "Download pages at a polite rate for each website and hand the new links back."
-        },
-        {
-          "id": "scheduler",
-          "label": "Scheduler",
-          "desc": "Wakes jobs up when they are due and gives each one to exactly one worker, with a lease."
-        },
-        {
-          "id": "sender",
-          "label": "Delivery workers",
-          "desc": "Send push, SMS and email through outside providers, and retry the ones that fail."
-        },
-        {
-          "id": "transcoder",
-          "label": "Transcoders",
-          "desc": "Turn one uploaded video into several sizes and qualities for different screens and networks."
-        },
-        {
-          "id": "sync",
-          "label": "Sync service",
-          "desc": "Merges changes from many devices or editors into one version: operations, versions, file chunks."
-        },
-        {
-          "id": "reservation",
-          "label": "Reservation service",
-          "desc": "Holds seats for a few minutes and confirms each seat once, so two people never get the same one."
-        }
       ]
     },
     {
@@ -529,18 +456,6 @@
         "kafka",
         "rabbitmq",
         "stream"
-      ],
-      "roles": [
-        {
-          "id": "log",
-          "label": "Event log",
-          "desc": "Keeps events in order for days, split into partitions; readers can replay them from any point."
-        },
-        {
-          "id": "frontier",
-          "label": "URL frontier",
-          "desc": "Links waiting to be crawled, one line per website so no site is hit too often."
-        }
       ]
     },
     {
@@ -570,18 +485,6 @@
         }
       ],
       "defaultSize": "cache.t3.medium",
-      "hitPct": {
-        "label": "Reads found in the cache (%)",
-        "default": 80,
-        "min": 0,
-        "max": 99
-      },
-      "writePct": {
-        "label": "Writes (% of queries)",
-        "default": 10,
-        "min": 0,
-        "max": 100
-      },
       "crash": {
         "above": 1.5,
         "minutes": 5,
@@ -627,33 +530,6 @@
         "redis",
         "memcached",
         "elasticache"
-      ],
-      "roles": [
-        {
-          "id": "sortedset",
-          "label": "Sorted set",
-          "desc": "Keeps members ordered by score: the top 10, or anyone's rank, in a moment."
-        },
-        {
-          "id": "geo",
-          "label": "Geo index",
-          "desc": "Live positions kept in memory and searchable by distance."
-        },
-        {
-          "id": "prefix",
-          "label": "Prefix index",
-          "desc": "The top suggestions for every prefix someone might type, ready to return."
-        },
-        {
-          "id": "feed",
-          "label": "Precomputed feeds",
-          "desc": "Each user's feed built ahead of time, so opening the app is a single read."
-        },
-        {
-          "id": "holds",
-          "label": "Holds with expiry",
-          "desc": "Short holds on an item (a seat, a slot, a basket) that disappear by themselves after a few minutes."
-        }
       ]
     },
     {
@@ -700,12 +576,6 @@
         "max": 5,
         "default": 0
       },
-      "writePct": {
-        "label": "Writes among its queries, %",
-        "min": 0,
-        "max": 100,
-        "default": 20
-      },
       "crash": {
         "above": 1.2,
         "minutes": 5,
@@ -718,53 +588,6 @@
         "db",
         "datastore",
         "data store"
-      ],
-      "roles": [
-        {
-          "id": "geo",
-          "label": "Geo index",
-          "desc": "Finds things near a point on the map, using cells such as geohashes or a quadtree."
-        },
-        {
-          "id": "search",
-          "label": "Search index",
-          "desc": "Finds documents by the words in them, with filters and ranking."
-        },
-        {
-          "id": "objects",
-          "label": "Object storage",
-          "desc": "Keeps big files (photos, video, file chunks) by key, cheaply and in several copies."
-        },
-        {
-          "id": "ledger",
-          "label": "Ledger",
-          "desc": "An append-only record of every money movement, where each entry balances."
-        },
-        {
-          "id": "timeseries",
-          "label": "Time-series store",
-          "desc": "Keeps counts per time bucket (per minute, per hour): fast to add to and to sum over a range."
-        },
-        {
-          "id": "kv",
-          "label": "Key-value store",
-          "desc": "One value per key, read and written only by key, spread over machines by the key."
-        },
-        {
-          "id": "wide",
-          "label": "Wide-column store",
-          "desc": "Huge tables split by a partition key and sorted by time inside it, built for very many writes (messages, swipes)."
-        },
-        {
-          "id": "jobs",
-          "label": "Job store",
-          "desc": "Jobs kept in order of the time they are due, so the next ones are cheap to find."
-        },
-        {
-          "id": "oplog",
-          "label": "Operation log",
-          "desc": "Every edit to a document in order, so anyone can replay it to the latest version."
-        }
       ],
       "features": [
         {
@@ -934,10 +757,7 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 2
-          },
-          "roles": [
-            "kv"
-          ]
+          }
         },
         {
           "id": "mongodb",
@@ -1044,10 +864,7 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          },
-          "roles": [
-            "wide"
-          ]
+          }
         },
         {
           "id": "opensearch",
@@ -1105,10 +922,7 @@
             "keyRequired": false,
             "maxIndexFields": 1,
             "allIndexed": true
-          },
-          "roles": [
-            "search"
-          ]
+          }
         },
         {
           "id": "s3",
@@ -1144,10 +958,7 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          },
-          "roles": [
-            "objects"
-          ]
+          }
         },
         {
           "id": "timeseries",
@@ -1205,10 +1016,7 @@
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 1
-          },
-          "roles": [
-            "timeseries"
-          ]
+          }
         },
         {
           "id": "graph",
@@ -1298,8 +1106,7 @@
         "y": 0,
         "config": {
           "size": "m5.large",
-          "count": 2,
-          "queriesPerRequest": 2
+          "count": 2
         }
       },
       {

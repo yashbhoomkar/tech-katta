@@ -40,7 +40,6 @@ export const patternOf = (comp, config) => comp?.patterns?.find((p) => p.id === 
 export const autoscaled = (comp, config) => !!(comp?.autoscaling && config?.autoscale);
 export const scaleRange = (comp, config) => { const lo = config?.count || 1; return [lo, Math.max(lo, Math.min(comp.count.max, config?.maxCount ?? comp.autoscaling?.defaultMax ?? lo))]; };
 
-const pct = (comp, config, key) => config?.[key] ?? comp[key].default;
 // Monthly cost in USD of a component serving servedRps; the API Gateway, queue and CDN are billed per request.
 export function monthlyCost(comp, config = {}, servedRps = 0) {
   if (comp.type === 'cdn') return (servedRps * SECONDS_PER_MONTH / 1e4) * comp.pricePer10k;
@@ -50,17 +49,15 @@ export function monthlyCost(comp, config = {}, servedRps = 0) {
   if (comp.type === 'server') return sizeOf(comp, config).hourly * HOURS_PER_MONTH * (config.count || 1);
   if (comp.type === 'database') {
     const e = engineOf(comp, config);
-    if (e?.capacity === 'request') { const w = comp.writePct ? pct(comp, config, 'writePct') / 100 : 0.2; return (servedRps * SECONDS_PER_MONTH / 1e6) * (w * e.writePerMillion + (1 - w) * e.readPerMillion); }
+    if (e?.capacity === 'request') { const w = 0.2; return (servedRps * SECONDS_PER_MONTH / 1e6) * (w * e.writePerMillion + (1 - w) * e.readPerMillion); }
     return sizeOf(comp, config).hourly * HOURS_PER_MONTH * ((config.multiAz && e?.multiAz !== 'none' && e?.multiAz !== 'builtin' ? comp.multiAz.priceFactor : 1) + replicasOf(comp, config));
   }
   return 0;
 }
 
-// What a component is called: the name the user gave it, else its role, else its kind.
+// What a component is called: the name the user gave it, else its kind.
 export const MAX_NAME = 40;
-export const displayName = (comp, node) => node?.name || roleOf(comp, node?.config)?.label || comp?.name || node?.type || '?';
-// The role a component has been given ({id, label, desc}), or null.
-export const roleOf = (comp, config) => (config?.role && comp?.roles?.find((r) => r.id === config.role)) || null;
+export const displayName = (comp, node) => node?.name || comp?.name || node?.type || '?';
 // Read replicas of a database (0 without the catalogue field).
 export const replicasOf = (comp, config) => (comp?.replicas && engineOf(comp, config)?.replicas !== false ? Math.max(0, Math.min(comp.replicas.max, Math.round(config?.replicas ?? comp.replicas.default) || 0)) : 0);
 

@@ -162,19 +162,19 @@ test('lab validation checks the shape and units of every setting', () => {
   assert.ok(check((l) => { l.components[I.apigw].limitRps = -1; }).some((p) => p.includes(`components[${I.apigw}]: limitRps`)));
   assert.ok(check((l) => { delete l.components[I.server].crash; }).some((p) => p.includes(`components[${I.server}]: crash`)));
   assert.ok(check((l) => { delete l.components[I.database].crash.failoverMinutes; }).some((p) => p.includes(`components[${I.database}]: crash`)));
-  assert.ok(check((l) => { l.components[I.server].queriesPerRequest.default = 0; }).some((p) => p.includes(`components[${I.server}]: queriesPerRequest`)));
+  assert.ok(check((l) => { l.components[I.server].queriesPerRequest = { label: 'x', min: 1, max: 9, default: 2 }; }).some((p) => p.includes(`components[${I.server}]: queriesPerRequest is v1 only`)));
   assert.ok(check((l) => { l.retries = 9; }).some((p) => p.includes('retries')));
 });
 
 test('lab validation checks the phase 2 components, which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
-  assert.ok(check((l) => { l.components[I.cache].hitPct.max = 150; }).some((p) => p.includes(`components[${I.cache}]: hitPct`)));
+  assert.ok(check((l) => { l.components[I.cache].hitPct = { label: 'x', min: 0, max: 99, default: 80 }; }).some((p) => p.includes(`components[${I.cache}]: hitPct is v1 only`)));
   assert.ok(check((l) => { delete l.components[I.cache].sizes[0].ops; }).some((p) => p.includes(`components[${I.cache}]: sizes`)));
   assert.ok(check((l) => { l.components[I.lb].rpsPerLcu = 0; }).some((p) => p.includes(`components[${I.lb}]: rpsPerLcu`)));
   assert.ok(check((l) => { delete l.components[I.queue].pricePerMillion; }).some((p) => p.includes(`components[${I.queue}]: pricePerMillion`)));
   assert.deepEqual(check((l) => { l.components = l.components.filter((c) => ['client', 'apigw', 'server', 'database'].includes(c.type)); delete l.challenges; delete l.levels; }).filter((p) => p.startsWith('lab.json')), []);
   assert.ok(check((l) => { l.components = l.components.filter((c) => c.type !== 'server'); }).some((p) => p.includes('missing component server')));
-  assert.ok(check((l) => { l.example.nodes.push({ id: 'c2', type: 'cache', x: 0, y: 200, config: { hitPct: 120 } }); }).some((p) => p.includes('hitPct must be from 0 to 99')));
+  assert.ok(check((l) => { l.example.nodes.push({ id: 'c2', type: 'cache', x: 0, y: 200, config: { hitPct: 80 } }); }).some((p) => p.includes('hitPct is v1 only')));
 });
 
 test('lab validation checks traffic patterns and autoscaling, which are optional', () => {
@@ -251,9 +251,8 @@ test('validation checks the CDN, a challenge\'s cost star, and the landing page 
   const labCheck = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const siteCheck = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
   const cdn = (l) => l.components.find((c) => c.type === 'cdn'), ch = (l) => l.challenges.find((c) => c.id === 'flash-sale');
-  assert.ok(labCheck((l) => { cdn(l).hitPct.max = 120; }).some((p) => p.includes('hitPct is missing or malformed')));
   assert.ok(labCheck((l) => { delete cdn(l).pricePer10k; }).some((p) => p.includes('pricePer10k')));
-  assert.ok(labCheck((l) => { cdn(l).live.default = 'no'; }).some((p) => p.includes('live is missing or malformed')));
+  assert.ok(labCheck((l) => { cdn(l).live = { label: 'x', default: false }; }).some((p) => p.includes('live is v1 only')));
   assert.ok(labCheck((l) => { ch(l).stars[2] = { kind: 'cost', max: 0, label: 'x' }; }).some((p) => p.includes('cost needs max above 0')));
   // IND vs PAK on the landing page is a problem: an article with practice
   assert.ok(siteCheck((s) => { s.landingLab.problem = 'world-cup'; }).some((p) => p.includes('landingLab.problem world-cup')));
