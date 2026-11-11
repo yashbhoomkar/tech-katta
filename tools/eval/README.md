@@ -1,6 +1,6 @@
 # tools/eval
 
-Tools for problems judged by the v2 evaluator (`practice.v === 2`; see `evaluator.md` in tech-katta-context).
+Tools for problems judged by the v2 evaluator (every problem and challenge; see `evaluator.md` in tech-katta-context). The v1 authoring scripts (`tools/practice`) were removed with v1 (#301, #303).
 
 ## calibrate.mjs
 

@@ -60,93 +60,66 @@ An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` 
 ## Problems: tests for an Interview Question (`practice`)
 
 Every Interview Question except "Start here" has a `practice` object, which turns it into a LeetCode-style
-problem: the visitor writes an answer and builds a design on the Lab canvas, and the judge
-(`frontend/src/judge/judge.js`) runs the tests against that design. Nothing is compared with a model answer.
+problem: the visitor writes an answer and builds a design on the canvas, and the v2 evaluator
+(`frontend/src/eval/`; `judge()` in `frontend/src/judge/judge.js` calls it) runs the tests against that design:
+it compiles the design into a plan for each call, simulates every test minute by minute, analyses it for
+correctness and checks the results. Nothing is compared with a model answer. The full format is in
+tech-katta-context `evaluator.md` §6; the URL shortener fixture `frontend/src/eval/fixtures/url-shortener.v2.json`
+is a worked example. Every practice is `"v": 2` (the v1 format was removed in #301; the validator refuses it).
 
 ```
 practice: {
+  v: 2,
   brief,                          what the tests send, shown above the example tests
-  fixed: {queriesPerRequest, hitPct, writePct, cdnHitPct, cdnLive},   applied in every test
-  start: {nodes, edges},          the design a visitor starts from (Easy: Clients → LB → a small server)
-  tests: [{id, name, desc, sample?, hours, startHour, traffic: {rps, pattern}, chaos?: [{minute, type}],
-           checks: [{kind, label, …}]}],    at least one sample (shown, run by Run); Submit runs all
-  rubric: {fr: [{label, keys}], nfr: {availability, p99, readsPerWrite: [min, max], consistency},
-           est: [{id, label, unit, answer, tol?, how?}], api: [{label, method, path (regex)}],
-           decisions: [{id, q, options (2–6), answer (index of the right option), why}]},
-  data: {entities: {name: {rows, sample: [row]}}, fields: [name], aliases?: {field: [other names]}},
-                                  sample data and field names for request tests (fields also feed the
-                                  schema editor's suggestions)
+  entities: {name: {rows, rowBytes, fields: {field: type}, sample: [≥ 2 rows], growthPerDay?, expires?}},
+  aliases?: {field: [other names]},          other names a learner may give a field
+  operations: [{id, name, kind: read | write | connect, request, share, steps, respond, bytesOut?,
+                keys?, cacheable?, live?, slo?, consistency?, durable?, effect?, idempotencyField?, ordered?,
+                source?: clients | external | schedule, perSec?}],   the Clients' shares add up to 1
+  tests: [trace test {id, name, desc, op, sample?}             one per operation
+        | load test {id, name, desc, sample?, hours, startHour, traffic: {rps, pattern}, faults?, checks}],
+  start: {nodes, edges},          the design a visitor starts from
+  locked?: [node id],             start nodes the visitor can't remove (e.g. a third party)
+  rubric: {fr, nfr, est, api, decisions},   the written steps (below)
   hints: [{step, x}],             step: requirements, estimates, api, design or deep; nudge → near-answer
-  referenceNote?: text,           shown under the solution design: where the Lab's version differs from the
-                                  worked answer's full-size one (e.g. capacity counted in requests, not CPU)
-  reference: {nodes, edges},      must pass every test; shown on the Solution tab (GET /v1/articles/<slug>/
-                                  solution) with Copy to my canvas, so lay it out neatly (left to right,
-                                  ~240 apart); submitted unchanged it isn't counted as solved
-  wrong: [{name, why, fails, nodes, edges}]   each must fail the test `fails` names
+  referenceNote?: text,           shown under the solution design
+  reference: {nodes, edges},      passes every test; shown on the Solution tab (GET /v1/articles/<slug>/solution)
+  wrong: [{name, why, fails, nodes, edges}],   each fails the test `fails` names
+  mutantsAllowed?, mutantsAllowedWhy?        the reference's mutants that are rightly still accepted
 }
 ```
 
-**Request tests** (a test with `request` instead of traffic; `frontend/src/judge/requests.js`):
-`{id, name, desc, sample?, async?, request: {method, path, body?}, steps: [step], respond: {status, body}}`.
-Steps: `get {entity, by, fields}`, `query {entity, where?, near?: {field, at: [lat, lng], km}, text?: {field,
-q}, range?, order?: {field, desc?}, limit?, fields, matches?}`, `put {entity, values}`, `update {entity, by,
-set?, add?, cond?: {field: {gte} | {eq}}}`, `tx {steps: [put | update]}`, `blob {entity, key, field, mode:
-put | get}`, `sum {entity, where?, range?, field}`. `respond.body` is a template: `"$s1.field"`, `"$s1"`,
-`"{$s1.code}"` inside text. The expected response is the steps run on `data` samples. The design's response
-is the same steps run through the design: from the Clients through CDN, API gateway and load balancers to
-a server, then to the databases it reaches (through caches and servers: synchronous; past a queue: only
-writes, and only when `async` is true, answering 202). A table qualifies when its fields cover the step's
-(names matched ignoring case, `_` and camelCase, plus `aliases`); its engine and schema must give an access
-path: the key, a sort key, an index (geo for `near`, text for `text`), OpenSearch's searchable fields, or a
-scan of a small table (≤ 50,000 rows) on an engine that can scan; more than 10,000 matching rows can't be
-sorted in memory (`matches`); `tx` needs one store with transactions; `blob` needs S3 with a file field.
-Each hop is recorded for the workspace's ▶ Watch. `tools/practice/requests.mjs` writes every problem's
-data, request tests, reference schemas (and engine changes) and a wrong design that fails one.
+- **Steps:** `get`, `query` (where, range, order, limit, near, text), `put` (unique?), `update` (set, add,
+  cond), `incr`, `rank`, `sum`, `tx`, `blob`, `call` (a third party, by `preset`), `publish`, `compute`
+  (cpuMs, isolated?). A step may be deferred (`timing: "defer", withinSec`), done a fraction of the time
+  (`times`) or, by a stream processor, once every n events (`batch`).
+- **Load test checks:** `slo`, `completes`, `fresh`, `noCrash`, `noLostWrites`, `noDuplicates`, `ordered`,
+  `atomic`, `fits`, `cost` and `has`. **Faults:** `crash`, `zoneDown`, `groupDown`, `instanceCrash`, `slow`,
+  `spike`, `hotKey`, `poison`, `abuse`; minutes are multiples of the tick (1 minute up to 6 hours, else 5).
+- At least one test of each kind is `sample` (shown, run by Run); Submit runs all.
+- **Designs:** `start`, `reference` and `wrong` designs come out of the v2 cleaning unchanged; the reference's
+  schemas have no errors. `reference`, `wrong` and the mutant lists are never served with the article.
+- **Calibration:** `node tools/eval/calibrate.mjs <article.json>`: the reference is accepted, each wrong design
+  fails its test, every mutant is killed or allowed (at most a fifth), and the reference with every count doubled
+  passes everything but cost. `cd frontend && npm test` runs it for every problem, so content changes run the
+  frontend CI. Budgets: the reference's fixed costs (storage, transfer, per-request parts) + 1.6 × the rest.
 
-Check kinds: `availability {min, from?, to?}`, `p99 {max}` (ms), `cost {max}` (dollars a month),
-`noCrash {type?}`, `noLostWrites`, `requires {types}`, `redundant {type}` (no single component of that
-type every request needs), `multiAz`, `has {type}`, `role {role, any?, behind?, min?}` (a component
-given that job, e.g. `geo`, is on every request's path; `any`: on at least one; `behind`: reached only
-after a component of that type, e.g. `queue`; `min`: at least that many). Roles are listed per component
-type in `lab.json` (`roles: [{id, label, desc}]`); a design sets `config.role`. They don't change the
-simulation: they say what a part is for, so a well-sized but generic design fails a problem it doesn't
-solve. `tools/practice/roles.mjs` holds each problem's roles, role checks and key decisions. `cd frontend && npm test` runs the calibration: the
-reference passes everything, each wrong design fails its test, the starting design is not accepted, and
-the rubric accepts its own answers. Content changes run the frontend CI for this reason.
+Rubric (the written steps): `fr: [{label, keys}]`, `nfr: {availability, p99, readsPerWrite: [min, max],
+consistency}`, `est: [{id, label, unit, answer, tol?, how?}]`, `api: [{label, method, path (regex)}]`,
+`decisions: [{id, q, options (2–6), answer (index), why}]`. Scoring (out of 100): functional requirements 10
+(keywords), non-functional 5 (ranges), estimates 10 (within `tol`×, default 3), API 10 (method + path regex),
+key decisions 15 (exact), design 50 (the evaluator's design score: function 15, scale 15, resilience 10,
+correctness 5, cost 5); each hint opened −3, at most −15.
 
-Scoring (out of 100): functional requirements 10 (keywords), non-functional 5 (ranges), estimates 10
-(within `tol`×, default 3), API 10 (method + path regex), key decisions 15 (exact), design tests 50
-(share passed); each hint
-opened −3, at most −15. Known limit: two queues feeding the same workers each hand them their full
-capacity, so suites keep to one queue per worker pool.
+## Challenges (`lab.json` `challenges`)
 
-### v2 problems (`practice.v: 2`)
-
-A problem with `"v": 2` is judged by the v2 evaluator (`frontend/src/eval/`; the full format is in
-tech-katta-context `evaluator.md` §6, and the URL shortener fixture `frontend/src/eval/fixtures/url-shortener.v2.json`
-is a worked example).
-
-- **What goes away from v1:** `fixed`, `data`, roles, and the checks `availability`, `p99`, `requires`,
-  `redundant`, `multiAz` and `role`.
-- **`entities`:** `{name: {rows, rowBytes, fields: {field: type}, sample: [≥ 2 rows], growthPerDay?, expires?}}`.
-- **`aliases`:** other names a learner may give a field.
-- **`operations`:** each has an `id`, `name`, `kind` (read / write), `request`, a `share` of traffic, `steps`, `respond`,
-  and optionally `keys`, `cacheable`, `slo`, `consistency`, `durable`, `effect`.
-  - The Clients' shares add up to 1.
-  - A read operation may only read.
-- **`tests`:**
-  - A **trace** test is `{id, name, desc, op, sample?}`. Every operation has one.
-  - A **load** test is `{hours, startHour, traffic, faults?, checks}`. Its checks are `slo`, `completes`, `fresh`,
-    `noCrash`, `noLostWrites`, `noDuplicates`, `ordered`, `atomic`, `fits`, `cost` and `has`.
-  - At least one test of each kind is `sample`.
-  - Fault minutes are multiples of the tick: 1 minute up to 6 hours, else 5.
-- **Designs:** `start`, `reference` and `wrong` designs come out of the v2 cleaning unchanged. The reference's
-  schemas have no errors.
-- **Mutation testing:** `mutantsAllowed` (with a reason for each in `mutantsAllowedWhy`) lists the reference's
-  mutants that are rightly still accepted. Like `reference` and `wrong`, these lists are never served with the
-  article.
-- **Calibration:** run `node tools/eval/calibrate.mjs <article.json>`. The design score is split by area:
-  function 15, scale 15, resilience 10, correctness 5, cost 5.
+Eight short scenarios on Problems (`/dashboard/problems/challenge/<id>/`), each a small v2 problem (#300):
+`{id, level, title, brief, hint, v: 2, hours, startHour, traffic, faults?, entities, operations, stars, start}`.
+`stars` (1–3) are the scenario's checks: `availability {min, from?, to?}`, `cost {max}`, `noCrash {type?}`,
+`noLostWrites`, `completes {withinSec?}`; the first must be met for any star to count.
+`frontend/src/eval/challenge.js` scores a design. Each challenge's reference design (earns every star) is a test
+fixture, `frontend/src/eval/fixtures/challenge-references.json`, not content, since `lab.json` is served to
+everyone; `frontend/src/lab/challenges.test.js` checks every start scores 0 and every reference every star.
 
 ## Subsections
 
@@ -161,34 +134,35 @@ databases, sharding and partitioning, object storage · **Messaging**: queues vs
 
 ## Lab catalogue (`lab.json`)
 
-`{title, intro, region, budget, retries, priceNote, modelNote, crashNote, smallScreen, components, example}`.
-Each component has `type, name, group, desc` plus the numbers its type needs (checked by
-`backend/src/content/validate.js`, simulated by `frontend/src/lab/engine.js`):
+`{title, smallScreen, components, example, levels, challenges, import?, …}` (the v1 keys `budget`, `retries` and
+the v1 notes are refused since #301). Each component has `type, name, group, desc` plus the numbers its type needs
+(checked by `backend/src/content/validate.js`; sizes and prices read by `frontend/src/lab/engine.js`, simulated by
+the v2 evaluator with `eval.json`):
 
 | type | fields | how it behaves |
 |---|---|---|
-| `client` | `rps {label,min,max,default}`, optional `patterns` | sends requests (at the `rps` rate at its busiest moment); retries a failed one `retries` times |
+| `client` | `rps {label,min,max,default}`, optional `patterns` | sends the test's traffic (its `rps` at the busiest moment of the pattern) |
 | `apigw` | `latencyMs, limitRps, pricePerMillion` | throttles past its limit, never crashes |
 | `lb` | `latencyMs, limitRps, hourly, lcuHourly, rpsPerLcu` | spreads load evenly; billed per hour + per LCU |
-| `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, queriesPerRequest, crash`, optional `autoscaling` | each request makes `queriesPerRequest` queries to a cache or database |
+| `server` | `latencyMs, sizes [{id,label,rps,hourly}], defaultSize, count, crash`, optional `autoscaling` | runs the operations' steps; `rps` is its capacity in work units a second |
 | `queue` | `latencyMs, limitRps, pricePerMillion` | async: the sender is done once the message is stored; workers take what they can, the rest waits as a backlog |
-| `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, hitPct, writePct, crash`, optional `warmupMinutes, flushSeconds, writePolicy, onDown` | Server → Cache → Database: only misses and writes reach the database |
-| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash`, optional `replicas, writePct, engines, defaultEngine, features` | receives only |
+| `cache` | `latencyMs, sizes [{id,label,ops,hourly}], defaultSize, crash`, optional `warmupMinutes, flushSeconds, writePolicy, onDown` | Server → Cache → Database: hits are worked out from the keys' popularity and the TTL; misses and writes reach the database |
+| `database` | `latencyMs, sizes [{id,label,qps,hourly}], defaultSize, multiAz, crash`, optional `replicas, engines, defaultEngine, features` | receives only |
 
-`client`, `apigw`, `server` and `database` are required; the others are optional.
+`client`, `apigw`, `server` and `database` are required; the others are optional. The v1 settings
+`queriesPerRequest`, `hitPct`, `writePct`, `roles` and the CDN's `live` are refused (#302): a design's load comes
+from the problem's operations, not from settings on its parts.
 
 **Traffic through the day** (`client.patterns`, optional): `[{id, label, short, desc, points}]`.
 `points` are `[hour, multiplier]` pairs from hour 0 to hour 24, hours never going back (two points
-at the same hour make a jump), multipliers 0–1 with at least one 1: the Clients send `rps ×
-multiplier`, linear between points, repeating every simulated day. The first pattern is the default.
-`label` is the menu entry, `desc` the line under it, `short` what the canvas shows on the Clients box.
-A design's Clients pick one with `config.pattern`.
+at the same hour make a jump), multipliers 0–1 with at least one 1: a test's traffic is `rps × multiplier`,
+linear between points, repeating every simulated day. A test names its pattern (`traffic.pattern`).
 
 **Database engines** (`database.engines`, optional; with `defaultEngine` and `features: [{id, label}]`):
 `[{id, label, family, aws, desc, capacity: "instance" | "request", multiAz: "option" | "builtin" | "none",
 replicas, crash, features: [feature id], aliases?, latencyMs?}]`. An `instance` engine has `sizes` +
 `defaultSize` (or uses the component's), is billed per hour and may crash. A `request` engine has
-`limitQps`, `readPerMillion`, `writePerMillion` (billed with the database's writes %), `crash: false`
+`limitQps`, `readPerMillion`, `writePerMillion` (billed at 20% writes), `crash: false`
 (it throttles) and `replicas: false`. `multiAz: "builtin"` means AWS already spreads it over zones: it
 counts as a standby for the `multiAz` check and a test can't crash it. A design's database sets
 `config.engine`; without it the `defaultEngine` is used, so older designs are unchanged. The import text
@@ -203,21 +177,17 @@ fields, no geo or text; Cassandra and S3: none) and whether every field is searc
 `schemaIssues` lists what an engine can't do (errors) and choices that usually hurt (warnings); a schema
 in content must be clean and have no errors.
 
-**Read replicas** (`database.replicas {label, min, max, default}` whole numbers from 0, max at most 10,
-and `database.writePct`, a percent; both optional): a design's database sets `config.replicas` and
-`config.writePct` (the share of the queries reaching it that are writes). Writes all go to the
-primary, reads spread over the primary and its replicas, so it takes `qps / (w + (1 − w) / (1 +
-replicas))` queries a second; each replica costs what the primary costs. While the primary is down
-the replicas still answer reads and writes fail. Replication lag is not modelled.
+**Read replicas** (`database.replicas {label, min, max, default}`, whole numbers from 0, max at most 10;
+optional): a design's database sets `config.replicas`. Writes all go to the primary; reads spread over the primary
+and its replicas (or only the replicas, `readFrom: replicas`, a moment behind); each replica costs what the
+primary costs.
 
-**Cache behaviour** (all optional; without them a cache is write-through, never cold, and fails its
-queries while down): `warmupMinutes` — after a crash the cache comes back empty and its hit rate
-climbs from 0 to its hit % over this time, with the misses on the database. `writePolicy` and `onDown`
-are choices `{label, default, options: [{id, label, desc}]}` with exactly the ids `through`/`back` and
-`database`/`fail`; a design's cache picks one with `config.writePolicy` / `config.onDown`.
-Write-back acknowledges writes in the cache and flushes them to the database as its spare capacity
-allows (a backlog of unflushed writes builds otherwise); when the cache crashes, that backlog plus the
-last `flushSeconds` of writes are lost. `onDown: database` sends a down cache's queries straight to
+**Cache behaviour** (all optional): `warmupMinutes`: after a crash without a replica the cache comes back empty
+and fills again over this time, with the misses on the database. `writePolicy` and `onDown` are choices
+`{label, default, options: [{id, label, desc}]}` with exactly the ids `through`/`back` and `database`/`fail`; a
+design's cache picks one with `config.writePolicy` / `config.onDown`. Write-back acknowledges writes in the cache
+and saves them later: when the cache crashes, the last `flushSeconds` of writes are lost. A cache with a replica in
+another zone fails over in a minute and keeps its data. `onDown: database` sends a down cache's reads straight to
 the database.
 
 **Autoscaling** (`server.autoscaling`, optional): `{label, minLabel, maxLabel, note, targetPct,
@@ -227,7 +197,7 @@ warmupMinutes, scaleInMinutes, defaultMax}`. A server with `config.autoscale: tr
 `scaleInMinutes`. `note` explains this to the user, so keep its numbers in step with the fields. `crash` is
 `{above, minutes, downMinutes, failoverMinutes?}`. Settings ranges are `{label, min, max, default}`
 (percentages 0–100). The `example` design is checked too: unique node ids, numeric `x`/`y`,
-settings inside their ranges, and edges that never point into Clients or out of a Database.
+settings inside their ranges, and no v1 settings.
 
 ## Changing content
 
@@ -237,12 +207,9 @@ settings inside their ranges, and edges that never point into Clients or out of 
 
 ## The v2 evaluator's catalogue (`eval.json`)
 
-Being built (tech-katta-context `evaluator.md`; phase 0 on 2026-11-10). It adds to `lab.json` what the next
-evaluator needs and changes nothing for today's problems: tick lengths, retries, limits, the work units each kind
-of step costs, each database engine's capabilities and storage price, and for each component type its settings
-(`number`, `choice`, `bool`, `size`, `fields`, `engine`, `schema`, `structures`), the arrows it may draw (`to`,
-`toIf` for conditions on the target, `toCdc` for a database's change stream) and extra size numbers
-(`sizeExtras`, e.g. a cache's `memoryGb`). Sizes, prices, latencies and crash policies stay in `lab.json`.
-`backend/src/content/validate-eval.js` checks it; a problem uses the v2 evaluator only when its `practice.v` is 2
-(none does yet).
-
+What the v2 evaluator (tech-katta-context `evaluator.md`) needs on top of `lab.json`: tick lengths, retries,
+limits, the work units each kind of step costs, each database engine's capabilities and storage price, and for each
+component type its settings (`number`, `choice`, `bool`, `size`, `fields`, `engine`, `schema`, `structures`), the
+arrows it may draw (`to`, `toIf` for conditions on the target, `toCdc` for a database's change stream) and extra
+size numbers (`sizeExtras`, e.g. a cache's `memoryGb`). Sizes, prices, latencies and crash policies stay in
+`lab.json`. `backend/src/content/validate-eval.js` checks it. Every problem and challenge uses it.
