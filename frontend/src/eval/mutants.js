@@ -35,7 +35,8 @@ export function mutants(design, lab) {
     if ((cfg.zones || 1) > 1 || cfg.multiAz || cfg.replica) out.push({ id: `onezone:${n.id}`, design: withNode(design, n.id, (x) => { if (cfg.zones > 1) x.config.zones = 1; if (cfg.multiAz) x.config.multiAz = false; if (cfg.replica) x.config.replica = false; }) });
     for (const t of n.type === 'database' ? cfg.schema?.tables || [] : n.type === 'cache' ? cfg.structures || [] : []) {
       (t.indexes || []).forEach((_, i) => out.push({ id: `noindex:${n.id}:${t.name}:${i}`, design: withNode(design, n.id, (x) => { const key = n.type === 'database' ? 'schema' : 'structures'; const tabs = clone(n.type === 'database' ? x.config.schema.tables : x.config.structures); const tt = tabs.find((y) => y.name === t.name); tt.indexes = tt.indexes.filter((__, j) => j !== i); if (key === 'schema') x.config.schema = { tables: tabs }; else x.config.structures = tabs; }) }));
-      if (t.sortKey) out.push({ id: `noindex:${n.id}:${t.name}:sort`, design: withNode(design, n.id, (x) => { const tabs = clone(x.config.schema.tables); delete tabs.find((y) => y.name === t.name).sortKey; x.config.schema = { tables: tabs }; }) });
+      // (a cache's structures are a list of their own; a database's tables are under its schema)
+      if (t.sortKey) out.push({ id: `noindex:${n.id}:${t.name}:sort`, design: withNode(design, n.id, (x) => { const db = n.type === 'database'; const tabs = clone(db ? x.config.schema.tables : x.config.structures); delete tabs.find((y) => y.name === t.name).sortKey; if (db) x.config.schema = { tables: tabs }; else x.config.structures = tabs; }) });
     }
     if (n.type === 'database') {
       const family = (db?.engines || []).find((e) => e.id === cfg.engine)?.family, seen = new Set([family]);

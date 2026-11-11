@@ -118,3 +118,17 @@ test('rank from a sorted set in a cache; incr on any engine with counters', () =
   const s3 = compile({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge' }), N('db', 'database', { engine: 's3', schema: { tables: [{ name: 'scores', fields: F('player_id score:int'), key: ['player_id'] }] } })], edges: E(['c', 'app'], ['app', 'db']) }, lab, { ...p, operations: [{ ...add, share: 1 }] });
   assert.equal(s3.plans.add.ok, false, 'object storage has no counters');
 });
+
+test('a step done one call in ten sends a message one call in ten; setting fields is safe to repeat', () => {
+  const ent = { pairs: { rows: 1e6, rowBytes: 80, fields: { a: 'string', b: 'string', says: 'string' }, sample: [{ a: 'u1', b: 'u2', says: 'yes' }, { a: 'u1', b: 'u3', says: null }] } };
+  const swipe = { id: 'swipe', name: 'Swipe', kind: 'write', share: 1, effect: 'once', idempotencyField: 'a',
+    steps: [{ id: 's1', op: 'update', entity: 'pairs', by: { a: 'u1', b: 'u2' }, set: { says: 'yes' } }, { id: 's2', op: 'call', preset: 'push', times: 0.1, timing: 'defer', withinSec: 60, label: 'Alert' }], respond: { status: 200, body: {} } };
+  const p = { v: 2, entities: ent, operations: [swipe] };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: { tables: [{ name: 'pairs', fields: F('a b says'), key: ['a', 'b'] }] } }), N('q', 'queue'), N('w', 'server', { size: 'm5.large' }), N('x', 'external', { preset: 'push', latencyMs: 100, limitRps: 5000, errorPct: 0, pricePerCall: 0 })],
+    edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'x']) };
+  const { c, sim, f } = run(d, p, { traffic: { rps: 2000, pattern: 'steady' } });
+  let enq = null; const walk = (h) => { if (h.kind === 'enqueue') enq = h; h.children.forEach(walk); }; walk(c.plans.swipe.root);
+  assert.equal(enq.per, 0.1, 'one message for every ten swipes');
+  assert.ok(sim.ops.swipe.deferred.s2.worstDelaySec < 10, '200 alerts a second: one small worker keeps up');
+  assert.ok(!f.some((x) => x.code === 'F_DOUBLE'), 'a resent swipe sets the same fields again: nothing happens twice');
+});

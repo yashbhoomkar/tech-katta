@@ -298,19 +298,20 @@ export function compile(design, lab, practice) {
       if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
       return at;
     };
-    const queues = new Map();   // deferred steps through the same queue share one message (§7.5)
+    const queues = new Map(), enqOf = new Map();   // deferred steps through the same queue share one message (§7.5)
     const enqueues = new Map();
-    const consumeHop = (handleHop, b) => {
+    // `frac`: a step done less than once a call (times < 1, "one swipe in ten matches") sends that share of messages
+    const consumeHop = (handleHop, b, frac = 1) => {
       const k = b.path.slice(0, b.qi + 2).join('\u0000');
-      if (queues.has(k)) return queues.get(k);
+      if (queues.has(k)) { const con = queues.get(k), enq = enqOf.get(con); if (enq) enq.per = Math.max(enq.per, frac); return con; }
       const pre = b.path.slice(1, b.qi + 1); // nodes from after h up to the queue
       // a stream's message is stored once and read by every consumer; a queue's goes to one of its workers
       const ek = b.path.slice(0, b.qi + 1).join('\u0000');
       let enq = type(b.queue) === 'stream' ? enqueues.get(ek) : null;
-      if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); }
+      if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue, per: frac }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); } else enq.per = Math.max(enq.per, frac);
       const con = mk(b.worker, 'consume', { work: type(b.worker) === 'processor' ? W.consume : W.consume + W.handle, sync: false, cpuMs: 0 });
       enq.children.push(con);
-      queues.set(k, con);
+      queues.set(k, con); enqOf.set(con, enq);
       return con;
     };
     const writers = [];  // for feeds: {entity, store, table, kind}
@@ -341,11 +342,11 @@ export function compile(design, lab, practice) {
         plan.steps[step.id] = { node: b.gw, table: b.kind, how: 'publish', work: W.pass, rows: 1, query: '', sync: false, via: b.via, viaKind: b.kind };
         return;
       }
-      const write = isWrite(step);
-      const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
+      const write = isWrite(step), frac = b.async && per < 1 ? per : 1;
+      const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per: frac < 1 ? 1 : per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
       if (!b.call) shardRoute(storeHop, b.store, b.table, step, b.parts);
       let from = handleHop, nodes = b.path.slice(1);
-      if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
+      if (b.async) { from = consumeHop(handleHop, b, frac); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];
       chain(from, nodes, storeHop, write ? null : step.entity);
       plan.steps[step.id] = { node: b.store, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: !b.async, viaCache: b.viaCache || null, ...(b.missing ? { missing: b.missing } : {}) };

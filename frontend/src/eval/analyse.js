@@ -91,6 +91,8 @@ export function analyse(compiled, practice, lab, sims = []) {
     // a transaction is repeat-safe when one of its writes refuses the repeat ("only if still pending")
     if (s.op === 'tx') return (s.steps || []).some((x) => (Array.isArray(x.unique) && x.unique.length) || (x.cond && Object.keys(x.cond).length));
     if ((Array.isArray(s.unique) && s.unique.length) || s.cond) return true;
+    // setting fields to given values (no `add`) writes the same row the same way twice: a repeat changes nothing
+    if (s.op === 'update' && s.set && !s.add) return true;
     const t = op.idempotencyField && tableOf(b), f = t && userField(match, t, op.idempotencyField)?.name;
     return !!f && ((t.key?.length === 1 && t.key[0] === f) || (t.indexes || []).some((i) => i.kind === 'unique' && i.fields.length === 1 && i.fields[0] === f));
   };
