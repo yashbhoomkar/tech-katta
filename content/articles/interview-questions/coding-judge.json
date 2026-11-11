@@ -216,31 +216,180 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends test runs (a submission is about 20 of them). Each one records a result and updates the standings: 2 queries. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 2
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 2500,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends what contestants' browsers do: submit a solution (about one request in 25) and ask whether it has been judged yet. A submission is answered at once; its code, written by strangers, runs against 20 tests in a sealed box (about 2 seconds of CPU in all) and the verdict is saved within five minutes (fifteen minutes in the last-minute rush). No submission may be lost.",
+    "entities": {
+      "submissions": {
+        "rows": 1000000000,
+        "rowBytes": 2000,
+        "growthPerDay": 5000000,
+        "fields": {
+          "submission_id": "string",
+          "problem_id": "string",
+          "user_id": "string",
+          "language": "string",
+          "code": "text",
+          "status": "string"
+        },
+        "sample": [
+          {
+            "submission_id": "sub0",
+            "problem_id": "two-sum",
+            "user_id": "u2",
+            "language": "cpp",
+            "code": "int main(){}",
+            "status": "accepted"
+          },
+          {
+            "submission_id": "sub7",
+            "problem_id": "two-sum",
+            "user_id": "u3",
+            "language": "python",
+            "code": "print(2)",
+            "status": "queued"
           }
-        }
-      ],
-      "edges": []
+        ]
+      }
     },
+    "aliases": {
+      "code": [
+        "source",
+        "program",
+        "solution",
+        "source_code"
+      ],
+      "language": [
+        "lang"
+      ]
+    },
+    "operations": [
+      {
+        "id": "submit",
+        "name": "Submit a solution",
+        "kind": "write",
+        "share": 0.04,
+        "sample": true,
+        "request": {
+          "method": "POST",
+          "path": "/v1/submissions",
+          "body": {
+            "problem_id": "two-sum",
+            "language": "python",
+            "code": "print(1)"
+          }
+        },
+        "bytesOut": 100,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "submissions",
+            "values": {
+              "submission_id": "sub1",
+              "problem_id": "two-sum",
+              "user_id": "u1",
+              "language": "python",
+              "code": "print(1)",
+              "status": "queued"
+            },
+            "unique": [
+              "submission_id"
+            ],
+            "label": "Saving the submission"
+          },
+          {
+            "id": "s2",
+            "op": "compute",
+            "cpuMs": 2000,
+            "isolated": true,
+            "timing": "defer",
+            "withinSec": 300,
+            "label": "Running the code on 20 tests, sealed off"
+          },
+          {
+            "id": "s3",
+            "op": "update",
+            "entity": "submissions",
+            "by": {
+              "submission_id": "sub1"
+            },
+            "set": {
+              "status": "accepted"
+            },
+            "timing": "defer",
+            "withinSec": 300,
+            "label": "Saving the verdict"
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "submission_id": "$s1.submission_id",
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "submission_id"
+      },
+      {
+        "id": "verdict",
+        "name": "Is it judged yet?",
+        "kind": "read",
+        "share": 0.96,
+        "request": {
+          "method": "GET",
+          "path": "/v1/submissions/sub0"
+        },
+        "bytesOut": 200,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "submissions",
+            "by": {
+              "submission_id": "sub0"
+            },
+            "fields": [
+              "status"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        }
+      }
+    ],
     "tests": [
+      {
+        "id": "api-submit",
+        "name": "Submit a solution",
+        "desc": "u1 submits Python code for \"two-sum\"; judging follows.",
+        "sample": true,
+        "op": "submit"
+      },
+      {
+        "id": "api-verdict",
+        "name": "Is sub0 judged yet?",
+        "desc": "u2's browser asks for the verdict on sub0.",
+        "op": "verdict"
+      },
       {
         "id": "normal",
         "name": "Early in the contest",
+        "desc": "1,500 requests a second: about 60 submissions, and people waiting for verdicts.",
         "sample": true,
-        "desc": "1,500 test runs a second (about 75 submissions, 20 tests each).",
         "hours": 1,
         "startHour": 15,
         "traffic": {
@@ -249,28 +398,18 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of test runs succeed"
+            "kind": "slo"
           },
           {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "role",
-            "role": "sandbox",
-            "behind": "queue",
-            "label": "Submitted code runs in sealed boxes, taking work from a queue"
+            "kind": "completes"
           }
         ]
       },
       {
         "id": "peak",
         "name": "Mid-contest",
+        "desc": "2,500 requests a second, an hour into the contest: 100 submissions a second.",
         "sample": true,
-        "desc": "2,500 test runs a second, an hour into the contest.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
@@ -279,25 +418,26 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of test runs succeed"
+            "kind": "slo"
           },
           {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
+            "kind": "completes"
           },
           {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "noLostWrites"
           }
         ]
       },
       {
         "id": "spike",
         "name": "The last 15 minutes",
-        "desc": "A quarter of all submissions arrive in the final 15 minutes: 6,000 test runs a second. Verdicts may slow down a little; none may be lost.",
+        "desc": "A quarter of all submissions arrive in the final 15 minutes: 6,000 requests a second. Verdicts may take up to fifteen minutes; none may be lost.",
         "hours": 3,
         "startHour": 19,
         "traffic": {
@@ -306,47 +446,50 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of test runs succeed"
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 500
           },
           {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
+            "kind": "completes",
+            "op": "submit",
+            "withinSec": 900
           },
           {
-            "kind": "has",
-            "type": "queue",
-            "label": "Submissions wait in a queue for a free judge"
+            "kind": "noCrash"
           }
         ]
       },
       {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (2,500 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Verdicts may be up to twenty minutes late; no submission may be lost.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
           "rps": 2500,
           "pattern": "steady"
         },
-        "chaos": [
+        "faults": [
           {
             "minute": 10,
-            "type": "server"
+            "kind": "zoneDown",
+            "minutes": 15
           }
         ],
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of test runs still succeed"
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
           },
           {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
+            "kind": "completes",
+            "op": "submit",
+            "withinSec": 1200
+          },
+          {
+            "kind": "noLostWrites"
           }
         ]
       },
@@ -360,28 +503,25 @@
           "rps": 2500,
           "pattern": "steady"
         },
-        "chaos": [
+        "faults": [
           {
             "minute": 10,
+            "kind": "crash",
             "type": "database"
           }
         ],
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of test runs still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
           }
         ]
       },
       {
         "id": "budget",
         "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (1,500 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "desc": "A whole day at the normal rate (1,500 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
         "hours": 24,
         "startHour": 0,
         "traffic": {
@@ -390,56 +530,1068 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of test runs succeed"
+            "kind": "slo"
           },
           {
             "kind": "cost",
-            "max": 8000,
-            "label": "Costs at most $8,000 a month"
+            "max": 10100
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Contest API",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 3,
+            "zones": 3
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 0,
+          "name": "Submissions",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "submissions",
+                  "fields": [
+                    {
+                      "name": "submission_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "problem_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "user_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "language",
+                      "type": "string"
+                    },
+                    {
+                      "name": "code",
+                      "type": "text"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "submission_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 200,
+          "name": "To judge",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 200,
+          "name": "Judges",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 14,
+            "zones": 2,
+            "sandbox": true
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Code run by the API servers",
+        "why": "The API servers judge each submission themselves: in the last 15 minutes the code to run is far more than they can take.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3,
+              "sandbox": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
           }
         ]
       },
       {
-        "id": "api-submit",
-        "name": "Submit a solution",
-        "sample": true,
-        "async": true,
-        "desc": "u1 submits Python code for \"two-sum\"; judging follows.",
-        "request": {
-          "method": "POST",
-          "path": "/v1/submissions",
-          "body": {
-            "problem_id": "two-sum",
-            "language": "python",
-            "code": "print(1)"
-          }
-        },
-        "steps": [
+        "name": "Judges without a sandbox",
+        "why": "Strangers' code runs on ordinary servers: it could read other people's solutions or attack the network.",
+        "fails": "api-submit",
+        "nodes": [
           {
-            "id": "s1",
-            "op": "put",
-            "entity": "submissions",
-            "values": {
-              "submission_id": "sub1",
-              "problem_id": "two-sum",
-              "user_id": "u1",
-              "language": "python",
-              "code": "print(1)",
-              "status": "queued"
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "zones": 2,
+              "sandbox": false
             }
           }
         ],
-        "respond": {
-          "status": 202,
-          "body": {
-            "submission_id": "$s1.submission_id",
-            "status": "$s1.status"
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
           }
-        }
+        ]
+      },
+      {
+        "name": "Submissions without the code",
+        "why": "The submitted code isn't stored, so the judges have nothing to run.",
+        "fails": "api-submit",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "zones": 2,
+              "sandbox": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Submissions saved by a write-back cache",
+        "why": "Submissions go to a cache that saves to the database later: when it fails, accepted submissions are gone.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "zones": 2,
+              "sandbox": true
+            }
+          },
+          {
+            "id": "sc",
+            "type": "cache",
+            "x": 600,
+            "y": -160,
+            "name": "Submission cache",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 1,
+              "replica": true,
+              "ttlSec": 3600,
+              "writePolicy": "back"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "sc"
+          },
+          {
+            "from": "sc",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, nobody can submit.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "zones": 2,
+              "sandbox": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "No standby: when it crashes, submissions and verdicts stop for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 14,
+              "zones": 2,
+              "sandbox": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Contest API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 10,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Submissions",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "submissions",
+                    "fields": [
+                      {
+                        "name": "submission_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "problem_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "language",
+                        "type": "string"
+                      },
+                      {
+                        "name": "code",
+                        "type": "text"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "submission_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "To judge",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Judges",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 2,
+              "sandbox": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
       }
     ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "engine:db:dynamodb",
+      "engine:db:cassandra"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "Clients may reach the Service group directly in this model.",
+      "engine:db:dynamodb": "DynamoDB stores submissions by id just as well.",
+      "engine:db:cassandra": "Cassandra stores submissions by id just as well."
+    },
     "rubric": {
       "fr": [
         {
@@ -595,7 +1747,7 @@
       },
       {
         "step": "estimates",
-        "x": "Average rate is easy; the last 15 minutes are the problem. How many cores does the rush need if each submission takes 3 seconds of CPU?"
+        "x": "Average rate is easy; the last 15 minutes are the problem. How many cores does the rush need if each submission takes 2 seconds of CPU?"
       },
       {
         "step": "api",
@@ -611,1204 +1763,8 @@
       },
       {
         "step": "design",
-        "x": "Two API server groups, two worker groups, a Multi-AZ database: no lost submissions."
+        "x": "API servers in three zones, sandboxed judges in two, a Multi-AZ database: no lost submissions."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 2500,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 2,
-            "queriesPerRequest": 2
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 2,
-            "queriesPerRequest": 2
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 720,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "m5.large",
-            "count": 3,
-            "queriesPerRequest": 2,
-            "role": "sandbox"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "m5.large",
-            "count": 3,
-            "queriesPerRequest": 2,
-            "role": "sandbox"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1200,
-          "y": 0,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "submissions",
-                  "fields": [
-                    {
-                      "name": "submission_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "problem_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "user_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "language",
-                      "type": "string"
-                    },
-                    {
-                      "name": "code",
-                      "type": "text"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "submission_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "user_id"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work1",
-          "to": "db1"
-        },
-        {
-          "from": "work2",
-          "to": "db1"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
-        "fails": "spike",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 50,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 50,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": -750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": -600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db8",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db9",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db10",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db11",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db12",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db13",
-            "type": "database",
-            "x": 1200,
-            "y": 600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db14",
-            "type": "database",
-            "x": 1200,
-            "y": 750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db15",
-            "type": "database",
-            "x": 1200,
-            "y": 900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db16",
-            "type": "database",
-            "x": 1200,
-            "y": 1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db17",
-            "type": "database",
-            "x": 1200,
-            "y": 1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work1",
-            "to": "db8"
-          },
-          {
-            "from": "work1",
-            "to": "db9"
-          },
-          {
-            "from": "work1",
-            "to": "db10"
-          },
-          {
-            "from": "work1",
-            "to": "db11"
-          },
-          {
-            "from": "work1",
-            "to": "db12"
-          },
-          {
-            "from": "work1",
-            "to": "db13"
-          },
-          {
-            "from": "work1",
-            "to": "db14"
-          },
-          {
-            "from": "work1",
-            "to": "db15"
-          },
-          {
-            "from": "work1",
-            "to": "db16"
-          },
-          {
-            "from": "work1",
-            "to": "db17"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db8"
-          },
-          {
-            "from": "work2",
-            "to": "db9"
-          },
-          {
-            "from": "work2",
-            "to": "db10"
-          },
-          {
-            "from": "work2",
-            "to": "db11"
-          },
-          {
-            "from": "work2",
-            "to": "db12"
-          },
-          {
-            "from": "work2",
-            "to": "db13"
-          },
-          {
-            "from": "work2",
-            "to": "db14"
-          },
-          {
-            "from": "work2",
-            "to": "db15"
-          },
-          {
-            "from": "work2",
-            "to": "db16"
-          },
-          {
-            "from": "work2",
-            "to": "db17"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Submissions without the code",
-        "why": "The submitted code isn't stored, so the runners have nothing to run.",
-        "fails": "api-submit",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2500,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 2
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 3,
-              "queriesPerRequest": 2,
-              "role": "sandbox"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "submissions",
-                    "fields": [
-                      {
-                        "name": "submission_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "problem_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "user_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "submission_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "submission_id",
-        "problem_id",
-        "user_id",
-        "language",
-        "code",
-        "status"
-      ],
-      "aliases": {
-        "code": [
-          "source",
-          "program",
-          "solution",
-          "source_code"
-        ],
-        "language": [
-          "lang"
-        ]
-      },
-      "entities": {
-        "submissions": {
-          "rows": 1000000000,
-          "sample": []
-        }
-      }
-    },
-    "referenceNote": "On the canvas a judge worker's capacity is counted in test runs a second, so this pool looks small. Real judging is CPU time: about 3 seconds per submission, so the last 15 minutes need around 85 eight-core machines, as the worked answer below works out."
+    ]
   }
 }
