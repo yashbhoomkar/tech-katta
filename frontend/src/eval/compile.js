@@ -203,9 +203,12 @@ export function compile(design, lab, practice) {
   function bindAll(op, h) {
     const k = `${op.id}\u0000${h}`;
     if (bindMemo.has(k)) return bindMemo.get(k);
-    const sR = syncReach(h, op), aR = asyncReach(h, op), bindings = [];
-    let error = null, unbound = 0;
+    const sR0 = syncReach(h, op), aR = asyncReach(h, op), bindings = [];
+    let error = null, unbound = 0, queued = false;
     for (const step of op.steps || []) {
+      // work that waits for a step done behind a queue uses that step's result: it is done behind the queue too
+      // (a page is saved after it is fetched, not by the API before the fetch)
+      const sR = queued && step.timing === 'defer' ? [] : sR0;
       let b;
       if (step.op === 'compute') {
         const defer = step.timing === 'defer', worker = defer ? aR.find((e) => e.worker)?.worker || flowOut(h, op).flatMap((q) => (type(q) === 'queue' ? flowOut(q, op).filter((w) => type(w) === 'server') : []))[0] : null;
@@ -217,9 +220,9 @@ export function compile(design, lab, practice) {
       else if (isWrite(step)) b = bindWrite(op, h, step, sR, aR);
       else if (isRead(step)) b = bindRead(op, h, step, sR, aR);
       else b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.op), { step: step.id }) };
-      if (b.error) { unbound++; error = error || b.error; } else bindings.push(b);
+      if (b.error) { unbound++; error = error || b.error; } else { bindings.push(b); if (b.async && step.timing === 'defer') queued = true; }
     }
-    const r = { ok: !error, bindings, error, unbound, sR, aR };
+    const r = { ok: !error, bindings, error, unbound, sR: sR0, aR };
     bindMemo.set(k, r);
     return r;
   }

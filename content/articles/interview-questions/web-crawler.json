@@ -217,31 +217,172 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends frontier operations. Each one checks the seen filter, the host's next allowed time and the URL record: 3 queries. Fetching the page can wait. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 3
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1200,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends frontier operations: URLs found on pages or added as seeds, and lookups of a page's state. A URL already seen must not be fetched again; a new one is answered at once and fetched within an hour. The websites together allow 2,000 fetches a second (more and they block the crawler), and a fetch takes most of a second.",
+    "entities": {
+      "pages": {
+        "rows": 10000000000,
+        "rowBytes": 200,
+        "growthPerDay": 30000000,
+        "fields": {
+          "url": "string",
+          "host": "string",
+          "status": "string",
+          "fetched_at": "time",
+          "content_hash": "string"
+        },
+        "sample": [
+          {
+            "url": "https://katta.cc/menu",
+            "host": "katta.cc",
+            "status": "fetched",
+            "fetched_at": "2026-11-07T10:00:00Z",
+            "content_hash": "9f2c"
+          },
+          {
+            "url": "https://dosa.example/",
+            "host": "dosa.example",
+            "status": "queued",
+            "fetched_at": null,
+            "content_hash": null
           }
-        }
-      ],
-      "edges": []
+        ]
+      }
     },
+    "aliases": {
+      "url": [
+        "link",
+        "page_url"
+      ],
+      "host": [
+        "domain",
+        "site"
+      ]
+    },
+    "operations": [
+      {
+        "id": "add",
+        "name": "Add a URL to crawl",
+        "kind": "write",
+        "share": 0.6,
+        "sample": true,
+        "request": {
+          "method": "POST",
+          "path": "/v1/seeds",
+          "body": {
+            "url": "https://katta.cc/"
+          }
+        },
+        "bytesOut": 50,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "put",
+            "entity": "pages",
+            "values": {
+              "url": "https://katta.cc/",
+              "host": "katta.cc",
+              "status": "queued"
+            },
+            "unique": [
+              "url"
+            ],
+            "label": "Recording the URL, unless it was seen before"
+          },
+          {
+            "id": "s2",
+            "op": "call",
+            "preset": "web",
+            "timing": "defer",
+            "withinSec": 3600,
+            "label": "Fetching the page"
+          },
+          {
+            "id": "s3",
+            "op": "update",
+            "entity": "pages",
+            "by": {
+              "url": "https://katta.cc/"
+            },
+            "set": {
+              "status": "fetched",
+              "fetched_at": "2026-11-07T10:00:00Z",
+              "content_hash": "77ab"
+            },
+            "timing": "defer",
+            "withinSec": 3600,
+            "label": "Saving what was fetched"
+          }
+        ],
+        "respond": {
+          "status": 202,
+          "body": {
+            "queued": true
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "url"
+      },
+      {
+        "id": "page",
+        "name": "Has this page been crawled?",
+        "kind": "read",
+        "share": 0.4,
+        "request": {
+          "method": "GET",
+          "path": "/v1/pages?url=https://katta.cc/menu"
+        },
+        "bytesOut": 200,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "get",
+            "entity": "pages",
+            "by": {
+              "url": "https://katta.cc/menu"
+            },
+            "fields": [
+              "status",
+              "fetched_at"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "status": "$s1.status"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        }
+      }
+    ],
     "tests": [
+      {
+        "id": "api-add",
+        "name": "Add a site to crawl",
+        "desc": "A new seed URL joins the crawl: recorded at once, fetched a little later.",
+        "sample": true,
+        "op": "add"
+      },
+      {
+        "id": "api-page",
+        "name": "Has katta.cc/menu been crawled?",
+        "desc": "The frontier looks up a page's state.",
+        "op": "page"
+      },
       {
         "id": "normal",
         "name": "A normal hour",
-        "sample": true,
         "desc": "400 frontier operations a second: URLs added, handed out and finished.",
+        "sample": true,
         "hours": 1,
         "startHour": 15,
         "traffic": {
@@ -250,33 +391,18 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of frontier operations succeed"
+            "kind": "slo"
           },
           {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
-          },
-          {
-            "kind": "role",
-            "role": "frontier",
-            "label": "Links wait in line per website, so no site is hit too often"
-          },
-          {
-            "kind": "role",
-            "role": "fetcher",
-            "behind": "queue",
-            "label": "Pages are downloaded by parts that take links from that line"
+            "kind": "completes"
           }
         ]
       },
       {
         "id": "peak",
         "name": "A busy hour",
-        "sample": true,
         "desc": "1,200 a second while menus are re-crawled.",
+        "sample": true,
         "hours": 1,
         "startHour": 20,
         "traffic": {
@@ -285,25 +411,26 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of frontier operations succeed"
+            "kind": "slo"
           },
           {
-            "kind": "p99",
-            "max": 500,
-            "label": "p99 under 500 ms"
+            "kind": "completes"
           },
           {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "noLostWrites"
           }
         ]
       },
       {
         "id": "spike",
         "name": "A new city is added",
-        "desc": "At 8 pm the seed list grows by a whole city's food sites: 6,000 new URLs a second for 15 minutes.",
+        "desc": "At 8 pm the seed list grows by a whole city's food sites: 6,000 new URLs a second for 15 minutes. The pages may be fetched later, within the hour; the sites must not be hit faster than they allow.",
         "hours": 3,
         "startHour": 19,
         "traffic": {
@@ -312,47 +439,50 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of frontier operations succeed"
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 500
           },
           {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
+            "kind": "completes",
+            "op": "add",
+            "withinSec": 3600
           },
           {
-            "kind": "has",
-            "type": "queue",
-            "label": "A frontier queue holds URLs for the fetchers"
+            "kind": "noCrash"
           }
         ]
       },
       {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (1,200 a second) the busiest group of servers crashes; it is back 5 minutes later.",
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. The frontier may slow down and pages may be fetched up to ten minutes late; no URL may be lost.",
         "hours": 1,
         "startHour": 20,
         "traffic": {
           "rps": 1200,
           "pattern": "steady"
         },
-        "chaos": [
+        "faults": [
           {
             "minute": 10,
-            "type": "server"
+            "kind": "zoneDown",
+            "minutes": 15
           }
         ],
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of frontier operations still succeed"
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
           },
           {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
+            "kind": "completes",
+            "op": "add",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
           }
         ]
       },
@@ -366,28 +496,25 @@
           "rps": 1200,
           "pattern": "steady"
         },
-        "chaos": [
+        "faults": [
           {
             "minute": 10,
+            "kind": "crash",
             "type": "database"
           }
         ],
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of frontier operations still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
           }
         ]
       },
       {
         "id": "budget",
         "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (400 a second). Paying for far more than the traffic needs fails, like a memory limit.",
+        "desc": "A whole day at the normal rate (400 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
         "hours": 24,
         "startHour": 0,
         "traffic": {
@@ -396,50 +523,1055 @@
         },
         "checks": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of frontier operations succeed"
+            "kind": "slo"
           },
           {
             "kind": "cost",
-            "max": 5500,
-            "label": "Costs at most $5,500 a month"
+            "max": 8600
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        },
+        {
+          "id": "web",
+          "type": "external",
+          "x": 1200,
+          "y": 200,
+          "name": "The websites",
+          "config": {
+            "preset": "web",
+            "latencyMs": 800,
+            "limitRps": 2000,
+            "errorPct": 1,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "locked": [
+      "web"
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Frontier API",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 4,
+            "zones": 3
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 0,
+          "name": "Pages",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 2,
+            "schema": {
+              "tables": [
+                {
+                  "name": "pages",
+                  "fields": [
+                    {
+                      "name": "url",
+                      "type": "string"
+                    },
+                    {
+                      "name": "host",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "fetched_at",
+                      "type": "time"
+                    },
+                    {
+                      "name": "content_hash",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "url"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 200,
+          "name": "Frontier",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 200,
+          "name": "Fetchers",
+          "config": {
+            "size": "m5.large",
+            "count": 5,
+            "zones": 2
+          }
+        },
+        {
+          "id": "web",
+          "type": "external",
+          "x": 1200,
+          "y": 200,
+          "name": "The websites",
+          "config": {
+            "preset": "web",
+            "latencyMs": 800,
+            "limitRps": 2000,
+            "errorPct": 1,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        },
+        {
+          "from": "app",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "web"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Fetching inside the request",
+        "why": "The frontier fetches each page while the caller waits: when a new city is added, the sites are hit faster than they allow.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "host",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "web"
           }
         ]
       },
       {
-        "id": "api-seed",
-        "name": "Add a site to crawl",
-        "sample": true,
-        "async": true,
-        "desc": "A new seed URL joins the crawl.",
-        "request": {
-          "method": "POST",
-          "path": "/v1/seeds",
-          "body": {
-            "url": "https://katta.cc/"
-          }
-        },
-        "steps": [
+        "name": "Pages without their site",
+        "why": "Pages are stored without their host, so the crawler can't keep each site's pace.",
+        "fails": "api-add",
+        "nodes": [
           {
-            "id": "s1",
-            "op": "put",
-            "entity": "pages",
-            "values": {
-              "url": "https://katta.cc/",
-              "host": "katta.cc",
-              "status": "queued"
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Frontier",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fetchers",
+            "config": {
+              "size": "m5.large",
+              "count": 5,
+              "zones": 2
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
             }
           }
         ],
-        "respond": {
-          "status": 202,
-          "body": {
-            "queued": true
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "web"
+          },
+          {
+            "from": "w",
+            "to": "db"
           }
-        }
+        ]
+      },
+      {
+        "name": "Seen URLs in a write-back cache",
+        "why": "The seen list lives in a cache that saves to the database later: when it fails, URLs that were accepted are gone.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "host",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Frontier",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fetchers",
+            "config": {
+              "size": "m5.large",
+              "count": 5,
+              "zones": 2
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          },
+          {
+            "id": "seen",
+            "type": "cache",
+            "x": 600,
+            "y": -160,
+            "name": "Seen URLs",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 1,
+              "replica": true,
+              "ttlSec": 86400,
+              "writePolicy": "back"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "web"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "seen"
+          },
+          {
+            "from": "seen",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every frontier server is in one zone: when it goes dark, nothing answers.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 1
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "host",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Frontier",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fetchers",
+            "config": {
+              "size": "m5.large",
+              "count": 5,
+              "zones": 2
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "web"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "No standby: when it crashes, the frontier stops for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 4,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": false,
+              "shards": 2,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "host",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Frontier",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fetchers",
+            "config": {
+              "size": "m5.large",
+              "count": 5,
+              "zones": 2
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "web"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Frontier API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 12,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Pages",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 5,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "pages",
+                    "fields": [
+                      {
+                        "name": "url",
+                        "type": "string"
+                      },
+                      {
+                        "name": "host",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fetched_at",
+                        "type": "time"
+                      },
+                      {
+                        "name": "content_hash",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 200,
+            "name": "Frontier",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 200,
+            "name": "Fetchers",
+            "config": {
+              "size": "m5.large",
+              "count": 5,
+              "zones": 2
+            }
+          },
+          {
+            "id": "web",
+            "type": "external",
+            "x": 1200,
+            "y": 200,
+            "name": "The websites",
+            "config": {
+              "preset": "web",
+              "latencyMs": 800,
+              "limitRps": 2000,
+              "errorPct": 1,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "web"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          }
+        ]
       }
     ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "engine:db:dynamodb",
+      "engine:db:cassandra"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "Clients may reach the Service group directly in this model.",
+      "engine:db:dynamodb": "DynamoDB records a URL only if it is new just as well.",
+      "engine:db:cassandra": "Cassandra records a URL only if it is new with a lightweight transaction: fine at this rate."
+    },
     "rubric": {
       "fr": [
         {
@@ -621,1347 +1753,8 @@
       },
       {
         "step": "design",
-        "x": "Two groups of frontier servers and fetchers, Multi-AZ for the URL records."
+        "x": "Frontier servers in three zones, fetchers in two, Multi-AZ for the URL records."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1200,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 2,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 2,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 720,
-          "y": 0,
-          "config": {
-            "role": "frontier"
-          }
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "m5.large",
-            "count": 2,
-            "queriesPerRequest": 3,
-            "role": "fetcher"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "m5.large",
-            "count": 2,
-            "queriesPerRequest": 3,
-            "role": "fetcher"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1200,
-          "y": 0,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "pages",
-                  "fields": [
-                    {
-                      "name": "url",
-                      "type": "string"
-                    },
-                    {
-                      "name": "host",
-                      "type": "string"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "fetched_at",
-                      "type": "time"
-                    },
-                    {
-                      "name": "content_hash",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "url"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "host"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work1",
-          "to": "db1"
-        },
-        {
-          "from": "work2",
-          "to": "db1"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "role": "frontier"
-            }
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "role": "frontier"
-            }
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
-        "fails": "spike",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "role": "frontier"
-            }
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 50,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 50,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -1800,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -1650,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -1500,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": -1350,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": -1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": -1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": -900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db8",
-            "type": "database",
-            "x": 1200,
-            "y": -750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db9",
-            "type": "database",
-            "x": 1200,
-            "y": -600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db10",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db11",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db12",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db13",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db14",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db15",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db16",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db17",
-            "type": "database",
-            "x": 1200,
-            "y": 600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db18",
-            "type": "database",
-            "x": 1200,
-            "y": 750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db19",
-            "type": "database",
-            "x": 1200,
-            "y": 900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db20",
-            "type": "database",
-            "x": 1200,
-            "y": 1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db21",
-            "type": "database",
-            "x": 1200,
-            "y": 1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db22",
-            "type": "database",
-            "x": 1200,
-            "y": 1350,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db23",
-            "type": "database",
-            "x": 1200,
-            "y": 1500,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db24",
-            "type": "database",
-            "x": 1200,
-            "y": 1650,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db25",
-            "type": "database",
-            "x": 1200,
-            "y": 1800,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work1",
-            "to": "db8"
-          },
-          {
-            "from": "work1",
-            "to": "db9"
-          },
-          {
-            "from": "work1",
-            "to": "db10"
-          },
-          {
-            "from": "work1",
-            "to": "db11"
-          },
-          {
-            "from": "work1",
-            "to": "db12"
-          },
-          {
-            "from": "work1",
-            "to": "db13"
-          },
-          {
-            "from": "work1",
-            "to": "db14"
-          },
-          {
-            "from": "work1",
-            "to": "db15"
-          },
-          {
-            "from": "work1",
-            "to": "db16"
-          },
-          {
-            "from": "work1",
-            "to": "db17"
-          },
-          {
-            "from": "work1",
-            "to": "db18"
-          },
-          {
-            "from": "work1",
-            "to": "db19"
-          },
-          {
-            "from": "work1",
-            "to": "db20"
-          },
-          {
-            "from": "work1",
-            "to": "db21"
-          },
-          {
-            "from": "work1",
-            "to": "db22"
-          },
-          {
-            "from": "work1",
-            "to": "db23"
-          },
-          {
-            "from": "work1",
-            "to": "db24"
-          },
-          {
-            "from": "work1",
-            "to": "db25"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db8"
-          },
-          {
-            "from": "work2",
-            "to": "db9"
-          },
-          {
-            "from": "work2",
-            "to": "db10"
-          },
-          {
-            "from": "work2",
-            "to": "db11"
-          },
-          {
-            "from": "work2",
-            "to": "db12"
-          },
-          {
-            "from": "work2",
-            "to": "db13"
-          },
-          {
-            "from": "work2",
-            "to": "db14"
-          },
-          {
-            "from": "work2",
-            "to": "db15"
-          },
-          {
-            "from": "work2",
-            "to": "db16"
-          },
-          {
-            "from": "work2",
-            "to": "db17"
-          },
-          {
-            "from": "work2",
-            "to": "db18"
-          },
-          {
-            "from": "work2",
-            "to": "db19"
-          },
-          {
-            "from": "work2",
-            "to": "db20"
-          },
-          {
-            "from": "work2",
-            "to": "db21"
-          },
-          {
-            "from": "work2",
-            "to": "db22"
-          },
-          {
-            "from": "work2",
-            "to": "db23"
-          },
-          {
-            "from": "work2",
-            "to": "db24"
-          },
-          {
-            "from": "work2",
-            "to": "db25"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Pages without their site",
-        "why": "Pages are stored without their host, so the crawler can't keep each site's pace.",
-        "fails": "api-seed",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1200,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 2,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "role": "frontier"
-            }
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 3,
-              "role": "fetcher"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "pages",
-                    "fields": [
-                      {
-                        "name": "url",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      },
-                      {
-                        "name": "fetched_at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "url"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "url",
-        "host",
-        "status",
-        "fetched_at",
-        "content_hash"
-      ],
-      "aliases": {
-        "url": [
-          "link",
-          "page_url"
-        ],
-        "host": [
-          "domain",
-          "site"
-        ]
-      },
-      "entities": {
-        "pages": {
-          "rows": 10000000000,
-          "sample": []
-        }
-      }
-    }
+    ]
   }
 }

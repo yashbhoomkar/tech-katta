@@ -93,6 +93,22 @@ test('batch: a stream processor writes once every n events; a Service writing th
   assert.ok(w(viaProc) < w(once), `${w(viaProc)} / ${w(once)}`);
 });
 
+test('work after a step done behind a queue is done behind the queue too, even when the API could reach the store', () => {
+  const ent = { pages: { rows: 1e6, rowBytes: 200, fields: { url: 'string', status: 'string' }, sample: [{ url: 'a', status: 'queued' }] } };
+  const op = { id: 'add', name: 'Add a URL', kind: 'write', share: 1, effect: 'once', idempotencyField: 'url', respond: { status: 202, body: {} },
+    steps: [{ id: 's1', op: 'put', entity: 'pages', values: { url: 'a', status: 'queued' } }, { id: 's2', op: 'call', preset: 'web', timing: 'defer', withinSec: 600 },
+      { id: 's3', op: 'update', entity: 'pages', by: { url: 'a' }, set: { status: 'fetched' }, timing: 'defer', withinSec: 600 }] };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'm5.large', count: 2 }), N('q', 'queue'), N('w', 'server', { size: 'm5.large', count: 2 }),
+    N('web', 'external', { preset: 'web', latencyMs: 500, limitRps: 5000 }), N('db', 'database', { engine: 'postgres', size: 'db.m5.large', schema: { tables: [{ name: 'pages', fields: F('url status'), key: ['url'] }] } })],
+  edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'web'], ['w', 'db']) };
+  const c = compile(d, lab, { v: 2, entities: ent, operations: [op] });
+  assert.equal(c.plans.add.ok, true, c.plans.add.error?.message);
+  assert.deepEqual([c.plans.add.steps.s1.sync, c.plans.add.steps.s2.sync, c.plans.add.steps.s3.sync], [true, false, false]);
+  // the fetchers can't reach the store: the page can't be saved after the fetch
+  d.edges = d.edges.filter((e) => !(e.from === 'w' && e.to === 'db'));
+  assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op] }).plans.add.ok, false);
+});
+
 // ---- shards ---------------------------------------------------------------------------------------------------
 test('a step that names the shard key goes to one shard; one that does not asks every shard', () => {
   const users = { orders: { rows: 1e8, rowBytes: 200, fields: { order_id: 'string', user_id: 'string', total: 'int' }, sample: [{ order_id: 'o1', user_id: 'u1', total: 5 }, { order_id: 'o2', user_id: 'u1', total: 9 }] } };
