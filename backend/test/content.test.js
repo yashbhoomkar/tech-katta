@@ -462,8 +462,10 @@ test('the account sync keeps the problem a saved design was opened for', async (
 
 test('validation checks practice suites: tests, checks, rubric, hints, calibration designs', async () => {
   const lab = JSON.parse(await readFile(path.join(repoContent, 'lab.json'), 'utf8'));
-  const q = structuredClone(allArticles.find((a) => a.practice && a.practice.v !== 2)); // a v1 problem (v2 rules: the v2 test below)
-  assert.ok(q, 'an Interview Question has practice tests');
+  // every Interview Question is on v2 now: the v1 rules are checked on a v1 problem kept as a fixture (file sync before
+  // its conversion) until v1 is removed (evaluator.md phase 7)
+  const q = JSON.parse(await readFile(new URL('./fixtures/v1-problem.json', import.meta.url), 'utf8'));
+  assert.ok(q.practice && q.practice.v !== 2, 'the fixture is a v1 problem');
   q.practice.tests[0].checks.push({ kind: 'teleport', label: 'x' });
   q.practice.tests[1].traffic.pattern = 'nope';
   q.practice.tests.forEach((t) => { t.sample = false; });

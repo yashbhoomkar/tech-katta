@@ -63,11 +63,14 @@ test('doing something twice (F_DOUBLE): client retries, redelivery, external cal
   assert.match(f.story, /the other company is called again/);
   assert.ok(!codes(findings(base(), PAY([put({ unique: ['request_id'] }), charge()], once))).some((c) => c.startsWith('F_DOUBLE')), 'recorded first, then called');
   assert.ok(!codes(findings(base(), PAY([put({ unique: ['id'] }), charge({ idempotent: true })], once))).some((c) => c.startsWith('F_DOUBLE')));
-  // redelivery from a queue: fail for a standard queue, warn for FIFO
+  // redelivery from a queue: adding to a row twice fails for a standard queue, warns for FIFO; a put of the row by its
+  // whole key (the message carries its id) writes the same row again: safe
+  const ADD = { id: 's1', op: 'update', entity: 'orders', by: { id: 'o9' }, add: { amount: 3 }, timing: 'defer' };
   const q = (kind) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge' }), N('q', 'queue', { kind }), N('w', 'server', { size: 'c5.2xlarge' }), N('db', 'database', { engine: 'postgres', multiAz: true, schema: ORDERS() })], edges: E(['c', 'app'], ['app', 'q'], ['q', 'w'], ['w', 'db']) });
-  f = findings(q('standard'), PAY([put({ timing: 'defer' })], once)).find((x) => x.code === 'F_DOUBLE');
+  assert.ok(!codes(findings(q('standard'), PAY([put({ timing: 'defer' })], once))).some((c) => c.startsWith('F_DOUBLE')));
+  f = findings(q('standard'), PAY([ADD], once)).find((x) => x.code === 'F_DOUBLE');
   assert.equal(f.severity, 'fail'); assert.match(f.story, /^Queue delivers each message at least once/);
-  assert.equal(findings(q('fifo'), PAY([put({ timing: 'defer' })], once)).find((x) => x.code === 'F_DOUBLE').severity, 'warn');
+  assert.equal(findings(q('fifo'), PAY([ADD], once)).find((x) => x.code === 'F_DOUBLE').severity, 'warn');
   // without effect: "once" nothing is checked
   assert.ok(!codes(findings(base(), PAY([put()]))).some((c) => c.startsWith('F_DOUBLE')));
 });

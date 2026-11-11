@@ -85,6 +85,45 @@ test('a processor that adds to a count counts twice after a replay; one that wri
   assert.ok(!run(proc(), { v: 2, entities: clicks, operations: [CLICK(UPSERT)] }).f.some((x) => x.code === 'F_DOUBLE'));
 });
 
+test('batch: a stream processor writes once every n events; a Service writing the same step writes every event', () => {
+  const B = { ...UPSERT, batch: 10 };
+  const viaProc = run(proc(), { v: 2, entities: clicks, operations: [CLICK(B)] });
+  const once = run(proc(), { v: 2, entities: clicks, operations: [CLICK(UPSERT)] });
+  const w = (r) => r.sim.nodes.db.writesPerSec ?? r.sim.nodes.db.rhoMax;
+  assert.ok(w(viaProc) < w(once), `${w(viaProc)} / ${w(once)}`);
+});
+
+test('work after a step done behind a queue is done behind the queue too, even when the API could reach the store', () => {
+  const ent = { pages: { rows: 1e6, rowBytes: 200, fields: { url: 'string', status: 'string' }, sample: [{ url: 'a', status: 'queued' }] } };
+  const op = { id: 'add', name: 'Add a URL', kind: 'write', share: 1, effect: 'once', idempotencyField: 'url', respond: { status: 202, body: {} },
+    steps: [{ id: 's1', op: 'put', entity: 'pages', values: { url: 'a', status: 'queued' } }, { id: 's2', op: 'call', preset: 'web', timing: 'defer', withinSec: 600 },
+      { id: 's3', op: 'update', entity: 'pages', by: { url: 'a' }, set: { status: 'fetched' }, timing: 'defer', withinSec: 600 }] };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'm5.large', count: 2 }), N('q', 'queue'), N('w', 'server', { size: 'm5.large', count: 2 }),
+    N('web', 'external', { preset: 'web', latencyMs: 500, limitRps: 5000 }), N('db', 'database', { engine: 'postgres', size: 'db.m5.large', schema: { tables: [{ name: 'pages', fields: F('url status'), key: ['url'] }] } })],
+  edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'web'], ['w', 'db']) };
+  const c = compile(d, lab, { v: 2, entities: ent, operations: [op] });
+  assert.equal(c.plans.add.ok, true, c.plans.add.error?.message);
+  assert.deepEqual([c.plans.add.steps.s1.sync, c.plans.add.steps.s2.sync, c.plans.add.steps.s3.sync], [true, false, false]);
+  // a read that can wait is done behind the queue too, when the worker reaches the store
+  const op2 = { ...op, steps: [op.steps[0], { id: 's2', op: 'get', entity: 'pages', by: { url: 'a' }, timing: 'defer', withinSec: 600 }] };
+  assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op2] }).plans.add.steps.s2.sync, false);
+  // the fetchers can't reach the store: the page can't be saved after the fetch
+  d.edges = d.edges.filter((e) => !(e.from === 'w' && e.to === 'db'));
+  assert.equal(compile(d, lab, { v: 2, entities: ent, operations: [op] }).plans.add.ok, false);
+});
+
+test('a composite primary key works as an index on its first fields; a sort key is part of what is unique', () => {
+  const ent = { ops: { rows: 1e9, rowBytes: 100, fields: { doc_id: 'string', version: 'int', op: 'json' }, sample: [{ doc_id: 'd1', version: 1, op: {} }, { doc_id: 'd1', version: 2, op: {} }] } };
+  const open = { id: 'open', name: 'Open', kind: 'read', share: 1, respond: { status: 200, body: {} }, steps: [{ id: 's1', op: 'query', entity: 'ops', where: { doc_id: 'd1' }, order: { field: 'version' }, limit: 100, matches: 100 }] };
+  const save = { id: 'save', name: 'Save', kind: 'write', share: 0, respond: { status: 200, body: {} }, steps: [{ id: 's1', op: 'put', entity: 'ops', values: { doc_id: 'd1', version: 3, op: {} }, unique: ['doc_id', 'version'] }] };
+  const d = (db) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'm5.large', count: 2 }), N('db', 'database', db)], edges: E(['c', 'app'], ['app', 'db']) });
+  const pg = compile(d({ engine: 'postgres', size: 'db.m5.large', schema: { tables: [{ name: 'ops', fields: F('doc_id version:int op:json'), key: ['doc_id', 'version'] }] } }), lab, { v: 2, entities: ent, operations: [open, save] });
+  assert.equal(pg.plans.open.steps.s1.how, 'index-range');
+  assert.equal(pg.plans.save.ok, true, pg.plans.save.error?.message);
+  const cs = compile(d({ engine: 'cassandra', schema: { tables: [{ name: 'ops', fields: F('doc_id version:int op:json'), key: ['doc_id'], sortKey: 'version' }] } }), lab, { v: 2, entities: ent, operations: [open, save] });
+  assert.equal(cs.plans.save.ok, true, cs.plans.save.error?.message);
+});
+
 // ---- shards ---------------------------------------------------------------------------------------------------
 test('a step that names the shard key goes to one shard; one that does not asks every shard', () => {
   const users = { orders: { rows: 1e8, rowBytes: 200, fields: { order_id: 'string', user_id: 'string', total: 'int' }, sample: [{ order_id: 'o1', user_id: 'u1', total: 5 }, { order_id: 'o2', user_id: 'u1', total: 9 }] } };
@@ -117,4 +156,18 @@ test('rank from a sorted set in a cache; incr on any engine with counters', () =
   }
   const s3 = compile({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge' }), N('db', 'database', { engine: 's3', schema: { tables: [{ name: 'scores', fields: F('player_id score:int'), key: ['player_id'] }] } })], edges: E(['c', 'app'], ['app', 'db']) }, lab, { ...p, operations: [{ ...add, share: 1 }] });
   assert.equal(s3.plans.add.ok, false, 'object storage has no counters');
+});
+
+test('a step done one call in ten sends a message one call in ten; setting fields is safe to repeat', () => {
+  const ent = { pairs: { rows: 1e6, rowBytes: 80, fields: { a: 'string', b: 'string', says: 'string' }, sample: [{ a: 'u1', b: 'u2', says: 'yes' }, { a: 'u1', b: 'u3', says: null }] } };
+  const swipe = { id: 'swipe', name: 'Swipe', kind: 'write', share: 1, effect: 'once', idempotencyField: 'a',
+    steps: [{ id: 's1', op: 'update', entity: 'pairs', by: { a: 'u1', b: 'u2' }, set: { says: 'yes' } }, { id: 's2', op: 'call', preset: 'push', times: 0.1, timing: 'defer', withinSec: 60, label: 'Alert' }], respond: { status: 200, body: {} } };
+  const p = { v: 2, entities: ent, operations: [swipe] };
+  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: { tables: [{ name: 'pairs', fields: F('a b says'), key: ['a', 'b'] }] } }), N('q', 'queue'), N('w', 'server', { size: 'm5.large' }), N('x', 'external', { preset: 'push', latencyMs: 100, limitRps: 5000, errorPct: 0, pricePerCall: 0 })],
+    edges: E(['c', 'app'], ['app', 'db'], ['app', 'q'], ['q', 'w'], ['w', 'x']) };
+  const { c, sim, f } = run(d, p, { traffic: { rps: 2000, pattern: 'steady' } });
+  let enq = null; const walk = (h) => { if (h.kind === 'enqueue') enq = h; h.children.forEach(walk); }; walk(c.plans.swipe.root);
+  assert.equal(enq.per, 0.1, 'one message for every ten swipes');
+  assert.ok(sim.ops.swipe.deferred.s2.worstDelaySec < 10, '200 alerts a second: one small worker keeps up');
+  assert.ok(!f.some((x) => x.code === 'F_DOUBLE'), 'a resent swipe sets the same fields again: nothing happens twice');
 });

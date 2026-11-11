@@ -128,6 +128,11 @@ export function compile(design, lab, practice) {
 
   // ---- binding one step from handler h (§7.5) --------------------------------------------------------------
   function bindRead(op, h, step, sR, aR) {
+    // a read that can wait (phase 6) is done by the worker behind a queue when one reaches the store
+    if (step.timing === 'defer') {
+      const later = candidates(step, aR).ok[0];
+      if (later) return { step, store: later.e.store, table: later.t, a: later.a, path: later.e.path, viaCache: viaCache(later.e.path), async: true, queue: later.e.queue, worker: later.e.worker, qi: later.e.qi };
+    }
     const c = candidates(step, sR);
     const best = c.ok[0] || c.partial[0];
     if (!best) {
@@ -203,9 +208,12 @@ export function compile(design, lab, practice) {
   function bindAll(op, h) {
     const k = `${op.id}\u0000${h}`;
     if (bindMemo.has(k)) return bindMemo.get(k);
-    const sR = syncReach(h, op), aR = asyncReach(h, op), bindings = [];
-    let error = null, unbound = 0;
+    const sR0 = syncReach(h, op), aR = asyncReach(h, op), bindings = [];
+    let error = null, unbound = 0, queued = false;
     for (const step of op.steps || []) {
+      // work that waits for a step done behind a queue uses that step's result: it is done behind the queue too
+      // (a page is saved after it is fetched, not by the API before the fetch)
+      const sR = queued && step.timing === 'defer' ? [] : sR0;
       let b;
       if (step.op === 'compute') {
         const defer = step.timing === 'defer', worker = defer ? aR.find((e) => e.worker)?.worker || flowOut(h, op).flatMap((q) => (type(q) === 'queue' ? flowOut(q, op).filter((w) => type(w) === 'server') : []))[0] : null;
@@ -217,9 +225,9 @@ export function compile(design, lab, practice) {
       else if (isWrite(step)) b = bindWrite(op, h, step, sR, aR);
       else if (isRead(step)) b = bindRead(op, h, step, sR, aR);
       else b = { error: err('E_NOT_YET', PLAN.E_NOT_YET(step.op), { step: step.id }) };
-      if (b.error) { unbound++; error = error || b.error; } else bindings.push(b);
+      if (b.error) { unbound++; error = error || b.error; } else { bindings.push(b); if (b.async && step.timing === 'defer') queued = true; }
     }
-    const r = { ok: !error, bindings, error, unbound, sR, aR };
+    const r = { ok: !error, bindings, error, unbound, sR: sR0, aR };
     bindMemo.set(k, r);
     return r;
   }
@@ -298,19 +306,20 @@ export function compile(design, lab, practice) {
       if (last && sharesForCache && type(nodes.at(-2)) === 'cache') last.share = { kind: 'miss', cache: nodes.at(-2), entity: sharesForCache };
       return at;
     };
-    const queues = new Map();   // deferred steps through the same queue share one message (§7.5)
+    const queues = new Map(), enqOf = new Map();   // deferred steps through the same queue share one message (§7.5)
     const enqueues = new Map();
-    const consumeHop = (handleHop, b) => {
+    // `frac`: a step done less than once a call (times < 1, "one swipe in ten matches") sends that share of messages
+    const consumeHop = (handleHop, b, frac = 1) => {
       const k = b.path.slice(0, b.qi + 2).join('\u0000');
-      if (queues.has(k)) return queues.get(k);
+      if (queues.has(k)) { const con = queues.get(k), enq = enqOf.get(con); if (enq) enq.per = Math.max(enq.per, frac); return con; }
       const pre = b.path.slice(1, b.qi + 1); // nodes from after h up to the queue
       // a stream's message is stored once and read by every consumer; a queue's goes to one of its workers
       const ek = b.path.slice(0, b.qi + 1).join('\u0000');
       let enq = type(b.queue) === 'stream' ? enqueues.get(ek) : null;
-      if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); }
+      if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue, per: frac }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); } else enq.per = Math.max(enq.per, frac);
       const con = mk(b.worker, 'consume', { work: type(b.worker) === 'processor' ? W.consume : W.consume + W.handle, sync: false, cpuMs: 0 });
       enq.children.push(con);
-      queues.set(k, con);
+      queues.set(k, con); enqOf.set(con, enq);
       return con;
     };
     const writers = [];  // for feeds: {entity, store, table, kind}
@@ -341,11 +350,15 @@ export function compile(design, lab, practice) {
         plan.steps[step.id] = { node: b.gw, table: b.kind, how: 'publish', work: W.pass, rows: 1, query: '', sync: false, via: b.via, viaKind: b.kind };
         return;
       }
-      const write = isWrite(step);
-      const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
+      // (a stream processor reads every event and writes a share: its messages are not thinned)
+      const write = isWrite(step), frac = b.async && per < 1 && type(b.worker) !== 'processor' ? per : 1;
+      const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per: frac < 1 ? 1 : per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
       if (!b.call) shardRoute(storeHop, b.store, b.table, step, b.parts);
+      // `batch: n` (phase 6): a stream processor keeps a running total and writes it once every n events; anything
+      // else writes once per event
+      if (step.batch > 1 && b.async && type(b.worker) === 'processor') storeHop.per /= step.batch;
       let from = handleHop, nodes = b.path.slice(1);
-      if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
+      if (b.async) { from = consumeHop(handleHop, b, frac); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];
       chain(from, nodes, storeHop, write ? null : step.entity);
       plan.steps[step.id] = { node: b.store, table: b.table.name, how: b.a.how, work: b.a.work, rows: b.a.rows, query: b.a.query, sync: !b.async, viaCache: b.viaCache || null, ...(b.missing ? { missing: b.missing } : {}) };
@@ -512,6 +525,8 @@ export function compile(design, lab, practice) {
   for (const p of [...Object.values(result.plans), ...result.system.map((s) => s.plan)]) (p.roots || []).forEach(visit);
   // only when every operation was planned: a failed route would make every node look unused
   const allPlanned = Object.values(result.plans).every((p) => p.ok);
+  // a coordination service a scheduler points at holds its lease: used, though no call goes through it
+  for (const n of d.nodes) if (n.type === 'coord' && g.inn.get(n.id).some((x) => type(x) === 'scheduler')) used.add(n.id);
   if (allPlanned) for (const n of d.nodes) if (!used.has(n.id) && n.type !== 'client') {
     const comp = cat[n.type];
     let cost = 0;

@@ -480,7 +480,7 @@ export function simulateTest(compiled, lab, practice, test) {
         const sch = order.filter((id) => info[id].type === 'scheduler');
         const up = sch.filter((id) => !isDown(id));
         const twice = up.some((id) => (info[id].cfg.count || 1) >= 2 && (info[id].cfg.lock || 'none') === 'none');
-        base[op.id] = (op.perSec ?? rps * share(op)) * (twice ? 2 : 1) * f;
+        base[op.id] = (op.perSec ?? rps * m * share(op)) * (twice ? 2 : 1) * f;
         missed[op.id] = sch.length > 0 && !up.length;   // due, but nobody starts them: they count as failed
       } else base[op.id] = rps * m * share(op) * f;
     }
@@ -557,7 +557,7 @@ export function simulateTest(compiled, lab, practice, test) {
       // nothing taken this tick (the workers' calls all fail): the oldest message waits a tick longer
       // (and while the workers back off, their rate says little about how soon it clears: age the wait instead)
       const backing = e.async.some((c) => thr(c) < 1);
-      waitSec[e.hop.id] = done > 1e-12 ? (backing ? Math.min(backlog[e.hop.id] / done, waitSec[e.hop.id] + secs) : backlog[e.hop.id] / done) : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0;
+      waitSec[e.hop.id] = Math.min(hours * 3600 * 2, done > 1e-12 ? (backing ? Math.min(backlog[e.hop.id] / done, waitSec[e.hop.id] + secs) : backlog[e.hop.id] / done) : backlog[e.hop.id] > 0.5 ? waitSec[e.hop.id] + secs : 0);   // (at most twice the test: a rate near zero says little)
       lastDone[e.hop.id] = done;
       if (waitSec[e.hop.id] > waitWorst[e.hop.id]) waitWorst[e.hop.id] = waitSec[e.hop.id];
       if (backlog[e.hop.id] > 0.5 && !e.backlogged) { e.backlogged = true; st.events.push({ t, node: e.node, kind: 'backlog' }); }

@@ -211,204 +211,88 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends rider location pings and order offers. Each updates or reads the in-memory map of riders: 1 query, which a cache (memory) answers 95% of the time. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 1,
-      "hitPct": 95,
-      "writePct": 5
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 75000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends what the rider and restaurant apps do: riders send their position every few seconds (only the latest one matters, and a position a few seconds old is fine), and now and then a restaurant asks for a rider for an order. The order is saved at once and must never be lost; the nearest free rider is found and offered it (through the push provider) within half a minute, and an order is never given to two riders.",
+    "entities": {
+      "riders": {
+        "rows": 500000,
+        "rowBytes": 100,
+        "growthPerDay": 100,
+        "fields": {
+          "rider_id": "string",
+          "location": "geo",
+          "status": "string",
+          "updated_at": "time"
+        },
+        "sample": [
+          {
+            "rider_id": "r1",
+            "location": [
+              18.52,
+              73.85
+            ],
+            "status": "free",
+            "updated_at": "2026-11-07T20:30:00Z"
+          },
+          {
+            "rider_id": "r2",
+            "location": [
+              18.53,
+              73.84
+            ],
+            "status": "busy",
+            "updated_at": "2026-11-07T20:30:02Z"
           }
-        }
+        ]
+      },
+      "orders": {
+        "rows": 1000000000,
+        "rowBytes": 200,
+        "growthPerDay": 3000000,
+        "fields": {
+          "order_id": "string",
+          "restaurant_id": "string",
+          "rider_id": "string",
+          "status": "string"
+        },
+        "sample": [
+          {
+            "order_id": "o90",
+            "restaurant_id": "rest_7",
+            "rider_id": "r2",
+            "status": "picked_up"
+          },
+          {
+            "order_id": "o89",
+            "restaurant_id": "rest_3",
+            "rider_id": null,
+            "status": "finding_rider"
+          }
+        ]
+      }
+    },
+    "aliases": {
+      "location": [
+        "loc",
+        "position",
+        "coords",
+        "lat_lng"
       ],
-      "edges": []
+      "status": [
+        "state"
+      ],
+      "rider_id": [
+        "partner_id",
+        "delivery_partner_id"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
-        "sample": true,
-        "desc": "25,000 location pings and offers a second in the afternoon.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 25000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of pings and offers succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "role",
-            "role": "geo",
-            "label": "Riders' latest positions are held where \"nearest to this point\" is quick to answer"
-          },
-          {
-            "kind": "role",
-            "role": "matcher",
-            "behind": "queue",
-            "label": "Orders are matched to riders by workers, away from the location pings"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "Dinner",
-        "sample": true,
-        "desc": "75,000 a second for an hour from 8 pm: 3 lakh riders pinging every 4 seconds.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 75000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of pings and offers succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "Rain at 8 pm",
-        "desc": "It starts raining in Mumbai: everyone orders in and riders ping more often: 1.1 lakh a second for 15 minutes from 8 pm.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 110000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of pings and offers succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          },
-          {
-            "kind": "has",
-            "type": "queue",
-            "label": "Location pings are queued for the workers"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (75,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 75000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of pings and offers still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 75000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of pings and offers still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (25,000 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 25000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of pings and offers succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 90000,
-            "label": "Costs at most $90,000 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-ping",
+        "id": "ping",
         "name": "A rider moves",
+        "kind": "write",
+        "share": 0.99,
         "sample": true,
-        "async": true,
-        "desc": "Rider r1 sends a new position from the rider app. Only the latest position is kept; the trail goes to cheap storage later.",
         "request": {
           "method": "POST",
           "path": "/v1/riders/r1/location",
@@ -417,6 +301,7 @@
             "lng": 73.8567
           }
         },
+        "bytesOut": 20,
         "steps": [
           {
             "id": "s1",
@@ -431,7 +316,8 @@
                 73.8567
               ],
               "updated_at": "2026-11-07T20:31:04Z"
-            }
+            },
+            "label": "Keeping r1's latest position"
           }
         ],
         "respond": {
@@ -439,13 +325,18 @@
           "body": {
             "ok": true
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
         }
       },
       {
-        "id": "api-order",
+        "id": "order",
         "name": "An order needs a rider",
-        "async": true,
-        "desc": "The restaurant accepts order #91. It is recorded as waiting for a rider; choosing one and sending the offer follows a moment later.",
+        "kind": "write",
+        "share": 0.01,
+        "sample": true,
         "request": {
           "method": "POST",
           "path": "/v1/orders/o91/dispatch",
@@ -453,6 +344,7 @@
             "restaurant_id": "rest_7"
           }
         },
+        "bytesOut": 100,
         "steps": [
           {
             "id": "s1",
@@ -462,7 +354,63 @@
               "order_id": "o91",
               "restaurant_id": "rest_7",
               "status": "finding_rider"
-            }
+            },
+            "unique": [
+              "order_id"
+            ],
+            "label": "Saving the order"
+          },
+          {
+            "id": "s2",
+            "op": "query",
+            "entity": "riders",
+            "near": {
+              "field": "location",
+              "at": [
+                18.52,
+                73.85
+              ],
+              "km": 3
+            },
+            "where": {
+              "status": "free"
+            },
+            "limit": 5,
+            "matches": 40,
+            "fields": [
+              "rider_id"
+            ],
+            "timing": "defer",
+            "withinSec": 30,
+            "label": "Finding the nearest free riders"
+          },
+          {
+            "id": "s3",
+            "op": "update",
+            "entity": "orders",
+            "by": {
+              "order_id": "o91"
+            },
+            "set": {
+              "rider_id": "r1",
+              "status": "offered"
+            },
+            "cond": {
+              "status": {
+                "eq": "finding_rider"
+              }
+            },
+            "timing": "defer",
+            "withinSec": 30,
+            "label": "Offering it to one rider only"
+          },
+          {
+            "id": "s4",
+            "op": "call",
+            "preset": "push",
+            "timing": "defer",
+            "withinSec": 30,
+            "label": "Telling the rider"
           }
         ],
         "respond": {
@@ -472,9 +420,1979 @@
             "status": "$s1.status"
           }
         },
-        "sample": false
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "durable": true,
+        "effect": "once",
+        "idempotencyField": "order_id"
       }
     ],
+    "tests": [
+      {
+        "id": "api-ping",
+        "name": "A rider moves",
+        "desc": "Rider r1 sends a new position from the rider app. Only the latest position is kept; the trail goes to cheap storage later.",
+        "sample": true,
+        "op": "ping"
+      },
+      {
+        "id": "api-order",
+        "name": "An order needs a rider",
+        "desc": "The restaurant accepts order #91. It is recorded as waiting for a rider; choosing one and sending the offer follows a moment later.",
+        "sample": true,
+        "op": "order"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "25,000 location pings and offers a second in the afternoon.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "Dinner",
+        "desc": "75,000 a second for an hour from 8 pm: 3 lakh riders pinging every 4 seconds.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 75000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "noDuplicates"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "Rain at 8 pm",
+        "desc": "It starts raining in Mumbai: everyone orders in and riders ping more often: 1.1 lakh a second for 15 minutes from 8 pm. Offers may take up to two minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 110000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 500
+          },
+          {
+            "kind": "completes",
+            "op": "order",
+            "withinSec": 120
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Offers may take up to ten minutes; no order may be lost.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 75000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          },
+          {
+            "kind": "completes",
+            "op": "order",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 75000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "order",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (25,000 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 25000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 29300
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        },
+        {
+          "id": "push",
+          "type": "external",
+          "x": 1440,
+          "y": 360,
+          "name": "Push provider",
+          "config": {
+            "preset": "push",
+            "latencyMs": 200,
+            "limitRps": 10000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "locked": [
+      "push"
+    ],
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": -80,
+          "config": {}
+        },
+        {
+          "id": "lb2",
+          "type": "lb",
+          "x": 240,
+          "y": 80,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": -160,
+          "name": "Ping API A",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 30,
+            "zones": 3
+          }
+        },
+        {
+          "id": "app2",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Ping API B",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 30,
+            "zones": 3
+          }
+        },
+        {
+          "id": "ord",
+          "type": "server",
+          "x": 480,
+          "y": 200,
+          "name": "Order API",
+          "config": {
+            "size": "m5.large",
+            "count": 3,
+            "zones": 3
+          }
+        },
+        {
+          "id": "map",
+          "type": "cache",
+          "x": 720,
+          "y": -80,
+          "name": "Rider map",
+          "config": {
+            "size": "cache.m5.large",
+            "nodes": 7,
+            "replica": true,
+            "ttlSec": 300,
+            "structures": [
+              {
+                "name": "riders",
+                "kind": "geo",
+                "fields": [
+                  {
+                    "name": "rider_id",
+                    "type": "string"
+                  },
+                  {
+                    "name": "location",
+                    "type": "geo"
+                  },
+                  {
+                    "name": "status",
+                    "type": "string"
+                  },
+                  {
+                    "name": "updated_at",
+                    "type": "time"
+                  }
+                ],
+                "key": [
+                  "rider_id"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 720,
+          "y": 200,
+          "name": "Orders",
+          "config": {
+            "engine": "postgres",
+            "size": "db.m5.xlarge",
+            "multiAz": true,
+            "schema": {
+              "tables": [
+                {
+                  "name": "orders",
+                  "fields": [
+                    {
+                      "name": "order_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "key": [
+                    "order_id"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "q",
+          "type": "queue",
+          "x": 720,
+          "y": 360,
+          "name": "To match",
+          "config": {}
+        },
+        {
+          "id": "w",
+          "type": "server",
+          "x": 960,
+          "y": 360,
+          "name": "Matchers",
+          "config": {
+            "size": "t3.medium",
+            "count": 8,
+            "zones": 2
+          }
+        },
+        {
+          "id": "push",
+          "type": "external",
+          "x": 1440,
+          "y": 360,
+          "name": "Push provider",
+          "config": {
+            "preset": "push",
+            "latencyMs": 200,
+            "limitRps": 10000,
+            "errorPct": 0.5,
+            "pricePerCall": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "clients",
+          "to": "lb2"
+        },
+        {
+          "from": "lb",
+          "to": "app",
+          "carries": [
+            "ping"
+          ]
+        },
+        {
+          "from": "lb2",
+          "to": "app",
+          "carries": [
+            "ping"
+          ]
+        },
+        {
+          "from": "lb",
+          "to": "app2",
+          "carries": [
+            "ping"
+          ]
+        },
+        {
+          "from": "lb2",
+          "to": "app2",
+          "carries": [
+            "ping"
+          ]
+        },
+        {
+          "from": "lb",
+          "to": "ord",
+          "carries": [
+            "order"
+          ]
+        },
+        {
+          "from": "app",
+          "to": "map"
+        },
+        {
+          "from": "app2",
+          "to": "map"
+        },
+        {
+          "from": "ord",
+          "to": "db"
+        },
+        {
+          "from": "ord",
+          "to": "q"
+        },
+        {
+          "from": "q",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "map"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        },
+        {
+          "from": "w",
+          "to": "push"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Riders without a position",
+        "why": "The riders map keeps no position, so a ping has nowhere to go and no one can find the nearest free rider.",
+        "fails": "api-ping",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "map",
+            "type": "cache",
+            "x": 720,
+            "y": -80,
+            "name": "Rider map",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "replica": true,
+              "ttlSec": 300,
+              "structures": [
+                {
+                  "name": "riders",
+                  "kind": "kv",
+                  "fields": [
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "rider_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 360,
+            "name": "To match",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 360,
+            "name": "Matchers",
+            "config": {
+              "size": "t3.medium",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "map"
+          },
+          {
+            "from": "app2",
+            "to": "map"
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "map"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "w",
+            "to": "push"
+          }
+        ]
+      },
+      {
+        "name": "Positions in the database",
+        "why": "75,000 position updates a second go to a database on disk, one by one: far more than it takes.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "riders",
+                    "fields": [
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "location",
+                        "type": "geo"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      },
+                      {
+                        "name": "updated_at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "rider_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "location"
+                        ],
+                        "kind": "geo"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 360,
+            "name": "To match",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 360,
+            "name": "Matchers",
+            "config": {
+              "size": "t3.medium",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "w",
+            "to": "push"
+          }
+        ]
+      },
+      {
+        "name": "Matching inside the request",
+        "why": "The restaurant's request waits while riders are searched and the push provider answers: at dinner it is too slow.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "map",
+            "type": "cache",
+            "x": 720,
+            "y": -80,
+            "name": "Rider map",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "replica": true,
+              "ttlSec": 300,
+              "structures": [
+                {
+                  "name": "riders",
+                  "kind": "geo",
+                  "fields": [
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "rider_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "map"
+          },
+          {
+            "from": "app2",
+            "to": "map"
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "push"
+          },
+          {
+            "from": "ord",
+            "to": "map"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, riders vanish from the map.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 1
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 1
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 1
+            }
+          },
+          {
+            "id": "map",
+            "type": "cache",
+            "x": 720,
+            "y": -80,
+            "name": "Rider map",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "replica": true,
+              "ttlSec": 300,
+              "structures": [
+                {
+                  "name": "riders",
+                  "kind": "geo",
+                  "fields": [
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "rider_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 360,
+            "name": "To match",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 360,
+            "name": "Matchers",
+            "config": {
+              "size": "t3.medium",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "map"
+          },
+          {
+            "from": "app2",
+            "to": "map"
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "map"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "w",
+            "to": "push"
+          }
+        ]
+      },
+      {
+        "name": "Single-zone database",
+        "why": "No standby: when it crashes, orders can't be saved for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "map",
+            "type": "cache",
+            "x": 720,
+            "y": -80,
+            "name": "Rider map",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 7,
+              "replica": true,
+              "ttlSec": 300,
+              "structures": [
+                {
+                  "name": "riders",
+                  "kind": "geo",
+                  "fields": [
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "rider_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": false,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 360,
+            "name": "To match",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 360,
+            "name": "Matchers",
+            "config": {
+              "size": "t3.medium",
+              "count": 8,
+              "zones": 2
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "map"
+          },
+          {
+            "from": "app2",
+            "to": "map"
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "map"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "w",
+            "to": "push"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": -80,
+            "config": {}
+          },
+          {
+            "id": "lb2",
+            "type": "lb",
+            "x": 240,
+            "y": 80,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": -160,
+            "name": "Ping API A",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3
+            }
+          },
+          {
+            "id": "app2",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Ping API B",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ord",
+            "type": "server",
+            "x": 480,
+            "y": 200,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "map",
+            "type": "cache",
+            "x": 720,
+            "y": -80,
+            "name": "Rider map",
+            "config": {
+              "size": "cache.m5.large",
+              "nodes": 10,
+              "replica": true,
+              "ttlSec": 300,
+              "structures": [
+                {
+                  "name": "riders",
+                  "kind": "geo",
+                  "fields": [
+                    {
+                      "name": "rider_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "location",
+                      "type": "geo"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    },
+                    {
+                      "name": "updated_at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "rider_id"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 200,
+            "name": "Orders",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rider_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              },
+              "replicas": 2
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 360,
+            "name": "To match",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 360,
+            "name": "Matchers",
+            "config": {
+              "size": "t3.medium",
+              "count": 20,
+              "zones": 2
+            }
+          },
+          {
+            "id": "push",
+            "type": "external",
+            "x": 1440,
+            "y": 360,
+            "name": "Push provider",
+            "config": {
+              "preset": "push",
+              "latencyMs": 200,
+              "limitRps": 10000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "lb2"
+          },
+          {
+            "from": "lb",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb2",
+            "to": "app2",
+            "carries": [
+              "ping"
+            ]
+          },
+          {
+            "from": "lb",
+            "to": "ord",
+            "carries": [
+              "order"
+            ]
+          },
+          {
+            "from": "app",
+            "to": "map"
+          },
+          {
+            "from": "app2",
+            "to": "map"
+          },
+          {
+            "from": "ord",
+            "to": "db"
+          },
+          {
+            "from": "ord",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "map"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "w",
+            "to": "push"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "ttl:map",
+      "engine:db:dynamodb",
+      "engine:db:cassandra"
+    ],
+    "mutantsAllowedWhy": {
+      "ttl:map": "Positions kept in a structure of the cache are its data, not copies: how long copies are kept changes nothing here.",
+      "engine:db:dynamodb": "DynamoDB saves an order and offers it only if no rider has it yet just as well.",
+      "engine:db:cassandra": "Cassandra offers an order only if no rider has it yet with a lightweight transaction: fine at this rate."
+    },
     "rubric": {
       "fr": [
         {
@@ -644,2464 +2562,12 @@
       },
       {
         "step": "design",
-        "x": "Queue the pings; workers update the map by cell; history goes to cheap storage later."
+        "x": "Keep the latest positions in a geo index in memory (a cache with a geo structure); queue the orders, and let matchers find the nearest free rider and offer it to one rider only."
       },
       {
         "step": "design",
-        "x": "Rain makes everything busier at once: size for it before 8 pm, and keep two groups everywhere."
+        "x": "Rain makes everything busier at once: size for it before 8 pm, keep API servers in three zones and matchers in two, and a Multi-AZ database for orders."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 75000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb1",
-          "type": "lb",
-          "x": 240,
-          "y": -75,
-          "config": {}
-        },
-        {
-          "id": "lb2",
-          "type": "lb",
-          "x": 240,
-          "y": 75,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 32,
-            "queriesPerRequest": 1
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 32,
-            "queriesPerRequest": 1
-          }
-        },
-        {
-          "id": "queue1",
-          "type": "queue",
-          "x": 720,
-          "y": -75,
-          "config": {}
-        },
-        {
-          "id": "queue2",
-          "type": "queue",
-          "x": 720,
-          "y": 75,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 17,
-            "queriesPerRequest": 1,
-            "role": "matcher"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 17,
-            "queriesPerRequest": 1,
-            "role": "matcher"
-          }
-        },
-        {
-          "id": "cache1",
-          "type": "cache",
-          "x": 1200,
-          "y": -150,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 95,
-            "writePct": 5,
-            "onDown": "database",
-            "role": "geo"
-          }
-        },
-        {
-          "id": "cache2",
-          "type": "cache",
-          "x": 1200,
-          "y": 0,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 95,
-            "writePct": 5,
-            "onDown": "database",
-            "role": "geo"
-          }
-        },
-        {
-          "id": "cache3",
-          "type": "cache",
-          "x": 1200,
-          "y": 150,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 95,
-            "writePct": 5,
-            "onDown": "database",
-            "role": "geo"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1440,
-          "y": -75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "riders",
-                  "fields": [
-                    {
-                      "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "location",
-                      "type": "geo"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "updated_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "rider_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "location"
-                      ],
-                      "kind": "geo"
-                    }
-                  ]
-                },
-                {
-                  "name": "orders",
-                  "fields": [
-                    {
-                      "name": "order_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "restaurant_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "order_id"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db2",
-          "type": "database",
-          "x": 1440,
-          "y": 75,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "schema": {
-              "tables": [
-                {
-                  "name": "riders",
-                  "fields": [
-                    {
-                      "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "location",
-                      "type": "geo"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    },
-                    {
-                      "name": "updated_at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "rider_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "location"
-                      ],
-                      "kind": "geo"
-                    }
-                  ]
-                },
-                {
-                  "name": "orders",
-                  "fields": [
-                    {
-                      "name": "order_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "restaurant_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "rider_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "status",
-                      "type": "string"
-                    }
-                  ],
-                  "key": [
-                    "order_id"
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb1"
-        },
-        {
-          "from": "clients",
-          "to": "lb2"
-        },
-        {
-          "from": "lb1",
-          "to": "app1"
-        },
-        {
-          "from": "lb2",
-          "to": "app1"
-        },
-        {
-          "from": "lb1",
-          "to": "app2"
-        },
-        {
-          "from": "lb2",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "queue1"
-        },
-        {
-          "from": "app2",
-          "to": "queue1"
-        },
-        {
-          "from": "app1",
-          "to": "queue2"
-        },
-        {
-          "from": "app2",
-          "to": "queue2"
-        },
-        {
-          "from": "queue1",
-          "to": "work1"
-        },
-        {
-          "from": "queue2",
-          "to": "work1"
-        },
-        {
-          "from": "queue1",
-          "to": "work2"
-        },
-        {
-          "from": "queue2",
-          "to": "work2"
-        },
-        {
-          "from": "work1",
-          "to": "cache1"
-        },
-        {
-          "from": "work1",
-          "to": "cache2"
-        },
-        {
-          "from": "work1",
-          "to": "cache3"
-        },
-        {
-          "from": "work2",
-          "to": "cache1"
-        },
-        {
-          "from": "work2",
-          "to": "cache2"
-        },
-        {
-          "from": "work2",
-          "to": "cache3"
-        },
-        {
-          "from": "cache1",
-          "to": "db1"
-        },
-        {
-          "from": "cache1",
-          "to": "db2"
-        },
-        {
-          "from": "cache2",
-          "to": "db1"
-        },
-        {
-          "from": "cache2",
-          "to": "db2"
-        },
-        {
-          "from": "cache3",
-          "to": "db1"
-        },
-        {
-          "from": "cache3",
-          "to": "db2"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "No cache",
-        "why": "Every read goes to the database, which can't take the peak.",
-        "fails": "peak",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app2",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "app2",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1440,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1440,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "cache1"
-          },
-          {
-            "from": "work1",
-            "to": "cache2"
-          },
-          {
-            "from": "work1",
-            "to": "cache3"
-          },
-          {
-            "from": "work2",
-            "to": "cache1"
-          },
-          {
-            "from": "work2",
-            "to": "cache2"
-          },
-          {
-            "from": "work2",
-            "to": "cache3"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1440,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1440,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app2",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "app2",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "cache1"
-          },
-          {
-            "from": "work1",
-            "to": "cache2"
-          },
-          {
-            "from": "work1",
-            "to": "cache3"
-          },
-          {
-            "from": "work2",
-            "to": "cache1"
-          },
-          {
-            "from": "work2",
-            "to": "cache2"
-          },
-          {
-            "from": "work2",
-            "to": "cache3"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
-        "fails": "spike",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -225,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache4",
-            "type": "cache",
-            "x": 720,
-            "y": 225,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app1",
-            "to": "cache3"
-          },
-          {
-            "from": "app1",
-            "to": "cache4"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache3"
-          },
-          {
-            "from": "app2",
-            "to": "cache4"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          },
-          {
-            "from": "cache4",
-            "to": "db1"
-          },
-          {
-            "from": "cache4",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app3",
-            "type": "server",
-            "x": 480,
-            "y": 150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 1200,
-            "y": -600,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache4",
-            "type": "cache",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache5",
-            "type": "cache",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache6",
-            "type": "cache",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache7",
-            "type": "cache",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache8",
-            "type": "cache",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache9",
-            "type": "cache",
-            "x": 1200,
-            "y": 600,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1440,
-            "y": -225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1440,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1440,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1440,
-            "y": 225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "lb1",
-            "to": "app3"
-          },
-          {
-            "from": "lb2",
-            "to": "app3"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app2",
-            "to": "queue1"
-          },
-          {
-            "from": "app3",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "app2",
-            "to": "queue2"
-          },
-          {
-            "from": "app3",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "cache1"
-          },
-          {
-            "from": "work1",
-            "to": "cache2"
-          },
-          {
-            "from": "work1",
-            "to": "cache3"
-          },
-          {
-            "from": "work1",
-            "to": "cache4"
-          },
-          {
-            "from": "work1",
-            "to": "cache5"
-          },
-          {
-            "from": "work1",
-            "to": "cache6"
-          },
-          {
-            "from": "work1",
-            "to": "cache7"
-          },
-          {
-            "from": "work1",
-            "to": "cache8"
-          },
-          {
-            "from": "work1",
-            "to": "cache9"
-          },
-          {
-            "from": "work2",
-            "to": "cache1"
-          },
-          {
-            "from": "work2",
-            "to": "cache2"
-          },
-          {
-            "from": "work2",
-            "to": "cache3"
-          },
-          {
-            "from": "work2",
-            "to": "cache4"
-          },
-          {
-            "from": "work2",
-            "to": "cache5"
-          },
-          {
-            "from": "work2",
-            "to": "cache6"
-          },
-          {
-            "from": "work2",
-            "to": "cache7"
-          },
-          {
-            "from": "work2",
-            "to": "cache8"
-          },
-          {
-            "from": "work2",
-            "to": "cache9"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache1",
-            "to": "db3"
-          },
-          {
-            "from": "cache1",
-            "to": "db4"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db3"
-          },
-          {
-            "from": "cache2",
-            "to": "db4"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db3"
-          },
-          {
-            "from": "cache3",
-            "to": "db4"
-          },
-          {
-            "from": "cache4",
-            "to": "db1"
-          },
-          {
-            "from": "cache4",
-            "to": "db2"
-          },
-          {
-            "from": "cache4",
-            "to": "db3"
-          },
-          {
-            "from": "cache4",
-            "to": "db4"
-          },
-          {
-            "from": "cache5",
-            "to": "db1"
-          },
-          {
-            "from": "cache5",
-            "to": "db2"
-          },
-          {
-            "from": "cache5",
-            "to": "db3"
-          },
-          {
-            "from": "cache5",
-            "to": "db4"
-          },
-          {
-            "from": "cache6",
-            "to": "db1"
-          },
-          {
-            "from": "cache6",
-            "to": "db2"
-          },
-          {
-            "from": "cache6",
-            "to": "db3"
-          },
-          {
-            "from": "cache6",
-            "to": "db4"
-          },
-          {
-            "from": "cache7",
-            "to": "db1"
-          },
-          {
-            "from": "cache7",
-            "to": "db2"
-          },
-          {
-            "from": "cache7",
-            "to": "db3"
-          },
-          {
-            "from": "cache7",
-            "to": "db4"
-          },
-          {
-            "from": "cache8",
-            "to": "db1"
-          },
-          {
-            "from": "cache8",
-            "to": "db2"
-          },
-          {
-            "from": "cache8",
-            "to": "db3"
-          },
-          {
-            "from": "cache8",
-            "to": "db4"
-          },
-          {
-            "from": "cache9",
-            "to": "db1"
-          },
-          {
-            "from": "cache9",
-            "to": "db2"
-          },
-          {
-            "from": "cache9",
-            "to": "db3"
-          },
-          {
-            "from": "cache9",
-            "to": "db4"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1440,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1440,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app2",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "app2",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "cache1"
-          },
-          {
-            "from": "work1",
-            "to": "cache2"
-          },
-          {
-            "from": "work1",
-            "to": "cache3"
-          },
-          {
-            "from": "work2",
-            "to": "cache1"
-          },
-          {
-            "from": "work2",
-            "to": "cache2"
-          },
-          {
-            "from": "work2",
-            "to": "cache3"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          }
-        ]
-      },
-      {
-        "name": "Riders without a position",
-        "why": "The riders table has no position, so a location ping has nowhere to go and no one can find the nearest free rider.",
-        "fails": "api-ping",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 75000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb1",
-            "type": "lb",
-            "x": 240,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "lb2",
-            "type": "lb",
-            "x": 240,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 32,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue1",
-            "type": "queue",
-            "x": 720,
-            "y": -75,
-            "config": {}
-          },
-          {
-            "id": "queue2",
-            "type": "queue",
-            "x": 720,
-            "y": 75,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 17,
-              "queriesPerRequest": 1,
-              "role": "matcher"
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "cache3",
-            "type": "cache",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 95,
-              "writePct": 5,
-              "onDown": "database",
-              "role": "geo"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1440,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "riders",
-                    "fields": [
-                      {
-                        "name": "rider_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      },
-                      {
-                        "name": "updated_at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "rider_id"
-                    ]
-                  },
-                  {
-                    "name": "orders",
-                    "fields": [
-                      {
-                        "name": "order_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "restaurant_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "rider_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "order_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1440,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "schema": {
-                "tables": [
-                  {
-                    "name": "riders",
-                    "fields": [
-                      {
-                        "name": "rider_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      },
-                      {
-                        "name": "updated_at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "rider_id"
-                    ]
-                  },
-                  {
-                    "name": "orders",
-                    "fields": [
-                      {
-                        "name": "order_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "restaurant_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "rider_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "status",
-                        "type": "string"
-                      }
-                    ],
-                    "key": [
-                      "order_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb1"
-          },
-          {
-            "from": "clients",
-            "to": "lb2"
-          },
-          {
-            "from": "lb1",
-            "to": "app1"
-          },
-          {
-            "from": "lb2",
-            "to": "app1"
-          },
-          {
-            "from": "lb1",
-            "to": "app2"
-          },
-          {
-            "from": "lb2",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue1"
-          },
-          {
-            "from": "app2",
-            "to": "queue1"
-          },
-          {
-            "from": "app1",
-            "to": "queue2"
-          },
-          {
-            "from": "app2",
-            "to": "queue2"
-          },
-          {
-            "from": "queue1",
-            "to": "work1"
-          },
-          {
-            "from": "queue2",
-            "to": "work1"
-          },
-          {
-            "from": "queue1",
-            "to": "work2"
-          },
-          {
-            "from": "queue2",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "cache1"
-          },
-          {
-            "from": "work1",
-            "to": "cache2"
-          },
-          {
-            "from": "work1",
-            "to": "cache3"
-          },
-          {
-            "from": "work2",
-            "to": "cache1"
-          },
-          {
-            "from": "work2",
-            "to": "cache2"
-          },
-          {
-            "from": "work2",
-            "to": "cache3"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache1",
-            "to": "db2"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db2"
-          },
-          {
-            "from": "cache3",
-            "to": "db1"
-          },
-          {
-            "from": "cache3",
-            "to": "db2"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "rider_id",
-        "location",
-        "status",
-        "updated_at",
-        "order_id",
-        "restaurant_id"
-      ],
-      "aliases": {
-        "location": [
-          "loc",
-          "position",
-          "coords",
-          "lat_lng"
-        ],
-        "status": [
-          "state"
-        ],
-        "rider_id": [
-          "partner_id",
-          "delivery_partner_id"
-        ]
-      },
-      "entities": {
-        "riders": {
-          "rows": 500000,
-          "sample": [
-            {
-              "rider_id": "r1",
-              "location": [
-                18.52,
-                73.85
-              ],
-              "status": "free",
-              "updated_at": "2026-11-07T20:30:00Z"
-            }
-          ]
-        },
-        "orders": {
-          "rows": 1000000000,
-          "sample": []
-        }
-      }
-    }
+    ]
   }
 }

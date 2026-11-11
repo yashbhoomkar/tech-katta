@@ -215,207 +215,93 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends edit batches. Each one is appended to its document's log: 1 query. An edit is acknowledged once it is in the log; applying it to snapshots can follow. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 1
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 40000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends what editors do: open a document (a connection that stays open about 10 minutes, plus the document's recent edits) and send edit batches. Each edit is acknowledged at once, saved within half a minute, and reaches the 3 other people in the document (all of them online). A document's edits must be applied in one order everywhere, and an acknowledged edit must never be lost.",
+    "entities": {
+      "ops": {
+        "rows": 100000000000,
+        "rowBytes": 200,
+        "growthPerDay": 1000000000,
+        "fields": {
+          "doc_id": "string",
+          "version": "int",
+          "op": "json",
+          "author_id": "string",
+          "at": "time"
+        },
+        "sample": [
+          {
+            "doc_id": "d1",
+            "version": 40,
+            "op": {
+              "insert": "Menu",
+              "at": 0
+            },
+            "author_id": "u2",
+            "at": "2026-11-07T09:59:00Z"
+          },
+          {
+            "doc_id": "d1",
+            "version": 41,
+            "op": {
+              "delete": 3,
+              "at": 4
+            },
+            "author_id": "u3",
+            "at": "2026-11-07T09:59:30Z"
           }
-        }
+        ]
+      }
+    },
+    "aliases": {
+      "op": [
+        "operation",
+        "change",
+        "edit",
+        "delta"
       ],
-      "edges": []
+      "version": [
+        "seq",
+        "rev",
+        "revision"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
-        "sample": true,
-        "desc": "10,000 edit batches a second.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 10000,
-          "pattern": "steady"
+        "id": "connect",
+        "name": "Open a document",
+        "kind": "connect",
+        "share": 0.02,
+        "sessionSec": 600,
+        "request": {
+          "method": "GET",
+          "path": "/v1/docs/d1/connect"
         },
-        "checks": [
+        "steps": [
           {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of edits succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 200,
-            "label": "p99 under 200 ms"
-          },
-          {
-            "kind": "role",
-            "role": "websocket",
-            "label": "Everyone in a document gets others' edits over connections that stay open"
-          },
-          {
-            "kind": "role",
-            "role": "sync",
-            "behind": "queue",
-            "label": "Edits are merged in order by a part that takes them from a queue"
-          },
-          {
-            "kind": "role",
-            "role": "oplog",
-            "label": "Edits are stored in order so the document can be replayed"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "The morning peak",
-        "sample": true,
-        "desc": "40,000 edit batches a second at 10 am, when kitchens update the day's menus.",
-        "hours": 1,
-        "startHour": 10,
-        "traffic": {
-          "rps": 40000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of edits succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 200,
-            "label": "p99 under 200 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "Menu change day",
-        "desc": "At 8 pm every restaurant changes prices for a festival: 80,000 edit batches a second for 15 minutes.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 80000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of edits succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          },
-          {
-            "kind": "has",
-            "type": "queue",
-            "label": "Edits go through an ordered log (queue)"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (40,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 10,
-        "traffic": {
-          "rps": 40000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
+            "id": "s1",
+            "op": "compute",
+            "cpuMs": 1,
+            "label": "Checking the token"
           }
         ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of edits still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
+        "respond": {
+          "status": 101,
+          "body": {
+            "connected": true
           }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 10,
-        "traffic": {
-          "rps": 40000,
-          "pattern": "steady"
         },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of edits still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 500
+        }
       },
       {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (10,000 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 10000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of edits succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 60000,
-            "label": "Costs at most $60,000 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-edit",
+        "id": "edit",
         "name": "Type in a document",
+        "kind": "write",
+        "share": 0.93,
         "sample": true,
-        "async": true,
-        "desc": "u1's edit becomes version 42 of document d1.",
         "request": {
           "method": "POST",
           "path": "/v1/docs/d1/ops",
@@ -427,6 +313,7 @@
             }
           }
         },
+        "bytesOut": 50,
         "steps": [
           {
             "id": "s1",
@@ -441,7 +328,19 @@
               },
               "author_id": "u1",
               "at": "2026-11-07T10:00:00Z"
-            }
+            },
+            "timing": "defer",
+            "withinSec": 30,
+            "label": "Saving version 42 (its place in the document's log)"
+          },
+          {
+            "id": "s2",
+            "op": "publish",
+            "audience": {
+              "avg": 3
+            },
+            "online": 1,
+            "label": "Sending it to the others in the document"
           }
         ],
         "respond": {
@@ -449,9 +348,1305 @@
           "body": {
             "version": "$s1.version"
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 200
+        },
+        "durable": true,
+        "ordered": {
+          "by": "doc_id"
+        }
+      },
+      {
+        "id": "open",
+        "name": "Load the recent edits",
+        "kind": "read",
+        "share": 0.05,
+        "request": {
+          "method": "GET",
+          "path": "/v1/docs/d1/ops?after=0"
+        },
+        "bytesOut": 20000,
+        "steps": [
+          {
+            "id": "s1",
+            "op": "query",
+            "entity": "ops",
+            "where": {
+              "doc_id": "d1"
+            },
+            "order": {
+              "field": "version"
+            },
+            "limit": 200,
+            "matches": 200,
+            "fields": [
+              "version",
+              "op"
+            ]
+          }
+        ],
+        "respond": {
+          "status": 200,
+          "body": {
+            "ops": "$s1"
+          }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
         }
       }
     ],
+    "tests": [
+      {
+        "id": "api-edit",
+        "name": "Type in a document",
+        "desc": "u1's edit becomes version 42 of document d1. The others in d1 get it at once.",
+        "sample": true,
+        "op": "edit"
+      },
+      {
+        "id": "api-open",
+        "name": "Load d1's recent edits",
+        "desc": "An editor opens d1 and gets the edits since its last snapshot, in order.",
+        "sample": true,
+        "op": "open"
+      },
+      {
+        "id": "api-connect",
+        "name": "Open a document",
+        "desc": "An editor's browser opens a connection to the gateway and keeps it open.",
+        "op": "connect"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "10,000 requests a second.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 10000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The morning peak",
+        "desc": "40,000 requests a second at 10 am, when kitchens update the day's menus. Every edit saved within 30 seconds, in order, none lost.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 40000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "ordered"
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "Menu change day",
+        "desc": "At 8 pm every restaurant changes prices for a festival: 80,000 requests a second for 15 minutes. Edits may take up to 15 minutes to be saved.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 80000,
+          "pattern": "sale"
+        },
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "edit",
+            "availability": 99.9,
+            "p99Ms": 500
+          },
+          {
+            "kind": "completes",
+            "op": "edit",
+            "withinSec": 900
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 10:10 am one availability zone is lost for 15 minutes. Browsers reconnect to the gateways that are left; no edit may be lost.",
+        "hours": 1,
+        "startHour": 10,
+        "traffic": {
+          "rps": 40000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "edit",
+            "availability": 99,
+            "p99Ms": 2000
+          },
+          {
+            "kind": "completes",
+            "op": "edit",
+            "withinSec": 600
+          },
+          {
+            "kind": "noLostWrites"
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (10,000 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 10000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 59700
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Edit API",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 44,
+            "zones": 3
+          }
+        },
+        {
+          "id": "st",
+          "type": "stream",
+          "x": 720,
+          "y": 0,
+          "name": "Edit log",
+          "config": {
+            "partitions": 16,
+            "keyField": [
+              "doc_id"
+            ]
+          }
+        },
+        {
+          "id": "w",
+          "type": "processor",
+          "x": 960,
+          "y": 0,
+          "name": "Edit saver",
+          "config": {
+            "size": "c5.2xlarge",
+            "parallelism": 3,
+            "checkpointSec": 10
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 1200,
+          "y": 0,
+          "name": "Edits",
+          "config": {
+            "engine": "postgres",
+            "size": "db.r5.2xlarge",
+            "multiAz": true,
+            "shards": 10,
+            "schema": {
+              "tables": [
+                {
+                  "name": "ops",
+                  "fields": [
+                    {
+                      "name": "doc_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int"
+                    },
+                    {
+                      "name": "op",
+                      "type": "json"
+                    },
+                    {
+                      "name": "author_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "at",
+                      "type": "time"
+                    }
+                  ],
+                  "key": [
+                    "doc_id",
+                    "version"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "rt",
+          "type": "realtime",
+          "x": 960,
+          "y": -200,
+          "name": "Document gateways",
+          "config": {
+            "size": "c5.2xlarge",
+            "count": 15,
+            "zones": 3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "lb",
+          "to": "rt"
+        },
+        {
+          "from": "app",
+          "to": "st"
+        },
+        {
+          "from": "st",
+          "to": "w"
+        },
+        {
+          "from": "w",
+          "to": "db"
+        },
+        {
+          "from": "st",
+          "to": "rt"
+        },
+        {
+          "from": "app",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "Edits keyed by a random id",
+        "why": "Each edit is keyed by its author and time, so a document's edits can't be read in order.",
+        "fails": "api-open",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 44,
+              "zones": 3
+            }
+          },
+          {
+            "id": "st",
+            "type": "stream",
+            "x": 720,
+            "y": 0,
+            "name": "Edit log",
+            "config": {
+              "partitions": 16,
+              "keyField": [
+                "doc_id"
+              ]
+            }
+          },
+          {
+            "id": "w",
+            "type": "processor",
+            "x": 960,
+            "y": 0,
+            "name": "Edit saver",
+            "config": {
+              "size": "c5.2xlarge",
+              "parallelism": 3,
+              "checkpointSec": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 10,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "author_id",
+                      "at"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "lb",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "st",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Nobody connected to the gateways",
+        "why": "Browsers never open a connection to the gateways, so nobody sees anyone else's edits.",
+        "fails": "api-edit",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 44,
+              "zones": 3
+            }
+          },
+          {
+            "id": "st",
+            "type": "stream",
+            "x": 720,
+            "y": 0,
+            "name": "Edit log",
+            "config": {
+              "partitions": 16,
+              "keyField": [
+                "doc_id"
+              ]
+            }
+          },
+          {
+            "id": "w",
+            "type": "processor",
+            "x": 960,
+            "y": 0,
+            "name": "Edit saver",
+            "config": {
+              "size": "c5.2xlarge",
+              "parallelism": 3,
+              "checkpointSec": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 10,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "doc_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "st",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "A queue instead of an ordered log",
+        "why": "A queue hands edits to whichever worker is free: two edits to one document can be applied the wrong way round.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 44,
+              "zones": 3
+            }
+          },
+          {
+            "id": "st",
+            "type": "queue",
+            "x": 720,
+            "y": 0,
+            "name": "Edit queue",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 0,
+            "name": "Save workers",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 30,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 10,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "doc_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "zones": 3
+            }
+          },
+          {
+            "id": "ps",
+            "type": "pubsub",
+            "x": 720,
+            "y": -200,
+            "name": "Delivery channel",
+            "config": {}
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "lb",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "ps"
+          },
+          {
+            "from": "ps",
+            "to": "rt"
+          }
+        ]
+      },
+      {
+        "name": "The log split by author",
+        "why": "Edits to one document land in different partitions and are applied in whichever order the workers finish.",
+        "fails": "peak",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 44,
+              "zones": 3
+            }
+          },
+          {
+            "id": "st",
+            "type": "stream",
+            "x": 720,
+            "y": 0,
+            "name": "Edit log",
+            "config": {
+              "partitions": 16,
+              "keyField": [
+                "author_id"
+              ]
+            }
+          },
+          {
+            "id": "w",
+            "type": "processor",
+            "x": 960,
+            "y": 0,
+            "name": "Edit saver",
+            "config": {
+              "size": "c5.2xlarge",
+              "parallelism": 3,
+              "checkpointSec": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 10,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "doc_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "lb",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "st",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every edit server is in one zone: when it goes dark, nobody can type.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 44,
+              "zones": 1
+            }
+          },
+          {
+            "id": "st",
+            "type": "stream",
+            "x": 720,
+            "y": 0,
+            "name": "Edit log",
+            "config": {
+              "partitions": 16,
+              "keyField": [
+                "doc_id"
+              ]
+            }
+          },
+          {
+            "id": "w",
+            "type": "processor",
+            "x": 960,
+            "y": 0,
+            "name": "Edit saver",
+            "config": {
+              "size": "c5.2xlarge",
+              "parallelism": 3,
+              "checkpointSec": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 10,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "doc_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 15,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "lb",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "st",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Edit API",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3
+            }
+          },
+          {
+            "id": "st",
+            "type": "stream",
+            "x": 720,
+            "y": 0,
+            "name": "Edit log",
+            "config": {
+              "partitions": 16,
+              "keyField": [
+                "doc_id"
+              ]
+            }
+          },
+          {
+            "id": "w",
+            "type": "processor",
+            "x": 960,
+            "y": 0,
+            "name": "Edit saver",
+            "config": {
+              "size": "c5.2xlarge",
+              "parallelism": 12,
+              "checkpointSec": 10
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 1200,
+            "y": 0,
+            "name": "Edits",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 20,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "ops",
+                    "fields": [
+                      {
+                        "name": "doc_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "int"
+                      },
+                      {
+                        "name": "op",
+                        "type": "json"
+                      },
+                      {
+                        "name": "author_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "doc_id",
+                      "version"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rt",
+            "type": "realtime",
+            "x": 960,
+            "y": -200,
+            "name": "Document gateways",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 50,
+              "zones": 3
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "lb",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "st"
+          },
+          {
+            "from": "st",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "db"
+          },
+          {
+            "from": "st",
+            "to": "rt"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "Browsers may reach the edit servers and the gateways directly in this model."
+    },
     "rubric": {
       "fr": [
         {
@@ -629,2648 +1824,16 @@
       },
       {
         "step": "design",
-        "x": "Each document's edits get one order in a log. On the canvas, a Queue between the edit servers and the workers that persist."
+        "x": "Each document's edits get one order in a log: an event stream partitioned by document keeps them in order, lets a stream processor save them, and feeds the gateways that send them to the others."
       },
       {
         "step": "design",
-        "x": "40,000 edits a second is more than one database: several share the documents."
+        "x": "40,000 edits a second is a lot of writes: split them over several databases by document, each edit keyed by document and version."
       },
       {
         "step": "design",
-        "x": "Two groups of edit servers and workers, Multi-AZ databases: an acknowledged edit survives a crash."
+        "x": "Edit servers and gateways in three zones; a stream and a multi-zone store keep an acknowledged edit safe."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 40000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 18,
-            "queriesPerRequest": 1,
-            "role": "websocket"
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 18,
-            "queriesPerRequest": 1,
-            "role": "websocket"
-          }
-        },
-        {
-          "id": "queue",
-          "type": "queue",
-          "x": 720,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "work1",
-          "type": "server",
-          "x": 960,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 9,
-            "queriesPerRequest": 1,
-            "role": "sync"
-          }
-        },
-        {
-          "id": "work2",
-          "type": "server",
-          "x": 960,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 9,
-            "queriesPerRequest": 1,
-            "role": "sync"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 1200,
-          "y": -450,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db2",
-          "type": "database",
-          "x": 1200,
-          "y": -300,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db3",
-          "type": "database",
-          "x": 1200,
-          "y": -150,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db4",
-          "type": "database",
-          "x": 1200,
-          "y": 0,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db5",
-          "type": "database",
-          "x": 1200,
-          "y": 150,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db6",
-          "type": "database",
-          "x": 1200,
-          "y": 300,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "id": "db7",
-          "type": "database",
-          "x": 1200,
-          "y": 450,
-          "config": {
-            "size": "db.r5.2xlarge",
-            "multiAz": true,
-            "role": "oplog",
-            "schema": {
-              "tables": [
-                {
-                  "name": "ops",
-                  "fields": [
-                    {
-                      "name": "doc_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "version",
-                      "type": "int"
-                    },
-                    {
-                      "name": "op",
-                      "type": "json"
-                    },
-                    {
-                      "name": "author_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "at",
-                      "type": "time"
-                    }
-                  ],
-                  "key": [
-                    "doc_id",
-                    "version"
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "queue"
-        },
-        {
-          "from": "app2",
-          "to": "queue"
-        },
-        {
-          "from": "queue",
-          "to": "work1"
-        },
-        {
-          "from": "queue",
-          "to": "work2"
-        },
-        {
-          "from": "work1",
-          "to": "db1"
-        },
-        {
-          "from": "work1",
-          "to": "db2"
-        },
-        {
-          "from": "work1",
-          "to": "db3"
-        },
-        {
-          "from": "work1",
-          "to": "db4"
-        },
-        {
-          "from": "work1",
-          "to": "db5"
-        },
-        {
-          "from": "work1",
-          "to": "db6"
-        },
-        {
-          "from": "work1",
-          "to": "db7"
-        },
-        {
-          "from": "work2",
-          "to": "db1"
-        },
-        {
-          "from": "work2",
-          "to": "db2"
-        },
-        {
-          "from": "work2",
-          "to": "db3"
-        },
-        {
-          "from": "work2",
-          "to": "db4"
-        },
-        {
-          "from": "work2",
-          "to": "db5"
-        },
-        {
-          "from": "work2",
-          "to": "db6"
-        },
-        {
-          "from": "work2",
-          "to": "db7"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": false,
-              "role": "oplog"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          }
-        ]
-      },
-      {
-        "name": "No queue",
-        "why": "The burst hits the database directly and crashes it.",
-        "fails": "spike",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": -375,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 720,
-            "y": -225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 720,
-            "y": 225,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 720,
-            "y": 375,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app1",
-            "to": "db2"
-          },
-          {
-            "from": "app1",
-            "to": "db3"
-          },
-          {
-            "from": "app1",
-            "to": "db4"
-          },
-          {
-            "from": "app1",
-            "to": "db5"
-          },
-          {
-            "from": "app1",
-            "to": "db6"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db2"
-          },
-          {
-            "from": "app2",
-            "to": "db3"
-          },
-          {
-            "from": "app2",
-            "to": "db4"
-          },
-          {
-            "from": "app2",
-            "to": "db5"
-          },
-          {
-            "from": "app2",
-            "to": "db6"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "app3",
-            "type": "server",
-            "x": 480,
-            "y": 150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -2550,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -2400,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -2250,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": -2100,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": -1950,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": -1800,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": -1650,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog"
-            }
-          },
-          {
-            "id": "db8",
-            "type": "database",
-            "x": 1200,
-            "y": -1500,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db9",
-            "type": "database",
-            "x": 1200,
-            "y": -1350,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db10",
-            "type": "database",
-            "x": 1200,
-            "y": -1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db11",
-            "type": "database",
-            "x": 1200,
-            "y": -1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db12",
-            "type": "database",
-            "x": 1200,
-            "y": -900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db13",
-            "type": "database",
-            "x": 1200,
-            "y": -750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db14",
-            "type": "database",
-            "x": 1200,
-            "y": -600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db15",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db16",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db17",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db18",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db19",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db20",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db21",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db22",
-            "type": "database",
-            "x": 1200,
-            "y": 600,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db23",
-            "type": "database",
-            "x": 1200,
-            "y": 750,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db24",
-            "type": "database",
-            "x": 1200,
-            "y": 900,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db25",
-            "type": "database",
-            "x": 1200,
-            "y": 1050,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db26",
-            "type": "database",
-            "x": 1200,
-            "y": 1200,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db27",
-            "type": "database",
-            "x": 1200,
-            "y": 1350,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db28",
-            "type": "database",
-            "x": 1200,
-            "y": 1500,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db29",
-            "type": "database",
-            "x": 1200,
-            "y": 1650,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db30",
-            "type": "database",
-            "x": 1200,
-            "y": 1800,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db31",
-            "type": "database",
-            "x": 1200,
-            "y": 1950,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db32",
-            "type": "database",
-            "x": 1200,
-            "y": 2100,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db33",
-            "type": "database",
-            "x": 1200,
-            "y": 2250,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db34",
-            "type": "database",
-            "x": 1200,
-            "y": 2400,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db35",
-            "type": "database",
-            "x": 1200,
-            "y": 2550,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "lb",
-            "to": "app3"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "app3",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work1",
-            "to": "db8"
-          },
-          {
-            "from": "work1",
-            "to": "db9"
-          },
-          {
-            "from": "work1",
-            "to": "db10"
-          },
-          {
-            "from": "work1",
-            "to": "db11"
-          },
-          {
-            "from": "work1",
-            "to": "db12"
-          },
-          {
-            "from": "work1",
-            "to": "db13"
-          },
-          {
-            "from": "work1",
-            "to": "db14"
-          },
-          {
-            "from": "work1",
-            "to": "db15"
-          },
-          {
-            "from": "work1",
-            "to": "db16"
-          },
-          {
-            "from": "work1",
-            "to": "db17"
-          },
-          {
-            "from": "work1",
-            "to": "db18"
-          },
-          {
-            "from": "work1",
-            "to": "db19"
-          },
-          {
-            "from": "work1",
-            "to": "db20"
-          },
-          {
-            "from": "work1",
-            "to": "db21"
-          },
-          {
-            "from": "work1",
-            "to": "db22"
-          },
-          {
-            "from": "work1",
-            "to": "db23"
-          },
-          {
-            "from": "work1",
-            "to": "db24"
-          },
-          {
-            "from": "work1",
-            "to": "db25"
-          },
-          {
-            "from": "work1",
-            "to": "db26"
-          },
-          {
-            "from": "work1",
-            "to": "db27"
-          },
-          {
-            "from": "work1",
-            "to": "db28"
-          },
-          {
-            "from": "work1",
-            "to": "db29"
-          },
-          {
-            "from": "work1",
-            "to": "db30"
-          },
-          {
-            "from": "work1",
-            "to": "db31"
-          },
-          {
-            "from": "work1",
-            "to": "db32"
-          },
-          {
-            "from": "work1",
-            "to": "db33"
-          },
-          {
-            "from": "work1",
-            "to": "db34"
-          },
-          {
-            "from": "work1",
-            "to": "db35"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db8"
-          },
-          {
-            "from": "work2",
-            "to": "db9"
-          },
-          {
-            "from": "work2",
-            "to": "db10"
-          },
-          {
-            "from": "work2",
-            "to": "db11"
-          },
-          {
-            "from": "work2",
-            "to": "db12"
-          },
-          {
-            "from": "work2",
-            "to": "db13"
-          },
-          {
-            "from": "work2",
-            "to": "db14"
-          },
-          {
-            "from": "work2",
-            "to": "db15"
-          },
-          {
-            "from": "work2",
-            "to": "db16"
-          },
-          {
-            "from": "work2",
-            "to": "db17"
-          },
-          {
-            "from": "work2",
-            "to": "db18"
-          },
-          {
-            "from": "work2",
-            "to": "db19"
-          },
-          {
-            "from": "work2",
-            "to": "db20"
-          },
-          {
-            "from": "work2",
-            "to": "db21"
-          },
-          {
-            "from": "work2",
-            "to": "db22"
-          },
-          {
-            "from": "work2",
-            "to": "db23"
-          },
-          {
-            "from": "work2",
-            "to": "db24"
-          },
-          {
-            "from": "work2",
-            "to": "db25"
-          },
-          {
-            "from": "work2",
-            "to": "db26"
-          },
-          {
-            "from": "work2",
-            "to": "db27"
-          },
-          {
-            "from": "work2",
-            "to": "db28"
-          },
-          {
-            "from": "work2",
-            "to": "db29"
-          },
-          {
-            "from": "work2",
-            "to": "db30"
-          },
-          {
-            "from": "work2",
-            "to": "db31"
-          },
-          {
-            "from": "work2",
-            "to": "db32"
-          },
-          {
-            "from": "work2",
-            "to": "db33"
-          },
-          {
-            "from": "work2",
-            "to": "db34"
-          },
-          {
-            "from": "work2",
-            "to": "db35"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          }
-        ]
-      },
-      {
-        "name": "Edits keyed by a random id",
-        "why": "Each edit is keyed by an id the client doesn't send, and nothing keeps edits of a document in order.",
-        "fails": "api-edit",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 40000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 18,
-              "queriesPerRequest": 1,
-              "role": "websocket"
-            }
-          },
-          {
-            "id": "queue",
-            "type": "queue",
-            "x": 720,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "work1",
-            "type": "server",
-            "x": 960,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "work2",
-            "type": "server",
-            "x": 960,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 9,
-              "queriesPerRequest": 1,
-              "role": "sync"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 1200,
-            "y": -450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db2",
-            "type": "database",
-            "x": 1200,
-            "y": -300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db3",
-            "type": "database",
-            "x": 1200,
-            "y": -150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db4",
-            "type": "database",
-            "x": 1200,
-            "y": 0,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db5",
-            "type": "database",
-            "x": 1200,
-            "y": 150,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db6",
-            "type": "database",
-            "x": 1200,
-            "y": 300,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": "db7",
-            "type": "database",
-            "x": 1200,
-            "y": 450,
-            "config": {
-              "size": "db.r5.2xlarge",
-              "multiAz": true,
-              "role": "oplog",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "ops",
-                    "fields": [
-                      {
-                        "name": "op_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "doc_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "version",
-                        "type": "int"
-                      },
-                      {
-                        "name": "op",
-                        "type": "json"
-                      },
-                      {
-                        "name": "author_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "at",
-                        "type": "time"
-                      }
-                    ],
-                    "key": [
-                      "op_id"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "queue"
-          },
-          {
-            "from": "app2",
-            "to": "queue"
-          },
-          {
-            "from": "queue",
-            "to": "work1"
-          },
-          {
-            "from": "queue",
-            "to": "work2"
-          },
-          {
-            "from": "work1",
-            "to": "db1"
-          },
-          {
-            "from": "work1",
-            "to": "db2"
-          },
-          {
-            "from": "work1",
-            "to": "db3"
-          },
-          {
-            "from": "work1",
-            "to": "db4"
-          },
-          {
-            "from": "work1",
-            "to": "db5"
-          },
-          {
-            "from": "work1",
-            "to": "db6"
-          },
-          {
-            "from": "work1",
-            "to": "db7"
-          },
-          {
-            "from": "work2",
-            "to": "db1"
-          },
-          {
-            "from": "work2",
-            "to": "db2"
-          },
-          {
-            "from": "work2",
-            "to": "db3"
-          },
-          {
-            "from": "work2",
-            "to": "db4"
-          },
-          {
-            "from": "work2",
-            "to": "db5"
-          },
-          {
-            "from": "work2",
-            "to": "db6"
-          },
-          {
-            "from": "work2",
-            "to": "db7"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "doc_id",
-        "version",
-        "op",
-        "author_id",
-        "at"
-      ],
-      "aliases": {
-        "op": [
-          "operation",
-          "change",
-          "edit",
-          "delta"
-        ],
-        "version": [
-          "seq",
-          "rev",
-          "revision"
-        ]
-      },
-      "entities": {
-        "ops": {
-          "rows": 100000000000,
-          "sample": []
-        }
-      }
-    }
+    ]
   }
 }
