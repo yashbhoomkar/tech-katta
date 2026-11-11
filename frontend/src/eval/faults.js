@@ -46,6 +46,8 @@ export function startFault(f, st, t) {
   const crashable = (n) => n.crashable;
   if (f.kind === 'crash') {
     const id = busiest(st, f.type, crashable);
+    // two schedulers: the other takes over (phase 6)
+    if (id && st.info[id].type === 'scheduler' && (st.info[id].cfg.count || 1) >= 2) { st.events.push({ t, node: id, kind: 'failover', forced: true }); return; }
     if (id) takeDown(st, id, t, t + downFor(st.info[id]), st.info[id].type === 'database' && st.info[id].standby ? 'failover' : 'crashed', true);
   } else if (f.kind === 'groupDown') {
     const id = busiest(st, f.type, (n) => !n.managed);
@@ -62,7 +64,8 @@ export function startFault(f, st, t) {
       if (n.type === 'database' && !n.perRequest && n.engine?.multiAz !== 'builtin') {
         if (n.standby) takeDown(st, id, t, t + (n.comp.crash?.failoverMinutes ?? 2), 'failover', true);
         else takeDown(st, id, t, until, 'crashed', true);
-      } else if (n.type === 'cache') {
+      } else if (n.type === 'scheduler' && (n.cfg.count || 1) < 2) takeDown(st, id, t, until, 'crashed', true);
+      else if (n.type === 'cache') {
         if (n.cfg.replica) { takeDown(st, id, t, t + 1, 'failover', true); st.keepData[id] = true; } else takeDown(st, id, t, until, 'crashed', true);
       }
     }

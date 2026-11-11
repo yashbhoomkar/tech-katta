@@ -16,6 +16,7 @@ const PASS = new Set(['cdn', 'apigw', 'lb']);
 const MAX_SERVICES = 4, MAX_QUEUES = 3;
 
 export function prefer(op) {
+  if (op.source === 'schedule') return ['server', 'queue'];   // a scheduler starts the job on a Service, or through a queue
   if (op.kind === 'connect') return ['lb', 'apigw', 'realtime'];
   if (op.cacheable || op.live) return ['cdn', 'apigw', 'lb', 'server'];
   return ['apigw', 'lb', 'server', 'cdn'];
@@ -67,7 +68,8 @@ export function compile(design, lab, practice) {
         const t = type(to);
         if ((t === 'queue' || t === 'stream') && depth <= MAX_QUEUES) {
           for (const w of flowOut(to, op)) {
-            if (type(w) !== 'server' || path.includes(w)) continue;
+            // a queue's workers are Services; a stream's consumers may also be stream processors (phase 6)
+            if (!(type(w) === 'server' || (t === 'stream' && type(w) === 'processor')) || path.includes(w)) continue;
             const pre = [...path, to, w];
             for (const r of syncReach(w, op)) out.push({ store: r.store, path: [...pre, ...r.path.slice(1)], queue: to, worker: w, qi: path.length });
             for (const r of asyncReach(w, op, depth + 1)) out.push({ ...r, path: [...pre, ...r.path.slice(1)], queue: to, worker: w, qi: path.length });
@@ -85,6 +87,20 @@ export function compile(design, lab, practice) {
     if (type(D) !== 'database') return out;
     for (const q of g.out.get(D)) if (type(q) === 'queue' || type(q) === 'stream') for (const w of g.out.get(q)) if (type(w) === 'server') for (const r of syncReach(w, {})) if (r.store !== D) out.add(r.store);
     return out;
+  };
+  // Shards (§5.6 database): a step that names the table's shard key (default the first field of its key) goes to one shard; one that
+  // doesn't asks every shard, so its work is multiplied by the number of shards.
+  // (a transaction goes to one shard when its first part does: the others are on the same shard or it is refused)
+  const routedOn = (table, step) => {
+    const keyF = table.shardKey?.length ? table.shardKey : (table.key || []).slice(0, 1);   // default: the first key field
+    const given = Object.keys(step.by || step.key || step.values || step.where || {});
+    return keyF.length > 0 && keyF.every((k) => given.some((g) => g === k || match(g, k)));
+  };
+  const shardRoute = (hop, store, table, step, parts) => {
+    const n = node(store); if (type(store) !== 'database') return;
+    const sh = configOf(n, lab).shards || 1; if (sh <= 1 || !table) return;
+    hop.shardRouted = step.op === 'tx' && parts?.length ? routedOn(parts[0].table, parts[0].step) : routedOn(table, step);
+    if (!hop.shardRouted) hop.work *= sh;
   };
   const viaCache = (path) => (path.length >= 3 && type(path.at(-1)) === 'database' && type(path.at(-2)) === 'cache' ? path.at(-2) : null);
   const better = (a, b) => (a.a.work - b.a.work) || (a.e.path.length - b.e.path.length) || (order.get(a.e.store) - order.get(b.e.store)) || (a.ti - b.ti);
@@ -222,7 +238,7 @@ export function compile(design, lab, practice) {
         const good = targets.filter((x) => bindAll(op, x).ok);
         if (good.length) return { ok: true, kids: good.map((x) => ({ node: x, weight: 1 / good.length, next: null })) };
         for (const x of targets) { const b = bindAll(op, x); remember({ ok: false, error: b.error, unbound: b.unbound }); }
-      } else if (PASS.has(t)) {
+      } else if (PASS.has(t) || (t === 'queue' && op.source === 'schedule')) {
         const found = [];
         for (const x of targets) { const r = route(op, x, new Set([...seen, x])); if (r.ok) found.push({ node: x, next: r.kids }); else remember(r); }
         if (found.length) return { ok: true, kids: found.map((f) => ({ ...f, weight: 1 / found.length })) };
@@ -257,7 +273,8 @@ export function compile(design, lab, practice) {
     const source = op.source || 'clients';
     // webhooks (source external) start at the external services (of the operation's preset, when it names one)
     const sources = source === 'clients' ? d.nodes.filter((n) => n.type === 'client').map((n) => n.id)
-      : source === 'external' ? d.nodes.filter((n) => n.type === 'external' && (!op.preset || configOf(n, lab).preset === op.preset)).map((n) => n.id) : [];
+      : source === 'external' ? d.nodes.filter((n) => n.type === 'external' && (!op.preset || configOf(n, lab).preset === op.preset)).map((n) => n.id)
+      : source === 'schedule' ? d.nodes.filter((n) => n.type === 'scheduler').map((n) => n.id) : [];
     if (!sources.length) return fail(err('E_NO_SOURCE', PLAN.E_NO_SOURCE(op.name || op.id, source)));
     const routes = sources.map((s) => route(op, s, new Set([s])));
     const bad = routes.find((r) => !r.ok);
@@ -291,7 +308,7 @@ export function compile(design, lab, practice) {
       const ek = b.path.slice(0, b.qi + 1).join('\u0000');
       let enq = type(b.queue) === 'stream' ? enqueues.get(ek) : null;
       if (!enq) { enq = mk(b.queue, 'enqueue', { work: W.enqueue }); chain(handleHop, pre, enq, null); enqueues.set(ek, enq); }
-      const con = mk(b.worker, 'consume', { work: W.consume + W.handle, sync: false, cpuMs: 0 });
+      const con = mk(b.worker, 'consume', { work: type(b.worker) === 'processor' ? W.consume : W.consume + W.handle, sync: false, cpuMs: 0 });
       enq.children.push(con);
       queues.set(k, con);
       return con;
@@ -326,6 +343,7 @@ export function compile(design, lab, practice) {
       }
       const write = isWrite(step);
       const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
+      if (!b.call) shardRoute(storeHop, b.store, b.table, step, b.parts);
       let from = handleHop, nodes = b.path.slice(1);
       if (b.async) { from = consumeHop(handleHop, b); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];
@@ -479,7 +497,9 @@ export function compile(design, lab, practice) {
       plan.staleness.push({ store: b.store, feed });
       result.copies.push({ store: b.store, table: b.table, entity: b.entity, feed });
       if (b.viaCache) {
-        const invalidated = writers.some((x) => x.kind === 'invalidate' && x.store === b.viaCache && x.db === b.store && x.entity === b.entity);
+        // a writer can clear the cached copy of one item it writes; a cached query result (many rows) waits for its TTL
+        const single = (op.steps || []).find((s) => s.id === b.step)?.op === 'get';
+        const invalidated = single && writers.some((x) => x.kind === 'invalidate' && x.store === b.viaCache && x.db === b.store && x.entity === b.entity);
         plan.staleness.push({ store: b.viaCache, feed: 'lookAside', cacheTtlSec: invalidated ? 1 : configOf(node(b.viaCache), lab).ttlSec });
       }
     }

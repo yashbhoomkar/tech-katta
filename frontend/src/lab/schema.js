@@ -2,7 +2,7 @@
 // keys and indexes. Used by the Lab's schema editor, saved designs (store.js), content validation and
 // the request tests (judge/requests.js), which plan each query against the schema.
 //
-//   config.schema = {tables: [{name, fields: [{name, type}], key: [field], sortKey?: field,
+//   config.schema = {tables: [{name, fields: [{name, type}], key: [field], sortKey?: field, shardKey?: [field],
 //                              indexes?: [{fields: [field], kind}], ttl?: field}]}
 //
 // What a key and an index mean depends on the engine (content/lab.json `engines[].schema`):
@@ -51,7 +51,9 @@ export function cleanSchema(src) {
       .map((ix) => ({ fields: ix.fields.filter(has).filter((x, i, a) => a.indexOf(x) === i).slice(0, LIMITS.indexFields), kind: ix.kind }))
       .filter((ix) => ix.fields.length).slice(0, LIMITS.indexes);
     seen.add(t.name.toLowerCase());
-    tables.push({ name: t.name, fields, key, ...(has(t.sortKey) ? { sortKey: t.sortKey } : {}), ...(indexes.length ? { indexes } : {}), ...(has(t.ttl) ? { ttl: t.ttl } : {}) });
+    // shardKey (v2, phase 6): the fields that pick a shard when the database has several (default: the key)
+    const shardKey = (Array.isArray(t.shardKey) ? t.shardKey : []).filter(has).filter((x, i, a) => a.indexOf(x) === i).slice(0, 2);
+    tables.push({ name: t.name, fields, key, ...(has(t.sortKey) ? { sortKey: t.sortKey } : {}), ...(indexes.length ? { indexes } : {}), ...(has(t.ttl) ? { ttl: t.ttl } : {}), ...(shardKey.length ? { shardKey } : {}) });
   }
   return tables.length ? { tables } : undefined;
 }

@@ -96,6 +96,9 @@ export function analyse(compiled, practice, lab, sims = []) {
   };
   // the Service that runs the call (the first handle hop)
   const handlerOf = (plan) => { let found = null; const walk = (h) => { if (!found && h.kind === 'handle') found = h.node; h.children.forEach(walk); }; (plan.roots || []).forEach(walk); return found; };
+  // the steps a stream processor writes (their store hops are under a consume hop on a processor)
+  const byProcessor = (plan) => { const out = new Set(); const walk = (h, inP) => { const p = inP || (h.kind === 'consume' && node(h.node)?.type === 'processor'); if (p && h.step) out.add(h.step); h.children.forEach((c) => walk(c, p)); }; (plan.roots || []).forEach((r) => walk(r, false)); return out; };
+  const upsertsByKey = (s, b) => { const t = tableOf(b); if (!t?.key?.length) return false; const given = Object.keys(s.values || {}); return t.key.every((k) => given.some((g) => g === k || match(g, k))); };
   const flat = (steps) => (steps || []).flatMap((s) => (s.op === 'tx' ? [s, ...(s.steps || [])] : [s]));
   for (const op of ops) {
     const plan = compiled.plans[op.id];
@@ -113,7 +116,12 @@ export function analyse(compiled, practice, lab, sims = []) {
         } else if (isWrite(s)) {
           if (refusesRepeat(op, s, b)) return;
           if (b.sync && ev.retries > 0) found = { way: 'retry', s, b };
-          else if (!b.sync) { const q = (qs[s.id] || [])[0]; found = { way: cfg(q)?.kind === 'fifo' ? 'fifo' : 'redelivery', s, b, q }; }
+          else if (!b.sync) {
+            const q = (qs[s.id] || [])[0];
+            // a stream processor replays from its checkpoint (way 3): an upsert by the table's key is safe
+            if (byProcessor(plan).has(s.id)) { if (!(s.op === 'put' && upsertsByKey(s, b))) found = { way: 'replay', s, b, q }; return; }
+            found = { way: cfg(q)?.kind === 'fifo' ? 'fifo' : 'redelivery', s, b, q };
+          }
         }
       });
       if (found) {
@@ -203,6 +211,18 @@ export function analyse(compiled, practice, lab, sims = []) {
     if (seenP.has(q) || (p.dlq && p.kind === 'standard')) continue;
     seenP.add(q);
     push({ code: 'F_POISON', severity: 'warn', nodes: [q], ...FIND.poison(name(q), p.kind, Math.round(p.share * 1000) / 10) });
+  }
+
+  // ---- §10.10 scheduling ----------------------------------------------------------------------------------------------
+  const schedOps = ops.filter((o) => o.source === 'schedule' && compiled.plans[o.id]?.ok);
+  if (schedOps.length) for (const n of compiled.design.nodes.filter((x) => x.type === 'scheduler')) {
+    const c = cfg(n.id), count = c.count || 1, lock = c.lock || 'none';
+    if (count < 2) push({ code: 'F_SCHED_SPOF', severity: 'warn', op: schedOps[0].id, nodes: [n.id], ...FIND.schedSpof(name(n.id)), concept: 'availability' });
+    else if (lock === 'none') for (const o of schedOps) push({ code: 'F_SCHED_TWICE', severity: 'fail', op: o.id, nodes: [n.id], ...FIND.schedTwice(name(n.id), opName(o)), concept: 'idempotency' });
+    if (lock === 'lease') {
+      const holds = g.out.get(n.id).some((x) => { const t = node(x)?.type; return t === 'coord' || t === 'cache' || (t === 'database' && (engine(x)?.caps || ev.engines?.[cfg(x).engine]?.caps || []).includes('cas')); });
+      if (!holds) push({ code: 'F_SCHED_NO_LOCK', severity: 'fail', op: schedOps[0].id, nodes: [n.id], ...FIND.schedNoLock(name(n.id)) });
+    }
   }
 
   // ---- §10.9 hot spots ----------------------------------------------------------------------------------------------------
