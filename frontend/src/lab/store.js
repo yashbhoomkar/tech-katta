@@ -33,15 +33,12 @@ export function cleanDesign(d,lab,id){
     const c=cat[n.type],src=obj(n.config)?n.config:{},config={};
     if(c.type==="client"){if(clamp(src.rps,c.rps)!==undefined)config.rps=clamp(src.rps,c.rps);if(Array.isArray(c.patterns)&&c.patterns.some(p=>p.id===src.pattern))config.pattern=src.pattern}
     if(c.type==="server"){if(clamp(src.count,c.count)!==undefined)config.count=Math.round(clamp(src.count,c.count));
-      if(typeof src.autoscale==="boolean")config.autoscale=src.autoscale;if(clamp(src.maxCount,c.count)!==undefined)config.maxCount=Math.max(config.count??c.count.default,Math.round(clamp(src.maxCount,c.count)));if(clamp(src.queriesPerRequest,c.queriesPerRequest)!==undefined)config.queriesPerRequest=clamp(src.queriesPerRequest,c.queriesPerRequest)}
-    if(c.type==="cdn"){if(clamp(src.hitPct,c.hitPct)!==undefined)config.hitPct=clamp(src.hitPct,c.hitPct);if(typeof src.live==="boolean")config.live=src.live}
-    if(c.type==="cache"){for(const k of["hitPct","writePct"])if(clamp(src[k],c[k])!==undefined)config[k]=clamp(src[k],c[k]);
-      for(const k of["writePolicy","onDown"])if(c[k]&&Array.isArray(c[k].options)&&c[k].options.some(o=>o.id===src[k]))config[k]=src[k]}
+      if(typeof src.autoscale==="boolean")config.autoscale=src.autoscale;if(clamp(src.maxCount,c.count)!==undefined)config.maxCount=Math.max(config.count??c.count.default,Math.round(clamp(src.maxCount,c.count)))}
+    if(c.type==="cache"){for(const k of["writePolicy","onDown"])if(c[k]&&Array.isArray(c[k].options)&&c[k].options.some(o=>o.id===src[k]))config[k]=src[k]}
     if(Array.isArray(c.engines)&&c.engines.some(e=>e.id===src.engine))config.engine=src.engine;
     {const e=Array.isArray(c.engines)?c.engines.find(x=>x.id===(config.engine??c.defaultEngine)):null,sizes=e&&Array.isArray(e.sizes)?e.sizes:c.sizes;if(Array.isArray(sizes)&&sizes.some(s=>s.id===src.size))config.size=src.size}
-    if(Array.isArray(c.roles)&&c.roles.some(r=>r.id===src.role))config.role=src.role;
     if(c.type==="database"){if(typeof src.multiAz==="boolean")config.multiAz=src.multiAz;{const sc=cleanSchema(src.schema);if(sc)config.schema=sc}
-      if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas));if(c.writePct&&clamp(src.writePct,c.writePct)!==undefined)config.writePct=clamp(src.writePct,c.writePct)}
+      if(c.replicas&&clamp(src.replicas,c.replicas)!==undefined)config.replicas=Math.round(clamp(src.replicas,c.replicas))}
     seen.add(n.id);const name=cleanName(n.name);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,...(name?{name}:{}),config});
   }
   if(v2){nodes.length=0;nodes.push(...d.nodes.slice(0,MAX_NODES))}

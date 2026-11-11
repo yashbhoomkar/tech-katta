@@ -135,13 +135,13 @@ const crashPolicy = (failover) => (c) => c && typeof c === 'object' && c.above >
 const LAB_TYPES = {
   client: { rps: range },
   apigw: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
-  server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText, queriesPerRequest: range, crash: crashPolicy(false) },
+  server: { latencyMs: positive, sizes: sizesOf('rps'), count: range, defaultSize: isText, crash: crashPolicy(false) },
   database: { latencyMs: positive, sizes: sizesOf('qps'), defaultSize: isText, crash: crashPolicy(true), multiAz: (m) => m && typeof m === 'object' && isText(m.label) && typeof m.default === 'boolean' && typeof m.priceFactor === 'number' && Number.isFinite(m.priceFactor) && m.priceFactor >= 1 },
   // Phase 2. Cache sizes are rated in operations per second (ops). Percentages run 0 to 100.
   lb: { latencyMs: positive, limitRps: positive, hourly: positive, lcuHourly: nonNegative, rpsPerLcu: positive },
-  cache: { latencyMs: positive, sizes: sizesOf('ops'), defaultSize: isText, hitPct: percent, writePct: percent, crash: crashPolicy(false) },
+  cache: { latencyMs: positive, sizes: sizesOf('ops'), defaultSize: isText, crash: crashPolicy(false) },
   queue: { latencyMs: positive, limitRps: positive, pricePerMillion: nonNegative },
-  cdn: { latencyMs: positive, limitRps: positive, pricePer10k: nonNegative, hitPct: percent, live: (l) => l && typeof l === 'object' && isText(l.label) && typeof l.default === 'boolean' },
+  cdn: { latencyMs: positive, limitRps: positive, pricePer10k: nonNegative },
 };
 // Optional fields (phase 2, time-based traffic). Traffic patterns on Clients: [hour, multiplier]
 // points from hour 0 to hour 24, hours never going back, multipliers 0 to 1 (1 = the rps setting)
@@ -169,11 +169,8 @@ const engine = (e, known) => e && typeof e === 'object' && /^[a-z0-9]{2,20}$/.te
   && (e.capacity === 'request' ? positive(e.limitQps) && nonNegative(e.readPerMillion) && nonNegative(e.writePerMillion) && e.crash === false && e.replicas === false
     : (e.sizes === undefined || (sizesOf('qps')(e.sizes) && e.sizes.some((s) => s.id === e.defaultSize))))
   && Array.isArray(e.features) && e.features.every((f) => known.has(f))
-  && (e.aliases === undefined || (Array.isArray(e.aliases) && e.aliases.every(isText)))
-  && (e.roles === undefined || (Array.isArray(e.roles) && e.roles.every((r) => /^[a-z]{2,20}$/.test(r))));
-// Roles: the jobs a component can be given ({id, label, desc}, ids lowercase letters, unique).
-const roles = (list) => Array.isArray(list) && list.length > 0 && list.every((r) => r && /^[a-z]{2,20}$/.test(r.id || '') && isText(r.label) && isText(r.desc)) && new Set(list.map((r) => r.id)).size === list.length;
-const OPTIONAL_FIELDS = { database: { replicas, writePct: percent, roles }, client: { patterns }, server: { autoscaling, roles }, queue: { roles }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown), roles } };
+  && (e.aliases === undefined || (Array.isArray(e.aliases) && e.aliases.every(isText)));
+const OPTIONAL_FIELDS = { database: { replicas }, client: { patterns }, server: { autoscaling }, cache: { warmupMinutes: positive, flushSeconds: positive, writePolicy: choice(CHOICES.writePolicy), onDown: choice(CHOICES.onDown) } };
 // Every catalogue needs the original four; the others are optional so content can add them later.
 const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
@@ -186,6 +183,7 @@ export function validateLab(lab, problems = []) {
   for (const [i, c] of list(lab.components).entries()) {
     const where = `${at} components[${i}]`;
     if (!c || !LAB_TYPES[c.type]) { problems.push(`${where}: unknown type ${c && c.type}`); continue; }
+    for (const k of ['queriesPerRequest', 'hitPct', 'writePct', 'roles', 'live']) if (c[k] !== undefined) problems.push(`${where}: ${k} is v1 only`);
     if (types.has(c.type)) problems.push(`${where}: duplicate type ${c.type}`);
     types.add(c.type);
     for (const key of ['name', 'group', 'desc']) if (!isText(c[key])) problems.push(`${where}: needs ${key}`);
@@ -277,13 +275,11 @@ export function validateDesign(design, lab, at, problems = []) {
     const inRange = (key, r) => { if (cfg[key] !== undefined && !(isNumber(cfg[key]) && r && cfg[key] >= r.min && cfg[key] <= r.max)) problems.push(`${where}: ${key} must be from ${r?.min} to ${r?.max}`); };
     if (c.type === 'client') { inRange('rps', c.rps); if (cfg.pattern !== undefined && !(Array.isArray(c.patterns) && c.patterns.some((p) => p && p.id === cfg.pattern))) problems.push(`${where}: unknown traffic pattern ${cfg.pattern}`); }
     if (c.type === 'server') {
-      inRange('count', c.count); inRange('queriesPerRequest', c.queriesPerRequest); inRange('maxCount', c.count);
+      inRange('count', c.count); inRange('maxCount', c.count);
       if (cfg.autoscale !== undefined && typeof cfg.autoscale !== 'boolean') problems.push(`${where}: autoscale must be true or false`);
       if (isNumber(cfg.maxCount) && cfg.maxCount < (cfg.count ?? c.count?.default)) problems.push(`${where}: maxCount is below count`);
     }
-    if (c.type === 'cdn') { inRange('hitPct', c.hitPct); if (cfg.live !== undefined && typeof cfg.live !== 'boolean') problems.push(`${where}: live must be true or false`); }
     if (c.type === 'cache') {
-      inRange('hitPct', c.hitPct); inRange('writePct', c.writePct);
       for (const key of Object.keys(CHOICES)) if (cfg[key] !== undefined && !(c[key] && Array.isArray(c[key].options) && c[key].options.some((o) => o && o.id === cfg[key]))) problems.push(`${where}: unknown ${key} ${cfg[key]}`);
     }
     const eng = c.type === 'database' && Array.isArray(c.engines) ? c.engines.find((e) => e && e.id === (cfg.engine ?? c.defaultEngine)) : null;
@@ -291,13 +287,14 @@ export function validateDesign(design, lab, at, problems = []) {
     const sizeList = eng && Array.isArray(eng.sizes) ? eng.sizes : c.sizes;
     if (Array.isArray(sizeList) && cfg.size !== undefined && !sizeList.some((s) => s && s.id === cfg.size)) problems.push(`${where}: unknown size ${cfg.size}${eng ? ` for ${eng.label}` : ''}`);
     if (c.type === 'database' && cfg.multiAz !== undefined && typeof cfg.multiAz !== 'boolean') problems.push(`${where}: multiAz must be true or false`);
-    if (c.type === 'database') { inRange('replicas', c.replicas); inRange('writePct', c.writePct); }
+    if (c.type === 'database') inRange('replicas', c.replicas);
     if (c.type === 'database' && cfg.schema !== undefined) {
       // a schema in content must already be clean, and have nothing its engine can't do
       if (canon(cleanSchema(cfg.schema)) !== canon(cfg.schema)) problems.push(`${where}: schema is malformed (names, types, keys or indexes)`);
       else for (const x of schemaIssues(eng, cfg.schema)) if (x.level === 'error') problems.push(`${where}: schema: ${x.text}`);
     }
-    if (cfg.role !== undefined && !(Array.isArray(c.roles) && c.roles.some((r) => r && r.id === cfg.role))) problems.push(`${where}: unknown role ${cfg.role}`);
+    // the v1 settings went with the v1 simulator (phase 7)
+    for (const k of ['queriesPerRequest', 'hitPct', 'writePct', 'role', 'live']) if (cfg[k] !== undefined) problems.push(`${where}: ${k} is v1 only`);
   }
   const seen = new Set();
   for (const e of design.edges) {

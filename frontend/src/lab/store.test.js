@@ -43,9 +43,9 @@ test("prototype-looking ids and types are treated as plain data",()=>{
   assert.equal(JSON.parse(JSON.stringify(s)).designs["__proto__"].name,"P","survives a save");
 });
 
-test("cache settings are kept inside their ranges",()=>{
+test("a cache keeps its size; the v1 hit and write percentages are dropped",()=>{
   const out=cleanDesign({nodes:[{id:"k",type:"cache",config:{hitPct:250,writePct:-3,size:"cache.m5.large"}}],edges:[]},lab,"x");
-  assert.deepEqual(out.nodes[0].config,{hitPct:99,writePct:0,size:"cache.m5.large"});
+  assert.deepEqual(out.nodes[0].config,{size:"cache.m5.large"});
 });
 
 test("traffic pattern and autoscaling settings are repaired",()=>{
@@ -83,13 +83,13 @@ test("huge or absurd saved designs are cut down (QA M5, L7)",()=>{
 
 test("read replicas are kept within the catalogue's range; nonsense is dropped",()=>{
   const d=cleanDesign({nodes:[{id:"a",type:"database",config:{replicas:9,writePct:30}},{id:"b",type:"database",config:{replicas:"two",writePct:-5}}],edges:[]},lab,"x");
-  assert.deepEqual(d.nodes[0].config,{replicas:5,writePct:30});
-  assert.deepEqual(d.nodes[1].config,{writePct:0});
+  assert.deepEqual(d.nodes[0].config,{replicas:5},"the v1 writes % is dropped");
+  assert.deepEqual(d.nodes[1].config,{});
 });
 
-test("a component's role is kept only when its type has that role",()=>{
-  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{role:"geo"}},{id:"b",type:"database",config:{role:"websocket"}},{id:"c",type:"server",config:{role:"websocket"}}],edges:[]},lab,"x");
-  assert.equal(d.nodes[0].config.role,"geo");assert.equal(d.nodes[1].config.role,undefined);assert.equal(d.nodes[2].config.role,"websocket");
+test("the v1 settings (roles, queries per request) are dropped from old designs",()=>{
+  const d=cleanDesign({nodes:[{id:"a",type:"database",config:{role:"geo"}},{id:"c",type:"server",config:{role:"websocket",queriesPerRequest:3,count:2}}],edges:[]},lab,"x");
+  assert.equal(d.nodes[0].config.role,undefined);assert.deepEqual(d.nodes[1].config,{count:2});
 });
 
 test("a component's own name is kept short and printable; blank means none",()=>{
