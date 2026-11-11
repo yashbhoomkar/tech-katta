@@ -513,6 +513,8 @@ export function compile(design, lab, practice) {
   for (const p of [...Object.values(result.plans), ...result.system.map((s) => s.plan)]) (p.roots || []).forEach(visit);
   // only when every operation was planned: a failed route would make every node look unused
   const allPlanned = Object.values(result.plans).every((p) => p.ok);
+  // a coordination service a scheduler points at holds its lease: used, though no call goes through it
+  for (const n of d.nodes) if (n.type === 'coord' && g.inn.get(n.id).some((x) => type(x) === 'scheduler')) used.add(n.id);
   if (allPlanned) for (const n of d.nodes) if (!used.has(n.id) && n.type !== 'client') {
     const comp = cat[n.type];
     let cost = 0;

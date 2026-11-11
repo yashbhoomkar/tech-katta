@@ -42,7 +42,9 @@ function loadChecks(test, sim, findings, compiled, practice, lab) {
   const ops = practice.operations || [], g = compiled.graph, cat = evalCatalogue(lab);
   const name = (id) => { const n = g.byId.get(id); return n?.name || cat[n?.type]?.name || id; };
   const D = sim.tickMinutes, hasF = (code, op) => findings.some((f) => f.code === code && f.severity === 'fail' && (!op || f.op === op));
-  const opsFor = (c) => (c.op ? ops.filter((o) => o.id === c.op) : ops.filter((o) => !o.source || o.source === 'clients'));
+  // a check without an op covers the clients' calls and the scheduled jobs (the system's own work); webhooks are
+  // checked by name, since the third party sends them at its own pace
+  const opsFor = (c) => (c.op ? ops.filter((o) => o.id === c.op) : ops.filter((o) => !o.source || o.source === 'clients' || o.source === 'schedule'));
   const windowOf = (c) => [Math.max(0, Math.floor((c.from ?? 0) / D)), Math.min(sim.T, Math.ceil((c.to ?? sim.T * D) / D))];
   return (test.checks || []).map((c) => {
     if (c.kind === 'slo') {
