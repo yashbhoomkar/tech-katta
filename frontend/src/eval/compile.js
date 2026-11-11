@@ -497,7 +497,9 @@ export function compile(design, lab, practice) {
       plan.staleness.push({ store: b.store, feed });
       result.copies.push({ store: b.store, table: b.table, entity: b.entity, feed });
       if (b.viaCache) {
-        const invalidated = writers.some((x) => x.kind === 'invalidate' && x.store === b.viaCache && x.db === b.store && x.entity === b.entity);
+        // a writer can clear the cached copy of one item it writes; a cached query result (many rows) waits for its TTL
+        const single = (op.steps || []).find((s) => s.id === b.step)?.op === 'get';
+        const invalidated = single && writers.some((x) => x.kind === 'invalidate' && x.store === b.viaCache && x.db === b.store && x.entity === b.entity);
         plan.staleness.push({ store: b.viaCache, feed: 'lookAside', cacheTtlSec: invalidated ? 1 : configOf(node(b.viaCache), lab).ttlSec });
       }
     }

@@ -222,195 +222,84 @@
     }
   ],
   "practice": {
-    "brief": "Each test sends searches. Each one asks 3 index shards (the city's pieces of the index), and a cache answers 80% of repeated queries; 5% of queries are menu updates. Your Clients' own rate is ignored.",
-    "fixed": {
-      "queriesPerRequest": 3,
-      "hitPct": 80,
-      "writePct": 5
-    },
-    "start": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1000,
-            "pattern": "steady"
+    "v": 2,
+    "brief": "Each test sends searches for dishes by their words in a city, cheapest first, and now and then a restaurant changes a price. Popular searches repeat (\"biryani\" at dinner). A changed price must show in search within five minutes.",
+    "entities": {
+      "dishes": {
+        "rows": 30000000,
+        "rowBytes": 300,
+        "growthPerDay": 20000,
+        "fields": {
+          "dish_id": "string",
+          "restaurant_id": "string",
+          "name": "text",
+          "city": "string",
+          "price": "int",
+          "veg": "bool"
+        },
+        "sample": [
+          {
+            "dish_id": "d1",
+            "restaurant_id": "r1",
+            "name": "Paneer Tikka Roll",
+            "city": "mumbai",
+            "price": 180,
+            "veg": true
+          },
+          {
+            "dish_id": "d2",
+            "restaurant_id": "r2",
+            "name": "Chicken Roll",
+            "city": "mumbai",
+            "price": 200,
+            "veg": false
+          },
+          {
+            "dish_id": "d3",
+            "restaurant_id": "r3",
+            "name": "Paneer Butter Masala",
+            "city": "pune",
+            "price": 260,
+            "veg": true
+          },
+          {
+            "dish_id": "d4",
+            "restaurant_id": "r4",
+            "name": "Paneer Roll Combo",
+            "city": "mumbai",
+            "price": 220,
+            "veg": true
           }
-        }
+        ]
+      }
+    },
+    "aliases": {
+      "name": [
+        "dish",
+        "title",
+        "dish_name"
       ],
-      "edges": []
+      "veg": [
+        "is_veg",
+        "vegetarian"
+      ]
     },
-    "tests": [
+    "operations": [
       {
-        "id": "normal",
-        "name": "A normal afternoon",
-        "sample": true,
-        "desc": "300 searches a second.",
-        "hours": 1,
-        "startHour": 15,
-        "traffic": {
-          "rps": 300,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of searches succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "role",
-            "role": "search",
-            "label": "Every search goes to something that finds dishes by the words in them, with filters"
-          }
-        ]
-      },
-      {
-        "id": "peak",
-        "name": "The dinner peak",
-        "sample": true,
-        "desc": "1,000 searches a second at 8 pm, when most people look for dinner.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of searches succeed"
-          },
-          {
-            "kind": "p99",
-            "max": 300,
-            "label": "p99 under 300 ms"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "spike",
-        "name": "The match ends",
-        "desc": "At 8 pm the match ends and everyone searches \"biryani\": 4,000 searches a second for 15 minutes.",
-        "hours": 3,
-        "startHour": 19,
-        "traffic": {
-          "rps": 4000,
-          "pattern": "sale"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of searches succeed"
-          },
-          {
-            "kind": "noCrash",
-            "label": "Nothing crashes from overload"
-          }
-        ]
-      },
-      {
-        "id": "server-dies",
-        "name": "A server group dies",
-        "desc": "At the peak (1,000 a second) the busiest group of servers crashes; it is back 5 minutes later.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "server"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.5,
-            "label": "At least 99.5% of searches still succeed"
-          },
-          {
-            "kind": "redundant",
-            "type": "server",
-            "label": "No server group that every request depends on (no single point of failure)"
-          }
-        ]
-      },
-      {
-        "id": "db-failover",
-        "name": "The database fails",
-        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
-        "hours": 1,
-        "startHour": 20,
-        "traffic": {
-          "rps": 1000,
-          "pattern": "steady"
-        },
-        "chaos": [
-          {
-            "minute": 10,
-            "type": "database"
-          }
-        ],
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.8,
-            "label": "At least 99.8% of searches still succeed"
-          },
-          {
-            "kind": "multiAz",
-            "label": "Every database has a standby in another zone (Multi-AZ)"
-          }
-        ]
-      },
-      {
-        "id": "budget",
-        "name": "A sensible bill",
-        "desc": "A whole day at the normal rate (300 a second). Paying for far more than the traffic needs fails, like a memory limit.",
-        "hours": 24,
-        "startHour": 0,
-        "traffic": {
-          "rps": 300,
-          "pattern": "steady"
-        },
-        "checks": [
-          {
-            "kind": "availability",
-            "min": 99.9,
-            "label": "At least 99.9% of searches succeed"
-          },
-          {
-            "kind": "cost",
-            "max": 2500,
-            "label": "Costs at most $2,500 a month"
-          }
-        ]
-      },
-      {
-        "id": "api-search",
+        "id": "search",
         "name": "Search \"paneer roll\" in Mumbai",
+        "kind": "read",
+        "share": 0.95,
         "sample": true,
-        "desc": "Dishes in Mumbai with both words, cheapest first.",
         "request": {
           "method": "GET",
           "path": "/v1/search?q=paneer+roll&city=mumbai"
+        },
+        "bytesOut": 4000,
+        "keys": {
+          "entity": "dishes",
+          "skew": "zipf",
+          "active": 2000000
         },
         "steps": [
           {
@@ -432,7 +321,8 @@
               "dish_id",
               "name",
               "price"
-            ]
+            ],
+            "matches": 500
           }
         ],
         "respond": {
@@ -440,49 +330,1182 @@
           "body": {
             "results": "$s1"
           }
+        },
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        },
+        "consistency": {
+          "maxStalenessSec": 300
         }
       },
       {
-        "id": "api-search-veg",
-        "name": "Veg rolls only",
-        "desc": "The same search with the veg filter.",
+        "id": "price",
+        "name": "Change a price",
+        "kind": "write",
+        "share": 0.05,
         "request": {
-          "method": "GET",
-          "path": "/v1/search?q=roll&city=mumbai&veg=true"
+          "method": "PATCH",
+          "path": "/v1/dishes/d1",
+          "body": {
+            "price": 190
+          }
         },
+        "bytesOut": 100,
         "steps": [
           {
             "id": "s1",
-            "op": "query",
+            "op": "update",
             "entity": "dishes",
-            "where": {
-              "city": "mumbai",
-              "veg": true
+            "by": {
+              "dish_id": "d1"
             },
-            "text": {
-              "field": "name",
-              "q": "roll"
-            },
-            "order": {
-              "field": "price"
-            },
-            "limit": 10,
-            "fields": [
-              "dish_id",
-              "name",
-              "price"
-            ]
+            "set": {
+              "price": 190
+            }
           }
         ],
         "respond": {
           "status": 200,
           "body": {
-            "results": "$s1"
+            "dish_id": "d1"
           }
         },
-        "sample": false
+        "slo": {
+          "availability": 99.9,
+          "p99Ms": 300
+        }
       }
     ],
+    "tests": [
+      {
+        "id": "api-search",
+        "name": "Search \"paneer roll\" in Mumbai",
+        "desc": "Dishes in Mumbai with both words, cheapest first.",
+        "sample": true,
+        "op": "search"
+      },
+      {
+        "id": "api-price",
+        "name": "Change a price",
+        "desc": "A restaurant changes the price of dish d1.",
+        "op": "price"
+      },
+      {
+        "id": "normal",
+        "name": "A normal afternoon",
+        "desc": "300 searches a second.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 15,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "fresh"
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "name": "The dinner peak",
+        "desc": "1,000 searches a second at 8 pm, when most people look for dinner.",
+        "sample": true,
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "noCrash"
+          },
+          {
+            "kind": "fresh"
+          }
+        ]
+      },
+      {
+        "id": "spike",
+        "name": "The match ends",
+        "desc": "At 8 pm the match ends and everyone searches \"biryani\": 4,000 searches a second for 15 minutes.",
+        "hours": 3,
+        "startHour": 19,
+        "traffic": {
+          "rps": 4000,
+          "pattern": "sale"
+        },
+        "faults": [
+          {
+            "minute": 60,
+            "kind": "hotKey",
+            "op": "search",
+            "share": 0.3,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 99.9,
+            "p99Ms": 600
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "name": "A zone goes dark",
+        "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Search may slow down; it must keep working.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "zoneDown",
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "availability": 95,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "db-failover",
+        "name": "The database fails",
+        "desc": "At the peak the busiest database crashes. With a standby in another zone it fails over in 2 minutes; without one it is down for 30.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "crash",
+            "type": "database"
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo",
+            "op": "search",
+            "availability": 99,
+            "p99Ms": 3000
+          }
+        ]
+      },
+      {
+        "id": "budget",
+        "name": "A sensible bill",
+        "desc": "A whole day at the normal rate (300 a second), storage and data transfer included. Paying for far more than the traffic needs fails.",
+        "hours": 24,
+        "startHour": 0,
+        "traffic": {
+          "rps": 300,
+          "pattern": "steady"
+        },
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "cost",
+            "max": 7600
+          }
+        ]
+      }
+    ],
+    "start": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "config": {
+            "size": "m5.large",
+            "count": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        }
+      ]
+    },
+    "reference": {
+      "nodes": [
+        {
+          "id": "clients",
+          "type": "client",
+          "x": 0,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "lb",
+          "type": "lb",
+          "x": 240,
+          "y": 0,
+          "config": {}
+        },
+        {
+          "id": "app",
+          "type": "server",
+          "x": 480,
+          "y": 0,
+          "name": "Search API",
+          "config": {
+            "size": "m5.xlarge",
+            "count": 4,
+            "zones": 2,
+            "timeoutMs": 300
+          }
+        },
+        {
+          "id": "cache",
+          "type": "cache",
+          "x": 720,
+          "y": 0,
+          "name": "Search cache",
+          "config": {
+            "size": "cache.t3.medium",
+            "nodes": 1,
+            "ttlSec": 120,
+            "replica": true
+          }
+        },
+        {
+          "id": "db",
+          "type": "database",
+          "x": 960,
+          "y": 0,
+          "name": "Dish index",
+          "config": {
+            "engine": "opensearch",
+            "size": "r6g.2xlarge.search",
+            "multiAz": true,
+            "shards": 3,
+            "schema": {
+              "tables": [
+                {
+                  "name": "dishes",
+                  "fields": [
+                    {
+                      "name": "dish_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "restaurant_id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "name",
+                      "type": "text"
+                    },
+                    {
+                      "name": "city",
+                      "type": "string"
+                    },
+                    {
+                      "name": "price",
+                      "type": "int"
+                    },
+                    {
+                      "name": "veg",
+                      "type": "bool"
+                    }
+                  ],
+                  "key": [
+                    "dish_id"
+                  ],
+                  "shardKey": [
+                    "city"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "clients",
+          "to": "lb"
+        },
+        {
+          "from": "lb",
+          "to": "app"
+        },
+        {
+          "from": "app",
+          "to": "cache"
+        },
+        {
+          "from": "cache",
+          "to": "db"
+        }
+      ]
+    },
+    "wrong": [
+      {
+        "name": "No word index",
+        "why": "A database without an index on the words reads every dish of the city for each search.",
+        "fails": "api-search",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 120,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "city",
+                          "price"
+                        ],
+                        "kind": "btree"
+                      }
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "No cache",
+        "why": "Every search runs on the index: when the match ends, more than it takes.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": true,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "A cache that keeps answers for a day",
+        "why": "A changed price takes up to a day to show in search.",
+        "fails": "normal",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 86400,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": true,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "The index split by dish",
+        "why": "Each search names a city, but the shards are split by dish: every search asks every shard.",
+        "fails": "spike",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 120,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": true,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One zone",
+        "why": "Every API server is in one zone: when it goes dark, search stops.",
+        "fails": "zone",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 1,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 120,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": true,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "One copy of the index",
+        "why": "No standby: when it crashes, every miss fails for 30 minutes.",
+        "fails": "db-failover",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 4,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 120,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": false,
+              "shards": 3,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "Biggest everything",
+        "why": "It passes every test, at several times the bill it needs.",
+        "fails": "budget",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Search API",
+            "config": {
+              "size": "m5.xlarge",
+              "count": 12,
+              "zones": 2,
+              "timeoutMs": 300
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Search cache",
+            "config": {
+              "size": "cache.r5.large",
+              "nodes": 4,
+              "ttlSec": 120,
+              "replica": true
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Dish index",
+            "config": {
+              "engine": "opensearch",
+              "size": "r6g.2xlarge.search",
+              "multiAz": true,
+              "shards": 6,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "dishes",
+                    "fields": [
+                      {
+                        "name": "dish_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "text"
+                      },
+                      {
+                        "name": "city",
+                        "type": "string"
+                      },
+                      {
+                        "name": "price",
+                        "type": "int"
+                      },
+                      {
+                        "name": "veg",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "dish_id"
+                    ],
+                    "shardKey": [
+                      "city"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      }
+    ],
+    "mutantsAllowed": [
+      "remove:lb",
+      "onezone:cache"
+    ],
+    "mutantsAllowedWhy": {
+      "remove:lb": "Clients may reach the Service group directly in this model.",
+      "onezone:cache": "The index can take every search of the dinner peak for the 15 minutes the cache is gone: the replica only saves warming it up again."
+    },
     "rubric": {
       "fr": [
         {
@@ -651,961 +1674,12 @@
       },
       {
         "step": "design",
-        "x": "Popular searches repeat (\"biryani\" at dinner): a Cache in front answers 80% of them."
+        "x": "Popular searches repeat (\"biryani\" at dinner): a cache in front answers most of them. Keep answers a couple of minutes, so a changed price still shows within five."
       },
       {
         "step": "design",
         "x": "Two server groups, Multi-AZ, and enough servers before 8 pm for the post-match spike."
       }
-    ],
-    "reference": {
-      "nodes": [
-        {
-          "id": "clients",
-          "type": "client",
-          "x": 0,
-          "y": 0,
-          "config": {
-            "rps": 1000,
-            "pattern": "steady"
-          }
-        },
-        {
-          "id": "lb",
-          "type": "lb",
-          "x": 240,
-          "y": 0,
-          "config": {}
-        },
-        {
-          "id": "app1",
-          "type": "server",
-          "x": 480,
-          "y": -75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "app2",
-          "type": "server",
-          "x": 480,
-          "y": 75,
-          "config": {
-            "size": "c5.2xlarge",
-            "count": 1,
-            "queriesPerRequest": 3
-          }
-        },
-        {
-          "id": "cache1",
-          "type": "cache",
-          "x": 720,
-          "y": -75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 80,
-            "writePct": 5,
-            "onDown": "database"
-          }
-        },
-        {
-          "id": "cache2",
-          "type": "cache",
-          "x": 720,
-          "y": 75,
-          "config": {
-            "size": "cache.m5.large",
-            "hitPct": 80,
-            "writePct": 5,
-            "onDown": "database"
-          }
-        },
-        {
-          "id": "db1",
-          "type": "database",
-          "x": 960,
-          "y": 0,
-          "config": {
-            "size": "db.m5.xlarge",
-            "multiAz": true,
-            "role": "search",
-            "schema": {
-              "tables": [
-                {
-                  "name": "dishes",
-                  "fields": [
-                    {
-                      "name": "dish_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "restaurant_id",
-                      "type": "string"
-                    },
-                    {
-                      "name": "name",
-                      "type": "text"
-                    },
-                    {
-                      "name": "city",
-                      "type": "string"
-                    },
-                    {
-                      "name": "price",
-                      "type": "int"
-                    },
-                    {
-                      "name": "veg",
-                      "type": "bool"
-                    }
-                  ],
-                  "key": [
-                    "dish_id"
-                  ],
-                  "indexes": [
-                    {
-                      "fields": [
-                        "name"
-                      ],
-                      "kind": "text"
-                    },
-                    {
-                      "fields": [
-                        "city",
-                        "price"
-                      ],
-                      "kind": "btree"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
-      ],
-      "edges": [
-        {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
-          "from": "lb",
-          "to": "app1"
-        },
-        {
-          "from": "lb",
-          "to": "app2"
-        },
-        {
-          "from": "app1",
-          "to": "cache1"
-        },
-        {
-          "from": "app1",
-          "to": "cache2"
-        },
-        {
-          "from": "app2",
-          "to": "cache1"
-        },
-        {
-          "from": "app2",
-          "to": "cache2"
-        },
-        {
-          "from": "cache1",
-          "to": "db1"
-        },
-        {
-          "from": "cache2",
-          "to": "db1"
-        }
-      ]
-    },
-    "wrong": [
-      {
-        "name": "No cache",
-        "why": "Every read goes to the database, which can't take the peak.",
-        "fails": "peak",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 720,
-            "y": 0,
-            "config": {
-              "size": "db.m5.large",
-              "multiAz": true,
-              "role": "search"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "db1"
-          },
-          {
-            "from": "app2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "One server group",
-        "why": "When it crashes, nothing answers for 5 minutes.",
-        "fails": "server-dies",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.m5.xlarge",
-              "multiAz": true,
-              "role": "search"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Single-zone database",
-        "why": "A crash keeps it down for 30 minutes.",
-        "fails": "db-failover",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.m5.xlarge",
-              "multiAz": false,
-              "role": "search"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Biggest everything",
-        "why": "Passes the load but costs far more than the traffic needs.",
-        "fails": "budget",
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app3",
-            "type": "server",
-            "x": 480,
-            "y": 150,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 50,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.m5.xlarge",
-              "multiAz": true,
-              "role": "search"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "lb",
-            "to": "app3"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "app3",
-            "to": "cache1"
-          },
-          {
-            "from": "app3",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "Right sizes, general parts",
-        "why": "The sizes and redundancy are right, but no component does the job this problem turns on, so the design would carry the traffic without doing what was asked.",
-        "fails": "normal",
-        "general": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.m5.xlarge",
-              "multiAz": true
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      },
-      {
-        "name": "No word index",
-        "why": "Dish names have no text index: finding \"paneer roll\" means reading all 2 crore dishes.",
-        "fails": "api-search",
-        "schemaWrong": true,
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 1000,
-              "pattern": "steady"
-            }
-          },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 240,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "app1",
-            "type": "server",
-            "x": 480,
-            "y": -75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "app2",
-            "type": "server",
-            "x": 480,
-            "y": 75,
-            "config": {
-              "size": "c5.2xlarge",
-              "count": 1,
-              "queriesPerRequest": 3
-            }
-          },
-          {
-            "id": "cache1",
-            "type": "cache",
-            "x": 720,
-            "y": -75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "cache2",
-            "type": "cache",
-            "x": 720,
-            "y": 75,
-            "config": {
-              "size": "cache.m5.large",
-              "hitPct": 80,
-              "writePct": 5,
-              "onDown": "database"
-            }
-          },
-          {
-            "id": "db1",
-            "type": "database",
-            "x": 960,
-            "y": 0,
-            "config": {
-              "size": "db.m5.xlarge",
-              "multiAz": true,
-              "role": "search",
-              "schema": {
-                "tables": [
-                  {
-                    "name": "dishes",
-                    "fields": [
-                      {
-                        "name": "dish_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "restaurant_id",
-                        "type": "string"
-                      },
-                      {
-                        "name": "name",
-                        "type": "text"
-                      },
-                      {
-                        "name": "city",
-                        "type": "string"
-                      },
-                      {
-                        "name": "price",
-                        "type": "int"
-                      },
-                      {
-                        "name": "veg",
-                        "type": "bool"
-                      }
-                    ],
-                    "key": [
-                      "dish_id"
-                    ],
-                    "indexes": [
-                      {
-                        "fields": [
-                          "city",
-                          "price"
-                        ],
-                        "kind": "btree"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "app1"
-          },
-          {
-            "from": "lb",
-            "to": "app2"
-          },
-          {
-            "from": "app1",
-            "to": "cache1"
-          },
-          {
-            "from": "app1",
-            "to": "cache2"
-          },
-          {
-            "from": "app2",
-            "to": "cache1"
-          },
-          {
-            "from": "app2",
-            "to": "cache2"
-          },
-          {
-            "from": "cache1",
-            "to": "db1"
-          },
-          {
-            "from": "cache2",
-            "to": "db1"
-          }
-        ]
-      }
-    ],
-    "data": {
-      "fields": [
-        "dish_id",
-        "restaurant_id",
-        "name",
-        "city",
-        "price",
-        "veg"
-      ],
-      "aliases": {
-        "name": [
-          "dish",
-          "title",
-          "dish_name"
-        ],
-        "veg": [
-          "is_veg",
-          "vegetarian"
-        ]
-      },
-      "entities": {
-        "dishes": {
-          "rows": 20000000,
-          "sample": [
-            {
-              "dish_id": "d1",
-              "restaurant_id": "r1",
-              "name": "Paneer Tikka Roll",
-              "city": "mumbai",
-              "price": 180,
-              "veg": true
-            },
-            {
-              "dish_id": "d2",
-              "restaurant_id": "r2",
-              "name": "Chicken Roll",
-              "city": "mumbai",
-              "price": 200,
-              "veg": false
-            },
-            {
-              "dish_id": "d3",
-              "restaurant_id": "r3",
-              "name": "Paneer Butter Masala",
-              "city": "pune",
-              "price": 260,
-              "veg": true
-            },
-            {
-              "dish_id": "d4",
-              "restaurant_id": "r4",
-              "name": "Paneer Roll Combo",
-              "city": "mumbai",
-              "price": 220,
-              "veg": true
-            }
-          ]
-        }
-      }
-    }
+    ]
   }
 }
