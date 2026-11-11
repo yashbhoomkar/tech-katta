@@ -68,7 +68,9 @@ function checkStep(s, entities, w, problems, ids, inTx = false) {
   if (missing.length) problems.push(`${w}: step ${s.id}: ${missing.join(', ')} not among ${s.entity}'s fields`);
 }
 
-export function validatePractice2(p, lab, at, problems, validateRubricHints) {
+// challenge: a Lab challenge (phase 7): one scenario test and a starting design; no trace tests, reference,
+// wrong designs, rubric or hints (its stars are its checks)
+export function validatePractice2(p, lab, at, problems, validateRubricHints, { challenge = false } = {}) {
   if (!obj(lab?.eval)) { problems.push(`${at}: v 2 needs content/eval.json`); return; }
   if (!text(p.brief)) problems.push(`${at}: needs brief`);
   if (p.referenceNote !== undefined && !text(p.referenceNote)) problems.push(`${at}: referenceNote must be text`);
@@ -164,6 +166,7 @@ export function validatePractice2(p, lab, at, problems, validateRubricHints) {
       if (c.kind === 'has' && c.type === undefined) problems.push(`${w}: has needs a type`);
     }
   }
+  if (challenge) { checkDesign(p.start, lab, [...opIds], `${at} start`, problems, { schemas: true }); return; }
   for (const o of ops) if (o && ID.test(o.id || '') && !tests.some((t) => t?.op === o.id)) problems.push(`${at}: operation ${o.id} has no trace test`);
   if (!tests.some((t) => t?.op && t.sample === true)) problems.push(`${at}: at least one trace test needs sample: true`);
   if (!tests.some((t) => t && !t.op && t.sample === true)) problems.push(`${at}: at least one load test needs sample: true`);

@@ -24,53 +24,309 @@
           "label": "Steady",
           "desc": "The same rate all day.",
           "short": "steady",
-          "points": [[0, 1], [24, 1]]
+          "points": [
+            [
+              0,
+              1
+            ],
+            [
+              24,
+              1
+            ]
+          ]
         },
         {
           "id": "meals",
           "label": "Lunch and dinner rush",
           "desc": "The full rate at 8:30 pm, three quarters of it at 1 pm, almost nothing at 4 am.",
           "short": "lunch and dinner rush",
-          "points": [[0, 0.2], [4, 0.05], [8, 0.15], [11, 0.45], [13, 0.75], [15, 0.35], [18, 0.45], [20.5, 1], [22.5, 0.5], [24, 0.2]]
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              4,
+              0.05
+            ],
+            [
+              8,
+              0.15
+            ],
+            [
+              11,
+              0.45
+            ],
+            [
+              13,
+              0.75
+            ],
+            [
+              15,
+              0.35
+            ],
+            [
+              18,
+              0.45
+            ],
+            [
+              20.5,
+              1
+            ],
+            [
+              22.5,
+              0.5
+            ],
+            [
+              24,
+              0.2
+            ]
+          ]
         },
         {
           "id": "sale",
           "label": "Flash sale at 8 pm",
           "desc": "The full rate for 15 minutes from 8 pm, a fifth of it the rest of the day.",
           "short": "8 pm flash sale",
-          "points": [[0, 0.2], [20, 0.2], [20, 1], [20.25, 1], [20.25, 0.2], [24, 0.2]]
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              20,
+              0.2
+            ],
+            [
+              20,
+              1
+            ],
+            [
+              20.25,
+              1
+            ],
+            [
+              20.25,
+              0.2
+            ],
+            [
+              24,
+              0.2
+            ]
+          ]
         },
         {
           "id": "match",
           "label": "IND vs PAK match night",
           "short": "IND vs PAK",
           "desc": "Quiet all day, a jump at the 7 pm toss, a dip at the innings break and the peak in the last over at 10:18 pm.",
-          "points": [[0, 0.01], [18.5, 0.03], [19, 0.086], [19.133, 0.114], [19.167, 0.143], [19.233, 0.4], [19.5, 0.429], [20, 0.486], [20.5, 0.571], [20.667, 0.629], [20.75, 0.314], [20.967, 0.314], [21.033, 0.514], [21.5, 0.571], [22, 0.686], [22.2, 0.743], [22.3, 1], [22.383, 0.971], [22.433, 0.343], [22.583, 0.114], [23.5, 0.03], [24, 0.01]]
+          "points": [
+            [
+              0,
+              0.01
+            ],
+            [
+              18.5,
+              0.03
+            ],
+            [
+              19,
+              0.086
+            ],
+            [
+              19.133,
+              0.114
+            ],
+            [
+              19.167,
+              0.143
+            ],
+            [
+              19.233,
+              0.4
+            ],
+            [
+              19.5,
+              0.429
+            ],
+            [
+              20,
+              0.486
+            ],
+            [
+              20.5,
+              0.571
+            ],
+            [
+              20.667,
+              0.629
+            ],
+            [
+              20.75,
+              0.314
+            ],
+            [
+              20.967,
+              0.314
+            ],
+            [
+              21.033,
+              0.514
+            ],
+            [
+              21.5,
+              0.571
+            ],
+            [
+              22,
+              0.686
+            ],
+            [
+              22.2,
+              0.743
+            ],
+            [
+              22.3,
+              1
+            ],
+            [
+              22.383,
+              0.971
+            ],
+            [
+              22.433,
+              0.343
+            ],
+            [
+              22.583,
+              0.114
+            ],
+            [
+              23.5,
+              0.03
+            ],
+            [
+              24,
+              0.01
+            ]
+          ]
         },
         {
           "id": "monday",
           "label": "Monday 10 am",
           "short": "Monday 10 am",
           "desc": "Quiet at night, the full rate for half an hour from 10 am, then about a sixth of it through the working day.",
-          "points": [[0, 0.02], [9.5, 0.05], [10, 1], [10.5, 1], [11, 0.15], [18, 0.15], [19, 0.05], [24, 0.02]]
+          "points": [
+            [
+              0,
+              0.02
+            ],
+            [
+              9.5,
+              0.05
+            ],
+            [
+              10,
+              1
+            ],
+            [
+              10.5,
+              1
+            ],
+            [
+              11,
+              0.15
+            ],
+            [
+              18,
+              0.15
+            ],
+            [
+              19,
+              0.05
+            ],
+            [
+              24,
+              0.02
+            ]
+          ]
         },
         {
           "id": "rush9",
           "label": "Rush at 9 pm",
           "short": "9 pm rush",
           "desc": "The full rate for 15 minutes from 9 pm, a fifth of it the rest of the day.",
-          "points": [[0, 0.2], [21, 0.2], [21, 1], [21.25, 1], [21.25, 0.2], [24, 0.2]]
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              21,
+              0.2
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              21.25,
+              1
+            ],
+            [
+              21.25,
+              0.2
+            ],
+            [
+              24,
+              0.2
+            ]
+          ]
         },
         {
           "id": "noon",
           "label": "Sale opens at noon",
           "short": "noon sale",
           "desc": "The full rate for 15 minutes from 12:00, a fifth of it the rest of the day.",
-          "points": [[0, 0.2], [12, 0.2], [12, 1], [12.25, 1], [12.25, 0.2], [24, 0.2]]
+          "points": [
+            [
+              0,
+              0.2
+            ],
+            [
+              12,
+              0.2
+            ],
+            [
+              12,
+              1
+            ],
+            [
+              12.25,
+              1
+            ],
+            [
+              12.25,
+              0.2
+            ],
+            [
+              24,
+              0.2
+            ]
+          ]
         }
       ],
       "like": "The crowd at the door: everyone who wants something from you, all at once.",
-      "aliases": ["clients", "client", "users", "user", "browsers", "browser", "mobile app", "apps"]
+      "aliases": [
+        "clients",
+        "client",
+        "users",
+        "user",
+        "browsers",
+        "browser",
+        "mobile app",
+        "apps"
+      ]
     },
     {
       "type": "cdn",
@@ -78,7 +334,12 @@
       "group": "Edge",
       "desc": "CloudFront. Servers in cities near your users keep copies of what they ask for (video chunks, images, menus) and answer from there; only what they don't have reaches your servers. Scales by itself and never crashes. Billed per request; data transfer is not counted here.",
       "like": "A kirana shop in every lane. Most things people need are already on its shelf; only rare items come all the way from the warehouse.",
-      "aliases": ["cdn", "cloudfront", "edge", "akamai"],
+      "aliases": [
+        "cdn",
+        "cloudfront",
+        "edge",
+        "akamai"
+      ],
       "latencyMs": 5,
       "limitRps": 20000000,
       "pricePer10k": 0.009,
@@ -102,7 +363,11 @@
       "limitRps": 10000,
       "pricePerMillion": 3.5,
       "like": "The security desk of an office building. It checks who you are, points you to the right floor, and stops letting people in when the lobby is full.",
-      "aliases": ["api gateway", "gateway", "apigw"]
+      "aliases": [
+        "api gateway",
+        "gateway",
+        "apigw"
+      ]
     },
     {
       "type": "lb",
@@ -115,7 +380,13 @@
       "lcuHourly": 0.008,
       "rpsPerLcu": 300,
       "like": "Booths at a toll plaza. Cars spread across every open booth, so no single lane jams.",
-      "aliases": ["load balancer", "lb", "alb", "elb", "nginx"]
+      "aliases": [
+        "load balancer",
+        "lb",
+        "alb",
+        "elb",
+        "nginx"
+      ]
     },
     {
       "type": "server",
@@ -179,7 +450,17 @@
         "like": "Opening more ticket counters at the station when the rush starts. It helps, but a new clerk takes a few minutes to sit down."
       },
       "like": "Cooks in a kitchen. Each one handles a few orders at a time; more cooks, or faster ones, handle a bigger rush.",
-      "aliases": ["server", "servers", "service", "app server", "backend", "api", "worker", "workers", "ec2"],
+      "aliases": [
+        "server",
+        "servers",
+        "service",
+        "app server",
+        "backend",
+        "api",
+        "worker",
+        "workers",
+        "ec2"
+      ],
       "roles": [
         {
           "id": "websocket",
@@ -247,7 +528,13 @@
       "limitRps": 100000,
       "pricePerMillion": 0.4,
       "like": "The token system at a bank. Customers take a token and wait; tellers call the next token when they are free.",
-      "aliases": ["queue", "sqs", "kafka", "rabbitmq", "stream"],
+      "aliases": [
+        "queue",
+        "sqs",
+        "kafka",
+        "rabbitmq",
+        "stream"
+      ],
       "roles": [
         {
           "id": "log",
@@ -340,7 +627,12 @@
         ]
       },
       "like": "The water bottle on your desk. It is one sip away, so you only walk to the kitchen when it is empty. Write-back is a shopkeeper noting sales in a notebook and copying them into the ledger later: quick, until the notebook is lost.",
-      "aliases": ["cache", "redis", "memcached", "elasticache"],
+      "aliases": [
+        "cache",
+        "redis",
+        "memcached",
+        "elasticache"
+      ],
       "roles": [
         {
           "id": "sortedset",
@@ -426,7 +718,12 @@
         "failoverMinutes": 2
       },
       "like": "The shop's ledger: the one record everyone trusts, so every change has to be written into it carefully.",
-      "aliases": ["database", "db", "datastore", "data store"],
+      "aliases": [
+        "database",
+        "db",
+        "datastore",
+        "data store"
+      ],
       "roles": [
         {
           "id": "geo",
@@ -533,14 +830,33 @@
           "multiAz": "option",
           "replicas": true,
           "crash": true,
-          "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
-          "aliases": ["postgres", "postgresql", "rds", "aurora", "sql"],
+          "features": [
+            "transactions",
+            "joins",
+            "secondaryIndex",
+            "range",
+            "geo",
+            "fullText",
+            "aggregate"
+          ],
+          "aliases": [
+            "postgres",
+            "postgresql",
+            "rds",
+            "aurora",
+            "sql"
+          ],
           "schema": {
             "table": "Table",
             "tables": "tables",
             "key": "Primary key",
             "index": "Index",
-            "indexKinds": ["btree", "unique", "geo", "text"],
+            "indexKinds": [
+              "btree",
+              "unique",
+              "geo",
+              "text"
+            ],
             "ttl": false,
             "keyRequired": true,
             "maxIndexFields": 3
@@ -556,14 +872,30 @@
           "multiAz": "option",
           "replicas": true,
           "crash": true,
-          "features": ["transactions", "joins", "secondaryIndex", "range", "geo", "fullText", "aggregate"],
-          "aliases": ["mysql", "mariadb"],
+          "features": [
+            "transactions",
+            "joins",
+            "secondaryIndex",
+            "range",
+            "geo",
+            "fullText",
+            "aggregate"
+          ],
+          "aliases": [
+            "mysql",
+            "mariadb"
+          ],
           "schema": {
             "table": "Table",
             "tables": "tables",
             "key": "Primary key",
             "index": "Index",
-            "indexKinds": ["btree", "unique", "geo", "text"],
+            "indexKinds": [
+              "btree",
+              "unique",
+              "geo",
+              "text"
+            ],
             "ttl": false,
             "keyRequired": true,
             "maxIndexFields": 3
@@ -583,20 +915,34 @@
           "multiAz": "builtin",
           "replicas": false,
           "crash": false,
-          "features": ["secondaryIndex", "range", "ttl", "highWrites", "transactions"],
-          "aliases": ["dynamodb", "dynamo", "ddb"],
+          "features": [
+            "secondaryIndex",
+            "range",
+            "ttl",
+            "highWrites",
+            "transactions"
+          ],
+          "aliases": [
+            "dynamodb",
+            "dynamo",
+            "ddb"
+          ],
           "schema": {
             "table": "Table",
             "tables": "tables",
             "key": "Partition key",
             "sortKey": "Sort key",
             "index": "Global secondary index",
-            "indexKinds": ["btree"],
+            "indexKinds": [
+              "btree"
+            ],
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 2
           },
-          "roles": ["kv"]
+          "roles": [
+            "kv"
+          ]
         },
         {
           "id": "mongodb",
@@ -635,14 +981,32 @@
             }
           ],
           "defaultSize": "docdb.r6g.large",
-          "features": ["secondaryIndex", "range", "geo", "fullText", "aggregate", "transactions"],
-          "aliases": ["mongodb", "mongo", "documentdb", "docdb", "document db"],
+          "features": [
+            "secondaryIndex",
+            "range",
+            "geo",
+            "fullText",
+            "aggregate",
+            "transactions"
+          ],
+          "aliases": [
+            "mongodb",
+            "mongo",
+            "documentdb",
+            "docdb",
+            "document db"
+          ],
           "schema": {
             "table": "Collection",
             "tables": "collections",
             "key": "Key (_id)",
             "index": "Index",
-            "indexKinds": ["btree", "unique", "geo", "text"],
+            "indexKinds": [
+              "btree",
+              "unique",
+              "geo",
+              "text"
+            ],
             "ttl": true,
             "keyRequired": true,
             "maxIndexFields": 3
@@ -662,8 +1026,19 @@
           "multiAz": "builtin",
           "replicas": false,
           "crash": false,
-          "features": ["range", "ttl", "highWrites"],
-          "aliases": ["cassandra", "keyspaces", "scylla", "scylladb", "wide column", "wide-column"],
+          "features": [
+            "range",
+            "ttl",
+            "highWrites"
+          ],
+          "aliases": [
+            "cassandra",
+            "keyspaces",
+            "scylla",
+            "scylladb",
+            "wide column",
+            "wide-column"
+          ],
           "schema": {
             "table": "Table",
             "tables": "tables",
@@ -675,7 +1050,9 @@
             "keyRequired": true,
             "maxIndexFields": 1
           },
-          "roles": ["wide"]
+          "roles": [
+            "wide"
+          ]
         },
         {
           "id": "opensearch",
@@ -709,8 +1086,20 @@
             }
           ],
           "defaultSize": "r6g.large.search",
-          "features": ["fullText", "geo", "range", "aggregate", "secondaryIndex"],
-          "aliases": ["opensearch", "elasticsearch", "elastic", "search engine", "solr"],
+          "features": [
+            "fullText",
+            "geo",
+            "range",
+            "aggregate",
+            "secondaryIndex"
+          ],
+          "aliases": [
+            "opensearch",
+            "elasticsearch",
+            "elastic",
+            "search engine",
+            "solr"
+          ],
           "schema": {
             "table": "Index",
             "tables": "indexes",
@@ -722,7 +1111,9 @@
             "maxIndexFields": 1,
             "allIndexed": true
           },
-          "roles": ["search"]
+          "roles": [
+            "search"
+          ]
         },
         {
           "id": "s3",
@@ -738,8 +1129,17 @@
           "multiAz": "builtin",
           "replicas": false,
           "crash": false,
-          "features": ["blobs"],
-          "aliases": ["s3", "object storage", "object store", "blob storage", "blob store", "gcs"],
+          "features": [
+            "blobs"
+          ],
+          "aliases": [
+            "s3",
+            "object storage",
+            "object store",
+            "blob storage",
+            "blob store",
+            "gcs"
+          ],
           "schema": {
             "table": "Bucket",
             "tables": "buckets",
@@ -750,7 +1150,9 @@
             "keyRequired": true,
             "maxIndexFields": 1
           },
-          "roles": ["objects"]
+          "roles": [
+            "objects"
+          ]
         },
         {
           "id": "timeseries",
@@ -783,8 +1185,21 @@
             }
           ],
           "defaultSize": "db.influx.large",
-          "features": ["range", "aggregate", "ttl", "highWrites"],
-          "aliases": ["influxdb", "influx", "timestream", "timescale", "timescaledb", "time series", "time-series"],
+          "features": [
+            "range",
+            "aggregate",
+            "ttl",
+            "highWrites"
+          ],
+          "aliases": [
+            "influxdb",
+            "influx",
+            "timestream",
+            "timescale",
+            "timescaledb",
+            "time series",
+            "time-series"
+          ],
           "schema": {
             "table": "Measurement",
             "tables": "measurements",
@@ -796,7 +1211,9 @@
             "keyRequired": true,
             "maxIndexFields": 1
           },
-          "roles": ["timeseries"]
+          "roles": [
+            "timeseries"
+          ]
         },
         {
           "id": "graph",
@@ -830,14 +1247,27 @@
             }
           ],
           "defaultSize": "db.r6g.large.graph",
-          "features": ["graph", "transactions", "secondaryIndex"],
-          "aliases": ["neptune", "neo4j", "graph", "graph db", "graph database"],
+          "features": [
+            "graph",
+            "transactions",
+            "secondaryIndex"
+          ],
+          "aliases": [
+            "neptune",
+            "neo4j",
+            "graph",
+            "graph db",
+            "graph database"
+          ],
           "schema": {
             "table": "Vertex or edge label",
             "tables": "labels",
             "key": "Id",
             "index": "Index",
-            "indexKinds": ["btree", "unique"],
+            "indexKinds": [
+              "btree",
+              "unique"
+            ],
             "ttl": false,
             "keyRequired": true,
             "maxIndexFields": 2
@@ -912,55 +1342,159 @@
       "title": "Too much for one server",
       "brief": "Zotato's order API runs on one server, and 2,000 requests a second are arriving. Keep orders flowing for six hours.",
       "hint": "One server handles about 600 requests a second. Add instances, and check that the database can take the queries they send.",
+      "v": 2,
       "hours": 6,
       "startHour": 12,
       "traffic": {
         "rps": 2000,
         "pattern": "steady"
       },
-      "start": {
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 2000
-            }
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
           },
-          {
-            "id": "api",
-            "type": "server",
-            "x": 240,
-            "y": 0,
-            "config": {
-              "size": "m5.large",
-              "count": 1,
-              "queriesPerRequest": 2
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
             }
+          ]
+        },
+        "orders": {
+          "rows": 200000000,
+          "rowBytes": 300,
+          "growthPerDay": 2000000,
+          "fields": {
+            "order_id": "string",
+            "restaurant_id": "string",
+            "user_id": "string",
+            "total": "int",
+            "status": "string"
           },
-          {
-            "id": "db",
-            "type": "database",
-            "x": 480,
-            "y": 0,
-            "config": {
-              "size": "db.m5.large"
+          "sample": [
+            {
+              "order_id": "o1",
+              "restaurant_id": "r1",
+              "user_id": "u1",
+              "total": 180,
+              "status": "placed"
+            },
+            {
+              "order_id": "o2",
+              "restaurant_id": "r2",
+              "user_id": "u2",
+              "total": 220,
+              "status": "delivered"
             }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "api"
-          },
-          {
-            "from": "api",
-            "to": "db"
-          }
-        ]
+          ]
+        }
       },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.8,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 50000
+          }
+        },
+        {
+          "id": "order",
+          "name": "Place an order",
+          "kind": "write",
+          "share": 0.2,
+          "request": {
+            "method": "POST",
+            "path": "/v1/orders",
+            "body": {
+              "restaurant_id": "r1"
+            }
+          },
+          "bytesOut": 200,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "put",
+              "entity": "orders",
+              "values": {
+                "order_id": "o3",
+                "restaurant_id": "r1",
+                "user_id": "u1",
+                "total": 180,
+                "status": "placed"
+              },
+              "unique": [
+                "order_id"
+              ],
+              "label": "Saving the order"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "durable": true,
+          "effect": "once",
+          "idempotencyField": "order_id"
+        }
+      ],
       "stars": [
         {
           "kind": "availability",
@@ -977,20 +1511,6 @@
           "label": "Nothing crashes"
         }
       ],
-      "requires": ["server", "database"]
-    },
-    {
-      "id": "first-rush",
-      "level": "beginner",
-      "title": "Lunch and dinner rush",
-      "brief": "A full day of Zotato traffic: quiet at night, busy at lunch, busiest at 8:30 pm with 3,000 requests a second.",
-      "hint": "Size for the dinner peak, or let autoscaling follow the day. Look at what the API Gateway costs at this traffic.",
-      "hours": 24,
-      "startHour": 0,
-      "traffic": {
-        "rps": 3000,
-        "pattern": "meals"
-      },
       "start": {
         "nodes": [
           {
@@ -998,16 +1518,285 @@
             "type": "client",
             "x": 0,
             "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 240,
+            "y": 0,
+            "name": "Order API",
             "config": {
-              "rps": 3000,
-              "pattern": "meals"
+              "size": "m5.large",
+              "count": 1
             }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 480,
+            "y": 0,
+            "name": "Database",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.large",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "total",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "db"
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-rush",
+      "level": "beginner",
+      "title": "Lunch and dinner rush",
+      "brief": "A full day of Zotato traffic: quiet at night, busy at lunch, busiest at 8:30 pm with 3,000 requests a second.",
+      "hint": "Size for the dinner peak, or let autoscaling follow the day. Look at what the API Gateway costs at this traffic.",
+      "v": 2,
+      "hours": 24,
+      "startHour": 0,
+      "traffic": {
+        "rps": 3000,
+        "pattern": "meals"
+      },
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
+            }
+          ]
+        },
+        "orders": {
+          "rows": 200000000,
+          "rowBytes": 300,
+          "growthPerDay": 2000000,
+          "fields": {
+            "order_id": "string",
+            "restaurant_id": "string",
+            "user_id": "string",
+            "total": "int",
+            "status": "string"
+          },
+          "sample": [
+            {
+              "order_id": "o1",
+              "restaurant_id": "r1",
+              "user_id": "u1",
+              "total": 180,
+              "status": "placed"
+            },
+            {
+              "order_id": "o2",
+              "restaurant_id": "r2",
+              "user_id": "u2",
+              "total": 220,
+              "status": "delivered"
+            }
+          ]
+        }
+      },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.9,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 50000
+          }
+        },
+        {
+          "id": "order",
+          "name": "Place an order",
+          "kind": "write",
+          "share": 0.1,
+          "request": {
+            "method": "POST",
+            "path": "/v1/orders",
+            "body": {
+              "restaurant_id": "r1"
+            }
+          },
+          "bytesOut": 200,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "put",
+              "entity": "orders",
+              "values": {
+                "order_id": "o3",
+                "restaurant_id": "r1",
+                "user_id": "u1",
+                "total": 180,
+                "status": "placed"
+              },
+              "unique": [
+                "order_id"
+              ],
+              "label": "Saving the order"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "durable": true,
+          "effect": "once",
+          "idempotencyField": "order_id"
+        }
+      ],
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.5,
+          "label": "At least 99.5% of requests succeed"
+        },
+        {
+          "kind": "cost",
+          "max": 3000,
+          "label": "Costs at most $3,000 a month"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        }
+      ],
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
           },
           {
             "id": "gateway",
             "type": "apigw",
             "x": 240,
             "y": 0,
+            "name": "API Gateway",
             "config": {}
           },
           {
@@ -1015,10 +1804,10 @@
             "type": "server",
             "x": 480,
             "y": 0,
+            "name": "Order API",
             "config": {
               "size": "t3.medium",
-              "count": 1,
-              "queriesPerRequest": 2
+              "count": 1
             }
           },
           {
@@ -1026,8 +1815,62 @@
             "type": "database",
             "x": 720,
             "y": 0,
+            "name": "Database",
             "config": {
-              "size": "db.t3.medium"
+              "engine": "postgres",
+              "size": "db.t3.medium",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "total",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1045,37 +1888,183 @@
             "to": "db"
           }
         ]
-      },
-      "stars": [
-        {
-          "kind": "availability",
-          "min": 99.5,
-          "label": "At least 99.5% of requests succeed"
-        },
-        {
-          "kind": "cost",
-          "max": 3000,
-          "label": "Costs at most $3,000 a month"
-        },
-        {
-          "kind": "noCrash",
-          "label": "Nothing crashes"
-        }
-      ],
-      "requires": ["server", "database"]
+      }
     },
     {
       "id": "flash-sale",
       "level": "intermediate",
       "title": "The 8 pm flash sale",
       "brief": "At 8 pm Zotato runs a 15-minute flash sale: 8,000 requests a second, five times the usual. Survive it.",
-      "hint": "New instances take 4 minutes to boot and the sale lasts 15. Each request makes 2 database queries.",
+      "hint": "New instances take 4 minutes to boot and the sale lasts 15. Most requests open a menu; one in five saves an order.",
+      "v": 2,
       "hours": 3,
       "startHour": 19,
       "traffic": {
         "rps": 8000,
         "pattern": "sale"
       },
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
+            }
+          ]
+        },
+        "orders": {
+          "rows": 200000000,
+          "rowBytes": 300,
+          "growthPerDay": 2000000,
+          "fields": {
+            "order_id": "string",
+            "restaurant_id": "string",
+            "user_id": "string",
+            "total": "int",
+            "status": "string"
+          },
+          "sample": [
+            {
+              "order_id": "o1",
+              "restaurant_id": "r1",
+              "user_id": "u1",
+              "total": 180,
+              "status": "placed"
+            },
+            {
+              "order_id": "o2",
+              "restaurant_id": "r2",
+              "user_id": "u2",
+              "total": 220,
+              "status": "delivered"
+            }
+          ]
+        }
+      },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.8,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 50000
+          }
+        },
+        {
+          "id": "order",
+          "name": "Place an order",
+          "kind": "write",
+          "share": 0.2,
+          "request": {
+            "method": "POST",
+            "path": "/v1/orders",
+            "body": {
+              "restaurant_id": "r1"
+            }
+          },
+          "bytesOut": 200,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "put",
+              "entity": "orders",
+              "values": {
+                "order_id": "o3",
+                "restaurant_id": "r1",
+                "user_id": "u1",
+                "total": 180,
+                "status": "placed"
+              },
+              "unique": [
+                "order_id"
+              ],
+              "label": "Saving the order"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "durable": true,
+          "effect": "once",
+          "idempotencyField": "order_id"
+        }
+      ],
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of requests succeed"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 4000,
+          "label": "Costs at most $4,000 a month"
+        }
+      ],
       "start": {
         "nodes": [
           {
@@ -1083,16 +2072,14 @@
             "type": "client",
             "x": 0,
             "y": 0,
-            "config": {
-              "rps": 8000,
-              "pattern": "sale"
-            }
+            "config": {}
           },
           {
             "id": "gateway",
             "type": "apigw",
             "x": 240,
             "y": 0,
+            "name": "API Gateway",
             "config": {}
           },
           {
@@ -1100,10 +2087,10 @@
             "type": "server",
             "x": 480,
             "y": 0,
+            "name": "Order API",
             "config": {
               "size": "m5.large",
-              "count": 2,
-              "queriesPerRequest": 2
+              "count": 2
             }
           },
           {
@@ -1111,9 +2098,63 @@
             "type": "database",
             "x": 720,
             "y": 0,
+            "name": "Database",
             "config": {
+              "engine": "postgres",
               "size": "db.m5.large",
-              "multiAz": true
+              "multiAz": true,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "total",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1131,7 +2172,232 @@
             "to": "db"
           }
         ]
+      }
+    },
+    {
+      "id": "read-heavy",
+      "level": "intermediate",
+      "title": "The menu everyone reads",
+      "brief": "5,000 people a second open restaurant menus. Each menu reads four things (the dishes, the rating, today's offers and whether it is open); one request in twenty changes a dish.",
+      "hint": "No database here takes 20,000 reads a second. A cache in front of it answers most of them; only misses and changes reach the database.",
+      "v": 2,
+      "hours": 4,
+      "startHour": 12,
+      "traffic": {
+        "rps": 5000,
+        "pattern": "steady"
       },
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
+            }
+          ]
+        },
+        "ratings": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "rating": "float"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "rating": 4.4
+            },
+            {
+              "restaurant_id": "r2",
+              "rating": 4.1
+            }
+          ]
+        },
+        "offers": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "offers": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "offers": [
+                "20% off"
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "offers": []
+            }
+          ]
+        },
+        "hours": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "open": "bool"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "open": true
+            },
+            {
+              "restaurant_id": "r2",
+              "open": false
+            }
+          ]
+        }
+      },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.95,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            },
+            {
+              "id": "s2",
+              "op": "get",
+              "entity": "ratings",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "rating"
+              ],
+              "label": "Reading the rating"
+            },
+            {
+              "id": "s3",
+              "op": "get",
+              "entity": "offers",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "offers"
+              ],
+              "label": "Reading today's offers"
+            },
+            {
+              "id": "s4",
+              "op": "get",
+              "entity": "hours",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "open"
+              ],
+              "label": "Is it open?"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 20000
+          },
+          "consistency": {
+            "maxStalenessSec": 300
+          }
+        },
+        {
+          "id": "edit",
+          "name": "Change a dish",
+          "kind": "write",
+          "share": 0.05,
+          "request": {
+            "method": "PUT",
+            "path": "/v1/menus/r1"
+          },
+          "bytesOut": 100,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "update",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "set": {
+                "items": [
+                  {
+                    "dish": "masala dosa",
+                    "price": 95
+                  }
+                ]
+              },
+              "label": "Saving the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          }
+        }
+      ],
       "stars": [
         {
           "kind": "availability",
@@ -1139,34 +2405,15 @@
           "label": "At least 99.9% of requests succeed"
         },
         {
-          "kind": "noCrash",
-          "label": "Nothing crashes"
+          "kind": "cost",
+          "max": 2500,
+          "label": "Costs at most $2,500 a month"
         },
         {
-          "kind": "cost",
-          "max": 3000,
-          "label": "Costs at most $3,000 a month"
+          "kind": "noCrash",
+          "label": "Nothing crashes"
         }
       ],
-      "requires": ["server", "database"]
-    },
-    {
-      "id": "read-heavy",
-      "level": "intermediate",
-      "title": "The menu everyone reads",
-      "brief": "5,000 people a second open restaurant menus. Each request makes 4 database queries, almost all reads.",
-      "hint": "No database here takes 20,000 queries a second. A cache answers 85% of reads; only misses and writes reach the database.",
-      "hours": 4,
-      "startHour": 12,
-      "traffic": {
-        "rps": 5000,
-        "pattern": "steady"
-      },
-      "fixed": {
-        "queriesPerRequest": 4,
-        "hitPct": 85,
-        "writePct": 5
-      },
       "start": {
         "nodes": [
           {
@@ -1174,9 +2421,7 @@
             "type": "client",
             "x": 0,
             "y": 0,
-            "config": {
-              "rps": 5000
-            }
+            "config": {}
           },
           {
             "id": "lb",
@@ -1190,10 +2435,10 @@
             "type": "server",
             "x": 480,
             "y": 0,
+            "name": "Menu API",
             "config": {
               "size": "m5.xlarge",
-              "count": 5,
-              "queriesPerRequest": 4
+              "count": 5
             }
           },
           {
@@ -1201,8 +2446,82 @@
             "type": "database",
             "x": 720,
             "y": 0,
+            "name": "Database",
             "config": {
-              "size": "db.m5.xlarge"
+              "engine": "postgres",
+              "size": "db.m5.xlarge",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "ratings",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rating",
+                        "type": "float"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "offers",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "offers",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "hours",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "open",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1220,42 +2539,98 @@
             "to": "db"
           }
         ]
-      },
-      "stars": [
-        {
-          "kind": "availability",
-          "min": 99.9,
-          "label": "At least 99.9% of requests succeed"
-        },
-        {
-          "kind": "cost",
-          "max": 2500,
-          "label": "Costs at most $2,500 a month"
-        },
-        {
-          "kind": "noCrash",
-          "label": "Nothing crashes"
-        }
-      ],
-      "requires": ["server", "database"]
+      }
     },
     {
       "id": "sms-link",
       "level": "intermediate",
       "title": "The link in 10 crore SMS",
       "brief": "At 8 pm Zotato texts a promo link to 10 crore phones. For 15 minutes, 30,000 people a second tap zot.to links, five times the evening's usual. Every tap is one lookup of a short code.",
-      "hint": "No database here answers 30,000 lookups a second, and new servers take 4 minutes to boot. The same few codes are read over and over: 95% of lookups can come from a cache. A CDN would also work, but it bills every request.",
+      "hint": "No database here answers 30,000 lookups a second, and new servers take 4 minutes to boot. The same few codes are read over and over: almost every lookup can come from a cache.",
+      "v": 2,
       "hours": 3,
       "startHour": 19,
       "traffic": {
         "rps": 30000,
         "pattern": "sale"
       },
-      "fixed": {
-        "queriesPerRequest": 1,
-        "hitPct": 95,
-        "writePct": 0
+      "entities": {
+        "links": {
+          "rows": 50000000,
+          "rowBytes": 300,
+          "growthPerDay": 100000,
+          "fields": {
+            "code": "string",
+            "url": "string"
+          },
+          "sample": [
+            {
+              "code": "dosa50",
+              "url": "https://zotato.example/offer/dosa"
+            },
+            {
+              "code": "x7k2",
+              "url": "https://zotato.example/r/r2"
+            }
+          ]
+        }
       },
+      "operations": [
+        {
+          "id": "tap",
+          "name": "Open a short link",
+          "kind": "read",
+          "share": 1,
+          "request": {
+            "method": "GET",
+            "path": "/dosa50"
+          },
+          "bytesOut": 100,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "links",
+              "by": {
+                "code": "dosa50"
+              },
+              "fields": [
+                "url"
+              ],
+              "label": "Finding where the code points"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "links",
+            "skew": "zipf",
+            "active": 50
+          }
+        }
+      ],
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of taps reach the right page"
+        },
+        {
+          "kind": "noCrash",
+          "label": "Nothing crashes"
+        },
+        {
+          "kind": "cost",
+          "max": 5000,
+          "label": "Costs at most $5,000 a month"
+        }
+      ],
       "start": {
         "nodes": [
           {
@@ -1263,10 +2638,7 @@
             "type": "client",
             "x": 0,
             "y": 0,
-            "config": {
-              "rps": 30000,
-              "pattern": "sale"
-            }
+            "config": {}
           },
           {
             "id": "lb",
@@ -1280,10 +2652,10 @@
             "type": "server",
             "x": 480,
             "y": 0,
+            "name": "Link servers",
             "config": {
               "size": "m5.xlarge",
-              "count": 4,
-              "queriesPerRequest": 1
+              "count": 4
             }
           },
           {
@@ -1291,8 +2663,30 @@
             "type": "database",
             "x": 720,
             "y": 0,
+            "name": "Database",
             "config": {
-              "size": "db.m5.large"
+              "engine": "postgres",
+              "size": "db.m5.large",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "links",
+                    "fields": [
+                      {
+                        "name": "code",
+                        "type": "string"
+                      },
+                      {
+                        "name": "url",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "code"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1310,40 +2704,144 @@
             "to": "db"
           }
         ]
-      },
-      "stars": [
-        {
-          "kind": "availability",
-          "min": 99.9,
-          "label": "At least 99.9% of taps reach the right page"
-        },
-        {
-          "kind": "noCrash",
-          "label": "Nothing crashes"
-        },
-        {
-          "kind": "cost",
-          "max": 4000,
-          "label": "Costs at most $4,000 a month"
-        }
-      ],
-      "requires": ["server", "database"]
+      }
     },
     {
       "id": "monday-sync",
       "level": "intermediate",
       "title": "Monday 10 am: every laptop syncs",
-      "brief": "Offices open at 10 on Monday, and 30 lakh laptops sync the weekend's changes at once. For half an hour, 3,000 files a second land in storage; for the rest of the day, about 450. Each file then needs a preview, a virus scan and a search update: 8 database queries. The file is already safe, so nobody waits for this work.",
-      "hint": "No single database takes 24,000 queries a second, and two big ones blow the budget. But this work can wait a little: a queue holds the burst, and workers can clear it by evening. Careful, though: workers pull as fast as they can, so size them for what the database can take.",
+      "brief": "Offices open at 10 on Monday, and 30 lakh laptops sync the weekend's changes at once. For half an hour, 3,000 files a second land in storage; for the rest of the day, about 450. Each file then needs a preview, a virus scan and a search update: three database writes and a little rendering. The file is already safe, so nobody waits for this work.",
+      "hint": "No single database takes 9,000 writes a second, and two big ones blow the budget. But this work can wait: a queue holds the burst, and workers can clear it by evening. Workers back off when the database is busy, so the queue, not the database, takes the rush.",
+      "v": 2,
       "hours": 12,
       "startHour": 9,
       "traffic": {
         "rps": 3000,
         "pattern": "monday"
       },
-      "fixed": {
-        "queriesPerRequest": 8
+      "entities": {
+        "files": {
+          "rows": 2000000000,
+          "rowBytes": 500,
+          "growthPerDay": 20000000,
+          "fields": {
+            "file_id": "string",
+            "owner_id": "string",
+            "preview": "string",
+            "scanned": "bool",
+            "words": "text"
+          },
+          "sample": [
+            {
+              "file_id": "f1",
+              "owner_id": "u1",
+              "preview": "p1.png",
+              "scanned": true,
+              "words": "q3 plan"
+            },
+            {
+              "file_id": "f2",
+              "owner_id": "u2",
+              "preview": null,
+              "scanned": false,
+              "words": ""
+            }
+          ]
+        }
       },
+      "operations": [
+        {
+          "id": "file",
+          "name": "A file lands",
+          "kind": "write",
+          "share": 1,
+          "request": {
+            "method": "POST",
+            "path": "/v1/files/f1/landed"
+          },
+          "bytesOut": 50,
+          "steps": [
+            {
+              "id": "s2",
+              "op": "update",
+              "entity": "files",
+              "by": {
+                "file_id": "f1"
+              },
+              "set": {
+                "preview": "p1.png"
+              },
+              "timing": "defer",
+              "withinSec": 39600,
+              "label": "Making a preview"
+            },
+            {
+              "id": "s3",
+              "op": "update",
+              "entity": "files",
+              "by": {
+                "file_id": "f1"
+              },
+              "set": {
+                "scanned": true
+              },
+              "timing": "defer",
+              "withinSec": 39600,
+              "label": "Virus scan result"
+            },
+            {
+              "id": "s4",
+              "op": "update",
+              "entity": "files",
+              "by": {
+                "file_id": "f1"
+              },
+              "set": {
+                "words": "q3 plan"
+              },
+              "timing": "defer",
+              "withinSec": 39600,
+              "label": "Search words"
+            },
+            {
+              "id": "s5",
+              "op": "compute",
+              "cpuMs": 20,
+              "timing": "defer",
+              "withinSec": 39600,
+              "label": "Rendering the preview"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "durable": true,
+          "effect": "once",
+          "idempotencyField": "file_id"
+        }
+      ],
+      "stars": [
+        {
+          "kind": "availability",
+          "min": 99.9,
+          "label": "At least 99.9% of new files are accepted"
+        },
+        {
+          "kind": "completes",
+          "withinSec": 39600,
+          "label": "Every file is processed by 9 pm"
+        },
+        {
+          "kind": "cost",
+          "max": 2000,
+          "label": "Costs at most $2,000 a month"
+        }
+      ],
       "start": {
         "nodes": [
           {
@@ -1351,10 +2849,7 @@
             "type": "client",
             "x": 0,
             "y": 0,
-            "config": {
-              "rps": 3000,
-              "pattern": "monday"
-            }
+            "config": {}
           },
           {
             "id": "lb",
@@ -1368,10 +2863,10 @@
             "type": "server",
             "x": 480,
             "y": 0,
+            "name": "File service",
             "config": {
               "size": "m5.large",
-              "count": 4,
-              "queriesPerRequest": 8
+              "count": 4
             }
           },
           {
@@ -1379,8 +2874,42 @@
             "type": "database",
             "x": 720,
             "y": 0,
+            "name": "Database",
             "config": {
-              "size": "db.m5.large"
+              "engine": "postgres",
+              "size": "db.m5.large",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "files",
+                    "fields": [
+                      {
+                        "name": "file_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "owner_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "preview",
+                        "type": "string"
+                      },
+                      {
+                        "name": "scanned",
+                        "type": "bool"
+                      },
+                      {
+                        "name": "words",
+                        "type": "text"
+                      }
+                    ],
+                    "key": [
+                      "file_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1398,118 +2927,227 @@
             "to": "db"
           }
         ]
-      },
-      "stars": [
-        {
-          "kind": "availability",
-          "min": 99.9,
-          "label": "At least 99.9% of files are processed by 9 pm"
-        },
-        {
-          "kind": "noCrash",
-          "label": "Nothing crashes"
-        },
-        {
-          "kind": "cost",
-          "max": 1500,
-          "label": "Costs at most $1,500 a month"
-        }
-      ],
-      "requires": ["server", "database"]
+      }
     },
     {
       "id": "cache-restart",
       "level": "advanced",
       "title": "The cache restarts at dinner",
       "brief": "At 8:15 pm, in the middle of the dinner rush, Zotato's cache crashes. When it comes back it is empty. Keep the database standing.",
-      "hint": "While the cache is down, its queries go to the database, and for 10 minutes after it returns most still do. Size for that, or don't depend on one cache.",
+      "hint": "While the cache is down, its reads go to the database, and for 10 minutes after it comes back most still do. Size the database for that, or give the cache a replica in another zone (even then, the database takes its reads for the minute the replica takes over).",
+      "v": 2,
       "hours": 4,
       "startHour": 19,
       "traffic": {
         "rps": 4000,
         "pattern": "meals"
       },
-      "fixed": {
-        "queriesPerRequest": 3,
-        "hitPct": 90,
-        "writePct": 10
-      },
-      "chaos": [
+      "faults": [
         {
           "minute": 75,
+          "kind": "crash",
           "type": "cache"
         }
       ],
-      "start": {
-        "nodes": [
-          {
-            "id": "clients",
-            "type": "client",
-            "x": 0,
-            "y": 0,
-            "config": {
-              "rps": 4000,
-              "pattern": "meals"
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
             }
+          ]
+        },
+        "ratings": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "rating": "float"
           },
-          {
-            "id": "lb",
-            "type": "lb",
-            "x": 220,
-            "y": 0,
-            "config": {}
-          },
-          {
-            "id": "api",
-            "type": "server",
-            "x": 440,
-            "y": 0,
-            "config": {
-              "size": "m5.large",
-              "count": 8,
-              "queriesPerRequest": 3
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "rating": 4.4
+            },
+            {
+              "restaurant_id": "r2",
+              "rating": 4.1
             }
+          ]
+        },
+        "offers": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "offers": "json"
           },
-          {
-            "id": "cache",
-            "type": "cache",
-            "x": 660,
-            "y": 0,
-            "config": {
-              "size": "cache.t3.medium",
-              "hitPct": 90,
-              "writePct": 10
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "offers": [
+                "20% off"
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "offers": []
             }
+          ]
+        },
+        "hours": {
+          "rows": 500000,
+          "rowBytes": 200,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "open": "bool"
           },
-          {
-            "id": "db",
-            "type": "database",
-            "x": 880,
-            "y": 0,
-            "config": {
-              "size": "db.m5.large"
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "open": true
+            },
+            {
+              "restaurant_id": "r2",
+              "open": false
             }
-          }
-        ],
-        "edges": [
-          {
-            "from": "clients",
-            "to": "lb"
-          },
-          {
-            "from": "lb",
-            "to": "api"
-          },
-          {
-            "from": "api",
-            "to": "cache"
-          },
-          {
-            "from": "cache",
-            "to": "db"
-          }
-        ]
+          ]
+        }
       },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.9,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            },
+            {
+              "id": "s2",
+              "op": "get",
+              "entity": "ratings",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "rating"
+              ],
+              "label": "Reading the rating"
+            },
+            {
+              "id": "s3",
+              "op": "get",
+              "entity": "offers",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "offers"
+              ],
+              "label": "Reading today's offers"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 20000
+          },
+          "consistency": {
+            "maxStalenessSec": 300
+          }
+        },
+        {
+          "id": "edit",
+          "name": "Change a dish",
+          "kind": "write",
+          "share": 0.1,
+          "request": {
+            "method": "PUT",
+            "path": "/v1/menus/r1"
+          },
+          "bytesOut": 100,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "update",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "set": {
+                "items": [
+                  {
+                    "dish": "masala dosa",
+                    "price": 95
+                  }
+                ]
+              },
+              "label": "Saving the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          }
+        }
+      ],
       "stars": [
         {
           "kind": "availability",
@@ -1527,31 +3165,6 @@
           "label": "Costs at most $3,000 a month"
         }
       ],
-      "requires": ["server", "cache", "database"]
-    },
-    {
-      "id": "lost-orders",
-      "level": "advanced",
-      "title": "Don't lose an order",
-      "brief": "Zotato's cache takes writes too (40% of queries are writes) and flushes them to the database later. Half an hour in, the cache crashes.",
-      "hint": "Write-back is fast until the cache crashes with writes it has not passed on. What does write-through ask of the database?",
-      "hours": 2,
-      "startHour": 13,
-      "traffic": {
-        "rps": 3000,
-        "pattern": "steady"
-      },
-      "fixed": {
-        "queriesPerRequest": 2,
-        "hitPct": 80,
-        "writePct": 40
-      },
-      "chaos": [
-        {
-          "minute": 30,
-          "type": "cache"
-        }
-      ],
       "start": {
         "nodes": [
           {
@@ -1559,47 +3172,119 @@
             "type": "client",
             "x": 0,
             "y": 0,
-            "config": {
-              "rps": 3000
-            }
+            "config": {}
           },
           {
             "id": "lb",
             "type": "lb",
-            "x": 220,
+            "x": 240,
             "y": 0,
             "config": {}
           },
           {
             "id": "api",
             "type": "server",
-            "x": 440,
+            "x": 480,
             "y": 0,
+            "name": "Menu API",
             "config": {
               "size": "m5.large",
-              "count": 6,
-              "queriesPerRequest": 2
+              "count": 8
             }
           },
           {
             "id": "cache",
             "type": "cache",
-            "x": 660,
+            "x": 720,
             "y": 0,
+            "name": "Cache",
             "config": {
               "size": "cache.t3.medium",
-              "hitPct": 80,
-              "writePct": 40,
-              "writePolicy": "back"
+              "nodes": 1,
+              "ttlSec": 300
             }
           },
           {
             "id": "db",
             "type": "database",
-            "x": 880,
+            "x": 960,
             "y": 0,
+            "name": "Database",
             "config": {
-              "size": "db.m5.large"
+              "engine": "postgres",
+              "size": "db.m5.large",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "ratings",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "rating",
+                        "type": "float"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "offers",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "offers",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "hours",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "open",
+                        "type": "bool"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  }
+                ]
+              }
             }
           }
         ],
@@ -1621,7 +3306,174 @@
             "to": "db"
           }
         ]
+      }
+    },
+    {
+      "id": "lost-orders",
+      "level": "advanced",
+      "title": "Don't lose an order",
+      "brief": "Zotato's cache takes writes too (four calls in ten save an order) and saves them to the database later. Half an hour in, the cache crashes.",
+      "hint": "Write-back is fast until the cache crashes with writes it has not passed on. What does write-through ask of the database?",
+      "v": 2,
+      "hours": 2,
+      "startHour": 13,
+      "traffic": {
+        "rps": 3000,
+        "pattern": "steady"
       },
+      "faults": [
+        {
+          "minute": 30,
+          "kind": "crash",
+          "type": "cache"
+        }
+      ],
+      "entities": {
+        "menus": {
+          "rows": 500000,
+          "rowBytes": 4000,
+          "growthPerDay": 100,
+          "fields": {
+            "restaurant_id": "string",
+            "name": "string",
+            "items": "json"
+          },
+          "sample": [
+            {
+              "restaurant_id": "r1",
+              "name": "Dosa Corner",
+              "items": [
+                {
+                  "dish": "masala dosa",
+                  "price": 90
+                }
+              ]
+            },
+            {
+              "restaurant_id": "r2",
+              "name": "Biryani House",
+              "items": [
+                {
+                  "dish": "chicken biryani",
+                  "price": 220
+                }
+              ]
+            }
+          ]
+        },
+        "orders": {
+          "rows": 200000000,
+          "rowBytes": 300,
+          "growthPerDay": 2000000,
+          "fields": {
+            "order_id": "string",
+            "restaurant_id": "string",
+            "user_id": "string",
+            "total": "int",
+            "status": "string"
+          },
+          "sample": [
+            {
+              "order_id": "o1",
+              "restaurant_id": "r1",
+              "user_id": "u1",
+              "total": 180,
+              "status": "placed"
+            },
+            {
+              "order_id": "o2",
+              "restaurant_id": "r2",
+              "user_id": "u2",
+              "total": 220,
+              "status": "delivered"
+            }
+          ]
+        }
+      },
+      "operations": [
+        {
+          "id": "menu",
+          "name": "Open a menu",
+          "kind": "read",
+          "share": 0.6,
+          "request": {
+            "method": "GET",
+            "path": "/v1/menu"
+          },
+          "bytesOut": 500,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "get",
+              "entity": "menus",
+              "by": {
+                "restaurant_id": "r1"
+              },
+              "fields": [
+                "name",
+                "items"
+              ],
+              "label": "Reading the menu"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "keys": {
+            "entity": "menus",
+            "skew": "zipf",
+            "active": 50000
+          }
+        },
+        {
+          "id": "order",
+          "name": "Place an order",
+          "kind": "write",
+          "share": 0.4,
+          "request": {
+            "method": "POST",
+            "path": "/v1/orders",
+            "body": {
+              "restaurant_id": "r1"
+            }
+          },
+          "bytesOut": 200,
+          "steps": [
+            {
+              "id": "s1",
+              "op": "put",
+              "entity": "orders",
+              "values": {
+                "order_id": "o3",
+                "restaurant_id": "r1",
+                "user_id": "u1",
+                "total": 180,
+                "status": "placed"
+              },
+              "unique": [
+                "order_id"
+              ],
+              "label": "Saving the order"
+            }
+          ],
+          "respond": {
+            "status": 200,
+            "body": {}
+          },
+          "slo": {
+            "availability": 99.9,
+            "p99Ms": 1000
+          },
+          "durable": true,
+          "effect": "once",
+          "idempotencyField": "order_id"
+        }
+      ],
       "stars": [
         {
           "kind": "availability",
@@ -1638,7 +3490,129 @@
           "label": "Costs at most $2,000 a month"
         }
       ],
-      "requires": ["server", "cache", "database"]
+      "start": {
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "api",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Order API",
+            "config": {
+              "size": "m5.large",
+              "count": 6
+            }
+          },
+          {
+            "id": "cache",
+            "type": "cache",
+            "x": 720,
+            "y": 0,
+            "name": "Cache",
+            "config": {
+              "size": "cache.t3.medium",
+              "nodes": 1,
+              "ttlSec": 300,
+              "writePolicy": "back"
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 960,
+            "y": 0,
+            "name": "Database",
+            "config": {
+              "engine": "postgres",
+              "size": "db.m5.large",
+              "schema": {
+                "tables": [
+                  {
+                    "name": "menus",
+                    "fields": [
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "items",
+                        "type": "json"
+                      }
+                    ],
+                    "key": [
+                      "restaurant_id"
+                    ]
+                  },
+                  {
+                    "name": "orders",
+                    "fields": [
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "restaurant_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "user_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "total",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "order_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "clients",
+            "to": "lb"
+          },
+          {
+            "from": "lb",
+            "to": "api"
+          },
+          {
+            "from": "api",
+            "to": "cache"
+          },
+          {
+            "from": "cache",
+            "to": "db"
+          }
+        ]
+      }
     }
   ],
   "levels": [

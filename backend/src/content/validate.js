@@ -219,6 +219,20 @@ export function validateLab(lab, problems = []) {
   return problems;
 }
 
+// A challenge judged by v2 (phase 7): its entities, operations and starting design as a v2 problem's, and its
+// stars as the checks of its one scenario test (frontend/src/eval/challenge.js).
+const STAR_KINDS2 = { availability: 'slo', cost: 'cost', noCrash: 'noCrash', noLostWrites: 'noLostWrites', completes: 'completes' };
+function checkChallenge2(ch, lab, where, problems) {
+  const stars = list(ch.stars);
+  if (!stars.length || stars.length > 3 || stars[0]?.kind !== 'availability' && stars[0]?.kind !== 'completes') problems.push(`${where}: stars needs 1 to 3 entries, the first an availability (or completes) goal`);
+  for (const st of stars) if (!st || !STAR_KINDS2[st.kind] || !isText(st.label)) problems.push(`${where}: each star needs a kind (${Object.keys(STAR_KINDS2).join(', ')}) and a label`);
+  for (const k of ['fixed', 'chaos', 'requires']) if (ch[k] !== undefined) problems.push(`${where}: ${k} is v1 only`);
+  const check = (st) => (st.kind === 'availability' ? { kind: 'slo', availability: st.min, ...(st.from !== undefined ? { from: st.from, to: st.to } : {}) } : st.kind === 'cost' ? { kind: 'cost', max: st.max } : { kind: STAR_KINDS2[st.kind], ...(st.type ? { type: st.type } : {}), ...(st.withinSec ? { withinSec: st.withinSec } : {}) });
+  const practice = { brief: ch.brief, entities: ch.entities, operations: ch.operations, start: ch.start,
+    tests: [{ id: 'scenario', name: ch.title, desc: ch.brief, hours: ch.hours, startHour: ch.startHour, traffic: ch.traffic, ...(ch.faults ? { faults: ch.faults } : {}), checks: stars.filter((st) => st && STAR_KINDS2[st.kind]).map(check) }] };
+  validatePractice2(practice, lab, where, problems, () => {}, { challenge: true });
+}
+
 // Challenges (optional): levels [{id, label}], and challenges with a scenario the simulator can play.
 const STAR_KINDS = new Set(['availability', 'cost', 'spend', 'noCrash', 'noLostWrites']);
 function checkChallenges(lab, problems) {
@@ -239,6 +253,7 @@ function checkChallenges(lab, problems) {
     const rps = byType.client?.rps, t = ch.traffic;
     if (!t || !isNumber(t.rps) || !rps || t.rps < rps.min || t.rps > rps.max) problems.push(`${where}: traffic.rps must be inside the Clients range`);
     if (!t || !list(byType.client?.patterns).some((p) => p && p.id === t.pattern)) problems.push(`${where}: traffic.pattern ${t && t.pattern} is not a Clients pattern`);
+    if (ch.v === 2) { checkChallenge2(ch, lab, where, problems); return; }
     const f = ch.fixed ?? {};
     for (const [k, c, key] of [['queriesPerRequest', byType.server], ['hitPct', byType.cache], ['writePct', byType.cache], ['cdnHitPct', byType.cdn, 'hitPct']]) {
       const r = c?.[key || k];
@@ -322,7 +337,7 @@ export function validateDesign(design, lab, at, problems = []) {
 
 export function validateContent({ site, examples, articles, lab, evalCat }) {
   const problems = [];
-  if (lab !== undefined) validateLab(lab, problems);
+  if (lab !== undefined) validateLab(evalCat && lab ? { ...lab, eval: evalCat } : lab, problems);
   // the v2 evaluator's catalogue (content/eval.json), when there is one
   if (evalCat !== undefined) validateEval(evalCat, lab, problems);
   if (site && site.landingLab && !list(articles).some((a) => a && a.slug === site.landingLab.problem && a.practice)) problems.push(`site.json: landingLab.problem ${site.landingLab.problem} is not a problem (an article with practice)`);
