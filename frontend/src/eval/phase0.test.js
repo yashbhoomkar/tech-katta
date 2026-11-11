@@ -8,7 +8,7 @@ import { buildGraph } from './graph.js';
 import { phi, gammaQ, gammaTail, hopTime, summarise, slowShare, mix, harmonic, harmonic2 } from './latency.js';
 import { hitCap, expiryMiss, cacheHit, cdnHit, itemsThatFit } from './hits.js';
 import { evaluate } from './index.js';
-import { judge, runTest, score } from '../judge/judge.js';
+import { judge, score } from '../judge/judge.js';
 
 const content = new URL('../../../content/', import.meta.url);
 const lab = { ...JSON.parse(readFileSync(new URL('lab.json', content))), eval: JSON.parse(readFileSync(new URL('eval.json', content))) };
@@ -167,7 +167,6 @@ test('a v2 problem goes to the v2 evaluator; a design it cannot read is an error
   const r = judge({ nodes: [], edges: [] }, lab, problem);
   assert.equal(r.verdict, 'error'); assert.equal(r.total, 2); assert.equal(r.results[0].error, 'Add the Clients: tests send their traffic from there.');
   assert.equal(judge({ nodes: [], edges: [] }, lab, problem, { sample: true }).total, 1);
-  assert.equal(runTest({ nodes: [], edges: [] }, lab, problem, problem.tests[1]).id, 'b');
   assert.deepEqual(evaluate(null, lab, null).results, []);
   assert.equal(score(null, { designPoints: 37.5, passed: 0, total: 9 }).parts.design, 37.5, 'v2 design points win over passed/total');
   assert.equal(score(null, { passed: 1, total: 2 }).parts.design, 25, 'v1 unchanged');

@@ -3,7 +3,7 @@
 //   expected(practice, op)                → { status, body }: the steps run on the sample rows, no design involved
 //   runTrace(compiled, practice, test, lab) → the result of a trace test, in the shape of v1's runRequest
 //
-// Running steps on sample data is ported from v1's judge/requests.js (unchanged there for v1 problems).
+// Running steps on sample data was ported from v1's judge/requests.js (removed in phase 7).
 import { evalCatalogue } from './design.js';
 
 // ---- running steps on the sample data ------------------------------------------------------------------

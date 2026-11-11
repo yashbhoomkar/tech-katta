@@ -1,6 +1,6 @@
 // Database schemas: the tables (collections, indexes, buckets…) a design's database holds, their fields,
 // keys and indexes. Used by the Lab's schema editor, saved designs (store.js), content validation and
-// the request tests (judge/requests.js), which plan each query against the schema.
+// the v2 evaluator (eval/access.js), which plans each step against the schema.
 //
 //   config.schema = {tables: [{name, fields: [{name, type}], key: [field], sortKey?: field, shardKey?: [field],
 //                              indexes?: [{fields: [field], kind}], ttl?: field}]}

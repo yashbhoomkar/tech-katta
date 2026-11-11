@@ -1,7 +1,7 @@
 // Access paths: can this table answer this step, and at what cost (evaluator.md §7.4)?
 //
 // Ported from v1's judge/requests.js (field matching, access by engine and schema, the query in the engine's own
-// language); that file is unchanged because v1 problems still use it. Costs are work units (eval.json `work`).
+// language); that file was removed in phase 7. Costs are work units (eval.json `work`).
 //
 // A "table" is a database schema table, or a cache structure ({...table, kind: kv|counter|zset|geo|set}).
 import { vocab } from '../lab/schema.js';

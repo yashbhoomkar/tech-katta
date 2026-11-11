@@ -8,9 +8,9 @@ test("missing, broken or foreign data gives an empty store instead of a crash",(
 });
 
 test("a good saved design survives unchanged",()=>{
-  const ex=lab.example,d={id:"d1",name:ex.name,updated:5,nodes:ex.nodes,edges:ex.edges,credit:{spent:12.5,hours:3}};
-  const s=readStore(JSON.stringify({current:"d1",designs:{d1:d}}),lab);
-  assert.equal(s.current,"d1");assert.deepEqual(s.designs.d1,d);
+  const ex=lab.example,d={id:"d1",name:ex.name,updated:5,nodes:ex.nodes,edges:ex.edges};
+  const s=readStore(JSON.stringify({current:"d1",designs:{d1:{...d,credit:{spent:12.5,hours:3}}}}),lab);
+  assert.equal(s.current,"d1");assert.deepEqual(s.designs.d1,d,"the credit an old (v1) design spent is dropped");
 });
 
 test("bad parts are repaired or dropped: unknown types, duplicate ids, bad settings, illegal edges",()=>{
@@ -20,7 +20,7 @@ test("bad parts are repaired or dropped: unknown types, duplicate ids, bad setti
     edges:[{from:"c",to:"s"},{from:"c",to:"s"},{from:"s",to:"db"},{from:"db",to:"s"},{from:"s",to:"c"},{from:"s",to:"s"},{from:"s",to:"q"},null]};
   const out=cleanDesign(d,lab,"x");
   assert.equal(out.name,"Untitled design");assert.equal(typeof out.updated,"number");
-  assert.deepEqual(out.credit,{spent:0,hours:0});
+  assert.equal(out.credit,undefined);
   assert.deepEqual(out.nodes.map(n=>n.id),["c","s","db"]);
   assert.deepEqual(out.nodes[0],{id:"c",type:"client",x:0,y:0,config:{rps:lab.components[0].rps.max}});
   assert.deepEqual(out.nodes[1].config,{count:1});

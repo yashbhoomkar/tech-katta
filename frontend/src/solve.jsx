@@ -11,7 +11,7 @@
 // Back and the top tabs agree. The divider drags (width in tk-solve-w). Below 900 px one pane at a time,
 // with a Canvas tab. Saved in this browser: tk-answers-v1, tk-hints-v1, tk-subs-v1; "solved:<slug>"
 // goes into progress (synced with the account). Copy: site.json problems.solve; workspace chrome here.
-import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,sameDesign,WEIGHTS}from"./judge/judge.js";import{expected}from"./judge/requests.js";import{read,write,ANSWERS,HINTS,SUBS,SOLUTIONS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore,cleanDesign}from"./lab/store.js";import SolutionDesign from"./SolutionDesign.jsx";import{expected as expected2}from"./eval/trace.js";import{checkLabel}from"./eval/words.js";import{evalCatalogue}from"./eval/design.js";import{submitProblem}from"./account.js";import"./solve.css";
+import React,{Suspense,useEffect,useRef,useState}from"react";import{getJSON}from"./api.js";import{Loading,LoadError}from"./status.jsx";import{readArticle}from"./analytics.js";import{markStep,readProgress}from"./progress.js";import{judge,gradeAnswer,score,sameDesign,WEIGHTS}from"./judge/judge.js";import{read,write,ANSWERS,HINTS,SUBS,SOLUTIONS,readSubs,usedHints}from"./practice.js";import{STORE_KEY,readStore,cleanDesign}from"./lab/store.js";import SolutionDesign from"./SolutionDesign.jsx";import{expected}from"./eval/trace.js";import{checkLabel}from"./eval/words.js";import{evalCatalogue}from"./eval/design.js";import{submitProblem}from"./account.js";import"./solve.css";
 
 // The question part of an Interview Question: from its "1. …" heading up to its "3. …" heading.
 export const statement=body=>{const h=body.map((b,i)=>b.t==="h2"?[i,b.x]:null).filter(Boolean);const a=h.find(([,x])=>/^1\./.test(x)),z=h.find(([,x])=>/^3\./.test(x));
@@ -52,7 +52,7 @@ useEffect(()=>{setCanvas(false);if(pane.current)pane.current.scrollTop=0},[view,
 useEffect(()=>{try{localStorage.setItem(W_KEY,String(w))}catch{}},[w]);
 // Reset, Copy to my canvas and Undo put another design on the canvas: a fresh Lab opens and loads it
 // into this problem's design (Lab problem.load); until that Lab has opened, Run and Submit judge it.
-const put=(d,credit)=>{design.current=null;setRes(null);setWatch(null);setPending({nodes:structuredClone(d.nodes),edges:structuredClone(d.edges),...(credit?{credit}:{})});setGen(g=>g+1)};
+const put=d=>{design.current=null;setRes(null);setWatch(null);setPending({nodes:structuredClone(d.nodes),edges:structuredClone(d.edges)});setGen(g=>g+1)};
 // A stopwatch, like an interview's clock: start, pause, carry on.
 useEffect(()=>{if(!clock.on)return;const t=setInterval(()=>tick(x=>x+1),1000);return()=>clearInterval(t)},[clock.on]);
 useEffect(()=>{setClock({on:false,acc:0,at:0})},[slug]);
@@ -61,7 +61,7 @@ const openHint=()=>{const n=hints+1;setHints(n);const all=read(HINTS);all[slug]=
 const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1],prev=i>0?qs[i-1]:null;
 const secs=Math.floor((clock.acc+(clock.on?Date.now()-clock.at:0))/1000),mmss=`${String(Math.floor(secs/60)).padStart(2,"0")}:${String(secs%60).padStart(2,"0")}`;
 const toggleClock=()=>setClock(c=>c.on?{on:false,acc:c.acc+Date.now()-c.at,at:0}:{...c,on:true,at:Date.now()});
-const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setUndo(null);put(P.start,{spent:0,hours:0})};
+const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setUndo(null);put(P.start)};
 const mine=()=>{const d=pending||design.current||savedDesign()||P.start;return{nodes:d.nodes,edges:d.edges}};
 const copySolution=()=>{if(!sol)return;setUndo(mine());put(sol);const all=read(SOLUTIONS);all[slug]=Date.now();write(SOLUTIONS,all);if(narrow)setCanvas(true)};
 const undoCopy=()=>{if(!undo)return;put(undo);setUndo(null)};
@@ -100,7 +100,7 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <p className="sv-how">{P?.v===2&&s.howV2?s.howV2:s.how}</p>
 <div className="sv-body">{body.map((b,k)=><Block key={k} b={b} i={k}/>)}</div>
 {P?.v===2&&<Ops P={P}/>}{P&&<section className="sv-tests" aria-labelledby="sv-ex"><h2 id="sv-ex">Example tests</h2><p className="sv-brief">{P.brief}</p>
-{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p>{P.v===2&&t.op?(()=>{const o=P.operations.find(x=>x.id===t.op);return o&&<div className="sv-io"><Json label="Request" v={reqOf(o)}/><Json label="Expected response" v={expected2(P,o)}/></div>})():t.request?<div className="sv-io"><Json label="Request" v={reqOf(t)}/><Json label="Expected response" v={expected(P,t)}/></div>:<ul>{t.checks.map((c,ci)=><li key={ci}>{c.label||checkLabel(c,P,lab?evalCatalogue(lab):{})}</li>)}</ul>}</div>)}
+{P.tests.filter(t=>t.sample).map((t,k)=><div key={t.id} className="sv-test"><b>Example {k+1}: {t.name}</b><p>{t.desc}</p>{t.op?(()=>{const o=P.operations.find(x=>x.id===t.op);return o&&<div className="sv-io"><Json label="Request" v={reqOf(o)}/><Json label="Expected response" v={expected(P,o)}/></div>})():<ul>{t.checks.map((c,ci)=><li key={ci}>{c.label||checkLabel(c,P,lab?evalCatalogue(lab):{})}</li>)}</ul>}</div>)}
 <p className="sv-more">{P.tests.filter(t=>!t.sample).length} more tests run when you submit: {P.tests.some(t=>(t.request||t.op)&&!t.sample)?"more API calls, ":""}spikes, failures and the bill.</p></section>}
 <div className="sv-links">
 {ch&&<a href={`#${ch.to}`}>{s.scored} →</a>}

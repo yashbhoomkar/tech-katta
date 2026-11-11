@@ -1,5 +1,5 @@
-// The v2 evaluator (tech-katta-context/evaluator.md). A problem uses it when its `practice.v` is 2; every other
-// problem keeps the v1 judge (judge/judge.js). Built in phases (evaluator.md §15).
+// The v2 evaluator (tech-katta-context/evaluator.md): it judges every problem and Lab challenge (the v1 judge
+// was removed in phase 7). Built in phases (evaluator.md §15).
 export { evalCatalogue, settingsOf, configOf, allowedEdge, capsOf, cleanDesign2 } from './design.js';
 export { buildGraph } from './graph.js';
 export { accessPath, fieldMatcher, holds } from './access.js';

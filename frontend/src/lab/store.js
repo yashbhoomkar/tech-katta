@@ -1,7 +1,8 @@
 // Saved Lab designs (localStorage). Whatever is in the browser is treated as untrusted: an old
 // format, a half-written value or a hand-edited one must never crash the Lab. readStore() keeps
 // every design it can repair against the current catalogue and drops what it cannot.
-// Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges,credit}}}.
+// Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges}}}. (Designs saved by the v1
+// Lab also kept the credit they had spent; it is dropped.)
 import{cleanSchema}from"./schema.js";import{cleanDesign2}from"../eval/design.js";
 export const STORE_KEY="tk-lab-v1";
 export const STORE_VERSION=1;
@@ -50,13 +51,11 @@ export function cleanDesign(d,lab,id){
     if(kind[e.to]==="client"||kind[e.from]==="database")continue;
     const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to,...(v2&&Array.isArray(e.carries)?{carries:e.carries}:{})});
   }
-  const cr=obj(d.credit)?d.credit:{};
   // a design started from a Lab challenge remembers which one (only if the catalogue still has it)
   const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
   // a design opened from Problems remembers the question (its article slug)
   const problem=typeof d.problem==="string"&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.problem)?{problem:d.problem}:{};
-  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{}),
-    credit:{spent:fin(cr.spent)&&cr.spent>0?Math.min(cr.spent,lab.budget):0,hours:fin(cr.hours)&&cr.hours>0?cr.hours:0}};
+  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{})};
 }
 
 // Parse and repair the whole store. `raw` is the string from localStorage (or null).

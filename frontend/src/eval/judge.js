@@ -1,6 +1,6 @@
 // Stage 5: judge (everything → verdict, score, feedback), evaluator.md §11.
 //
-//   evaluate(design, lab, practice, { sample }) → Result (v1's shape from judge/judge.js, plus designPoints,
+//   evaluate(design, lab, practice, { sample }) → Result (the shape the v1 judge had, plus designPoints,
 //                                                   findings and plans)
 import { compile } from './compile.js';
 import { runTrace } from './trace.js';
