@@ -215,31 +215,28 @@ test('lab validation checks the cache behaviour fields, which are optional', () 
   assert.deepEqual(check((l) => { l.example.nodes.push({ id: 'k2', type: 'cache', x: 0, y: 300, config: { writePolicy: 'back', onDown: 'fail' } }); }).filter((p) => !p.includes('no traffic')), []);
 });
 
-test('lab validation checks levels and challenges, which are optional', () => {
+test('lab validation checks levels and challenges (judged by v2), which are optional', () => {
   const check = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const C = (l, id) => l.challenges.find((c) => c.id === id);
   assert.deepEqual(check((l) => { delete l.levels; delete l.challenges; }).filter((p) => p.startsWith('lab.json')), []);
   assert.ok(check((l) => { l.levels.push({ id: 'beginner', label: 'Again' }); }).some((p) => p.includes('levels must be')));
   assert.ok(check((l) => { C(l, 'flash-sale').level = 'expert'; }).some((p) => p.includes('unknown level expert')));
   assert.ok(check((l) => { C(l, 'flash-sale').id = 'one-server'; }).some((p) => p.includes('duplicate id one-server')));
-  assert.ok(check((l) => { C(l, 'flash-sale').traffic.rps = 90000000; }).some((p) => p.includes('traffic.rps')));
-  assert.ok(check((l) => { C(l, 'flash-sale').traffic.pattern = 'tsunami'; }).some((p) => p.includes('traffic.pattern tsunami')));
-  assert.ok(check((l) => { C(l, 'read-heavy').fixed.hitPct = 120; }).some((p) => p.includes('fixed.hitPct')));
-  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].minute = 77; }).some((p) => p.includes('chaos event')));
-  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].type = 'lb'; }).some((p) => p.includes('chaos event')), 'load balancers never crash');
-  assert.ok(check((l) => { C(l, 'cache-restart').chaos[0].minute = 9999; }).some((p) => p.includes('chaos event')));
-  assert.ok(check((l) => { C(l, 'one-server').start.edges.push({ from: 'db', to: 'api' }); }).some((p) => p.includes('out of a Database')));
-  assert.ok(check((l) => { C(l, 'one-server').stars.reverse(); }).some((p) => p.includes('the first an availability goal')));
-  assert.ok(check((l) => { C(l, 'one-server').stars[1].kind = 'vibes'; }).some((p) => p.includes('known kind')));
-  assert.ok(check((l) => { C(l, 'one-server').stars[0].min = 101; }).some((p) => p.includes('availability min')));
-  assert.ok(check((l) => { C(l, 'one-server').hours = 0; }).some((p) => p.includes('hours must be')));
   assert.ok(check((l) => { delete C(l, 'one-server').hint; }).some((p) => p.includes('needs hint')));
-  assert.ok(check((l) => { C(l, 'one-server').requires = ['rocket']; }).some((p) => p.includes('requires must list')));
-  // availability windows: multiples of 5 minutes inside the run (flash-sale runs 3 hours)
-  assert.deepEqual(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 5, to: 35 }); }).filter((p) => p.startsWith('lab.json')), []);
-  assert.ok(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 7, to: 35 }); }).some((p) => p.includes("star's window")));
-  assert.ok(check((l) => { Object.assign(C(l, 'flash-sale').stars[0], { from: 5, to: 9999 }); }).some((p) => p.includes("star's window")));
-  assert.ok(check((l) => { C(l, 'one-server').stars[1].from = 0; C(l, 'one-server').stars[1].to = 30; }).some((p) => p.includes("star's window")), 'windows only on availability goals');
+  // the scenario is checked as a v2 test: traffic, hours, faults
+  assert.ok(check((l) => { C(l, 'flash-sale').traffic.pattern = 'tsunami'; }).some((p) => p.includes('traffic needs rps above 0 and a Clients pattern')));
+  assert.ok(check((l) => { C(l, 'one-server').hours = 0; }).some((p) => p.includes('hours must be')));
+  assert.ok(check((l) => { C(l, 'cache-restart').faults[0].minute = 9999; }).some((p) => p.includes('fault crash: minute')));
+  assert.ok(check((l) => { C(l, 'cache-restart').faults[0].type = 'rocket'; }).some((p) => p.includes('type rocket is not a component type')));
+  // its calls and data as a v2 problem's, and a starting design that can be read
+  assert.ok(check((l) => { C(l, 'one-server').operations[0].steps[0].entity = 'nope'; }).some((p) => p.includes('entity nope is not in entities')));
+  assert.ok(check((l) => { C(l, 'one-server').start.edges.push({ from: 'db', to: 'api' }); }).some((p) => p.includes('challenges[0] start')));
+  // stars: 1 to 3, the first availability (or completes), known kinds; v1 settings are refused
+  assert.ok(check((l) => { C(l, 'one-server').stars.reverse(); }).some((p) => p.includes('the first an availability')));
+  assert.ok(check((l) => { C(l, 'one-server').stars[1].kind = 'vibes'; }).some((p) => p.includes('each star needs a kind')));
+  assert.ok(check((l) => { C(l, 'one-server').stars[0].min = 101; }).some((p) => p.includes('availability must be above 0 and at most 100')));
+  assert.ok(check((l) => { C(l, 'read-heavy').fixed = { hitPct: 85 }; }).some((p) => p.includes('fixed is v1 only')));
+  assert.ok(check((l) => { C(l, 'one-server').requires = ['server']; }).some((p) => p.includes('requires is v1 only')));
 });
 
 test('lab validation checks aliases, which are optional', () => {
@@ -249,18 +246,14 @@ test('lab validation checks aliases, which are optional', () => {
   assert.ok(check((l) => { l.components[I.cache].aliases.push('DB'); }).some((p) => p.includes('names both cache and database')));
 });
 
-test('validation checks the CDN, CDN settings a challenge fixes, and the landing page problem', () => {
+test('validation checks the CDN, a challenge\'s cost star, and the landing page problem', () => {
   const labCheck = (change) => { const bad = structuredClone(lab); change(bad); return validateContent({ site, examples, articles: allArticles, lab: bad }); };
   const siteCheck = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
   const cdn = (l) => l.components.find((c) => c.type === 'cdn'), ch = (l) => l.challenges.find((c) => c.id === 'flash-sale');
   assert.ok(labCheck((l) => { cdn(l).hitPct.max = 120; }).some((p) => p.includes('hitPct is missing or malformed')));
   assert.ok(labCheck((l) => { delete cdn(l).pricePer10k; }).some((p) => p.includes('pricePer10k')));
   assert.ok(labCheck((l) => { cdn(l).live.default = 'no'; }).some((p) => p.includes('live is missing or malformed')));
-  assert.deepEqual(labCheck((l) => { ch(l).fixed = { cdnHitPct: 99, cdnLive: true }; }).filter((p) => p.startsWith('lab.json')), []);
-  assert.ok(labCheck((l) => { ch(l).fixed = { cdnHitPct: 100 }; }).some((p) => p.includes('fixed.cdnHitPct')));
-  assert.ok(labCheck((l) => { ch(l).fixed = { cdnLive: 'yes' }; }).some((p) => p.includes('fixed.cdnLive')));
-  assert.ok(labCheck((l) => { ch(l).start.nodes.push({ id: 'c2', type: 'cdn', x: 0, y: 0, config: { live: 1 } }); }).some((p) => p.includes('live must be true or false')));
-  assert.ok(labCheck((l) => { ch(l).stars[2] = { kind: 'spend', max: 0, label: 'x' }; }).some((p) => p.includes('spend max must be above 0')));
+  assert.ok(labCheck((l) => { ch(l).stars[2] = { kind: 'cost', max: 0, label: 'x' }; }).some((p) => p.includes('cost needs max above 0')));
   // IND vs PAK on the landing page is a problem: an article with practice
   assert.ok(siteCheck((s) => { s.landingLab.problem = 'world-cup'; }).some((p) => p.includes('landingLab.problem world-cup')));
   assert.ok(siteCheck((s) => { s.landingLab.problem = 'how-to-answer'; }).some((p) => p.includes('landingLab.problem how-to-answer')), 'a guide is not a problem');
@@ -518,7 +511,9 @@ test('eval.json is loaded, valid, and served inside the Lab catalogue', async ()
   const { eval: evalCat, ...labOnly } = lab;
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly, evalCat }), []);
   // without eval.json the v1 content is still valid; a v2 problem says it needs it
-  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), allArticles.filter((a) => a.practice?.v === 2).map((a) => `articles/${a.section}/${a.slug}.json practice: v 2 needs content/eval.json`));
+  assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), [
+    ...labOnly.challenges.map((c, i) => `lab.json challenges[${i}]: v 2 needs content/eval.json`),
+    ...allArticles.filter((a) => a.practice?.v === 2).map((a) => `articles/${a.section}/${a.slug}.json practice: v 2 needs content/eval.json`)]);
   const { server, baseUrl } = await startServer();
   try { const body = await (await fetch(baseUrl + '/v1/lab')).json(); assert.equal(body.eval.v, 2); assert.equal(body.eval.components.length, lab.eval.components.length); }
   finally { server.kill(); }

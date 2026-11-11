@@ -48,6 +48,8 @@ export function startFault(f, st, t) {
     const id = busiest(st, f.type, crashable);
     // two schedulers: the other takes over (phase 6)
     if (id && st.info[id].type === 'scheduler' && (st.info[id].cfg.count || 1) >= 2) { st.events.push({ t, node: id, kind: 'failover', forced: true }); return; }
+    // a cache with a replica in another zone: the replica takes over within a minute, with the data (phase 7)
+    if (id && st.info[id].type === 'cache' && st.info[id].cfg.replica) { takeDown(st, id, t, t + 1, 'failover', true); st.keepData[id] = true; return; }
     if (id) takeDown(st, id, t, t + downFor(st.info[id]), st.info[id].type === 'database' && st.info[id].standby ? 'failover' : 'crashed', true);
   } else if (f.kind === 'groupDown') {
     const id = busiest(st, f.type, (n) => !n.managed);

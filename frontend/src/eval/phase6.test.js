@@ -124,6 +124,17 @@ test('a composite primary key works as an index on its first fields; a sort key 
   assert.equal(cs.plans.save.ok, true, cs.plans.save.error?.message);
 });
 
+test('a cache that crashes with a replica in another zone fails over in a minute and keeps its data (phase 7)', () => {
+  const ent = { items: { rows: 1e5, rowBytes: 100, fields: { id: 'string', v: 'int' }, sample: [{ id: 'a', v: 1 }, { id: 'b', v: 2 }] } };
+  const op = { id: 'read', name: 'Read', kind: 'read', share: 1, respond: { status: 200, body: {} }, steps: [{ id: 's1', op: 'get', entity: 'items', by: { id: 'a' } }] };
+  const d = (replica) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 2 }), N('k', 'cache', { size: 'cache.m5.large', ttlSec: 300, replica }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: { tables: [{ name: 'items', fields: F('id v:int'), key: ['id'] }] } })],
+    edges: E(['c', 'app'], ['app', 'k'], ['k', 'db']) });
+  const p = { v: 2, entities: ent, operations: [op] }, t = { faults: [{ minute: 10, kind: 'crash', type: 'cache' }] };
+  const kinds = (replica) => run(d(replica), p, t).sim.events.filter((e) => e.node === 'k').map((e) => e.kind);
+  assert.ok(kinds(true).includes('failover') && !kinds(true).includes('cold'), kinds(true).join(' '));
+  assert.ok(kinds(false).includes('crashed') && kinds(false).includes('cold'), kinds(false).join(' '));
+});
+
 // ---- shards ---------------------------------------------------------------------------------------------------
 test('a step that names the shard key goes to one shard; one that does not asks every shard', () => {
   const users = { orders: { rows: 1e8, rowBytes: 200, fields: { order_id: 'string', user_id: 'string', total: 'int' }, sample: [{ order_id: 'o1', user_id: 'u1', total: 5 }, { order_id: 'o2', user_id: 'u1', total: 9 }] } };

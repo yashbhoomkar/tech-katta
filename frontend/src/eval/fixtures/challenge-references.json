@@ -1,0 +1,927 @@
+{
+ "one-server": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 240,
+    "y": 0,
+    "name": "Order API",
+    "config": {
+     "size": "m5.large",
+     "count": 5
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 480,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.large",
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "orders",
+        "fields": [
+         {
+          "name": "order_id",
+          "type": "string"
+         },
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "user_id",
+          "type": "string"
+         },
+         {
+          "name": "total",
+          "type": "int"
+         },
+         {
+          "name": "status",
+          "type": "string"
+         }
+        ],
+        "key": [
+         "order_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "db"
+   }
+  ]
+ },
+ "first-rush": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Order API",
+    "config": {
+     "size": "m5.large",
+     "count": 4,
+     "autoscale": true,
+     "maxCount": 10
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 720,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.xlarge",
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "orders",
+        "fields": [
+         {
+          "name": "order_id",
+          "type": "string"
+         },
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "user_id",
+          "type": "string"
+         },
+         {
+          "name": "total",
+          "type": "int"
+         },
+         {
+          "name": "status",
+          "type": "string"
+         }
+        ],
+        "key": [
+         "order_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "db"
+   }
+  ]
+ },
+ "flash-sale": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "orders",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Order API",
+    "config": {
+     "size": "c5.2xlarge",
+     "count": 4
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 720,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.r5.2xlarge",
+     "multiAz": true,
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "orders",
+        "fields": [
+         {
+          "name": "order_id",
+          "type": "string"
+         },
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "user_id",
+          "type": "string"
+         },
+         {
+          "name": "total",
+          "type": "int"
+         },
+         {
+          "name": "status",
+          "type": "string"
+         }
+        ],
+        "key": [
+         "order_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "orders"
+   },
+   {
+    "from": "orders",
+    "to": "db"
+   }
+  ]
+ },
+ "read-heavy": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Menu API",
+    "config": {
+     "size": "m5.xlarge",
+     "count": 5
+    }
+   },
+   {
+    "id": "cache",
+    "type": "cache",
+    "x": 720,
+    "y": 0,
+    "name": "Cache",
+    "config": {
+     "size": "cache.m5.large",
+     "nodes": 1,
+     "ttlSec": 300
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 960,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.xlarge",
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "ratings",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "rating",
+          "type": "float"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "offers",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "offers",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "hours",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "open",
+          "type": "bool"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "cache"
+   },
+   {
+    "from": "cache",
+    "to": "db"
+   }
+  ]
+ },
+ "sms-link": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "links",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Link servers",
+    "config": {
+     "size": "c5.2xlarge",
+     "count": 16
+    }
+   },
+   {
+    "id": "cache",
+    "type": "cache",
+    "x": 720,
+    "y": 0,
+    "name": "Cache",
+    "config": {
+     "size": "cache.m5.large",
+     "nodes": 1,
+     "ttlSec": 3600
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 960,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.large",
+     "schema": {
+      "tables": [
+       {
+        "name": "links",
+        "fields": [
+         {
+          "name": "code",
+          "type": "string"
+         },
+         {
+          "name": "url",
+          "type": "string"
+         }
+        ],
+        "key": [
+         "code"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "links"
+   },
+   {
+    "from": "links",
+    "to": "cache"
+   },
+   {
+    "from": "cache",
+    "to": "db"
+   }
+  ]
+ },
+ "monday-sync": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "File service",
+    "config": {
+     "size": "c5.2xlarge",
+     "count": 2
+    }
+   },
+   {
+    "id": "q",
+    "type": "queue",
+    "x": 720,
+    "y": 160,
+    "name": "Work to do",
+    "config": {}
+   },
+   {
+    "id": "work",
+    "type": "server",
+    "x": 960,
+    "y": 0,
+    "name": "Workers",
+    "config": {
+     "size": "m5.large",
+     "count": 4
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 720,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.xlarge",
+     "schema": {
+      "tables": [
+       {
+        "name": "files",
+        "fields": [
+         {
+          "name": "file_id",
+          "type": "string"
+         },
+         {
+          "name": "owner_id",
+          "type": "string"
+         },
+         {
+          "name": "preview",
+          "type": "string"
+         },
+         {
+          "name": "scanned",
+          "type": "bool"
+         },
+         {
+          "name": "words",
+          "type": "text"
+         }
+        ],
+        "key": [
+         "file_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "db"
+   },
+   {
+    "from": "api",
+    "to": "q"
+   },
+   {
+    "from": "q",
+    "to": "work"
+   },
+   {
+    "from": "work",
+    "to": "db"
+   }
+  ]
+ },
+ "cache-restart": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Menu API",
+    "config": {
+     "size": "m5.large",
+     "count": 8
+    }
+   },
+   {
+    "id": "cache",
+    "type": "cache",
+    "x": 720,
+    "y": 0,
+    "name": "Cache",
+    "config": {
+     "size": "cache.t3.medium",
+     "nodes": 1,
+     "ttlSec": 300,
+     "replica": true
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 960,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.r5.2xlarge",
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "ratings",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "rating",
+          "type": "float"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "offers",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "offers",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "hours",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "open",
+          "type": "bool"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "cache"
+   },
+   {
+    "from": "cache",
+    "to": "db"
+   }
+  ]
+ },
+ "lost-orders": {
+  "nodes": [
+   {
+    "id": "clients",
+    "type": "client",
+    "x": 0,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "lb",
+    "type": "lb",
+    "x": 240,
+    "y": 0,
+    "config": {}
+   },
+   {
+    "id": "api",
+    "type": "server",
+    "x": 480,
+    "y": 0,
+    "name": "Order API",
+    "config": {
+     "size": "m5.large",
+     "count": 6
+    }
+   },
+   {
+    "id": "cache",
+    "type": "cache",
+    "x": 720,
+    "y": 0,
+    "name": "Cache",
+    "config": {
+     "size": "cache.t3.medium",
+     "nodes": 1,
+     "ttlSec": 300,
+     "writePolicy": "through"
+    }
+   },
+   {
+    "id": "db",
+    "type": "database",
+    "x": 960,
+    "y": 0,
+    "name": "Database",
+    "config": {
+     "engine": "postgres",
+     "size": "db.m5.xlarge",
+     "schema": {
+      "tables": [
+       {
+        "name": "menus",
+        "fields": [
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "name",
+          "type": "string"
+         },
+         {
+          "name": "items",
+          "type": "json"
+         }
+        ],
+        "key": [
+         "restaurant_id"
+        ]
+       },
+       {
+        "name": "orders",
+        "fields": [
+         {
+          "name": "order_id",
+          "type": "string"
+         },
+         {
+          "name": "restaurant_id",
+          "type": "string"
+         },
+         {
+          "name": "user_id",
+          "type": "string"
+         },
+         {
+          "name": "total",
+          "type": "int"
+         },
+         {
+          "name": "status",
+          "type": "string"
+         }
+        ],
+        "key": [
+         "order_id"
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "clients",
+    "to": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "api"
+   },
+   {
+    "from": "api",
+    "to": "cache"
+   },
+   {
+    "from": "cache",
+    "to": "db"
+   }
+  ]
+ }
+}
