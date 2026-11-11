@@ -342,9 +342,13 @@ export function compile(design, lab, practice) {
         plan.steps[step.id] = { node: b.gw, table: b.kind, how: 'publish', work: W.pass, rows: 1, query: '', sync: false, via: b.via, viaKind: b.kind };
         return;
       }
-      const write = isWrite(step), frac = b.async && per < 1 ? per : 1;
+      // (a stream processor reads every event and writes a share: its messages are not thinned)
+      const write = isWrite(step), frac = b.async && per < 1 && type(b.worker) !== 'processor' ? per : 1;
       const storeHop = mk(b.store, b.call ? 'call' : 'store', { step: step.id, work: b.a.work, write, per: frac < 1 ? 1 : per, entity: step.entity || b.parts?.[0]?.step.entity, how: b.a.how, rows: b.a.rows, bytes: step.bytes });
       if (!b.call) shardRoute(storeHop, b.store, b.table, step, b.parts);
+      // `batch: n` (phase 6): a stream processor keeps a running total and writes it once every n events; anything
+      // else writes once per event
+      if (step.batch > 1 && b.async && type(b.worker) === 'processor') storeHop.per /= step.batch;
       let from = handleHop, nodes = b.path.slice(1);
       if (b.async) { from = consumeHop(handleHop, b, frac); nodes = b.path.slice(b.qi + 2); }
       if (!nodes.length) nodes = [b.store];

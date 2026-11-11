@@ -85,6 +85,14 @@ test('a processor that adds to a count counts twice after a replay; one that wri
   assert.ok(!run(proc(), { v: 2, entities: clicks, operations: [CLICK(UPSERT)] }).f.some((x) => x.code === 'F_DOUBLE'));
 });
 
+test('batch: a stream processor writes once every n events; a Service writing the same step writes every event', () => {
+  const B = { ...UPSERT, batch: 10 };
+  const viaProc = run(proc(), { v: 2, entities: clicks, operations: [CLICK(B)] });
+  const once = run(proc(), { v: 2, entities: clicks, operations: [CLICK(UPSERT)] });
+  const w = (r) => r.sim.nodes.db.writesPerSec ?? r.sim.nodes.db.rhoMax;
+  assert.ok(w(viaProc) < w(once), `${w(viaProc)} / ${w(once)}`);
+});
+
 // ---- shards ---------------------------------------------------------------------------------------------------
 test('a step that names the shard key goes to one shard; one that does not asks every shard', () => {
   const users = { orders: { rows: 1e8, rowBytes: 200, fields: { order_id: 'string', user_id: 'string', total: 'int' }, sample: [{ order_id: 'o1', user_id: 'u1', total: 5 }, { order_id: 'o2', user_id: 'u1', total: 9 }] } };

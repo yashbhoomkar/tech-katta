@@ -44,6 +44,7 @@ function checkStep(s, entities, w, problems, ids, inTx = false) {
   if (ids.has(s.id)) problems.push(`${w}: duplicate step ${s.id}`);
   ids.add(s.id);
   if (s.times !== undefined && !(num(s.times) && s.times > 0)) problems.push(`${w}: step ${s.id}: times must be above 0`);
+  if (s.batch !== undefined && !(num(s.batch) && s.batch >= 1 && s.timing === 'defer' && ['put', 'update', 'incr'].includes(s.op))) problems.push(`${w}: step ${s.id}: batch (events per write by a stream processor) is for a deferred write, and must be 1 or more`);
   if (s.timing !== undefined && !['sync', 'defer'].includes(s.timing)) problems.push(`${w}: step ${s.id}: timing is sync or defer`);
   if (s.withinSec !== undefined && !(num(s.withinSec) && s.withinSec > 0)) problems.push(`${w}: step ${s.id}: withinSec must be above 0`);
   if (s.op === 'tx') {

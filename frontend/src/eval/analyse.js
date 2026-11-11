@@ -121,7 +121,9 @@ export function analyse(compiled, practice, lab, sims = []) {
           else if (!b.sync) {
             const q = (qs[s.id] || [])[0];
             // a stream processor replays from its checkpoint (way 3): an upsert by the table's key is safe
-            if (byProcessor(plan).has(s.id)) { if (!(s.op === 'put' && upsertsByKey(s, b))) found = { way: 'replay', s, b, q }; return; }
+            // an upsert by the table's whole key writes the same row again: safe after a replay or a redelivery
+            if (s.op === 'put' && upsertsByKey(s, b)) return;
+            if (byProcessor(plan).has(s.id)) { found = { way: 'replay', s, b, q }; return; }
             found = { way: cfg(q)?.kind === 'fifo' ? 'fifo' : 'redelivery', s, b, q };
           }
         }
