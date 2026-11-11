@@ -179,11 +179,9 @@ const REQUIRED_TYPES = ['client', 'apigw', 'server', 'database'];
 export function validateLab(lab, problems = []) {
   const at = 'lab.json';
   if (!lab) { problems.push(`${at}: missing`); return problems; }
-  for (const key of ['title', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote', 'smallScreen']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
-  if (lab.requiresNote !== undefined && !isText(lab.requiresNote)) problems.push(`${at}: requiresNote must be text`);
-  if (lab.roleNote !== undefined && !isText(lab.roleNote)) problems.push(`${at}: roleNote must be text`);
-  if (!(Number.isInteger(lab.retries) && lab.retries >= 0 && lab.retries <= 3)) problems.push(`${at}: retries must be a whole number from 0 to 3`);
-  if (!(Number.isFinite(lab.budget) && lab.budget > 0)) problems.push(`${at}: budget must be a positive number`);
+  for (const key of ['title', 'smallScreen']) if (!isText(lab[key])) problems.push(`${at}: needs ${key}`);
+  // the v1 Lab's credit, retries and notes went with it (phase 7): the v2 evaluator's are in eval.json
+  for (const key of ['budget', 'retries', 'intro', 'region', 'priceNote', 'modelNote', 'crashNote', 'requiresNote', 'roleNote']) if (lab[key] !== undefined) problems.push(`${at}: ${key} is v1 only`);
   const types = new Set();
   for (const [i, c] of list(lab.components).entries()) {
     const where = `${at} components[${i}]`;
@@ -234,7 +232,6 @@ function checkChallenge2(ch, lab, where, problems) {
 }
 
 // Challenges (optional): levels [{id, label}], and challenges with a scenario the simulator can play.
-const STAR_KINDS = new Set(['availability', 'cost', 'spend', 'noCrash', 'noLostWrites']);
 function checkChallenges(lab, problems) {
   const at = 'lab.json';
   const levels = list(lab.levels);
@@ -253,27 +250,8 @@ function checkChallenges(lab, problems) {
     const rps = byType.client?.rps, t = ch.traffic;
     if (!t || !isNumber(t.rps) || !rps || t.rps < rps.min || t.rps > rps.max) problems.push(`${where}: traffic.rps must be inside the Clients range`);
     if (!t || !list(byType.client?.patterns).some((p) => p && p.id === t.pattern)) problems.push(`${where}: traffic.pattern ${t && t.pattern} is not a Clients pattern`);
-    if (ch.v === 2) { checkChallenge2(ch, lab, where, problems); return; }
-    const f = ch.fixed ?? {};
-    for (const [k, c, key] of [['queriesPerRequest', byType.server], ['hitPct', byType.cache], ['writePct', byType.cache], ['cdnHitPct', byType.cdn, 'hitPct']]) {
-      const r = c?.[key || k];
-      if (f[k] !== undefined && !(isNumber(f[k]) && r && f[k] >= r.min && f[k] <= r.max)) problems.push(`${where}: fixed.${k} must be inside its range`);
-    }
-    if (f.cdnLive !== undefined && (typeof f.cdnLive !== 'boolean' || !byType.cdn)) problems.push(`${where}: fixed.cdnLive must be true or false, with a CDN in the catalogue`);
-    for (const c of ch.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < ch.hours * 60 && byType[c.type]?.crash)) problems.push(`${where}: a chaos event needs a minute (multiple of 5, inside the run) and a type that can crash`);
-    validateDesign(ch.start && { name: ch.title, ...ch.start }, lab, `${where} start`, problems);
-    if (ch.requires !== undefined && !(Array.isArray(ch.requires) && ch.requires.length && ch.requires.every((t) => byType[t]))) problems.push(`${where}: requires must list component types in the catalogue`);
-    const stars = list(ch.stars);
-    if (!stars.length || stars.length > 3 || stars[0]?.kind !== 'availability') problems.push(`${where}: stars needs 1 to 3 entries, the first an availability goal`);
-    for (const st of stars) {
-      if (!st || !STAR_KINDS.has(st.kind) || !isText(st.label)) { problems.push(`${where}: each star needs a known kind and a label`); continue; }
-      if (st.kind === 'availability' && !(isNumber(st.min) && st.min > 0 && st.min <= 100)) problems.push(`${where}: availability min must be above 0 and at most 100`);
-      if (st.from !== undefined || st.to !== undefined) {
-        if (st.kind !== 'availability' || !isNumber(st.from) || !isNumber(st.to) || st.from % 5 || st.to % 5 || st.from < 0 || st.to <= st.from || st.to > ch.hours * 60) problems.push(`${where}: a star's window needs from < to, multiples of 5 minutes inside the run, on an availability goal`);
-      }
-      if ((st.kind === 'cost' || st.kind === 'spend') && !(isNumber(st.max) && st.max > 0)) problems.push(`${where}: ${st.kind} max must be above 0`);
-      if (st.kind === 'noCrash' && st.type !== undefined && !byType[st.type]) problems.push(`${where}: noCrash type ${st.type} is not a component`);
-    }
+    if (ch.v !== 2) { problems.push(`${where}: v must be 2 (the v1 format was removed)`); return; }
+    checkChallenge2(ch, lab, where, problems);
   });
 }
 
@@ -377,112 +355,18 @@ export function validateContent({ site, examples, articles, lab, evalCat }) {
   return problems;
 }
 
-// An Interview Question as a problem to solve (article `practice`; judged by frontend/src/judge/judge.js):
-// the fixed settings every test applies, the starting design, the test suite (at least one sample test
-// shown before Submit), the rubric for the written steps, hints, and the designs that calibrate the
-// tests (the reference must pass every test, each wrong design must fail the test it names; checked by
-// frontend/src/judge/judge.test.js).
-const CHECK_KINDS = new Set(['availability', 'p99', 'cost', 'noCrash', 'noLostWrites', 'requires', 'redundant', 'multiAz', 'has', 'role']);
+// An Interview Question as a problem to solve (article `practice`, v 2; judged by the v2 evaluator in
+// frontend/src/eval, tech-katta-context/evaluator.md §6): its data and calls, the tests, the designs that
+// calibrate them, the rubric for the written steps and the hints. The v1 format was removed in phase 7.
 const HINT_STEPS = new Set(['requirements', 'estimates', 'api', 'design', 'deep']);
 const ID = /^[a-z0-9][a-z0-9-]{0,40}$/;
-// A request test (judge/requests.js): a request, the data steps, and the response template.
-const STEP_OPS = new Set(['get', 'query', 'put', 'update', 'tx', 'blob', 'sum']);
-const obj = (v) => v && typeof v === 'object' && !Array.isArray(v);
-function validateStep(s, entities, w, problems, ids, inTx = false) {
-  if (!s || !ID.test(s.id || '') || !STEP_OPS.has(s.op)) { problems.push(`${w}: a step needs an id and an op (${[...STEP_OPS].join(', ')})`); return; }
-  if (ids.has(s.id)) problems.push(`${w}: duplicate step ${s.id}`); ids.add(s.id);
-  if (s.op === 'tx') { if (inTx || !Array.isArray(s.steps) || !s.steps.length) problems.push(`${w}: step ${s.id}: a transaction lists put or update steps`); else for (const x of s.steps) { if (!['put', 'update'].includes(x?.op)) problems.push(`${w}: step ${s.id}: a transaction holds only put and update steps`); validateStep(x, entities, w, problems, ids, true); } return; }
-  if (!entities || !Object.hasOwn(entities, s.entity)) problems.push(`${w}: step ${s.id}: entity ${s.entity} is not in data.entities`);
-  const need = { get: ['by', 'fields'], query: ['fields'], put: ['values'], update: ['by'], blob: ['key', 'field', 'mode'], sum: ['field'] }[s.op];
-  for (const k of need) if (s[k] === undefined) problems.push(`${w}: step ${s.id}: ${s.op} needs ${k}`);
-  for (const k of ['by', 'where', 'values', 'set', 'add', 'key', 'cond']) if (s[k] !== undefined && !obj(s[k])) problems.push(`${w}: step ${s.id}: ${k} must be an object`);
-  if (s.fields !== undefined && !(Array.isArray(s.fields) && s.fields.every(isText))) problems.push(`${w}: step ${s.id}: fields must list names`);
-  if (s.near !== undefined && !(obj(s.near) && isText(s.near.field) && Array.isArray(s.near.at) && s.near.at.length === 2 && s.near.at.every(isNumber) && isNumber(s.near.km) && s.near.km > 0)) problems.push(`${w}: step ${s.id}: near needs field, at [lat, lng] and km`);
-  for (const k of ['text', 'range', 'order']) if (s[k] !== undefined && !(obj(s[k]) && isText(s[k].field))) problems.push(`${w}: step ${s.id}: ${k} needs a field`);
-  if (s.mode !== undefined && !['put', 'get'].includes(s.mode)) problems.push(`${w}: step ${s.id}: mode is put or get`);
-  if (s.limit !== undefined && !(Number.isInteger(s.limit) && s.limit > 0)) problems.push(`${w}: step ${s.id}: limit must be a whole number`);
-}
-function validateRequestTest(t, entities, w, problems, p) {
-  const r = t.request;
-  if (!obj(r) || !['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(r.method) || typeof r.path !== 'string' || !r.path.startsWith('/') || (r.body !== undefined && !obj(r.body))) problems.push(`${w}: request needs a method, a path starting with / and an optional JSON body`);
-  if (!entities) problems.push(`${w}: a request test needs the problem's data`);
-  if (!Array.isArray(t.steps) || !t.steps.length) problems.push(`${w}: steps must be a non-empty list`);
-  const ids = new Set(); for (const s of list(t.steps)) validateStep(s, entities, w, problems, ids);
-  if (!obj(t.respond) || !(Number.isInteger(t.respond.status) && t.respond.status >= 100 && t.respond.status < 600) || t.respond.body === undefined) problems.push(`${w}: respond needs a status and a body`);
-  if (t.async !== undefined && typeof t.async !== 'boolean') problems.push(`${w}: async must be true or false`);
-}
 export function validatePractice(p, lab, at, problems) {
   if (!p || typeof p !== 'object' || Array.isArray(p)) { problems.push(`${at}: needs an object`); return; }
-  // a problem judged by the v2 evaluator (tech-katta-context/evaluator.md §6)
-  if (p.v === 2) { validatePractice2(p, lab, at, problems, validateRubricHints); return; }
-  if (p.v !== undefined) { problems.push(`${at}: v must be 2 (or left out for v1)`); return; }
-  const byType = Object.fromEntries(list(lab?.components).map((c) => [c && c.type, c]));
-  const patterns = new Set(list(byType.client?.patterns).map((x) => x && x.id));
-  if (!isText(p.brief)) problems.push(`${at}: needs brief`);
-  if (p.referenceNote !== undefined && !isText(p.referenceNote)) problems.push(`${at}: referenceNote must be text (shown under the solution design)`);
-  const f = p.fixed;
-  if (f !== undefined) {
-    if (!f || typeof f !== 'object') problems.push(`${at}: fixed needs an object`);
-    else for (const [k, v] of Object.entries(f)) {
-      const r = { queriesPerRequest: byType.server?.queriesPerRequest, hitPct: byType.cache?.hitPct, writePct: byType.cache?.writePct, cdnHitPct: byType.cdn?.hitPct }[k];
-      if (k === 'cdnLive') { if (typeof v !== 'boolean') problems.push(`${at}: fixed.cdnLive must be true or false`); }
-      else if (!r) problems.push(`${at}: unknown fixed setting ${k}`);
-      else if (!(isNumber(v) && v >= r.min && v <= r.max)) problems.push(`${at}: fixed.${k} must be from ${r.min} to ${r.max}`);
-    }
-  }
-  validateDesign(p.start && { name: 'start', ...p.start }, lab, `${at} start`, problems);
-  validateDesign(p.reference && { name: 'reference', ...p.reference }, lab, `${at} reference`, problems);
-  // sample data and field names for request tests
-  const d = p.data, entities = d && typeof d.entities === 'object' && d.entities ? d.entities : null;
-  if (d !== undefined) {
-    if (!entities || !Object.keys(entities).length) problems.push(`${at}: data.entities must name the problem's data`);
-    else for (const [k, e] of Object.entries(entities)) if (!/^[a-z][a-z0-9_]{0,30}$/.test(k) || !e || !(isNumber(e.rows) && e.rows > 0) || !Array.isArray(e.sample) || !e.sample.every((r) => r && typeof r === 'object' && !Array.isArray(r))) problems.push(`${at}: data.entities.${k} needs rows (a number) and sample (a list of rows)`);
-    if (!Array.isArray(d.fields) || !d.fields.every(isText)) problems.push(`${at}: data.fields must list the field names`);
-    if (d.aliases !== undefined && !(typeof d.aliases === 'object' && Object.values(d.aliases).every((a) => Array.isArray(a) && a.every(isText)))) problems.push(`${at}: data.aliases must map fields to lists of names`);
-  }
-  const tests = list(p.tests), ids = new Set();
-  if (!tests.length) problems.push(`${at}: tests must be a non-empty list`);
-  if (!tests.some((t) => t && t.sample === true)) problems.push(`${at}: at least one test needs sample: true`);
-  for (const [i, t] of tests.entries()) {
-    const w = `${at} test ${t?.id || i}`;
-    if (!t || !ID.test(t.id || '')) { problems.push(`${w}: needs an id`); continue; }
-    if (ids.has(t.id)) problems.push(`${w}: duplicate id`); ids.add(t.id);
-    for (const k of ['name', 'desc']) if (!isText(t[k])) problems.push(`${w}: needs ${k}`);
-    if (t.sample !== undefined && typeof t.sample !== 'boolean') problems.push(`${w}: sample must be true or false`);
-    if (t.request !== undefined) { validateRequestTest(t, entities, w, problems, p); continue; }
-    if (!(isNumber(t.hours) && t.hours > 0 && t.hours <= 48)) problems.push(`${w}: hours must be above 0 and at most 48`);
-    if (!(isNumber(t.startHour) && t.startHour >= 0 && t.startHour < 24)) problems.push(`${w}: startHour must be from 0 to under 24`);
-    const rps = byType.client?.rps;
-    if (!t.traffic || !isNumber(t.traffic.rps) || !rps || t.traffic.rps < rps.min || t.traffic.rps > rps.max) problems.push(`${w}: traffic.rps must be inside the Clients range`);
-    if (!t.traffic || !patterns.has(t.traffic.pattern)) problems.push(`${w}: traffic.pattern must be a Clients pattern`);
-    for (const c of t.chaos ?? []) if (!(c && isNumber(c.minute) && c.minute >= 0 && c.minute % 5 === 0 && c.minute < t.hours * 60 && byType[c.type]?.crash)) problems.push(`${w}: a chaos event needs a minute (multiple of 5, inside the test) and a type that can crash`);
-    if (!list(t.checks).length) problems.push(`${w}: checks must be a non-empty list`);
-    for (const c of list(t.checks)) {
-      if (!c || !CHECK_KINDS.has(c.kind)) { problems.push(`${w}: unknown check ${c && c.kind}`); continue; }
-      if (!isText(c.label)) problems.push(`${w}: check ${c.kind} needs a label`);
-      if (c.kind === 'availability' && !(isNumber(c.min) && c.min > 0 && c.min <= 100)) problems.push(`${w}: availability min must be above 0 and at most 100`);
-      if (c.kind === 'availability' && (c.from !== undefined || c.to !== undefined) && !(isNumber(c.from) && isNumber(c.to) && c.from % 5 === 0 && c.to % 5 === 0 && c.from >= 0 && c.to > c.from && c.to <= t.hours * 60)) problems.push(`${w}: an availability window needs from < to, multiples of 5 minutes inside the test`);
-      if ((c.kind === 'p99' || c.kind === 'cost') && !(isNumber(c.max) && c.max > 0)) problems.push(`${w}: ${c.kind} max must be above 0`);
-      if (['redundant', 'has'].includes(c.kind) && !byType[c.type]) problems.push(`${w}: ${c.kind} needs a component type`);
-      if (c.kind === 'noCrash' && c.type !== undefined && !byType[c.type]) problems.push(`${w}: noCrash type ${c.type} is not a component`);
-      if (c.kind === 'role') {
-        if (!Object.values(byType).some((x) => Array.isArray(x.roles) && x.roles.some((r) => r && r.id === c.role))) problems.push(`${w}: role ${c.role} is not a role of any component`);
-        if (c.behind !== undefined && !byType[c.behind]) problems.push(`${w}: role behind ${c.behind} is not a component type`);
-        if (c.min !== undefined && !(Number.isInteger(c.min) && c.min >= 1)) problems.push(`${w}: role min must be a whole number from 1`);
-        if (c.any !== undefined && typeof c.any !== 'boolean') problems.push(`${w}: role any must be true or false`);
-      }
-      if (c.kind === 'requires' && !(Array.isArray(c.types) && c.types.length && c.types.every((x) => byType[x]))) problems.push(`${w}: requires must list component types`);
-    }
-  }
-  validateRubricHints(p, at, problems);
-  for (const [i, w] of list(p.wrong).entries()) {
-    if (!w || !isText(w.name) || !isText(w.why) || !ids.has(w.fails)) { problems.push(`${at} wrong design ${i}: needs name, why and fails (a test id)`); continue; }
-    validateDesign({ ...w }, lab, `${at} wrong design ${w.name}`, problems);
-  }
-  if (!list(p.wrong).length) problems.push(`${at}: needs at least one wrong design to calibrate the tests`);
+  if (p.v !== 2) { problems.push(`${at}: v must be 2 (the v1 format was removed)`); return; }
+  validatePractice2(p, lab, at, problems, validateRubricHints);
 }
 
-// The written steps (rubric) and the hints: the same for v1 and v2 problems.
+// The written steps (rubric) and the hints.
 export function validateRubricHints(p, at, problems) {
   const r = p.rubric;
   if (!r || typeof r !== 'object') problems.push(`${at}: needs rubric`);

@@ -1,10 +1,5 @@
 {
   "title": "Design canvas",
-  "intro": "Drag components onto the canvas, connect them, then send virtual traffic through your design. Every design starts with $200,000 of virtual AWS credit, spent at the design's hourly cost while its traffic runs.",
-  "budget": 200000,
-  "region": "Mumbai (ap-south-1)",
-  "priceNote": "Approximate AWS on-demand list prices for Mumbai, for learning only. Data transfer and storage are not counted yet.",
-  "modelNote": "Capacities are rules of thumb for a typical web API, not benchmarks. The simulation shows each component's utilisation, the queueing delay it adds, and the requests it has to drop once it is past capacity. Traffic follows the Clients' pattern over the simulated day, so pick a faster speed to watch a whole day. Queues are asynchronous: users get their answer once the message is stored, and a backlog shows how far behind the workers are.",
   "smallScreen": "The canvas is built for a laptop or tablet. On a phone you can look around, but designing is easier on a bigger screen.",
   "components": [
     {
@@ -1333,8 +1328,6 @@
       }
     ]
   },
-  "retries": 1,
-  "crashNote": "Overloaded components can crash. A server group crashes after 10 simulated minutes above 150% of its capacity and restarts 5 minutes later (and crashes again if the load is still there). A database crashes after 5 minutes above 120%: with Multi-AZ the standby takes over in 2 minutes, without it the database is down for 30. The API Gateway never crashes; past its limit it rejects the extra requests. Clients retry a failed request once, which adds load. Crashed components are still billed. A cache crashes after 5 minutes above 150% and is back 10 minutes later, empty: its hits climb back over 10 minutes while the misses land on the database. While a cache is down its queries go to the database or fail, as set on the cache. Load Balancers and Queues scale by themselves and never crash.",
   "challenges": [
     {
       "id": "one-server",
@@ -3628,7 +3621,5 @@
       "id": "advanced",
       "label": "Advanced"
     }
-  ],
-  "requiresNote": "Every request has to go through: {types}. In this design some never reach the {missing}, so it scores no stars.",
-  "roleNote": "What it does: pick the job this component has in your design. It doesn't change its numbers; tests look for the parts a problem needs."
+  ]
 }
