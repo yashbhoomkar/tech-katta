@@ -620,6 +620,64 @@
         ]
       },
       {
+        "id": "provider-slow",
+        "name": "The payment provider slows down",
+        "desc": "At 8:10 pm the payment provider takes ten times as long to answer, for 15 minutes. Paying must stay fast; collecting may wait and catch up within 30 minutes.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "slow",
+            "type": "external",
+            "preset": "payments",
+            "factor": 10,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes",
+            "op": "pay",
+            "withinSec": 1800
+          }
+        ]
+      },
+      {
+        "id": "card-testing",
+        "name": "A card-testing bot",
+        "desc": "At 8:10 pm a bot tries stolen cards: one client sends four times the normal traffic for 15 minutes. Real customers must still be able to pay.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 1000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "abuse",
+            "factor": 4,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "noCrash"
+          }
+        ]
+      },
+      {
         "id": "zone",
         "name": "A zone goes dark",
         "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Payments may slow down; none may be lost.",
@@ -765,6 +823,17 @@
           "config": {}
         },
         {
+          "id": "gw",
+          "type": "apigw",
+          "x": 240,
+          "y": -160,
+          "name": "API gateway",
+          "config": {
+            "rateLimit": "perClient",
+            "perClientRps": 20
+          }
+        },
+        {
           "id": "lb",
           "type": "lb",
           "x": 240,
@@ -905,10 +974,6 @@
       ],
       "edges": [
         {
-          "from": "clients",
-          "to": "lb"
-        },
-        {
           "from": "lb",
           "to": "app"
         },
@@ -930,6 +995,14 @@
         },
         {
           "from": "psp",
+          "to": "lb"
+        },
+        {
+          "from": "clients",
+          "to": "gw"
+        },
+        {
+          "from": "gw",
           "to": "lb"
         }
       ]
@@ -2384,6 +2457,203 @@
           {
             "from": "cache",
             "to": "db"
+          }
+        ]
+      },
+      {
+        "name": "No limit per client",
+        "why": "The gateway lets one client send as much as it likes: a bot's four-times traffic fills the servers and real customers' payments fail.",
+        "fails": "card-testing",
+        "nodes": [
+          {
+            "id": "clients",
+            "type": "client",
+            "x": 0,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "gw",
+            "type": "apigw",
+            "x": 240,
+            "y": -160,
+            "name": "API gateway",
+            "config": {
+              "rateLimit": "off",
+              "perClientRps": 20
+            }
+          },
+          {
+            "id": "lb",
+            "type": "lb",
+            "x": 240,
+            "y": 0,
+            "config": {}
+          },
+          {
+            "id": "app",
+            "type": "server",
+            "x": 480,
+            "y": 0,
+            "name": "Payments service",
+            "config": {
+              "size": "c5.2xlarge",
+              "count": 3,
+              "zones": 3
+            }
+          },
+          {
+            "id": "db",
+            "type": "database",
+            "x": 720,
+            "y": 0,
+            "name": "Payments DB",
+            "config": {
+              "engine": "postgres",
+              "size": "db.r5.2xlarge",
+              "multiAz": true,
+              "shards": 4,
+              "schema": {
+                "tables": [
+                  {
+                    "name": "payments",
+                    "fields": [
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "order_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "idempotency_key",
+                        "type": "string"
+                      },
+                      {
+                        "name": "amount",
+                        "type": "int"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "key": [
+                      "payment_id"
+                    ],
+                    "indexes": [
+                      {
+                        "fields": [
+                          "idempotency_key"
+                        ],
+                        "kind": "unique"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ledger_entries",
+                    "fields": [
+                      {
+                        "name": "entry_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "payment_id",
+                        "type": "string"
+                      },
+                      {
+                        "name": "account",
+                        "type": "string"
+                      },
+                      {
+                        "name": "debit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "credit",
+                        "type": "int"
+                      },
+                      {
+                        "name": "at",
+                        "type": "time"
+                      }
+                    ],
+                    "key": [
+                      "entry_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "q",
+            "type": "queue",
+            "x": 720,
+            "y": 240,
+            "name": "Charges to make",
+            "config": {}
+          },
+          {
+            "id": "w",
+            "type": "server",
+            "x": 960,
+            "y": 240,
+            "name": "Charge workers",
+            "config": {
+              "size": "m5.large",
+              "count": 4,
+              "zones": 2
+            }
+          },
+          {
+            "id": "psp",
+            "type": "external",
+            "x": 0,
+            "y": 240,
+            "name": "Payment provider",
+            "config": {
+              "preset": "payments",
+              "latencyMs": 400,
+              "limitRps": 5000,
+              "errorPct": 0.5,
+              "pricePerCall": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "lb",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "db"
+          },
+          {
+            "from": "app",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "w"
+          },
+          {
+            "from": "w",
+            "to": "psp"
+          },
+          {
+            "from": "psp",
+            "to": "lb"
+          },
+          {
+            "from": "clients",
+            "to": "gw"
+          },
+          {
+            "from": "gw",
+            "to": "lb"
           }
         ]
       },

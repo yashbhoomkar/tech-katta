@@ -4,7 +4,7 @@
 //
 // A fluid model: each tick it computes the calls a second flowing along every hop of every plan, how loaded each
 // node is, and what that does to success and latency. Deterministic: no randomness, no clock, input order only.
-// Not yet: timeouts / concurrency / breakers (§8.9, phase 5).
+// Phase 5 (§8.9): a Service's calls in progress, the timeout, retries and the circuit breaker on the calls it makes.
 import { configOf, evalCatalogue } from './design.js';
 import { hopTime, summarise, slowShare, mix, harmonic, harmonic2 } from './latency.js';
 import { cacheHit, cdnHit, CACHE_OVERHEAD } from './hits.js';
@@ -94,7 +94,8 @@ export function simulateTest(compiled, lab, practice, test) {
   const enqRecs = recs.filter((r) => r.hop.kind === 'enqueue');
   // consumers back off while what they call is overloaded (§8.7): each consume hop keeps a throttle from the last
   // tick, rescaled so the busiest node below it would be at about 80% whenever it is above 85% or below 70%
-  const below = (r) => { const out = new Set(); const walk = (x) => { for (const c of x.units.flatMap((u) => u.one ? [u.one] : u.group)) { if (c.hop.kind === 'store' || c.hop.kind === 'call' || c.hop.kind === 'cache') out.add(c.node); walk(c); } }; walk(r); return [...out]; };
+  // (an external provider's rate limit refuses the excess at once and never falls over: workers run up to it)
+  const below = (r) => { const out = new Set(); const walk = (x) => { for (const c of x.units.flatMap((u) => u.one ? [u.one] : u.group)) { if (c.hop.kind === 'store' || c.hop.kind === 'cache') out.add(c.node); walk(c); } }; walk(r); return [...out]; };
   // one throttle per worker group and queue: the workers take messages without knowing which call sent them
   const tkey = (r) => `${r.parent?.node}|${r.node}`;
   const throttle = dict(), throttleNodes = dict();
@@ -122,7 +123,7 @@ export function simulateTest(compiled, lab, practice, test) {
   // ---- state (§8.2) -------------------------------------------------------------------------------------------------
   const st = {
     order, info, events: [], crashes: dict(), down: dict(), keepData: dict(), over: dict(), inst: dict(), pending: dict(), low: dict(),
-    lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(), hot: [], poison: null,
+    lostInst: dict(), cold: dict(), slow: dict(), spikes: [], zoneUntil: -1, prevRho: dict(), lost: 0, writeRate: dict(), hot: [], poison: null, abuse: null,
   };
   for (const id of order) { st.lostInst[id] = []; st.pending[id] = []; st.writeRate[id] = 0; if (info[id].type === 'server' || info[id].type === 'realtime') st.inst[id] = info[id].cfg.count || 1; }
   const backlog = dict(), waitSec = dict(), waitWorst = dict(), lastDone = dict();
@@ -133,6 +134,10 @@ export function simulateTest(compiled, lab, practice, test) {
   const hitNow = dict(); for (const id in cacheFit) hitNow[id] = dict();
   const rho = dict(), busy = dict(), offered = dict(), served = dict(), readsAt = dict(), writesAt = dict();
   const isDown = (id) => st.down[id] !== undefined;
+  // §8.9: how long a call occupies each Service (last tick), and per call a Service makes: last success, breaker
+  const holdMs = dict(), holdWorst = dict(), unitsPerCall = dict(), lastS = dict(), open = dict();
+  const caller = (r) => r.parent && info[r.parent.node]?.type === 'server' && (r.parent.hop.kind === 'handle' || r.parent.hop.kind === 'consume') && r.hop.sync !== false ? info[r.parent.node] : null;
+  const CONC = ev.components?.find?.((c) => c.type === 'server')?.concurrency ?? 256;
 
   const instancesNow = (id) => {
     const n = info[id]; let k = Math.max(0, st.inst[id] - st.lostInst[id].reduce((a, x) => a + x.n, 0));
@@ -143,7 +148,12 @@ export function simulateTest(compiled, lab, practice, test) {
     const n = info[id];
     if (n.type === 'client') return Infinity;
     if (isDown(id)) return 0;
-    if (n.type === 'server') return (n.size?.rps || 0) * instancesNow(id) * (n.cfg.sandbox ? 0.8 : 1);
+    if (n.type === 'server') {
+      const k = instancesNow(id), units = (n.size?.rps || 0) * k * (n.cfg.sandbox ? 0.8 : 1);
+      // calls in progress: at most `concurrency` per instance, each held for holdMs (§8.9)
+      const conc = holdMs[id] > 0 ? (k * (n.size?.concurrency ?? CONC) * 1000 / holdMs[id]) * (unitsPerCall[id] || 1) : Infinity;
+      return Math.min(units, conc);
+    }
     if (n.type === 'stream') return 10000 * (n.cfg.partitions || 6);
     if (n.type === 'realtime') return (n.size?.messagesPerSec || 0) * instancesNow(id);
     if (n.type === 'cache') return (n.size?.ops || 0) * (n.cfg.nodes || 1);
@@ -154,7 +164,7 @@ export function simulateTest(compiled, lab, practice, test) {
   };
 
   // share of the parent's calls this hop gets now (§8.4 shareNow)
-  const cdnMissNow = dict();
+  const cdnMissNow = dict(), abuseRate = dict(), abuseFrac = dict();
   const isUp = (id) => !isDown(id) && capacityNow(id) > 0;
   function shareNow(r) {
     const sh = r.hop.share;
@@ -215,7 +225,17 @@ export function simulateTest(compiled, lab, practice, test) {
             r.in = (e.out + backlog[e.hop.id] / secs) * wgt;
           }
           r.in *= thr(r);
-        } else { r.p = shareNow(r); r.in = r.parent.out * r.p * r.hop.per; }
+        } else {
+          r.p = shareNow(r); r.in = r.parent.out * r.p * r.hop.per;
+          const cs = caller(r);
+          if (cs) {
+            const k = cs.cfg.callRetries || 0, f = 1 - (lastS[r.i] ?? 1);
+            let m = 1; for (let j = 1; j <= k; j++) m += f ** j;
+            r.in *= m * (cs.cfg.breaker && open[r.i] ? 0.1 : 1);
+          }
+          // a rate-limited API gateway refuses the abusive client's calls: they cost it, and go no further
+          if (info[r.node].type === 'apigw' && info[r.node].cfg.rateLimit === 'perClient' && abuseFrac[r.op.id]) r.blocked = abuseFrac[r.op.id]; else r.blocked = 0;
+        }
       }
       const cap = capacityNow(id), down = isDown(id);
       let sync = 0, pull = 0, R = 0, Wr = 0, calls = 0;
@@ -262,7 +282,7 @@ export function simulateTest(compiled, lab, practice, test) {
           if (pz.work > 1 || pz.blocked > 0) { const q = info[r.parent.node]; poisonSeen[q.id] = { dlq: !!q.cfg.dlq, kind: q.type === 'stream' ? 'stream' : q.cfg.kind || 'standard', share: st.poison.share }; }
           r.phi *= 1 - pz.blocked;
         }
-        r.out = r.in * r.phi;
+        r.out = r.in * r.phi * (1 - (r.blocked || 0));
       }
       // a hot item: the part (shard, partition, cache node) that holds it takes more than its share
       const P = partsOf(id);
@@ -315,32 +335,49 @@ export function simulateTest(compiled, lab, practice, test) {
     }
     return b * (st.slow[r.node]?.factor || 1);
   }
+  // A call made by a Service (§8.9): cut at its timeout (slower is a failure), retried, or refused by an open breaker.
+  function seen(c) {
+    const cs = caller(c);
+    if (!cs) return { S: c.S, L: c.L };
+    const T = cs.cfg.timeoutMs ?? 1000, Ec = c.L.F + c.L.M;
+    let S = c.S * (1 - slowShare(c.L, T)), L = c.L;
+    if (Ec > T) { const k = T / Ec; L = { F: L.F * k, M: L.M * k, V: L.V * k * k }; }
+    lastS[c.i] = S;
+    const k = cs.cfg.callRetries || 0;
+    if (k > 0) S = 1 - (1 - S) ** (k + 1);
+    if (cs.cfg.breaker && open[c.i]) { S *= 0.1; L = { F: 0.1 * L.F + 0.9, M: 0.1 * L.M, V: 0.1 * L.V }; }
+    return { S, L };
+  }
   function solve() {
     for (let i = recs.length - 1; i >= 0; i--) {
       const r = recs[i], n = info[r.node];
       let S = 1;
       const b = baseTime(r);
-      const ht = r.hop.kind === 'source' ? { fixed: 0, wait: 0, v: 0 } : hopTime(b, rho[r.node] ?? 0);
+      // a node that is down refuses calls at once (they fail fast); only a slow or overloaded one makes callers wait
+      // (an external provider answers at its usual speed up to its limit and refuses the rest; a managed service or a
+      // per-request store throttles: over its limit it refuses the excess at once, so callers never queue far there)
+      const rq = n.type === 'external' ? 0 : n.managed && n.type !== 'client' ? Math.min(rho[r.node] ?? 0, 0.7) : rho[r.node] ?? 0;
+      const ht = r.hop.kind === 'source' || isDown(r.node) ? { fixed: 0, wait: 0, v: 0 } : hopTime(b, rq);
       let wait = ht.wait, v = ht.v;
       if (r.hop.kind === 'store' && n.type === 'database' && (n.cfg.shards || 1) > 1 && r.hop.shardRouted === false) { const s = n.cfg.shards; wait *= harmonic(s); v *= harmonic2(s); }
       let F = b, M = wait, V = v;
       for (const u of r.units) {
         if (u.one) {
-          const c = u.one, per = c.hop.per || 1, sh = c.hop.share;
+          const c = u.one, per = c.hop.per || 1, sh = c.hop.share, x = seen(c);
           const partial = typeof sh === 'object' && (sh.kind === 'miss' || sh.kind === 'cdnMiss');
           const p = partial ? c.p : 1, pS = partial && sh.kind === 'cdnMiss' && r.op.live ? 1 : p;
-          S *= partial ? 1 - pS + pS * c.S ** per : c.S ** per;
-          const Ec = c.L.F + c.L.M;
-          if (p >= 1 - 1e-12) { F += per * c.L.F; M += per * c.L.M; V += per * c.L.V; }
-          else { M += p * per * Ec; V += p * per * c.L.V + p * (1 - p) * (per * Ec) ** 2; }
+          S *= partial ? 1 - pS + pS * x.S ** per : x.S ** per;
+          const Ec = x.L.F + x.L.M;
+          if (p >= 1 - 1e-12) { F += per * x.L.F; M += per * x.L.M; V += per * x.L.V; }
+          else { M += p * per * Ec; V += p * per * x.L.V + p * (1 - p) * (per * Ec) ** 2; }
         } else {
-          const ws = u.group.map((c) => c.p / (c.hop.per || 1)), tw = ws.reduce((a, x) => a + x, 0);
-          S *= tw > 0 ? u.group.reduce((a, c, j) => a + (ws[j] / tw) * c.S, 0) : 0;
-          const m = mix(u.group.map((c, j) => ({ w: tw > 0 ? ws[j] : 1, F: c.L.F, M: c.L.M, V: c.L.V })));
+          const xs = u.group.map(seen), ws = u.group.map((c) => c.p / (c.hop.per || 1)), tw = ws.reduce((a, x) => a + x, 0);
+          S *= tw > 0 ? xs.reduce((a, x, j) => a + (ws[j] / tw) * x.S, 0) : 0;
+          const m = mix(xs.map((x, j) => ({ w: tw > 0 ? ws[j] : 1, F: x.L.F, M: x.L.M, V: x.L.V })));
           F += m.F; M += m.M; V += m.V;
         }
       }
-      r.Sb = S; r.S = r.phi * S; r.L = { F, M, V };
+      r.Sb = S; r.S = r.phi * S; r.L = { F, M, V }; r.ownWait = wait;
     }
   }
   const opLatency = (op) => {
@@ -361,7 +398,7 @@ export function simulateTest(compiled, lab, practice, test) {
   for (const id of order) nodeT[id] = { rhoMax: 0, rhoMaxAt: 0, crashes: 0, downMinutes: 0, cost: 0 };
   const timeline = { tickMinutes: D, ops: dict(), nodes: dict() };
   for (const op of ops) timeline.ops[op.id] = { rate: [], ok: [], p99: [] };
-  for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [] };
+  for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [], held: [], callsLimit: [] };
   const feedDelay = dict();   // "store|entity" → worst seconds behind (async copies)
   // work done after answering: writes and calls behind a queue (their delay and what is left undone)
   const deferredSteps = recs.filter((r) => (r.hop.kind === 'store' || r.hop.kind === 'call') && r.enq.length);
@@ -434,11 +471,13 @@ export function simulateTest(compiled, lab, practice, test) {
       // webhooks follow the test's traffic too (their share of it); scheduled jobs come in phase 6
       base[op.id] = (op.source === 'schedule' ? 0 : rps * m * share(op)) * f;
     }
+    // the abusive client (fault abuse): extra calls on top, not counted in the operation's success (§8.13)
+    for (const op of ops) { const a = st.abuse ? rps * m * share(op) * st.abuse.factor : 0; abuseRate[op.id] = a; }
     // 3. the retry loop
     const factor = dict(), s = dict();
     for (const op of planned) factor[op.id] = 1;
     for (let k = 0; k < 4; k++) {
-      const rate = dict(); for (const op of planned) rate[op.id] = base[op.id] * factor[op.id];
+      const rate = dict(); for (const op of planned) { rate[op.id] = base[op.id] * factor[op.id] + abuseRate[op.id]; abuseFrac[op.id] = rate[op.id] > 0 ? abuseRate[op.id] / rate[op.id] : 0; }
       for (const o of sysOps) rate[o.id] = cdcPrev[o.id];
       flowPass(rate, t); solve();
       let done = true;
@@ -476,6 +515,8 @@ export function simulateTest(compiled, lab, practice, test) {
       const tl = timeline.nodes[id];
       tl.rho.push(r3(Math.min(rv, 10))); tl.up.push(isDown(id) ? 0 : 1); tl.instances.push(info[id].type === 'server' || info[id].type === 'realtime' ? instancesNow(id) : 0);
       tl.backlog.push(r3(enqRecs.filter((e) => e.node === id).reduce((a, e) => a + backlog[e.hop.id], 0)));
+      // a Service limited by its calls in progress (§8.9) rather than by its work units
+      if (info[id].type === 'server') { const n = info[id], k = instancesNow(id), units = (n.size?.rps || 0) * k * (n.cfg.sandbox ? 0.8 : 1); tl.held.push(r3(holdMs[id] || 0)); tl.callsLimit.push(!isDown(id) && k > 0 && capacityNow(id) < units - 1e-9 ? 1 : 0); } else { tl.held.push(0); tl.callsLimit.push(0); }
       const c = monthlyNow(id); byNode[id] += c * D / (60 * HOURS_PER_MONTH);
     }
     transferTotal += transferNow * D / (60 * HOURS_PER_MONTH);
@@ -536,6 +577,20 @@ export function simulateTest(compiled, lab, practice, test) {
       const key = `${r.node}|${r.hop.entity}`;
       if (r.hop.write && delay > (feedDelay[key] || 0)) feedDelay[key] = delay;
     }
+    // how long a call occupied each Service this tick (its own time and the calls it made, each cut at its timeout)
+    for (const id of order) {
+      if (info[id].type !== 'server') continue;
+      let w = 0, h = 0, calls = 0;
+      // (not the time it waited for the Service itself: that is its load, counted already)
+      for (const r of hopsAt[id]) if ((r.hop.kind === 'handle' || r.hop.kind === 'consume') && r.L && r.in > 0) { w += r.in; h += r.in * Math.max(0, r.L.F + r.L.M - (r.ownWait || 0)); }
+      for (const r of hopsAt[id]) calls += r.in;
+      // smoothed over ticks: a call's hold changes with the load it causes, and a one-tick lag would make it swing
+      const now = w > 0 ? h / w : 0;
+      holdMs[id] = holdMs[id] > 0 ? 0.5 * holdMs[id] + 0.5 * now : now;
+      if (holdMs[id] > (holdWorst[id] || 0)) holdWorst[id] = holdMs[id];
+      unitsPerCall[id] = calls > 0 ? (offered[id] || 0) / calls : 1;
+    }
+    for (const r of recs) { const cs = caller(r); if (cs?.cfg.breaker) open[r.i] = (lastS[r.i] ?? 1) < 0.5; }
     for (const k in throttle) {
       const worst = Math.max(0, ...throttleNodes[k].map((id) => (Number.isFinite(rho[id]) ? rho[id] || 0 : 10)));
       if (worst > 0.85 || worst < 0.7) throttle[k] = Math.min(1, Math.max(0.05, (throttle[k] * 0.8) / Math.max(worst, 1e-6)));
@@ -587,7 +642,7 @@ export function simulateTest(compiled, lab, practice, test) {
   if (T > 300) {
     const k = Math.ceil(T / 300), squeeze = (arr, f) => { const o = []; for (let j = 0; j < arr.length; j += k) o.push(f(arr.slice(j, j + k))); return o; };
     for (const id in timeline.ops) { const o = timeline.ops[id]; o.rate = squeeze(o.rate, (a) => a[0]); o.ok = squeeze(o.ok, (a) => Math.min(...a)); o.p99 = squeeze(o.p99, (a) => Math.max(...a)); }
-    for (const id in timeline.nodes) { const o = timeline.nodes[id]; o.rho = squeeze(o.rho, (a) => Math.max(...a)); o.up = squeeze(o.up, (a) => Math.min(...a)); o.instances = squeeze(o.instances, (a) => Math.min(...a)); o.backlog = squeeze(o.backlog, (a) => Math.max(...a)); }
+    for (const id in timeline.nodes) { const o = timeline.nodes[id]; o.rho = squeeze(o.rho, (a) => Math.max(...a)); o.up = squeeze(o.up, (a) => Math.min(...a)); o.instances = squeeze(o.instances, (a) => Math.min(...a)); o.backlog = squeeze(o.backlog, (a) => Math.max(...a)); o.held = squeeze(o.held, (a) => Math.max(...a)); o.callsLimit = squeeze(o.callsLimit, (a) => Math.max(...a)); }
     timeline.tickMinutes = D * k;
   }
   const nodeCosts = Object.values(nodeT).reduce((a, n) => a + n.cost, 0), transfer = transferTotal * HOURS_PER_MONTH / hours;
@@ -600,6 +655,6 @@ export function simulateTest(compiled, lab, practice, test) {
   return {
     ops: out, nodes: nodeT, events: st.events, timeline, ticks: perTick, tickMinutes: D, T, hours,
     cost: { monthly: nodeCosts + storageMonthly + transfer, byNode: Object.fromEntries(order.map((id) => [id, nodeT[id].cost])), storage: storageMonthly, transfer },
-    storageGb, lost: st.lost, duplicates: 0, queues, feedDelay, hotParts: Object.values(hotParts), poison: poisonSeen,
+    storageGb, lost: st.lost, duplicates: 0, queues, feedDelay, hotParts: Object.values(hotParts), poison: poisonSeen, holdMs: { ...holdWorst },
   };
 }

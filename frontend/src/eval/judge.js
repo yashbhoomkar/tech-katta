@@ -123,7 +123,14 @@ function explain(test, checks, sim, findings, compiled, practice, lab) {
       if (trig && words(trig)) s += WHY.trigger(words(trig));
       else if (fault) s += WHY.trigger({ spike: `traffic jumped to ${fault.factor ?? 2} times the usual`, cacheFlush: 'the cache was emptied', zoneDown: 'a zone went dark', slow: `a ${fault.type || 'component'} slowed down`, crash: `a ${fault.type} crashed`, groupDown: `a bad deploy took down a ${fault.type}`, instanceCrash: 'an instance crashed' }[fault.kind] || 'a fault began');
       let advice;
-      if (type === 'server') { const zoneOn = sim.events.some((e) => e.kind === 'zoneDown' && e.t <= t0) && !sim.events.some((e) => e.kind === 'zoneBack' && e.t <= t0); advice = zoneOn && (cfg.zones || 1) <= 1 ? WHY.serverZone() : WHY.serverOver(cat.server?.autoscaling?.warmupMinutes ?? 4); }
+      if (type === 'server') {
+        const zoneOn = sim.events.some((e) => e.kind === 'zoneDown' && e.t <= t0) && !sim.events.some((e) => e.kind === 'zoneBack' && e.t <= t0);
+        // limited by its calls in progress then, or in the minutes before it crashed
+        const j = Math.floor(tw / k), from = Math.max(0, Math.floor((tw - 15 / D) / k)), lim = tl.nodes[culprit]?.callsLimit || [], hs = tl.nodes[culprit]?.held || [];
+        let jj = -1; for (let x = j; x >= from; x--) if (lim[x]) { jj = x; break; }
+        const byCalls = jj >= 0, held = byCalls ? hs[jj] || 0 : 0;
+        advice = zoneOn && (cfg.zones || 1) <= 1 ? WHY.serverZone() : byCalls ? WHY.serverHeld(Math.round(held), cat.server?.concurrency ?? 256, cfg.timeoutMs ?? 1000) : WHY.serverOver(cat.server?.autoscaling?.warmupMinutes ?? 4);
+      }
       else if (type === 'database') {
         if (down) advice = WHY.dbDown(cat.database?.crash?.failoverMinutes ?? 2, cat.database?.crash?.downMinutes ?? 30);
         else {

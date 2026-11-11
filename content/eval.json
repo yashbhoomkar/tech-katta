@@ -60,7 +60,7 @@
       ]
     },
     {
-      "type": "server", "group": "Compute",
+      "type": "server", "group": "Compute", "concurrency": 256,
       "to": ["server", "cache", "database", "queue", "stream", "pubsub", "realtime", "external"],
       "settings": [
         { "key": "size", "label": "Size", "kind": "size" },

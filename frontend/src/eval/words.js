@@ -107,6 +107,7 @@ export const WHY = {
   trigger: (what) => ` It began when ${what}.`,
   serverOver: (warm) => `Add instances or a larger size. New instances take ${warm} minutes, so a sudden rush needs them started beforehand.`,
   serverZone: () => 'Spread it over two or three zones.',
+  serverHeld: (ms, conc, timeout) => `Its calls were waiting on what they call: each held it about ${ms.toLocaleString('en-US')} ms, and an instance has room for ${conc} at a time. Give its calls a shorter timeout (now ${timeout.toLocaleString('en-US')} ms) or a circuit breaker, so a slow dependency can't fill it.`,
   dbReads: (step, work, how) => `${cap1(step)} costs ${work} units through ${how}. Put a cache in front, add read replicas, or give it a key or index.`,
   dbWrites: () => "Replicas don't help writes. A larger size, shards, or a queue in front to smooth the burst.",
   dbDown: (fo, down) => `Give it a standby in another zone (Multi-AZ): it is back in ${fo} minutes instead of ${down}.`,

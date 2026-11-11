@@ -546,6 +546,42 @@
         ]
       },
       {
+        "id": "sms-slow",
+        "name": "The SMS provider slows down",
+        "desc": "At 8:10 pm the SMS provider takes five times as long to answer, for 15 minutes. OTPs may wait; pushes must not.",
+        "hours": 1,
+        "startHour": 20,
+        "traffic": {
+          "rps": 2000,
+          "pattern": "steady"
+        },
+        "faults": [
+          {
+            "minute": 10,
+            "kind": "slow",
+            "type": "external",
+            "preset": "sms",
+            "factor": 5,
+            "minutes": 15
+          }
+        ],
+        "checks": [
+          {
+            "kind": "slo"
+          },
+          {
+            "kind": "completes",
+            "op": "otp",
+            "withinSec": 1800
+          },
+          {
+            "kind": "completes",
+            "op": "push",
+            "withinSec": 120
+          }
+        ]
+      },
+      {
         "id": "zone",
         "name": "A zone goes dark",
         "desc": "At 8:10 pm one availability zone is lost for 15 minutes. Notifications may slow down; none may be lost.",
@@ -793,9 +829,10 @@
           "y": -160,
           "name": "OTP senders",
           "config": {
-            "size": "c5.2xlarge",
-            "count": 4,
-            "zones": 2
+            "size": "m5.large",
+            "count": 20,
+            "zones": 2,
+            "timeoutMs": 3000
           }
         },
         {
@@ -988,9 +1025,10 @@
             "y": -160,
             "name": "OTP senders",
             "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "zones": 2
+              "size": "m5.large",
+              "count": 20,
+              "zones": 2,
+              "timeoutMs": 3000
             }
           },
           {
@@ -1306,9 +1344,10 @@
             "y": -160,
             "name": "Senders",
             "config": {
-              "size": "c5.2xlarge",
-              "count": 10,
-              "zones": 2
+              "size": "m5.large",
+              "count": 20,
+              "zones": 2,
+              "timeoutMs": 3000
             }
           },
           {
@@ -1474,9 +1513,10 @@
             "y": -160,
             "name": "OTP senders",
             "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "zones": 2
+              "size": "m5.large",
+              "count": 20,
+              "zones": 2,
+              "timeoutMs": 3000
             }
           },
           {
@@ -1668,9 +1708,10 @@
             "y": -160,
             "name": "OTP senders",
             "config": {
-              "size": "c5.2xlarge",
-              "count": 4,
-              "zones": 2
+              "size": "m5.large",
+              "count": 20,
+              "zones": 2,
+              "timeoutMs": 3000
             }
           },
           {
@@ -1863,9 +1904,10 @@
             "y": -160,
             "name": "OTP senders",
             "config": {
-              "size": "c5.2xlarge",
-              "count": 12,
-              "zones": 2
+              "size": "m5.large",
+              "count": 20,
+              "zones": 2,
+              "timeoutMs": 3000
             }
           },
           {
