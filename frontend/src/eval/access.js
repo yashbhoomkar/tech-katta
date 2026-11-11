@@ -182,7 +182,8 @@ export function accessPath(node, table, step, practice, lab, match = fieldMatche
 
   if (step.op === 'update' || step.op === 'incr') {
     if (step.op === 'incr' && !caps.has('counter')) return no(ACCESS.counter(label));
-    if (step.op === 'incr' && cache && !['counter', 'kv'].includes(table.kind)) return no(ACCESS.counter(`The ${table.kind} ${table.name}`));
+    // a sorted set adds to a member's score (ZINCRBY): a leaderboard's points
+    if (step.op === 'incr' && cache && !['counter', 'kv', 'zset'].includes(table.kind)) return no(ACCESS.counter(`The ${table.kind} ${table.name}`));
     if (step.cond && !caps.has('cas')) return no(ACCESS.cas(label));
     const p = getPath();
     if (!p) return no(noFind());

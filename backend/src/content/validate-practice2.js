@@ -106,6 +106,7 @@ export function validatePractice2(p, lab, at, problems, validateRubricHints) {
     if (!obj(o.request) || !METHODS.has(o.request.method) || typeof o.request.path !== 'string' || !o.request.path.startsWith('/') || (o.request.body !== undefined && !obj(o.request.body))) problems.push(`${w}: request needs a method, a path starting with / and an optional JSON body`);
     if (!(num(o.share) && o.share >= 0)) problems.push(`${w}: share must be 0 or more`);
     else if (!o.source || o.source === 'clients') shares += o.share;
+    if (o.perSec !== undefined && !(o.source === 'schedule' && num(o.perSec) && o.perSec > 0)) problems.push(`${w}: perSec (jobs a second) is only for a scheduled operation, and must be above 0`);
     for (const k of ['bytesIn', 'bytesOut']) if (o[k] !== undefined && !(num(o[k]) && o[k] > 0)) problems.push(`${w}: ${k} must be above 0`);
     if (o.keys !== undefined && !(obj(o.keys) && Object.hasOwn(entities, o.keys.entity) && ['zipf', 'uniform'].includes(o.keys.skew) && (o.keys.active === undefined || (num(o.keys.active) && o.keys.active > 0)))) problems.push(`${w}: keys needs a known entity, skew zipf or uniform, and active above 0`);
     if (obj(o.keys) && o.keys.hot !== undefined && !(num(o.keys.hot) && o.keys.hot > 0 && o.keys.hot <= 1)) problems.push(`${w}: keys.hot (the share of calls for one item) must be above 0 and at most 1`);

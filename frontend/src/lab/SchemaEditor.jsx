@@ -7,7 +7,7 @@ import{TYPES,INDEX_KINDS,LIMITS,cleanSchema,schemaIssues,vocab}from"./schema.js"
 const NAME=/^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
 const blankTable=(v,n)=>({name:`${v.table.toLowerCase().split(" ")[0].replace(/[^a-z]/g,"")||"table"}${n}`,fields:[{name:"id",type:"string"}],key:["id"]});
 
-export default function SchemaEditor({engine,schema,title,save,close,suggest=[]}){
+export default function SchemaEditor({engine,schema,title,save,close,suggest=[],shards=1}){
 const v=vocab(engine);
 // the draft keeps what is being typed (an empty or invalid name); what is valid is saved at once
 const[draft,setDraft]=useState(()=>structuredClone(schema?.tables||[]));
@@ -36,6 +36,7 @@ return <section key={i} className="sch-t" aria-label={`${v.table} ${t.name||i+1}
 <button type="button" className="sch-add" disabled={fields.length>=LIMITS.fields} onClick={()=>tab(i,{fields:[...fields,{name:`field${fields.length+1}`,type:"string"}]})}>+ Add a field</button>
 {(v.sortKey||v.ttl)&&<div className="sch-row">{v.sortKey&&<label className="sch-name"><span>{v.sortKey}</span><select value={t.sortKey||""} onChange={e=>tab(i,{sortKey:e.target.value||undefined})}><option value="">none</option>{names.filter(n=>!(t.key||[]).includes(n)).map(n=><option key={n}>{n}</option>)}</select></label>}
 {v.ttl&&<label className="sch-name"><span>Expires at</span><select value={t.ttl||""} onChange={e=>tab(i,{ttl:e.target.value||undefined})}><option value="">never</option>{fields.filter(f=>f.type==="time").map(f=><option key={f.name}>{f.name}</option>)}</select></label>}</div>}
+{shards>1&&<div className="sch-row"><label className="sch-name"><span>Shard by</span><select value={t.shardKey?.[0]||""} onChange={e=>tab(i,{shardKey:e.target.value?[e.target.value]:undefined})}><option value="">{(t.key||[])[0]?`${t.key[0]} (the first ${v.key.toLowerCase()} field)`:"the key"}</option>{names.map(n=><option key={n}>{n}</option>)}</select></label><small className="sch-none"> A lookup that gives this field goes to one of the {shards} shards; any other asks all of them.</small></div>}
 {v.indexKinds.length>0&&<div className="sch-ix"><b>{v.index}es</b>{(t.indexes||[]).length===0&&<span className="sch-none"> none</span>}
 {(t.indexes||[]).map((ix,k)=><div key={k} className="sch-row"><select value={ix.kind} aria-label={`${v.index} ${k+1} kind`} onChange={e=>tab(i,{indexes:t.indexes.map((x,j)=>j===k?{...x,kind:e.target.value}:x)})}>{INDEX_KINDS.filter(([id])=>v.indexKinds.includes(id)||id===ix.kind).map(([id,l])=><option key={id} value={id}>{l}</option>)}</select>
 {Array.from({length:Math.min(v.maxIndexFields,ix.kind==="geo"||ix.kind==="text"?1:v.maxIndexFields)},(_,n)=><select key={n} value={ix.fields[n]||""} aria-label={`${v.index} ${k+1} field ${n+1}`} onChange={e=>{const fs=[...ix.fields];fs[n]=e.target.value;tab(i,{indexes:t.indexes.map((x,j)=>j===k?{...x,fields:fs.filter(Boolean)}:x)})}}><option value="">{n?"(then)":"field"}</option>{names.map(nm=><option key={nm}>{nm}</option>)}</select>)}

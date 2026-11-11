@@ -166,7 +166,7 @@
       "type": "stream", "v2only": true, "group": "Messaging", "managed": true,
       "name": "Event stream", "latencyMs": 5, "brokerHourly": 0.21, "storagePerGbMonth": 0.10,
       "desc": "A durable, ordered, partitioned log (Kafka, Kinesis). Every consumer gets every event, in order per key, and can read it again later.",
-      "to": ["server", "realtime"],
+      "to": ["server", "realtime", "processor"],
       "settings": [
         { "key": "partitions", "label": "Partitions", "kind": "number", "min": 1, "max": 200, "default": 6, "step": 1, "help": "Each takes 10,000 messages a second. A consumer reads with at most one instance per partition." },
         { "key": "retentionHours", "label": "Keep events for (hours)", "kind": "number", "min": 1, "max": 720, "default": 24, "step": 1 },
@@ -182,6 +182,45 @@
         { "key": "channels", "label": "Channels", "kind": "choice", "default": "perKey", "options": [
           { "id": "perKey", "label": "One per key", "desc": "Only the subscribers of that key (a chat, a user) get it." },
           { "id": "global", "label": "One for everything", "desc": "Every subscriber gets every message." } ] }
+      ]
+    },
+    {
+      "type": "scheduler", "v2only": true, "group": "Compute",
+      "name": "Scheduler", "latencyMs": 2, "firesPerSec": 1000, "hourly": 0.05,
+      "desc": "Starts jobs at their time (cron, delayed tasks). Two of them stay up when one fails, but then they need a lock so a job doesn't start twice.",
+      "crash": { "above": 1.5, "minutes": 5, "downMinutes": 5 },
+      "to": ["server", "queue", "stream", "coord", "database", "cache"],
+      "settings": [
+        { "key": "count", "label": "Instances", "kind": "number", "min": 1, "max": 2, "default": 1, "step": 1, "help": "With two, one takes over when the other fails." },
+        { "key": "lock", "label": "Who fires a job", "kind": "choice", "default": "none", "options": [
+          { "id": "none", "label": "Every instance", "desc": "Each instance fires every job it knows about." },
+          { "id": "lease", "label": "The holder of a lock", "desc": "Only the instance holding a lease (in a coordination service, a cache or a database with compare-and-set) fires jobs." } ] }
+      ]
+    },
+    {
+      "type": "processor", "v2only": true, "group": "Compute",
+      "name": "Stream processor", "latencyMs": 5, "defaultSize": "c5.2xlarge",
+      "desc": "Reads an event stream and keeps running results (counts, sums per minute) in a store (Flink, Kafka Streams). After a crash it starts again from its last checkpoint.",
+      "crash": { "above": 1.5, "minutes": 5, "downMinutes": 5 },
+      "sizes": [
+        { "id": "m5.large", "label": "m5.large · 2 vCPU, 8 GB", "eventsPerSec": 10000, "hourly": 0.101 },
+        { "id": "c5.2xlarge", "label": "c5.2xlarge · 8 vCPU, 16 GB", "eventsPerSec": 20000, "hourly": 0.34 } ],
+      "to": ["database", "cache", "stream", "queue"],
+      "settings": [
+        { "key": "size", "label": "Size", "kind": "size" },
+        { "key": "parallelism", "label": "Parallel instances", "kind": "number", "min": 1, "max": 64, "default": 2, "step": 1, "help": "At most as many as the stream has partitions do any work." },
+        { "key": "checkpointSec", "label": "Checkpoint every (seconds)", "kind": "number", "min": 10, "max": 600, "default": 60, "step": 1, "help": "After a crash, events since the last checkpoint are processed again." }
+      ]
+    },
+    {
+      "type": "coord", "v2only": true, "group": "Data", "managed": true,
+      "name": "Coordination service", "latencyMs": 10, "limitRps": 20000, "hourlyPerNode": 0.10,
+      "desc": "A small, strongly consistent store for locks, leases and leader election (ZooKeeper, etcd). Not for your data.",
+      "to": [],
+      "settings": [
+        { "key": "nodes", "label": "Nodes", "kind": "choice", "default": "three", "options": [
+          { "id": "three", "label": "3", "desc": "Survives one lost zone." },
+          { "id": "five", "label": "5", "desc": "Survives two lost nodes." } ] }
       ]
     }
   ]

@@ -155,6 +155,9 @@ export function simulateTest(compiled, lab, practice, test) {
       return Math.min(units, conc);
     }
     if (n.type === 'stream') return 10000 * (n.cfg.partitions || 6);
+    // a stream processor: at most as many instances work as the stream it reads has partitions (§5.6)
+    if (n.type === 'processor') { const parts = Math.max(1, ...g.inn.get(id).filter((x) => info[x]?.type === 'stream').map((x) => info[x].cfg.partitions || 6)); return (n.size?.eventsPerSec || 20000) * Math.min(n.cfg.parallelism || 2, parts); }
+    if (n.type === 'coord') return n.comp.limitRps || 20000;
     if (n.type === 'realtime') return (n.size?.messagesPerSec || 0) * instancesNow(id);
     if (n.type === 'cache') return (n.size?.ops || 0) * (n.cfg.nodes || 1);
     if (n.type === 'database') return n.perRequest ? n.engine.limitQps : (n.size?.qps || 0) * (n.cfg.shards || 1);
@@ -302,7 +305,7 @@ export function simulateTest(compiled, lab, practice, test) {
       }
       rho[id] = rr; offered[id] = sync + pull; served[id] = calls; readsAt[id] = 0; writesAt[id] = 0;
       // how busy it is, counting the messages it pulls from queues (they do not slow its own answers or crash it)
-      busy[id] = n.type === 'server' && pull > 0 && cap > 0 ? (sync + pull * phiPull) / cap : rr;
+      busy[id] = (n.type === 'server' || n.type === 'processor') && pull > 0 && cap > 0 ? (sync + pull * phiPull) / cap : rr;
       for (const r of list) if (r.hop.kind === 'store') { if (r.hop.write) writesAt[id] += r.in; else readsAt[id] += r.in; }
       if (n.type === 'cache') {
         let wr = 0;
@@ -439,6 +442,9 @@ export function simulateTest(compiled, lab, practice, test) {
     if (n.type === 'stream') return Math.max(3, Math.ceil((n.cfg.partitions || 6) / 50)) * (n.comp.brokerHourly || 0.21) * HOURS_PER_MONTH;
     if (n.type === 'pubsub') return (n.comp.pricePerMillion || 0) * (served[id] || 0) * SECONDS_PER_MONTH / 1e6;
     if (n.type === 'realtime') return (n.size?.hourly || 0) * Math.max(0, st.inst[id] - st.lostInst[id].reduce((a, x) => a + x.n, 0)) * HOURS_PER_MONTH;
+    if (n.type === 'scheduler') return (n.comp.hourly || 0.05) * (n.cfg.count || 1) * HOURS_PER_MONTH;
+    if (n.type === 'processor') return (n.size?.hourly || 0) * (n.cfg.parallelism || 2) * HOURS_PER_MONTH;
+    if (n.type === 'coord') return (n.comp.hourlyPerNode || 0.1) * (n.cfg.nodes === 'five' ? 5 : 3) * HOURS_PER_MONTH;
     if (n.comp?.v2only) return 0;
     return monthlyCost(n.comp, n.cfg, served[id] || 0);
   };
@@ -465,11 +471,18 @@ export function simulateTest(compiled, lab, practice, test) {
     while (fi < faults.length && faults[fi].minute < t + D) { if (faults[fi].minute >= t) startFault(faults[fi], st, t); fi++; }
     // 2. rates
     const m = clientComp ? trafficAt(clientComp, pattern, clock) : 1;
-    const base = dict();
+    const base = dict(), missed = dict();
     for (const op of ops) {
       let f = 1; for (const s of st.spikes) if (!s.op || s.op === op.id) f *= s.factor;
-      // webhooks follow the test's traffic too (their share of it); scheduled jobs come in phase 6
-      base[op.id] = (op.source === 'schedule' ? 0 : rps * m * share(op)) * f;
+      // webhooks follow the test's traffic too (their share of it); scheduled jobs fire at `perSec` (or their share),
+      // not at all while every scheduler is down, and twice when two schedulers fire without a lock (§10.10)
+      if (op.source === 'schedule') {
+        const sch = order.filter((id) => info[id].type === 'scheduler');
+        const up = sch.filter((id) => !isDown(id));
+        const twice = up.some((id) => (info[id].cfg.count || 1) >= 2 && (info[id].cfg.lock || 'none') === 'none');
+        base[op.id] = (op.perSec ?? rps * share(op)) * (twice ? 2 : 1) * f;
+        missed[op.id] = sch.length > 0 && !up.length;   // due, but nobody starts them: they count as failed
+      } else base[op.id] = rps * m * share(op) * f;
     }
     // the abusive client (fault abuse): extra calls on top, not counted in the operation's success (§8.13)
     for (const op of ops) { const a = st.abuse ? rps * m * share(op) * st.abuse.factor : 0; abuseRate[op.id] = a; }
@@ -477,13 +490,14 @@ export function simulateTest(compiled, lab, practice, test) {
     const factor = dict(), s = dict();
     for (const op of planned) factor[op.id] = 1;
     for (let k = 0; k < 4; k++) {
-      const rate = dict(); for (const op of planned) { rate[op.id] = base[op.id] * factor[op.id] + abuseRate[op.id]; abuseFrac[op.id] = rate[op.id] > 0 ? abuseRate[op.id] / rate[op.id] : 0; }
+      const rate = dict(); for (const op of planned) { rate[op.id] = missed[op.id] ? 0 : base[op.id] * factor[op.id] + abuseRate[op.id]; abuseFrac[op.id] = rate[op.id] > 0 ? abuseRate[op.id] / rate[op.id] : 0; }
       for (const o of sysOps) rate[o.id] = cdcPrev[o.id];
       flowPass(rate, t); solve();
       let done = true;
       for (const op of planned) {
         s[op.id] = Math.max(0, Math.min(1, opSuccess(op) * (1 - slowShare(opLatency(op), ev.clientTimeoutMs))));
-        let f = 1; for (let j = 1; j <= retries; j++) f += (1 - s[op.id]) ** j;
+        // clients retry (eval.retries); webhooks and scheduled jobs are not retried that way (§8.3)
+        let f = 1; if (!op.source || op.source === 'clients') for (let j = 1; j <= retries; j++) f += (1 - s[op.id]) ** j;
         if (Math.abs(f - factor[op.id]) >= 1e-6) done = false;
         factor[op.id] = f;
       }
@@ -496,7 +510,7 @@ export function simulateTest(compiled, lab, practice, test) {
       let ok = 0, slow = 0, p99 = 0, p50 = 0;
       if (compiled.plans?.[op.id]?.ok) {
         const L = opLatency(op), sum = summarise(L);
-        const user = 1 - (1 - s[op.id]) ** (retries + 1);
+        const user = missed[op.id] ? 0 : 1 - (1 - s[op.id]) ** ((!op.source || op.source === 'clients' ? retries : 0) + 1);
         ok = calls * user; p99 = sum.p99; p50 = sum.p50; pt.F[i] = L.F; pt.M[i] = L.M; pt.V[i] = L.V;
         slow = op.slo?.p99Ms ? calls * slowShare(L, op.slo.p99Ms) : 0;
         const cdnShare = op.cacheable ? 1 - (cdnMissNow[op.id] ?? 1) : 0;

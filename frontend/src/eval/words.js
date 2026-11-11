@@ -80,9 +80,13 @@ export const FIND = {
         ? `The answer to ${op} is lost on the way back and the app retries after ${timeoutSec} seconds. ${store} accepts the same write again, so it happens twice.`
         : way === 'fifo'
           ? `${queue} removes duplicate messages only within 5 minutes; a message delivered again later is written to ${store} a second time.`
+          : way === 'replay'
+            ? `After a crash the stream processor starts again from its last checkpoint and reads the events since then a second time. It adds them to ${store} again, so the count goes up twice.`
           : `${queue} delivers each message at least once: a worker that crashes after writing but before saying it is done gets the message again, and ${store} accepts it again.`,
     fix: way === 'call'
       ? `Write the request with its id first, in a table that refuses a second row with the same id, and call the other company only for a new row (or use its idempotency key).`
+      : way === 'replay'
+        ? 'Write the result for each window by its key (set the count for minute M) instead of adding to it, so processing an event twice writes the same value.'
       : `Give every request an id from the client and make the store refuse a second row with the same id (a unique index on ${idf}).`,
   }),
   dualWrite: (svc, entity, a, b) => ({ title: `${cap1(entity)} is written to two stores without a transaction`, story: `${svc} writes ${entity} to ${a}, then to ${b}. If it crashes between the two, ${b} never hears about it, and nothing repairs it.`, fix: `Write once, to ${a}, and let ${b} follow it: change data capture into a stream, or an outbox table read by a worker.` }),
@@ -91,6 +95,9 @@ export const FIND = {
   orderStream: (stream, by) => ({ title: 'Changes can be applied out of order', story: `${stream} keeps order only inside a partition, and it is not partitioned by ${by}: events for one ${by} land in different partitions, and two workers apply them in whichever order they finish.`, fix: `Partition ${stream} by ${by} ("Partition by" in its settings).` }),
   orderPubsub: (ch) => ({ title: 'Order is not guaranteed', story: `${ch} usually delivers in order, but nothing guarantees it: a message can overtake another.`, fix: 'Use an event stream partitioned by the conversation, or number the messages so the app can sort them.' }),
   noCatchUp: (op) => ({ title: 'A message sent while someone is offline is never seen', story: `${op} pushes the message to whoever is connected right now, and nothing stores it: a phone that is offline for a moment never sees it.`, fix: 'Store the message too (in a database the app reads when it reconnects), then push it.' }),
+  schedSpof: (name) => ({ title: `${name} is a single point of failure`, story: `There is one ${name}. While it restarts, the jobs due in those minutes are not started.`, fix: 'Run two, with a lock so only one of them fires each job.' }),
+  schedTwice: (name, op) => ({ title: `${op} starts twice`, story: `Both instances of ${name} fire every job, so each ${op} runs twice.`, fix: 'Give them a lock: only the instance holding a lease fires jobs (in a coordination service, a cache, or a database with compare-and-set).' }),
+  schedNoLock: (name) => ({ title: `${name} has nowhere to keep its lock`, story: `${name} is set to fire only while it holds a lease, but it has no arrow to anything that can hold one.`, fix: 'Draw an arrow from it to a coordination service, a cache, or a database whose engine has compare-and-set.' }),
   poison: (queue, kind, pct) => (kind === 'standard'
     ? { title: `${queue} retries bad messages for ever`, story: `${pct}% of the messages could never be processed. Without a dead-letter queue, ${queue} hands them out again and again, and the workers spend their time on them.`, fix: `Turn on the dead-letter queue: after a few tries the bad message is set aside for a person to look at.` }
     : { title: `Bad messages block ${queue}`, story: `${pct}% of the messages could never be processed. ${queue} keeps order, so everything behind a bad message in its ${kind === 'stream' ? 'partition' : 'group'} waits.`, fix: kind === 'stream' ? 'Have the consumer set a message it cannot process aside (to a dead-letter topic) and move on.' : 'Turn on the dead-letter queue so a bad message leaves its group after a few tries.' }),

@@ -57,7 +57,7 @@ function SchemaBox({ comp, cfg, set, title, suggest }) {
     <p className="lab-note lab-note-tight">{cfg.schema?.tables?.length ? schemaSummary(e, cfg.schema) : `No ${v.tables} yet. Add what this store keeps: the tests look for the data where your ${v.tables} say it is.`}</p>
     {iss.length > 0 && <p className={'lab-note lab-note-tight ' + (errs ? 'lab-warn' : '')}>{errs ? `${errs} problem${errs > 1 ? 's' : ''}: open the schema to see them.` : `${iss.length} warning${iss.length > 1 ? 's' : ''}: open the schema to see them.`}</p>}
     <button type="button" className="lab-btn ghost" onClick={() => setOpen(true)}>{cfg.schema?.tables?.length ? 'Edit schema' : `Add ${v.tables}`}</button>
-    {open && <SchemaEditor engine={e} schema={cfg.schema} title={title} suggest={suggest} save={(schema) => set({ schema })} close={() => setOpen(false)} />}</div>;
+    {open && <SchemaEditor engine={e} schema={cfg.schema} title={title} suggest={suggest} shards={cfg.shards || 1} save={(schema) => set({ schema })} close={() => setOpen(false)} />}</div>;
 }
 
 // A cache's own data (structures): like a schema's tables, each with a kind (key–value, counters, sorted set…).

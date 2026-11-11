@@ -78,7 +78,7 @@ function loadChecks(test, sim, findings, compiled, practice, lab) {
       const bad = sim.lost > 0 || sim.events.some((e) => e.kind === 'eventsLost') || ['F_NOT_DURABLE', 'F_WRITE_BACK', 'F_NO_CATCH_UP'].some((k) => hasF(k));
       return { ...c, ok: !bad, value: Math.round(sim.lost) };
     }
-    if (c.kind === 'noDuplicates') return { ...c, ok: !hasF('F_DOUBLE', c.op) && !hasF('F_SCHED_TWICE', c.op), value: null };
+    if (c.kind === 'noDuplicates') return { ...c, ok: !hasF('F_DOUBLE', c.op) && !hasF('F_SCHED_TWICE', c.op) && !hasF('F_SCHED_NO_LOCK', c.op), value: null };
     if (c.kind === 'ordered') return { ...c, ok: !hasF('F_ORDER', c.op), value: null };
     if (c.kind === 'atomic') return { ...c, ok: !opsFor(c).some((o) => compiled.plans[o.id]?.error?.code === 'E_TX_SPLIT') && !hasF('F_DUAL_WRITE', c.op), value: null };
     if (c.kind === 'fresh') return { ...c, ok: !opsFor(c).some((o) => hasF('F_STALE', o.id)), value: null };
@@ -154,7 +154,7 @@ function explain(test, checks, sim, findings, compiled, practice, lab) {
     } else if (c.kind === 'noCrash' && c.first) why.push(WHY.crash(name(c.first.node), clockOf(start + c.first.t)));
     else if (c.kind === 'has') why.push(WHY.has(cat[c.type]?.name || c.type));
     else {
-      const codes = { noLostWrites: ['F_NOT_DURABLE', 'F_WRITE_BACK', 'F_NO_CATCH_UP'], noDuplicates: ['F_DOUBLE', 'F_SCHED_TWICE'], ordered: ['F_ORDER'], atomic: ['F_DUAL_WRITE'], fresh: ['F_STALE'], fits: ['F_STORAGE', 'F_CACHE_FULL', 'F_RETENTION'] }[c.kind] || [];
+      const codes = { noLostWrites: ['F_NOT_DURABLE', 'F_WRITE_BACK', 'F_NO_CATCH_UP'], noDuplicates: ['F_DOUBLE', 'F_SCHED_TWICE', 'F_SCHED_NO_LOCK'], ordered: ['F_ORDER'], atomic: ['F_DUAL_WRITE'], fresh: ['F_STALE'], fits: ['F_STORAGE', 'F_CACHE_FULL', 'F_RETENTION'] }[c.kind] || [];
       const f = findings.find((x) => codes.includes(x.code) && x.severity === 'fail' && (!c.op || x.op === c.op));
       if (f) why.push(WHY.finding(f));
       else if (c.kind === 'noLostWrites' && c.value > 0) why.push(`About ${c.value.toLocaleString('en-US')} acknowledged writes were lost when a cache went down before saving them.`);
