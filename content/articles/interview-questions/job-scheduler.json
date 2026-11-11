@@ -353,10 +353,10 @@
         "source": "schedule",
         "share": 0.003,
         "request": {
-          "method": "TICK",
-          "path": "/scheduler"
+          "method": "POST",
+          "path": "/internal/jobs/due"
         },
-        "bytesOut": 0,
+        "bytesOut": 100,
         "steps": [
           {
             "id": "s1",
@@ -375,6 +375,10 @@
             },
             "limit": 100,
             "matches": 1000000,
+            "fields": [
+              "job_id",
+              "payload"
+            ],
             "label": "Finding the next 100 due jobs"
           },
           {
@@ -426,6 +430,12 @@
         "desc": "A daily report for 9 am tomorrow.",
         "sample": true,
         "op": "schedule"
+      },
+      {
+        "id": "api-fire",
+        "name": "Run the due jobs",
+        "desc": "The scheduler finds the next due jobs, claims each and has a worker run it.",
+        "op": "fire"
       },
       {
         "id": "api-status",
