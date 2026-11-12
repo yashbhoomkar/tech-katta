@@ -58,5 +58,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .zoom-btn{border:1px solid var(--line-strong);border-radius:var(--r-md);color:var(--ink);font:600 12px var(--font);letter-spacing:0}
 .zoom-box{border-radius:var(--r-xl)}
 @media(max-width:980px){.hero{grid-template-columns:1fr;gap:36px;padding-top:44px;padding-bottom:52px}}
+@media(min-width:681px) and (max-width:900px){.brand span{display:none}.nav{gap:18px}}
 @media(max-width:680px){.header{height:60px}.nav{top:59px;gap:0;background:var(--bg);box-shadow:var(--shadow-3);font-size:16px}.brand{font-size:19px}.hero h1{font-size:40px}.hero p{font-size:17px}.btn{flex:1 1 auto;justify-content:center}.inside h2,.ch-title{font-size:30px}}
 @media(prefers-reduced-motion:reduce){.btn,.inside-grid a,.nav a{transition:none}.inside-grid a:hover{transform:none}}
