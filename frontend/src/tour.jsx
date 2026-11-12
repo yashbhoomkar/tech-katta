@@ -19,7 +19,10 @@ const move=d=>{setDir(d);setEl(null);setBox(null);setI(v=>Math.max(0,Math.min(li
 useEffect(()=>{if(!step)return;let on=true;(async()=>{if(step.click){const c=find(step.click);try{for(const t of["mousedown","mouseup"])c?.dispatchEvent(new MouseEvent(t,{bubbles:true,view:window}));c?.click()}catch{}}
 const t=await wait(step.target,step.click?2000:400);if(!on)return;if(t){setEl(t);return}
 const n=i+dir;if(n>=0&&n<list.length)setI(n);else if(dir<0&&i<list.length-1){setDir(1);setI(i+1)}else onClose()})();return()=>{on=false}},[i]);// eslint-disable-line
-useLayoutEffect(()=>{if(!el)return;el.scrollIntoView({block:"nearest",inline:"nearest"});
+// On a phone the card is a sheet at the bottom, so the target is scrolled to just under the header, where the
+// sheet can't cover it; elsewhere it is scrolled only as far as needed.
+useLayoutEffect(()=>{if(!el)return;el.scrollIntoView({block:"nearest",inline:"center"});
+if(innerWidth<640){const head=document.querySelector(".d-head")?.getBoundingClientRect().bottom||0,r=el.getBoundingClientRect();if(r.top<head+8||r.bottom>innerHeight*.5)scrollBy({top:r.top-head-12,behavior:"instant"})}
 const place=()=>{const r=el.getBoundingClientRect();setBox({x:r.left,y:r.top,w:r.width,h:r.height})};place();addEventListener("resize",place);addEventListener("scroll",place,true);
 const t=setInterval(place,300);return()=>{removeEventListener("resize",place);removeEventListener("scroll",place,true);clearInterval(t)}},[el]);
 useLayoutEffect(()=>{if(card.current)setCh(card.current.offsetHeight)},[box,i]);
@@ -34,7 +37,9 @@ const narrow=innerWidth<640,W=Math.min(360,innerWidth-24),pad=8,H=ch||200;
 const below=box.y+box.h+pad+6+H<innerHeight-12,above=box.y-pad-6-H>12;
 const top=below?box.y+box.h+pad+6:above?box.y-pad-6-H:Math.max(12,Math.min(innerHeight-H-12,box.y));
 const left=!below&&!above?(box.x+box.w+pad+12+W<innerWidth?box.x+box.w+pad+12:Math.max(12,box.x-pad-12-W)):Math.max(12,Math.min(box.x,innerWidth-W-12));
-const style=narrow?{left:12,right:12,bottom:12}:{left,top,width:W};
+// on a phone the card is a sheet at the bottom, or at the top when the target starts low on the screen (e.g. the fixed
+// Run/Submit bar); a target taller than the screen keeps its top, the part that says what it is, clear of the card
+const style=narrow?(box.y>innerHeight*.45?{left:12,right:12,top:12}:{left:12,right:12,bottom:12}):{left,top,width:W};
 // a target taller than the window (a whole pane): outline only what's on screen
 const hy=Math.max(box.y-pad,4),hb=Math.min(box.y+box.h+pad,innerHeight-4);
 return createPortal(<div className="tour" role="presentation"><div className="tour-hole" style={{left:box.x-pad,top:hy,width:box.w+pad*2,height:Math.max(0,hb-hy)}}/>

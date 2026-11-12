@@ -34,8 +34,10 @@ export{INK,GREY,RED,BLUE,LB,LR,FB}from"../theme/palette.js";
 export const Mk=({m})=><defs><marker id={m} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L8 4L0 8z" fill={INK}/></marker></defs>;
 export const Bx=({x,y,w=120,h=34,t,s,c=GREY,fill=BG,sw})=><g><rect x={x} y={y} width={w} height={h} rx="7" fill={fill} stroke={c} strokeWidth={sw??(c===BLUE?1.5:undefined)}/><text x={x+w/2} y={y+(s?h/2-3:h/2+4)} textAnchor="middle" className="fb">{t}</text>{s&&<text x={x+w/2} y={y+h/2+12} textAnchor="middle" className="fl">{s}</text>}</g>;
 export const Ar=({x1,y1,x2,y2,m,c=INK,dash,w})=><><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth={w} strokeDasharray={dash?"4 3":undefined} markerEnd={m?`url(#${m})`:undefined}/>{c===BLUE&&!dash&&<Glint x1={x1} y1={y1} x2={x2} y2={y2} w={w}/>}</>;
-export const Caps=({caps,D})=>caps.map(([t,c],i)=><Show key={i} t0={i/caps.length} t1={(i+1)/caps.length} dur={D}><text x="10" y="26" className="fb" style={{fill:c}}>{t}</text></Show>);
-export const Cap=({t,c=BLUE})=><text x="10" y="26" className="fb" style={{fill:c}}>{t}</text>;
+// The step line is tagged (tk-caps with its loop length; tk-cap when still) so a phone can show it above the figure,
+// which there scrolls sideways (dashboard/figure.jsx).
+export const Caps=({caps,D})=><g className="tk-caps" data-dur={parseFloat(D)}>{caps.map(([t,c],i)=><Show key={i} t0={i/caps.length} t1={(i+1)/caps.length} dur={D}><text x="10" y="26" className="fb" style={{fill:c}}>{t}</text></Show>)}</g>;
+export const Cap=({t,c=BLUE})=><text x="10" y="26" className="fb tk-cap" style={{fill:c}}>{t}</text>;
 export const Life=({x,t,s,y0=48,y1})=><g><text x={x} y={y0} textAnchor="middle" className="fb">{t}</text>{s&&<text x={x} y={y0+14} textAnchor="middle" className="fl">{s}</text>}<line x1={x} y1={y0+22} x2={x} y2={y1} stroke={GREY} strokeDasharray="3 3"/></g>;
 export const Msg=({x1,x2,y,t,m,c=INK,dash,w,tx})=><g><Ar x1={x1} y1={y} x2={x2+(x2>x1?-3:3)} y2={y} m={m} c={c} dash={dash} w={w}/>{t&&<text x={tx??(x1+x2)/2} y={y-6} textAnchor="middle" className="fl" style={c!==INK?{fill:c}:undefined}>{t}</text>}</g>;
 
