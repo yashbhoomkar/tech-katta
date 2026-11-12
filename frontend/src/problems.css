@@ -38,8 +38,8 @@
 .pb-filter button,.qt-levels button{min-height:34px;padding:0 14px;border:1px solid var(--line-strong);border-radius:var(--r-full);background:var(--bg);color:var(--ink-3);font:500 13.5px var(--font);letter-spacing:0;transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease)}
 .pb-filter button:hover,.qt-levels button:hover{border-color:var(--ink);color:var(--ink)}
 .pb-filter button.on,.qt-levels button.on{border-color:var(--inverse);background:var(--inverse);color:var(--on-inverse);font-weight:600}
-.pb-pick{min-height:34px;padding:0 14px;border:1px solid var(--brand-edge);border-radius:var(--r-full);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font);letter-spacing:0}
-.pb-pick:hover{background:var(--brand-strong)}
+.pb-filter .pb-pick,.pb-pick{min-height:34px;padding:0 14px;border:1px solid var(--brand-edge);border-radius:var(--r-full);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font);letter-spacing:0}
+.pb-filter .pb-pick:hover,.pb-pick:hover{background:var(--brand-strong)}
 .pb-group{margin-top:40px}
 .pb-group>h2{padding-top:0;border-top:0;font:600 24px/1.15 var(--font-display);letter-spacing:-.015em;text-transform:none}
 .pb-group a:not(.pb-lab){border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg);padding:18px 20px;box-shadow:var(--shadow-1);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),border-color var(--dur) var(--ease)}

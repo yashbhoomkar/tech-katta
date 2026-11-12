@@ -101,7 +101,7 @@
 .lab.lab-watch{grid-template-columns:minmax(0,1fr)}.lab-watch .lab-pal,.lab-watch .lab-ins{display:none}
 
 /* ===== Katta Paper skin ===== */
-.lab-name{border-radius:var(--radius);font:600 19px var(--font-display)}
+.lab-name{flex:1 1 280px;max-width:560px;border-radius:var(--radius);font:600 19px var(--font-display)}
 .lab-name:hover{border-color:var(--line-strong)}
 .lab-name:focus{border-color:var(--accent)}
 .lab-btn{border:1px solid var(--brand-edge);border-radius:var(--r-md);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font);letter-spacing:0;transition:background var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease)}
