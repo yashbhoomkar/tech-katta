@@ -6,6 +6,7 @@ import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { validateContent } from './validate.js';
 import { existsSync } from 'node:fs';
+import { loadProblems } from '../practice/problems.js';
 
 const readJson = async (file) => {
   try { return JSON.parse(await readFile(file, 'utf8')); }
@@ -27,12 +28,14 @@ export async function loadContent(dir) {
   // catalogue as lab.eval, so the frontend and the judge worker get it with everything else they already read.
   const evalPath = path.join(dir, 'eval.json');
   const evalCat = existsSync(evalPath) ? await readJson(evalPath) : undefined;
-  const problems = validateContent({ site, examples, articles, lab, evalCat });
+  // practice problems (content/problems2/, optional): shape and calibration checked like the rest
+  const practice = await loadProblems(dir);
+  const problems = [...validateContent({ site, examples, articles, lab, evalCat }), ...practice.errors];
   if (problems.length) throw new Error(`Invalid content in ${dir}:\n- ${problems.join('\n- ')}`);
   let release = path.basename(dir);
   try { release = path.basename(realpathSync(dir)); } catch {}
   if (evalCat !== undefined) lab = { ...lab, eval: evalCat };
-  return { site, examples, articles, lab, release };
+  return { site, examples, articles, lab, release, practice: practice.problems };
 }
 
 const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek', 'audio'];

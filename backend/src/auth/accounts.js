@@ -12,6 +12,7 @@
 //            rev goes up by one on every save; a save only lands on the rev it was merged from, so two
 //            devices syncing at the same moment can't overwrite each other (the loser merges again).
 //   events   { name, at, visitor, userId?, device, page, props }  — usage events (events.js), TTL 13 months
+//   practice_submissions, practice_stats: the LeetCode-style practice pages (practice/store.js); deleted with the account
 //   submissions { userId, slug, at, verdict, passed, total, score, cost, p99, hints }  — a problem's
 //            Submit, judged again on the server (routes.js). Only the result: the design and the written
 //            answer are not kept. Gives each problem its acceptance rate and "cheaper than N%".
@@ -153,6 +154,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     async deleteAccount(userId) {
       await events.deleteMany({ userId });
       await submissions.deleteMany({ userId });
+      await db.collection('practice_submissions').deleteMany({ user_id: userId });
       await lab.deleteOne({ userId });
       await users.deleteOne({ _id: userId });
       await sessions.deleteMany({ userId });
@@ -218,5 +220,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
     // Create the indexes now (at startup) rather than on the first request. Never throws.
     warmUp() { return init().then(() => true, () => false); },
     close: () => mongo.close(),
+    // the database, for the practice store (practice/store.js), which keeps its submissions beside the accounts
+    db,
   };
 }

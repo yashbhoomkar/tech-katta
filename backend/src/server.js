@@ -7,6 +7,8 @@ import { loadContent, buildBodies } from './content/store.js';
 import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
 import { accountRoutes, ACCOUNT_PATHS, JSON_CSP } from './auth/routes.js';
 import { judgePool } from './auth/judge-pool.js';
+import { practiceRoutes } from './practice/routes.js';
+import { openPractice } from './practice/store.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -41,7 +43,7 @@ function healthPayload() {
     service: packageJson.name,
     version: packageJson.version,
     uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
-    content: { release: content.release, articles: content.articles.length },
+    content: { release: content.release, articles: content.articles.length, practice: content.practice.length },
     auth: auth.enabled ? 'on' : 'off',
     ...(accounts ? { accounts: accounts.health(), ...(accounts.storage() ? { storage: accounts.storage() } : {}) } : {}),
     timestamp: new Date().toISOString(),
@@ -117,6 +119,14 @@ const handleAccount = accountRoutes({
   analyticsOrigin: process.env.ANALYTICS_ORIGIN ?? 'https://analytics.katta.cc',
   verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
 });
+// Practice (tech-katta-context/21-PROBLEM-EXPERIENCE-LEETCODE-STYLE.md): its own judging thread, so a Submit never
+// waits behind a canvas problem's simulation, and a time limit per design. The limit is 1 s, not the spec's 250 ms: a
+// fresh worker spends most of 250 ms loading the engine on the VPS, which would turn a first Submit into a Judge Error.
+const practiceJudges = judgePool({ size: 1, timeoutMs: 1_000, maxQueue: 50, workerUrl: new URL('./practice/judge-worker.js', import.meta.url) });
+const handlePractice = practiceRoutes({
+  problems: () => content.practice, accounts, store: accounts ? openPractice(accounts.db) : null, enabled: auth.enabled, allowedOrigin,
+  judge: (job) => practiceJudges.run(job),
+});
 console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
 // indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
 accounts?.warmUp().then(() => accounts.health());
@@ -166,6 +176,7 @@ function route(request, response) {
   }
 
   if (ACCOUNT_PATHS.has(pathname)) return handleAccount(request, response, pathname);
+  if (pathname.startsWith('/v1/practice/')) return handlePractice(request, response, pathname);
 
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
@@ -232,6 +243,7 @@ server.listen(port, host, () => {
 function shutdown(signal) {
   console.log(`Received ${signal}; shutting down API server.`);
   judges.close();
+  practiceJudges.close();
   server.close((error) => {
     if (error) { console.error('HTTP server shutdown failed:', error); process.exitCode = 1; }
     Promise.resolve(accounts?.close()).catch(() => {}).finally(() => process.exit());
