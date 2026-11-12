@@ -35,7 +35,8 @@
   .d-list a:hover em,.inside-grid a:hover em,.card:hover .card-go,.a-lab:hover em{transform:translateX(4px)}
   .a-more[open]>:not(summary),.sv-hints li.open>:not(button){animation:tk-rise .24s var(--ease) backwards}
   /* 4. Things that open over the page: menus pop, the phone drawer's backdrop fades, sheets slide up */
-  .acct-menu,.lab-menu,.tour-card,.lock-card{animation:tk-pop .16s var(--ease) backwards}
+  .acct-menu,.lab-menu,.tour-card,.lock-card,.acct-dialog-card{animation:tk-pop .16s var(--ease) backwards}
+  .acct-dialog::backdrop{animation:tk-fade var(--dur) var(--ease) backwards}
   .scrim{animation:tk-fade var(--dur) var(--ease) backwards}
   .sv-console,.lab-score{animation:tk-sheet .26s var(--ease) backwards}
   .sv-test:nth-child(-n+6){animation:tk-rise .24s var(--ease) backwards}

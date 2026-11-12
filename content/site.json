@@ -27,12 +27,12 @@
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
     "description": "Design interview problems on a canvas and have them judged: real traffic, crashed servers and the bill decide, and you get a score out of 100. Plus short, plain articles, built for Indian scale.",
-    "primary": "Start practising",
+    "primary": "Dashboard",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
-    "primaryHref": "/dashboard/problems/",
+    "primaryHref": "/dashboard/concepts/",
     "secondaryHref": "#ind-vs-pak"
   },
   "topics": {
@@ -332,6 +332,80 @@
     "skip": "Skip",
     "done": "Done",
     "close": "Close",
+    "section": [
+      {
+        "target": ".side-nav",
+        "title": "The library",
+        "text": "Every section is on the left: Concepts and Components teach the ideas and tools, Interview Questions work full answers, Problems is where you practise. The one you are in is marked."
+      },
+      {
+        "target": ".side-sub",
+        "title": "This section's articles",
+        "text": "Every article in this section, in reading order and grouped by topic. Start at the top if you are new; jump to any one if you are revising."
+      },
+      {
+        "target": ".d-list, .qt-start, .d-notes",
+        "title": "Pick an article",
+        "text": "Each card is one article and what it covers. Tap a card to read it."
+      },
+      {
+        "target": ".tabs",
+        "title": "Other sections",
+        "text": "The same sections along the top. Problems is the place to try what you read: design on a canvas, run the tests, get a score."
+      },
+      {
+        "target": ".d-head .theme-btn",
+        "title": "Light or dark",
+        "text": "Switch the colours any time; the site remembers your choice."
+      },
+      {
+        "target": ".d-tour",
+        "title": "A tour on every page",
+        "text": "Open an article and press Tour again: it shows Listen, the contents list and the figures. In a problem, Tour shows how to use the canvas."
+      }
+    ],
+    "article": [
+      {
+        "target": ".crumbs",
+        "title": "Where you are",
+        "text": "The section and the article's place in it. Tap the section name to go back to the list."
+      },
+      {
+        "target": ".reader",
+        "title": "Listen",
+        "text": "Press Listen and the article is read aloud with your device's voices. Pick a speed; the sentence being read is highlighted and kept in view."
+      },
+      {
+        "target": ".a-tldr",
+        "title": "In 30 seconds",
+        "text": "The whole article in a few lines. Read this first; if it is enough for today, you have the key points."
+      },
+      {
+        "target": ".d-rail",
+        "title": "On this page",
+        "text": "Jump to any heading. The heading you are reading is marked as you scroll."
+      },
+      {
+        "target": ".a-fig",
+        "title": "Figures that move",
+        "text": "Figures play the idea as a short loop: follow a request through the system. On a phone, the full-screen button turns a figure sideways to fill the screen."
+      },
+      {
+        "target": ".a-more",
+        "title": "Go deeper",
+        "text": "Extra detail stays folded so the main path stays short. Tap to open it, tap again to close."
+      },
+      {
+        "target": ".share",
+        "title": "Share",
+        "text": "Send this article to a friend: it uses your phone's share sheet, or copies the link."
+      },
+      {
+        "target": ".side-sub",
+        "title": "What's next",
+        "text": "The rest of this section, in order. The article you are reading is marked."
+      }
+    ],
     "dashboard": [
       {
         "target": ".tabs",
@@ -607,6 +681,11 @@
     "and": "and the",
     "agreeFirst": "Tick the box to agree to the Terms and conditions first.",
     "signIn": "Sign in",
+    "signInDialog": {
+      "title": "Sign in to Tech Katta",
+      "text": "Articles, problems and notes are free with a Google account. Sign in once and your designs, scores and stars follow you to every device.",
+      "close": "Close"
+    },
     "pageLock": {
       "title": "Sign in to open this",
       "text": "Articles, problems and notes are free with a Google account. Sign in once and everything opens, on every device."

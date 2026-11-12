@@ -37,9 +37,11 @@ addEventListener("hashchange",restore);addEventListener("popstate",restore);retu
 useEffect(()=>{let last=routeKey(location);const f=()=>{const k=routeKey(location);if(k===last)return;last=k;setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);addEventListener("popstate",f);return()=>{removeEventListener("hashchange",f);removeEventListener("popstate",f)}},[]);
 useEffect(()=>{const p=pathFor(keyOf(route));if(location.pathname!==p||location.hash){try{history.replaceState(history.state,"",p)}catch{}}let l=document.querySelector('link[rel="canonical"]');if(!l){l=document.createElement("link");l.rel="canonical";document.head.appendChild(l)}l.href="https://tech.katta.cc"+p},[route]);
 useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
-// Guided tour, one per kind of page: the dashboard, a problem's workspace, a challenge's canvas. It opens only when
+// Guided tour, one per kind of page: the dashboard, a section, an article, a problem's workspace, a challenge's canvas. It opens only when
 // the Tour button is pressed (owner's decision, 2026-11-07): never by itself.
-const tourKind=solving?(c.tour?.problem?"problem":null):route.challenge?(c.tour?.lab?"lab":null):"dashboard";
+// Reading pages get their own: an article (Listen, contents, figures) and a section's list of articles.
+const reading=route.sec&&!["problems","privacy","terms"].includes(route.sec);
+const tourKind=solving?(c.tour?.problem?"problem":null):route.challenge?(c.tour?.lab?"lab":null):reading&&route.art&&c.tour?.article?"article":reading&&!route.art&&c.tour?.section?"section":"dashboard";
 const[tour,setTour]=useState(null);const closeTour=()=>setTour(null);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:route.challenge?"Challenge · Problems | Tech Katta":active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);

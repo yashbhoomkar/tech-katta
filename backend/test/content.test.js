@@ -262,6 +262,9 @@ test('validation checks the CDN, a challenge\'s cost star, and the landing page 
   assert.deepEqual(siteCheck((s) => { delete s.landingLab; delete s.fact; }), []);
   // there is no Lab tab: its tour is optional
   assert.deepEqual(siteCheck((s) => { delete s.tour.lab; }), []);
+  // the section and article tours and the header's sign-in dialog copy are optional too
+  assert.deepEqual(siteCheck((s) => { delete s.tour.section; delete s.tour.article; delete s.account.signInDialog; }), []);
+  assert.notDeepEqual(siteCheck((s) => { s.tour.article[0].target = 7; }), []);
 });
 
 test('content preflight allows If-None-Match', async () => {
