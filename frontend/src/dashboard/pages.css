@@ -1,0 +1,38 @@
+/* Section pages: panels, article lists and groups, Quick Notes, the start page, Privacy and Terms. */
+.d-panel{max-width:760px;background:var(--bg);border:1px solid var(--line);padding:32px 36px}
+.d-panel label{display:inline-block;color:var(--accent);font:600 10px var(--mono);letter-spacing:.09em;border:1px solid var(--accent-line);background:var(--accent-tint);padding:5px 8px}
+.d-panel h1{margin:18px 0 10px;font-size:32px;line-height:1.15;letter-spacing:-.03em}
+.d-desc{margin:0;max-width:580px;color:var(--muted);font-size:15px;line-height:1.6}
+.d-empty{margin-top:28px;border-top:1px solid var(--line);padding-top:20px}
+.d-empty span{font:600 10px var(--mono);letter-spacing:.08em;color:var(--muted)}
+.d-empty p{margin:8px 0 0;font-size:14px;line-height:1.6}
+.d-notes{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--ink)}
+.d-notes li{display:grid;grid-template-columns:32px 1fr auto auto;align-items:baseline;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.d-notes b{font-size:14px;font-weight:500;line-height:1.45}
+.d-no,.d-tag,.d-notes em{font:500 10px var(--mono);letter-spacing:.06em;color:var(--muted);font-style:normal}
+.d-notes em{border:1px solid var(--line);padding:3px 6px}
+.d-notes em.draft{color:var(--accent);border-color:var(--accent-line);background:var(--accent-tint)}
+.d-list{margin-top:28px;border-top:1px solid var(--line);padding-top:20px}
+.d-list>span{font:600 10px var(--mono);letter-spacing:.08em;color:var(--muted)}
+.d-list ol{list-style:none;margin:12px 0 0;padding:0}
+.d-list a{display:block;border:1px solid var(--line);padding:18px 20px}
+.d-list a:hover{border-color:var(--accent)}
+.d-list small{font:600 10px var(--mono);letter-spacing:.08em;color:var(--accent)}
+.d-list b{display:block;margin:6px 0;font-size:18px;line-height:1.3;letter-spacing:-.015em}
+.d-list p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+.d-list em{display:inline-block;margin-top:12px;font:600 11px var(--mono);font-style:normal;color:var(--accent)}
+.d-panel .r-rate{border:0;background:none;padding:0;color:var(--muted)}
+@media(max-width:680px){.d-panel{padding:22px 18px}.d-panel h1{font-size:26px}.d-notes li{grid-template-columns:24px 1fr auto;gap:10px}.d-tag{display:none}}
+.d-start .cards{margin-top:22px;max-width:1100px}
+.d-panel.d-start{max-width:1100px}
+.priv{max-width:680px;margin-top:18px}
+.priv h2{font-size:16px;margin:0 0 4px}
+.priv p{margin:0;font-size:15px;line-height:1.65;color:var(--ink-2)}
+.d-group{margin-top:26px}
+.d-group>h2{margin:0;padding-top:14px;border-top:1px solid var(--ink);font-size:13px;font-family:var(--mono);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.d-group>p{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.d-group>ol{margin-top:12px}
+.d-group .d-soon{margin-top:10px;padding:14px 16px;border:1px dashed var(--line);font:500 11px var(--mono);letter-spacing:.04em}
+.d-list ol li+li{margin-top:10px}
+/* Start page: the Library cards sit straight on the page; they have their own frames. */
+.d-panel.d-start{background:none;border:0;padding:8px 0 0}

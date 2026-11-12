@@ -1,0 +1,12 @@
+/* Read aloud controls. */
+.reader{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:18px;padding:10px 12px;border:1px solid var(--line);background:var(--surface);max-width:680px}
+.r-btn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);font:600 11px var(--mono);letter-spacing:.02em;color:var(--ink)}
+.r-btn:hover{border-color:var(--accent);color:var(--accent)}
+.r-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.r-btn.primary:hover{background:var(--accent-strong);color:var(--on-accent)}
+.r-rate{display:inline-flex;align-items:center;gap:6px;font:600 10px var(--mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.r-rate select{height:32px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);font:500 12px var(--mono);color:var(--ink);padding:0 6px}
+.r-note{font:500 10px var(--mono);letter-spacing:.04em;color:var(--muted)}
+.r-btn.share{height:30px;flex:none}
+@media(max-width:680px){.r-note{flex-basis:100%}}
+@media(max-width:680px){.r-btn{height:40px;padding:0 14px}.r-rate select{height:40px}.r-voice{flex:1 1 100%}.r-voice select{flex:1;min-width:0;max-width:100%}}

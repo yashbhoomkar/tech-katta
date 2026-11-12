@@ -1,0 +1,32 @@
+/* Article figures and the full-screen figure view. */
+.a-fig{margin:28px 0 0;border:1px solid var(--line)}
+.a-fig-head{padding:10px 14px;border-bottom:1px solid var(--line);font:600 10px var(--mono);letter-spacing:.08em;background:var(--surface)}
+.a-fig-body{padding:22px 18px 16px}
+.a-fig-err{margin:0;padding:24px 8px;font-size:13px;color:var(--muted);text-align:center}
+.a-fig svg{display:block;width:100%;height:auto}
+.a-fig .fk{font:600 10px var(--mono);letter-spacing:.06em;fill:var(--accent)}
+.a-fig .fsub{font:12px var(--font);fill:var(--muted)}
+.a-fig .fb{font:600 12px var(--font);fill:var(--ink)}
+.a-fig .fl{font:500 10px var(--mono);fill:var(--muted)}
+.a-fig figcaption{padding:12px 14px;border-top:1px solid var(--line);font-size:13px;line-height:1.55;color:var(--muted)}
+.fs-btn{display:none;width:calc(100% - 24px);height:40px;margin:0 12px 12px;align-items:center;justify-content:center;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--bg);border:1px solid var(--accent-line)}
+.fs-btn:hover,.fs-btn:focus-visible{border-color:var(--accent)}
+.fs{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}
+.fs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);font:600 10px var(--mono);letter-spacing:.06em}
+.fs-head .r-btn{white-space:nowrap;flex:none}
+.fs-title{display:grid;gap:4px;min-width:0}
+.fs-hint{display:none;font:500 10px var(--mono);letter-spacing:0;color:var(--muted)}
+@media(orientation:portrait){.fs-hint{display:block}}
+.fs-stage{position:relative;flex:1;overflow:hidden;background:var(--surface-2)}
+.fs-fig{position:absolute;left:50%;top:50%}
+.fs-fig svg{display:block;width:100%;height:auto}
+.fs .fk{font:600 10px var(--mono);letter-spacing:.06em;fill:var(--accent)}
+.fs .fsub{font:12px var(--font);fill:var(--muted)}
+.fs .fb{font:600 12px var(--font);fill:var(--ink)}
+.fs .fl{font:500 10px var(--mono);fill:var(--muted)}
+.a-fig .fq,.fs .fq{font:500 12px var(--font);fill:var(--ink)}
+.a-fig .fh,.fs .fh{font:600 10.5px var(--font);fill:var(--ink)}
+.a-fig .fx,.fs .fx{font:700 14px var(--font);fill:var(--ink)}
+.a-fig .halo,.fs .halo{paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+@media(pointer:coarse){.fs-btn{display:flex}}
+@media(max-width:760px){.fs-btn{display:flex}.a-fig-body{padding:14px 8px 10px}}
