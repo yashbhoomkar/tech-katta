@@ -366,66 +366,212 @@
     ],
     "article": [
       {
-        "target": ".crumbs",
-        "title": "Where you are",
-        "text": "The section and the article's place in it. Tap the section name to go back to the list."
+        "target": ".a-tldr",
+        "title": "Start with In 30 seconds",
+        "text": "The whole article in a few lines. If that is all the time you have, you have the key points."
       },
       {
         "target": ".reader",
-        "title": "Listen",
-        "text": "Press Listen and the article is read aloud with your device's voices. Pick a speed; the sentence being read is highlighted and kept in view."
+        "title": "Or listen",
+        "text": "Press Listen to hear the article in your device's voice; the sentence being read is highlighted. Pick a speed."
       },
       {
-        "target": ".a-tldr",
-        "title": "In 30 seconds",
-        "text": "The whole article in a few lines. Read this first; if it is enough for today, you have the key points."
+        "target": ".a-fig",
+        "title": "Figures that play",
+        "text": "Each figure plays the idea step by step; the line at its top says what is happening. On a phone, swipe it sideways or open it full screen."
       },
       {
         "target": ".d-rail",
         "title": "On this page",
-        "text": "Jump to any heading. The heading you are reading is marked as you scroll."
-      },
-      {
-        "target": ".a-fig",
-        "title": "Figures that move",
-        "text": "Figures play the idea as a short loop: follow a request through the system. On a phone, the full-screen button turns a figure sideways to fill the screen."
+        "text": "Jump to any heading; the one you are reading is marked."
       },
       {
         "target": ".a-more",
         "title": "Go deeper",
-        "text": "Extra detail stays folded so the main path stays short. Tap to open it, tap again to close."
+        "text": "Extra detail is folded away so the main path stays short. Tap to open it."
       },
       {
-        "target": ".share",
-        "title": "Share",
-        "text": "Send this article to a friend: it uses your phone's share sheet, or copies the link."
+        "target": ".tabs .tab[href=\"#problems\"]",
+        "title": "Then practise",
+        "text": "Try the idea in Problems: build a design, run the tests and get a score.",
+        "cta": {
+          "label": "Go to Problems →",
+          "href": "#problems"
+        }
+      }
+    ],
+    "concepts": [
+      {
+        "target": ".d-desc",
+        "title": "Concepts",
+        "text": "21 articles in three groups. Read the nine Core concepts in order: each one builds on the one before. Recurring patterns and Specialised data are for when a problem needs them."
       },
       {
         "target": ".side-sub",
-        "title": "What's next",
-        "text": "The rest of this section, in order. The article you are reading is marked."
+        "title": "Your reading list",
+        "text": "Every article in order, grouped as on the page. The one you are reading is marked."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:nth-child(2)",
+        "title": "Inside every article",
+        "text": "A 30-second summary first, then the full explanation with figures that play the idea step by step, numbers to quote and the traps interviewers look for. Press Listen to hear it instead."
+      },
+      {
+        "target": ".tabs .tab[href=\"#problems\"]",
+        "title": "Then test yourself",
+        "text": "Problems turns these ideas into designs that get judged: real traffic, crashed servers and a monthly bill decide your score."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:first-child",
+        "title": "Start here",
+        "text": "Networking essentials comes first: how one request gets from a phone to a server and back. The articles after it assume it.",
+        "cta": {
+          "label": "Read Networking essentials →",
+          "href": "#concepts/networking-essentials"
+        }
+      }
+    ],
+    "components": [
+      {
+        "target": ".d-desc",
+        "title": "Components",
+        "text": "Ten tools interviewers expect you to name, from Redis and Kafka to PostgreSQL and DynamoDB. You do not need all ten at once: read one when your design needs it."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:nth-child(2)",
+        "title": "What each one covers",
+        "text": "What the tool is good at, where it breaks, the numbers to quote, and what to say when an interviewer asks why not something else."
+      },
+      {
+        "target": ".tabs .tab[href=\"#concepts\"]",
+        "title": "New to the ideas?",
+        "text": "Caching, sharding and consistency are explained in Concepts. These tools are built on them, so read those first if they are new to you."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:first-child",
+        "title": "Start with Redis",
+        "text": "It is the cache in most designs, so it is the tool to know first.",
+        "cta": {
+          "label": "Read Redis →",
+          "href": "#components/redis"
+        }
+      }
+    ],
+    "interview-questions": [
+      {
+        "target": ".d-desc",
+        "title": "Interview Questions",
+        "text": "Seven short guides on how the interview works, then 22 questions from Easy to Hard, each answered from requirements and rough numbers to a design you can defend."
+      },
+      {
+        "target": "a.qt-start[href*=\"how-to-answer\"]",
+        "title": "The method",
+        "text": "How to answer gives the order every answer here follows, from requirements to deep dives. Read it before the questions."
+      },
+      {
+        "target": ".qt-table",
+        "title": "The questions",
+        "text": "Each question opens beside its own canvas: read the answer, then build it yourself and run the tests. Easy ones teach the method; Medium and Hard add peaks, crashes and a budget."
+      },
+      {
+        "target": ".qt-levels",
+        "title": "Filter by difficulty",
+        "text": "Show only Easy, Medium or Hard questions."
+      },
+      {
+        "target": "a.qt-start",
+        "title": "Start here",
+        "text": "System design interviews explains what the interview tests and how to use this library.",
+        "cta": {
+          "label": "Read the first guide →",
+          "href": "#interview-questions/system-design-interviews"
+        }
+      }
+    ],
+    "quick-notes": [
+      {
+        "target": ".d-desc",
+        "title": "Quick Notes",
+        "text": "Short notes on one system at a time: how it works, where it breaks and the trade-off it makes. A few minutes each."
+      },
+      {
+        "target": ".d-notes",
+        "title": "The notes",
+        "text": "Each note covers one system. Notes marked Planned are not written yet."
+      },
+      {
+        "target": ".numbers-wrap",
+        "title": "Numbers worth knowing",
+        "text": "Rough latencies, and the arithmetic that turns a requirement into requests per second and storage. Worth a look before any interview."
+      }
+    ],
+    "real-systems": [
+      {
+        "target": ".d-desc",
+        "title": "Real systems",
+        "text": "Six case studies of real teams: the hard problem, what they built and the numbers behind it. Read them after Concepts: they show the same ideas under real load."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:nth-child(2)",
+        "title": "What each one gives you",
+        "text": "Each one ends with what to say in an interview, so a real example can back up your answer."
+      },
+      {
+        "target": ".d-list > section:first-of-type li:first-child",
+        "title": "Start here",
+        "text": "Shopify: holding the last unit at checkout, in MySQL instead of Redis.",
+        "cta": {
+          "label": "Read Shopify →",
+          "href": "#real-systems/shopify-reservations"
+        }
+      }
+    ],
+    "problems": [
+      {
+        "target": ".pb-bar",
+        "title": "Your progress",
+        "text": "Problems solved and challenge stars earned, saved as you go. Choose Not done yet to see only what is left."
+      },
+      {
+        "target": ".qt-levels",
+        "title": "Start with Easy",
+        "text": "The four Easy problems teach the method; the URL shortener is the first. Medium and Hard add traffic peaks, crashed servers and a budget."
+      },
+      {
+        "target": ".qt-table",
+        "title": "How a problem works",
+        "text": "Open a row, read the problem, build your design on the canvas, Run the example tests, then Submit for a score out of 100. Hints and a worked solution are there when you are stuck."
+      },
+      {
+        "target": ".pb-pick",
+        "title": "Not sure where to start?",
+        "text": "Pick one opens a problem you have not solved yet."
+      },
+      {
+        "target": ".pb-group + .pb-group",
+        "title": "Challenges",
+        "text": "Eight shorter puzzles on one idea each, worth up to three stars: keep a server up, stay under budget, lose no orders.",
+        "cta": {
+          "label": "Try the URL shortener →",
+          "href": "#problems/url-shortener"
+        }
       }
     ],
     "dashboard": [
       {
-        "target": ".tabs",
-        "title": "Learn, then practise",
-        "text": "Concepts, Components and Interview Questions teach. Problems is where you practise: design on a canvas, run the tests, get a score. Quick Notes are two-minute reads, and Real systems retells how real teams solved hard problems."
+        "target": ".cards",
+        "title": "Three ways in",
+        "text": "Learn the ideas in Concepts and Components, see full answers in Interview Questions, then practise in Problems, where your design is tested and scored. New here? Go in that order."
+      },
+      {
+        "target": ".tabs .tab[href=\"#concepts\"]",
+        "title": "Start with Concepts",
+        "text": "Nine core articles, read in order: networking, APIs, data models, caching, sharding and the numbers to know. Each one opens with a 30-second summary."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
-        "title": "Problems: practise against tests",
-        "text": "Interview problems, each with its own test suite, plus eight challenges with stars. Design it on a canvas, Run the example tests, then Submit for a score out of 100."
-      },
-      {
-        "target": ".tabs .tab[href=\"#interview-questions\"]",
-        "title": "Worked answers",
-        "text": "Each question worked from requirements and rough numbers to a design you can defend, with the traps an interviewer looks for. It opens beside its own canvas."
-      },
-      {
-        "target": ".tabs .tab[href=\"#components\"]",
-        "title": "The building blocks",
-        "text": "The named tools interviewers expect, such as Redis, Kafka and PostgreSQL: what each one is for and where it breaks, with figures. Concepts covers the ideas behind them."
+        "title": "Then practise",
+        "text": "22 problems and 8 challenges. Build a design on a canvas, run the tests and get a score out of 100: real traffic, crashed servers and the monthly bill decide it."
       },
       {
         "target": ".d-head .acct",
@@ -434,11 +580,11 @@
       },
       {
         "target": ".d-tour",
-        "title": "That's it",
-        "text": "Press Tour any time: each page has its own. The best place to start is the first problem.",
+        "title": "A tour on every page",
+        "text": "Press Tour on any page and it explains that page.",
         "cta": {
-          "label": "Try the first problem →",
-          "href": "#problems/url-shortener"
+          "label": "Start with Networking essentials →",
+          "href": "#concepts/networking-essentials"
         }
       }
     ],

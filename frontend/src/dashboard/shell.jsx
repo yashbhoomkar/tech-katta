@@ -41,7 +41,8 @@ useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
 // the Tour button is pressed (owner's decision, 2026-11-07): never by itself.
 // Reading pages get their own: an article (Listen, contents, figures) and a section's list of articles.
 const reading=route.sec&&!["problems","privacy","terms"].includes(route.sec);
-const tourKind=solving?(c.tour?.problem?"problem":null):route.challenge?(c.tour?.lab?"lab":null):reading&&route.art&&c.tour?.article?"article":reading&&!route.art&&c.tour?.section?"section":"dashboard";
+// A section's list has its own tour when content has one (tour.concepts, tour["interview-questions"], …), else the generic one.
+const tourKind=solving?(c.tour?.problem?"problem":null):route.challenge?(c.tour?.lab?"lab":null):reading&&route.art&&c.tour?.article?"article":reading&&!route.art?(c.tour?.[route.sec]?route.sec:c.tour?.section?"section":"dashboard"):route.sec==="problems"&&c.tour?.problems?"problems":"dashboard";
 const[tour,setTour]=useState(null);const closeTour=()=>setTour(null);
 useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
 useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:route.challenge?"Challenge · Problems | Tech Katta":active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
