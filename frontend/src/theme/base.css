@@ -1,0 +1,4 @@
+/* Rules every page shares. Page stylesheets add their own layout on top. */
+*{box-sizing:border-box}body{margin:0}
+/* Reduced motion: every transition that uses the motion tokens stops. */
+@media(prefers-reduced-motion:reduce){:root{--dur-fast:0s;--dur:0s}}

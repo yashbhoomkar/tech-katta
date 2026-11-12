@@ -2,7 +2,7 @@
 // The design is judged by the v2 evaluator (src/eval): a problem's Run and Submit (solve.jsx), a challenge's Score.
 // The canvas shows a replayed load test minute by minute when one is being watched. The component catalogue, prices and
 // settings come from the API (GET /v1/lab: content/lab.json and eval.json). Designs are kept in this browser.
-import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
+import{BLUE,INK,LINE}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
 import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow,BaseEdge,EdgeLabelRenderer,getSmoothStepPath}from"@xyflow/react";
 import"@xyflow/react/dist/style.css";import"./lab.css";import{schemaSummary}from"./schema.js";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
@@ -27,7 +27,7 @@ const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:S
 const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
 const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:n.x??0,y:n.y??0},data:{kind:n.type,config:n.config||{},...(n.name?{name:n.name}:{})}})),edges:d.edges.map(e=>edge(e.from,e.to,e.carries))});
 const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x),y:Math.round(n.position.y),...(n.data.name?{name:n.data.name}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target,...(e.data?.carries?{carries:e.data.carries}:{})}))});
-const edge=(source,target,carries)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:"#1c2733"},...(carries?{data:{carries}}:{})});
+const edge=(source,target,carries)=>({id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:16,height:16,color:INK},...(carries?{data:{carries}}:{})});
 
 const ICON={cdn:"M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM2.5 10h15M10 2.5c2 2 3 4.5 3 7.5s-1 5.5-3 7.5M10 2.5c-2 2-3 4.5-3 7.5s1 5.5 3 7.5",client:"M4 5h12v8H4zM8 16h4M10 13v3",apigw:"M3 10h4M13 10h4M7 6h6v8H7zM10 6V3M10 17v-3",server:"M4 4h12v5H4zM4 11h12v5H4zM7 6.5h1M7 13.5h1",lb:"M10 3v4M10 7l-6 6M10 7l6 6M10 7v6M2 13h4v4H2zM8 13h4v4H8zM14 13h4v4h-4z",cache:"M11 2L4 11h5l-1 7 7-9h-5z",queue:"M2 7h16v6H2zM6 7v6M10 7v6M14 7v6",external:"M3 10h9M9 6l4 4-4 4M14 4h3v12h-3",realtime:"M4 10a6 6 0 0 1 12 0M7 10a3 3 0 0 1 6 0M10 10v7M7 17h6",stream:"M2 6h16M2 10h16M2 14h16M15 4l3 2-3 2",pubsub:"M10 4v4M10 8l-6 6M10 8l6 6M10 8v6M3 14h2v2H3zM9 14h2v2H9zM15 14h2v2h-2z",scheduler:"M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM10 6v4l3 2",processor:"M2 6h6M2 10h6M2 14h6M8 4h6v12H8zM14 10h4",coord:"M10 3l6 3.5v7L10 17l-6-3.5v-7zM10 3v14M4 6.5l12 7M16 6.5l-12 7",database:"M4 5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v10c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM4 5c0 1.4 2.7 2.5 6 2.5S16 6.4 16 5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"};
 const Glyph=({kind})=><svg className="lab-ico" viewBox="0 0 20 20" aria-hidden="true"><path d={ICON[kind]||ICON.server}/></svg>;
@@ -47,7 +47,7 @@ const nodeTypes={comp:CompNode};
 // Arrows: click (or tap) one to select it; a selected arrow shows ✕ to remove it (Delete works too).
 function Arrow({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected}){const rf=useReactFlow();const{trace}=useContext(Ctx);const[path,lx,ly]=getSmoothStepPath({sourceX,sourceY,sourcePosition,targetX,targetY,targetPosition});
 const fwd=trace&&trace.from===source&&trace.at===target,back=trace&&trace.from===target&&trace.at===source;
-return <><BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24} style={fwd||back?{stroke:"#1d4ed8",strokeWidth:2.5}:undefined}/>{(fwd||back)&&<circle r="6" className="lab-dot" key={trace.n}><animateMotion dur="0.9s" repeatCount="indefinite" path={path} keyPoints={back?"1;0":"0;1"} keyTimes="0;1" calcMode="linear"/></circle>}{selected&&<EdgeLabelRenderer><button type="button" className="lab-edge-x nodrag nopan" style={{transform:`translate(-50%,-50%) translate(${lx}px,${ly}px)`}} onClick={()=>rf.deleteElements({edges:[{id}]})} aria-label="Remove this arrow" title="Remove this arrow">✕</button></EdgeLabelRenderer>}</>}
+return <><BaseEdge id={id} path={path} markerEnd={markerEnd} interactionWidth={24} style={fwd||back?{stroke:BLUE,strokeWidth:2.5}:undefined}/>{(fwd||back)&&<circle r="6" className="lab-dot" key={trace.n}><animateMotion dur="0.9s" repeatCount="indefinite" path={path} keyPoints={back?"1;0":"0;1"} keyTimes="0;1" calcMode="linear"/></circle>}{selected&&<EdgeLabelRenderer><button type="button" className="lab-edge-x nodrag nopan" style={{transform:`translate(-50%,-50%) translate(${lx}px,${ly}px)`}} onClick={()=>rf.deleteElements({edges:[{id}]})} aria-label="Remove this arrow" title="Remove this arrow">✕</button></EdgeLabelRenderer>}</>}
 const edgeTypes={arrow:Arrow};
 
 // Palette items are dragged with pointer events (mouse, trackpad, touch, pen) rather than HTML5
@@ -86,7 +86,7 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.faults?.length?", with the crash the challenge causes":""}.</p></>}
 <div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 
-function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
+function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
@@ -165,7 +165,8 @@ const badStart=start&&!(lab.challenges||[]).some(c=>c.id===start)?start:null;
 const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.current)startChallenge(start);firstStart.current=null},[start]);// eslint-disable-line
 const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error){recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));track("score",{challenge:ch.id,stars:r.stars,max:r.max,passed:r.checks.map(c=>c.ok?1:0).join(""),lite:false})}setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
-const flowEdges=edges;
+// Arrowheads take the current ink colour (saved designs carry the colour of the theme they were drawn in).
+const flowEdges=React.useMemo(()=>edges.map(e=>e.markerEnd&&typeof e.markerEnd==="object"?{...e,markerEnd:{...e.markerEnd,color:INK}}:e),[edges,theme]);// eslint-disable-line
 return <Ctx.Provider value={{cat,trace,replay}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
@@ -174,9 +175,9 @@ return <Ctx.Provider value={{cat,trace,replay}}><div className={"lab"+(trace?" l
 <div className="lab-status" aria-live="polite">{replay?<span>{replay.status}</span>:badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:ch?<span className="lab-muted">Score your design to see which stars it earns.</span>:<span className="lab-muted">Run or Submit to test this design; then ▶ Replay a load test to watch it here.</span>}</div>
 <Palette lab={lab} comps={paletteV2(lab)} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
-<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
+<ReactFlow colorMode={theme} nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
-<Background gap={20} size={1} color="#d9dee7"/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
+<Background gap={20} size={1} color={LINE}/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
 <Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields||(chStart?[...new Set(Object.values(chStart.entities||{}).flatMap(e=>Object.keys(e.fields||{})))]:undefined)} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} update={update} remove={remove} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} ops={problem?.ops||(chStart?chStart.operations.map(o=>({id:o.id,name:o.name})):undefined)} setCarries={setCarries} lockedIds={locked}/>
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={embedded?.next&&nextCh?(()=>{location.hash=`problems/challenge/${nextCh.id}`}):null} more={embedded?.next?null:embedded}/>}

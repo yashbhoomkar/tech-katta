@@ -1,6 +1,6 @@
 // Interview Questions › Easy: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "easy").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_TINT_2,BG,LB,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
 
 // URL shortener, FIG: the two paths. Creating: the marketing tool posts a long URL, the API turns its next
 // ID into a short code, stores it and returns zot.to/2Bi. Opening: a customer taps the link in an SMS,
@@ -11,7 +11,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sht${uid}`}><titl
 <SBox x={0} y={50} w={120} t="Marketing tool"/><Line x1={122} y1={50} x2={216} y2={50} m={M}/><text x="168" y="42" textAnchor="middle" className="fl">POST /links</text>
 <SBox x={220} y={50} w={120} t="Links API" blue/><text x="280" y="80" textAnchor="middle" className="fl">ID 10,000 → "2Bi"</text>
 <Line x1={342} y1={50} x2={476} y2={50} m={M}/><SBox x={480} y={50} w={150} t="Database (code → URL)"/>
-<line x1="0" y1="110" x2="640" y2="110" stroke="#e6eaf0"/>
+<line x1="0" y1="110" x2="640" y2="110" stroke={LINE_SOFT}/>
 <text x="0" y="132" className="fb">Open (100 times more often)</text>
 <SBox x={0} y={170} w={120} t="Customer's phone"/><Line x1={122} y1={170} x2={216} y2={170} m={M}/><text x="168" y="162" textAnchor="middle" className="fl">GET /2Bi</text>
 <SBox x={220} y={170} w={120} t="Redirect service" blue/><Line x1={216} y1={182} x2={124} y2={182} m={M} dash/><text x="168" y="198" textAnchor="middle" className="fl">302 → long URL</text>
@@ -34,7 +34,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`sct${uid}`}><titl
 <SBox x={0} y={130} w={130} t="Counter" blue/><text x="65" y="160" textAnchor="middle" className="fl">next block: 12,000</text>
 {rows.map(([n,blk,id,code],i)=>{const y=80+i*100;return <g key={n}><Line x1={132} y1={130} x2={226} y2={y} m={M} c={GREY}/><text x="150" y={y+(i?20:-8)} className="fl">{blk}</text>
 <SBox x={230} y={y} w={110} t={n}/><Line x1={342} y1={y} x2={406} y2={y} m={M}/><text x="374" y={y-8} textAnchor="middle" className="fl">ID {id}</text>
-<rect x="410" y={y-14} width="90" height="28" fill="#f8faff" stroke={BLUE}/><text x="455" y={y+5} textAnchor="middle" className="fb" style={{fill:BLUE}}>{code}</text><text x="512" y={y+5} className="fl">zot.to/{code}</text></g>})}
+<rect x="410" y={y-14} width="90" height="28" fill={LB} stroke={BLUE}/><text x="455" y={y+5} textAnchor="middle" className="fb" style={{fill:BLUE}}>{code}</text><text x="512" y={y+5} className="fl">zot.to/{code}</text></g>})}
 <text x="0" y="30" className="fb">Base 62: 0–9, a–z, A–Z</text><text x="0" y="48" className="fl">7 characters ≈ 3.5 lakh crore codes · 6 run out in about 18 months at 10 crore a day</text>
 {!still&&<g aria-hidden="true"><Dot x1={132} x2={224} y={130} y2={80} t0={.05} t1={.15} dur={D}/><Glow x={230} y={68} w={110} h={24} t0={.15} t1={.3} dur={D}/><Dot x1={342} x2={404} y={80} t0={.25} t1={.33} dur={D}/>
 <Dot x1={132} x2={224} y={130} y2={180} t0={.5} t1={.6} dur={D}/><Glow x={230} y={168} w={110} h={24} t0={.6} t1={.75} dur={D}/><Dot x1={342} x2={404} y={180} t0={.7} t1={.78} dur={D}/></g>}</svg>}
@@ -98,7 +98,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`nbt${uid}`}><titl
 // Biryani Zone is 300 m away but in the next cell. One cell misses it; the 3 × 3 block finds it.
 function GeoCellsFig({still,uid=""}){const D="10s",X=40,Y=40,C=70,ux=X+C+62,uy=Y+C+34,bx=X+2*C+14,by=Y+C+30;
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><title id={`gct${uid}`}>A 3 by 3 block of map cells. The customer is near the right edge of the middle cell. Biryani Zone is 300 metres away, but just across the border in the cell to the right. Searching only the customer's cell misses it; searching the customer's cell and the 8 around it finds it. If cells are at least as wide as the search radius, the 3 by 3 block always covers the whole search circle.</title>
-{[0,1,2].map(r=>[0,1,2].map(c=><rect key={r+"-"+c} x={X+c*C} y={Y+r*C} width={C} height={C} fill={r===1&&c===1?"#eef2ff":"#fff"} stroke={GREY}/>))}
+{[0,1,2].map(r=>[0,1,2].map(c=><rect key={r+"-"+c} x={X+c*C} y={Y+r*C} width={C} height={C} fill={r===1&&c===1?ACCENT_TINT_2:BG} stroke={GREY}/>))}
 <circle cx={ux} cy={uy} r="5" fill={INK}/><text x={ux-4} y={uy+18} textAnchor="end" className="fl">you</text>
 <rect x={bx-4} y={by-4} width="8" height="8" fill={RED}/><text x={X+2*C+35} y={by-24} textAnchor="middle" className="fl" style={{fill:RED}}>Biryani</text><text x={X+2*C+35} y={by-12} textAnchor="middle" className="fl" style={{fill:RED}}>Zone</text>
 <line x1={ux} y1={uy} x2={bx} y2={by} stroke={RED} strokeDasharray="3 2"/><text x={X+2*C+35} y={by+22} textAnchor="middle" className="fl">300 m</text>
@@ -113,10 +113,10 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><titl
 // (minute 0-1); payment starts the picker and assigns a rider at the same moment; picking and packing take
 // to minute 4 while the rider waits at the store; the ride is minutes 4-10. A red line walks the clock.
 function MinutesFig({still,uid=""}){const D="12s",X0=96,W=520,x=(m)=>X0+m*W/10;
-const lanes=[["Customer",[[0,1,"hold + pay",BLUE]]],["Picker",[[1,4,"pick, pack",BLUE]]],["Rider",[[1,4,"assigned, waits at store","#e6eaf0"],[4,10,"ride, about 2 km",BLUE]]]];
+const lanes=[["Customer",[[0,1,"hold + pay",BLUE]]],["Picker",[[1,4,"pick, pack",BLUE]]],["Rider",[[1,4,"assigned, waits at store",LINE_SOFT],[4,10,"ride, about 2 km",BLUE]]]];
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`mnt${uid}`}><title id={`mnt${uid}`}>One order against a 10-minute clock. Minute 0 to 1: the customer's items are held and they pay. The moment payment lands, a picker starts and a rider is assigned. Minutes 1 to 4: the picker picks and packs while the rider waits at the store. Minutes 4 to 10: the rider rides about 2 kilometres to the door.</title>
 {lanes.map(([n,bars],i)=>{const y=60+i*60;return <g key={n}><text x="0" y={y+5} className="fb">{n}</text>
-{bars.map(([a,b,t,c])=>{const out=b-a<2;return <g key={t}><rect x={x(a)} y={y-16} width={x(b)-x(a)-2} height="32" fill={c} stroke={c===BLUE?BLUE:GREY}/><text x={out?x(b)+8:(x(a)+x(b))/2} y={y+4} textAnchor={out?"start":"middle"} className="fl" style={{fill:c===BLUE&&!out?"#fff":INK}}>{t}</text></g>})}</g>})}
+{bars.map(([a,b,t,c])=>{const out=b-a<2;return <g key={t}><rect x={x(a)} y={y-16} width={x(b)-x(a)-2} height="32" fill={c} stroke={c===BLUE?BLUE:GREY}/><text x={out?x(b)+8:(x(a)+x(b))/2} y={y+4} textAnchor={out?"start":"middle"} className="fl" style={{fill:c===BLUE&&!out?ON_ACCENT:INK}}>{t}</text></g>})}</g>})}
 <line x1={x(1)} y1="36" x2={x(1)} y2="196" stroke={INK} strokeDasharray="3 2"/><text x={x(1)+4} y="32" className="fl">paid: picker and rider start together</text>
 {[0,1,2,3,4,5,6,7,8,9,10].map(m=><g key={m}><line x1={x(m)} y1="206" x2={x(m)} y2="212" stroke={GREY}/><text x={x(m)} y="226" textAnchor="middle" className="fl">{m}</text></g>)}
 <text x={x(10)} y="246" textAnchor="end" className="fl">minutes after ordering</text>

@@ -1,13 +1,13 @@
 // Components › Tools by name: the figures this sub-tab's articles draw (site.json dashboard.groups.components, "tools").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // The tools: Redis, Elasticsearch, Kafka, Temporal, gateways, Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper.
-import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Mark,Line,Box,Dot,SBox}from"../parts.jsx";
+import{BG,GRID,LINE,LINE_SOFT,SURFACE}from"../../theme/palette.js";import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Mark,Line,Box,Dot,SBox}from"../parts.jsx";
 
 // Redis, FIG 1: five data types, each with one command and the Zotato job it does.
 function RedisTypesFig({still,uid=""}){
 const R=[["String","SET menu:42 '{…}' EX 300","a restaurant's menu, gone after 5 minutes"],["Hash","HINCRBY cart:77 dish:9 1","a cart, one field per dish"],["Sorted set","ZINCRBY top:pune 1 r42","restaurants ranked by today's orders"],["Stream","XADD rider:9 * lat 18.52 lng 73.85","a rider's recent locations, many readers"],["Counter","INCR otp:98201; EXPIRE otp:98201 3600","OTP requests per phone in the last hour"]];
 const caps=[["1 · strings and hashes: a cached menu with an expiry, and a cart kept field by field",INK],["2 · a sorted set keeps a live ranking: add to a score, read the top 10 in order",BLUE],["3 · a stream is an append-only log that several consumers can read",BLUE],["4 · a counter with an expiry is a rate limit in two commands",BLUE]];
-const row=(i,hi)=>{const y=48+i*42;return <g key={i}><Bx x={10} y={y} w={110} h={30} t={R[i][0]} c={hi?BLUE:GREY} fill={hi?LB:"#fff"}/><T x={135} y={y+19} t={R[i][1]} c={hi?BLUE:undefined}/><T x={392} y={y+19} t={R[i][2]}/></g>};
+const row=(i,hi)=>{const y=48+i*42;return <g key={i}><Bx x={10} y={y} w={110} h={30} t={R[i][0]} c={hi?BLUE:GREY} fill={hi?LB:BG}/><T x={135} y={y+19} t={R[i][1]} c={hi?BLUE:undefined}/><T x={392} y={y+19} t={R[i][2]}/></g>};
 const base=<g>{R.map((r,i)=>row(i))}</g>;
 return <svg viewBox="0 0 640 264" role="img" aria-labelledby={`rtt${uid}`}><title id={`rtt${uid}`}>Five Redis data types and one job each at Zotato. A string holds a restaurant's menu with a 5-minute expiry. A hash holds a cart, one field per dish. A sorted set ranks restaurants by today's orders. A stream keeps a rider's recent locations for several services to read. A counter with an expiry limits OTP requests per phone per hour.</title>
 {base}{still?<g>{[0,1,2,3,4].map(i=>row(i,true))}<Cap t={caps[3][0]}/></g>:<Steps caps={caps} only={[0,1,2,3]} g={[<g>{row(0,1)}{row(1,1)}</g>,row(2,1),row(3,1),row(4,1)]}/>}</svg>}
@@ -32,7 +32,7 @@ const Dd=[["d1","Paneer tikka masala"],["d2","Chicken tikka"],["d3","Paneer butt
 const I=[["paneer","d1, d3"],["tikka","d1, d2"],["masala","d1, d3, d4"],["butter","d3"],["chicken","d2"],["dosa","d4"]];
 const caps=[["1 · each dish name is split into lowercase words, called tokens, when it is indexed",INK],["2 · the index maps every word to the dishes that contain it, like the index of a book",INK],["3 · \"paneer tikka\" reads two short lists instead of every dish",BLUE],["4 · both words beat one; among one-word matches, the shorter name scores a little higher",BLUE]];
 const base=<g><T x={10} y={46} t="DISHES" b/>{Dd.map(([d,n],i)=><g key={d}><T x={10} y={74+i*30} t={d}/><T x={40} y={74+i*30} t={n} b/></g>)}</g>;
-const idx=hi=><g><T x={230} y={46} t="INDEX" b/>{I.map(([w,l],i)=><g key={w}><rect x={230} y={58+i*28} width={180} height={22} fill={hi&&i<2?FB:"#fff"} stroke={hi&&i<2?BLUE:GREY}/><T x={240} y={73+i*28} t={w} c={hi&&i<2?BLUE:undefined}/><T x={320} y={73+i*28} t={l}/></g>)}</g>;
+const idx=hi=><g><T x={230} y={46} t="INDEX" b/>{I.map(([w,l],i)=><g key={w}><rect x={230} y={58+i*28} width={180} height={22} fill={hi&&i<2?FB:BG} stroke={hi&&i<2?BLUE:GREY}/><T x={240} y={73+i*28} t={w} c={hi&&i<2?BLUE:undefined}/><T x={320} y={73+i*28} t={l}/></g>)}</g>;
 const res=<g><T x={440} y={46} t="paneer tikka" b c={BLUE}/>{["1  Paneer tikka masala","2  Chicken tikka","3  Paneer butter masala"].map((t,i)=><T key={t} x={440} y={80+i*24} t={t} c={i?undefined:BLUE}/>)}<T x={440} y={170} t="d1 has both words;"/><T x={440} y={184} t="d2 is the shorter of"/><T x={440} y={198} t="the one-word matches"/></g>;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`eit${uid}`}><title id={`eit${uid}`}>An inverted index over four dish names: paneer tikka masala, chicken tikka, paneer butter masala and masala dosa. Each name is split into lowercase words, and the index maps each word to the dishes that contain it: paneer to d1 and d3, tikka to d1 and d2, masala to d1, d3 and d4, and so on. A search for paneer tikka reads just two lists. Paneer tikka masala, with both words, ranks first; chicken tikka ranks above paneer butter masala because it is shorter.</title>
 {base}{still?<g>{idx(1)}{res}<Cap t={caps[3][0]}/></g>:<Steps caps={caps} only={[1]} g={[null,idx(0),idx(1),res]}/>}</svg>}
@@ -55,7 +55,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`est${uid}`}><titl
 function KafkaGroupFig({still,uid=""}){
 const P=[0,1,2,3,4,5],py=i=>50+i*32,C=["C1","C2","C3"],cy=[70,134,198];
 const caps=[["1 · the orders topic has 6 partitions; in a group, each is read by exactly one consumer",INK],["2 · two consumers: three partitions each, and every event is read once by the group",BLUE],["3 · a third consumer joins: the group rebalances to two partitions each",BLUE],["4 · C2 dies: once its session times out, its partitions move to C1 and C3",RED]];
-const parts=<g>{P.map(i=><g key={i}><rect x={20} y={py(i)} width={120} height={24} fill="#fff" stroke={GREY}/><T x={30} y={py(i)+16} t={`orders · P${i}`}/></g>)}</g>;
+const parts=<g>{P.map(i=><g key={i}><rect x={20} y={py(i)} width={120} height={24} fill={BG} stroke={GREY}/><T x={30} y={py(i)+16} t={`orders · P${i}`}/></g>)}</g>;
 const cons=(on,dead)=><g>{C.map((c,i)=>on.includes(i)&&<Bx key={c} x={450} y={cy[i]-20} w={120} h={40} t={c} s={dead===i?"gone":"consumer"} c={dead===i?RED:BLUE} fill={dead===i?LR:LB}/>)}</g>;
 const links=a=><g>{a.map((c,i)=><line key={i} x1={142} y1={py(i)+12} x2={448} y2={cy[c]} stroke={BLUE}/>)}</g>;
 const st=[[[0,0,0,1,1,1],[0,1]],[[0,0,1,1,2,2],[0,1,2]],[[0,0,0,2,2,2],[0,2]]];
@@ -115,7 +115,7 @@ return <svg viewBox="0 0 640 236" role="img" aria-labelledby={`gct${uid}`}><titl
 function GwCostFig({still,uid=""}){const W=v=>Math.max(3,v/20);
 const L=[["10 requests/s",90,180],["100 requests/s",900,180],["1,000 requests/s",6800,250]];
 const caps=[["1 · a managed gateway bills per request; a self-hosted one bills per server",INK],["2 · at 10 requests a second, managed costs about $90 a month: less than two servers",BLUE],["3 · at 100 a second it is about $900, and at 1,000 about $6,800; the servers stay near $250",INK],["4 · the server bars leave out people: someone has to patch, scale and watch them",RED]];
-const row=([n,m,s],i)=>{const y=56+i*58;return <g key={n}><T x={10} y={y+18} t={n} b/><rect x={150} y={y} width={W(m)} height={16} fill={FB} stroke={BLUE}/><T x={156+W(m)} y={y+12} t={`managed ~$${m.toLocaleString("en-IN")}`} c={BLUE}/><rect x={150} y={y+22} width={W(s)} height={16} fill="#eef1f5" stroke={GREY}/><T x={156+W(s)} y={y+34} t={`self-hosted ~$${s}`}/></g>};
+const row=([n,m,s],i)=>{const y=56+i*58;return <g key={n}><T x={10} y={y+18} t={n} b/><rect x={150} y={y} width={W(m)} height={16} fill={FB} stroke={BLUE}/><T x={156+W(m)} y={y+12} t={`managed ~$${m.toLocaleString("en-IN")}`} c={BLUE}/><rect x={150} y={y+22} width={W(s)} height={16} fill={GRID} stroke={GREY}/><T x={156+W(s)} y={y+34} t={`self-hosted ~$${s}`}/></g>};
 const note=<g><T x={10} y={238} t="+ the time to patch, scale and watch your own gateway" c={RED}/><T x={10} y={254} t="Rough monthly list prices in Mumbai; check current ones." /></g>;
 return <svg viewBox="0 0 640 262" role="img" aria-labelledby={`gkt${uid}`}><title id={`gkt${uid}`}>Rough monthly cost of a gateway at three traffic levels. A managed gateway that bills per request costs about 90 dollars at 10 requests a second, about 900 at 100 a second and about 6,800 at 1,000 a second. Self-hosted gateway servers with a load balancer cost about 180 dollars at the lower two levels and about 250 at 1,000 a second. The server cost leaves out the people needed to patch, scale and watch them.</title>
 {row(L[0],0)}{still?<g>{row(L[1],1)}{row(L[2],2)}{note}<Cap t={caps[3][0]} c={RED}/></g>:<Steps caps={caps} g={[null,null,<g>{row(L[1],1)}{row(L[2],2)}</g>,note]}/>}</svg>}
@@ -125,8 +125,8 @@ return <svg viewBox="0 0 640 262" role="img" aria-labelledby={`gkt${uid}`}><titl
 function CassModelFig({still,uid=""}){const M=`cm${uid}`,NX=[20,175,330,485];
 const caps=[["1 · the partition key, chat_id, decides which nodes hold a chat's rows",INK],["2 · inside the partition, rows are stored sorted by sent_at, newest first",INK],["3 · \"last 50 messages of chat 512\" reads one partition, already in order",BLUE],["4 · \"every message from Asha\" names no partition: every node would have to be scanned",RED]];
 const code=["CREATE TABLE messages_by_chat (","  chat_id bigint, sent_at timeuuid, sender text, body text,","  PRIMARY KEY ((chat_id), sent_at)",") WITH CLUSTERING ORDER BY (sent_at DESC);"];
-const base=<g>{code.map((l,i)=><T key={i} x={20+(l.startsWith("  ")?12:0)} y={52+i*15} t={l.trim()}/>)}{NX.map((x,i)=><g key={i}><rect x={x} y={130} width={135} height={90} fill="#fff" stroke={GREY}/><T x={x+8} y={146} t={`node ${i+1}`}/></g>)}</g>;
-const part=hi=><g><rect x={185} y={154} width={115} height={58} fill={hi?LB:"#f5f7fa"} stroke={hi?BLUE:GREY}/><T x={192} y={168} t="chat 512" c={hi?BLUE:undefined}/>{["20:41 Asha","20:40 Ravi","20:38 Asha"].map((t,i)=><T key={t} x={192} y={182+i*12} t={t}/>)}</g>;
+const base=<g>{code.map((l,i)=><T key={i} x={20+(l.startsWith("  ")?12:0)} y={52+i*15} t={l.trim()}/>)}{NX.map((x,i)=><g key={i}><rect x={x} y={130} width={135} height={90} fill={BG} stroke={GREY}/><T x={x+8} y={146} t={`node ${i+1}`}/></g>)}</g>;
+const part=hi=><g><rect x={185} y={154} width={115} height={58} fill={hi?LB:SURFACE} stroke={hi?BLUE:GREY}/><T x={192} y={168} t="chat 512" c={hi?BLUE:undefined}/>{["20:41 Asha","20:40 Ravi","20:38 Asha"].map((t,i)=><T key={t} x={192} y={182+i*12} t={t}/>)}</g>;
 const s3=<g>{part(1)}<T x={20} y={246} t="WHERE chat_id = 512 LIMIT 50 → one partition, in order" c={BLUE}/></g>;
 const s4=<g>{NX.map((x,i)=><rect key={i} x={x} y={130} width={135} height={90} fill="none" stroke={RED} strokeDasharray="4 3"/>)}<T x={20} y={262} t="WHERE sender = 'asha' → rejected, or ALLOW FILTERING: every node" c={RED}/></g>;
 return <svg viewBox="0 0 640 272" role="img" aria-labelledby={`cmt${uid}`}><title id={`cmt${uid}`}>A Cassandra table designed for one question: messages by chat, with chat ID as the partition key and send time as the clustering column, newest first. The partition key decides which nodes hold a chat's rows, and inside the partition the rows are sorted by time. Asking for the last 50 messages of chat 512 reads one partition, already in order. Asking for every message from Asha names no partition, so Cassandra rejects it unless you allow filtering, which scans every node.</title><Mk m={M}/>
@@ -136,7 +136,7 @@ return <svg viewBox="0 0 640 272" role="img" aria-labelledby={`cmt${uid}`}><titl
 // makes a read step over 990 tombstones; warn at 1,000, fail at 1 lakh; dropped after gc_grace (10 days).
 function CassTombFig({still,uid=""}){const n=40,cx=i=>20+i*15;
 const caps=[["1 · a delete in Cassandra writes a marker, a tombstone, instead of removing the row",INK],["2 · a table used as a queue deletes 990 of 1,000 rows: a read steps over 990 tombstones",RED],["3 · reads slow down; past 1,000 tombstones Cassandra warns, past 1 lakh it fails the read",RED],["4 · after gc_grace_seconds, 10 days by default, compaction finally drops them",BLUE]];
-const cells=dead=><g>{[...Array(n).keys()].map(i=>{const d=dead&&i<n-1;return <g key={i}><rect x={cx(i)} y={80} width={12} height={30} fill={d?"#eef1f5":LB} stroke={d?GREY:BLUE}/>{d&&<path d={`M${cx(i)+2} 84l8 22m0-22l-8 22`} stroke={GREY}/>}</g>})}</g>;
+const cells=dead=><g>{[...Array(n).keys()].map(i=>{const d=dead&&i<n-1;return <g key={i}><rect x={cx(i)} y={80} width={12} height={30} fill={d?GRID:LB} stroke={d?GREY:BLUE}/>{d&&<path d={`M${cx(i)+2} 84l8 22m0-22l-8 22`} stroke={GREY}/>}</g>})}</g>;
 const base=<g><T x={20} y={64} t="partition: jobs for restaurant 42 (each box is 25 rows)"/>{cells(0)}</g>;
 const s2=<g>{cells(1)}<T x={20} y={134} t="990 tombstones, 10 live rows" c={RED}/></g>,s3=<g><line x1={20} y1={122} x2={cx(n-1)+12} y2={122} stroke={RED} strokeWidth="2"/><T x={20} y={160} t="a read for the next job scans all of it" c={RED}/><T x={20} y={180} t="tombstone_warn_threshold 1,000 · tombstone_failure_threshold 1,00,000"/></g>;
 const s4=<g><T x={20} y={214} t="after 10 days, compaction removes them; until then, design so reads don't cross them" c={BLUE}/></g>;
@@ -148,7 +148,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ctt${uid}`}><titl
 function DdbKeysFig({still,uid=""}){const M=`dk${uid}`;
 const Rw=[["c77","19:02","r42"],["c77","20:15","r9"],["c81","20:11","r42"],["c90","20:14","r42"]];
 const caps=[["1 · the table's key is customer_id plus placed_at: a customer's orders sit together, in time order",INK],["2 · Query customer c77, newest first: one partition, one request",BLUE],["3 · a global secondary index keeps a copy of each order under restaurant_id plus placed_at",INK],["4 · the copy is written asynchronously: a new order can take a moment to appear there",RED]];
-const tbl=(x,t,h,rows,hi)=><g><T x={x} y={50} t={t} b/><T x={x} y={70} t={h}/>{rows.map((r,i)=><g key={i}><rect x={x} y={78+i*26} width={260} height={22} fill={hi(i)?LB:"#fff"} stroke={hi(i)?BLUE:GREY}/><T x={x+8} y={93+i*26} t={r}/></g>)}</g>;
+const tbl=(x,t,h,rows,hi)=><g><T x={x} y={50} t={t} b/><T x={x} y={70} t={h}/>{rows.map((r,i)=><g key={i}><rect x={x} y={78+i*26} width={260} height={22} fill={hi(i)?LB:BG} stroke={hi(i)?BLUE:GREY}/><T x={x+8} y={93+i*26} t={r}/></g>)}</g>;
 const base=tbl(10,"orders (table)","customer_id · placed_at · restaurant",Rw.map(r=>`${r[0]} · ${r[1]} · ${r[2]}`),()=>0);
 const s2=tbl(10,"orders (table)","customer_id · placed_at · restaurant",Rw.map(r=>`${r[0]} · ${r[1]} · ${r[2]}`),i=>i<2);
 const gsiRows=[["r42","19:02","c77"],["r42","20:11","c81"],["r42","20:14","c90"],["r9","20:15","c77"]];
@@ -161,7 +161,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dkt${uid}`}><titl
 // match send 2,000 a second to one partition and half are throttled; ten suffixed keys spread them.
 function DdbHotFig({still,uid=""}){const y=v=>200-v*0.06,X=[60,190,320,450];
 const caps=[["1 · DynamoDB splits a table into partitions; each takes at most 1,000 writes a second",INK],["2 · votes keyed by match:ind-pak all land on one partition: 2,000 a second",RED],["3 · half of them are throttled, though the table as a whole has room to spare",RED],["4 · add a suffix, match:ind-pak#0 to #9, and the votes spread over the partitions",BLUE]];
-const bars=(v,c)=><g>{X.map((x,i)=><g key={i}><rect x={x} y={y(Math.min(v[i],3200))} width={90} height={200-y(Math.min(v[i],3200))} fill={c[i]===RED?LR:c[i]===BLUE?FB:"#eef1f5"} stroke={c[i]||GREY}/><T x={x+45} y={194} t={`${v[i].toLocaleString("en-IN")}/s`} a="middle" c={c[i]}/></g>)}</g>;
+const bars=(v,c)=><g>{X.map((x,i)=><g key={i}><rect x={x} y={y(Math.min(v[i],3200))} width={90} height={200-y(Math.min(v[i],3200))} fill={c[i]===RED?LR:c[i]===BLUE?FB:GRID} stroke={c[i]||GREY}/><T x={x+45} y={194} t={`${v[i].toLocaleString("en-IN")}/s`} a="middle" c={c[i]}/></g>)}</g>;
 const base=<g><line x1={40} y1={200} x2={600} y2={200} stroke={GREY}/><line x1={40} y1={y(1000)} x2={600} y2={y(1000)} stroke={RED} strokeDasharray="4 3"/><T x={600} y={y(1000)-6} t="1,000 writes/s per partition" a="end" c={RED}/>{X.map((x,i)=><T key={i} x={x+45} y={216} t={`partition ${i+1}`} a="middle"/>)}</g>;
 const s1=bars([300,250,280,260],[]),s2=bars([300,2000,280,260],[undefined,RED]),s3=<g>{s2}<T x={190} y={236} t="1,000/s throttled" c={RED}/></g>,s4=bars([800,750,780,760],[BLUE,BLUE,BLUE,BLUE]);
 return <svg viewBox="0 0 640 248" role="img" aria-labelledby={`dht${uid}`}><title id={`dht${uid}`}>A hot partition in DynamoDB. Each partition takes at most 1,000 writes a second. Votes keyed by one match all land on one partition at 2,000 a second, so half of them are throttled even though the table as a whole has spare capacity. Adding a suffix from 0 to 9 to the key spreads the votes over all the partitions, each well under the limit.</title>
@@ -171,9 +171,9 @@ return <svg viewBox="0 0 640 248" role="img" aria-labelledby={`dht${uid}`}><titl
 // VACUUM frees the old version once no snapshot needs it.
 function PgMvccFig({still,uid=""}){
 const caps=[["1 · the dish's row: price ₹250, written by transaction 100",INK],["2 · transaction 205 updates the price: the old version is marked ended, a new one is written",BLUE],["3 · a report that began earlier still sees ₹250; new reads see ₹280, and nobody waited",BLUE],["4 · once no transaction can still see the old version, VACUUM frees its space",INK]];
-const ver=(y,t,s,c=GREY,fill="#fff")=><g><rect x={20} y={y} width={300} height={40} fill={fill} stroke={c} strokeDasharray={c===RED?"4 3":undefined}/><T x={32} y={y+17} t={t} b/><T x={32} y={y+32} t={s}/></g>;
+const ver=(y,t,s,c=GREY,fill=BG)=><g><rect x={20} y={y} width={300} height={40} fill={fill} stroke={c} strokeDasharray={c===RED?"4 3":undefined}/><T x={32} y={y+17} t={t} b/><T x={32} y={y+32} t={s}/></g>;
 const base=ver(60,"dish 9 · price ₹250","created by txn 100");
-const s2=<g>{ver(60,"dish 9 · price ₹250","created by txn 100 · ended by txn 205",GREY,"#f5f7fa")}{ver(110,"dish 9 · price ₹280","created by txn 205",BLUE,LB)}</g>;
+const s2=<g>{ver(60,"dish 9 · price ₹250","created by txn 100 · ended by txn 205",GREY,SURFACE)}{ver(110,"dish 9 · price ₹280","created by txn 205",BLUE,LB)}</g>;
 const s3=<g><Bx x={420} y={58} w={210} h={44} t="Report, snapshot at 20:00" s="sees ₹250"/><line x1={418} y1={80} x2={322} y2={80} stroke={GREY} strokeDasharray="3 3"/><Bx x={420} y={110} w={210} h={44} t="New read, 20:05" s="sees ₹280" c={BLUE} fill={LB}/><line x1={418} y1={132} x2={322} y2={130} stroke={BLUE} strokeDasharray="3 3"/></g>;
 const s4=<g>{ver(60,"dead version","freed by VACUUM",RED,LR)}<T x={20} y={190} t="Long-running transactions keep old versions alive, so tables bloat until they finish."/></g>;
 return <svg viewBox="0 0 640 206" role="img" aria-labelledby={`pmt${uid}`}><title id={`pmt${uid}`}>How PostgreSQL updates a row. Dish 9's price, 250 rupees, was written by transaction 100. Transaction 205 changes it to 280 by marking the old version as ended and writing a new version. A report whose snapshot began earlier still sees 250, while new reads see 280, and neither waited for the other. Once no transaction can see the old version, VACUUM frees its space. A long-running transaction keeps old versions alive, so tables bloat until it finishes.</title>
@@ -221,7 +221,7 @@ return <svg viewBox="0 0 640 234" role="img" aria-labelledby={`fct${uid}`}><titl
 function ZkElectFig({still,uid=""}){
 const caps=[["1 · each candidate creates an ephemeral, sequential znode under /election",INK],["2 · the lowest number leads; each other candidate watches only the znode just before it",BLUE],["3 · A's session expires, and its ephemeral znode disappears with it",RED],["4 · only B is told; it now has the lowest number and leads, while C sleeps on",BLUE]];
 const Z=[["A","n_0000000017",70],["B","n_0000000018",130],["C","n_0000000019",190]];
-const zn=(i,c=GREY,fill="#fff",s)=><g key={i}><Bx x={230} y={Z[i][2]-18} w={170} h={36} t={Z[i][1]} c={c} fill={fill}/><Bx x={470} y={Z[i][2]-18} w={160} h={36} t={`Payout worker ${Z[i][0]}`} s={s} c={c} fill={fill}/></g>;
+const zn=(i,c=GREY,fill=BG,s)=><g key={i}><Bx x={230} y={Z[i][2]-18} w={170} h={36} t={Z[i][1]} c={c} fill={fill}/><Bx x={470} y={Z[i][2]-18} w={160} h={36} t={`Payout worker ${Z[i][0]}`} s={s} c={c} fill={fill}/></g>;
 const base=<g><Bx x={10} y={112} w={140} h={36} t="/election"/><line x1={152} y1={130} x2={228} y2={70} stroke={GREY}/><line x1={152} y1={130} x2={228} y2={130} stroke={GREY}/><line x1={152} y1={130} x2={228} y2={190} stroke={GREY}/>{[0,1,2].map(i=>zn(i))}</g>;
 const watch=(a,b)=><path d={`M405 ${Z[b][2]}C440 ${Z[b][2]} 440 ${Z[a][2]} 405 ${Z[a][2]}`} fill="none" stroke={BLUE} strokeDasharray="3 3"/>;
 const s2=<g>{zn(0,BLUE,LB,"leader")}{watch(0,1)}{watch(1,2)}<T x={410} y={234} t="each watches the one before it" c={BLUE}/></g>;
@@ -251,13 +251,13 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`gwft${uid}`}><tit
 <Line x1={130} y1={90} x2={GX-2} y2={90} m={M}/><Line x1={130} y1={210} x2={GX-2} y2={210} m={M}/>
 {SY.map(y=><Line key={y} x1={GX+GW} y1={220} x2={SX-2} y2={y} m={M} c={GREY}/>)}
 <Box x={0} y={90} w={130} t="Customer app"/><Box x={0} y={210} w={130} t="Restaurant billing"/><text x="65" y="241" textAnchor="middle" className="fl">partner, API key</text>
-<rect x={GX} y="44" width={GW} height="200" fill="#f8faff" stroke="#2855d9"/><text x={GX+GW/2} y="64" textAnchor="middle" className="fk">API GATEWAY</text>
-{GW_STEPS.map((t,i)=><g key={t}><rect x={GX+10} y={RY[i]-14} width={GW-20} height="28" fill="#fff" stroke="#d9dee7"/><text x={GX+20} y={RY[i]+4} className="fq">{t}</text></g>)}
+<rect x={GX} y="44" width={GW} height="200" fill={LB} stroke={BLUE}/><text x={GX+GW/2} y="64" textAnchor="middle" className="fk">API GATEWAY</text>
+{GW_STEPS.map((t,i)=><g key={t}><rect x={GX+10} y={RY[i]-14} width={GW-20} height="28" fill={BG} stroke={LINE}/><text x={GX+20} y={RY[i]+4} className="fq">{t}</text></g>)}
 {[["Orders","/orders"],["Menus","/menus"],["Payments","/payments"]].map(([n,p],i)=><g key={n}><Box x={SX} y={SY[i]} w={150} t={n}/><text x={SX+75} y={SY[i]+31} textAnchor="middle" className="fl">{p}</text></g>)}
 {!still&&<g aria-hidden="true">
 <Dot x1={132} x2={GX-4} y={90} t0={.02} t1={.08} dur={D}/>{RY.map((y,i)=><Glow key={i} x={GX+10} y={y-14} w={GW-20} h={28} t0={+(.08+i*.06).toFixed(2)} t1={+(.14+i*.06).toFixed(2)} dur={D}/>)}<Dot x1={GX+GW+2} x2={SX-4} y={220} y2={72} t0={.32} t1={.4} dur={D}/><Glow x={SX} y={53} w={150} h={34} t0={.4} t1={.46} dur={D}/>
 <Dot x1={132} x2={GX-4} y={210} t0={.52} t1={.58} dur={D}/><Glow x={GX+10} y={RY[0]-14} w={GW-20} h={28} t0={.58} t1={.64} dur={D}/><Glow x={GX+10} y={RY[1]-14} w={GW-20} h={28} t0={.64} t1={.7} dur={D}/>
-<Show t0={.7} t1={.92} dur={D}><rect x={GX+10} y={RY[2]-14} width={GW-20} height="28" fill="#fff5f4" stroke={RED}/><text x={GX+20} y={RY[2]+4} className="fq">3  Over the limit: stop</text></Show>
+<Show t0={.7} t1={.92} dur={D}><rect x={GX+10} y={RY[2]-14} width={GW-20} height="28" fill={LR} stroke={RED}/><text x={GX+20} y={RY[2]+4} className="fq">3  Over the limit: stop</text></Show>
 <Dot x1={GX-4} x2={132} y={222} t0={.74} t1={.82} dur={D}/><Show t0={.76} t1={.94} dur={D}><text x="165" y="200" textAnchor="middle" className="fl" style={{fill:RED}}>429</text></Show></g>}</svg>}
 // Rate limiting, FIG: the same requests through three limiters, each allowing 5 requests a second.
 // Decisions are computed, not drawn: a burst just before and just after 1 s shows the fixed window
@@ -269,12 +269,12 @@ const slideW=()=>{const ok=[];return RT.map(t=>{const c=ok.filter(x=>x>t-1).leng
 const bucket=()=>{let tok=5,last=0;return RT.map(t=>{tok=Math.min(5,tok+(t-last)*5);last=t;if(tok>=1){tok-=1;return true}return false})};
 const LIMITERS=[["FIXED WINDOW","5 per clock second",fixedW()],["SLIDING WINDOW","5 in any 1 second",slideW()],["TOKEN BUCKET","holds 5, refills 5 a second",bucket()]];
 function RateFig({still,uid=""}){const D="10s",x=t=>150+t*135,RY0=56;
-const dot=(t,ok,y)=>ok?<circle cx={x(t)} cy={y} r="4" fill="#2855d9"/>:<circle cx={x(t)} cy={y} r="3.5" fill="#fff" stroke={RED} strokeWidth="1.5"/>;
+const dot=(t,ok,y)=>ok?<circle cx={x(t)} cy={y} r="4" fill={BLUE}/>:<circle cx={x(t)} cy={y} r="3.5" fill={BG} stroke={RED} strokeWidth="1.5"/>;
 const at=t=>+(t/3*.85+.03).toFixed(3);
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><title id={`rlt${uid}`}>The same 17 requests, a burst just before one second, a burst just after it, then one every quarter second, go through three rate limiters that each allow 5 requests a second. The fixed window lets 10 requests through within about two thirds of a second because the count resets at one second. The sliding window never lets more than 5 through in any second. The token bucket starts full and keeps refilling, so it lets most of the bursts through and then about one request every fifth of a second.</title>
 <text x="0" y="22" className="fl">filled = let through · open = rejected with 429</text>
 <text x="0" y={RY0+4} className="fk">REQUESTS</text>{RT.map((t,i)=>still?<circle key={i} cx={x(t)} cy={RY0} r="4" fill={GREY}/>:<Show key={i} t0={at(t)} t1={.98} dur={D}><circle cx={x(t)} cy={RY0} r="4" fill={GREY}/></Show>)}
-{LIMITERS.map(([n,sub,ok],r)=>{const y=RY0+58*(r+1);return <g key={n}><line x1="0" x2="640" y1={y-29} y2={y-29} stroke="#d9dee7"/><text x="0" y={y} className="fk">{n}</text><text x="0" y={y+15} className="fsub">{sub}</text>
+{LIMITERS.map(([n,sub,ok],r)=>{const y=RY0+58*(r+1);return <g key={n}><line x1="0" x2="640" y1={y-29} y2={y-29} stroke={LINE}/><text x="0" y={y} className="fk">{n}</text><text x="0" y={y+15} className="fsub">{sub}</text>
 {r===0&&[1,2].map(w=><line key={w} x1={x(w)} x2={x(w)} y1={y-20} y2={y+12} stroke={GREY} strokeDasharray="2 3"/>)}
 {RT.map((t,i)=>still?<g key={i}>{dot(t,ok[i],y)}</g>:<Show key={i} t0={at(t)} t1={.98} dur={D}>{dot(t,ok[i],y)}</Show>)}
 <text x="640" y={y+4} textAnchor="end" className="fl">{ok.filter(Boolean).length} of {RT.length}</text></g>})}
@@ -287,14 +287,14 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><titl
 // message to one worker, which deletes it when done. The stream keeps every event in order; three
 // services read all of it, each at its own position (offset).
 function QueueStreamFig({still,uid=""}){const M=`qs${uid}`,D="10s",Q=78,S=228;
-const cell=(x,y,t,on)=><g key={x}><rect x={x} y={y-12} width="26" height="24" fill={on?"#f8faff":"#fff"} stroke={on?"#2855d9":GREY}/><text x={x+13} y={y+4} textAnchor="middle" className="fl">{t}</text></g>;
+const cell=(x,y,t,on)=><g key={x}><rect x={x} y={y-12} width="26" height="24" fill={on?LB:BG} stroke={on?BLUE:GREY}/><text x={x+13} y={y+4} textAnchor="middle" className="fl">{t}</text></g>;
 return <svg viewBox="0 0 640 320" role="img" aria-labelledby={`qst${uid}`}><title id={`qst${uid}`}>Top: the Order API puts jobs on a queue. Each job goes to one of two workers, which deletes it once done. Bottom: the Order API appends order events to a stream, a log that keeps them in order for seven days. Notifications, analytics and the restaurant tablet service each read every event, each from its own position, so analytics can lag behind or replay old events without affecting the others.</title><Mark m={M}/>
 <text x="0" y="22" className="fb">Queue · SQS, RabbitMQ</text><text x="0" y="38" className="fl">each job to one worker, then deleted</text>
 <Box x={0} y={Q} w={100} t="Order API"/><Line x1={102} y1={Q} x2={176} y2={Q} m={M}/>
-<rect x="180" y={Q-17} width="130" height="34" fill="#f8faff" stroke="#2855d9"/>{[0,1,2].map(i=><rect key={i} x={190+i*38} y={Q-9} width="30" height="18" fill="#fff" stroke={GREY}/>)}<text x="245" y={Q+32} textAnchor="middle" className="fl">jobs waiting</text>
+<rect x="180" y={Q-17} width="130" height="34" fill={LB} stroke={BLUE}/>{[0,1,2].map(i=><rect key={i} x={190+i*38} y={Q-9} width="30" height="18" fill={BG} stroke={GREY}/>)}<text x="245" y={Q+32} textAnchor="middle" className="fl">jobs waiting</text>
 <Line x1={312} y1={Q-6} x2={426} y2={Q-30} m={M} c={GREY}/><Line x1={312} y1={Q+6} x2={426} y2={Q+30} m={M} c={GREY}/>
 <Box x={430} y={Q-34} w={130} t="Worker A"/><Box x={430} y={Q+34} w={130} t="Worker B"/><text x="572" y={Q+4} className="fl">done →</text><text x="572" y={Q+18} className="fl">deleted</text>
-<line x1="0" y1="150" x2="640" y2="150" stroke="#e6eaf0"/>
+<line x1="0" y1="150" x2="640" y2="150" stroke={LINE_SOFT}/>
 <text x="0" y="172" className="fb">Stream · Kafka, Kinesis</text><text x="0" y="188" className="fl">kept for 7 days; every reader gets every event</text>
 <Box x={0} y={S} w={100} t="Order API"/><Line x1={102} y1={S} x2={176} y2={S} m={M}/>
 {[0,1,2,3,4,5].map(i=>cell(180+i*26,S,i,i===5))}<text x="258" y={S+28} textAnchor="middle" className="fl">offsets 0–5, never deleted early</text>
@@ -305,7 +305,7 @@ return <svg viewBox="0 0 640 320" role="img" aria-labelledby={`qst${uid}`}><titl
 <Dot x1={102} x2={186} y={Q} t0={.28} t1={.36} dur={D}/><Dot x1={312} x2={424} y={Q+6} y2={Q+30} t0={.38} t1={.48} dur={D}/><Glow x={430} y={Q+17} w={130} h={34} t0={.48} t1={.56} dur={D}/>
 <Dot x1={102} x2={332} y={S} t0={.55} t1={.66} dur={D}/>
 <Dot x1={338} x2={424} y={S-4} y2={S-50} t0={.68} t1={.78} dur={D}/><Dot x1={338} x2={424} y={S} t0={.68} t1={.78} dur={D}/><Dot x1={338} x2={424} y={S+4} y2={S+50} t0={.68} t1={.78} dur={D}/>
-<Show t0={.78} t1={.98} dur={D}><text x="258" y={S-22} textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>one event, three readers</text></Show></g>}</svg>}
+<Show t0={.78} t1={.98} dur={D}><text x="258" y={S-22} textAnchor="middle" className="fl" style={{fill:BLUE}}>one event, three readers</text></Show></g>}</svg>}
 
 export const FIGS={
 "redis-types":{C:RedisTypesFig,ar:640/264,title:()=>"ONE SERVER, FIVE SHAPES OF DATA"},

@@ -1,13 +1,13 @@
 // Concepts › Networking essentials: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "networking").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Line,SBox,Glow,Box}from"../parts.jsx";
+import{BG,LINE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Line,SBox,Glow,Box}from"../parts.jsx";
 
 // ---------- 01 Layers ----------
 
 // FIG 1: a request is wrapped layer by layer on the phone and unwrapped on the server.
 function StackFig({still,uid=""}){const M=`ns${uid}`,D="14s";
 const L=[["Application","HTTP"],["Transport","TCP"],["Network","IP"],["Link","Wi-Fi, fibre"]],Y=[44,86,128,170];
-const stack=(x,hi)=>L.map(([t,s],i)=><Bx key={i} x={x} y={Y[i]} w={150} h={34} t={t} s={s} c={hi?BLUE:GREY} fill={hi?LB:"#fff"}/>);
+const stack=(x,hi)=>L.map(([t,s],i)=><Bx key={i} x={x} y={Y[i]} w={150} h={34} t={t} s={s} c={hi?BLUE:GREY} fill={hi?LB:BG}/>);
 const pay=y=><Bx x={364} y={y} w={104} h={34} t="GET /menu/42" c={BLUE} fill={LB}/>;
 const tcp=y=><Bx x={262} y={y} w={100} h={34} t="TCP" s="port 443, seq 1"/>,ip=y=><Bx x={164} y={y} w={96} h={34} t="IP" s="to 13.235.4.20"/>;
 const caps=[["1 · the app writes a request. It knows nothing about cables or radio",INK],["2 · TCP wraps it with ports and a sequence number, so it can be ordered and resent",BLUE],["3 · IP wraps that with addresses, so routers can carry it between networks",BLUE],["4 · the link sends the bits; the server unwraps the layers in reverse, up to its app",BLUE]];
@@ -45,7 +45,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // FIG 2: three requests on new connections, on one kept-alive connection, and over HTTP/2.
 function KeepAliveFig({still,uid=""}){const u=38,x0=140;
 const seg=(y,i,n,t,c,fill)=><g key={`${y}${i}`}><rect x={x0+i*u} y={y} width={n*u-2} height={24} fill={fill} stroke={c}/><T x={x0+i*u+(n*u-2)/2} y={y+16} t={t} a="middle" c={c===GREY?undefined:c}/></g>;
-const hs=(y,i)=><g key={`h${y}${i}`}>{seg(y,i,1,"TCP",GREY,"#fff")}{seg(y,i+1,1,"TLS",GREY,"#fff")}</g>,rq=(y,i,k="GET")=>seg(y,i,1,k,BLUE,LB);
+const hs=(y,i)=><g key={`h${y}${i}`}>{seg(y,i,1,"TCP",GREY,BG)}{seg(y,i+1,1,"TLS",GREY,BG)}</g>,rq=(y,i,k="GET")=>seg(y,i,1,k,BLUE,LB);
 const r1=<g><T x={10} y={74} t="new connection"/><T x={10} y={86} t="for each request"/>{[0,3,6].map(i=><g key={i}>{hs(62,i)}{rq(62,i+2)}</g>)}<T x={x0+9*u+8} y={78} t="9 round trips" b/></g>;
 const r2=<g><T x={10} y={128} t="one connection,"/><T x={10} y={140} t="kept alive"/>{hs(116,0)}{rq(116,2)}{rq(116,3)}{rq(116,4)}<T x={x0+5*u+8} y={132} t="5 round trips" b/></g>;
 const r3=<g><T x={10} y={182} t="HTTP/2: all three"/><T x={10} y={194} t="at once"/>{hs(170,0)}{[0,1,2].map(k=><rect key={k} x={x0+2*u} y={170+k*8} width={u-2} height={7} fill={LB} stroke={BLUE}/>)}<T x={x0+3*u+8} y={186} t="3 round trips" b c={BLUE}/></g>;
@@ -69,10 +69,10 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 2: a voice call over UDP plays on through a lost frame; over TCP it freezes.
 function UdpFig({still,uid=""}){const x0=120,st=62,w=56;
-const fr=(y,i,t,c=INK,fill="#fff")=><g key={`${y}${i}`}><rect x={x0+i*st} y={y} width={w} height={26} fill={fill} stroke={c}/><T x={x0+i*st+w/2} y={y+17} t={t} a="middle" c={c===INK?undefined:c}/></g>;
+const fr=(y,i,t,c=INK,fill=BG)=><g key={`${y}${i}`}><rect x={x0+i*st} y={y} width={w} height={26} fill={fill} stroke={c}/><T x={x0+i*st+w/2} y={y+17} t={t} a="middle" c={c===INK?undefined:c}/></g>;
 const r1=<g><T x={10} y={70} t="sent: one frame"/><T x={10} y={82} t="every 20 ms"/>{[1,2,3,4,5,6].map((n,i)=>fr(58,i,`frame ${n}`))}</g>;
 const r2=<g>{fr(58,2,"frame 3",RED,LR)}<X x={x0+2*st+w/2} y={100}/><T x={x0+2*st+w/2} y={118} t="lost" a="middle" c={RED}/></g>;
-const r3=<g><T x={10} y={146} t="over UDP:"/><T x={10} y={158} t="plays on"/>{[1,2].map((n,i)=>fr(134,i,`${n}`,BLUE,LB))}<rect x={x0+2*st} y={134} width={w} height={26} fill="#fff" stroke={GREY} strokeDasharray="3 3"/><T x={x0+2*st+w/2} y={151} t="gap" a="middle"/>{[4,5,6].map((n,i)=>fr(134,i+3,`${n}`,BLUE,LB))}</g>;
+const r3=<g><T x={10} y={146} t="over UDP:"/><T x={10} y={158} t="plays on"/>{[1,2].map((n,i)=>fr(134,i,`${n}`,BLUE,LB))}<rect x={x0+2*st} y={134} width={w} height={26} fill={BG} stroke={GREY} strokeDasharray="3 3"/><T x={x0+2*st+w/2} y={151} t="gap" a="middle"/>{[4,5,6].map((n,i)=>fr(134,i+3,`${n}`,BLUE,LB))}</g>;
 const r4=<g><T x={10} y={204} t="over TCP:"/><T x={10} y={216} t="waits for 3"/>{[1,2].map((n,i)=>fr(192,i,`${n}`))}<rect x={x0+2*st} y={192} width={2*st-6} height={26} fill={LR} stroke={RED}/><T x={x0+3*st-3} y={209} t="frozen" a="middle" c={RED}/>{[3,4,5,6].map((n,i)=>fr(192,i+4,`${n}`))}</g>;
 const caps=[["1 · a rider's voice call: one small audio frame every 20 ms",INK],["2 · frame 3 is lost somewhere between the phones",RED],["3 · over UDP the call plays on: 20 ms of near-silence, barely heard",BLUE],["4 · over TCP everything waits for frame 3 to be resent: the voice freezes",RED]];
 return <Fig still={still} h={232} id={`nut${uid}`} caps={caps} title="Why live voice uses UDP. A rider's call sends one small audio frame every 20 milliseconds. Frame 3 is lost. Over UDP the call plays on: frames 4, 5 and 6 play on time and the listener hears 20 milliseconds of near-silence. Over TCP, frames 4, 5 and 6 wait until frame 3 has been resent, so the voice freezes for a round trip and then everything arrives late."
@@ -84,7 +84,7 @@ base={null} g={[r1,r2,r3,r4]} last={<g>{r1}{r2}{r3}{r4}</g>}/>}
 function HttpFig({still,uid=""}){
 const Q=["GET /restaurants/42/menu HTTP/1.1","Host: api.zotato.in","Accept: application/json","Accept-Encoding: gzip, br","Authorization: Bearer eyJhbGci…","","(no body)"];
 const R=["HTTP/1.1 200 OK","Content-Type: application/json","Content-Encoding: br","Cache-Control: max-age=60","Content-Length: 4210","",'{"dishes":[{"id":9,"name":"Misal pav"…'];
-const panel=(x,h,L)=><g><rect x={x} y={40} width={300} height={168} fill="#fbfcfd" stroke={GREY}/><T x={x+10} y={58} t={h} b/>{L.map((l,i)=><T key={i} x={x+10} y={82+i*18} t={l}/>)}</g>;
+const panel=(x,h,L)=><g><rect x={x} y={40} width={300} height={168} fill={SURFACE_2} stroke={GREY}/><T x={x+10} y={58} t={h} b/>{L.map((l,i)=><T key={i} x={x+10} y={82+i*18} t={l}/>)}</g>;
 const hl=(x,i,n=1,c=BLUE)=><rect x={x+4} y={70+i*18} width={292} height={n*18} fill="none" stroke={c} strokeWidth="2"/>;
 const caps=[["1 · the request line: a method, a path and the HTTP version",BLUE],["2 · headers carry the rest: the host, formats, compression accepted, who is asking",BLUE],["3 · the response starts with a status: 200 OK",BLUE],["4 · the server chose br from the client's list, says so, and sends the body",BLUE]];
 const s=[hl(10,0),hl(10,1,4),hl(330,0),<g>{hl(10,3)}{hl(330,2)}{hl(330,6)}</g>];
@@ -119,7 +119,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function OverFetchFig({still,uid=""}){const x0=150;
 const f4=["name","rating","delivery time","photo"];
 const s1=<g><T x={10} y={70} t="the card shows"/>{f4.map((f,i)=><Bx key={f} x={x0+i*102} y={56} w={96} h={26} t={f} c={BLUE} fill={LB}/>)}<T x={562} y={74} t="≈ 180 B"/></g>;
-const s2=<g><T x={10} y={112} t="GET /restaurants/42"/><T x={10} y={124} t="returns 40 fields"/>{Array.from({length:40},(_,i)=><rect key={i} x={x0+i*10} y={102} width={8} height={22} fill={i<4?LB:"#fff"} stroke={i<4?BLUE:GREY}/>)}<T x={562} y={118} t="≈ 3.1 KB"/><T x={x0} y={140} t="address, hours, licence, owner, bank details, full menu …"/></g>;
+const s2=<g><T x={10} y={112} t="GET /restaurants/42"/><T x={10} y={124} t="returns 40 fields"/>{Array.from({length:40},(_,i)=><rect key={i} x={x0+i*10} y={102} width={8} height={22} fill={i<4?LB:BG} stroke={i<4?BLUE:GREY}/>)}<T x={562} y={118} t="≈ 3.1 KB"/><T x={x0} y={140} t="address, hours, licence, owner, bank details, full menu …"/></g>;
 const bar=(y,w,t,c,fill,l1,l2)=><g><T x={10} y={y+10} t={l1}/><T x={10} y={y+22} t={l2}/><rect x={x0} y={y} width={w} height={24} fill={fill} stroke={c}/><T x={x0+w+8} y={y+16} t={t} b c={c}/></g>;
 const s3=bar(160,400,"62 KB",RED,LR,"20 cards, REST","(full objects)");
 const s4=bar(198,23,"3.6 KB",BLUE,LB,"20 cards, GraphQL","(4 fields each)");
@@ -133,7 +133,7 @@ const base=<g><Bx x={10} y={52} w={120} h={40} t="Customer app"/><Bx x={10} y={1
 <Ar x1={132} y1={72} x2={186} y2={104} m={M}/><Ar x1={132} y1={152} x2={186} y2={120} m={M}/><Ar x1={302} y1={112} x2={346} y2={112} m={M}/>{[60,112,164].map(y=><Ar key={y} x1={462} y1={112} x2={506} y2={y} m={M}/>)}</g>;
 const s1=<g><rect x={6} y={36} width={300} height={144} fill="none" stroke={INK} strokeDasharray="3 3"/><T x={160} y={198} t="REST + JSON over HTTPS" a="middle" b/></g>;
 const s2=<g><rect x={342} y={34} width={294} height={156} fill="none" stroke={BLUE} strokeDasharray="3 3"/><T x={489} y={208} t="gRPC: protobuf over HTTP/2" a="middle" b c={BLUE}/></g>;
-const s3=<g><T x={10} y={232} t="one order as JSON"/><rect x={150} y={222} width={196} height={14} fill="#fff" stroke={INK}/><T x={354} y={233} t="49 bytes"/><T x={10} y={252} t="as protobuf"/><rect x={150} y={242} width={72} height={14} fill={LB} stroke={BLUE}/><T x={230} y={253} t="18 bytes" c={BLUE}/></g>;
+const s3=<g><T x={10} y={232} t="one order as JSON"/><rect x={150} y={222} width={196} height={14} fill={BG} stroke={INK}/><T x={354} y={233} t="49 bytes"/><T x={10} y={252} t="as protobuf"/><rect x={150} y={242} width={72} height={14} fill={LB} stroke={BLUE}/><T x={230} y={253} t="18 bytes" c={BLUE}/></g>;
 const s4=<g><T x={420} y={240} t="stubs generated from" c={BLUE}/><T x={420} y={254} t="orders.proto, both sides" c={BLUE}/></g>;
 const caps=[["1 · outside, apps and browsers speak REST with JSON: easy to read, works everywhere",INK],["2 · inside, services call each other with gRPC: binary messages over HTTP/2",BLUE],["3 · the same order is 49 bytes as JSON and 18 as protobuf, and cheaper to parse",BLUE],["4 · both sides' code is generated from one schema, so a mismatch fails the build",BLUE]];
 return <Fig still={still} h={262} id={`ngt${uid}`} M={M} caps={caps} title="REST outside, gRPC inside. The customer app and browsers call Zotato's API gateway with REST and JSON over HTTPS: easy to read and supported everywhere, including browsers. Behind the gateway, the Orders service calls Payments, Dispatch and Menu with gRPC, binary protobuf messages over HTTP/2. The same order is 49 bytes as JSON and 18 bytes as protobuf, and cheaper to parse. The client and server code on both sides is generated from one schema file, so a mismatch fails the build instead of production."
@@ -275,7 +275,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 2: regional partitioning: each region serves its own cities.
 function RegionsFig({still,uid=""}){const D="14s";
-const reg=(x,n,c,cities)=><g><rect x={x} y={42} width={300} height={130} fill="#fbfcfd" stroke={GREY}/><T x={x+10} y={60} t={n} b/><T x={x+10} y={76} t={cities}/><Bx x={x+16} y={92} w={130} h={36} t="Orders, Dispatch"/><Bx x={x+156} y={92} w={130} h={36} t={`Database (${c})`}/></g>;
+const reg=(x,n,c,cities)=><g><rect x={x} y={42} width={300} height={130} fill={SURFACE_2} stroke={GREY}/><T x={x+10} y={60} t={n} b/><T x={x+10} y={76} t={cities}/><Bx x={x+16} y={92} w={130} h={36} t="Orders, Dispatch"/><Bx x={x+156} y={92} w={130} h={36} t={`Database (${c})`}/></g>;
 const base=<g>{reg(10,"West region · Mumbai","west","Mumbai, Pune, Ahmedabad …")}{reg(330,"South region · Hyderabad","south","Bengaluru, Chennai, Hyderabad …")}</g>;
 const s1=<g><T x={26} y={152} t="Pune order + Pune riders: all local" c={BLUE}/>{!still&&<Dot x1={80} x2={240} y={140} t0={.05} t1={.18} dur={D}/>}</g>;
 const s2=<g><T x={346} y={152} t="Chennai order + Chennai riders" c={BLUE}/>{!still&&<Dot x1={400} x2={560} y={140} t0={.3} t1={.43} dur={D}/>}</g>;
@@ -312,7 +312,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 3: a circuit breaker's three states.
 function BreakerFig({still,uid=""}){const M=`nz${uid}`;
-const st=(x,t,s,c=GREY,fill="#fff")=><Bx x={x} y={92} w={140} h={50} t={t} s={s} c={c} fill={fill}/>;
+const st=(x,t,s,c=GREY,fill=BG)=><Bx x={x} y={92} w={140} h={50} t={t} s={s} c={c} fill={fill}/>;
 const base=<g>{st(10,"Closed","calls go through")}{st(250,"Open","fail at once")}{st(490,"Half-open","one test call")}
 <Ar x1={152} y1={106} x2={246} y2={106} m={M}/><T x={199} y={84} t="half fail in 10 s" a="middle"/><Ar x1={392} y1={106} x2={486} y2={106} m={M}/><T x={439} y={84} t="after 30 s" a="middle"/>
 <path d="M560 144 V176 H80 V146" fill="none" stroke={INK} markerEnd={`url(#${M})`}/><T x={200} y={170} t="test call works" a="middle"/><path d="M540 144 V160 H330 V146" fill="none" stroke={INK} strokeDasharray="4 3" markerEnd={`url(#${M})`}/><T x={435} y={156} t="test fails" a="middle"/></g>;
@@ -331,9 +331,9 @@ const ALGOS=[["ROUND ROBIN","Each server in turn.","Fine when requests cost the 
 function LbAlgosFig({still,uid=""}){const M=`lba${uid}`,D="9s",X=280,BX=420;
 const rows=[{notes:["requests 1, 4","requests 2, 5","requests 3, 6"],to:[0,1,2,0,1,2]},{notes:["9 open","2 open","5 open"],to:[1,1,1],glow:1},{notes:["user 7 · user 12","user 31","user 42"],to:[2,2,2],glow:2,key:"user 42"}];
 return <svg viewBox="0 0 640 330" role="img" aria-labelledby={`lbat${uid}`}><title id={`lbat${uid}`}>Three ways a load balancer picks a server. Round robin sends requests to each server in turn. Least connections sends the next request to the server with the fewest requests still open. Hashing on a key, such as the user ID, sends the same user to the same server every time.</title><Mark m={M}/>
-{ALGOS.map(([a,b,c],i)=><g key={a}>{i>0&&<line x1="0" x2="640" y1={i*110} y2={i*110} stroke="#d9dee7"/>}<text x="0" y={i*110+40} className="fk">{a}</text><text x="0" y={i*110+58} className="fsub">{b}</text><text x="0" y={i*110+74} className="fsub">{c}</text></g>)}
+{ALGOS.map(([a,b,c],i)=><g key={a}>{i>0&&<line x1="0" x2="640" y1={i*110} y2={i*110} stroke={LINE}/>}<text x="0" y={i*110+40} className="fk">{a}</text><text x="0" y={i*110+58} className="fsub">{b}</text><text x="0" y={i*110+74} className="fsub">{c}</text></g>)}
 {rows.map((r,i)=>{const yc=i*110+55,ys=[yc-32,yc,yc+32];return <g key={i}>
-<circle cx={X} cy={yc} r="16" fill="#f8faff" stroke="#2855d9"/><text x={X} y={yc+4} textAnchor="middle" className="fb">LB</text>{r.key&&<text x={X} y={yc-24} textAnchor="middle" className="fl">{r.key}</text>}
+<circle cx={X} cy={yc} r="16" fill={LB} stroke={BLUE}/><text x={X} y={yc+4} textAnchor="middle" className="fb">LB</text>{r.key&&<text x={X} y={yc-24} textAnchor="middle" className="fl">{r.key}</text>}
 {ys.map((y,j)=><g key={j}><Line x1={X+16} y1={yc} x2={BX-2} y2={y} m={M} c={GREY}/><SBox x={BX} y={y} w={96} t={`Server ${"ABC"[j]}`}/><text x={BX+106} y={y+4} className="fl">{r.notes[j]}</text></g>)}
 {!still&&<g aria-hidden="true">{r.to.map((j,k)=>{const n=r.to.length,t0=.04+k*(.9/n),t1=t0+.9/n*.8;return <Dot key={k} x1={X+18} x2={BX-4} y={yc} y2={ys[j]} t0={+t0.toFixed(3)} t1={+t1.toFixed(3)} dur={D}/>})}{r.glow!==undefined&&<Glow x={BX} y={ys[r.glow]-12} w={96} h={24} t0={.04} t1={.94} dur={D}/>}</g>}</g>})}</svg>}
 // CDN, FIG: three cities. Pune's edge has the image (hit); Delhi's misses and fetches it through the

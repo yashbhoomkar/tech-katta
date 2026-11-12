@@ -1,4 +1,4 @@
-import"./fonts.js";import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary,Part}from"./status.jsx";import"./dashboard.css";import Problems,{Questions}from"./problems.jsx";
+import"./theme/index.js";import ThemeToggle from"./theme/ThemeToggle.jsx";import{useTheme}from"./theme/mode.js";import{useStill}from"./theme/motion.js";import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{chunks,spoken}from"./speech.js";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary,Part}from"./status.jsx";import"./dashboard.css";import Problems,{Questions}from"./problems.jsx";
 import Numbers from"./numbers.jsx";import{routeKey,pathFor,fromLab}from"./routes.js";import{knownFig,figOf,loadFigs,prefetchFigs}from"./figs/index.js";import LibraryCards from"./library.jsx";import{HostAnalytics}from"./hostanalytics.jsx";import Tour from"./tour.jsx";import{prefetchAccount,startAccount,wireSync}from"./account.js";import{track,referrer,readArticle}from"./analytics.js";import{AccountControl,PageLock,useAccount}from"./accountui.jsx";
 
 // Line icons drawn on a 20×20 grid (stand-ins for the Stitch mock's Material Symbols).
@@ -20,8 +20,6 @@ const count=x=>(x||"").split(/\s+/).filter(Boolean).length;
 const words=a=>count(a.dek)+a.body.reduce((n,b)=>n+count(spoken(b,0,a.example)),0);
 const extraWords=a=>a.body.reduce((n,b)=>n+(b.more||[]).reduce((m,x)=>m+count(x),0)+(b.t==="more"?b.body.reduce((m,x)=>m+count(spoken(x,0,a.example)||x.x),0):0),0);
 
-// prefers-reduced-motion, including changes while the page is open.
-function useStill(){const q="(prefers-reduced-motion: reduce)";const[s,set]=useState(()=>matchMedia(q).matches);useEffect(()=>{const m=matchMedia(q),f=()=>set(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);return s}
 
 // Read aloud. Articles with a recording (tools/tts → /audio/<slug>/manifest.json) play a natural
 // Kokoro voice from MP3s, chunk by chunk; any chunk without a matching recording, and articles
@@ -76,9 +74,9 @@ return createPortal(<div className="fs" role="dialog" aria-modal="true" aria-lab
 // A figure that fails to draw says so in its own box; the article around it is unaffected. The boundary is keyed
 // by the figure id: the next article reuses this block, and a working figure there must not inherit the failure.
 const FIG_FAILED=<p className="a-fig-err">This figure couldn't be drawn. The rest of the article is fine.</p>;
-function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
-return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><Part key={id} fallback={FIG_FAILED}><C still={still}/></Part></div>
-<button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
+function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
+return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>
+<button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id+theme} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
 
 // Share (phone share sheet where available, otherwise copy the link).
 function Share({a}){const[msg,setMsg]=useState("");const url=location.href;const flash=m=>{setMsg(m);setTimeout(()=>setMsg(""),2500)};
@@ -206,7 +204,7 @@ return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}><a class
 <div className="side-label">{d.label}</div><nav className="side-nav" aria-label="Main">{links("side-link")}</nav>
 {c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}{c.terms&&<a className="side-priv" href="#terms">{c.account?.termsLink||c.terms.title}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
 {open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
-<div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>tourKind&&setTour(tourKind)}>{c.tour.button}</button>}<a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
+<div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>tourKind&&setTour(tourKind)}>{c.tour.button}</button>}<ThemeToggle/><a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
 <main tabIndex={-1} className={"d-body"+(inLab&&!gate?" d-lab":"")}>{gate==="wait"?<Loading/>:gate?<PageLock t={c.account} lock={c.account.pageLock} title={gate} section={active} slug={route.art?.slug||route.sub||route.challenge||""}/>:solving?<Suspense fallback={<Loading/>}><Solve slug={ws} tab={active==="problems"?"q":"a"} s={c.problems.solve} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab}/></Suspense>:route.art?<ArticlePage s={route.art}/>:route.challenge?<Suspense fallback={<Loading label="Loading the challenge"/>}><Lab key={route.challenge} challenge={route.challenge} embedded={{open:c.problems?.backToProblems||c.problems?.label||"Problems",href:"#problems",back:true,h1:true,next:true}}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}
 
 // Content comes from the API: site copy (with the example system) and article summaries, then render.

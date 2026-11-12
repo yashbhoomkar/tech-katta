@@ -1,6 +1,6 @@
 // Interview Questions › Medium: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "medium").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_LINE,BG,DANGER_LINE,LB,LINE,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
 
 // Ticket booking, FIG: the waiting room. 50 lakh people join the line (random places before noon); it admits
 // about 110 a second, as fast as booking can serve, so about 20,000 shop at once. Booking holds seats and
@@ -112,7 +112,7 @@ const val=(y,t0,before,after)=>still?<text x={V} y={y} className="fb" style={{fi
 const note=(x,y,t0,t,anchor)=>still?<text x={x} y={y} textAnchor={anchor} className="fl">{t}</text>:<Show t0={t0} t1={.98} dur={D}><text x={x} y={y} textAnchor={anchor} className="fl">{t}</text></Show>;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><title id={`prt${uid}`}>Ananya and Rohit swipe right on each other at the same moment. Both swipes update the same row, one row per pair of people, and each update reads the other side's answer back in the same step. Ananya's update lands first and sees that Rohit hasn't said yes, so nothing happens. Rohit's update sees that Ananya has, so it marks the pair matched and both get the news. Exactly one of the two creates the match.</title>
 <SBox x={0} y={60} w={110} t="Ananya swipes →"/><SBox x={530} y={60} w={110} t="← Rohit swipes"/>
-<rect x={L} y={30} width={W} height={140} fill="#fff" stroke={GREY}/><text x={L+10} y={50} className="fl">one row: pair a_17 · r_42</text>
+<rect x={L} y={30} width={W} height={140} fill={BG} stroke={GREY}/><text x={L+10} y={50} className="fl">one row: pair a_17 · r_42</text>
 <line x1={L} y1={62} x2={L+W} y2={62} stroke={GREY}/>
 <text x={L+10} y={90} className="fl">Ananya likes Rohit</text>{val(90,.2,"—","yes")}
 <text x={L+10} y={120} className="fl">Rohit likes Ananya</text>{val(120,.5,"—","yes")}
@@ -145,7 +145,7 @@ function SandboxFig({still,uid=""}){const D="10s";
 const limits=["No network","256 MB memory","2 s CPU per test","64 processes","Output capped at 1 MB","Read-only code and input"];
 const tests=[["Test 1","passed",0],["Test 2","passed",0],["Test 3","passed",0],["Test 4","over 2 s",1],["Test 5","not run",2]];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sbt${uid}`}><title id={`sbt${uid}`}>One sandbox. The candidate's code runs with no network, at most 256 MB of memory, 2 seconds of CPU per test, 64 processes and 1 MB of output, with a read-only copy of the code and the test input. Tests run one after another: tests 1 to 3 pass, test 4 goes over the time limit, so the verdict is "Time limit exceeded on test 4" and test 5 is not run.</title>
-<rect x={0} y={20} width={250} height={200} fill="#f8faff" stroke={BLUE}/><text x={12} y={42} className="fb">Sandbox</text>
+<rect x={0} y={20} width={250} height={200} fill={LB} stroke={BLUE}/><text x={12} y={42} className="fb">Sandbox</text>
 {limits.map((t,i)=><text key={t} x={12} y={70+i*26} className="fl">· {t}</text>)}
 <text x={300} y={42} className="fb">Running the tests</text>
 {tests.map(([t,r,bad],i)=>{const y=72+i*28,row=<g><text x={300} y={y} className="fl">{t}</text><text x={400} y={y} className="fb" style={{fill:bad===1?RED:bad===2?GREY:BLUE}}>{r}</text></g>;return still?<g key={t}>{row}</g>:<Show key={t} t0={.08+i*.13} t1={.98} dur={D}>{row}</Show>})}
@@ -173,7 +173,7 @@ function ChatSyncFig({still,uid=""}){const D="10s";
 const msgs=[[41,"Ananya: 8 pm?"],[42,"Rohit: done"],[43,"Meera: me too"],[44,"Ananya: booked"],[45,"Meera: 4 of us"]];
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><title id={`cst${uid}`}>Catching up. Every message in a conversation gets the next number. Rohit's phone has messages up to number 42, then goes offline. When it reconnects, it says "I have up to 42", and the server sends 43, 44 and 45, in order.</title>
 <text x="0" y="28" className="fb">The conversation, in order</text>
-{msgs.map(([n,t],i)=><g key={n}><rect x={i*128} y={44} width={120} height={44} fill={n>42?"#f8faff":"#fff"} stroke={n>42?BLUE:GREY}/><text x={i*128+8} y={62} className="fb">#{n}</text><text x={i*128+8} y={80} className="fl">{t}</text></g>)}
+{msgs.map(([n,t],i)=><g key={n}><rect x={i*128} y={44} width={120} height={44} fill={n>42?LB:BG} stroke={n>42?BLUE:GREY}/><text x={i*128+8} y={62} className="fb">#{n}</text><text x={i*128+8} y={80} className="fl">{t}</text></g>)}
 <text x="0" y="128" className="fb">Rohit's phone</text>
 <text x="0" y="150" className="fl">has up to #42, then offline</text>
 {still?<text x="0" y="180" className="fl" style={{fill:BLUE}}>back online: "I have up to 42" → gets #43, #44, #45</text>:<Show t0={.2} t1={.98} dur={D}><text x="0" y="180" className="fl" style={{fill:BLUE}}>back online: "I have up to 42" → gets #43, #44, #45</text></Show>}
@@ -203,10 +203,10 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><titl
 function LanesFig({still,uid=""}){const D="10s",X=150,W=360;
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lnt${uid}`}><title id={`lnt${uid}`}>Two lanes. The bulk lane holds a promotion to 5 crore people and is drained at a steady rate over about an hour. An OTP arrives in the middle of it. It goes into the urgent lane, which is empty, and is sent in about 2 seconds instead of waiting behind the promotion.</title>
-<text x={0} y={64} className="fb">Bulk lane</text><rect x={X} y={44} width={W} height={32} fill="#fff" stroke={GREY}/>
-{Array.from({length:18},(_,i)=><rect key={i} x={X+6+i*19.5} y={50} width={14} height={20} fill="#e6eaf0"/>)}
+<text x={0} y={64} className="fb">Bulk lane</text><rect x={X} y={44} width={W} height={32} fill={BG} stroke={GREY}/>
+{Array.from({length:18},(_,i)=><rect key={i} x={X+6+i*19.5} y={50} width={14} height={20} fill={LINE_SOFT}/>)}
 <text x={X+W+10} y={58} className="fl">5 crore promos</text><text x={X+W+10} y={74} className="fl">drained over ~1 hour</text>
-<text x={0} y={144} className="fb">Urgent lane</text><rect x={X} y={124} width={W} height={32} fill="#fff" stroke={BLUE}/>
+<text x={0} y={144} className="fb">Urgent lane</text><rect x={X} y={124} width={W} height={32} fill={BG} stroke={BLUE}/>
 {step(.25,<g><rect x={X+W-24} y={130} width={18} height={20} fill={BLUE}/><text x={X+W+10} y={138} className="fl" style={{fill:BLUE}}>OTP for Ananya</text></g>)}
 {step(.5,<text x={X+W+10} y={154} className="fl" style={{fill:BLUE}}>sent in ~2 s</text>)}
 {step(.65,<text x={0} y={200} className="fl">workers always empty the urgent lane first; the promo blast never slows an OTP</text>)}</svg>}
@@ -261,11 +261,11 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sct${uid}`}><titl
 function LeaseFig({still,uid=""}){const D="12s",X=110,W=500,T=60;const x=(s)=>X+s/T*W;
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><title id={`lst${uid}`}>A lease running out. Worker A claims the 9 pm payout job with a 30-second lease and dies 10 seconds in, before its next heartbeat. Nobody else touches the job until the lease ends at 30 seconds. Then worker B claims it with a new lease and runs it to the end. If A was only paused and wakes up, the job's id makes its late work harmless.</title>
-{[0,10,20,30,40,50,60].map(s=><g key={s}><line x1={x(s)} y1={40} x2={x(s)} y2={180} stroke="#e6eaf0"/><text x={x(s)} y={198} textAnchor="middle" className="fl">{s===60?"21:01:00":`21:00:${String(s).padStart(2,"0")}`}</text></g>)}
+{[0,10,20,30,40,50,60].map(s=><g key={s}><line x1={x(s)} y1={40} x2={x(s)} y2={180} stroke={LINE_SOFT}/><text x={x(s)} y={198} textAnchor="middle" className="fl">{s===60?"21:01:00":`21:00:${String(s).padStart(2,"0")}`}</text></g>)}
 <text x={0} y={74} className="fb">Worker A</text><text x={0} y={144} className="fb">Worker B</text>
-<rect x={x(0)} y={60} width={x(30)-x(0)} height={22} fill="#f8faff" stroke={BLUE} strokeDasharray="4 3"/><text x={x(15)} y={54} textAnchor="middle" className="fl">A's lease, 30 s</text>
+<rect x={x(0)} y={60} width={x(30)-x(0)} height={22} fill={LB} stroke={BLUE} strokeDasharray="4 3"/><text x={x(15)} y={54} textAnchor="middle" className="fl">A's lease, 30 s</text>
 <rect x={x(0)} y={64} width={x(10)-x(0)} height={14} fill={BLUE}/>{step(.2,<text x={x(10)+6} y={76} className="fb" style={{fill:RED}}>✕ dies</text>)}
-{step(.5,<g><rect x={x(30)} y={130} width={x(60)-x(30)} height={22} fill="#f8faff" stroke={BLUE} strokeDasharray="4 3"/><rect x={x(30)} y={134} width={x(48)-x(30)} height={14} fill={BLUE}/><text x={x(45)} y={124} textAnchor="middle" className="fl">B claims when the lease ends, runs it</text></g>)}
+{step(.5,<g><rect x={x(30)} y={130} width={x(60)-x(30)} height={22} fill={LB} stroke={BLUE} strokeDasharray="4 3"/><rect x={x(30)} y={134} width={x(48)-x(30)} height={14} fill={BLUE}/><text x={x(45)} y={124} textAnchor="middle" className="fl">B claims when the lease ends, runs it</text></g>)}
 {step(.75,<text x={x(48)+6} y={146} className="fb" style={{fill:BLUE}}>✓ done</text>)}</svg>}
 
 // Web crawler, FIG: the loop. The frontier hands out URLs; fetchers check robots.txt and download pages;
@@ -288,7 +288,7 @@ function PoliteFig({still,uid=""}){const D="10s";
 const hosts=[["pune-foodie.example","10 lakh URLs","in 1 s"],["chennai-eats.example","4,200 URLs","now"],["dhaba-diaries.example","18 URLs","now"],["mumbai-menus.example","90,000 URLs","in 3 s"]];
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`plt${uid}`}><title id={`plt${uid}`}>Politeness. The frontier keeps one queue per site, each with a not-before time. Fetchers take the next URL only from sites whose time has come. A big food blog with 10 lakh URLs waits a second between pages, so it is never hammered, and small sites with a few URLs are not stuck behind it.</title>
 <text x={0} y={24} className="fb">Site</text><text x={210} y={24} className="fb">Waiting</text><text x={340} y={24} className="fb">Next fetch</text>
-{hosts.map(([h,n,t],i)=>{const y=60+i*36,ready=t==="now";const row=<g><rect x={0} y={y-16} width={200} height={26} fill={ready?"#f8faff":"#fff"} stroke={ready?BLUE:GREY}/><text x={10} y={y+2} className="fl">{h}</text><text x={210} y={y+2} className="fl">{n}</text><text x={340} y={y+2} className="fb" style={{fill:ready?BLUE:GREY}}>{t}</text>{ready&&<text x={410} y={y+2} className="fl" style={{fill:BLUE}}>→ a fetcher takes one</text>}</g>;return still?<g key={h}>{row}</g>:<Show key={h} t0={.05+i*.15} t1={.98} dur={D}>{row}</Show>})}
+{hosts.map(([h,n,t],i)=>{const y=60+i*36,ready=t==="now";const row=<g><rect x={0} y={y-16} width={200} height={26} fill={ready?LB:BG} stroke={ready?BLUE:GREY}/><text x={10} y={y+2} className="fl">{h}</text><text x={210} y={y+2} className="fl">{n}</text><text x={340} y={y+2} className="fb" style={{fill:ready?BLUE:GREY}}>{t}</text>{ready&&<text x={410} y={y+2} className="fl" style={{fill:BLUE}}>→ a fetcher takes one</text>}</g>;return still?<g key={h}>{row}</g>:<Show key={h} t0={.05+i*.15} t1={.98} dur={D}>{row}</Show>})}
 <text x={0} y={216} className="fl">one queue per site, one page at a time each; the big site never blocks the small ones</text></svg>}
 
 // Leaderboard, FIG: the path. Answers are saved as they arrive. When a question closes, the scorer adds
@@ -311,7 +311,7 @@ function LbRankFig({still,uid=""}){const D="10s";
 const bands=[["400+",1200],["350–399",36000],["300–349",173200],["250–299",410000],["200–249",820000]],max=820000,X=120,W=330;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><title id={`lrt${uid}`}>Rank from counts. The leaderboard keeps how many players have each band of scores: 1,200 have 400 or more, 36,000 have 350 to 399, 1,73,200 have 300 to 349, and so on. Ananya has 340 points. Everyone in the two bands above hers, 37,200 players, is ahead, plus those above her within her own band, so her rank, about 80,000th, the top 2% of 50 lakh, is estimated from these counts instead of asking every shard.</title>
 <text x={0} y={22} className="fb">Score band</text><text x={X} y={22} className="fb">Players</text>
-{bands.map(([b,n],i)=>{const y=44+i*32,w=Math.max(4,n/max*W),me=i===2;return <g key={b}><text x={0} y={y+14} className="fl">{b}</text><rect x={X} y={y} width={w} height={20} fill={me?BLUE:"#b9c9ff"}/><text x={X+w+8} y={y+14} className="fl">{n.toLocaleString("en-IN")}</text></g>})}
+{bands.map(([b,n],i)=>{const y=44+i*32,w=Math.max(4,n/max*W),me=i===2;return <g key={b}><text x={0} y={y+14} className="fl">{b}</text><rect x={X} y={y} width={w} height={20} fill={me?BLUE:ACCENT_LINE}/><text x={X+w+8} y={y+14} className="fl">{n.toLocaleString("en-IN")}</text></g>})}
 {still?<g><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></g>:<Show t0={.3} t1={.98} dur={D}><text x={0} y={222} className="fb" style={{fill:BLUE}}>Ananya, 340: 37,200 ahead in higher bands, plus her place in her band</text></Show>}</svg>}
 
 // Ad clicks, FIG: two paths for the same events. Fast: clicks go through a log to an aggregator that counts
@@ -335,7 +335,7 @@ function WindowsFig({still,uid=""}){const D="10s",X=60,W=110;
 const mins=["20:40","20:41","20:42","20:43","20:44"];
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`wnt${uid}`}><title id={`wnt${uid}`}>Counting by the minute a click happened. Each minute from 20:40 to 20:44 is its own window. A click made at 20:41 that only arrives at 20:43, from a phone that was out of signal, is still counted in the 20:41 window. Each window stays open for 5 minutes after it ends; clicks later than that are left to the nightly recount.</title>
-{mins.map((m,i)=><g key={m}><rect x={X+i*W} y={50} width={W-8} height={60} fill={i===1?"#f8faff":"#fff"} stroke={i===1?BLUE:GREY}/><text x={X+i*W+8} y={44} className="fl">{m}</text>{Array.from({length:[5,6,4,7,3][i]},(_,j)=><circle key={j} cx={X+i*W+14+j*12} cy={80} r={4} fill="#b9c9ff"/>)}</g>)}
+{mins.map((m,i)=><g key={m}><rect x={X+i*W} y={50} width={W-8} height={60} fill={i===1?LB:BG} stroke={i===1?BLUE:GREY}/><text x={X+i*W+8} y={44} className="fl">{m}</text>{Array.from({length:[5,6,4,7,3][i]},(_,j)=><circle key={j} cx={X+i*W+14+j*12} cy={80} r={4} fill={ACCENT_LINE}/>)}</g>)}
 <text x={0} y={84} className="fl">clicks</text>
 {step(.3,<g><circle cx={X+3*W+40} cy={150} r={5} fill={BLUE}/><text x={X+3*W+52} y={154} className="fl" style={{fill:BLUE}}>arrives 20:43</text><path d={`M${X+3*W+34} 150 H${X+W+86} V86`} fill="none" stroke={BLUE} strokeDasharray="4 3"/><circle cx={X+W+86} cy={80} r={5} fill={BLUE}/></g>)}
 {step(.55,<text x={X+W+8} y={172} className="fl" style={{fill:BLUE}}>counted in 20:41, when it happened</text>)}
@@ -349,10 +349,10 @@ const key=70,[kx,ky]=pt(key);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`rgt${uid}`}><title id={`rgt${uid}`}>The ring. Four machines, A, B, C and D, sit at points on a ring of hash values. The key "cart:u_42" hashes to a point between A and B, so it is stored on the next three different machines clockwise: B, C and D. When a new machine E joins between A and B, it takes over only the slice of keys next to it; every other key stays where it was.</title>
 <circle cx={CX} cy={CY} r={RAD} fill="none" stroke={GREY}/>
-{nodes.map(([n,d])=>{const[x,y]=pt(d);const mine=n!=="A";return <g key={n}><circle cx={x} cy={y} r={14} fill={mine?"#f8faff":"#fff"} stroke={mine?BLUE:GREY}/><text x={x} y={y+4} textAnchor="middle" className="fb">{n}</text></g>})}
+{nodes.map(([n,d])=>{const[x,y]=pt(d);const mine=n!=="A";return <g key={n}><circle cx={x} cy={y} r={14} fill={mine?LB:BG} stroke={mine?BLUE:GREY}/><text x={x} y={y+4} textAnchor="middle" className="fb">{n}</text></g>})}
 <circle cx={kx} cy={ky} r={5} fill={RED}/><text x={kx+10} y={ky-8} className="fl" style={{fill:RED}}>cart:u_42</text>
 <text x={300} y={50} className="fb">cart:u_42 is stored on B, C and D</text><text x={300} y={68} className="fl">the next three machines clockwise from its point</text>
-{step(.4,<g>{(()=>{const[x,y]=pt(45);return <g><circle cx={x} cy={y} r={14} fill="#fff" stroke={BLUE} strokeDasharray="4 3"/><text x={x} y={y+4} textAnchor="middle" className="fb">E</text></g>})()}<text x={300} y={120} className="fb">E joins between A and B</text><text x={300} y={138} className="fl">it takes over only the slice next to it;</text><text x={300} y={154} className="fl">every other key stays where it is</text></g>)}
+{step(.4,<g>{(()=>{const[x,y]=pt(45);return <g><circle cx={x} cy={y} r={14} fill={BG} stroke={BLUE} strokeDasharray="4 3"/><text x={x} y={y+4} textAnchor="middle" className="fb">E</text></g>})()}<text x={300} y={120} className="fb">E joins between A and B</text><text x={300} y={138} className="fl">it takes over only the slice next to it;</text><text x={300} y={154} className="fl">every other key stays where it is</text></g>)}
 <text x={300} y={200} className="fl">each machine also owns many small slices (vnodes),</text><text x={300} y={216} className="fl">so a new machine takes a little from everyone</text></svg>}
 
 // Key-value store, FIG: quorums. Three copies (N = 3). A write waits for two (W = 2); C was slow and missed
@@ -390,11 +390,11 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><titl
 function TransformFig({still,uid=""}){const D="12s";
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><title id={`tft${uid}`}>Two edits at once. The menu line reads "Tikka ₹220". Ananya inserts "Paneer " at the start. At the same moment Rohit replaces the 3 characters at position 7, 220, with 240. The server takes Ananya's edit first, as number 41. Rohit's edit was made on number 40, so the server shifts it right by the 7 characters Ananya added, to position 14. Everyone ends with "Paneer Tikka ₹240".</title>
-<text x={0} y={24} className="fb">Version #40</text><rect x={120} y={8} width={170} height={24} fill="#fff" stroke={GREY}/><text x={130} y={25} className="fb">Tikka ₹220</text>
+<text x={0} y={24} className="fb">Version #40</text><rect x={120} y={8} width={170} height={24} fill={BG} stroke={GREY}/><text x={130} y={25} className="fb">Tikka ₹220</text>
 {step(.1,<g><text x={0} y={66} className="fl">Ananya:</text><text x={70} y={66} className="fl" style={{fill:BLUE}}>insert "Paneer " at 0</text><text x={330} y={66} className="fl">→ #41</text></g>)}
 {step(.1,<g><text x={0} y={92} className="fl">Rohit:</text><text x={70} y={92} className="fl" style={{fill:BLUE}}>replace 3 characters at 7 with "240", made on #40</text></g>)}
 {step(.4,<g><text x={0} y={128} className="fb">Server</text><text x={70} y={128} className="fl">Rohit's edit came after #41, which added 7 characters before it:</text><text x={70} y={146} className="fl" style={{fill:BLUE}}>replace 3 characters at 14 with "240" → #42</text></g>)}
-{step(.7,<g><text x={0} y={196} className="fb">Everyone</text><rect x={120} y={180} width={230} height={24} fill="#f8faff" stroke={BLUE}/><text x={130} y={197} className="fb">Paneer Tikka ₹240</text></g>)}</svg>}
+{step(.7,<g><text x={0} y={196} className="fb">Everyone</text><rect x={120} y={180} width={230} height={24} fill={LB} stroke={BLUE}/><text x={130} y={197} className="fb">Paneer Tikka ₹240</text></g>)}</svg>}
 
 // Rider dispatch, FIG: the path. Rider apps send their location every few seconds to a location service,
 // which keeps only the latest one per rider in an in-memory map of the city. When an order is placed, the
@@ -429,7 +429,7 @@ const sizes=["240p","360p","480p","720p","1080p"];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`vpt${uid}`}><title id={`vpt${uid}`}>The chef's app uploads the original video straight to storage. A queue hands it to transcoders, which split it into chunks and encode each chunk in five sizes, from 240p to 1080p, at the same time. The result is 4-second segments for each size plus a playlist, served through a CDN to viewers.</title><Mark m={M}/>
 <SBox x={0} y={50} w={100} t="Chef's app"/><SBox x={140} y={50} w={110} t="Storage"/><SBox x={290} y={50} w={80} t="Queue"/><SBox x={410} y={50} w={130} t="Transcoders" blue/>
 <Line x1={102} y1={50} x2={136} y2={50} m={M}/><Line x1={252} y1={50} x2={286} y2={50} m={M}/><Line x1={372} y1={50} x2={406} y2={50} m={M}/><text x={120} y={36} textAnchor="middle" className="fl">original</text>
-{sizes.map((z,i)=><g key={z}><rect x={410+i*46} y={84} width={40} height={20} fill="#f8faff" stroke={BLUE}/><text x={430+i*46} y={98} textAnchor="middle" className="fl">{z}</text></g>)}
+{sizes.map((z,i)=><g key={z}><rect x={410+i*46} y={84} width={40} height={20} fill={LB} stroke={BLUE}/><text x={430+i*46} y={98} textAnchor="middle" className="fl">{z}</text></g>)}
 <text x={475} y={122} textAnchor="middle" className="fl">every chunk, five sizes, in parallel</text>
 <SBox x={410} y={170} w={130} t="Segments + playlist"/><SBox x={250} y={170} w={110} t="CDN"/><SBox x={90} y={170} w={110} t="Viewers"/>
 <Line x1={475} y1={130} x2={475} y2={156} m={M}/><Line x1={408} y1={170} x2={364} y2={170} m={M}/><Line x1={248} y1={170} x2={204} y2={170} m={M}/>
@@ -445,7 +445,7 @@ const h=(q)=>q===720?70:q===480?46:22;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`abt${uid}`}><title id={`abt${uid}`}>The player fetches 4-second segments and picks a size for each one from how fast the last few downloaded. On strong 4G it fetches 720p. In a lift the speed drops, so the next two segments are 240p and the video keeps playing without a pause. Out of the lift it climbs back to 480p, then 720p.</title>
 <text x={0} y={64} className="fl">720p</text><text x={0} y={88} className="fl">480p</text><text x={0} y={112} className="fl">240p</text>
 <line x1={X} y1={130} x2={X+seg.length*SW+4} y2={130} stroke={GREY}/>
-{seg.map(([q,n],i)=>{const el=<rect x={X+i*SW+2} y={130-h(q)} width={SW-6} height={h(q)} fill={q===240?"#f4c7c3":q===480?"#b9c9ff":BLUE}/>;return still?<g key={i}>{el}</g>:<Show key={i} t0={.03+i*.07} t1={.98} dur={D}>{el}</Show>})}
+{seg.map(([q,n],i)=>{const el=<rect x={X+i*SW+2} y={130-h(q)} width={SW-6} height={h(q)} fill={q===240?DANGER_LINE:q===480?ACCENT_LINE:BLUE}/>;return still?<g key={i}>{el}</g>:<Show key={i} t0={.03+i*.07} t1={.98} dur={D}>{el}</Show>})}
 <text x={X+3*SW+2} y={150} className="fl" style={{fill:RED}}>in a lift</text><text x={X+5*SW+2} y={166} className="fl">back</text>
 <text x={0} y={150} className="fl">each bar: 4 s</text>
 <text x={0} y={200} className="fl">quality changes from one segment to the next; the picture never stops</text></svg>}
@@ -473,7 +473,7 @@ const res=[["d12","Paneer Butter Masala · 3 of 3",1],["d40","Paneer Masala Dosa
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ivt${uid}`}><title id={`ivt${uid}`}>An inverted index: each word points to the dishes that contain it. paneer points to d12, d40 and d77; butter to d12 and d55; masala to d12, d40 and d90. A search for paneer butter masala reads these three short lists and combines them: d12, Paneer Butter Masala, has all three words and ranks first; d40, Paneer Masala Dosa, has two; d55, Butter Naan, has one.</title>
 <text x={0} y={22} className="fb">Word</text><text x={100} y={22} className="fb">Dishes that contain it</text>
-{rows.map(([w,ids],i)=>{const y=52+i*34;return <g key={w}><rect x={0} y={y-16} width={86} height={26} fill="#f8faff" stroke={BLUE}/><text x={10} y={y+2} className="fb">{w}</text>{ids.map((d,j)=><g key={d}><rect x={100+j*54} y={y-16} width={48} height={26} fill={d==="d12"?"#b9c9ff":"#fff"} stroke={GREY}/><text x={124+j*54} y={y+2} textAnchor="middle" className="fl">{d}</text></g>)}</g>})}
+{rows.map(([w,ids],i)=>{const y=52+i*34;return <g key={w}><rect x={0} y={y-16} width={86} height={26} fill={LB} stroke={BLUE}/><text x={10} y={y+2} className="fb">{w}</text>{ids.map((d,j)=><g key={d}><rect x={100+j*54} y={y-16} width={48} height={26} fill={d==="d12"?ACCENT_LINE:BG} stroke={GREY}/><text x={124+j*54} y={y+2} textAnchor="middle" className="fl">{d}</text></g>)}</g>})}
 {step(.3,<text x={300} y={22} className="fb">"paneer butter masala"</text>)}
 {res.map(([d,t,top],i)=><g key={d}>{step(.4+i*.15,<text x={300} y={52+i*34} className="fl" style={{fill:top?BLUE:INK}}>{i+1}. {t}</text>)}</g>)}
 <text x={0} y={200} className="fl">three short lists instead of reading every dish in Pune; most words match a tiny share</text></svg>}

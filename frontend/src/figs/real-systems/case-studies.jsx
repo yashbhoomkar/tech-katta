@@ -1,12 +1,12 @@
 // Real systems › Case studies: the figures this sub-tab's articles draw (site.json dashboard.groups["real-systems"], "case-studies").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,T,Fig,X,INK,GREY,RED,BLUE,LB,LR,FB}from"../parts.jsx";
+import{BG}from"../../theme/palette.js";import React from"react";import{Bx,Ar,T,Fig,X,INK,GREY,RED,BLUE,LB,LR,FB}from"../parts.jsx";
 
 // Shopify, FIG 1: one row per unit, handed out with SKIP LOCKED. Checkout 1 locks units 1–3, checkout 2
 // passes over them and takes 4–5, and the stock ledger refills the pool when it runs low.
 function SkipLockedFig({still,uid=""}){const M=`sk${uid}`;
 const at=i=>({x:220+(i%2)*120,y:62+Math.floor(i/2)*36});
-const unit=(i,by)=>{const{x,y}=at(i);return <Bx key={i} x={x} y={y} w={110} h={28} t={by?`unit ${i+1} · ${by}`:`unit ${i+1}`} c={by?BLUE:GREY} fill={by?LB:"#fff"}/>};
+const unit=(i,by)=>{const{x,y}=at(i);return <Bx key={i} x={x} y={y} w={110} h={28} t={by?`unit ${i+1} · ${by}`:`unit ${i+1}`} c={by?BLUE:GREY} fill={by?LB:BG}/>};
 const base=<g><text x="220" y="50" className="fk">UNIT ROWS · ONE ITEM, ONE LOCATION</text>{[0,1,2,3,4,5,6,7,8,9].map(i=>unit(i))}
 <Bx x={10} y={70} w={150} h={44} t="Checkout 1" s="wants 3 units"/><Bx x={10} y={170} w={150} h={44} t="Checkout 2" s="wants 2 units"/>
 <Bx x={490} y={150} w={140} h={44} t="Stock ledger" s="the source of truth"/><T x={220} y={258} t="Pool: at most 1,000 rows per item and location"/></g>;
@@ -21,7 +21,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Discord, FIG 1: an @everyone ping. Seven reads of channel 42 all route to data service B, which sends one
 // query to ScyllaDB and shares the one answer.
 function CoalesceFig({still,uid=""}){const M=`dc${uid}`,Y=[52,82,112,142,172,202,232];
-const req=y=><g key={y}><rect x="10" y={y} width="128" height="22" fill="#fff" stroke={GREY}/><text x="74" y={y+15} textAnchor="middle" className="fl">read channel 42</text></g>;
+const req=y=><g key={y}><rect x="10" y={y} width="128" height="22" fill={BG} stroke={GREY}/><text x="74" y={y+15} textAnchor="middle" className="fl">read channel 42</text></g>;
 const base=<g><Bx x={230} y={60} w={150} h={44} t="Data service A" s="other channels"/><Bx x={230} y={128} w={150} h={44} t="Data service B" s="channels incl. 42"/><Bx x={230} y={196} w={150} h={44} t="Data service C" s="other channels"/>
 <Bx x={490} y={122} w={140} h={56} t="ScyllaDB" s="channel 42's partition"/></g>;
 const s1=<g>{Y.map(req)}</g>;
@@ -37,7 +37,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function KafkaBufferFig({still,uid=""}){const M=`sq${uid}`,X0=[8,114,220,326,432,538];
 const B=[["Web app","PHP / Hack"],["Kafkagate","HTTP → Kafka"],["Kafka","on disk"],["JQRelay","rate limit"],["Redis","in memory"],["Workers","run the jobs"]];
 const box=(i,c,fill,s)=><Bx key={i} x={X0[i]} y={96} w={86} h={48} t={B[i][0]} s={s||B[i][1]} c={c} fill={fill}/>;
-const gauge=(x,f,c)=><g><rect x={x} y={160} width="86" height="12" fill="#fff" stroke={GREY}/>{f>0&&<rect x={x+1} y={161} width={84*f} height="10" fill={c}/>}</g>;
+const gauge=(x,f,c)=><g><rect x={x} y={160} width="86" height="12" fill={BG} stroke={GREY}/>{f>0&&<rect x={x+1} y={161} width={84*f} height="10" fill={c}/>}</g>;
 const base=<g>{B.map((_,i)=>box(i))}{gauge(220,0)}{gauge(432,0)}<T x={220} y={188} t="backlog"/><T x={432} y={188} t="memory"/></g>;
 const s1=<g>{[0,1,2,3,4].map(i=><Ar key={i} x1={X0[i]+88} y1={120} x2={X0[i+1]-3} y2={120} m={M} c={BLUE}/>)}<T x={8} y={222} t="a normal day: up to 33,000 jobs a second flow straight through"/></g>;
 const s2=<g>{box(5,RED,LR,"slowed down")}<T x={8} y={238} t="the database is struggling, so jobs finish slower than they arrive" c={RED}/></g>;
@@ -50,9 +50,9 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Figma, FIG 1: last write wins per property. Different properties never conflict; for the same property
 // the server's order decides, and a client ignores incoming values while its own change is unconfirmed.
 function LwwFig({still,uid=""}){const M=`fg${uid}`;
-const val=(y,t,c=INK)=><g><rect x="324" y={y-12} width="60" height="16" fill="#fff"/><text x="330" y={y} className="fl" style={{fill:c}}>{t}</text></g>;
-const screen=(x,who,s,c=GREY,fill="#fff")=><Bx x={x} y={96} w={120} h={60} t={`${who}'s screen`} s={s} c={c} fill={fill}/>;
-const base=<g><rect x="250" y="50" width="140" height="160" fill="#fff" stroke={GREY}/><text x="320" y="70" textAnchor="middle" className="fb">Server</text><text x="320" y="84" textAnchor="middle" className="fl">button 51</text>
+const val=(y,t,c=INK)=><g><rect x="324" y={y-12} width="60" height="16" fill={BG}/><text x="330" y={y} className="fl" style={{fill:c}}>{t}</text></g>;
+const screen=(x,who,s,c=GREY,fill=BG)=><Bx x={x} y={96} w={120} h={60} t={`${who}'s screen`} s={s} c={c} fill={fill}/>;
+const base=<g><rect x="250" y="50" width="140" height="160" fill={BG} stroke={GREY}/><text x="320" y="70" textAnchor="middle" className="fb">Server</text><text x="320" y="84" textAnchor="middle" className="fl">button 51</text>
 {[["colour",116],["width",146],["text",176]].map(([p,y])=><text key={p} x="262" y={y} className="fl">{p}</text>)}{val(116,"grey")}{val(146,"100")}{val(176,"Menu")}
 {screen(10,"Asha","button 51")}{screen(510,"Ben","button 51")}</g>;
 const s1=<g><Ar x1={132} y1={108} x2={246} y2={108} m={M} c={BLUE}/><T x={190} y={100} t="colour = blue" a="middle" c={BLUE}/><Ar x1={508} y1={108} x2={394} y2={108} m={M} c={BLUE}/><T x={450} y={100} t="width = 120" a="middle" c={BLUE}/>{val(116,"blue",BLUE)}{val(146,"120",BLUE)}</g>;

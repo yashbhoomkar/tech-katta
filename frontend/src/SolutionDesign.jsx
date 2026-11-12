@@ -4,7 +4,7 @@
 // (solve.jsx puts it there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
 // submission of the copied design unchanged isn't counted as solved (judge.js sameDesign). `note`
 // (practice.referenceNote) says where the Lab's version differs from the worked answer's full-size one.
-import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
+import{MUTED}from"./theme/palette.js";import{useTheme}from"./theme/mode.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
 
 const KIND={btree:"index",unique:"unique index",geo:"geo index",text:"text index"};
 const NW=176,NH=74,PAD=24;
@@ -17,7 +17,7 @@ if(Math.abs(a.x-b.x)<NW&&b.y>a.y)return `M${a.x+NW/2},${a.y+NH} L${b.x+NW/2},${b
 if(Math.abs(a.x-b.x)<NW&&b.y<a.y)return `M${a.x+NW/2},${a.y} L${b.x+NW/2},${b.y+NH}`;
 const lo=Math.max(a.y,b.y)+NH+30;return `M${a.x+NW/2},${a.y+NH} C${a.x+NW/2},${lo} ${b.x+NW/2},${lo} ${b.x+NW/2},${b.y+NH}`}
 
-export default function SolutionDesign({sol,lab,copy,copied,undo,busy,note}){
+export default function SolutionDesign({sol,lab,copy,copied,undo,busy,note}){useTheme();
 const cat=useMemo(()=>lab?catalogue(lab):{},[lab]);
 // a design wider than the pane scrolls in its box (say so), and opens full size in a dialog
 const box=useRef(null),dlg=useRef(null),[wide,setWide]=useState(false);
@@ -28,7 +28,7 @@ return{n,comp,name:displayName(comp,n),group:(comp?.group||n.type).toUpperCase()
 const x0=Math.min(...sol.nodes.map(n=>n.x))-PAD,y0=Math.min(...sol.nodes.map(n=>n.y))-PAD,x1=Math.max(...sol.nodes.map(n=>n.x))+NW+PAD,y1=Math.max(...sol.nodes.map(n=>n.y))+NH+PAD+30;
 const W=x1-x0,H=y1-y0,at=Object.fromEntries(sol.nodes.map(n=>[n.id,n]));
 const draw=(min,id)=><svg viewBox={`${x0} ${y0} ${W} ${H}`} style={{width:"100%",minWidth:min+"px"}} aria-hidden="true">
-<defs><marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6b7f"/></marker></defs>
+<defs><marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill={MUTED}/></marker></defs>
 {sol.edges.map((e,k)=>at[e.from]&&at[e.to]?<path key={k} d={path(at[e.from],at[e.to])} className="sd-edge" markerEnd={`url(#${id})`}/>:null)}
 {parts.map(({n,name,group,sum,comp})=><g key={n.id} transform={`translate(${n.x},${n.y})`}>
 <rect width={NW} height={NH} rx="2" className="sd-node"/>

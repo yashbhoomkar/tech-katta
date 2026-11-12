@@ -1,11 +1,11 @@
 // Concepts › Data modelling: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "data-modelling").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Mk,Cap,Caps,Show,Dot}from"../parts.jsx";
+import{BG,GRID,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Mk,Cap,Caps,Show,Dot}from"../parts.jsx";
 
-const HEAD="#f3f5f8";
+const HEAD=SURFACE;
 
 // A table: a name bar and one mono line per column. Row i is centred near y+30+14i.
-const Tbl=({x,y,w,name,cols,c=GREY,fill="#fff"})=><g><rect x={x} y={y} width={w} height={26+cols.length*14} fill={fill} stroke={c}/><rect x={x} y={y} width={w} height={20} fill={HEAD} stroke={c}/><T x={x+8} y={y+14} t={name} b/>{cols.map((k,i)=><T key={i} x={x+8} y={y+33+i*14} t={k}/>)}</g>;
+const Tbl=({x,y,w,name,cols,c=GREY,fill=BG})=><g><rect x={x} y={y} width={w} height={26+cols.length*14} fill={fill} stroke={c}/><rect x={x} y={y} width={w} height={20} fill={HEAD} stroke={c}/><T x={x+8} y={y+14} t={name} b/>{cols.map((k,i)=><T key={i} x={x+8} y={y+33+i*14} t={k}/>)}</g>;
 
 const Tag=({x,y,i,t})=><T x={x} y={y+33+i*14} t={t} a="end" c={BLUE}/>;
 
@@ -46,10 +46,10 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Choosing a database model, FIG 4: a graph, and the same edges as a table.
 function GraphFig({still,uid=""}){const M=`dg${uid}`;
 const N={P:[60,90,"Priya"],A:[230,80,"Arjun"],Mm:[80,206,"Meera"],K:[240,200,"Kabir"]};
-const node=(k,c=GREY,fill="#fff")=>{const[x,y,t]=N[k];return <g key={k+c}><circle cx={x} cy={y} r={24} fill={fill} stroke={c}/><T x={x} y={y+4} t={t} a="middle" b/></g>};
+const node=(k,c=GREY,fill=BG)=>{const[x,y,t]=N[k];return <g key={k+c}><circle cx={x} cy={y} r={24} fill={fill} stroke={c}/><T x={x} y={y+4} t={t} a="middle" b/></g>};
 const edge=(a,b,c=INK)=>{const[x1,y1]=N[a],[x2,y2]=N[b],d=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/d,uy=(y2-y1)/d;return <Ar key={a+b+c} x1={x1+ux*25} y1={y1+uy*25} x2={x2-ux*27} y2={y2-uy*27} m={M} c={c} w={c===INK?undefined:2}/>};
 const R=[["Priya","Arjun"],["Priya","Meera"],["Arjun","Kabir"],["Meera","Kabir"]];
-const row=(i,c=GREY,fill="#fff")=><g key={i+c}><rect x={330} y={80+i*24} width={150} height={24} fill={fill} stroke={c}/><rect x={480} y={80+i*24} width={150} height={24} fill={fill} stroke={c}/><T x={340} y={96+i*24} t={R[i][0]}/><T x={490} y={96+i*24} t={R[i][1]}/></g>;
+const row=(i,c=GREY,fill=BG)=><g key={i+c}><rect x={330} y={80+i*24} width={150} height={24} fill={fill} stroke={c}/><rect x={480} y={80+i*24} width={150} height={24} fill={fill} stroke={c}/><T x={340} y={96+i*24} t={R[i][0]}/><T x={490} y={96+i*24} t={R[i][1]}/></g>;
 const s1=<g>{edge("P","A")}{edge("P","Mm")}{edge("A","K")}{edge("Mm","K")}{["P","A","Mm","K"].map(k=>node(k))}<T x={145} y={76} t="follows" a="middle"/></g>;
 const s2=<g><T x={330} y={50} t="follows" b/><rect x={330} y={56} width={150} height={24} fill={HEAD} stroke={GREY}/><rect x={480} y={56} width={150} height={24} fill={HEAD} stroke={GREY}/><T x={340} y={72} t="follower_id"/><T x={490} y={72} t="followee_id"/>{[0,1,2,3].map(i=>row(i))}</g>;
 const s3=<g>{edge("P","A",BLUE)}{edge("P","Mm",BLUE)}{node("P",BLUE,LB)}{row(0,BLUE,LB)}{row(1,BLUE,LB)}<T x={330} y={198} t="index on follower_id: one lookup per hop" c={BLUE}/></g>;
@@ -88,15 +88,15 @@ const s1=row(46,"GET /users/77/orders","WHERE user_id = 77 ORDER BY created_at D
 const s2=row(96,"GET /restaurants/42/live-orders","WHERE restaurant_id = 42 AND status = 'live'","(restaurant_id, status)","on orders");
 const s3=row(146,"GET /restaurants/42/menu","WHERE restaurant_id = 42","(restaurant_id)","on dishes");
 const K=[["76","07 Nov"],["77","08 Nov"],["77","05 Nov"],["77","03 Nov"],["78","08 Nov"],["79","01 Nov"]];
-const s4=<g><T x={10} y={210} t="inside (user_id, created_at):" b/>{K.map(([u,d],i)=>{const on=u==="77";return <Bx key={i} x={10+i*103} y={218} w={99} h={30} t={`${u} · ${d}`} c={on?BLUE:GREY} fill={on?LB:"#fff"}/>})}<T x={113} y={264} t="user 77's orders: one range, already newest first" c={BLUE}/></g>;
+const s4=<g><T x={10} y={210} t="inside (user_id, created_at):" b/>{K.map(([u,d],i)=>{const on=u==="77";return <Bx key={i} x={10+i*103} y={218} w={99} h={30} t={`${u} · ${d}`} c={on?BLUE:GREY} fill={on?LB:BG}/>})}<T x={113} y={264} t="user 77's orders: one range, already newest first" c={BLUE}/></g>;
 const caps=[["1 · order history filters by user and sorts by time: one composite index does both",BLUE],["2 · a restaurant's live orders: filter by restaurant, then by status",BLUE],["3 · the menu page: dishes by restaurant",BLUE],["4 · inside the index, user 77's orders sit together, already in time order",BLUE]];
 return <Fig still={still} h={272} id={`det${uid}`} M={M} caps={caps} title="From each endpoint to the index it needs. GET /users/77/orders filters by user_id and sorts by created_at, so it needs an index on orders over user_id then created_at. A restaurant's live orders filter by restaurant_id and status, so an index on orders over restaurant_id then status. The menu reads dishes by restaurant_id. Inside the composite index, user 77's orders sit next to each other, already newest first, so the query reads one range."
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Indexes and normalisation, FIG 2: a rename, normalised and denormalised.
 function AnomalyFig({still,uid=""}){
-const L=(y,t,c=GREY,fill="#fff")=><Bx x={10} y={y} w={290} h={y===66?30:24} t={t} c={c} fill={fill}/>;
-const Rr=(i,t,c=GREY,fill="#fff")=><Bx key={i+c} x={340} y={66+i*30} w={290} h={24} t={t} c={c} fill={fill}/>;
+const L=(y,t,c=GREY,fill=BG)=><Bx x={10} y={y} w={290} h={y===66?30:24} t={t} c={c} fill={fill}/>;
+const Rr=(i,t,c=GREY,fill=BG)=><Bx key={i+c} x={340} y={66+i*30} w={290} h={24} t={t} c={c} fill={fill}/>;
 const ids=["9101","9102","9103","9104"];
 const base=<g><T x={10} y={54} t="normalised: the name is stored once" b/><T x={340} y={54} t="denormalised: copied into every order" b/>{L(66,"restaurant 42 · Spice Route")}{["9101","9102","9103"].map((o,i)=><g key={o}>{L(106+i*28,`order ${o} → restaurant 42`)}</g>)}{ids.map((o,i)=>Rr(i,`order ${o} · Spice Route`))}</g>;
 const s1=<g>{L(66,"restaurant 42 · Masala House",BLUE,LB)}<T x={10} y={210} t="one row updated; every order shows it" c={BLUE}/></g>;
@@ -110,7 +110,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Sharding the model, FIG 2: a query with the shard key, and one without.
 function CrossShardFig({still,uid=""}){const M=`ds${uid}`;
 const S=[["shard 1 · Mumbai",44,["9101 · rest 42 · user 77","9107 · rest 42 · user 12"]],["shard 2 · Pune",122,["8810 · rest 61 · user 77","8815 · rest 63 · user 30"]],["shard 3 · Delhi",200,["7702 · rest 90 · user 77","7710 · rest 91 · user 5"]]];
-const shard=([t,y,r],c=GREY,fill="#fff")=><g key={t+c}><rect x={440} y={y} width={190} height={64} fill={fill} stroke={c}/><T x={450} y={y+17} t={t} b/>{r.map((l,i)=><T key={i} x={450} y={y+35+i*16} t={l}/>)}</g>;
+const shard=([t,y,r],c=GREY,fill=BG)=><g key={t+c}><rect x={440} y={y} width={190} height={64} fill={fill} stroke={c}/><T x={450} y={y+17} t={t} b/>{r.map((l,i)=><T key={i} x={450} y={y+35+i*16} t={l}/>)}</g>;
 const mark=(y,c)=><rect key={y+c} x={447} y={y+25} width={176} height={14} fill="none" stroke={c} strokeWidth="1.5"/>;
 const s1=<g><Bx x={10} y={110} w={130} h={44} t="app server"/>{S.map(s=>shard(s))}</g>;
 const s2=<g><T x={10} y={98} t="restaurant 42's live orders" c={BLUE}/><Ar x1={142} y1={122} x2={436} y2={76} m={M} c={BLUE} w={2}/><rect x={443} y={66} width={184} height={36} fill="none" stroke={BLUE} strokeWidth="2"/></g>;
@@ -127,18 +127,18 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // itself, the table changes in one row, and the copy inside old order documents keeps the old name.
 function ModelShapesFig({still,uid=""}){const M=`ms${uid}`,D="14s";
 const caps=[["1 · the order screen needs the order, its dishes, the customer and the restaurant",INK],["2 · as tables, each fact is stored once, and the screen joins four tables to show it",BLUE],["3 · as one document, everything the screen shows comes back in a single read",BLUE],["4 · the restaurant renames itself: one row changes, but copies in old orders don't",RED]];
-const tb=(x,y,w,t,rows)=><g><rect x={x} y={y} width={w} height={24+rows.length*16} fill="#fff" stroke={GREY}/><rect x={x} y={y} width={w} height="20" fill="#eef1f5" stroke={GREY}/><text x={x+8} y={y+14} className="fb">{t}</text>{rows.map((r,i)=><text key={i} x={x+8} y={y+35+i*16} className="fl">{r}</text>)}</g>;
+const tb=(x,y,w,t,rows)=><g><rect x={x} y={y} width={w} height={24+rows.length*16} fill={BG} stroke={GREY}/><rect x={x} y={y} width={w} height="20" fill={GRID} stroke={GREY}/><text x={x+8} y={y+14} className="fb">{t}</text>{rows.map((r,i)=><text key={i} x={x+8} y={y+35+i*16} className="fl">{r}</text>)}</g>;
 const doc=['{ order: 9051,','  customer: { id: 77, name: "Asha" },','  restaurant: { id: 42,','    name: "Udupi Corner" },','  items: [','    { dish: "masala dosa", qty: 2 },','    { dish: "filter coffee", qty: 1 } ],','  total: 255 }'];
 const line=(l,i,c)=><text key={i} x={362+(l.length-l.trimStart().length)*6} y={78+i*17} className="fl" style={c?{fill:c}:undefined}>{l.trim()}</text>;
 const base=<g><text x="10" y="46" className="fk">AS FOUR TABLES</text><text x="350" y="46" className="fk">AS ONE DOCUMENT</text>
 {tb(10,56,145,"orders",["id 9051","customer_id 77","restaurant_id 42","total 255"])}{tb(175,56,155,"order_items",["9051 · masala dosa ×2","9051 · filter coffee ×1"])}
 {tb(10,180,145,"customers",["id 77 · Asha"])}{tb(175,180,155,"restaurants",["id 42 · Udupi Corner"])}
 <Ar x1={60} y1={144} x2={60} y2={177} m={M}/><Ar x1={120} y1={144} x2={228} y2={177} m={M}/><Ar x1={175} y1={84} x2={158} y2={84} m={M}/>
-<rect x="350" y="56" width="280" height="154" fill="#fff" stroke={GREY}/>{doc.map((l,i)=>line(l,i))}</g>;
+<rect x="350" y="56" width="280" height="154" fill={BG} stroke={GREY}/>{doc.map((l,i)=>line(l,i))}</g>;
 const s2=<text x="10" y="246" className="fl" style={{fill:BLUE}}>one query, three joins</text>;
 const s3=<g><rect x="350" y="56" width="280" height="154" fill="none" stroke={BLUE} strokeWidth="2"/><text x="350" y="246" className="fl" style={{fill:BLUE}}>one read</text></g>;
-const s4=<g><rect x="177" y="204" width="151" height="15" fill="#fff"/><text x="183" y="215" className="fl" style={{fill:BLUE}}>id 42 · Udupi Café</text><text x="10" y="266" className="fl" style={{fill:BLUE}}>renamed in one place</text>
-<rect x="384" y="118" width="200" height="15" fill="#fff"/>{line(doc[3],3,RED)}<text x="350" y="266" className="fl" style={{fill:RED}}>old orders keep the old name</text></g>;
+const s4=<g><rect x="177" y="204" width="151" height="15" fill={BG}/><text x="183" y="215" className="fl" style={{fill:BLUE}}>id 42 · Udupi Café</text><text x="10" y="266" className="fl" style={{fill:BLUE}}>renamed in one place</text>
+<rect x="384" y="118" width="200" height="15" fill={BG}/>{line(doc[3],3,RED)}<text x="350" y="266" className="fl" style={{fill:RED}}>old orders keep the old name</text></g>;
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`mst${uid}`}><title id={`mst${uid}`}>One food order stored two ways. As four tables: orders, order items, customers and restaurants, each fact stored once and linked by IDs, so the order screen needs one query that joins all four. As one document: the order holds a copy of the customer's name, the restaurant's name and the dishes, so the screen needs a single read. When the restaurant renames itself from Udupi Corner to Udupi Café, the tables change in one row, while old order documents keep the old name in their copy.</title><Mk m={M}/>
 {base}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]} c={RED}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
 <Show t0={.25} t1={1} dur={D}>{s2}</Show><Dot x1={60} x2={60} y={144} y2={176} t0={.28} t1={.36} dur={D}/><Dot x1={120} x2={226} y={144} y2={176} t0={.36} t1={.44} dur={D}/><Dot x1={175} x2={160} y={84} t0={.44} t1={.5} dur={D}/>
@@ -151,7 +151,7 @@ const caps=[["1 · the restaurant page shows its average rating; 2,000 people op
 const top=<g><text x="10" y="50" className="fk">WORK IT OUT ON EVERY VIEW</text><Bx x={10} y={62} w={150} h={40} t="Restaurant page" s="2,000 views a minute"/><Ar x1={162} y1={82} x2={296} y2={82} m={M}/><Bx x={300} y={62} w={180} h={40} t="reviews" s="48,000 rows for this place"/></g>;
 const s2=<g><text x="229" y="74" textAnchor="middle" className="fl" style={{fill:RED}}>average, every time</text><text x="496" y="78" className="fl" style={{fill:RED}}>≈ 9.6 crore rows</text><text x="496" y="94" className="fl" style={{fill:RED}}>read a minute</text></g>;
 const s3=<g><text x="10" y="150" className="fk">KEEP THE ANSWER ON THE RESTAURANT ROW</text><Bx x={10} y={162} w={150} h={40} t="Restaurant page" s="2,000 views a minute"/><Ar x1={162} y1={182} x2={296} y2={182} m={M}/><text x="229" y="174" textAnchor="middle" className="fl" style={{fill:BLUE}}>read 1 row</text>
-<Bx x={300} y={162} w={180} h={40} t="restaurants · id 42" s="rating 4.3 · 48,000 reviews" c={BLUE} fill="#f8faff"/><text x="496" y="178" className="fl" style={{fill:BLUE}}>2,000 rows read</text><text x="496" y="194" className="fl" style={{fill:BLUE}}>a minute</text></g>;
+<Bx x={300} y={162} w={180} h={40} t="restaurants · id 42" s="rating 4.3 · 48,000 reviews" c={BLUE} fill={LB}/><text x="496" y="178" className="fl" style={{fill:BLUE}}>2,000 rows read</text><text x="496" y="194" className="fl" style={{fill:BLUE}}>a minute</text></g>;
 const s4=<g><Bx x={10} y={222} w={150} h={40} t="Review API" s="a new review"/><Ar x1={162} y1={236} x2={330} y2={205} m={M}/><text x="172" y="262" className="fl">adds the review and updates the rating, together</text><text x="496" y="238" className="fl" style={{fill:BLUE}}>+1 update</text><text x="496" y="254" className="fl" style={{fill:BLUE}}>per review</text></g>;
 return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`mct${uid}`}><title id={`mct${uid}`}>Two ways to show a restaurant's average rating on a page opened 2,000 times a minute. Working it out on every view averages all 48,000 reviews each time, about 9.6 crore rows read a minute. Keeping the rating on the restaurant's own row means each view reads one row, 2,000 rows a minute. The price is paid on writes: each new review is added and the restaurant's rating updated in the same transaction.</title><Mk m={M}/>
 {top}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/>
