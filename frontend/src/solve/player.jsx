@@ -1,0 +1,12 @@
+import React,{useEffect}from"react";
+// ---- Request tests: JSON in and out, and the request travelling through the design ----
+export const reqOf=t=>({method:t.request.method,path:t.request.path,...(t.request.body?{body:t.request.body}:{})});
+export function Json({label,v,bad}){return <figure className={"sv-json"+(bad?" bad":"")}><figcaption>{label}</figcaption><pre>{typeof v==="string"?v:JSON.stringify(v,null,2)}</pre></figure>}
+export function Player({w,set}){const{hops,i,play,r}=w,h=hops[i],last=i===hops.length-1;
+useEffect(()=>{if(!play)return;if(last){set(x=>({...x,play:false}));return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,x.hops.length-1)}),1300);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
+useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null);else if(e.key==="ArrowRight")set(x=>({...x,play:false,i:Math.min(x.i+1,x.hops.length-1)}));else if(e.key==="ArrowLeft")set(x=>({...x,play:false,i:Math.max(x.i-1,0)}))};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
+return <section className="sv-console sv-player" aria-label="The request travelling through your design">
+<header className={"sv-v "+(r.ok?"good":"bad")}><div><b>{(r.request||r.test.request).method} {(r.request||r.test.request).path}</b><small>Step {i+1} of {hops.length} · {r.ok?"the design answers as expected":"the design doesn't answer as expected"}</small></div>
+<span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.max(0,x.i-1)}))} disabled={i===0} aria-label="Previous step">‹</button><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(x=>({...x,play:false,i:Math.min(x.hops.length-1,x.i+1)}))} disabled={last} aria-label="Next step">›</button><button type="button" onClick={()=>set(null)} aria-label="Close">✕</button></span></header>
+<div className="sv-trace"><ol>{hops.map((x,k)=><li key={k} className={k===i?"on":k<i?"done":""}><button type="button" onClick={()=>set(y=>({...y,play:false,i:k}))}>{x.title}</button></li>)}</ol>
+<div className="sv-hop" aria-live="polite"><b>{h.title}</b>{h.json!=null?<pre>{typeof h.json==="string"?h.json:JSON.stringify(h.json,null,2)}</pre>:<p className="sv-tdesc">{last?"":"Passing it along…"}</p>}{last&&!r.ok&&r.why?.[0]&&<p className="sv-whyline">{r.why[0]}</p>}</div></div></section>}

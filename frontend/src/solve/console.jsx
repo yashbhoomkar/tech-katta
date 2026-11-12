@@ -1,0 +1,26 @@
+import React,{useEffect,useState}from"react";import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js";import{Json,reqOf}from"./player.jsx";import{Findings,HowRead}from"./v2.jsx";
+// ---- Results under the canvas ----
+export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
+const{kind,j,g,sc,crash}=res;
+if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
+const acc=j.verdict==="accepted",err=j.verdict==="error";
+return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria-label="Test results">
+<header className={"sv-v "+(acc?"good":"bad")}><div><b>{err?"Can't run the tests":acc?(kind==="run"?"Example tests passed":"Accepted"):"Wrong design"}</b>
+<small>{err?j.first?.error:`${j.passed} / ${j.total} ${kind==="run"?"example ":""}tests passed`}{j.metrics&&!err?` · worst availability ${pct(j.metrics.availability)} · p99 ${fmt(j.metrics.p99)} ms · up to $${fmt(j.metrics.avgMonthly)}/month`:""}</small></div>
+<span className="sv-vbtns"><button type="button" onClick={()=>setMin(m=>!m)} aria-expanded={!min} aria-label={min?"Show the results":"Make the results smaller"}>{min?"▴":"▾"}</button><button type="button" onClick={close} aria-label="Close results">✕</button></span></header>
+{!min&&<>{sc&&<div className="sv-score"><b>{sc.total}<small>/100</small></b><ul>
+<li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
+<li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
+{g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
+{res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
+{res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
+{!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:(r.request||r.test.request)&&r.output?`${(r.request||r.test.request).method} ${(r.request||r.test.request).path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
+<p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}
+{(r.request||r.test.request)&&<><div className="sv-io"><Json label="Request" v={r.request||reqOf(r.test)}/><Json label="Expected" v={r.expect}/>{r.output&&<Json label="Your design's response" v={r.output} bad={!r.ok}/>}</div>{r.trace?.length>1&&<button type="button" className="sv-watch" onClick={()=>watch(r)}>▶ Watch the request travel</button>}</>}
+<ul className="sv-checks">{r.checks.map((c,ci)=><li key={ci} className={c.ok?"ok":"no"}><i aria-hidden="true">{c.ok?"✓":"✕"}</i>{c.label}</li>)}</ul>
+{r.ops&&<ul className="sv-opres">{Object.entries(r.ops).map(([id,o])=><li key={id}><b>{P?.operations?.find(x=>x.id===id)?.name||id}</b> {o.planned?<>{pct(o.availability)} · p50 {fmt(o.p50)} ms · p99 {fmt(o.p99Worst)} ms{Object.entries(o.deferred||{}).map(([sid,d])=><span key={sid}> · done later within {fmt(d.worstDelaySec)} s{d.notDone>0?`, ${fmt(d.notDone)} left`:""}</span>)}</>:"can't run"}</li>)}</ul>}
+{r.timeline&&<button type="button" className="sv-watch" onClick={()=>replay(r)}>▶ Replay this test</button>}</details></li>)}</ol>}
+{!err&&j.findings?.length>0&&<Findings f={j.findings} more={j.allFindings}/>}{!err&&j.plans&&Object.keys(j.plans).length>0&&<HowRead plans={j.plans} P={P} nameOf={nameOf}/>}
+{!acc&&!err&&<p className="sv-nudge">Stuck? <button type="button" className="sv-linkbtn" onClick={hint}>Open a hint</button> (3 points each).</p>}</>}
+</section>}
