@@ -1,5 +1,8 @@
 # theme/ — the site's look in one place
 
+Where the look is heading (observations of fanout.sh, and how they map onto these tokens, step by step): the repo's
+[`Design.md`](../../../Design.md).
+
 Every page (`main.jsx` landing, `dashboard.jsx`, `admin.jsx` analytics) imports `theme/index.js` first. It loads:
 
 | File | What it holds | Change it to… |
