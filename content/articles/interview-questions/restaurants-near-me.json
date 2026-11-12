@@ -10,16 +10,6 @@
   "dek": "Open Zotato in Koramangala at 8 pm and the home screen lists restaurants that deliver to you, nearest and best first, in a blink. Find those few hundred among 3 lakh restaurants, thousands of times a second, while kitchens switch on and off all evening.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "All 3 lakh restaurants fit in about 300 MB, so the data isn't the problem. The problem is answering \"what's near this point?\" 6,000 times a second.",
-        "A normal index can't do it: an index on latitude alone returns a strip across the whole country. You need a geo index that keeps nearby places together.",
-        "Geohash cuts the map into named cells; places close together share a prefix. Look up your cell and its 8 neighbours, never just your own.",
-        "\"Near me\" for delivery means \"delivers to me\". Keep a list per cell of the restaurants that serve it, and check open or busy at query time.",
-        "Many people in one area ask the same question at dinner: cache each cell's candidates for a minute or so."
-      ]
-    },
-    {
       "t": "example"
     },
     {

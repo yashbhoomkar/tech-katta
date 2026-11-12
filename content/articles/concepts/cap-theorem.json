@@ -10,14 +10,6 @@
   "dek": "The first question of your non-functional requirements, designing for consistency or for availability, and choosing consistency per feature, with the levels between strong and eventual.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "C: every read sees the latest write, as if there were one copy. A: every request to a working server gets an answer, maybe not the latest. P: the system keeps going when the network between its servers fails.",
-        "Consistency first: keep one source of truth (one primary database), or coordinate writes across stores (distributed transactions, consensus). Expect higher latency and errors during a split. Typical choices: PostgreSQL or MySQL, Spanner, DynamoDB with strongly consistent reads.",
-        "Decide per feature, and say it in one sentence: 'consistency for booking seats, availability for browsing matches.'"
-      ]
-    },
-    {
       "t": "example"
     },
     {

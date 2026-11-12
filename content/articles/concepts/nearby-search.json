@@ -10,14 +10,6 @@
   "dek": "\"Restaurants that deliver to me\" and \"the nearest free rider\" are questions an ordinary index can't answer well, because nearness is in two dimensions. Here is how geohashes, quadtrees, hexagon grids and R-trees turn them into fast lookups, and how static places differ from riders who move every few seconds.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Computing the distance to every restaurant works for thousands, not for lakhs of searches a second over crores of places. Divide the map into cells and look only in the few cells near the customer.",
-        "Geohashes name square cells by a string; nearby places share a prefix, but places on either side of a border don't, so always search the cell and its 8 neighbours.",
-        "Quadtrees adapt cell size to density; hexagon grids give every neighbour the same distance; R-trees (PostGIS) handle shapes such as delivery zones. Moving riders belong in memory, not in a disk index."
-      ]
-    },
-    {
       "t": "example"
     },
     {

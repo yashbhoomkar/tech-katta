@@ -10,16 +10,6 @@
   "dek": "Zotato Live opens sales for India vs Pakistan at noon: 1 lakh seats, 50 lakh people. Let them in without falling over, never sell a seat twice, and be fair to the people who aren't bots.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "The problem isn't the seats, it's the crowd: 50 lakh people for 1 lakh seats, all at 12:00. Put a waiting room in front and let people in at the rate the booking system can serve.",
-        "Everyone who joins before 12:00 gets a random place in the line, so refreshing at 11:59:59 doesn't help and bots gain nothing from speed.",
-        "A seat is available, held or sold. Holding takes all the seats in an order in one transaction, or none, and the hold expires after 10 minutes if nobody pays.",
-        "Show the seat map from a cache that's a second or two behind; trust only the hold.",
-        "Limit tickets per verified account and check at the door that a ticket is real and unused."
-      ]
-    },
-    {
       "t": "example"
     },
     {

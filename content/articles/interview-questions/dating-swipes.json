@@ -10,16 +10,6 @@
   "dek": "Zotato Date shows people nearby who'd like to go out for dinner, one card at a time. Swipe right for yes, left for no; when two people both say yes, it's a match and both phones buzz at once. Build it for 50 lakh people swiping every evening.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Two jobs: hand each person a stack of profiles to swipe (reading), and record every swipe and spot a match (writing). Build them separately.",
-        "Keep one row per pair of people, with a yes-or-no for each side. A swipe updates that row and reads the other side in the same step, so two people saying yes at the same moment still make exactly one match.",
-        "Don't search for candidates on every swipe. Build a deck of a few hundred profiles ahead of time, keep it in memory, and refill it in the background.",
-        "Never show someone the same profile twice: keep a compact 'seen' filter per person. If it's sometimes wrong, someone gets skipped, which is harmless.",
-        "Matches go on a queue and become pushes. Left swipes are never shown to anyone, and nobody's exact location ever leaves the server."
-      ]
-    },
-    {
       "t": "example"
     },
     {

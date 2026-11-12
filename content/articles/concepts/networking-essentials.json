@@ -10,22 +10,6 @@
   "dek": "Layers and addresses, one request from tap to answer, TCP or UDP, HTTP, the API styles built on it, pushing updates, phone-to-phone calls, spreading load, layer 4 or 7, distance, and what to do when calls fail.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A request passes through layers: the app's protocol (HTTP), transport (TCP or UDP), network (IP) and the physical link. Each adds a small header and relies on the layer below.",
-        "A fresh request costs a DNS lookup, a TCP handshake and a TLS handshake before the request itself: up to four round trips before the first byte of the answer.",
-        "TCP: a connection, every byte delivered in order, lost packets resent, and speed adjusted to the receiver and the network. The default for almost everything.",
-        "HTTP is request and response: the client sends a method and a path with headers and an optional body; the server answers with a status code, headers and a body.",
-        "REST: resources at URLs, acted on with HTTP methods, usually with JSON. The default in interviews and for public APIs.",
-        "Server-sent events (SSE): one HTTP response kept open, carrying many small events from server to client. Simple, works through most infrastructure, reconnects by itself with the last event id.",
-        "WebRTC carries audio, video and data directly between two devices, over UDP, encrypted. It is the only browser technology that gives you UDP.",
-        "Scale up (a bigger machine) as far as it sensibly goes; scale out (more machines) for more capacity and for surviving failures. Scaling out needs something to choose a server for each request.",
-        "Layer 4: chooses a server when a TCP connection opens, from addresses and ports only, then forwards every packet of that connection there. Fast; can't see URLs, headers or cookies.",
-        "Light in fibre travels about 200 km a millisecond, so every 1,000 km adds at least 10 ms to a round trip; real networks roughly double that.",
-        "Assume the network fails. Set a timeout on every call; retry only what is safe to repeat; back off exponentially with jitter so retries don't arrive all at once."
-      ]
-    },
-    {
       "t": "example"
     },
     {

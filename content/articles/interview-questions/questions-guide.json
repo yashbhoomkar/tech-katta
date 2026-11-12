@@ -10,14 +10,6 @@
   "dek": "Every worked question on the site, the core challenge it trains, and an order to take them in.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Each question trains one or two hard problems; the rest of the design is the same method every time.",
-        "Start with the easy questions to learn the method, then the medium ones for the deep dives most interviews reach.",
-        "Do each one in the workspace before reading the worked answer: your requirements, numbers, API and design, then the tests."
-      ]
-    },
-    {
       "t": "h2",
       "x": "How each question is built"
     },

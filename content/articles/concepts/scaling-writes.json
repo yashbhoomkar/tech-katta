@@ -10,14 +10,6 @@
   "dek": "Caches and replicas don't help with writes: every write still has to land on the primary. Here is how to make each write cheaper, how a queue turns a spike into a steady load, when to split the data across machines, and what to do about one counter everybody updates.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Writes are harder to scale than reads: every copy has to take every write, so caches and replicas don't add write capacity.",
-        "First make each write cheaper: fewer indexes, batching, and storage built for writing. Then smooth spikes with a queue, and finally split the data over several primaries.",
-        "Hot keys hurt writes most: one counter or row that everyone updates. Split it into parts, or add up in memory and write the total."
-      ]
-    },
-    {
       "t": "example"
     },
     {

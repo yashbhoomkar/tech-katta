@@ -10,14 +10,6 @@
   "dek": "Cassandra has no leader: every node takes reads and writes, data is copied around a ring, and writes are cheap appends. The catch is that you design one table per question, and deletes behave in ways that surprise people. Here is how to model for it, tune its consistency, and keep it healthy.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Cassandra spreads partitions over a ring of equal nodes and copies each to several of them (replication factor 3 is usual). Any node can coordinate any request.",
-        "Model from the queries: the partition key decides where a query goes, clustering columns decide the order inside it. One table per question, with data written to several tables.",
-        "Choose consistency per query (ONE, QUORUM, LOCAL_QUORUM). Deletes leave tombstones, so tables used like queues or with heavy deletes slow down."
-      ]
-    },
-    {
       "t": "example"
     },
     {

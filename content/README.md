@@ -50,7 +50,7 @@ locked and nothing shows it). Free: only How to answer, until the owner picks mo
 
 An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
-- `tldr {items}` the "In 30 seconds" box · `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
+- `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
 - `fig {id, cap}`: `id` must be a figure the frontend can draw. Figures are organised by sub-tab (the `group` of `dashboard.groups` in `site.json`): each sub-tab with figures has `frontend/src/figs/<tab>/<sub-tab>.jsx`, exporting `FIGS` (id → component), and `backend/src/content/figs/<tab>/<sub-tab>.js`, listing the same ids, e.g. `figs/concepts/caching.jsx` and `content/figs/concepts/caching.js`. Shared drawing parts are in `frontend/src/figs/parts.jsx`. A figure lives in the sub-tab it was made for; any article may still use it by id. A new figure goes in its sub-tab's two files; a new sub-tab adds both files and a line in each `figs/index.js`. A backend test checks the two folders, both indexes and every pair of id lists match.
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
 - `code {label, x, say}` preformatted; `say` is read aloud instead of the code

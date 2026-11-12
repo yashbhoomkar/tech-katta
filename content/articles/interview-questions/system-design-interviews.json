@@ -10,15 +10,6 @@
   "dek": "What happens in a system design interview, what the interviewer is scoring at each level, the kinds of question you'll get, and the order to use this site in.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A system design interview is 45 to 60 minutes on one open question, such as 'design a URL shortener'. There is no single right answer; the interviewer scores how you reach yours.",
-        "Four things are scored: how you pin down the problem, whether the design works end to end, how deep you go where it matters, and how clearly you explain the trade-offs.",
-        "The more senior the role, the more you are expected to lead: find the hard parts without being steered, and go deeper into them.",
-        "Use this site in order: these guides, then Concepts and Components, then the Interview Questions in the workspace, then the challenges on the Problems page."
-      ]
-    },
-    {
       "t": "example"
     },
     {

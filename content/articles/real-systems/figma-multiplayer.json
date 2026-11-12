@@ -10,14 +10,6 @@
   "dek": "Figma lets several people edit the same file live. It skipped operational transforms, the usual approach for shared text, and borrowed simpler ideas from CRDTs, made simpler again because its server decides the order: the last write wins for each property, objects point to their parents, and positions are fractions.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Each open file has one process on the server, and every editor connects to it over a WebSocket. Because the server puts all changes in one order, Figma needs far less machinery than a system with no central server.",
-        "A file is a map from object ID to properties. Two people changing different properties never conflict; when they change the same property, the change that reaches the server last wins.",
-        "The hard cases get simple rules: clients make their own object IDs, an object stores its parent and position as one property, the server rejects moves that would make a loop, and a position is a fraction between its neighbours."
-      ]
-    },
-    {
       "t": "h2",
       "x": "The setup"
     },

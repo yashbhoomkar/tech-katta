@@ -10,16 +10,6 @@
   "dek": "A restaurant's owner, chef and manager edit their Zotato menu together: one adds a dish while another changes a price, each seeing the other's changes as they type. Build editing where nobody's change is lost, and everyone ends up with the same menu.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Don't save whole documents: the last save would wipe out the other person's change. Send small edits instead (insert this, delete that).",
-        "Give each document one server that owns it at a time. It puts every edit in one order, numbers it, saves it to the document's log, and sends it to everyone else.",
-        "Edits made at the same moment were made against an older version. Adjust the later one for what landed first (operational transforms), so both survive.",
-        "Save a snapshot every few hundred edits, so opening a document is a snapshot plus a few recent edits, not its whole history.",
-        "Cursors and \"who's here\" are sent but never saved; losing one costs nothing."
-      ]
-    },
-    {
       "t": "example"
     },
     {

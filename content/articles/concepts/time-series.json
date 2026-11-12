@@ -10,14 +10,6 @@
   "dek": "Rider speeds every 10 seconds, orders per minute per city, the latency of every API: data that arrives in time order, is read by time range, and matters less as it ages. Here is why general databases struggle with it, how time-series stores compress and expire it, and the one mistake that sinks them: too many series.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A time series is a stream of (time, value) points for one thing, named by a metric and a few labels: rider_speed{rider=9}. Writes are appends; reads are ranges and aggregates.",
-        "Time-series stores keep each series' points together in time-ordered blocks and compress them to a byte or two per point, then drop or summarise old blocks whole.",
-        "Every distinct combination of labels is a separate series. A label such as order_id or user_id multiplies series into the crores and overwhelms the store."
-      ]
-    },
-    {
       "t": "example"
     },
     {

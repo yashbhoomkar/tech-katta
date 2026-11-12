@@ -10,16 +10,6 @@
   "dek": "At 8:30 pm Zotato has 3 lakh riders on the road and hundreds of new orders every second. Pick the right rider for each order, so the food is picked up just as it's ready, and never give one rider two orders by mistake.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Riders' phones send their location every few seconds. Keep only the latest location per rider, in memory, in a map split into small cells per city. Don't write every ping to a database.",
-        "For a new order, look up free riders in the cells around the restaurant, and score them by how soon they can get there compared with when the food will be ready. The nearest rider isn't always the best one.",
-        "Offer the order to one rider at a time, holding them for 20 seconds. The hold is a conditional change (only if still free), so two orders can never grab the same rider.",
-        "At the peak, decide every few seconds for all waiting orders together, rather than one at a time; it gives better pairs overall.",
-        "A location older than about 30 seconds means the rider is out of signal or offline; leave them out."
-      ]
-    },
-    {
       "t": "example"
     },
     {

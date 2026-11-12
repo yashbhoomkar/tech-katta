@@ -10,14 +10,6 @@
   "dek": "Batch jobs answer yesterday's questions. Flink answers them as events arrive: clicks per ad this minute, a card used in two cities within ten minutes, the live ETA of every order. Here is how it handles time, keeps state, and recovers without counting anything twice.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Flink runs a graph of operators over unbounded streams, usually reading from Kafka, with state kept per key (per ad, per card, per rider).",
-        "It works in event time: windows are based on when things happened, and watermarks say when a window can be considered complete despite late arrivals.",
-        "Regular checkpoints save all state together with the source offsets, so after a failure it restores and replays: each event affects the state exactly once."
-      ]
-    },
-    {
       "t": "example"
     },
     {

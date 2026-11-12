@@ -10,14 +10,6 @@
   "dek": "Discord's message store had grown to 177 Cassandra nodes that kept paging the on-call team. The fix was a service in front of the database that merges identical reads, a move to ScyllaDB, and a copy of trillions of messages that took nine days.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Messages were partitioned by channel and a window of time. A busy channel made its partition hot, and because reads and writes waited for a quorum of replicas, one hot spot slowed queries across the cluster.",
-        "Before changing databases, Discord put data services in front of it: thin Rust services that merge identical requests into one database query, with every request for a channel routed to the same instance.",
-        "Then it moved to ScyllaDB, a Cassandra-compatible database with no garbage collector. 177 nodes became 72, and the p99 for reading old messages fell from 40–125 ms to 15 ms."
-      ]
-    },
-    {
       "t": "h2",
       "x": "How messages were stored"
     },

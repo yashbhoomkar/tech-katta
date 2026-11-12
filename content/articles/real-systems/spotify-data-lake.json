@@ -10,14 +10,6 @@
   "dek": "Spotify keeps petabytes in Bigtable for online use, but exabytes in Parquet files on cloud storage. Random Access Parquet (RAP) adds an index from each key to the exact files and rows, so one user's history can be read from the lake in a few small reads, without copying it into a key-value store.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Online features and AI agents need one user's data fast ('what was I listening to last summer?'). Keeping years of history in a key-value store costs too much, and SQL engines over the lake take seconds even for one row.",
-        "The slow part is a chain of reads, each waiting for the one before: a file's footer, then its metadata, then the key column, then the pages. An external index maps each key straight to its files and rows, so the reads can all go out at once.",
-        "Writing the files with lookups in mind (sorted by key, a page per key, the fields in one blob, small values kept in the index itself) can bring a lookup down to one small read, or none."
-      ]
-    },
-    {
       "t": "h2",
       "x": "The problem"
     },

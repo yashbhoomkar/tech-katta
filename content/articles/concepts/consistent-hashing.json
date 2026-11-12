@@ -10,14 +10,6 @@
   "dek": "When to name it and when to explain it, the hash ring step by step, and rings in practice: hot keys, replication and fixed slots.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "The problem it solves: with hash(key) % N, changing the number of servers N moves almost every key. Consistent hashing moves only about 1/N of them.",
-        "Modulo hashing (hash(id) % 3) is simple and even, but going to % 4 or % 2 changes the home of almost every key.",
-        "Consistent hashing spreads keys evenly, not traffic. A key that is far busier than the rest (the final's tickets) still lands on one server. Fix it with replicas of the hot key, key salting or automatic rebalancing."
-      ]
-    },
-    {
       "t": "example"
     },
     {

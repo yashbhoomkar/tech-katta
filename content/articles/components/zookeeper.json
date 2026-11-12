@@ -10,14 +10,6 @@
   "dek": "ZooKeeper stores a little data, configuration, membership, who leads, in a tree of nodes that a small ensemble of servers keeps consistent. Clients can watch nodes and have nodes vanish when they die. From those few pieces come leader election, locks and service discovery.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Data lives in znodes, a tree like a file system, each holding a little data (1 MB at most, usually far less). An ensemble of 3 or 5 servers keeps it consistent with its own atomic broadcast protocol (Zab).",
-        "Ephemeral znodes disappear when the client's session ends; sequential znodes get an increasing number; watches tell a client when a znode changes.",
-        "Writes go through the leader and need a majority. Reads come from the server a client is connected to and can be slightly behind."
-      ]
-    },
-    {
       "t": "example"
     },
     {

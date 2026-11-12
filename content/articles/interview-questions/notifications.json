@@ -10,16 +10,6 @@
   "dek": "Zotato sends login OTPs, \"your order is on the way\" updates and a Diwali offer to 5 crore people, by push, SMS and email. Build one service that sends them all, where an OTP is never stuck behind a promotion and nobody gets the same message twice.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Other services don't talk to SMS or push providers themselves. They send one event (who, which template, how urgent) to a notification service, which does the rest.",
-        "Keep separate lanes by priority: urgent (OTPs), normal (order updates), bulk (promotions). Workers always empty the urgent lane first, so a promotion to crores never delays an OTP.",
-        "Check preferences before sending: opted out, quiet hours, how many promotions this week, which devices and language.",
-        "Every event carries an id, so a retried request sends once. Newer order updates replace older ones that haven't gone out yet.",
-        "Providers fail. Retry with backoff, switch SMS to a second provider, drop push tokens the provider says are dead, and record what happened to every message."
-      ]
-    },
-    {
       "t": "example"
     },
     {

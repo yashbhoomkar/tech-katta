@@ -10,14 +10,6 @@
   "dek": "Slack's job queue runs every message post, push notification and link preview, up to 33,000 jobs a second. When Redis filled up during an outage, nothing could be queued or even taken off the queue. The fix wasn't a rewrite: Kafka went in front of Redis as a buffer on disk, with a relay that feeds Redis at a safe rate.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Jobs went straight into Redis. When workers slowed, Redis hit its memory limit, and because taking a job off the queue also needs a little memory, the queue stayed stuck even after the cause was fixed.",
-        "Rather than replace Redis, Slack put Kafka in front of it. The web app writes jobs to Kafka through a small service, and a relay moves them into Redis under a rate limit that can be changed on the fly.",
-        "It rolled out with double writes, counts compared at every hop, a test job through every partition each minute, and job types switched over one at a time."
-      ]
-    },
-    {
       "t": "h2",
       "x": "The queue, and the outage"
     },

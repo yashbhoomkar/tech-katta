@@ -10,16 +10,6 @@
   "dek": "Zotato Recipes lets chefs upload short cooking videos, and 50 lakh people a day watch them on their phones, many on patchy 4G. Get a 10-minute upload ready to watch within minutes, start playback in a couple of seconds, and keep it playing in a lift.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Uploads go straight from the phone to storage, in resumable pieces. Your servers never carry the video bytes.",
-        "A transcoding pipeline turns the original into several sizes (240p to 1080p), each cut into short segments of about 4 seconds, plus a playlist that lists them.",
-        "Split the video into chunks and encode them in parallel: a 10-minute video is ready in a minute or two instead of ten.",
-        "The player picks a size for each segment from how fast the last ones arrived (adaptive bitrate). Bad network: a smaller size, and the video keeps playing.",
-        "Almost all the bytes are served by a CDN. Video traffic is huge; your origin should mostly see just the first request for each segment at each edge."
-      ]
-    },
-    {
       "t": "example"
     },
     {

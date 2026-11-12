@@ -1,4 +1,4 @@
-/* Article blocks: In 30 seconds, the example system, type cards, code, tables, analogies, canvas cards. */
+/* Article blocks: the example system, type cards, code, tables, analogies, canvas cards. */
 .a-type{margin-top:22px;padding:20px 0 4px;border-top:1px solid var(--line);max-width:680px}
 .a-type h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin:0;font-size:18px;letter-spacing:-.015em}
 .a-type h3 small{font:600 10px var(--mono);letter-spacing:.08em;color:var(--accent)}
@@ -27,10 +27,6 @@
 .a-code figcaption{padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface);font:600 10px var(--mono);letter-spacing:.08em;color:var(--muted)}
 .a-code pre{margin:0;padding:14px 12px;overflow-x:auto;font:500 12.5px/1.6 var(--mono);color:var(--ink);background:var(--bg)}
 .a-code pre:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.a-tldr{margin-top:24px;border:1px solid var(--ink);padding:16px 20px;max-width:680px}
-.a-tldr>b{font:600 10px var(--mono);letter-spacing:.08em;color:var(--accent)}
-.a-tldr ul{margin:10px 0 0;padding-left:18px;font-size:15px;line-height:1.6}
-.a-tldr li{margin:6px 0}
 .a-type .a-what{font-size:16px;font-weight:500;color:var(--ink)}
 .a-more{margin-top:12px;max-width:680px}
 .a-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 12px;border:1px solid var(--line);background:var(--surface);font:600 11px var(--mono);letter-spacing:.04em;color:var(--accent)}
@@ -64,9 +60,7 @@
 .d-article h3{margin:30px 0 0;font-size:18px;letter-spacing:-.015em;scroll-margin-top:calc(var(--head) + 16px)}
 
 /* ===== Katta Paper skin ===== */
-.a-tldr{border:0;border-radius:var(--r-lg);background:var(--surface);padding:20px 24px}
-.a-tldr>b,.a-ex-head b,.a-analogy b,.a-lab b{font:600 10px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.a-tldr ul{font-size:16px;line-height:1.65;color:var(--ink-2)}
+.a-ex-head b,.a-analogy b,.a-lab b{font:600 10px var(--mono);letter-spacing:.12em;color:var(--muted)}
 .a-example{border:1px solid var(--accent-line);border-radius:var(--r-lg);background:var(--accent-tint);padding:20px 24px}
 .a-ex-head b{color:var(--accent)}
 .a-ex-head span{font:600 19px var(--font-display);color:var(--ink)}

@@ -10,16 +10,6 @@
   "dek": "Zotato Minutes promises milk, bread and instant noodles at your door in 10 minutes. That only works if the store is close, the shelf count is right, and nobody sells the last packet twice.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Ten minutes is a budget: about 1 to order, 3 to pick and pack, 6 to ride. Six minutes on a scooter is about 2 km, so every customer needs a small warehouse (a dark store) within 2 km.",
-        "Each dark store is its own little world: its stock, its pickers, its riders. Partition everything by store.",
-        "Stock shown while browsing can be a few seconds old. Stock taken at checkout must be exact: one conditional update that only succeeds if enough is left.",
-        "Hold the items for a few minutes while the customer pays, then confirm or release. Nobody pays for something that isn't on the shelf.",
-        "Pick and find a rider at the same time, not one after the other. When riders run out (rain, a match), promise a longer time or pause the store, instead of breaking the promise."
-      ]
-    },
-    {
       "t": "example"
     },
     {

@@ -10,14 +10,6 @@
   "dek": "Ten technologies interviewers expect you to recognise: what each is for, when to reach for it, a number to remember, and the catch. Each points to its full article in Components.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Interviewers don't need you to know every product, but they expect the common ones by name and by purpose: a database, a cache, a log, a search engine, a stream processor and a coordinator.",
-        "Name a technology only with its reason: 'Redis, because the leaderboard is a sorted set and needs thousands of updates a second', not just 'Redis'.",
-        "For each one, know what it's for, one number, and the catch."
-      ]
-    },
-    {
       "t": "table",
       "head": [
         "If you need",

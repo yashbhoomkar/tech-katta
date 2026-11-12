@@ -10,14 +10,6 @@
   "dek": "DynamoDB is a key-value and document store where you never pick a server size, patch an engine or plan a failover. You pay for that with discipline: every query must use a key you designed in advance, and every partition has its own limit. Here is how keys, indexes, capacity and consistency work.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Every item has a partition key and an optional sort key. Queries fetch one partition, optionally a range of its sort key; anything else is a full-table Scan.",
-        "Global secondary indexes copy items under another key, asynchronously, so other questions can be answered by key too.",
-        "Capacity is per partition as well as per table: about 1,000 writes and 3,000 reads a second per partition. One hot key gets throttled even when the table has room."
-      ]
-    },
-    {
       "t": "example"
     },
     {

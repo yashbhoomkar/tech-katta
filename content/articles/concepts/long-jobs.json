@@ -10,14 +10,6 @@
   "dek": "Reports, payouts, exports and video conversions take too long for a request. Here is how a job gets from the API to a worker, how a lease notices a worker that died, how retries and a dead-letter queue keep one bad job from blocking the rest, and how to show progress.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Anything that takes more than a second or two runs as a background job: the API records it and answers at once, and workers do the work.",
-        "A worker holds a lease on its job and renews it while working. If the worker dies, the lease runs out and another worker takes the job, so every job must be safe to run twice.",
-        "Retry failures with growing, randomised waits. After a few tries, move the job to a dead-letter queue and alert someone, so one bad job never blocks the rest."
-      ]
-    },
-    {
       "t": "example"
     },
     {

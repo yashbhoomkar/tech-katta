@@ -10,16 +10,6 @@
   "dek": "The same six steps for every question, how long to spend on each, and what the interviewer is listening for at each one. Every question in this section follows them.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Pin down what to build before drawing anything: three or so features, what's out of scope, and a few qualities with numbers.",
-        "Name the main things the system stores, then write the API calls the features need.",
-        "Draw a simple design that handles every feature end to end. Caches, queues and shards come after it works.",
-        "Use the remaining time to make it hold up: the numbers, the failure cases, and the part the interviewer pushes on.",
-        "Talk while you work, do maths only when it changes a decision, and leave room for the interviewer to steer."
-      ]
-    },
-    {
       "t": "example"
     },
     {

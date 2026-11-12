@@ -10,14 +10,6 @@
   "dek": "Photos, videos and exports don't belong in the database or in an API server's memory. Here is how phones upload straight to storage in parts, how the database tracks each file from 'pending' to 'ready', and how downloads stay fast and private.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Keep file bytes in object storage, and only a row about each file in the database. The API should hand out permission to upload, not carry the bytes.",
-        "Phones upload and download directly with short-lived signed URLs. Big files go up in parts, so a dropped connection costs one part, not the whole file.",
-        "Track every file's state in the database, process it after upload, show only ready files, and sweep uploads nobody finished."
-      ]
-    },
-    {
       "t": "example"
     },
     {

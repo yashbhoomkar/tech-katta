@@ -10,18 +10,6 @@
   "dek": "The API step of an interview, REST endpoints done well, GraphQL and gRPC, the habits of a clean API, everyday patterns such as pages, filters, retries and versions, and securing it.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "The API step follows a fixed pattern: pick a style (almost always REST), turn the core entities into resources, and say what goes in and what comes back. About five minutes.",
-        "Resources come from the core entities and are nouns, usually plural: /restaurants, /orders, /payments. An action becomes a resource ('cancel an order' becomes POST /orders/{id}/cancellation).",
-        "GraphQL exposes one endpoint and a typed schema; clients send queries naming the fields they want, nested as deep as they like, and get back exactly that shape.",
-        "RPC calls a named procedure on another machine: ChargeOrder(order_id, amount). Generated stubs hide the network, so it reads like a local call.",
-        "Model resources, be consistent, behave the way HTTP leads people to expect, keep requests stateless, make retries safe.",
-        "Pages: offset (?offset=40&limit=20) is simple but repeats or skips rows when data changes; a cursor (the last item seen) stays correct. Offset is fine unless the list changes fast or is huge.",
-        "Authentication proves who is calling; authorisation decides whether they may do this particular thing. 'This is Priya' versus 'Priya may cancel her own order, not someone else's'."
-      ]
-    },
-    {
       "t": "example"
     },
     {

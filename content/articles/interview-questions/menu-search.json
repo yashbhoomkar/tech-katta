@@ -10,16 +10,6 @@
   "dek": "Someone in Pune opens Zotato and types \"panir butter masala\" and expects the right dish from restaurants that are open and deliver to them, in a blink. Search 3 crore dishes across India by their words, cope with Hinglish spellings, and show a price change within a minute.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Don't scan dishes for the words. Build an inverted index: for each word, the list of dishes that contain it. A search reads a few short lists and combines them.",
-        "Clean the query first: fix spellings, map Hinglish and synonyms (\"panir\", \"panner\" → paneer; \"makhani\" ↔ butter), and use the same rules when indexing.",
-        "Split the index by city, and within a big city into a few shards. A search asks every shard of its city at once and merges their best results.",
-        "Keep only restaurants that are open and deliver to you, then rank by how well the words match, distance, how popular the dish is and what you've ordered before.",
-        "Menu changes reach the index within a minute. Things that change constantly, like \"sold out\", are kept in a small fast layer checked at search time instead of re-indexing."
-      ]
-    },
-    {
       "t": "example"
     },
     {

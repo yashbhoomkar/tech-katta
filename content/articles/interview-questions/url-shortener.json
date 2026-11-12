@@ -10,16 +10,6 @@
   "dek": "Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Two calls: create a short link, and open one. Opening happens about a hundred times more often, so the design is built around fast reads.",
-        "Codes come from a counter written in base 62 (0–9, a–z, A–Z). Each server takes a block of 1,000 numbers at a time, so codes never clash and the counter is rarely asked.",
-        "Store `code → long URL` in a database keyed by the code; keep hot codes in Redis, so most redirects never touch the database.",
-        "Answer with 302 if you want to count every click (the browser asks you each time), 301 if you'd rather the browser remember it.",
-        "Send clicks to a stream for analytics, so counting never slows a redirect."
-      ]
-    },
-    {
       "t": "example"
     },
     {

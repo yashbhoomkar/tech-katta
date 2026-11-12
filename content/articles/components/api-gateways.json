@@ -10,19 +10,6 @@
   "dek": "What a gateway does before a request reaches your code, how it differs from a load balancer, how rate limiters decide who gets a 429, and how to choose and run one: a managed gateway or self-hosted Kong or Envoy.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "An API gateway is one front door for many services. It ends HTTPS, checks who is calling, applies rate limits and routes each request to the right service.",
-        "A load balancer spreads requests across copies of one service. A gateway decides which service, and whether the request may go in at all. Many systems use both.",
-        "Rate limiting protects you from abuse, from runaway clients and from your own costs. Over the limit, the answer is `429 Too Many Requests`.",
-        "Token bucket is the usual algorithm: it allows short bursts and a steady average. Fixed windows are simpler but let twice the limit through at a window edge.",
-        "A gateway adds a few milliseconds and a per-request bill. Keep business logic out of it.",
-        "Managed gateways bill per request and need no servers; self-hosted gateways (Kong, Envoy, NGINX) cost servers and people's time but little per request.",
-        "At low traffic managed is cheapest; from a few hundred requests a second, per-request bills grow far past the cost of a few servers.",
-        "Gateways do more than auth and limits: weighted routing lets you send 5% of traffic to a new version and roll back with one setting."
-      ]
-    },
-    {
       "t": "example"
     },
     {
