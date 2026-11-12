@@ -30,7 +30,7 @@ export default function Solve({slug,tab,s,articles,Block,Article,prep,Lab}){
 const[st,set]=useState({}),[hide,setHide]=useState(false),[w,setW]=useState(savedW),[canvas,setCanvas]=useState(false);
 const[view,setView]=useState(tab==="a"?"solution":"description");
 const[narrow,setNarrow]=useState(()=>typeof matchMedia!=="undefined"&&matchMedia(narrowQ).matches);const pane=useRef(null);
-const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false);
+const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false),[flow,setFlow]=useState(0);
 const[gen,setGen]=useState(0),[pending,setPending]=useState(null),[sol,setSol]=useState(null),[undo,setUndo]=useState(null),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0);
 const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useState(null),[hints,setHints]=useState(()=>usedHints(slug)),[subs,setSubs]=useState(()=>readSubs(slug));
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
@@ -79,10 +79,14 @@ if(kind==="submit"){const g=gradeAnswer(ans,P.rubric),sc=score(g,j,hints);out.g=
 const copied=!!(sol&&read(SOLUTIONS)[slug]&&sameDesign(cleanDesign(d,lab,"mine"),cleanDesign(sol,lab,"solution")));out.copied=copied;
 const sub={at:Date.now(),verdict:j.verdict,passed:j.passed,total:j.total,score:sc.total,cost:j.metrics?.avgMonthly??null,p99:j.metrics?.p99??null,hints,...(copied?{copied:true}:{})};
 const all=read(SUBS);all[slug]=[sub,...readSubs(slug)].slice(0,30);write(SUBS,all);setSubs(all[slug]);
-markStep("practice:"+slug);if(j.verdict==="accepted"&&!copied)markStep("solved:"+slug);
+markStep("practice:"+slug);if(j.verdict==="accepted"&&!copied){
+// solved for the first time: the Problems list draws its tick when the reader goes back to it
+if(!readProgress().steps["solved:"+slug])try{sessionStorage.setItem("tk-just-solved",slug)}catch{}markStep("solved:"+slug)}
 // signed in: the API judges it again and says how it compares with everyone else's
 out.server="pending";submitProblem({slug,design:d,answer:ans,hints}).then(v=>setRes(r=>r&&r.j===j?{...r,server:v||"off"}:r))}}
-catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false)},30)};
+catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false);
+// a passing design: requests visibly flow along its arrows for a moment (nodes.jsx Arrow), then stop
+if(out.j?.verdict==="accepted"){const n=Date.now();setFlow(n);setTimeout(()=>setFlow(f=>f===n?0:f),2400)}},30)};
 const tabs=[["description","Description",`#problems/${slug}`],["answer","Your answer"],["hints",`Hints${P?` (${P.hints.length})`:""}`],["solution",s.tabA,`#interview-questions/${slug}`],["subs",`Submissions${subs.length?` (${subs.length})`:""}`]];
 return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-canvas":"")} style={{"--qw":w+"px"}}>
 <div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</button>)}
@@ -109,7 +113,7 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
 <span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
 <span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button></>}</div>
-{showLab&&<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.v===2?fieldsOf(P):P?.data?.fields,v:P?.v,locked:P?.v===2?P.locked:undefined,ops:P?.v===2?P.operations.map(o=>({id:o.id,name:o.name})):undefined,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null} replay={rep?replayAt(rep,P):null}/></Suspense>}
+{showLab&&<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.v===2?fieldsOf(P):P?.data?.fields,v:P?.v,locked:P?.v===2?P.locked:undefined,ops:P?.v===2?P.operations.map(o=>({id:o.id,name:o.name})):undefined,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null} replay={rep?replayAt(rep,P):null} flow={watch||rep?0:flow}/></Suspense>}
 {watch?<Player w={watch} set={setWatch}/>:rep?<ReplayBar rep={rep} set={setRep} P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}}/>:(busy||res)&&<Console P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}} busy={busy} res={res} close={()=>setRes(null)} replay={r=>{if(narrow)setCanvas(true);setRep({r,i:0,play:false})}} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}
