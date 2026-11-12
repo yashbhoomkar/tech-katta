@@ -9,7 +9,7 @@ const stored=()=>{try{const v=localStorage.getItem(KEY);return v==="light"||v===
 const system=()=>typeof matchMedia==="function"&&matchMedia(Q).matches?"dark":"light";
 export const current=()=>typeof document!=="undefined"&&document.documentElement.dataset.theme==="dark"?"dark":"light";
 function apply(t){if(typeof document==="undefined")return;const el=document.documentElement;if(el.dataset.theme!==t)el.dataset.theme=t;
-  const meta=document.querySelector('meta[name="theme-color"]');readTokens(el);if(meta)meta.content=getComputedStyle(el).getPropertyValue("--bg").trim()||meta.content;
+  const meta=document.querySelector('meta[name="theme-color"]');readTokens(el);if(meta)meta.content=getComputedStyle(el).getPropertyValue("--page").trim()||meta.content;
   subs.forEach(f=>f())}
 // Set the theme ("light" or "dark") and remember it; null forgets the choice and follows the device again.
 export function setTheme(t){try{t?localStorage.setItem(KEY,t):localStorage.removeItem(KEY)}catch{}apply(t||system())}
