@@ -20,6 +20,10 @@ export const EVENTS = {
   score: { challenge: S, stars: N, max: N, passed: S, lite: B },
   lab_locked: { lite: B },
   page_locked: { section: S, slug: S },
+  // practice pages (tech-katta-context 21 §24.7): no design text, no personal data
+  practice_open: { problem: N, editor: S }, practice_first_edit: { problem: N, seconds: N },
+  practice_run: { problem: N, verdict: S, seconds: N, editor: S }, practice_submit: { problem: N, verdict: S, attempt: N },
+  practice_switch_editor: { from: S, to: S },
   sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
 };
 export const MAX_BATCH = 50;

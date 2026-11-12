@@ -1,0 +1,255 @@
+{
+  "id": 1,
+  "slug": "url-shortener",
+  "title": "Design a URL shortener",
+  "difficulty": "easy",
+  "topics": [
+    "caching",
+    "ids",
+    "replication"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "Zotato sends crores of promo SMS a month. Each one carries a short link such as `zt.to/a8Kq2`, and opening it must take the customer to the long offer page at once.\n\nDesign the service behind those links. It **creates** a short code for a long URL (marketing does this a few times a second) and **opens** links (customers do this all day, a hundred times as often, with an evening peak when the SMS go out).\n\nA code must never point at two URLs. A link that was just created must never be lost, even if a machine dies. An opened link may show an edited URL up to an hour late. And the whole thing has to fit in ₹1 lakh a month.",
+  "constraints": [
+    "Up to 10 crore links in total",
+    "Opens outnumber new links 100 to 1",
+    "Evening peak: 2,500 opens a second",
+    "Budget ₹1,00,000 a month"
+  ],
+  "total_items": 100000000,
+  "requests": [
+    {
+      "name": "GET_LINK",
+      "mode": "read",
+      "table": "links",
+      "key": "code",
+      "distinct_keys": 1000000,
+      "item_bytes": 500,
+      "skew": 0.8,
+      "max_stale_s": 3600,
+      "read_your_writes": false,
+      "cdn_ok": false,
+      "says": "Open a short link: return the long URL for a code."
+    },
+    {
+      "name": "CREATE_LINK",
+      "mode": "write",
+      "table": "links",
+      "key": "code",
+      "durable": true,
+      "unique_id": true,
+      "says": "Create a short link for a long URL. Codes must never repeat."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "links",
+      "columns": [
+        "code",
+        "url",
+        "created_at"
+      ],
+      "pk": "code"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nread  GET_LINK:    client > lb > api > \nwrite CREATE_LINK: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-quiet-afternoon",
+      "title": "A quiet afternoon",
+      "hidden": false,
+      "explain": "200 opens and 2 new links a second for 10 minutes. Almost any working design is fast enough here; this is where the ₹1 lakh budget is checked.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_LINK": 200,
+            "CREATE_LINK": 2
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_LINK": 100,
+          "CREATE_LINK": 200
+        },
+        "availability": {
+          "GET_LINK": 0.999
+        },
+        "budget_inr": 100000
+      }
+    },
+    {
+      "id": "t02-evening-peak",
+      "title": "Evening peak",
+      "hidden": false,
+      "explain": "The SMS go out: 1,000 opens a second, then 2,500 for five minutes. Opens must stay under 100 ms at the 99th percentile.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_LINK": 1000,
+            "CREATE_LINK": 10
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_LINK": 2500,
+            "CREATE_LINK": 25
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_LINK": 100
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies at peak",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_LINK": 2000,
+            "CREATE_LINK": 20
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_LINK": 2000,
+            "CREATE_LINK": 20
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_LINK": 0.999
+        },
+        "p99_ms": {
+          "GET_LINK": 150
+        }
+      }
+    },
+    {
+      "id": "t04-database-fails",
+      "title": "The database primary fails",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_LINK": 2000,
+            "CREATE_LINK": 20
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_LINK": 2000,
+            "CREATE_LINK": 20
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "availability": {
+          "GET_LINK": 0.95
+        }
+      }
+    },
+    {
+      "id": "t05-cold-cache",
+      "title": "The cache restarts",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_LINK": 2000,
+            "CREATE_LINK": 20
+          },
+          "events": [
+            {
+              "flush_role": "cache"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_LINK": 0.999
+        }
+      }
+    }
+  ],
+  "reference": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n",
+  "wrong": [
+    {
+      "name": "no-cache-one-server",
+      "expect": "Overloaded",
+      "why": "One small server can't take the evening peak.",
+      "source": "lb  = lb()\napi = server(count=1, size=small)\ndb  = sql(size=medium, replicas=1, sync=true)\nids = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > db\nwrite CREATE_LINK: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "no-cache",
+      "expect": "Too Slow",
+      "why": "Every open reaches the database, which runs hot at the peak.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > db\nwrite CREATE_LINK: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "async-replica",
+      "expect": "Data Lost",
+      "why": "The replica is a second behind; a failover loses that second of new links.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=false)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n"
+    },
+    {
+      "name": "no-replica",
+      "expect": "Unavailable",
+      "why": "When the only database dies nothing takes over.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=medium, replicas=0, sync=false)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n"
+    },
+    {
+      "name": "random-32-bit-ids",
+      "expect": "Wrong Answer",
+      "why": "10 crore random 32-bit codes repeat.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=random, bits=32)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n"
+    },
+    {
+      "name": "day-long-cache-no-invalidate",
+      "expect": "Wrong Answer",
+      "why": "An edited link can stay wrong for a day.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=medium)\ncache = cache(nodes=2, memory_gb=1, ttl_s=86400)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "everything-large",
+      "expect": "Over Budget",
+      "why": "It passes every test at more than the budget.",
+      "source": "# Design a URL shortener\nlb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=large, replicas=1, sync=true)\nids   = idgen(kind=counter)\n\ntable db.links(code pk, url, created_at)\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n"
+    }
+  ],
+  "hints": [
+    "Opens are 100 times the new links. Where could most opens be answered without the database?",
+    "A database on one machine is a single point of failure. What takes over when it dies, and does it have every acknowledged link?",
+    "Ten crore random codes in a small id space will repeat. What kind of id can never repeat?"
+  ],
+  "editorial": "## The approach\n\nTwo numbers decide this design. Opens outnumber new links 100 to 1, and at the evening peak 2,500 opens arrive every second. So the work is almost all reads, and the reads repeat: a promo link is opened by thousands of people in the same hour.\n\n1. **Answer most opens from memory.** A cache in front of the database (`cache | db`: on a miss, ask the database and keep the answer) takes about 99 % of opens off the database. The database then only sees new links and the rare miss.\n2. **Enough servers for the peak, with room to lose one.** Four medium servers give 4,000 calls a second; at the 2,525 calls of the peak they run at 63 %, where waiting is still short. With three left after a failure they still keep up.\n3. **Never lose a link that was acknowledged.** One replica, written on every write (`sync=true`), means a failover loses nothing. It doubles the write time, which nobody notices on a 2-a-second request.\n4. **Codes that can't repeat.** A counter hands out each number once. Ten crore random 32-bit codes would repeat about 11 lakh times.\n5. **Fresh enough.** The promise allows an hour of staleness. Clearing the cached copy on every write (`then invalidate cache`) makes edits show at once anyway, and costs one extra call per new link.\n\n## The reference design, line by line\n\n```\nlb    = lb()                                      # spreads opens over the servers\napi   = server(count=4, size=medium)              # 4,000 calls a second; survives losing one\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)   # 2 GB holds every hot code (40 lakh of 500 bytes)\ndb    = sql(size=medium, replicas=1, sync=true)   # a replica with every acknowledged write\nids   = idgen(kind=counter)                       # codes never repeat\n\ntable db.links(code pk, url, created_at)          # looked up by its primary key: fast\n\nread  GET_LINK:    client > lb > api > cache | db\nwrite CREATE_LINK: client > lb > api > ids > db then invalidate cache\n```\n\nIt costs ₹69,000 a month, inside the ₹1 lakh budget.\n\n## Why the usual wrong designs fail\n\n- **One small server, no cache: Overloaded.** One small server serves 500 calls a second; the evening peak sends 2,525.\n- **No cache: Too Slow.** Every open reaches the database, which runs at 86 % of its read capacity at the peak; its wait grows to about 70 ms and opens take 127 ms at the 99th percentile.\n- **An async replica: Data Lost.** The replica is a second behind. When the primary dies, the last second of new links (about 20) existed only on it.\n- **No replica: Unavailable.** When the only database dies, nothing takes over: half of the test's opens fail.\n- **Random 32-bit ids: Wrong Answer.** With 10 crore links, about 11 lakh codes would point at two URLs.\n- **A day-long cache that is never cleared: Wrong Answer.** An edited link could show the old URL for a day; the problem allows an hour.\n- **Everything large: Over Budget.** It passes every test, at ₹1.43 lakh a month.\n\n## Read more\n\n- Caching: [when to add a cache](/dashboard/concepts/caching/)\n- Replication and failover: [PostgreSQL](/dashboard/components/postgresql/)\n"
+}
