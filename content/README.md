@@ -199,6 +199,22 @@ warmupMinutes, scaleInMinutes, defaultMax}`. A server with `config.autoscale: tr
 (percentages 0–100). The `example` design is checked too: unique node ids, numeric `x`/`y`,
 settings inside their ranges, and no v1 settings.
 
+## Tours (`site.json` `tour`)
+
+The Tour button in the dashboard opens the tour for the page it is on (`frontend/src/dashboard/shell.jsx` picks it):
+`tour.concepts`, `components`, `interview-questions`, `quick-notes`, `real-systems` on a section's list (else
+`tour.section`), `tour.article` on an article, `tour.problems` on the Problems list, `tour.problem` in a problem's
+workspace, `tour.lab` on a challenge, `tour.dashboard` on the start page. Each is a list of steps
+`{target, title, text, click?, cta?}`: `target` is a CSS selector (a step whose target is missing or hidden, such as the
+sidebar on a phone, is skipped); `click` is clicked first to open what the step shows; `cta {label, href}` on the last
+step is a link that closes the tour and goes there (hash routes, e.g. `#concepts/networking-essentials`).
+
+How to write one (owner, 2026-11-12): say what the page is for, the order to use it in, what is inside and how it
+links to practice, in five steps or fewer, and end on one first step (`cta`). Point at content, not at the sidebar or
+the theme button. Signed out, pages are behind the sign-in card: when a page's tour can show fewer than three steps,
+`tour.dashboard` is shown instead, starting with its sign-in step (`.lock-card`). Check a new tour on a phone and
+signed out.
+
 ## Changing content
 
 1. Edit the JSON (new article: add the file and its entry in `articles/index.json`).
