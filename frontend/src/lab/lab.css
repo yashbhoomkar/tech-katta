@@ -54,7 +54,7 @@
 .lab .react-flow__handle{width:10px;height:10px;border:1.5px solid var(--bg);background:var(--accent)}
 .lab .react-flow__edge-path{stroke:var(--ink);stroke-width:1.4}.lab .react-flow__edge.selected .react-flow__edge-path{stroke:var(--accent);stroke-width:2}
 .lab .react-flow__edge.live .react-flow__edge-path{stroke:var(--accent)}
-.lab .react-flow__controls{box-shadow:none;border:1px solid var(--line)}.lab .react-flow__controls-button{border-bottom:1px solid var(--line)}
+.lab .react-flow{--xy-background-color:transparent}.lab .react-flow__controls{box-shadow:none;border:1px solid var(--line)}.lab .react-flow__controls-button{border-bottom:1px solid var(--line)}
 .lab .react-flow__attribution{background:rgb(var(--bg-rgb) / .7);font:10px var(--mono)}
 @media(prefers-reduced-motion:reduce){.lab .react-flow__edge.animated path{animation:none}.ln-bar i{transition:none}}
 @media(max-width:900px){.lab-small{display:block}.lab-wrap{height:auto}.lab{grid-template-columns:1fr;grid-template-rows:auto auto 62vh auto auto}.lab-top{flex-wrap:wrap}.lab-budget{margin-left:0;min-width:0;flex:1 1 100%;order:3}
