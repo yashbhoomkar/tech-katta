@@ -1,0 +1,8 @@
+/* The dashboard's stylesheets, in the order they must load (a later rule wins over an earlier one of equal
+   specificity). shell.jsx imports this file before anything else. Colours and type come from theme/tokens.css. */
+@import "./shell.css";
+@import "./pages.css";
+@import "./article.css";
+@import "./blocks.css";
+@import "./reader.css";
+@import "./figure.css";

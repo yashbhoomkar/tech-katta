@@ -1,0 +1,54 @@
+// The dashboard frame: routes, the sidebar, the header with its tabs, and which page fills <main>.
+import"./index.css";import React,{Suspense,lazy,useEffect,useRef,useState}from"react";import{routeKey,pathFor,fromLab}from"../routes.js";import{prefetchFigs}from"../figs/index.js";import{HostAnalytics}from"../hostanalytics.jsx";import Tour from"../tour.jsx";import{track,referrer}from"../analytics.js";import{AccountControl,PageLock,useAccount}from"../accountui.jsx";import{Loading}from"../status.jsx";import ThemeToggle from"../theme/ThemeToggle.jsx";import{c,d,ids,articles}from"./site.js";import{lsGet,lsSet}from"./storage.js";import{Icon}from"./icons.jsx";import{Block}from"./blocks.jsx";import{Article,ArticlePage,withFigs}from"./article.jsx";import{Home,Policy,Section,grouped}from"./pages.jsx";
+// Routes: /dashboard/<section>/ lists a section, /dashboard/<section>/<slug>/ opens an article (routes.js);
+// /dashboard/problems/<slug>/ opens a problem's workspace and /dashboard/problems/challenge/<id>/ a challenge's canvas.
+// In-app links use #<section>/<slug>; the address bar then shows the path form (see Dashboard).
+// Old Lab links (#lab, #lab/<challenge>; the Lab tab was removed 2026-11-10) open the challenge from Problems, or the
+// problem it became (IND vs PAK): routes.js fromLab.
+const fromHash=()=>{const[sec,slug,more]=fromLab(routeKey(location),articles.filter(a=>a.tests).map(a=>a.slug)).split("/");
+if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */if(sec==="problems"&&slug==="challenge")return{sec,challenge:more||undefined};
+return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="problems"&&c.problems?.solve?slug:undefined}};
+// The design canvas (React Flow + simulation) loads only when a problem or a challenge opens it.
+const Lab=lazy(()=>import("../lab/Lab.jsx"));const Solve=lazy(()=>import("../solve.jsx"));
+
+// Every tab needs a signed-in visitor (owner, 11-05); the start page, Privacy and Terms stay open.
+// gate: false (show the page), "wait" (still checking the session) or the locked page's title.
+function useGate(route){const a=useAccount();const open=!route.sec||route.sec==="privacy"||route.sec==="terms";
+if(open||!c.account?.pageLock)return false;if(!a.ready)return"wait";if(!a.enabled||a.user)return false;
+return route.art?route.art.title:d.sections.find(s=>s[0]===route.sec)?.[1]||""}
+// Skip link: the dashboard routes on the hash, so it focuses <main> instead of linking to an id.
+const skipToMain=e=>{e.preventDefault();const m=document.querySelector("main");if(m){m.focus();m.scrollIntoView()}};
+const keyOf=r=>!r.sec?"":r.art?`${r.sec}/${r.art.slug}`:r.challenge?`${r.sec}/challenge/${r.challenge}`:r.sub?`${r.sec}/${r.sub}`:r.sec;
+export default function Dashboard(){const[route,setRoute]=useState(fromHash);const gate=useGate(route);const firstView=useRef(true);useEffect(()=>{track("page_view",{section:route.sec||"home",slug:route.art?.slug||route.sub||route.challenge||"",ref:firstView.current?referrer():""});firstView.current=false},[route.sec,route.art?.slug,route.sub,route.challenge]);// eslint-disable-line
+const active=route.sec;const[collapsed,setCollapsed]=useState(()=>lsGet("tk-sidebar")==="collapsed");
+// The canvas needs the width: the sidebar folds to icons there by default (the saved preference for
+// other pages is untouched), and the toggle works per mode.
+// Every Interview Question opens in the problem workspace (solve.jsx): on its description from Problems,
+// on its worked answer from Interview Questions. Needs site.json problems.solve.
+const ws=!c.problems?.solve?null:active==="problems"&&route.sub?route.sub:route.art&&route.art.section==="interview-questions"&&route.art.group!=="start"?route.art.slug:null;
+const solving=!!ws;useEffect(()=>{const q=ws&&articles.find(x=>x.slug===ws);if(q)prefetchFigs(q.section,q.group)},[ws]);const inLab=!!route.challenge||solving;const[labOpen,setLabOpen]=useState(false);const fold=inLab?!labOpen:collapsed;const toggle=()=>inLab?setLabOpen(v=>!v):setCollapsed(v=>!v);const[open,setOpen]=useState(false);const menuBtn=useRef(null);const drawer=useRef(null);
+// Back/Forward return to where you were on that page; following a link starts at the top (QA M8).
+useEffect(()=>{const pos=new Map();let clicked=false,key=routeKey(location);const onScroll=()=>pos.set(key,scrollY);const onClick=e=>{const a=e.target.closest?.("a[href^='#']");if(a)clicked=true};
+addEventListener("scroll",onScroll,{passive:true});document.addEventListener("click",onClick,true);
+const restore=()=>{const k=routeKey(location);if(k===key)return;const want=clicked?0:pos.get(k)||0;clicked=false;key=k;if(!want){scrollTo(0,0);return}let n=0;const go=()=>{scrollTo(0,want);if(Math.abs(scrollY-want)>2&&++n<40)setTimeout(go,50)};go()};
+addEventListener("hashchange",restore);addEventListener("popstate",restore);return()=>{removeEventListener("scroll",onScroll);document.removeEventListener("click",onClick,true);removeEventListener("hashchange",restore);removeEventListener("popstate",restore)}},[]);
+// A link (#…) or Back/Forward (a path) changes the route; both events can fire for one link, so only a new
+// route counts. The address bar then shows the route's own path, the one search engines and shares use.
+useEffect(()=>{let last=routeKey(location);const f=()=>{const k=routeKey(location);if(k===last)return;last=k;setRoute(fromHash());setOpen(false)};addEventListener("hashchange",f);addEventListener("popstate",f);return()=>{removeEventListener("hashchange",f);removeEventListener("popstate",f)}},[]);
+useEffect(()=>{const p=pathFor(keyOf(route));if(location.pathname!==p||location.hash){try{history.replaceState(history.state,"",p)}catch{}}let l=document.querySelector('link[rel="canonical"]');if(!l){l=document.createElement("link");l.rel="canonical";document.head.appendChild(l)}l.href="https://tech.katta.cc"+p},[route]);
+useEffect(()=>{lsSet("tk-sidebar",collapsed?"collapsed":"open")},[collapsed]);
+// Guided tour, one per kind of page: the dashboard, a problem's workspace, a challenge's canvas. It opens only when
+// the Tour button is pressed (owner's decision, 2026-11-07): never by itself.
+const tourKind=solving?(c.tour?.problem?"problem":null):route.challenge?(c.tour?.lab?"lab":null):"dashboard";
+const[tour,setTour]=useState(null);const closeTour=()=>setTour(null);
+useEffect(()=>{if(!open)return;const r=requestAnimationFrame(()=>drawer.current?.querySelector(".side-nav a")?.focus());const k=e=>{if(e.key==="Escape"){setOpen(false);menuBtn.current?.focus()}};addEventListener("keydown",k);return()=>{cancelAnimationFrame(r);removeEventListener("keydown",k)}},[open]);
+useEffect(()=>{const s=d.sections.find(s=>s[0]===active);document.title=route.art?`${route.art.title} | Tech Katta`:route.challenge?"Challenge · Problems | Tech Katta":active==="privacy"?`${c.privacy.title} | Tech Katta`:active==="terms"?`${c.terms.title} | Tech Katta`:s?`${s[1]} · Dashboard | Tech Katta`:"Dashboard | Tech Katta"},[route]);
+const links=cls=>d.sections.map(([id,label])=>{const subs=cls==="side-link"&&id===active?articles.filter(a=>a.section===id):[];return <React.Fragment key={id}><a href={`#${id}`} className={cls+(id===active?" active":"")} aria-current={id===active&&!route.art?"page":undefined} title={fold?label:undefined}>{cls==="side-link"&&<Icon name={id}/>}<span>{label}</span></a>
+{subs.length>0&&<div className="side-sub">{grouped(id,subs).map(([g,items],i)=>items.length>0&&<React.Fragment key={g?.gid||i}>{g&&<span className="side-group">{g.label}</span>}{items.map(a=><a key={a.slug} href={`#${id}/${a.slug}`} className={route.art===a?"active":""} aria-current={route.art===a?"page":undefined}>{a.title.split(":")[0]}</a>)}</React.Fragment>)}</div>}</React.Fragment>});
+return <div className={"dash"+(fold?" collapsed":"")+(open?" open":"")}><a className="skip" href="#" onClick={skipToMain}>Skip to content</a><HostAnalytics route={"/dashboard/"+(route.sec?"[section]"+(route.art?"/[article]":route.challenge?"/challenge/[challenge]":route.sub?"/[problem]":""):"")} path={"/dashboard/"+(route.sec||"")+(route.art?"/"+route.art.slug:route.challenge?"/challenge/"+route.challenge:route.sub?"/"+route.sub:"")}/>
+<aside className="side" id="sidebar" ref={drawer} aria-label="Dashboard"><div className="side-head"><a className="side-brand" href="/" aria-label="Tech Katta home"><b aria-hidden="true">TK</b><span>{c.brand.name}</span></a><button type="button" className="icon-btn desk" aria-label={fold?"Expand sidebar":"Collapse sidebar"} aria-expanded={!fold} aria-controls="sidebar" onClick={toggle}><Icon name="collapse"/></button><button type="button" className="icon-btn mob" aria-label="Close menu" onClick={()=>{setOpen(false);menuBtn.current?.focus()}}><Icon name="close"/></button></div>
+<div className="side-label">{d.label}</div><nav className="side-nav" aria-label="Main">{links("side-link")}</nav>
+{c.privacy&&<a className="side-priv" href="#privacy">{c.account?.privacy||c.privacy.eyebrow}</a>}{c.terms&&<a className="side-priv" href="#terms">{c.account?.termsLink||c.terms.title}</a>}<a className="side-foot" href="/" aria-label={d.back}><Icon name="back"/><span>{d.back}</span></a></aside>
+{open&&<div className="scrim" onClick={()=>setOpen(false)}/>}
+<div className="d-main"><header className="d-head"><button type="button" ref={menuBtn} className="icon-btn mob" aria-label="Open menu" aria-expanded={open} aria-controls="sidebar" onClick={()=>setOpen(true)}><Icon name="menu"/></button><nav className="tabs" aria-label="Sections">{links("tab")}</nav><AccountControl t={c.account} button={false}/>{c.tour&&<button type="button" className="d-tour" onClick={()=>tourKind&&setTour(tourKind)}>{c.tour.button}</button>}<ThemeToggle/><a className="d-home" href="/">tech.katta.cc</a></header>{tour&&<Tour key={tour} steps={c.tour[tour]} labels={c.tour} onClose={closeTour}/>}
+<main tabIndex={-1} className={"d-body"+(inLab&&!gate?" d-lab":"")}>{gate==="wait"?<Loading/>:gate?<PageLock t={c.account} lock={c.account.pageLock} title={gate} section={active} slug={route.art?.slug||route.sub||route.challenge||""}/>:solving?<Suspense fallback={<Loading/>}><Solve slug={ws} tab={active==="problems"?"q":"a"} s={c.problems.solve} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab}/></Suspense>:route.art?<ArticlePage s={route.art}/>:route.challenge?<Suspense fallback={<Loading label="Loading the challenge"/>}><Lab key={route.challenge} challenge={route.challenge} embedded={{open:c.problems?.backToProblems||c.problems?.label||"Problems",href:"#problems",back:true,h1:true,next:true}}/></Suspense>:active==="privacy"?<Policy p={c.privacy}/>:active==="terms"?<Policy p={c.terms}/>:active?<Section id={active}/>:<Home/>}</main></div></div>}

@@ -2,7 +2,7 @@
 // Signed out, everything stays in this browser as before. Signed in, this browser's Lab data and the
 // account's are merged (lab/merge.js, the same rules the API uses) on sign-in, when the Lab opens,
 // and a few seconds after each change, so the same designs and stars show up on every device.
-import{API}from"./api.js";import{STORE_KEY,STORE_VERSION,readStore}from"./lab/store.js";import{mergeLab}from"./lab/merge.js";
+import{current}from"./theme/mode.js";import{API}from"./api.js";import{STORE_KEY,STORE_VERSION,readStore}from"./lab/store.js";import{mergeLab}from"./lab/merge.js";
 import{readProgress,replaceProgress}from"./progress.js";import{track}from"./analytics.js";
 
 export const DELETED_KEY="tk-lab-deleted";// {design id: when it was deleted}, so deletions reach other devices
@@ -30,7 +30,7 @@ let gis=null;
 export function loadGoogle(){return gis||=new Promise((res,rej)=>{if(window.google?.accounts?.id)return res(window.google);const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=()=>window.google?.accounts?.id?res(window.google):rej(new Error("gis"));s.onerror=()=>{gis=null;rej(new Error("gis"))};document.head.appendChild(s)})}
 let initialised=false;
 export async function renderGoogleButton(el,{text="signin_with"}={}){const g=await loadGoogle();if(!initialised){g.accounts.id.initialize({client_id:state.clientId,callback:r=>signIn(r.credential),ux_mode:"popup",auto_select:false,itp_support:true,use_fedcm_for_prompt:true});initialised=true}
-g.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
+g.accounts.id.renderButton(el,{type:"standard",theme:current()==="dark"?"filled_black":"outline",size:"medium",text,shape:"rectangular",logo_alignment:"left"})}
 // "I agree to the Terms and conditions and the Privacy policy" next to the sign-in button: required
 // (the button can't be used until it is ticked, and the API refuses a sign-in without it).
 let termsChoice=false;export const setTermsChoice=v=>{termsChoice=!!v};

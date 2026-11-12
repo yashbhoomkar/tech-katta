@@ -1,4 +1,4 @@
-// Text an article is read aloud from, shared by the browser player (dashboard.jsx) and the
+// Text an article is read aloud from, shared by the browser player (dashboard/reader.jsx) and the
 // recording script (tools/tts). The article is split into sentence-sized chunks (≤ ~220 chars;
 // long utterances stall in Chrome); `key` is the body block index ("head" for title + dek) so the
 // player can highlight the block being read. Recorded audio is matched to chunks by exact text.

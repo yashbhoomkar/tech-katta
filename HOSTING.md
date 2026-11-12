@@ -47,7 +47,7 @@ now steers new static sites to Workers with static assets rather than Pages; `ho
 5. Change the privacy page's sentence about Vercel Web Analytics (`content/site.json`, `privacy`).
 6. Test read-aloud in Safari (iPhone and Mac). Cloudflare answers byte-range requests with the whole file
    (status 200, not 206), and Safari may refuse to play audio that way. If it does, play each recording from a
-   downloaded copy (`frontend/src/dashboard.jsx`, `new Audio(…)` in the reader) and add `blob:` to `media-src` in
+   downloaded copy (`frontend/src/dashboard/reader.jsx`, `new Audio(…)`) and add `blob:` to `media-src` in
    `routes.json`.
 
 Differences from Vercel, measured with `wrangler dev` against production:

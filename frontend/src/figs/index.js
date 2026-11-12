@@ -10,7 +10,7 @@ import manifest from"virtual:fig-manifest";
 const modules=import.meta.glob("./*/*.jsx");
 const drawn={},loading={};
 // A module that can't be fetched fails with figs:true. The browser remembers a failed module and won't fetch
-// it again in this page, so the page's "Try again" reloads the page instead (dashboard.jsx, solve.jsx).
+// it again in this page, so the page's "Try again" reloads the page instead (dashboard/article.jsx, solve.jsx).
 const load=m=>loading[m]||=modules[`./${m}.jsx`]().then(x=>{if(!x?.FIGS)throw new Error("no FIGS");Object.assign(drawn,x.FIGS)})
 .catch(e=>{delete loading[m];throw Object.assign(new Error(`couldn't load the figures in ${m}`),{figs:true,cause:e})});
 // a figure id some module draws

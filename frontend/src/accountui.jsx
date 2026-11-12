@@ -1,13 +1,13 @@
 // Sign in with Google, as the page shows it (state and sync live in account.js). Used by the landing
 // page header (the place to sign in), the landing IND vs PAK result (an invite after a score), and the
 // dashboard header (only once signed in: the avatar menu, no sign-in button there).
-import React,{useEffect,useRef,useState}from"react";import{account,renderGoogleButton,signOut,signOutAll,deleteAccount,setTermsChoice,setAdsConsent}from"./account.js";import{track}from"./analytics.js";import"./account.css";
+import React,{useEffect,useRef,useState}from"react";import{useTheme}from"./theme/mode.js";import{account,renderGoogleButton,signOut,signOutAll,deleteAccount,setTermsChoice,setAdsConsent}from"./account.js";import{track}from"./analytics.js";import"./account.css";
 
 export function useAccount(){const[s,set]=useState(account);useEffect(()=>{const on=()=>set(account());on();addEventListener("tk-account",on);return()=>removeEventListener("tk-account",on)},[]);return s}
 
 // Google's own button, drawn into a div (Google Identity Services). `text` is Google's label preset.
-export function GoogleButton({t,text="signin_with"}){const g=useRef(null),a=useAccount();const[blocked,setBlocked]=useState(false);
-useEffect(()=>{if(a.ready&&a.enabled&&!a.user&&g.current)renderGoogleButton(g.current,{text}).then(()=>setBlocked(false),()=>setBlocked(true))},[a.ready,a.enabled,a.user,text]);
+export function GoogleButton({t,text="signin_with"}){const g=useRef(null),a=useAccount(),theme=useTheme();const[blocked,setBlocked]=useState(false);
+useEffect(()=>{if(a.ready&&a.enabled&&!a.user&&g.current)renderGoogleButton(g.current,{text}).then(()=>setBlocked(false),()=>setBlocked(true))},[a.ready,a.enabled,a.user,text,theme]);
 return <span className="acct-gwrap"><span ref={g} className="acct-g"/>{blocked&&t?.googleBlocked&&<span className="acct-err" role="alert">{t.googleBlocked}</span>}</span>}
 
 // Header control. Signed out: Google's button (unless `button` is false). Signed in: avatar + menu.
