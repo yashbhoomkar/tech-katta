@@ -1,115 +1,152 @@
 /* The site's look in one place: every colour, typeface, radius, shadow and animation speed the pages use.
-   Every stylesheet reads these names (var(--accent), var(--line), …) and never a colour code of its own, so a
+   Every stylesheet reads these names (var(--brand), var(--line), …) and never a colour code of its own, so a
    new colour scheme is an edit to this file. Code that needs a colour value (figures, the canvas) reads them through theme/palette.js.
    Dark mode: the same names with dark values, below. It follows the device's setting unless the visitor picked
    one with the theme button (<html data-theme="light|dark">, set before the page draws by public/theme-boot.js; theme/mode.js keeps it up to date).
-   Rules for colour names: name the role, not the hue (--accent, not --blue), so a red accent still reads right. */
+   Rules for colour names: name the role, not the hue (--brand, not --yellow), so a new brand colour still reads right.
+   The look ("Katta Paper"): warm paper page, white cards, ink text, one brand colour (marigold) for the main button,
+   the highlighter mark and "you are here"; ochre (the dark end of the same family) for links, focus, and lines in figures and on the canvas. */
 :root{
   color-scheme:light;
-  /* Surfaces, from the page outwards */
-  --bg:#fff;              /* the page, cards, inputs, figure boxes */
-  --surface:#f5f7fa;      /* grey panels and wells */
-  --surface-2:#fbfcfd;    /* very faint panels (workspace body, stages) */
+  /* Surfaces */
+  --page:#faf7f0;         /* the page background (paper) */
+  --bg:#fff;              /* cards, inputs, figure boxes */
+  --surface:#f3efe5;      /* wells, quiet panels, inline code */
+  --surface-2:#fcfaf5;    /* sidebar, table heads, very faint panels */
+  --hover:#efeadd;        /* hover on rows and quiet buttons */
+  --inverse:#1d1b16;      /* the one dark card per page (practise call-out), selected chips */
+  --on-inverse:#faf7f0;
   /* Text */
-  --ink:#1c2733;          /* body text, headings, strong rules */
-  --ink-2:#36424f;        /* secondary text */
-  --ink-3:#536174;        /* lead paragraphs, card text */
-  --muted:#586575;        /* captions, labels, meta */
-  --muted-2:#647184;      /* quieter captions, footers */
-  --faint:#8a94a3;        /* hints, figure sub-labels */
-  --disabled:#c7cfdb;     /* disabled controls, empty stars */
+  --ink:#1d1b16;
+  --ink-2:#3a372f;
+  --ink-3:#4d493f;
+  --muted:#625c4f;
+  --muted-2:#6b6557;
+  --faint:#736d5d;
+  --disabled:#cdc7b6;
   /* Lines */
-  --line-strong:#9aa5b4;  /* component outlines in figures and the canvas */
-  --line:#d9dee7;         /* hairlines, borders */
-  --line-soft:#e6eaf0;    /* progress tracks, skeletons */
-  --grid:#eef1f5;         /* grid lines, faint separators */
-  /* Accent (links, buttons, the path that works) */
-  --accent:#2855d9;
-  --accent-strong:#1f46b8;/* hover on accent buttons */
-  --accent-mid:#9db3ef;   /* bars and fills in charts */
-  --accent-line:#b9c9ff;  /* borders of accent-tinted boxes */
-  --accent-soft:#dfe6fb;  /* filled accent boxes in figures */
-  --accent-tint-2:#eef3ff;/* hover on accent-tinted rows */
-  --accent-tint:#f8faff;  /* accent-tinted panels */
-  --on-accent:#fff;       /* text on accent buttons */
+  --line-strong:#b9b2a0;
+  --line:#e6e0d1;
+  --line-soft:#ddd6c4;
+  --grid:#f0ebde;
+  /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
+  --brand:#ffc233;
+  --brand-strong:#f2ac00; /* hover on the main button, active marker lines */
+  --brand-edge:#d79a00;   /* border of the main button */
+  --brand-ink:#6e4a00;    /* brand-coloured text on light tints */
+  --brand-line:#f0d388;   /* border of brand-tinted boxes */
+  --brand-tint:#fff3cf;   /* brand-tinted boxes, active sidebar row */
+  --on-brand:#1d1b16;
+  --mark:#ffd866;         /* the highlighter stroke under a headline word */
+  /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
+     Use it for lines and text only. A filled shape is --brand with --on-brand text. */
+  --accent:#94600a;
+  --accent-strong:#754a00;
+  --accent-mid:#e9b949;
+  --accent-line:#f0d388;
+  --accent-soft:#ffe08a;
+  --accent-tint-2:#ffedb8;
+  --accent-tint:#fff6dc;
+  --on-accent:#fff;
   /* Status */
-  --danger:#b42318;       /* errors, failed tests */
-  --red:#c8372d;          /* trouble in figures */
-  --danger-line:#f4c7c3;
-  --danger-soft:#fde3e1;
-  --danger-tint:#fff5f4;
-  --success:#1a7f37;
-  --success-line:#b7e1c1;
-  --success-tint:#eefaf2;
-  --warn:#9a6700;
-  --warn-strong:#7a4b00;
-  --warn-mid:#d4a72c;     /* load bars at 70 % and over */
-  --warn-line:#f0d58a;
-  --warn-tint:#fff8eb;
-  --star:#e3a008;
+  --danger:#b3261e;
+  --red:#d23b30;
+  --danger-line:#f3c6c1;
+  --danger-soft:#fce1de;
+  --danger-tint:#fff4f2;
+  --success:#17794a;
+  --success-line:#b5e0c6;
+  --success-tint:#ecf8f0;
+  --warn:#9c4a00;         /* orange, so a warning never reads as the brand */
+  --warn-strong:#7a3900;
+  --warn-mid:#e8700c;
+  --warn-line:#f5cfa9;
+  --warn-tint:#fff3e6;
+  --star:#e8a308;
   /* Categories, where a figure needs several colours that mean nothing more than "different" */
   --cat-green:#1f8a5b;
   --cat-amber:#b7791f;
   --cat-violet:#7c3aed;
   --cat-teal:#0e7490;
   --cat-pink:#be185d;
-  /* The same colours as r g b triples, for see-through shadows and backdrops: rgb(var(--ink-rgb) / .12) */
-  --ink-rgb:28 39 51;
+  /* The same colours as r g b triples, for see-through shadows and backdrops */
+  --ink-rgb:29 27 22;
   --bg-rgb:255 255 255;
-  --accent-rgb:40 85 217;
+  --page-rgb:250 247 240;
+  --accent-rgb:148 96 10;
   /* Shadows and backdrops */
-  --shadow-1:0 6px 18px rgb(var(--ink-rgb) / .18);
-  --shadow-2:0 8px 24px rgb(var(--ink-rgb) / .12);
-  --shadow-3:0 10px 30px rgb(var(--ink-rgb) / .16);
-  --scrim:rgb(var(--ink-rgb) / .32);
+  --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
+  --shadow-2:0 2px 4px rgb(var(--ink-rgb) / .05),0 10px 24px rgb(var(--ink-rgb) / .09);
+  --shadow-3:0 4px 8px rgb(var(--ink-rgb) / .06),0 18px 44px rgb(var(--ink-rgb) / .18);
+  --scrim:rgb(var(--ink-rgb) / .36);
+  --glass:rgb(var(--page-rgb) / .86);
   /* Type */
   --font:Inter,Arial,sans-serif;
+  --font-display:"Fraunces Variable",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",monospace;
   /* Shape */
-  --radius:2px;
+  --radius:8px;
+  --r-sm:6px;
+  --r-md:10px;
+  --r-lg:14px;
+  --r-xl:18px;
+  --r-full:999px;
   /* Motion: every transition uses these, and reduced motion sets them to 0 (theme/base.css) */
-  --dur-fast:.2s;
-  --dur:.3s;
-  --ease:ease;
+  --dur-fast:.12s;
+  --dur:.2s;
+  --dur-enter:.36s;       /* things arriving on the page (theme/motion.css) */
+  --ease:cubic-bezier(.2,.7,.2,1);
 }
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
 :root[data-theme=dark]{
   color-scheme:dark;
-  --bg:#12171e;
-  --surface:#1a2029;
-  --surface-2:#151b23;
-  --ink:#e6eaf0;
-  --ink-2:#c9d1dc;
-  --ink-3:#b3bdca;
-  --muted:#9aa6b5;
-  --muted-2:#8b97a7;
-  --faint:#6f7b8b;
-  --disabled:#465160;
-  --line-strong:#5d6878;
-  --line:#2c3440;
-  --line-soft:#252d38;
-  --grid:#1f2630;
-  --accent:#7c9cff;
-  --accent-strong:#9db3ff;
-  --accent-mid:#4a63b0;
-  --accent-line:#34477f;
-  --accent-soft:#223060;
-  --accent-tint-2:#1f2a47;
-  --accent-tint:#18203a;
-  --on-accent:#0b1020;
+  --page:#15140f;
+  --bg:#1e1c16;
+  --surface:#28261e;
+  --surface-2:#191812;
+  --hover:#2e2b22;
+  --inverse:#f4f1e8;
+  --on-inverse:#1d1b16;
+  --ink:#f4f1e8;
+  --ink-2:#dbd7ca;
+  --ink-3:#c8c3b4;
+  --muted:#aca695;
+  --muted-2:#9f9988;
+  --faint:#8d8777;
+  --disabled:#504c40;
+  --line-strong:#5e594a;
+  --line:#322f26;
+  --line-soft:#3d3a2f;
+  --grid:#22201a;
+  --brand:#ffc233;
+  --brand-strong:#ffd466;
+  --brand-edge:#b88400;
+  --brand-ink:#ffd87a;
+  --brand-line:#5f4813;
+  --brand-tint:#30260f;
+  --on-brand:#1d1b16;
+  --mark:#7d5c00;
+  --accent:#ffc233;
+  --accent-strong:#ffd466;
+  --accent-mid:#a87a10;
+  --accent-line:#5f4813;
+  --accent-soft:#4a3a12;
+  --accent-tint-2:#3a2e10;
+  --accent-tint:#2b230f;
+  --on-accent:#1d1b16;
   --danger:#ff8a80;
   --red:#ff7b72;
   --danger-line:#6b2c28;
   --danger-soft:#4a2220;
-  --danger-tint:#2a1716;
+  --danger-tint:#2b1816;
   --success:#5fd38a;
   --success-line:#2c5e3c;
-  --success-tint:#14261b;
-  --warn:#f0c060;
-  --warn-strong:#f5d38a;
-  --warn-mid:#d4a72c;
-  --warn-line:#5e4a1c;
-  --warn-tint:#2a2214;
+  --success-tint:#15261b;
+  --warn:#ffab66;
+  --warn-strong:#ffc594;
+  --warn-mid:#e8700c;
+  --warn-line:#693c14;
+  --warn-tint:#2d1d10;
   --star:#f2b01e;
   --cat-green:#3fb97a;
   --cat-amber:#e0a43a;
@@ -117,10 +154,12 @@
   --cat-teal:#22b8cf;
   --cat-pink:#f472b6;
   --ink-rgb:0 0 0;
-  --bg-rgb:18 23 30;
-  --accent-rgb:124 156 255;
-  --shadow-1:0 6px 18px rgb(0 0 0 / .5);
-  --shadow-2:0 8px 24px rgb(0 0 0 / .45);
-  --shadow-3:0 10px 30px rgb(0 0 0 / .5);
-  --scrim:rgb(0 0 0 / .55);
+  --bg-rgb:30 28 22;
+  --page-rgb:21 20 15;
+  --accent-rgb:255 194 51;
+  --shadow-1:0 1px 2px rgb(0 0 0 / .4);
+  --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);
+  --shadow-3:0 4px 8px rgb(0 0 0 / .4),0 18px 44px rgb(0 0 0 / .55);
+  --scrim:rgb(0 0 0 / .6);
+  --glass:rgb(var(--page-rgb) / .86);
 }

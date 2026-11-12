@@ -23,3 +23,14 @@
 .ll-res .ll-verdict{margin:0;font-size:14px}.ll-score:disabled{opacity:.6;cursor:default}
 .lp-run{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--muted)}.lp-run .ll-score{height:40px;padding:0 18px}
 .lp-res{margin:0;border-width:1px 0 0}
+
+/* ===== Katta Paper skin ===== */
+.ll-flow{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-2)}
+.ll-box{border-radius:var(--radius);box-shadow:var(--shadow-1)}
+.ll-check,.ll-step,.ll-radio{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg)}
+.ll-check input,.ll-radio input{accent-color:var(--brand-strong)}
+.ll-step button{border:1px solid var(--line-strong);border-radius:var(--r-md)}
+.ll-radio legend{font:600 10px var(--mono);letter-spacing:.1em}
+.ll-score{height:50px;border:1px solid var(--brand-edge);border-radius:var(--r-md);background:var(--brand);color:var(--on-brand);font:600 15px var(--font)}
+.ll-res{border:1px solid var(--brand-line);border-radius:var(--r-lg);background:var(--brand-tint)}
+.ll-stars{color:var(--star)}

@@ -1,3 +1,5 @@
+> Superseded by tech-katta-context/20-UI-REDESIGN-SPEC.md. Kept as a record of observations only.
+
 # Design.md — the look we are moving towards
 
 **Source of inspiration:** fanout.sh, observed on 2026-11-12 (owner: "take inspiration of their UI"; then "make the

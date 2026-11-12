@@ -3,3 +3,17 @@
 .card{color:var(--ink);text-decoration:none;background:var(--bg);container:card/inline-size}.card:hover,.card:focus-visible{border-color:var(--accent)}.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.card:hover .card-go,.card:focus-visible .card-go{text-decoration:underline}.card-go{color:var(--accent)}
 /* below ~300px of card width some footers wrap and some don't; stack them all so the cards line up */
 @container card (max-width:299px){.card-foot{flex-direction:column;align-items:flex-start;justify-content:center}}
+
+/* ===== Katta Paper skin ===== */
+.cards{gap:16px}
+.card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg);padding:20px 20px 0;box-shadow:var(--shadow-1);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.card:hover,.card:focus-visible{border-color:var(--line-strong);transform:translateY(-3px);box-shadow:var(--shadow-2)}
+.meta{font:600 10px var(--mono);letter-spacing:.1em;color:var(--faint)}
+.meta span:first-child{color:var(--brand-ink)}
+.mini{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:18px}
+.card h2{font:600 23px/1.2 var(--font-display);letter-spacing:-.01em;margin:0 0 8px}
+.card>p{font-size:14.5px;line-height:1.55;color:var(--muted)}
+.card-foot{border-top:1px solid var(--line);min-height:48px;font:500 10px var(--mono);letter-spacing:.08em;color:var(--faint)}
+.card-go{font:600 13px var(--font);letter-spacing:0;color:var(--ink)}
+.card:hover .card-go,.card:focus-visible .card-go{text-decoration:none}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover,.card:focus-visible{transform:none}}

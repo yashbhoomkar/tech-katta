@@ -6,16 +6,10 @@
 // The bindings are live (`export let`): readTokens() reads the current values from the page's CSS variables, so
 // when the theme changes, figures drawn afterwards get the new colours. The defaults below are the light theme,
 // used before the page is ready and in tests.
-export const TOKENS={bg:"#fff",surface:"#f5f7fa","surface-2":"#fbfcfd",ink:"#1c2733","ink-2":"#36424f","ink-3":"#536174",
-muted:"#586575","muted-2":"#647184",faint:"#8a94a3",disabled:"#c7cfdb","line-strong":"#9aa5b4",line:"#d9dee7","line-soft":"#e6eaf0",
-grid:"#eef1f5",accent:"#2855d9","accent-strong":"#1f46b8","accent-mid":"#9db3ef","accent-line":"#b9c9ff","accent-soft":"#dfe6fb",
-"accent-tint-2":"#eef3ff","accent-tint":"#f8faff","on-accent":"#fff",danger:"#b42318",red:"#c8372d","danger-line":"#f4c7c3",
-"danger-soft":"#fde3e1","danger-tint":"#fff5f4",success:"#1a7f37","success-line":"#b7e1c1","success-tint":"#eefaf2",warn:"#9a6700",
-"warn-strong":"#7a4b00","warn-mid":"#d4a72c","warn-line":"#f0d58a","warn-tint":"#fff8eb",star:"#e3a008",
-"cat-green":"#1f8a5b","cat-amber":"#b7791f","cat-violet":"#7c3aed","cat-teal":"#0e7490","cat-pink":"#be185d"};
+export const TOKENS={page:"#faf7f0",bg:"#fff",surface:"#f3efe5","surface-2":"#fcfaf5",hover:"#efeadd",inverse:"#1d1b16","on-inverse":"#faf7f0",ink:"#1d1b16","ink-2":"#3a372f","ink-3":"#4d493f",muted:"#625c4f","muted-2":"#6b6557",faint:"#736d5d",disabled:"#cdc7b6","line-strong":"#b9b2a0",line:"#e6e0d1","line-soft":"#ddd6c4",grid:"#f0ebde",brand:"#ffc233","brand-strong":"#f2ac00","brand-edge":"#d79a00","brand-ink":"#6e4a00","brand-line":"#f0d388","brand-tint":"#fff3cf","on-brand":"#1d1b16",mark:"#ffd866",accent:"#94600a","accent-strong":"#754a00","accent-mid":"#e9b949","accent-line":"#f0d388","accent-soft":"#ffe08a","accent-tint-2":"#ffedb8","accent-tint":"#fff6dc","on-accent":"#fff",danger:"#b3261e",red:"#d23b30","danger-line":"#f3c6c1","danger-soft":"#fce1de","danger-tint":"#fff4f2",success:"#17794a","success-line":"#b5e0c6","success-tint":"#ecf8f0",warn:"#9c4a00","warn-strong":"#7a3900","warn-mid":"#e8700c","warn-line":"#f5cfa9","warn-tint":"#fff3e6",star:"#e8a308","cat-green":"#1f8a5b","cat-amber":"#b7791f","cat-violet":"#7c3aed","cat-teal":"#0e7490","cat-pink":"#be185d"};
 export let BG,SURFACE,SURFACE_2,INK,INK_2,INK_3,MUTED,MUTED_2,FAINT,DISABLED,LINE_STRONG,LINE,LINE_SOFT,GRID,ACCENT,ACCENT_STRONG,
 ACCENT_MID,ACCENT_LINE,ACCENT_SOFT,ACCENT_TINT_2,ACCENT_TINT,ON_ACCENT,DANGER,RED,DANGER_LINE,DANGER_SOFT,DANGER_TINT,SUCCESS,SUCCESS_LINE,
-SUCCESS_TINT,WARN,WARN_STRONG,WARN_MID,WARN_LINE,WARN_TINT,STAR,CAT_GREEN,CAT_AMBER,CAT_VIOLET,CAT_TEAL,CAT_PINK;
+SUCCESS_TINT,WARN,WARN_STRONG,WARN_MID,WARN_LINE,WARN_TINT,STAR,CAT_GREEN,CAT_AMBER,CAT_VIOLET,CAT_TEAL,CAT_PINK,BRAND,BRAND_EDGE,ON_BRAND;
 // The short names the figures were written with: ink, grey outlines, red for trouble, blue for the path that works,
 // light blue (LB) and light red (LR) box fills, and the filled blue (FB).
 export{LINE_STRONG as GREY,ACCENT as BLUE,ACCENT_TINT as LB,DANGER_TINT as LR,ACCENT_SOFT as FB};
@@ -25,7 +19,7 @@ faint:FAINT,disabled:DISABLED,"line-strong":LINE_STRONG,line:LINE,"line-soft":LI
 "accent-tint":ACCENT_TINT,"on-accent":ON_ACCENT,danger:DANGER,red:RED,"danger-line":DANGER_LINE,"danger-soft":DANGER_SOFT,
 "danger-tint":DANGER_TINT,success:SUCCESS,"success-line":SUCCESS_LINE,"success-tint":SUCCESS_TINT,warn:WARN,"warn-strong":WARN_STRONG,"warn-mid":WARN_MID,
 "warn-line":WARN_LINE,"warn-tint":WARN_TINT,star:STAR,"cat-green":CAT_GREEN,"cat-amber":CAT_AMBER,"cat-violet":CAT_VIOLET,
-"cat-teal":CAT_TEAL,"cat-pink":CAT_PINK}=t)}
+"cat-teal":CAT_TEAL,"cat-pink":CAT_PINK,brand:BRAND,"brand-edge":BRAND_EDGE,"on-brand":ON_BRAND}=t)}
 set(TOKENS);
 // Read the current values of every token from the page (call after the theme changes). Missing ones keep the default.
 export function readTokens(el=typeof document!=="undefined"?document.documentElement:null){
