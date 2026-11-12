@@ -1,6 +1,6 @@
 // Concepts › API design: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "api-design").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Cap,Caps}from"../parts.jsx";
+import{BG,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Cap,Caps}from"../parts.jsx";
 
 // The API step, FIG 1: three questions pick the style.
 function ChooseFig({still,uid=""}){const M=`ac${uid}`;
@@ -26,10 +26,10 @@ base={head} g={g} last={<g>{g}</g>}/>}
 
 // REST endpoints, FIG 2: path, query, body and headers.
 function PartsFig({still,uid=""}){
-const chip=(x,w,t,c=GREY,fill="#fff")=><Bx x={x} y={52} w={w} h={34} t={t} c={c} fill={fill}/>;
+const chip=(x,w,t,c=GREY,fill=BG)=><Bx x={x} y={52} w={w} h={34} t={t} c={c} fill={fill}/>;
 const r1=<g>{chip(20,56,"GET")}{chip(80,210,"/restaurants/42/menu")}{chip(294,200,"?veg=true&lang=hi")}</g>;
 const s1=<g>{chip(80,210,"/restaurants/42/menu",BLUE,LB)}<T x={185} y={104} t="path: which resource" a="middle" c={BLUE}/><T x={185} y={118} t="(required)" a="middle" c={BLUE}/></g>;
-const s2=<g>{chip(294,200,"?veg=true&lang=hi",INK,"#fbfcfd")}<T x={394} y={104} t="query: filter, sort, page" a="middle"/><T x={394} y={118} t="(optional)" a="middle"/></g>;
+const s2=<g>{chip(294,200,"?veg=true&lang=hi",INK,SURFACE_2)}<T x={394} y={104} t="query: filter, sort, page" a="middle"/><T x={394} y={118} t="(optional)" a="middle"/></g>;
 const s3=<g><Bx x={20} y={140} w={56} h={34} t="POST"/><Bx x={80} y={140} w={120} h={34} t="/orders"/><rect x={20} y={180} width={300} height={62} fill={LB} stroke={BLUE}/>{['{"restaurant_id": 42,',' "items": [{"dish_id": 9, "qty": 2}],',' "address_id": 3 }'].map((l,i)=><T key={i} x={30} y={198+i*16} t={l}/>)}<T x={330} y={216} t="body: the data being created" c={BLUE}/></g>;
 const s4=<g><T x={220} y={152} t="Authorization: Bearer eyJ…"/><T x={220} y={168} t="Idempotency-Key: 7f3c-…"/><T x={430} y={160} t="headers: who is asking," c={BLUE}/><T x={430} y={174} t="and which attempt" c={BLUE}/></g>;
 const caps=[["1 · the path picks the resource: restaurant 42's menu",BLUE],["2 · the query narrows and shapes what comes back: vegetarian, in Hindi",INK],["3 · the body carries what is being created or changed",BLUE],["4 · headers carry the rest: who is asking, and a key for this attempt",BLUE]];
@@ -38,7 +38,7 @@ base={r1} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // GraphQL, FIG 1: the N+1 problem and a batching loader.
 function NPlusOneFig({still,uid=""}){
-const bar=(x,y,w,t,c=GREY,fill="#fff")=><g key={`${x}${y}`}><rect x={x} y={y} width={w} height={14} fill={fill} stroke={c}/>{t&&<T x={x+6} y={y+11} t={t}/>}</g>;
+const bar=(x,y,w,t,c=GREY,fill=BG)=><g key={`${x}${y}`}><rect x={x} y={y} width={w} height={14} fill={fill} stroke={c}/>{t&&<T x={x+6} y={y+11} t={t}/>}</g>;
 const top=<g><T x={10} y={52} t="query { orders(first: 50) { id  restaurant { name } } }"/><T x={10} y={82} t="without batching" b/><T x={340} y={82} t="with a loader" b/></g>;
 const s1=bar(10,94,290,"SELECT … FROM orders LIMIT 50",INK);
 const s2=<g>{Array.from({length:9},(_,i)=>bar(10,112+i*12,290,"",RED,LR))}<T x={16} y={122} t="SELECT … FROM restaurants WHERE id = 42"/><T x={10} y={236} t="1 + 50 = 51 queries" b c={RED}/></g>;
@@ -75,8 +75,8 @@ base={base} g={[s1,s2,s3,s4]} only={[0,1,2,3]} last={s4}/>}
 
 // Patterns, FIG 1: a stable error code drives the app; the message is free text.
 function ErrorsFig({still,uid=""}){const M=`ao${uid}`;
-const env=(code,msg,c=INK)=><g><rect x={10} y={44} width={300} height={110} fill="#fbfcfd" stroke={GREY}/><T x={20} y={64} t="HTTP/1.1 409 Conflict" b/><T x={20} y={86} t={'{ "error": {'}/><T x={34} y={104} t={`"code": "${code}",`} c={BLUE}/><T x={34} y={122} t={`"message": "${msg}"`} c={c}/><T x={20} y={140} t="} }"/></g>;
-const out=(y,code,screen,hi)=><g key={code}><Bx x={380} y={y} w={250} h={44} t={screen} s={code} c={hi?BLUE:GREY} fill={hi?LB:"#fff"}/></g>;
+const env=(code,msg,c=INK)=><g><rect x={10} y={44} width={300} height={110} fill={SURFACE_2} stroke={GREY}/><T x={20} y={64} t="HTTP/1.1 409 Conflict" b/><T x={20} y={86} t={'{ "error": {'}/><T x={34} y={104} t={`"code": "${code}",`} c={BLUE}/><T x={34} y={122} t={`"message": "${msg}"`} c={c}/><T x={20} y={140} t="} }"/></g>;
+const out=(y,code,screen,hi)=><g key={code}><Bx x={380} y={y} w={250} h={44} t={screen} s={code} c={hi?BLUE:GREY} fill={hi?LB:BG}/></g>;
 const s1=env("RESTAURANT_CLOSED","Shree Misal closed at 10:30 pm");
 const s2=<g>{s1}<Ar x1={312} y1={100} x2={376} y2={72} m={M} c={BLUE}/>{out(50,"RESTAURANT_CLOSED","Show similar places open now",1)}</g>;
 const s3=<g>{env("RESTAURANT_CLOSED","श्री मिसळ रात्री 10:30 ला बंद झाले",INK)}<Ar x1={312} y1={100} x2={376} y2={72} m={M} c={BLUE}/>{out(50,"RESTAURANT_CLOSED","Show similar places open now",1)}<T x={160} y={176} t="message reworded or translated: nothing breaks" a="middle" c={BLUE}/></g>;
@@ -113,12 +113,12 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // returns 46 to 42, repeating 46; ?before=46 returns 45 to 41, with nothing repeated or missed.
 function ApiPagesFig({still,uid=""}){const D="14s",X=[20,240,460],Y=i=>96+i*30;
 const caps=[["1 · page 1 of a restaurant's orders, newest first: 50 down to 46",INK],["2 · a new order, 51, arrives before the next page is loaded",INK],["3 · ?offset=5 skips five rows of the new list, so order 46 shows up twice",RED],["4 · ?before=46 asks for orders older than the last one seen: no repeats, no gaps",BLUE]];
-const row=(x,i,n,c=GREY,fill="#fff")=><g key={x+"-"+n}><rect x={x} y={Y(i)-14} width="160" height="26" fill={fill} stroke={c}/><text x={x+12} y={Y(i)+4} className="fl">order {n}</text></g>;
+const row=(x,i,n,c=GREY,fill=BG)=><g key={x+"-"+n}><rect x={x} y={Y(i)-14} width="160" height="26" fill={fill} stroke={c}/><text x={x+12} y={Y(i)+4} className="fl">order {n}</text></g>;
 const col=(i,t)=><text x={X[i]} y="72" className="fb">{t}</text>;
 const p1=<g>{col(0,"page 1")}{[50,49,48,47,46].map((n,i)=>row(X[0],i,n))}</g>;
-const s2=<g>{row(X[0],-1,51,BLUE,"#f8faff")}<text x={X[0]+170} y={Y(-1)+4} className="fl" style={{fill:BLUE}}>new</text></g>;
-const s3=<g>{col(1,"page 2 · ?offset=5")}{[46,45,44,43,42].map((n,i)=>row(X[1],i,n,n===46?RED:GREY,n===46?"#fff5f4":"#fff"))}<text x={X[1]} y="262" className="fl" style={{fill:RED}}>46 again: the list moved under it</text></g>;
-const s4=<g>{col(2,"page 2 · ?before=46")}{[45,44,43,42,41].map((n,i)=>row(X[2],i,n,BLUE,"#f8faff"))}<text x={X[2]} y="262" className="fl" style={{fill:BLUE}}>picks up right after 46</text></g>;
+const s2=<g>{row(X[0],-1,51,BLUE,LB)}<text x={X[0]+170} y={Y(-1)+4} className="fl" style={{fill:BLUE}}>new</text></g>;
+const s3=<g>{col(1,"page 2 · ?offset=5")}{[46,45,44,43,42].map((n,i)=>row(X[1],i,n,n===46?RED:GREY,n===46?LR:BG))}<text x={X[1]} y="262" className="fl" style={{fill:RED}}>46 again: the list moved under it</text></g>;
+const s4=<g>{col(2,"page 2 · ?before=46")}{[45,44,43,42,41].map((n,i)=>row(X[2],i,n,BLUE,LB))}<text x={X[2]} y="262" className="fl" style={{fill:BLUE}}>picks up right after 46</text></g>;
 return <svg viewBox="0 0 640 276" role="img" aria-labelledby={`apt${uid}`}><title id={`apt${uid}`}>Offset pagination against cursor pagination on a restaurant's order list, newest first. Page 1 shows orders 50 down to 46. A new order, 51, arrives before the next page is loaded. Asking for page 2 with offset 5 skips five rows of the new list, so it returns orders 46 to 42 and order 46 appears twice. Asking for orders before 46, a cursor, returns 45 to 41: nothing is repeated or missed.</title>
 {p1}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
 

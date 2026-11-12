@@ -1,6 +1,6 @@
 // Concepts › Caching: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "caching").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show}from"../parts.jsx";
+import{BG,DANGER_SOFT,GRID,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show}from"../parts.jsx";
 
 // Caching in an interview, FIG 1: the same reads with and without a cache.
 function WhyFig({still,uid=""}){const M=`cw${uid}`;
@@ -16,7 +16,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function LayersFig({still,uid=""}){const M=`cy${uid}`;
 const L=[["phone","app's own copy","city list, photos","no network"],["CDN edge","in Mumbai","dish photos","20–40 ms"],["app server","in-process","flags, banner","microseconds"],["Redis","shared cache","menus, profiles","about 1 ms"],["database","source of truth","what all missed","5–50 ms"]];
 const X0=i=>10+i*128;
-const box=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={X0(i)} y={60} w={108} h={46} t={L[i][0]} s={L[i][1]} c={c} fill={fill}/>;
+const box=(i,c=GREY,fill=BG)=><Bx key={i+c} x={X0(i)} y={60} w={108} h={46} t={L[i][0]} s={L[i][1]} c={c} fill={fill}/>;
 const note=i=><g key={`n${i}`}><T x={X0(i)+54} y={128} t={L[i][2]} a="middle" c={BLUE}/><T x={X0(i)+54} y={144} t={L[i][3]} a="middle" c={BLUE}/></g>;
 const base=<g>{L.map((_,i)=>box(i))}{[0,1,2,3].map(i=><Ar key={i} x1={X0(i)+110} y1={83} x2={X0(i)+126} y2={83} m={M}/>)}</g>;
 const s1=<g>{box(0,BLUE,LB)}{note(0)}</g>,s2=<g>{box(1,BLUE,LB)}{note(1)}</g>,s3=<g>{box(2,BLUE,LB)}{box(3,BLUE,LB)}{note(2)}{note(3)}</g>;
@@ -27,7 +27,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Where to cache, FIG 2: a shared external cache.
 function ExternalFig({still,uid=""}){const M=`ce${uid}`;
-const sv=(i,s,c=GREY,fill="#fff")=><Bx key={i+c} x={10} y={50+i*60} w={170} h={40} t={`app server ${i+1}`} s={s} c={c} fill={fill}/>;
+const sv=(i,s,c=GREY,fill=BG)=><Bx key={i+c} x={10} y={50+i*60} w={170} h={40} t={`app server ${i+1}`} s={s} c={c} fill={fill}/>;
 const ar=i=><Ar key={`a${i}`} x1={182} y1={70+i*60} x2={286} y2={116+i*14} m={M} c={BLUE}/>;
 const base=<g>{[0,1,2].map(i=>sv(i,"")) }<Bx x={290} y={100} w={150} h={60} t="Redis" s="shared cache"/><Ar x1={442} y1={130} x2={496} y2={130} m={M}/><T x={469} y={124} t="misses" a="middle"/><Bx x={500} y={105} w={130} h={50} t="database"/></g>;
 const s1=<g>{sv(0,"miss: DB, then SET menu:42",BLUE,LB)}{ar(0)}</g>;
@@ -40,10 +40,10 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Where to cache, FIG 3: caches on the device and in a client library.
 function ClientFig({still,uid=""}){const M=`cc${uid}`;
-const item=(y,t,c=GREY,fill="#fff")=><Bx key={y+c} x={30} y={y} w={110} h={22} t={t} c={c} fill={fill}/>;
-const nd=(i,s,c=GREY,fill="#fff")=><Bx key={i+c+s} x={500} y={50+i*60} w={130} h={40} t={`node ${"ABC"[i]}`} s={s} c={c} fill={fill}/>;
-const base=<g><rect x={20} y={48} width={130} height={170} rx={14} fill="#fff" stroke={GREY}/><T x={85} y={68} t="the phone" a="middle" b/>{item(80,"dish photos")}{item(108,"city list")}{item(136,"yesterday's order")}
-<rect x={230} y={50} width={200} height={160} fill="#fff" stroke={GREY}/><T x={240} y={68} t="app server · Redis client" b/>{[0,1,2].map(i=>nd(i,["slots 0–5460","5461–10922","10923–16383"][i]))}</g>;
+const item=(y,t,c=GREY,fill=BG)=><Bx key={y+c} x={30} y={y} w={110} h={22} t={t} c={c} fill={fill}/>;
+const nd=(i,s,c=GREY,fill=BG)=><Bx key={i+c+s} x={500} y={50+i*60} w={130} h={40} t={`node ${"ABC"[i]}`} s={s} c={c} fill={fill}/>;
+const base=<g><rect x={20} y={48} width={130} height={170} rx={14} fill={BG} stroke={GREY}/><T x={85} y={68} t="the phone" a="middle" b/>{item(80,"dish photos")}{item(108,"city list")}{item(136,"yesterday's order")}
+<rect x={230} y={50} width={200} height={160} fill={BG} stroke={GREY}/><T x={240} y={68} t="app server · Redis client" b/>{[0,1,2].map(i=>nd(i,["slots 0–5460","5461–10922","10923–16383"][i]))}</g>;
 const s1=<g>{item(80,"dish photos",BLUE,LB)}{item(108,"city list",BLUE,LB)}<T x={20} y={236} t="opening the menu again: no download" c={BLUE}/></g>;
 const s2=<g><T x={20} y={252} t="but the server can't change these copies" c={RED}/></g>;
 const s3=<g>{["slots 0–5460 → node A","5461–10922 → node B","10923–16383 → node C"].map((t,i)=><T key={i} x={240} y={92+i*16} t={t}/>)}<T x={240} y={152} t="GET menu:42 → slot 7138" b c={BLUE}/><Ar x1={432} y1={140} x2={496} y2={130} m={M} c={BLUE}/></g>;
@@ -55,8 +55,8 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Where to cache, FIG 4: in-process caches, one per server.
 function InProcessFig({still,uid=""}){
 const sx=i=>10+i*210;
-const banner=(i,t,c=GREY,fill="#fff")=><Bx key={i+t+c} x={sx(i)+20} y={130} w={160} h={22} t={t} c={c} fill={fill}/>;
-const base=<g>{[0,1,2].map(i=><g key={i}><rect x={sx(i)} y={48} width={200} height={124} fill="#fff" stroke={GREY}/><T x={sx(i)+10} y={66} t={`app server ${i+1}`} b/><rect x={sx(i)+12} y={76} width={176} height={86} fill="#fbfcfd" stroke={GREY} strokeDasharray="3 3"/><T x={sx(i)+20} y={94} t="in its own memory:"/><T x={sx(i)+20} y={114} t="flags · cities · fees"/>{banner(i,"banner: v1")}</g>)}</g>;
+const banner=(i,t,c=GREY,fill=BG)=><Bx key={i+t+c} x={sx(i)+20} y={130} w={160} h={22} t={t} c={c} fill={fill}/>;
+const base=<g>{[0,1,2].map(i=><g key={i}><rect x={sx(i)} y={48} width={200} height={124} fill={BG} stroke={GREY}/><T x={sx(i)+10} y={66} t={`app server ${i+1}`} b/><rect x={sx(i)+12} y={76} width={176} height={86} fill={SURFACE_2} stroke={GREY} strokeDasharray="3 3"/><T x={sx(i)+20} y={94} t="in its own memory:"/><T x={sx(i)+20} y={114} t="flags · cities · fees"/>{banner(i,"banner: v1")}</g>)}</g>;
 const s1=<g>{[0,1,2].map(i=><rect key={i} x={sx(i)+12} y={76} width={176} height={86} fill="none" stroke={BLUE}/>)}<T x={10} y={196} t="reads: microseconds, no network" c={BLUE}/></g>;
 const s2=<g>{banner(0,"banner: v2",BLUE,LB)}<T x={10} y={214} t="server 1 picks up the new banner" c={BLUE}/></g>;
 const s3=<g>{banner(1,"banner: v1 (old)",RED,LR)}{banner(2,"banner: v1 (old)",RED,LR)}<T x={330} y={214} t="servers 2 and 3 don't know" c={RED}/></g>;
@@ -102,7 +102,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function EvictFig({still,uid=""}){
 const R=[["menu A","19:00","50","20:10"],["menu B","19:20","20","19:40"],["menu C","19:30","2","20:09"],["menu D","19:50","9","20:05"]];
 const CX=[10,110,190,260],CW=[100,80,70,80];
-const cell=(r,k,c=GREY,fill="#fff")=><Bx key={`${r}${k}${c}`} x={CX[k]} y={70+r*26} w={CW[k]} h={26} t={R[r][k]} c={c} fill={fill}/>;
+const cell=(r,k,c=GREY,fill=BG)=><Bx key={`${r}${k}${c}`} x={CX[k]} y={70+r*26} w={CW[k]} h={26} t={R[r][k]} c={c} fill={fill}/>;
 const base=<g>{["in the cache","stored","reads","last read"].map((t,k)=><T key={k} x={CX[k]+6} y={62} t={t}/>)}{R.map((_,r)=>[0,1,2,3].map(k=>cell(r,k)))}</g>;
 const res=(y,t,s)=><Bx x={380} y={y} w={250} h={40} t={t} s={s} c={RED} fill={LR}/>;
 const s1=<g><Bx x={10} y={188} w={160} h={30} t="menu E arrives" c={BLUE} fill={LB}/><T x={180} y={207} t="the cache is full: one has to go"/></g>;
@@ -149,8 +149,8 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Cache problems, FIG 3: a hot key, replicated and copied locally.
 function HotKeyFig({still,uid=""}){const M=`ch${uid}`;
-const sv=(i,s,c=GREY,fill="#fff")=><Bx key={i+c+s} x={10} y={50+i*60} w={170} h={44} t={`app server ${i+1}`} s={s} c={c} fill={fill}/>;
-const nd=(i,s,c=GREY,fill="#fff")=><Bx key={i+c+s} x={440} y={50+i*60} w={190} h={44} t={`Redis node ${i+1}`} s={s} c={c} fill={fill}/>;
+const sv=(i,s,c=GREY,fill=BG)=><Bx key={i+c+s} x={10} y={50+i*60} w={170} h={44} t={`app server ${i+1}`} s={s} c={c} fill={fill}/>;
+const nd=(i,s,c=GREY,fill=BG)=><Bx key={i+c+s} x={440} y={50+i*60} w={190} h={44} t={`Redis node ${i+1}`} s={s} c={c} fill={fill}/>;
 const base=<g>{[0,1,2].map(i=>sv(i,""))}{[0,1,2].map(i=>nd(i,""))}</g>;
 const hot=<g>{[0,1,2].map(i=><Ar key={i} x1={182} y1={72+i*60} x2={436} y2={132} m={M} c={RED} w={3}/>)}{nd(1,"promo:final-night · 4 lakh/s",RED,LR)}</g>;
 const s2=<g>{hot}{nd(0,"other keys · 2,000/s")}{nd(2,"other keys · 2,000/s")}</g>;
@@ -167,13 +167,13 @@ base={base} g={[hot,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 function CacheAsideFig({still,uid=""}){const M=`cas${uid}`,D="12s",AX=150,RX=468;
 const lanes=[[60,"GET menu:r42",false,"→"],[84,"the menu (hit) · nothing (miss)",true,"←"],[108,"SET menu:r42 EX 300",false,"→"],[204,"SELECT … FROM menu_items",false,"→"],[228,"rows",true,"←"]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`cast${uid}`}><title id={`cast${uid}`}>Cache-aside for one restaurant menu. The Order API first asks Redis for menu:r42. On a hit, Redis returns the menu in about a millisecond and the database is never asked. On a miss, Redis returns nothing, the Order API reads the menu from the database in about 5 milliseconds, and stores it in Redis with a 5 minute expiry for the next request. When the restaurant changes its menu, the API updates the database and deletes the key.</title><Mark m={M}/>
-<rect x="20" y="40" width={AX-20} height="210" fill="#fff" stroke={GREY}/><text x={(20+AX)/2} y="140" textAnchor="middle" className="fb">Order API</text><text x={(20+AX)/2} y="156" textAnchor="middle" className="fl">your code</text>
-<rect x={RX} y="44" width="152" height="80" fill="#f8faff" stroke="#2855d9"/><text x={RX+76} y="80" textAnchor="middle" className="fb">Redis</text><text x={RX+76} y="96" textAnchor="middle" className="fl">about 1 ms</text>
-<rect x={RX} y="188" width="152" height="56" fill="#fff" stroke={GREY}/><text x={RX+76} y="212" textAnchor="middle" className="fb">Database</text><text x={RX+76} y="228" textAnchor="middle" className="fl">about 5 ms</text>
+<rect x="20" y="40" width={AX-20} height="210" fill={BG} stroke={GREY}/><text x={(20+AX)/2} y="140" textAnchor="middle" className="fb">Order API</text><text x={(20+AX)/2} y="156" textAnchor="middle" className="fl">your code</text>
+<rect x={RX} y="44" width="152" height="80" fill={LB} stroke={BLUE}/><text x={RX+76} y="80" textAnchor="middle" className="fb">Redis</text><text x={RX+76} y="96" textAnchor="middle" className="fl">about 1 ms</text>
+<rect x={RX} y="188" width="152" height="56" fill={BG} stroke={GREY}/><text x={RX+76} y="212" textAnchor="middle" className="fb">Database</text><text x={RX+76} y="228" textAnchor="middle" className="fl">about 5 ms</text>
 {lanes.map(([y,t,back])=><Arr key={y} m={M} x1={back?RX-2:AX+2} x2={back?AX+4:RX-4} y={y} t={t} dash={back}/>)}
 <text x="0" y="284" className="fl">On a menu change: UPDATE the database, then DEL menu:r42. The next read misses and loads the new menu.</text>
 {!still&&<g aria-hidden="true">
-<Dot x1={AX+4} x2={RX-8} y={60} t0={.02} t1={.1} dur={D}/><Glow x={RX} y={44} w={152} h={80} t0={.1} t1={.14} dur={D}/><Dot x1={RX-6} x2={AX+8} y={84} t0={.14} t1={.22} dur={D}/><Show t0={.14} t1={.3} dur={D}><text x={RX+76} y="138" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>HIT</text></Show>
+<Dot x1={AX+4} x2={RX-8} y={60} t0={.02} t1={.1} dur={D}/><Glow x={RX} y={44} w={152} h={80} t0={.1} t1={.14} dur={D}/><Dot x1={RX-6} x2={AX+8} y={84} t0={.14} t1={.22} dur={D}/><Show t0={.14} t1={.3} dur={D}><text x={RX+76} y="138" textAnchor="middle" className="fl" style={{fill:BLUE}}>HIT</text></Show>
 <Dot x1={AX+4} x2={RX-8} y={60} t0={.36} t1={.44} dur={D}/><Show t0={.44} t1={.62} dur={D}><text x={RX+76} y="138" textAnchor="middle" className="fl" style={{fill:RED}}>MISS</text></Show><Dot x1={RX-6} x2={AX+8} y={84} t0={.46} t1={.52} dur={D}/>
 <Dot x1={AX+4} x2={RX-8} y={204} t0={.54} t1={.62} dur={D}/><Glow x={RX} y={188} w={152} h={56} t0={.62} t1={.66} dur={D}/><Dot x1={RX-6} x2={AX+8} y={228} t0={.66} t1={.74} dur={D}/><Dot x1={AX+4} x2={RX-8} y={108} t0={.76} t1={.84} dur={D}/><Glow x={RX} y={44} w={152} h={80} t0={.84} t1={.9} dur={D}/></g>}</svg>}
 // Cache, FIG: the "cache restarts at dinner" challenge. 12,000 queries a second, 90% hits, 10% writes:
@@ -183,9 +183,9 @@ function CacheWarmFig({still,uid=""}){const D="10s",x=t=>80+t*11.5,y=q=>232-q*.0
 const load=[[0,BASE],[15,BASE],[15,ALL],[25,ALL],[35,BASE],[45,BASE]],path=load.map(([t,q],i)=>`${i?"L":"M"}${x(t)} ${y(q)}`).join("");
 const over=`M${x(15)} ${y(CAP)}L${x(15)} ${y(ALL)}L${x(25)} ${y(ALL)}L${x(25+10*(ALL-CAP)/(ALL-BASE))} ${y(CAP)}Z`;
 return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>Database queries a second during Zotato's dinner rush. With the cache working, the database sees about 2,300 a second, just under the 2,500 a db.m5.large handles. At 8:15 the cache crashes and every one of the 12,000 queries a second goes to the database for 10 minutes. When the cache returns at 8:25 it is empty, so the load falls back only as the cache warms up, reaching normal at 8:35. For about 20 minutes the database is asked for far more than it can handle.</title>
-{[0,5000,10000].map(q=><g key={q}><line x1={x(0)} x2={x(45)} y1={y(q)} y2={y(q)} stroke="#eef1f5"/><text x={x(0)-8} y={y(q)+4} textAnchor="end" className="fl">{q.toLocaleString("en-IN")}</text></g>)}
+{[0,5000,10000].map(q=><g key={q}><line x1={x(0)} x2={x(45)} y1={y(q)} y2={y(q)} stroke={GRID}/><text x={x(0)-8} y={y(q)+4} textAnchor="end" className="fl">{q.toLocaleString("en-IN")}</text></g>)}
 <text x="0" y="30" className="fl">database queries/s</text>
-<path d={over} fill="#fde3e1"/><line x1={x(0)} x2={x(45)} y1={y(CAP)} y2={y(CAP)} stroke={RED} strokeDasharray="4 3"/><text x={x(0)+4} y={y(CAP)-6} className="fl" style={{fill:RED}}>database limit · 2,500</text>
+<path d={over} fill={DANGER_SOFT}/><line x1={x(0)} x2={x(45)} y1={y(CAP)} y2={y(CAP)} stroke={RED} strokeDasharray="4 3"/><text x={x(0)+4} y={y(CAP)-6} className="fl" style={{fill:RED}}>database limit · 2,500</text>
 <path d={path} fill="none" stroke={INK} strokeWidth="2"/>
 <text x={(x(15)+x(25))/2} y={y(ALL)-10} textAnchor="middle" className="fl">cache down</text><text x={(x(25)+x(35))/2+14} y={y(7600)} className="fl">back, empty:</text><text x={(x(25)+x(35))/2+14} y={y(7600)+14} className="fl">warming up</text>
 <text x={x(1)} y={y(BASE)+18} className="fl">cache working: 90% hits</text>

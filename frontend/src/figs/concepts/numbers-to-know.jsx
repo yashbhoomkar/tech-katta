@@ -1,12 +1,12 @@
 // Concepts › Numbers to know: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "numbers").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // Bars use log scales.
-import React from"react";import{INK,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
+import{LINE_SOFT}from"../../theme/palette.js";import React from"react";import{INK,RED,BLUE,LB,LR,T,Fig}from"../parts.jsx";
 
 // A log-scale bar: label on the left, bar from x0 to sx(v), value text after it.
 const Bar=({y,label,v,sx,x0,t,c=BLUE})=><g><T x={10} y={y+13} t={label}/><rect x={x0} y={y} width={Math.max(2,sx(v)-x0)} height={18} fill={c===RED?LR:LB} stroke={c}/><T x={sx(v)+6} y={y+13} t={t} c={c}/></g>;
 
-const Axis=({sx,ticks,y})=><g>{ticks.map(([v,t])=><g key={t}><line x1={sx(v)} y1={48} x2={sx(v)} y2={y} stroke="#e3e7ec"/><T x={sx(v)} y={y+14} t={t} a="middle"/></g>)}</g>;
+const Axis=({sx,ticks,y})=><g>{ticks.map(([v,t])=><g key={t}><line x1={sx(v)} y1={48} x2={sx(v)} y2={y} stroke={LINE_SOFT}/><T x={sx(v)} y={y+14} t={t} a="middle"/></g>)}</g>;
 
 // FIG: what one machine offers today.
 function MachineFig({still,uid=""}){

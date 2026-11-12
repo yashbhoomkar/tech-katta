@@ -1,7 +1,7 @@
 // Concepts › Consistent hashing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "consistent-hashing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // Ring positions run 0–100 clockwise from the top, like the articles' 100-position ring.
-import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Cap,Caps,Show}from"../parts.jsx";
+import{BG,CAT_AMBER,CAT_GREEN,CAT_PINK,CAT_TEAL,CAT_VIOLET,GRID,LINE,ON_ACCENT,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Cap,Caps,Show}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=6})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
@@ -12,7 +12,7 @@ const Ring=({cx,cy,r})=><circle cx={cx} cy={cy} r={r} fill="none" stroke={GREY} 
 
 const Arc=({cx,cy,r,p1,p2,c=BLUE,w=6})=>{let q=p2<=p1?p2+100:p2;const[x1,y1]=pt(cx,cy,r,p1),[x2,y2]=pt(cx,cy,r,q);return <path d={`M${x1} ${y1}A${r} ${r} 0 ${q-p1>50?1:0} 1 ${x2} ${y2}`} fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" opacity="0.85"/>;};
 
-const Node=({cx,cy,r,p,t,c=INK,fill="#fff",nr=15})=>{const[x,y]=pt(cx,cy,r,p);return <g><circle cx={x} cy={y} r={nr} fill={fill} stroke={c} strokeWidth="1.5"/><text x={x} y={y+4} textAnchor="middle" className="fb" style={{fill:c,fontSize:nr<13?10:11}}>{t}</text></g>;};
+const Node=({cx,cy,r,p,t,c=INK,fill=BG,nr=15})=>{const[x,y]=pt(cx,cy,r,p);return <g><circle cx={x} cy={y} r={nr} fill={fill} stroke={c} strokeWidth="1.5"/><text x={x} y={y+4} textAnchor="middle" className="fb" style={{fill:c,fontSize:nr<13?10:11}}>{t}</text></g>;};
 
 const Key=({cx,cy,r,p,c=BLUE,t})=>{const[x,y]=pt(cx,cy,r,p);const[lx,ly]=pt(cx,cy,r-22,p);return <g><circle cx={x} cy={y} r={5} fill={c}/>{t&&<text x={lx} y={ly+3} textAnchor="middle" className="fl" style={{fill:c}}>{t}</text>}</g>;};
 
@@ -26,7 +26,7 @@ const nodes4=(skip)=><g>{DB4.map(([p,t])=>p!==skip&&<g key={t}><Lab {...C} p={p}
 
 // The hash ring, FIG 1: from one database to several.
 function ShardEventsFig({still,uid=""}){const M=`ce${uid}`;
-const db=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={440} y={44+i*62} w={190} h={46} t={`database ${i}`} s="a third of the matches" c={c} fill={fill}/>;
+const db=(i,c=GREY,fill=BG)=><Bx key={i+c} x={440} y={44+i*62} w={190} h={46} t={`database ${i}`} s="a third of the matches" c={c} fill={fill}/>;
 const base=<Bx x={10} y={102} w={130} h={46} t="app servers" s="match pages, bookings"/>;
 const s1=<g><Ar x1={142} y1={125} x2={436} y2={125} m={M}/><Bx x={440} y={102} w={190} h={46} t="one database" s="every match, every seat" c={RED} fill={LR}/><T x={290} y={118} t="fine at first; too busy later" a="middle" c={RED}/></g>;
 const s2=<g>{[0,1,2].map(i=>db(i))}</g>;
@@ -38,7 +38,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s2}{s3}{s4}</g>}/>}
 
 // The hash ring, FIG 2: modulo hashing.
 function ModuloFig({still,uid=""}){const M=`cm${uid}`;
-const db=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={520} y={50+i*48} w={110} h={38} t={`database ${i}`} c={c} fill={fill}/>;
+const db=(i,c=GREY,fill=BG)=><Bx key={i+c} x={520} y={50+i*48} w={110} h={38} t={`database ${i}`} c={c} fill={fill}/>;
 const base=<g>{[0,1,2].map(i=>db(i))}</g>;
 const s1=<g><Bx x={10} y={88} w={100} h={40} t="match 1234"/><Ar x1={112} y1={108} x2={136} y2={108} m={M}/><Bx x={140} y={88} w={80} h={40} t="hash()"/></g>;
 const s2=<g><Ar x1={222} y1={108} x2={246} y2={108} m={M}/><Bx x={250} y={88} w={110} h={40} t="8,671,204"/></g>;
@@ -52,11 +52,11 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function ModChangeFig({still,uid=""}){
 const H=[12,25,31,46,52,69],m3=H.map(h=>h%3),m4=H.map(h=>h%4),m2=H.map(h=>h%2);
 const X0=i=>130+i*84;
-const cell=(i,y,v,c=GREY,fill="#fff")=><Bx key={`${i}${y}${c}`} x={X0(i)} y={y} w={76} h={28} t={`db${v}`} c={c} fill={fill}/>;
+const cell=(i,y,v,c=GREY,fill=BG)=><Bx key={`${i}${y}${c}`} x={X0(i)} y={y} w={76} h={28} t={`db${v}`} c={c} fill={fill}/>;
 const base=<g>{H.map((h,i)=><T key={i} x={X0(i)+38} y={56} t={`match ${i+1}`} a="middle"/>)}</g>;
 const s1=<g><T x={10} y={82} t="% 3" b/><T x={10} y={96} t="three databases"/>{m3.map((v,i)=>cell(i,66,v))}</g>;
-const s2=<g><T x={10} y={132} t="% 4" b/><T x={10} y={146} t="one added"/>{m4.map((v,i)=>cell(i,116,v,v!==m3[i]?RED:GREY,v!==m3[i]?LR:"#fff"))}<T x={130} y={162} t="4 of 6 matches move, not just the ones the new database should take" c={RED}/></g>;
-const s3=<g><T x={10} y={196} t="% 2" b/><T x={10} y={210} t="db2 lost"/>{m2.map((v,i)=>cell(i,180,v,v!==m3[i]?RED:GREY,v!==m3[i]?LR:"#fff"))}<T x={130} y={226} t="none of these lived on db2, yet 3 of 6 move" c={RED}/></g>;
+const s2=<g><T x={10} y={132} t="% 4" b/><T x={10} y={146} t="one added"/>{m4.map((v,i)=>cell(i,116,v,v!==m3[i]?RED:GREY,v!==m3[i]?LR:BG))}<T x={130} y={162} t="4 of 6 matches move, not just the ones the new database should take" c={RED}/></g>;
+const s3=<g><T x={10} y={196} t="% 2" b/><T x={10} y={210} t="db2 lost"/>{m2.map((v,i)=>cell(i,180,v,v!==m3[i]?RED:GREY,v!==m3[i]?LR:BG))}<T x={130} y={226} t="none of these lived on db2, yet 3 of 6 move" c={RED}/></g>;
 const s4=<g><T x={130} y={246} t="only the keys of the database that changed should have to move" c={BLUE}/></g>;
 const caps=[["1 · six matches spread over three databases with hash % 3",INK],["2 · add a fourth database, and most matches change home",RED],["3 · lose a database, and the same happens again",RED],["4 · what we want: only the affected keys move",BLUE]];
 return <Fig still={still} h={256} id={`cht${uid}`} caps={caps} title="Changing the number of databases with modulo hashing. Six matches are spread over three databases with hash modulo 3. Adding a fourth database, so modulo 4, moves four of the six matches, not just the ones the new database should take. Losing database 2, so modulo 2, moves three of the six, although none of them lived on database 2. What we want is that only the keys of the database that changed have to move."
@@ -88,7 +88,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function RingRemoveFig({still,uid=""}){
 const base=<Ring {...C}/>;
 const db2=(c,fill)=><g><Lab {...C} p={25} t="25"/><Node {...C} p={25} t="DB2" c={c} fill={fill}/></g>;
-const s1=<g>{db2(INK,"#fff")}<Arc {...C} p1={0} p2={25} c={GREY}/><T x={300} y={70} t="DB2, at 25, owns 1–25"/></g>;
+const s1=<g>{db2(INK,BG)}<Arc {...C} p1={0} p2={25} c={GREY}/><T x={300} y={70} t="DB2, at 25, owns 1–25"/></g>;
 const s2=<g>{db2(RED,LR)}{(()=>{const[x,y]=pt(C.cx,C.cy,C.r,25);return <X x={x+18} y={y-16}/>;})()}<T x={300} y={104} t="DB2 fails" c={RED}/></g>;
 const s3=<g><Arc {...C} p1={0} p2={47} c={RED}/>{db2(RED,LR)}<T x={300} y={138} t="its keys walk on to DB3, at 50;" c={RED}/><T x={300} y={154} t="nobody else's keys move" c={INK}/></g>;
 const s4=<g><T x={300} y={190} t="but DB3 now owns 1–50:" c={RED}/><T x={300} y={206} t="twice the keys of DB1 or DB4" c={RED}/></g>;
@@ -114,7 +114,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Rings in practice, FIG 1: a hot key, salted.
 function SaltFig({still,uid=""}){
 const L={cx:150,cy:142,r:70},Rr={cx:470,cy:142,r:70},S=[0,17,33,50,67,83];
-const srv=(c,hot,cool)=>S.map((p,i)=><Node key={i+String(hot)+String(cool)} {...c} p={p} t={`S${i+1}`} nr={13} c={hot===i?RED:cool&&cool.includes(i)?BLUE:INK} fill={hot===i?LR:cool&&cool.includes(i)?LB:"#fff"}/>);
+const srv=(c,hot,cool)=>S.map((p,i)=><Node key={i+String(hot)+String(cool)} {...c} p={p} t={`S${i+1}`} nr={13} c={hot===i?RED:cool&&cool.includes(i)?BLUE:INK} fill={hot===i?LR:cool&&cool.includes(i)?LB:BG}/>);
 const base=<g><T x={10} y={52} t="one hot key" b/><T x={330} y={52} t="salted into ten keys" b/><Ring {...L}/><Ring {...Rr}/>{srv(L)}{srv(Rr)}</g>;
 const s1=<g><Key {...L} p={22} c={RED}/>{srv(L,2)}<T x={10} y={238} t="final-tickets → S3: 4 lakh reads/s" c={RED}/></g>;
 const s2=<g><T x={10} y={254} t="the ring spread the keys, not the traffic" c={INK}/></g>;
@@ -128,7 +128,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Rings in practice, FIG 2: replicas on the ring.
 function ReplicasFig({still,uid=""}){
 const S=[0,17,33,50,67,83];
-const srv=(st)=>S.map((p,i)=><Node key={i+JSON.stringify(st)} {...C} p={p} t={`S${i+1}`} nr={14} c={st[i]==="x"?RED:st[i]?BLUE:INK} fill={st[i]==="x"?LR:st[i]?LB:"#fff"}/>);
+const srv=(st)=>S.map((p,i)=><Node key={i+JSON.stringify(st)} {...C} p={p} t={`S${i+1}`} nr={14} c={st[i]==="x"?RED:st[i]?BLUE:INK} fill={st[i]==="x"?LR:st[i]?LB:BG}/>);
 const base=<g><Ring {...C}/>{srv({})}</g>;
 const s1=<g><Key {...C} p={9} t="K"/><Arc {...C} p1={9} p2={15}/>{srv({1:1})}<T x={300} y={70} t="key K hashes to 9: its owner is S2" c={BLUE}/></g>;
 const s2=<g><Arc {...C} p1={17} p2={48}/>{srv({1:1,2:1,3:1})}<T x={300} y={104} t="copies on the next two servers: S3, S4" c={BLUE}/><T x={300} y={120} t="(replication factor 3)"/></g>;
@@ -141,7 +141,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Consistent hashing, interactive: a ring you can change. Not a captioned loop like the others; it has state.
 const fnv=str=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;};
 
-const PAL=["#1c2733","#2855d9","#c8372d","#1f8a5b","#b7791f","#7c3aed","#0e7490","#be185d"];
+const PAL=[INK,BLUE,RED,CAT_GREEN,CAT_AMBER,CAT_VIOLET,CAT_TEAL,CAT_PINK];
 
 const NK=40,KEYS=Array.from({length:NK},(_,i)=>{const h=fnv(`match-${i}`);return{h,p:(h%10000)/100};});
 
@@ -152,7 +152,7 @@ const START={servers:[1,2,3,4],v:false,prev:null,msg:"Four servers, one point ea
 
 const Btn=({x,y,w,t,on,off,act})=>{const go=e=>{if(off)return;if(e.type==="click"||e.key==="Enter"||e.key===" "){e.preventDefault();on();}};
 return <g role="button" tabIndex={off?-1:0} aria-disabled={off||undefined} aria-pressed={act===undefined?undefined:act} onClick={go} onKeyDown={go} style={{cursor:off?"default":"pointer"}}>
-<rect x={x} y={y} width={w} height={26} rx={3} fill={off?"#f4f5f7":act?BLUE:LB} stroke={off?"#d5dae1":BLUE}/><text x={x+w/2} y={y+17} textAnchor="middle" className="fb" style={{fill:off?GREY:act?"#fff":BLUE}}>{t}</text></g>;};
+<rect x={x} y={y} width={w} height={26} rx={3} fill={off?SURFACE:act?BLUE:LB} stroke={off?LINE:BLUE}/><text x={x+w/2} y={y+17} textAnchor="middle" className="fb" style={{fill:off?GREY:act?ON_ACCENT:BLUE}}>{t}</text></g>;};
 
 function PlaygroundFig({uid=""}){const[st,set]=React.useState(START);const cur=place(st.servers,st.v);const R={cx:150,cy:162,r:104};
 const change=(servers,v,what)=>{const nx=place(servers,v);const moved=nx.own.reduce((n,o,i)=>n+(o!==cur.own[i]?1:0),0);
@@ -166,7 +166,7 @@ return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><ti
 <text x="10" y="26" className="fb" style={{fill:BLUE}}>Try it: change the servers and watch which keys move</text>
 <Ring {...R}/>
 {KEYS.map((k,i)=>{const[x,y]=pt(R.cx,R.cy,R.r-14,k.p);const mv=st.prev&&st.prev[i]!==cur.own[i];return <g key={i}>{mv&&<circle cx={x} cy={y} r={7.5} fill="none" stroke={RED} strokeWidth="2"/>}<circle cx={x} cy={y} r={4} fill={PAL[cur.own[i]-1]}/></g>;})}
-{cur.pts.map((q,i)=>{const[x,y]=pt(R.cx,R.cy,R.r+4,q.p);return <g key={i}><circle cx={x} cy={y} r={st.v?7:10} fill={PAL[q.s-1]}/><text x={x} y={y+(st.v?3:4)} textAnchor="middle" className="fb" style={{fill:"#fff",fontSize:st.v?8:10}}>{q.s}</text></g>;})}
+{cur.pts.map((q,i)=>{const[x,y]=pt(R.cx,R.cy,R.r+4,q.p);return <g key={i}><circle cx={x} cy={y} r={st.v?7:10} fill={PAL[q.s-1]}/><text x={x} y={y+(st.v?3:4)} textAnchor="middle" className="fb" style={{fill:ON_ACCENT,fontSize:st.v?8:10}}>{q.s}</text></g>;})}
 <Btn x={310} y={48} w={100} t="+ add server" on={add} off={!next}/><Btn x={416} y={48} w={100} t="− remove last" on={drop} off={st.servers.length<=2}/><Btn x={522} y={48} w={108} t="S2 fails" on={fail} off={!st.servers.includes(2)||st.servers.length<=2}/>
 <Btn x={310} y={82} w={170} t={st.v?"virtual nodes: on (6 each)":"virtual nodes: off"} on={vn} act={st.v}/><Btn x={486} y={82} w={80} t="reset" on={()=>set(START)}/>
 <g aria-live="polite"><text x="310" y="134" className="fb">{st.msg}</text>
@@ -182,7 +182,7 @@ return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><ti
 function HashMoveFig({still,uid=""}){const D="14s",K=[2,4,9,10,11,13,28,36,42,44,50,53,56,63,65,69,70,76,77,83],L="ABCDE",x=i=>20+i*30;
 const ring=k=>k<=10||k>85?"A":k<=35?"B":k<=60?"C":"D",ring5=k=>k>60&&k<=72?"E":ring(k);
 const caps=[["1 · 20 carts hashed to 0–99; with 4 servers, each cart lives on server hash % 4",INK],["2 · a fifth server, so hash % 5: 16 of the 20 carts now belong somewhere else",RED],["3 · on a ring, each server owns the hashes up to its point: 10, 35, 60 and 85",INK],["4 · E joins at 72 and takes only 61–72 from D: 4 carts move, the other 16 stay",BLUE]];
-const cells=(y,f,cls="fb")=><g>{K.map((k,i)=>{const[t,c]=f(k);return <g key={i}><rect x={x(i)} y={y} width="26" height="24" fill={c===RED?"#fff5f4":c===BLUE?"#f8faff":"#fff"} stroke={c||GREY} strokeWidth={c?1.5:1}/><text x={x(i)+13} y={y+16} textAnchor="middle" className={cls} style={c?{fill:c}:undefined}>{t}</text></g>})}</g>;
+const cells=(y,f,cls="fb")=><g>{K.map((k,i)=>{const[t,c]=f(k);return <g key={i}><rect x={x(i)} y={y} width="26" height="24" fill={c===RED?LR:c===BLUE?LB:BG} stroke={c||GREY} strokeWidth={c?1.5:1}/><text x={x(i)+13} y={y+16} textAnchor="middle" className={cls} style={c?{fill:c}:undefined}>{t}</text></g>})}</g>;
 const lab=(y,t,r,c)=><g><text x="20" y={y} className="fl">{t}</text>{r&&<text x="616" y={y} textAnchor="end" className="fl" style={{fill:c}}>{r}</text>}</g>;
 const r01=<g>{lab(50,"20 carts, each hashed to a number from 0 to 99")}{cells(58,k=>[k],"fl")}{lab(104,"4 servers · hash % 4")}{cells(112,k=>[L[k%4]])}</g>;
 const r2=<g>{lab(158,"5 servers · hash % 5","16 of 20 move",RED)}{cells(166,k=>[L[k%5],k%5!==k%4?RED:null])}</g>;
@@ -199,9 +199,9 @@ const at=(cx,a,r=R)=>[cx+r*Math.sin(a*Math.PI/180),CY-r*Math.cos(a*Math.PI/180)]
 const arc=(cx,a1,a2,c)=>{const[x1,y1]=at(cx,a1),[x2,y2]=at(cx,a2);return <path d={`M${x1} ${y1}A${R} ${R} 0 ${a2-a1>180?1:0} 1 ${x2} ${y2}`} fill="none" stroke={c} strokeWidth="6" strokeOpacity=".45"/>};
 const P1=[[20,"A"],[60,"B"],[200,"C"],[290,"D"]];
 const P2=[[0,"C"],[12,"A"],[30,"B"],[42,"C"],[63,"A"],[75,"C"],[90,"D"],[105,"B"],[117,"A"],[132,"C"],[147,"B"],[165,"A"],[177,"B"],[192,"D"],[207,"C"],[222,"D"],[240,"A"],[255,"D"],[267,"A"],[288,"D"],[300,"B"],[318,"C"],[333,"B"],[348,"D"]];
-const big=(cx,[a,n],down)=>{const[x,y]=at(cx,a);return <g key={a}><circle cx={x} cy={y} r="11" fill={down?"#fff5f4":"#fff"} stroke={down?RED:INK} strokeDasharray={down?"3 2":undefined}/><text x={x} y={y+4} textAnchor="middle" className="fb" style={down?{fill:RED}:undefined}>{n}</text></g>};
-const small=(cx,[a,n],down)=>{const[x,y]=at(cx,a),[lx,ly]=at(cx,a,R+13);return <g key={a}><circle cx={x} cy={y} r="3.5" fill={down?"#fff":INK} stroke={down?RED:INK}/><text x={lx} y={ly+3.5} textAnchor="middle" className="fl" style={down?{fill:RED}:undefined}>{n}</text></g>};
-const table=(x0,S)=><g><text x={x0+174} y="96" className="fl">share</text>{"ABCD".split("").map((n,i)=><g key={n}><text x={x0+160} y={120+i*22} className="fb">{n}</text><rect x={x0+174} y={111+i*22} width={S[i]} height="10" fill="#eef1f5" stroke={GREY}/><text x={x0+230} y={120+i*22} className="fl">{S[i]}%</text></g>)}</g>;
+const big=(cx,[a,n],down)=>{const[x,y]=at(cx,a);return <g key={a}><circle cx={x} cy={y} r="11" fill={down?LR:BG} stroke={down?RED:INK} strokeDasharray={down?"3 2":undefined}/><text x={x} y={y+4} textAnchor="middle" className="fb" style={down?{fill:RED}:undefined}>{n}</text></g>};
+const small=(cx,[a,n],down)=>{const[x,y]=at(cx,a),[lx,ly]=at(cx,a,R+13);return <g key={a}><circle cx={x} cy={y} r="3.5" fill={down?BG:INK} stroke={down?RED:INK}/><text x={lx} y={ly+3.5} textAnchor="middle" className="fl" style={down?{fill:RED}:undefined}>{n}</text></g>};
+const table=(x0,S)=><g><text x={x0+174} y="96" className="fl">share</text>{"ABCD".split("").map((n,i)=><g key={n}><text x={x0+160} y={120+i*22} className="fb">{n}</text><rect x={x0+174} y={111+i*22} width={S[i]} height="10" fill={GRID} stroke={GREY}/><text x={x0+230} y={120+i*22} className="fl">{S[i]}%</text></g>)}</g>;
 const after=(x0,Sb,c)=><g><text x={x0+262} y="96" className="fl" style={{fill:c}}>B down</text>{Sb.map((v,i)=><text key={i} x={x0+262} y={120+i*22} className="fl" style={{fill:v==null?RED:c}}>{v==null?"—":v+"%"}</text>)}</g>;
 const left=<g><text x="10" y="52" className="fb">One point per server</text><text x="10" y="68" className="fl">each owns the arc up to its point</text><circle cx="75" cy={CY} r={R} fill="none" stroke={GREY}/>{arc(75,60,200,BLUE)}{P1.map(p=>big(75,p))}{table(0,[25,11,39,25])}</g>;
 const right=<g><text x="340" y="52" className="fb">Six points per server</text><text x="340" y="68" className="fl">the same four servers, mixed</text><circle cx="405" cy={CY} r={R} fill="none" stroke={GREY}/>{P2.map(p=>small(405,p))}{table(330,[26,24,23,27])}</g>;

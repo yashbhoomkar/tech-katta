@@ -1,10 +1,10 @@
 // Concepts › Real-time updates: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "realtime").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,T,Fig}from"../parts.jsx";
+import{BG}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,T,Fig}from"../parts.jsx";
 
 // Real-time in an interview: two hops.
 function TwoHopsFig({still,uid=""}){const M=`rh${uid}`;
-const cs=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={330} y={48+i*60} w={140} h={40} t={`connection server ${i+1}`} s={i===1?"holds Ravi's socket":"other users"} c={c} fill={fill}/>;
+const cs=(i,c=GREY,fill=BG)=><Bx key={i+c} x={330} y={48+i*60} w={140} h={40} t={`connection server ${i+1}`} s={i===1?"holds Ravi's socket":"other users"} c={c} fill={fill}/>;
 const base=<g>{[0,1,2].map(i=>cs(i))}</g>;
 const s1=<g><Bx x={10} y={108} w={100} h={40} t="Asha" s="sends 'hi'"/><Ar x1={112} y1={128} x2={146} y2={128} m={M}/><Bx x={150} y={108} w={130} h={40} t="chat service" s="has the message"/></g>;
 const s2=<g><Ar x1={282} y1={128} x2={326} y2={128} m={M} c={BLUE} w={2}/>{cs(1,BLUE,LB)}<T x={150} y={182} t="hop 2: from the source" c={BLUE} b/><T x={150} y={198} t="to the right server" c={BLUE}/></g>;
@@ -31,7 +31,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Second hop: route by hashing the user.
 function HashRouteFig({still,uid=""}){const M=`rr${uid}`;
-const sv=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={300} y={44+i*50} w={140} h={36} t={`connection server ${i+1}`} c={c} fill={fill}/>;
+const sv=(i,c=GREY,fill=BG)=><Bx key={i+c} x={300} y={44+i*50} w={140} h={36} t={`connection server ${i+1}`} c={c} fill={fill}/>;
 const base=<g>{[0,1,2,3].map(i=>sv(i))}</g>;
 const s1=<g><Bx x={500} y={144} w={130} h={36} t="Ravi's phone"/><Ar x1={498} y1={162} x2={444} y2={162} m={M} dash/><T x={630} y={132} t="connects to hash(ravi) → 3" a="end"/>{sv(2,BLUE,LB)}</g>;
 const s2=<g><Bx x={10} y={144} w={150} h={36} t="chat service" s="message for Ravi"/><T x={10} y={132} t="hash(ravi) → server 3" c={BLUE}/><Ar x1={162} y1={162} x2={296} y2={162} m={M} c={BLUE} w={2}/></g>;
@@ -43,9 +43,9 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Second hop: pub/sub channels.
 function PubSubFig({still,uid=""}){const M=`ru${uid}`;
-const sv=(i,sub,c=GREY,fill="#fff")=><Bx key={i+c+sub} x={460} y={44+i*70} w={170} h={44} t={`server ${i+1}`} s={sub} c={c} fill={fill}/>;
+const sv=(i,sub,c=GREY,fill=BG)=><Bx key={i+c+sub} x={460} y={44+i*70} w={170} h={44} t={`server ${i+1}`} s={sub} c={c} fill={fill}/>;
 const SUB=["user:asha, user:dev","user:ravi, room:42","user:meera"];
-const base=<g><rect x={220} y={84} width={170} height={96} fill="#fff" stroke={GREY}/><T x={230} y={102} t="pub/sub broker" b/>{["user:ravi","user:asha","room:42","user:meera"].map((t,i)=><T key={t} x={230} y={120+i*15} t={t}/>)}{[0,1,2].map(i=>sv(i,SUB[i]))}</g>;
+const base=<g><rect x={220} y={84} width={170} height={96} fill={BG} stroke={GREY}/><T x={230} y={102} t="pub/sub broker" b/>{["user:ravi","user:asha","room:42","user:meera"].map((t,i)=><T key={t} x={230} y={120+i*15} t={t}/>)}{[0,1,2].map(i=>sv(i,SUB[i]))}</g>;
 const s1=<g>{[0,1,2].map(i=><Ar key={i} x1={458} y1={66+i*70} x2={394} y2={110+i*20} m={M} dash/>)}<T x={305} y={76} t="subscriptions" a="middle"/></g>;
 const s2=<g><Bx x={10} y={110} w={150} h={44} t="chat service" s="publish user:ravi"/><Ar x1={162} y1={132} x2={216} y2={132} m={M} c={BLUE} w={2}/><rect x={226} y={109} width={70} height={15} fill="none" stroke={BLUE}/></g>;
 const s3=<g><Ar x1={394} y1={124} x2={456} y2={136} m={M} c={BLUE} w={2}/>{sv(1,SUB[1],BLUE,LB)}</g>;
@@ -56,7 +56,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Deep dives: one update to crores of viewers.
 function CelebrityFig({still,uid=""}){const M=`rc${uid}`;
-const sv=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={370} y={44+i*48} w={120} h={34} t={`server ${i+1}`} c={c} fill={fill}/>;
+const sv=(i,c=GREY,fill=BG)=><Bx key={i+c} x={370} y={44+i*48} w={120} h={34} t={`server ${i+1}`} c={c} fill={fill}/>;
 const base=<g>{[0,1,2,3].map(i=>sv(i))}<T x={430} y={244} t="… hundreds more" a="middle"/></g>;
 const s1=<g><Bx x={10} y={110} w={120} h={44} t="wicket!" s="score service"/><Ar x1={132} y1={132} x2={176} y2={132} m={M} c={BLUE} w={2}/><Bx x={180} y={110} w={140} h={44} t="topic match:final" s="published once" c={BLUE} fill={LB}/></g>;
 const s2=<g>{[0,1,2,3].map(i=><Ar key={i} x1={322} y1={132} x2={366} y2={61+i*48} m={M} c={BLUE}/>)}{[0,1,2,3].map(i=>sv(i,BLUE,LB))}<T x={180} y={184} t="one message per server," c={BLUE}/><T x={180} y={200} t="not one per viewer" c={BLUE}/></g>;
@@ -68,7 +68,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Deep dives: ordering with sequence numbers.
 function OrderingFig({still,uid=""}){const M=`ro${uid}`;
-const base=<g><Bx x={10} y={100} w={100} h={44} t="Asha"/><Bx x={140} y={100} w={150} h={44} t="chat service" s="numbers each message"/><Bx x={330} y={52} w={120} h={40} t="server A" s="slow just now"/><Bx x={330} y={150} w={120} h={40} t="server B"/><rect x={490} y={70} width={140} height={110} fill="#fff" stroke={GREY}/><T x={500} y={88} t="Ravi's phone" b/></g>;
+const base=<g><Bx x={10} y={100} w={100} h={44} t="Asha"/><Bx x={140} y={100} w={150} h={44} t="chat service" s="numbers each message"/><Bx x={330} y={52} w={120} h={40} t="server A" s="slow just now"/><Bx x={330} y={150} w={120} h={40} t="server B"/><rect x={490} y={70} width={140} height={110} fill={BG} stroke={GREY}/><T x={500} y={88} t="Ravi's phone" b/></g>;
 const s1=<g><Ar x1={112} y1={122} x2={136} y2={122} m={M}/><T x={140} y={168} t="#17 'free tonight?'" c={INK}/><T x={140} y={184} t="#18 'or tomorrow?'" c={INK}/></g>;
 const s2=<g><Ar x1={292} y1={130} x2={326} y2={168} m={M} c={RED}/><Ar x1={452} y1={170} x2={486} y2={150} m={M} c={RED}/><T x={500} y={110} t="#18 arrives first" c={RED}/></g>;
 const s3=<g><Ar x1={292} y1={114} x2={326} y2={76} m={M}/><Ar x1={452} y1={72} x2={486} y2={96} m={M}/><T x={500} y={126} t="#17 arrives" c={INK}/></g>;

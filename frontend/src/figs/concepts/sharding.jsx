@@ -1,16 +1,16 @@
 // Concepts › Sharding: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "sharding").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Show,Mark,Box,Line,SBox,Dot,Glow}from"../parts.jsx";
+import{ACCENT_MID,BG,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Show,Mark,Box,Line,SBox,Dot,Glow}from"../parts.jsx";
 
 // Sharding in an interview: scale up hits a ceiling, scale out keeps growing.
 function CeilingFig({still,uid=""}){
-const up=(i,h,t,c=GREY,fill="#fff")=><g key={i+c}><rect x={30+i*80} y={220-h} width={60} height={h} fill={fill} stroke={c}/><T x={60+i*80} y={236} t={t} a="middle"/></g>;
-const base=<g><T x={10} y={52} t="scale up: a bigger machine" b/><T x={350} y={52} t="scale out: more machines" b/><line x1={330} y1={44} x2={330} y2={240} stroke="#e3e7ec"/></g>;
+const up=(i,h,t,c=GREY,fill=BG)=><g key={i+c}><rect x={30+i*80} y={220-h} width={60} height={h} fill={fill} stroke={c}/><T x={60+i*80} y={236} t={t} a="middle"/></g>;
+const base=<g><T x={10} y={52} t="scale up: a bigger machine" b/><T x={350} y={52} t="scale out: more machines" b/><line x1={330} y1={44} x2={330} y2={240} stroke={LINE_SOFT}/></g>;
 const s1=up(0,50,"8 cores");
 const s2=<g>{up(1,100,"32 cores")}{up(2,140,"128 cores",RED,LR)}<line x1={10} y1={80} x2={310} y2={80} stroke={RED} strokeDasharray="5 4" strokeWidth="2"/><T x={10} y={74} t="one machine's ceiling" c={RED}/></g>;
 const sh=n=>Array.from({length:n},(_,i)=><rect key={i} x={350+i*35} y={140} width={29} height={80} fill={LB} stroke={BLUE}/>);
 const s3=<g>{sh(2)}<T x={350} y={236} t="2 shards" c={BLUE}/></g>;
-const s4=<g>{sh(8)}<rect x={348} y={234-12} width={120} height={16} fill="#fff"/><T x={350} y={236} t="8 shards, and room for more" c={BLUE}/><T x={350} y={126} t="storage and throughput grow with each shard" c={BLUE}/></g>;
+const s4=<g>{sh(8)}<rect x={348} y={234-12} width={120} height={16} fill={BG}/><T x={350} y={236} t="8 shards, and room for more" c={BLUE}/><T x={350} y={126} t="storage and throughput grow with each shard" c={BLUE}/></g>;
 const caps=[["1 · a growing product first moves its database to a bigger machine",INK],["2 · that works for a while, but one machine has a ceiling",RED],["3 · splitting the data across machines shares the work",BLUE],["4 · capacity then grows with the number of machines",BLUE]];
 return <Fig still={still} h={246} id={`sct${uid}`} caps={caps} title="Scaling up versus scaling out. A growing database first moves to bigger machines, from 8 cores to 32 to 128, but one machine has a ceiling. Splitting the data across machines, first two shards and then eight, lets storage and throughput grow with each shard added."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
@@ -18,7 +18,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Partitioning and sharding: monthly partitions inside one database.
 function PartitionFig({still,uid=""}){
 const P=["2022","2023","2024","Jan–Sep","October","November"];
-const chip=(i,c=GREY,fill="#fff",s="partition")=><Bx key={i+c+s} x={310+(i%3)*106} y={84+Math.floor(i/3)*58} w={98} h={44} t={P[i]} s={s} c={c} fill={fill}/>;
+const chip=(i,c=GREY,fill=BG,s="partition")=><Bx key={i+c+s} x={310+(i%3)*106} y={84+Math.floor(i/3)*58} w={98} h={44} t={P[i]} s={s} c={c} fill={fill}/>;
 const s1=<g><Bx x={10} y={60} w={240} h={140} t="orders" s="50 crore rows · 2 TB" c={RED} fill={LR}/><T x={10} y={222} t="October's orders: searches all 2 TB" c={RED}/></g>;
 const s2=<g><rect x={300} y={56} width={330} height={150} fill="none" stroke={GREY}/><T x={310} y={74} t="the same database: orders, partitioned by month" b/>{P.map((_,i)=>chip(i))}</g>;
 const s3=<g>{chip(4,BLUE,LB,"read")}<T x={310} y={222} t="October's orders: one partition" c={BLUE}/></g>;
@@ -30,7 +30,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Partitioning and sharding: vertical partitioning by columns.
 function VerticalFig({still,uid=""}){
 const C=[["id",60],["status",80],["total",70],["placed_at",90],["instructions",140],["receipt_text",160]];
-const row=(y,cols,x0,c=GREY,fill="#fff")=>{let x=x0;return cols.map(([t,w],i)=>{const e=<Bx key={t+y+c} x={x} y={y} w={w} h={30} t={t} c={c} fill={fill}/>;x+=w;return e;});};
+const row=(y,cols,x0,c=GREY,fill=BG)=>{let x=x0;return cols.map(([t,w],i)=>{const e=<Bx key={t+y+c} x={x} y={y} w={w} h={30} t={t} c={c} fill={fill}/>;x+=w;return e;});};
 const s1=<g><T x={20} y={54} t="orders: one wide table" b/>{row(62,C,20)}</g>;
 const s2=<g><T x={20} y={124} t="orders: small, read on every screen" c={BLUE}/>{row(132,C.slice(0,4),20,BLUE,LB)}</g>;
 const s3=<g><T x={340} y={124} t="order_details: large, rarely read"/>{row(132,[["id",60],["instructions",110],["receipt_text",120]],340)}</g>;
@@ -42,7 +42,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Partitioning and sharding: rows split over three machines.
 function ShardsFig({still,uid=""}){const M=`ss${uid}`;
 const R=["ids 1 – 10 crore","10 – 20 crore","20 – 30 crore"];
-const sh=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={440} y={44+i*60} w={190} h={48} t={`shard ${i+1}`} s={R[i]} c={c} fill={fill}/>;
+const sh=(i,c=GREY,fill=BG)=><Bx key={i+c} x={440} y={44+i*60} w={190} h={48} t={`shard ${i+1}`} s={R[i]} c={c} fill={fill}/>;
 const s1=<g><Bx x={440} y={104} w={190} h={48} t="one database" s="all 30 crore orders" c={RED} fill={LR}/></g>;
 const s2=<g>{[0,1,2].map(i=>sh(i))}</g>;
 const s3=<g>{[0,1,2].map(i=>sh(i))}<Bx x={10} y={104} w={160} h={48} t="app" s="GET order 15,20,00,000"/><Ar x1={172} y1={128} x2={436} y2={128} m={M} c={BLUE} w={2}/>{sh(1,BLUE,LB)}<T x={300} y={120} t="routed by id" a="middle" c={BLUE}/></g>;
@@ -54,7 +54,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 // Shard keys and strategies: range sharding.
 function RangeFig({still,uid=""}){const M=`sr${uid}`;
 const R=["1 – 10 lakh","10 – 20 lakh","20 – 30 lakh","30 – 40 lakh"];
-const sh=(i,c=GREY,fill="#fff",s=R[i])=><Bx key={i+c+s} x={10+i*157} y={66} w={150} h={46} t={`shard ${i+1}`} s={s} c={c} fill={fill}/>;
+const sh=(i,c=GREY,fill=BG,s=R[i])=><Bx key={i+c+s} x={10+i*157} y={66} w={150} h={46} t={`shard ${i+1}`} s={s} c={c} fill={fill}/>;
 const s1=<g><T x={10} y={56} t="customers sharded by id range" b/>{[0,1,2,3].map(i=>sh(i))}</g>;
 const s2=<g><rect x={66} y={116} width={22} height={6} fill={BLUE}/><T x={10} y={140} t="customers 5–6 lakh: one shard" c={BLUE}/></g>;
 const s3=<g>{sh(3,RED,LR,"every new sign-up")}<Ar x1={556} y1={168} x2={556} y2={116} m={M} c={RED} w={2}/><T x={556} y={182} t="new customers" a="middle" c={RED}/><T x={300} y={140} t="the newest range takes all new writes" c={RED}/></g>;
@@ -67,21 +67,21 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 function HashModFig({still,uid=""}){
 const H=[17,42,9,30,55,23,61,8,34,47,12,26],m4=H.map(h=>h%4),m5=H.map(h=>h%5),ring=m4.map((s,i)=>i===4||i===9?4:s);
 const X0=i=>96+i*44;
-const cell=(i,y,v,c=GREY,fill="#fff")=><Bx key={`${i}${y}${c}`} x={X0(i)} y={y} w={40} h={26} t={`s${v}`} c={c} fill={fill}/>;
+const cell=(i,y,v,c=GREY,fill=BG)=><Bx key={`${i}${y}${c}`} x={X0(i)} y={y} w={40} h={26} t={`s${v}`} c={c} fill={fill}/>;
 const base=<g>{H.map((h,i)=><T key={i} x={X0(i)+20} y={60} t={`c${i+1}`} a="middle"/>)}</g>;
 const s1=<g><T x={10} y={88} t="hash % 4" b/>{m4.map((v,i)=>cell(i,70,v))}</g>;
 const s2=<g><T x={10} y={128} t="hash % 5" b/>{m5.map((v,i)=>cell(i,110,v))}</g>;
 const s3=<g>{m5.map((v,i)=>v!==m4[i]&&cell(i,110,v,RED,LR))}<T x={96} y={154} t="9 of 12 customers changed shard: most of the data moves" c={RED}/></g>;
-const s4=<g><T x={10} y={188} t="ring or" b/><T x={10} y={202} t="buckets" b/>{ring.map((v,i)=>cell(i,176,v,v===4?BLUE:GREY,v===4?LB:"#fff"))}<T x={96} y={220} t="only 2 of 12 move, both to the new shard s4" c={BLUE}/></g>;
+const s4=<g><T x={10} y={188} t="ring or" b/><T x={10} y={202} t="buckets" b/>{ring.map((v,i)=>cell(i,176,v,v===4?BLUE:GREY,v===4?LB:BG))}<T x={96} y={220} t="only 2 of 12 move, both to the new shard s4" c={BLUE}/></g>;
 const caps=[["1 · twelve customers spread over four shards with hash % 4",INK],["2 · a fifth shard is added, so the rule becomes hash % 5",INK],["3 · almost every customer now maps to a different shard",RED],["4 · with a ring or fixed buckets, only the share the new shard takes moves",BLUE]];
 return <Fig still={still} h={228} id={`smt${uid}`} caps={caps} title="Adding a fifth shard. Twelve customers are spread over four shards with hash modulo 4. When the rule becomes hash modulo 5, nine of the twelve customers map to a different shard, so most of the data has to move. With consistent hashing or fixed buckets, only the customers the new shard takes over move: two of twelve, both to the new shard."
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Shard keys and strategies: directory sharding.
 function DirectoryFig({still,uid=""}){const M=`sd${uid}`;
-const sh=(i,c=GREY,fill="#fff")=><Bx key={i+c} x={470} y={44+i*42} w={160} h={34} t={`shard ${i+1}`} c={c} fill={fill}/>;
-const base=<g><Bx x={10} y={80} w={120} h={44} t="app"/><rect x={210} y={60} width={200} height={90} fill="#fff" stroke={GREY}/><T x={220} y={78} t="directory" b/><T x={220} y={98} t="customer 15  → shard 1"/><T x={220} y={134} t="customer 204 → shard 2"/>{[0,1,2,3].map(i=>sh(i))}</g>;
-const r87=(t,c)=><g key={t}><rect x={214} y={104} width={192} height={16} fill="#fff"/><T x={220} y={116} t={t} c={c}/></g>;
+const sh=(i,c=GREY,fill=BG)=><Bx key={i+c} x={470} y={44+i*42} w={160} h={34} t={`shard ${i+1}`} c={c} fill={fill}/>;
+const base=<g><Bx x={10} y={80} w={120} h={44} t="app"/><rect x={210} y={60} width={200} height={90} fill={BG} stroke={GREY}/><T x={220} y={78} t="directory" b/><T x={220} y={98} t="customer 15  → shard 1"/><T x={220} y={134} t="customer 204 → shard 2"/>{[0,1,2,3].map(i=>sh(i))}</g>;
+const r87=(t,c)=><g key={t}><rect x={214} y={104} width={192} height={16} fill={BG}/><T x={220} y={116} t={t} c={c}/></g>;
 const s1=<g>{r87("customer 87  → shard 4",BLUE)}<Ar x1={132} y1={102} x2={206} y2={102} m={M} c={BLUE}/><T x={170} y={96} t="87?" a="middle" c={BLUE}/></g>;
 const s2=<g><Ar x1={412} y1={112} x2={466} y2={170} m={M} c={BLUE} w={2}/>{sh(3,BLUE,LB)}</g>;
 const s3=<g>{r87("customer 87  → shard 2",BLUE)}{sh(1,BLUE,LB)}<T x={210} y={170} t="moving a customer: change one row" c={BLUE}/></g>;
@@ -92,7 +92,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 
 // Sharding problems: scatter-gather across shards, and a cache.
 function ScatterFig({still,uid=""}){const M=`sg${uid}`;
-const sh=(i,c=GREY,fill="#fff",s)=><Bx key={i+c} x={440+(i%2)*100} y={44+Math.floor(i/2)*44} w={90} h={34} t={`shard ${i+1}`} s={s} c={c} fill={fill}/>;
+const sh=(i,c=GREY,fill=BG,s)=><Bx key={i+c} x={440+(i%2)*100} y={44+Math.floor(i/2)*44} w={90} h={34} t={`shard ${i+1}`} s={s} c={c} fill={fill}/>;
 const base=<g><Bx x={10} y={100} w={120} h={44} t="app" s="top 10 dishes"/>{Array.from({length:8},(_,i)=>sh(i))}<T x={440} y={232} t="… and 56 more shards"/></g>;
 const fan=c=>Array.from({length:8},(_,i)=><Ar key={i+c} x1={132} y1={122} x2={436} y2={61+Math.floor(i/2)*44+(i%2?0:-6)} m={M} c={c}/>);
 const g1=<g>{fan(INK)}</g>;
@@ -127,7 +127,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`hst${uid}`}><titl
 <line x1="60" y1={B-100*U} x2="600" y2={B-100*U} stroke={RED} strokeDasharray="4 3"/><text x="600" y={B-100*U-6} textAnchor="end" className="fl" style={{fill:RED}}>capacity</text>
 <line x1="60" y1={B} x2="600" y2={B} stroke={GREY}/>
 {X.map((x,i)=>{const H=h(i),v=[H[0],H[0],H[1],H[1],H[2],H[2]];const shown=still?H[1]:H[0];const hot=i===2;
-return <g key={i}><rect x={x} y={B-shown} width="90" height={shown} rx="2" fill={hot&&still?RED:"#9db3ef"}>{!still&&<><animate attributeName="height" values={v.join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/><animate attributeName="y" values={v.map(q=>B-q).join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/>{hot&&<animate attributeName="fill" values="#9db3ef;#9db3ef;#c8372d;#c8372d;#9db3ef;#9db3ef" keyTimes={kt} dur={D} repeatCount="indefinite"/>}</>}</rect>
+return <g key={i}><rect x={x} y={B-shown} width="90" height={shown} rx="2" fill={hot&&still?RED:ACCENT_MID}>{!still&&<><animate attributeName="height" values={v.join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/><animate attributeName="y" values={v.map(q=>B-q).join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/>{hot&&<animate attributeName="fill" values={[ACCENT_MID,ACCENT_MID,RED,RED,ACCENT_MID,ACCENT_MID].join(";")} keyTimes={kt} dur={D} repeatCount="indefinite"/>}</>}</rect>
 <text x={x+45} y={B+18} textAnchor="middle" className="fb">Shard {i+1}</text>
 {(still?[1]:[0,1,2]).map(k=>{const t=<text key={k} x={x+45} y={B-phases[k][i]*U-6} textAnchor="middle" className="fl" style={k===1&&hot?{fill:RED}:undefined}>{phases[k][i]}%</text>;return still?t:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{t}</Show>})}</g>})}
 {(still?[1]:[0,1,2]).map(k=>{const t=[["7 pm · orders spread evenly",""],["8 pm, IND vs PAK · one biryani chain = 30% of orders","every one of them on shard 3, which slows down"],["Fix · split the chain over 8 sub-keys","restaurant_id + (order_id % 8)"]][k];const g=<g key={k}><text x="10" y="24" className="fb" style={k===1?{fill:RED}:undefined}>{t[0]}</text><text x="10" y="42" className="fl">{t[1]}</text></g>;return still?g:<Show key={k} t0={[0,.33,.66][k]} t1={[.3,.63,1][k]} dur={D}>{g}</Show>})}</svg>}
@@ -143,7 +143,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`shkt${uid}`}><tit
 <Show t0={0} t1={.44} dur={D}><text x="10" y="30" className="fb">"My orders" · customer 77</text><text x="10" y="48" className="fl">the key is in the query</text></Show>
 <Dot x1={112} x2={166} y={150} t0={.03} t1={.09} dur={D}/><Glow x={170} y={133} w={150} h={34} t0={.09} t1={.15} dur={D}/>
 <Dot x1={322} x2={426} y={150} y2={180} t0={.15} t1={.24} dur={D}/><Glow x={430} y={168} w={200} h={24} t0={.24} t1={.36} dur={D}/>
-<Show t0={.26} t1={.44} dur={D}><text x="245" y="230" textAnchor="middle" className="fl" style={{fill:"#2855d9"}}>1 shard asked · fast</text></Show>
+<Show t0={.26} t1={.44} dur={D}><text x="245" y="230" textAnchor="middle" className="fl" style={{fill:BLUE}}>1 shard asked · fast</text></Show>
 <Show t0={.5} t1={.96} dur={D}><text x="10" y="30" className="fb">Restaurant 12 · today's orders</text><text x="10" y="48" className="fl">no customer_id in the query</text></Show>
 <Dot x1={112} x2={166} y={150} t0={.52} t1={.58} dur={D}/><Glow x={170} y={133} w={150} h={34} t0={.58} t1={.64} dur={D}/>
 {YS.map((y,i)=><g key={i}><Dot x1={322} x2={426} y={150} y2={y} t0={.64} t1={.73} dur={D}/><Glow x={430} y={y-12} w={200} h={24} t0={.73} t1={.85} dur={D}/></g>)}

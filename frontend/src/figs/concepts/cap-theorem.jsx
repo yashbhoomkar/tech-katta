@@ -1,10 +1,10 @@
 // Concepts › CAP theorem: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "cap").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,SBox,Line,Mark,Dot,Glow,Show}from"../parts.jsx";
+import{BG,FB,LINE_SOFT,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,SBox,Line,Mark,Dot,Glow,Show}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=8})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
-const srv=(x,t,s,c=GREY,fill="#fff")=><Bx key={t+s+c} x={x} y={92} w={170} h={50} t={t} s={s} c={c} fill={fill}/>;
+const srv=(x,t,s,c=GREY,fill=BG)=><Bx key={t+s+c} x={x} y={92} w={170} h={50} t={t} s={s} c={c} fill={fill}/>;
 
 // CAP in an interview, FIG 1: normal replication.
 function ReplicateFig({still,uid=""}){const M=`pr${uid}`;
@@ -31,7 +31,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // CAP in an interview, FIG 3: one question per feature.
 function ChooseFig({still,uid=""}){const M=`pc${uid}`;
 const s1=<g><Bx x={150} y={46} w={340} h={40} t="would briefly stale data be a disaster?"/></g>;
-const s2=<g><Ar x1={250} y1={88} x2={160} y2={122} m={M}/><T x={190} y={104} t="yes" a="end" b/><Bx x={20} y={126} w={280} h={40} t="consistency" s="refuse or wait during a split" c={INK} fill="#fbfcfd"/>{["seat booking","the last plate in stock","wallets and payments"].map((t,i)=><T key={i} x={30} y={188+i*16} t={`· ${t}`}/>)}</g>;
+const s2=<g><Ar x1={250} y1={88} x2={160} y2={122} m={M}/><T x={190} y={104} t="yes" a="end" b/><Bx x={20} y={126} w={280} h={40} t="consistency" s="refuse or wait during a split" c={INK} fill={SURFACE_2}/>{["seat booking","the last plate in stock","wallets and payments"].map((t,i)=><T key={i} x={30} y={188+i*16} t={`· ${t}`}/>)}</g>;
 const s3=<g><Ar x1={390} y1={88} x2={480} y2={122} m={M} c={BLUE}/><T x={450} y={104} t="no" b c={BLUE}/><Bx x={340} y={126} w={280} h={40} t="availability" s="answer with what you have" c={BLUE} fill={LB}/>{["profiles and photos","menus and descriptions","opening hours and reviews"].map((t,i)=><T key={i} x={350} y={188+i*16} t={`· ${t}`} c={BLUE}/>)}</g>;
 const s4=<g><T x={350} y={250} t="most features land here" c={BLUE} b/><T x={30} y={250} t="decide feature by feature"/></g>;
 const caps=[["1 · for each feature, ask one question",INK],["2 · if stale data would be a disaster, choose consistency",INK],["3 · if not, choose availability and let copies catch up",BLUE],["4 · most features are the second kind; decide each one separately",BLUE]];
@@ -40,7 +40,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Designing for consistency or availability: the two shapes.
 function DesignsFig({still,uid=""}){const M=`pd${uid}`;
-const s1=<g><T x={10} y={52} t="consistency first" b/><Bx x={10} y={62} w={130} h={40} t="app"/><Ar x1={50} y1={104} x2={50} y2={146} m={M}/><T x={58} y={130} t="writes"/><Ar x1={110} y1={146} x2={110} y2={104} m={M}/><T x={118} y={130} t="exact reads"/><Bx x={10} y={150} w={270} h={44} t="primary database" s="the one source of truth" c={INK} fill="#fbfcfd"/></g>;
+const s1=<g><T x={10} y={52} t="consistency first" b/><Bx x={10} y={62} w={130} h={40} t="app"/><Ar x1={50} y1={104} x2={50} y2={146} m={M}/><T x={58} y={130} t="writes"/><Ar x1={110} y1={146} x2={110} y2={104} m={M}/><T x={118} y={130} t="exact reads"/><Bx x={10} y={150} w={270} h={44} t="primary database" s="the one source of truth" c={INK} fill={SURFACE_2}/></g>;
 const s2=<g><T x={10} y={214} t="during a split: waits or refuses" c={RED}/><T x={10} y={230} t="every write: waits for agreement" c={INK}/></g>;
 const s3=<g><T x={340} y={52} t="availability first" b/><Bx x={340} y={62} w={110} h={40} t="app"/><Ar x1={395} y1={104} x2={395} y2={124} m={M}/><Bx x={340} y={126} w={110} h={36} t="primary" c={BLUE} fill={LB}/><Ar x1={452} y1={144} x2={476} y2={144} m={M} c={BLUE}/><Bx x={480} y={126} w={150} h={36} t="change stream" s="CDC" c={BLUE} fill={LB}/>{["replica","cache","search"].map((t,i)=><g key={t}><Ar x1={555} y1={164} x2={385+i*100} y2={186} m={M} c={BLUE}/><Bx x={340+i*100} y={188} w={90} h={30} t={t} c={BLUE} fill={LB}/></g>)}<T x={462} y={84} t="reads: nearest copy" c={BLUE}/></g>;
 const s4=<g><T x={340} y={238} t="during a split: still answers, a little behind" c={BLUE}/></g>;
@@ -50,7 +50,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // Consistency per feature: one app, two choices.
 function PerFeatureFig({still,uid=""}){const M=`pf${uid}`;
-const s1=<g><Bx x={10} y={60} w={170} h={44} t="book seat 14, block C"/><Ar x1={182} y1={82} x2={226} y2={82} m={M}/><Bx x={230} y={60} w={180} h={44} t="bookings database" s="one primary" c={INK} fill="#fbfcfd"/><T x={320} y={120} t="consistency" a="middle" b/></g>;
+const s1=<g><Bx x={10} y={60} w={170} h={44} t="book seat 14, block C"/><Ar x1={182} y1={82} x2={226} y2={82} m={M}/><Bx x={230} y={60} w={180} h={44} t="bookings database" s="one primary" c={INK} fill={SURFACE_2}/><T x={320} y={120} t="consistency" a="middle" b/></g>;
 const s2=<g><Bx x={10} y={150} w={170} h={44} t="browse the match page"/><Ar x1={182} y1={172} x2={226} y2={172} m={M} c={BLUE}/><Bx x={230} y={150} w={180} h={44} t="replicas and cache" s="near the user" c={BLUE} fill={LB}/><T x={320} y={210} t="availability" a="middle" b c={BLUE}/></g>;
 const s3=<g><T x={450} y={52} t="when the network splits:" c={RED} b/><Bx x={450} y={60} w={180} h={44} t="refuses: try again" s="no seat sold twice" c={RED} fill={LR}/><Ar x1={412} y1={82} x2={446} y2={82} m={M} c={RED}/></g>;
 const s4=<g><Bx x={450} y={150} w={180} h={44} t="still answers" s="preview a minute old" c={BLUE} fill={LB}/><Ar x1={412} y1={172} x2={446} y2={172} m={M} c={BLUE}/></g>;
@@ -68,7 +68,7 @@ function ConsistencyTimelineFig({still,uid=""}){const D="10s",X0=200,X1=620,T=50
 const rows=[["Leader (the truth)",[[0,100,0],[100,500,1]],"price changed at 100 ms"],["Strong read",[[0,100,0],[100,500,1]],"always the newest"],["The owner, reading own write",[[0,100,0],[100,500,1]],"reads go to the leader"],["Replica 250 ms behind",[[0,350,0],[350,500,1]],"eventual: late, then right"],["Two replicas, no stickiness",[[0,100,0],[100,180,1],[180,300,0],[300,500,1]],"₹280, then ₹250 again"]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`ctt${uid}`}><title id={`ctt${uid}`}>A restaurant changes a biryani from 250 to 280 rupees at 100 milliseconds. The leader and any strongly consistent read show 280 from that moment. The owner, whose own reads go to the leader after a change, also sees 280 at once. A customer reading from a replica 250 milliseconds behind sees 250 until 350 milliseconds, then 280: eventually consistent. A customer whose reads land on two different replicas sees 280, then 250 again, then 280, as if time went backwards.</title>
 {rows.map(([n,segs,note],i)=>{const y=60+i*44;return <g key={n}><text x="0" y={y+4} className="fb">{n}</text><text x="0" y={y+18} className="fl">{note}</text>
-{segs.map(([a,b,v],j)=><g key={j}><rect x={x(a)} y={y-10} width={x(b)-x(a)-1} height="20" fill={v?"#dfe6fb":"#f1f3f6"} stroke={v?BLUE:GREY}/>{x(b)-x(a)>40&&<text x={(x(a)+x(b))/2} y={y+4} textAnchor="middle" className="fl" style={v?{fill:BLUE}:undefined}>₹{v?280:250}</text>}</g>)}</g>})}
+{segs.map(([a,b,v],j)=><g key={j}><rect x={x(a)} y={y-10} width={x(b)-x(a)-1} height="20" fill={v?FB:SURFACE} stroke={v?BLUE:GREY}/>{x(b)-x(a)>40&&<text x={(x(a)+x(b))/2} y={y+4} textAnchor="middle" className="fl" style={v?{fill:BLUE}:undefined}>₹{v?280:250}</text>}</g>)}</g>})}
 <line x1={x(100)} y1="40" x2={x(100)} y2="260" stroke={INK} strokeDasharray="4 3"/><text x={x(100)} y="34" textAnchor="middle" className="fl">change at 100 ms</text>
 {[0,100,200,300,400,500].map(t=><text key={t} x={x(t)} y="282" textAnchor="middle" className="fl">{t} ms</text>)}
 {!still&&<line x1={x(0)} y1="44" x2={x(0)} y2="262" stroke={RED} strokeWidth="1.5" aria-hidden="true"><animate attributeName="x1" values={`${x(0)};${x(500)}`} dur={D} repeatCount="indefinite"/><animate attributeName="x2" values={`${x(0)};${x(500)}`} dur={D} repeatCount="indefinite"/></line>}</svg>}
@@ -84,7 +84,7 @@ const half=(y,title,sub,strong)=><g><text x="0" y={y-38} className="fb" style={!
 <text x="420" y={y+4} className="fl">Asha: accepted</text><text x="420" y={y+48} className="fl">Ravi: accepted</text><text x="420" y={y+26} className="fb" style={{fill:RED}}>two riders, one order</text></>}</g>;
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dat${uid}`}><title id={`dat${uid}`}>Two riders, Asha and Ravi, tap Accept on order 123 within a few milliseconds. In an eventually consistent store their writes reach two different replicas, each of which sees the order as free and says yes, so both riders head to the restaurant. With one copy deciding, the write is UPDATE orders SET rider_id = Asha WHERE id = 123 AND rider_id IS NULL: Asha's changes one row and she gets the order, Ravi's changes none and he is told it's taken.</title><Mark m={M}/>
 {half(70,"Eventually consistent: each copy decides","both replicas think the order is free",false)}
-<line x1="0" y1="150" x2="640" y2="150" stroke="#e6eaf0"/>
+<line x1="0" y1="150" x2="640" y2="150" stroke={LINE_SOFT}/>
 {half(212,"One copy decides","UPDATE orders SET rider_id = ? WHERE id = 123 AND rider_id IS NULL",true)}
 {!still&&<g aria-hidden="true"><Dot x1={102} x2={244} y={70} t0={.05} t1={.18} dur={D}/><Dot x1={102} x2={244} y={114} t0={.06} t1={.19} dur={D}/>
 <Dot x1={102} x2={244} y={212} y2={228} t0={.52} t1={.64} dur={D}/><Dot x1={102} x2={244} y={256} y2={240} t0={.55} t1={.67} dur={D}/><Glow x={250} y={222} w={150} h={24} t0={.64} t1={.76} dur={D}/></g>}</svg>}
@@ -95,8 +95,8 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dat${uid}`}><titl
 function CapSplitFig({still,uid=""}){const M=`cap${uid}`,D="14s";
 const caps=[["1 · normally every change is copied both ways",INK],["2 · the link between the regions breaks",RED],["3 · wallet top-up in Hyderabad: refused (consistency first)",BLUE],["4 · menu edit in Hyderabad: accepted (availability first); merged later",BLUE]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`capt${uid}`}><title id={`capt${uid}`}>Zotato keeps a copy of its data in Mumbai and in Hyderabad, and normally every change is copied between them. When the network link between the regions breaks, each side can still serve its own users but can't reach the other. A wallet top-up arriving in Hyderabad is refused, because Hyderabad can't be sure of the balance without Mumbai: consistency first. A restaurant's menu edit arriving in Hyderabad is accepted, so the two copies differ for a while and the edits are merged when the link returns: availability first.</title><Mark m={M}/>
-<rect x="20" y="70" width="220" height="150" fill="#fff" stroke={GREY}/><text x="130" y="92" textAnchor="middle" className="fb">Mumbai</text><SBox x={60} y={140} w={140} t="Copy of the data" blue/>
-<rect x="400" y="70" width="220" height="150" fill="#fff" stroke={GREY}/><text x="510" y="92" textAnchor="middle" className="fb">Hyderabad</text><SBox x={440} y={140} w={140} t="Copy of the data" blue/>
+<rect x="20" y="70" width="220" height="150" fill={BG} stroke={GREY}/><text x="130" y="92" textAnchor="middle" className="fb">Mumbai</text><SBox x={60} y={140} w={140} t="Copy of the data" blue/>
+<rect x="400" y="70" width="220" height="150" fill={BG} stroke={GREY}/><text x="510" y="92" textAnchor="middle" className="fb">Hyderabad</text><SBox x={440} y={140} w={140} t="Copy of the data" blue/>
 <Line x1={202} y1={136} x2={436} y2={136} m={M} c={GREY}/><Line x1={436} y1={146} x2={204} y2={146} m={M} c={GREY}/>
 <text x="10" y="252" className="fl">wallet, payments, rider assignment → refuse during a split</text><text x="10" y="270" className="fl">menus, carts, reviews → accept, merge afterwards</text>
 {still?<g><text x="10" y="30" className="fb" style={{fill:RED}}>The link is down: each side decides on its own</text><text x="320" y="132" textAnchor="middle" className="fb" style={{fill:RED}}>✕</text><text x="320" y="170" textAnchor="middle" className="fl" style={{fill:RED}}>link down</text><text x="510" y="196" textAnchor="middle" className="fl" style={{fill:BLUE}}>top-up: "try again soon"</text><text x="510" y="212" textAnchor="middle" className="fl" style={{fill:BLUE}}>menu edit: saved, synced later</text></g>:<g aria-hidden="true">
