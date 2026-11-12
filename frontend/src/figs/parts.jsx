@@ -4,7 +4,7 @@
 //   Box  a labelled component box centred vertically on y · Arr a labelled arrow (marker id m)
 //   Glow outlines a box during [t0,t1] · Show shows its children during [t0,t1] · Mark the arrowhead
 import React from"react";import{BG,BLUE,FB,GREY,INK,LB,LR,RED}from"../theme/palette.js";
-export const LOOP="8s";
+import{LOOP}from"../theme/motion.js";export{LOOP};
 export const Dot=({x1,x2,y,y2=y,t0,t1,dur=LOOP})=><circle cx={x1} cy={y} r="4" fill={BLUE} opacity="0"><animate attributeName="cx" values={`${x1};${x1};${x2};${x2}`} keyTimes={`0;${t0};${t1};1`} dur={dur} repeatCount="indefinite"/>{y2!==y&&<animate attributeName="cy" values={`${y};${y};${y2};${y2}`} keyTimes={`0;${t0};${t1};1`} dur={dur} repeatCount="indefinite"/>}<animate attributeName="opacity" values="0;1;0" keyTimes={`0;${t0};${t1}`} calcMode="discrete" dur={dur} repeatCount="indefinite"/></circle>;
 export const Box=({x,y,w=124,t,blue})=><g><rect x={x} y={y-17} width={w} height="34" fill={blue?LB:BG} stroke={blue?BLUE:GREY}/><text x={x+w/2} y={y+4} textAnchor="middle" className="fb">{t}</text></g>;
 export const Arr=({x1,x2,y,t,dash,ty,m="ah"})=><g><line x1={x1} y1={y} x2={x2} y2={y} stroke={INK} strokeDasharray={dash?"4 3":undefined} markerEnd={`url(#${m})`}/>{t&&<text x={(x1+x2)/2} y={ty??y-6} textAnchor="middle" className="fl">{t}</text>}</g>;

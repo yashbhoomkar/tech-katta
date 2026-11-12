@@ -1,7 +1,7 @@
 // The owner's analytics dashboard (analytics.katta.cc). Reads /v1/admin/summary, which only admin
 // accounts may read; the session is the one from signing in on tech.katta.cc (same site, so the API's
 // cookie comes along). Mobile-first: tiles, one daily chart, a funnel, then tables.
-import"./theme/index.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{API}from"./api.js";import"./admin.css";
+import"./theme/index.js";import ThemeToggle from"./theme/ThemeToggle.jsx";import React,{useEffect,useMemo,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{API}from"./api.js";import"./admin.css";
 
 const RANGES=[[1,"24 hours"],[7,"7 days"],[30,"30 days"],[90,"90 days"]];
 const SITE="https://tech.katta.cc";
@@ -64,7 +64,7 @@ function App(){const[days,setDays]=useState(()=>{try{return Number(localStorage.
 const go=()=>{const id=++tick.current;setSt(s=>s.data?{...s,refreshing:true}:{state:"loading"});load(days).then(r=>{if(id===tick.current)setSt(r)},e=>{if(id===tick.current)setSt({state:"error",message:e.message})})};
 useEffect(()=>{try{localStorage.setItem("tk-analytics-days",String(days))}catch{}go()},[days]);// eslint-disable-line
 return <div className="a-page"><header className="a-head"><div><b>Tech Katta</b><span>Analytics</span></div>
-{st.state==="ok"&&<a className="a-btn ghost" href={`${API}/v1/admin/audience.csv`}>Meta audience CSV</a>}</header>
+<span className="a-head-r">{st.state==="ok"&&<a className="a-btn ghost" href={`${API}/v1/admin/audience.csv`}>Meta audience CSV</a>}<ThemeToggle/></span></header>
 <nav className="a-range" aria-label="Time range">{RANGES.map(([d,l])=><button key={d} type="button" aria-pressed={days===d} onClick={()=>setDays(d)}>{l}</button>)}<button type="button" className="a-refresh" onClick={go} disabled={st.state==="loading"||st.refreshing}>{st.refreshing?"Refreshing…":"Refresh"}</button></nav>
 <main>{st.state==="loading"?<p className="a-msg">Loading…</p>
 :st.state==="signed_out"?<div className="a-msg"><b>Sign in first</b><p>Sign in on <a href={SITE+"/#ind-vs-pak"}>tech.katta.cc</a> with the owner's Google account, then come back and press Refresh.</p></div>

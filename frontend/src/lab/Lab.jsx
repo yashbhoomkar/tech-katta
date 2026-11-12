@@ -2,7 +2,7 @@
 // The design is judged by the v2 evaluator (src/eval): a problem's Run and Submit (solve.jsx), a challenge's Score.
 // The canvas shows a replayed load test minute by minute when one is being watched. The component catalogue, prices and
 // settings come from the API (GET /v1/lab: content/lab.json and eval.json). Designs are kept in this browser.
-import{BLUE,INK,LINE}from"../theme/palette.js";import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
+import{BLUE,INK,LINE}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState}from"react";
 import{ReactFlow,ReactFlowProvider,Background,Controls,Handle,Position,MarkerType,addEdge,useNodesState,useEdgesState,useReactFlow,BaseEdge,EdgeLabelRenderer,getSmoothStepPath}from"@xyflow/react";
 import"@xyflow/react/dist/style.css";import"./lab.css";import{schemaSummary}from"./schema.js";
 import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";
@@ -86,7 +86,7 @@ return <div className="lab-score-back" onClick={e=>{if(e.target===e.currentTarge
 <p className="lab-note">{res.stars===res.max?"Every star. Try the next one.":res.stars===0&&!res.checks[0].ok?"No stars yet: the first goal has to be met before the others count.":"Some goals left. Change the design and score it again."} Simulated {ch.hours} hours from {String(Math.floor(ch.startHour)).padStart(2,"0")}:00{ch.faults?.length?", with the crash the challenge causes":""}.</p></>}
 <div className="lab-score-act"><button type="button" ref={ref} className="lab-btn ghost" onClick={close}>Keep improving</button>{next&&<button type="button" className="lab-btn" onClick={next}>Next challenge →</button>}{more&&<a className="lab-btn" href={more.href}>{more.open} →</a>}</div></div></div>}
 
-function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
+function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
@@ -165,7 +165,8 @@ const badStart=start&&!(lab.challenges||[]).some(c=>c.id===start)?start:null;
 const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.current)startChallenge(start);firstStart.current=null},[start]);// eslint-disable-line
 const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error){recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));track("score",{challenge:ch.id,stars:r.stars,max:r.max,passed:r.checks.map(c=>c.ok?1:0).join(""),lite:false})}setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
-const flowEdges=edges;
+// Arrowheads take the current ink colour (saved designs carry the colour of the theme they were drawn in).
+const flowEdges=React.useMemo(()=>edges.map(e=>e.markerEnd&&typeof e.markerEnd==="object"?{...e,markerEnd:{...e.markerEnd,color:INK}}:e),[edges,theme]);// eslint-disable-line
 return <Ctx.Provider value={{cat,trace,replay}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
@@ -174,7 +175,7 @@ return <Ctx.Provider value={{cat,trace,replay}}><div className={"lab"+(trace?" l
 <div className="lab-status" aria-live="polite">{replay?<span>{replay.status}</span>:badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:ch?<span className="lab-muted">Score your design to see which stars it earns.</span>:<span className="lab-muted">Run or Submit to test this design; then ▶ Replay a load test to watch it here.</span>}</div>
 <Palette lab={lab} comps={paletteV2(lab)} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
-<ReactFlow nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
+<ReactFlow colorMode={theme} nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
 fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color={LINE}/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>

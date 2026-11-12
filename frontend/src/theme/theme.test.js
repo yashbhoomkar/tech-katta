@@ -8,7 +8,8 @@ const files=walk(SRC).filter(p=>!p.startsWith(THEME));
 const tokensCss=readFileSync(join(THEME,"tokens.css"),"utf8").replace(/\/\*[\s\S]*?\*\//g,"");
 const block=sel=>{const i=tokensCss.indexOf(sel+"{");return i<0?"":tokensCss.slice(i,tokensCss.indexOf("}",i))};
 const defs=css=>Object.fromEntries([...css.matchAll(/--([a-z0-9-]+):([^;]+);/g)].map(m=>[m[1],m[2].trim()]));
-const COLOUR=/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d|hsla?\(\s*\d/;
+// Colour codes, rgb()/hsl() with numbers, and colour keywords used as a value (color:white).
+const COLOUR=/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d|hsla?\(\s*\d|:\s*(white|black|red|blue|green|gr[ae]y|orange|yellow|silver|navy)\b/;
 test("every colour token in tokens.css has the same light value in palette.js, and back",()=>{
   const css=defs(block(":root"));
   for(const[k,v]of Object.entries(TOKENS))assert.equal(css[k],v,`--${k}`);
