@@ -10,7 +10,8 @@ Every page (`main.jsx` landing, `dashboard.jsx`, `admin.jsx` analytics) imports 
 | `palette.js` | The same colours for code that needs a value in JavaScript: SVG figures, the landing and library diagrams, the canvas | (kept equal to `tokens.css` by `theme.test.js`; edit both together) |
 | `base.css` | Rules every page shares (box sizing, reduced motion) | change page-wide defaults |
 | `fonts.js`, `fonts.css` | The self-hosted Inter and IBM Plex Mono; Fraunces (headings) is loaded in `fonts.js` | swap a typeface (then update `--font` / `--mono`) |
-| `motion.css` | Every entrance and feedback animation | slow down, speed up or remove an animation |
+| `motion.css` | Every entrance and feedback animation of the interface | slow down, speed up or remove an animation |
+| `motion.js` | `SPEED` and `pace()` for figure loops (every figure writes its loop length as `pace(14)`, never `"14s"`), `LOOP`, and `useStill()` for reduced motion | make every figure faster or slower: change `SPEED` (0.7 since #312) |
 
 ## Rules (checked by `theme.test.js`, part of `npm test`)
 
@@ -24,5 +25,7 @@ Every page (`main.jsx` landing, `dashboard.jsx`, `admin.jsx` analytics) imports 
 
 - **New brand colour**: --brand, --brand-strong, --brand-edge, --brand-ink, --brand-line, --brand-tint, --on-brand, --mark in tokens.css (light and dark) and the same keys in palette.js TOKENS.
 - **Rounder corners**: `--radius`.
-- **Slower or faster transitions**: `--dur-fast`, `--dur`, `--ease`. Reduced motion sets the durations to 0.
+- **Slower or faster transitions**: `--dur-fast`, `--dur`, `--ease`; things arriving on a page: `--dur-enter` (0.28 s). Reduced motion sets the durations to 0.
+- **Faster or slower figures**: `SPEED` in `motion.js`. How figures move (steps fade, request dots with a trail, the glint on the working path, glows) lives in `figs/parts.jsx`, so a change there reaches all 232 figures.
+- **Figures on phones**: `dashboard/figure.jsx` and the phone block at the end of `dashboard/figure.css` (600 px wide in a sideways-scrolling frame, the step line above it).
 - **New token**: add it to `tokens.css` (and to `palette.js` if it is a colour), then use it.
