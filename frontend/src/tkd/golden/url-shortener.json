@@ -1,0 +1,621 @@
+{
+ "judge_version": 1,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 69000,
+  "worst_p99_ms": {
+   "GET_LINK": 76.4,
+   "CREATE_LINK": 138.2
+  },
+  "worst_p50_ms": {
+   "GET_LINK": 19.1,
+   "CREATE_LINK": 34.6
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-quiet-afternoon",
+   "margin": 0.31,
+   "text": "Tightest promise: budget, 31 % to spare."
+  },
+  "rank_p99_ms": 76.4,
+  "tests": [
+   {
+    "id": "t01-quiet-afternoon",
+    "title": "A quiet afternoon",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-evening-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies at peak",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-cold-cache",
+    "title": "The cache restarts",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 1
+ },
+ "wrong": {
+  "no-cache-one-server": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 45000,
+   "worst_p99_ms": {
+    "GET_LINK": 472.7,
+    "CREATE_LINK": 613.8
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 118.2,
+    "CREATE_LINK": 153.5
+   },
+   "failed": {
+    "test": "t02-evening-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_LINK",
+    "phase": 2,
+    "expected": "at most 500 calls a second",
+    "actual": "2,525 calls a second",
+    "message": "api received 2,525 calls a second but can serve 500.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 5.05,
+     "note": "api is at 505 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.11,
+      "rho": 0.0505
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 5.05
+     },
+     {
+      "part": "db",
+      "ms": 70.57,
+      "rho": 0.8583
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_LINK",
+     "message": "GET_LINK took 472.7 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 505 % of capacity."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 472.7,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 2,
+     "col": 1,
+     "message": "\"api\" has no spare. If it fails, GET_LINK and CREATE_LINK stop.",
+     "part": "api"
+    }
+   ],
+   "judge_version": 1
+  },
+  "no-cache": {
+   "verdict": "Too Slow",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 66000,
+   "worst_p99_ms": {
+    "GET_LINK": 126.9,
+    "CREATE_LINK": 268.1
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 31.7,
+    "CREATE_LINK": 67
+   },
+   "failed": {
+    "test": "t02-evening-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "reason": "p99",
+    "request": "GET_LINK",
+    "phase": 2,
+    "expected": "p99 ≤ 100 ms",
+    "actual": "p99 126.9 ms",
+    "message": "GET_LINK took 126.9 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 86 % of capacity.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 0.8583,
+     "note": "db is at 86 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.11,
+      "rho": 0.0505
+     },
+     {
+      "part": "api",
+      "ms": 54.24,
+      "rho": 0.6313
+     },
+     {
+      "part": "db",
+      "ms": 70.57,
+      "rho": 0.8583
+     }
+    ]
+   },
+   "also": [],
+   "tip": "Bigger machines for \"db\" would fix this.",
+   "rank_p99_ms": 126.9,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 1
+  },
+  "async-replica": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 69000,
+   "worst_p99_ms": {
+    "GET_LINK": 75.6,
+    "CREATE_LINK": 78.7
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 16.3,
+    "CREATE_LINK": 19.7
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "reason": "lost",
+    "request": "CREATE_LINK",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 20 lost",
+    "message": "When db failed, about 20 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "db",
+     "line": 5,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Making \"db\" wait for its replicas would fix this.",
+   "rank_p99_ms": 75.6,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 1
+  },
+  "no-replica": {
+   "verdict": "Unavailable",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 49000,
+   "worst_p99_ms": {
+    "GET_LINK": 75.6,
+    "CREATE_LINK": 78.7
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 16.3,
+    "CREATE_LINK": 19.7
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "reason": "unavailable",
+    "request": "GET_LINK",
+    "phase": 2,
+    "expected": "95.00%",
+    "actual": "50.00%",
+    "message": "GET_LINK was available 50.00% of the time; the promise is 95.00%. db had no spare when it failed.",
+    "blame": {
+     "part": "db",
+     "line": 5,
+     "rho": null,
+     "note": "db failed"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.08,
+      "rho": 0.0404
+     },
+     {
+      "part": "api",
+      "ms": 40.4,
+      "rho": 0.505
+     },
+     {
+      "part": "cache",
+      "ms": 2.04,
+      "rho": 0.0202,
+      "hit": 0.989852
+     },
+     {
+      "part": "db",
+      "ms": null,
+      "rho": null,
+      "down": true
+     }
+    ]
+   },
+   "also": [],
+   "tip": "A replica of \"db\" would fix this.",
+   "rank_p99_ms": 75.6,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": "Unavailable"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 5,
+     "col": 1,
+     "message": "\"db\" has no spare. If it fails, GET_LINK and CREATE_LINK stop.",
+     "part": "db"
+    }
+   ],
+   "judge_version": 1
+  },
+  "random-32-bit-ids": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 69000,
+   "worst_p99_ms": {
+    "GET_LINK": 35.2,
+    "CREATE_LINK": 53.4
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 6.3,
+    "CREATE_LINK": 13.4
+   },
+   "failed": {
+    "test": "t01-quiet-afternoon",
+    "title": "A quiet afternoon",
+    "hidden": false,
+    "reason": "collision",
+    "request": "CREATE_LINK",
+    "phase": null,
+    "expected": "no repeated ids",
+    "actual": "about 11,64,153 repeats expected",
+    "message": "With 10 crore items, 32-bit random ids are expected to collide. Use more bits, or a counter.",
+    "blame": {
+     "part": "ids",
+     "line": 6,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "More bits in the ids of \"ids\" would fix this.",
+   "rank_p99_ms": 35.2,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 1
+  },
+  "day-long-cache-no-invalidate": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 69000,
+   "worst_p99_ms": {
+    "GET_LINK": 35.1,
+    "CREATE_LINK": 53.2
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 6.3,
+    "CREATE_LINK": 13.3
+   },
+   "failed": {
+    "test": "t01-quiet-afternoon",
+    "title": "A quiet afternoon",
+    "hidden": false,
+    "reason": "stale",
+    "request": "GET_LINK",
+    "phase": null,
+    "expected": "at most 3600 s old",
+    "actual": "up to 86400 s old",
+    "message": "GET_LINK can return data up to 86400 s old, but this problem allows 3600 s. Look at the cache TTL, or invalidate on write.",
+    "blame": {
+     "part": "cache",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Clearing \"cache\" when the data changes would fix this.",
+   "rank_p99_ms": 35.1,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 1
+  },
+  "everything-large": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 143000,
+   "worst_p99_ms": {
+    "GET_LINK": 34.6,
+    "CREATE_LINK": 52.7
+   },
+   "worst_p50_ms": {
+    "GET_LINK": 6.1,
+    "CREATE_LINK": 13.2
+   },
+   "failed": {
+    "test": "t01-quiet-afternoon",
+    "title": "A quiet afternoon",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,00,000",
+    "actual": "₹1,43,000",
+    "message": "This design costs ₹1,43,000 a month; the budget is ₹1,00,000.",
+    "blame": {
+     "part": "db",
+     "line": 5,
+     "rho": null,
+     "note": "db is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "A smaller \"db\" would fix this.",
+   "rank_p99_ms": 34.6,
+   "tests": [
+    {
+     "id": "t01-quiet-afternoon",
+     "title": "A quiet afternoon",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-evening-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies at peak",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 1
+  }
+ }
+}

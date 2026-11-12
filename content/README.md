@@ -229,3 +229,19 @@ component type its settings (`number`, `choice`, `bool`, `size`, `fields`, `engi
 arrows it may draw (`to`, `toIf` for conditions on the target, `toCdc` for a database's change stream) and extra
 size numbers (`sizeExtras`, e.g. a cache's `memoryGb`). Sizes, prices, latencies and crash policies stay in
 `lab.json`. `backend/src/content/validate-eval.js` checks it. Every problem and challenge uses it.
+
+## Practice problems (`problems2/`), LeetCode style
+
+The problems of `/dashboard/practice/` (specification: `tech-katta-context/21-PROBLEM-EXPERIENCE-LEETCODE-STYLE.md`).
+`problems2/index.json` lists `NNN-slug` files in order (`{"problems": ["001-url-shortener"]}`); each file is one problem:
+`id`, `slug`, `title`, `difficulty`, `topics`, `companies`, `free`, `statement` (Markdown, at most 200 words),
+`constraints`, `total_items`, `requests`, `tables_hint`, `template` (TKD text), `tests` (phases, events, promises; `hidden`),
+`reference` (TKD), `wrong` (designs with the verdict each must get), `hints`, `editorial` (Markdown). The answer is a
+design in TKD text; the judge is `frontend/src/tkd/` (the same files in the browser and the API).
+
+Checked when content loads (so by the deploy too): the shape, and the calibration — the reference is Accepted with
+10 % to spare on every promise, each wrong design gets exactly its verdict, at least 2 visible and 3 hidden tests, the
+template only unfinished (E022/E029/E030). The API never serves hidden tests' numbers, the reference, wrong designs or the
+editorial except through their endpoints. Before adding or changing a problem, run
+`node backend/scripts/sweep-problem.mjs <slug>` and paste its summary into the pull request; then
+`UPDATE_GOLDEN=1 npm test` in `frontend/` regenerates `src/tkd/golden/<slug>.json` (review the diff).
