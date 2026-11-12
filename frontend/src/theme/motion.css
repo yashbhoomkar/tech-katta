@@ -39,12 +39,22 @@
   .acct-dialog::backdrop{animation:tk-fade var(--dur) var(--ease) backwards}
   .scrim{animation:tk-fade var(--dur) var(--ease) backwards}
   .sv-console,.lab-score{animation:tk-sheet .2s var(--ease) backwards}
-  .sv-test:nth-child(-n+6){animation:tk-rise .18s var(--ease) backwards}
-  .sv-test:nth-child(2){animation-delay:.04s}
-  .sv-test:nth-child(3){animation-delay:.08s}
-  .sv-test:nth-child(4){animation-delay:.12s}
-  .sv-test:nth-child(5){animation-delay:.16s}
-  .sv-test:nth-child(6){animation-delay:.2s}
+  /* the results tick off like a test run: each row in turn (--i, its place, at most 14), its ✓ or ✕ popping just
+     after; all done within about a second */
+  .sv-results>li{animation:tk-rise .18s var(--ease) backwards;animation-delay:calc(var(--i,0) * 60ms)}
+  .sv-results>li summary>i{display:inline-block;animation:tk-pop .2s var(--ease) backwards;animation-delay:calc(var(--i,0) * 60ms + 100ms)}
+  /* while the judge works: a marigold sweep under "Running the tests…" (the workspace's only loop, gone with the result) */
+  .sv-running::after{content:"";display:block;height:3px;margin-top:12px;border-radius:var(--r-full);background:linear-gradient(90deg,transparent 0,var(--brand) 50%,transparent 100%) var(--brand-tint);background-size:200% 100%;background-position:200% 0;animation:tk-shimmer 1.1s ease-in-out infinite}
+  /* back on Problems after a first solve: the highlighter is drawn under that problem's tick, once */
+  .qt-st.done.fresh{background-image:linear-gradient(var(--mark),var(--mark));background-repeat:no-repeat;background-size:100% 100%;border-radius:var(--r-sm);animation:tk-mark .45s var(--ease) .35s backwards}
+  /* Interview Questions: the guide cards arrive like the other card lists (first eight) */
+  .d-panel>a.qt-start:nth-of-type(-n+8){animation:tk-rise var(--dur-enter) var(--ease) backwards}
+  .d-panel>a.qt-start:nth-of-type(2){animation-delay:.04s}
+  .d-panel>a.qt-start:nth-of-type(3){animation-delay:.08s}
+  .d-panel>a.qt-start:nth-of-type(4){animation-delay:.12s}
+  .d-panel>a.qt-start:nth-of-type(5){animation-delay:.16s}
+  .d-panel>a.qt-start:nth-of-type(6){animation-delay:.2s}
+  .d-panel>a.qt-start:nth-of-type(7){animation-delay:.24s}
   .ll-res{animation:tk-pop .18s var(--ease) backwards}
   /* 8. Tech Katta's own moments (spec section 4.8): the verdict, the stars, a server going down, a figure opening */
   .sv-v.good b{animation:tk-mark .38s var(--ease) .22s backwards}
