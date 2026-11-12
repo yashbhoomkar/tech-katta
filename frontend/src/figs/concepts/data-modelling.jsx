@@ -1,6 +1,6 @@
 // Concepts › Data modelling: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "data-modelling").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,GRID,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Mk,Cap,Caps,Show,Dot}from"../parts.jsx";
+import{BG,GRID,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Mk,Cap,Caps,Show,Dot,pace}from"../parts.jsx";
 
 const HEAD=SURFACE;
 
@@ -125,7 +125,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Modelling data, FIG 1: one order stored two ways. As four tables each fact is stored once and the order
 // screen joins them; as one document a single read returns the whole screen. When the restaurant renames
 // itself, the table changes in one row, and the copy inside old order documents keeps the old name.
-function ModelShapesFig({still,uid=""}){const M=`ms${uid}`,D="14s";
+function ModelShapesFig({still,uid=""}){const M=`ms${uid}`,D=pace(14);
 const caps=[["1 · the order screen needs the order, its dishes, the customer and the restaurant",INK],["2 · as tables, each fact is stored once, and the screen joins four tables to show it",BLUE],["3 · as one document, everything the screen shows comes back in a single read",BLUE],["4 · the restaurant renames itself: one row changes, but copies in old orders don't",RED]];
 const tb=(x,y,w,t,rows)=><g><rect x={x} y={y} width={w} height={24+rows.length*16} fill={BG} stroke={GREY}/><rect x={x} y={y} width={w} height="20" fill={GRID} stroke={GREY}/><text x={x+8} y={y+14} className="fb">{t}</text>{rows.map((r,i)=><text key={i} x={x+8} y={y+35+i*16} className="fl">{r}</text>)}</g>;
 const doc=['{ order: 9051,','  customer: { id: 77, name: "Asha" },','  restaurant: { id: 42,','    name: "Udupi Corner" },','  items: [','    { dish: "masala dosa", qty: 2 },','    { dish: "filter coffee", qty: 1 } ],','  total: 255 }'];
@@ -146,7 +146,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`mst${uid}`}><titl
 // Modelling data, FIG 2: pay when reading or when writing. The restaurant page shows an average rating and
 // is opened 2,000 times a minute. Working it out on each view reads 48,000 reviews every time; keeping the
 // rating on the restaurant's row means one row per view, and one extra update, in the same transaction, per review.
-function ModelCopyFig({still,uid=""}){const M=`mc${uid}`,D="14s";
+function ModelCopyFig({still,uid=""}){const M=`mc${uid}`,D=pace(14);
 const caps=[["1 · the restaurant page shows its average rating; 2,000 people open it a minute",INK],["2 · working it out on each view reads all 48,000 reviews, every single time",RED],["3 · keep the rating on the restaurant's row instead: each view reads one row",BLUE],["4 · each new review updates that row in the same transaction: a bit more work per write",BLUE]];
 const top=<g><text x="10" y="50" className="fk">WORK IT OUT ON EVERY VIEW</text><Bx x={10} y={62} w={150} h={40} t="Restaurant page" s="2,000 views a minute"/><Ar x1={162} y1={82} x2={296} y2={82} m={M}/><Bx x={300} y={62} w={180} h={40} t="reviews" s="48,000 rows for this place"/></g>;
 const s2=<g><text x="229" y="74" textAnchor="middle" className="fl" style={{fill:RED}}>average, every time</text><text x="496" y="78" className="fl" style={{fill:RED}}>≈ 9.6 crore rows</text><text x="496" y="94" className="fl" style={{fill:RED}}>read a minute</text></g>;

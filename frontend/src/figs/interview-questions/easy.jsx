@@ -1,11 +1,11 @@
 // Interview Questions › Easy: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "easy").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{ACCENT_TINT_2,BG,LB,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_TINT_2,BG,LB,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE,pace}from"../parts.jsx";
 
 // URL shortener, FIG: the two paths. Creating: the marketing tool posts a long URL, the API turns its next
 // ID into a short code, stores it and returns zot.to/2Bi. Opening: a customer taps the link in an SMS,
 // the redirect service finds the code in Redis and answers 302 to the long URL, and logs the click.
-function ShortenerFig({still,uid=""}){const M=`sh${uid}`,D="14s";
+function ShortenerFig({still,uid=""}){const M=`sh${uid}`,D=pace(14);
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sht${uid}`}><title id={`sht${uid}`}>Creating a short link: Zotato's marketing tool sends the long URL to the links API, which takes the next number from its block of IDs, turns it into the code 2Bi, stores code and URL in the database, and returns zot.to/2Bi. Opening it: a customer taps the link in an SMS; the redirect service looks the code up in Redis, falls back to the database on a miss, answers 302 with the long URL, and sends a click event to a stream for analytics.</title><Mark m={M}/>
 <text x="0" y="20" className="fb">Create</text>
 <SBox x={0} y={50} w={120} t="Marketing tool"/><Line x1={122} y1={50} x2={216} y2={50} m={M}/><text x="168" y="42" textAnchor="middle" className="fl">POST /links</text>
@@ -28,7 +28,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sht${uid}`}><titl
 // URL shortener, FIG: making codes without collisions. A counter hands each API server a block of
 // 1,000 IDs; each server turns its next ID into base 62 (0-9, a-z, A-Z). No two servers can make the
 // same code, and the counter is asked once per 1,000 links.
-function ShortCodesFig({still,uid=""}){const M=`sc${uid}`,D="12s";
+function ShortCodesFig({still,uid=""}){const M=`sc${uid}`,D=pace(12);
 const rows=[["Server A","10,000–10,999","10,000","2Bi"],["Server B","11,000–11,999","11,157","2TX"]];
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`sct${uid}`}><title id={`sct${uid}`}>A counter in the database hands each links server a block of 1,000 IDs: server A gets 10,000 to 10,999, server B gets 11,000 to 11,999. Each server turns its next ID into base 62 using the characters 0 to 9, a to z and A to Z: 10,000 becomes 2Bi and 11,157 becomes 2TX. No two servers can make the same code, and the counter is touched once per thousand links. Seven characters allow about 3.5 trillion codes.</title><Mark m={M}/>
 <SBox x={0} y={130} w={130} t="Counter" blue/><text x="65" y="160" textAnchor="middle" className="fl">next block: 12,000</text>
@@ -42,7 +42,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`sct${uid}`}><titl
 // File sync, FIG: one edit reaching another device. 1 the laptop puts the changed chunk straight into object
 // storage, 2 commits the new chunk list (the change log gets #8840), 3 the notifier tells the phone,
 // 4 the phone asks for changes after its cursor, 5 and downloads just that chunk.
-function SyncFig({still,uid=""}){const M=`sy${uid}`,D="14s";
+function SyncFig({still,uid=""}){const M=`sy${uid}`,D=pace(14);
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`syt${uid}`}><title id={`syt${uid}`}>One edit reaching another device. First, the counter laptop uploads only the changed chunk of menu.pdf straight to object storage with a signed URL. Second, it commits the new chunk list to the metadata service, which records version 8 and adds change number 8840 to the owner's change log. Third, the notifier tells the owner's phone it has changes. Fourth, the phone asks the metadata service for changes after its cursor, 8839. Fifth, it downloads just the new chunk from object storage.</title><Mark m={M}/>
 <SBox x={0} y={60} w={120} t="Counter laptop"/><SBox x={250} y={60} w={140} t="Metadata service" blue/><SBox x={500} y={60} w={140} t="Notifier"/>
 <SBox x={250} y={230} w={140} t="Object storage"/><SBox x={500} y={230} w={140} t="Owner's phone"/>
@@ -63,7 +63,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`syt${uid}`}><titl
 
 // File sync, FIG: chunks named by their hash. menu.pdf (9 MB) is three chunks of 4, 4 and 1 MB; a price change on page 2
 // changes only the middle chunk's hash, so only that chunk is uploaded.
-function ChunksFig({still,uid=""}){const M=`fc${uid}`,D="10s",X=[130,240,350];
+function ChunksFig({still,uid=""}){const M=`fc${uid}`,D=pace(10),X=[130,240,350];
 const v7=["9f2c…","41ab…","c07e…"],v8=["9f2c…","d51e…","c07e…"],pg=["page 1","page 2: price","page 3"];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fct${uid}`}><title id={`fct${uid}`}>menu.pdf, version 7, is 9 MB: three chunks of 4, 4 and 1 MB, named by their hashes: 9f2c, 41ab and c07e. A price changes on page 2. In version 8 the first and last chunks are unchanged; only the middle chunk is new, with hash d51e, so only that one chunk is uploaded to object storage: 4 MB instead of 9.</title><Mark m={M}/>
 <text x="0" y="64" className="fb">menu.pdf v7</text><text x="0" y="80" className="fl">9 MB</text><text x="0" y="174" className="fb">menu.pdf v8</text>
@@ -77,7 +77,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fct${uid}`}><titl
 // Restaurants near me, FIG: one home-screen request. The nearby service turns the location into a cell,
 // 1 reads which restaurants deliver into it from the in-memory geo index, 2 drops closed or busy ones
 // (status in Redis), 3 adds names and ratings from a cache, then ranks and returns 20.
-function NearbyFig({still,uid=""}){const M=`nb${uid}`,D="12s";
+function NearbyFig({still,uid=""}){const M=`nb${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`nbt${uid}`}><title id={`nbt${uid}`}>One home-screen request. The customer app sends its location to the nearby service. The service turns it into a map cell and first reads, from an in-memory geo index, the restaurants that deliver into that cell: about 180. Second, it checks their status in Redis and drops the closed and busy ones. Third, it adds names and ratings from a cache. Then it ranks them and returns the first 20 to the app.</title><Mark m={M}/>
 <SBox x={0} y={130} w={120} t="Customer app"/><SBox x={190} y={130} w={130} t="Nearby service" blue/>
 <SBox x={450} y={50} w={190} t="Geo index (in memory)"/><SBox x={450} y={130} w={190} t="Open or busy (Redis)"/><SBox x={450} y={210} w={190} t="Names, ratings (cache)"/>
@@ -96,7 +96,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`nbt${uid}`}><titl
 
 // Restaurants near me, FIG: why you search 9 cells. The customer sits near the right edge of their cell;
 // Biryani Zone is 300 m away but in the next cell. One cell misses it; the 3 × 3 block finds it.
-function GeoCellsFig({still,uid=""}){const D="10s",X=40,Y=40,C=70,ux=X+C+62,uy=Y+C+34,bx=X+2*C+14,by=Y+C+30;
+function GeoCellsFig({still,uid=""}){const D=pace(10),X=40,Y=40,C=70,ux=X+C+62,uy=Y+C+34,bx=X+2*C+14,by=Y+C+30;
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><title id={`gct${uid}`}>A 3 by 3 block of map cells. The customer is near the right edge of the middle cell. Biryani Zone is 300 metres away, but just across the border in the cell to the right. Searching only the customer's cell misses it; searching the customer's cell and the 8 around it finds it. If cells are at least as wide as the search radius, the 3 by 3 block always covers the whole search circle.</title>
 {[0,1,2].map(r=>[0,1,2].map(c=><rect key={r+"-"+c} x={X+c*C} y={Y+r*C} width={C} height={C} fill={r===1&&c===1?ACCENT_TINT_2:BG} stroke={GREY}/>))}
 <circle cx={ux} cy={uy} r="5" fill={INK}/><text x={ux-4} y={uy+18} textAnchor="end" className="fl">you</text>
@@ -112,7 +112,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`gct${uid}`}><titl
 // Grocery delivery, FIG: one order against the 10-minute clock. The customer holds stock and pays
 // (minute 0-1); payment starts the picker and assigns a rider at the same moment; picking and packing take
 // to minute 4 while the rider waits at the store; the ride is minutes 4-10. A red line walks the clock.
-function MinutesFig({still,uid=""}){const D="12s",X0=96,W=520,x=(m)=>X0+m*W/10;
+function MinutesFig({still,uid=""}){const D=pace(12),X0=96,W=520,x=(m)=>X0+m*W/10;
 const lanes=[["Customer",[[0,1,"hold + pay",BLUE]]],["Picker",[[1,4,"pick, pack",BLUE]]],["Rider",[[1,4,"assigned, waits at store",LINE_SOFT],[4,10,"ride, about 2 km",BLUE]]]];
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`mnt${uid}`}><title id={`mnt${uid}`}>One order against a 10-minute clock. Minute 0 to 1: the customer's items are held and they pay. The moment payment lands, a picker starts and a rider is assigned. Minutes 1 to 4: the picker picks and packs while the rider waits at the store. Minutes 4 to 10: the rider rides about 2 kilometres to the door.</title>
 {lanes.map(([n,bars],i)=>{const y=60+i*60;return <g key={n}><text x="0" y={y+5} className="fb">{n}</text>
@@ -125,7 +125,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`mnt${uid}`}><titl
 // Grocery delivery, FIG: the last packet. Two customers send the same conditional update ("hold 1 if at
 // least 1 is available"); the database applies them one after the other. A's changes one row and
 // holds the packet; B's changes none, so B is told it's sold out before paying.
-function StockHoldFig({still,uid=""}){const M=`sh4${uid}`,D="12s";
+function StockHoldFig({still,uid=""}){const M=`sh4${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`skt${uid}`}><title id={`skt${uid}`}>Two customers want the last packet of milk. Both send the same update: hold 1 if at least 1 is available. The database applies them one at a time. Customer A's update changes one row, so the packet is held and A pays. Customer B's update changes no rows, so B is told it is sold out before paying anything.</title><Mark m={M}/>
 <text x="320" y="24" textAnchor="middle" className="fl">both send: hold 1 if available ≥ 1</text>
 <SBox x={0} y={70} w={110} t="Customer A"/><SBox x={0} y={190} w={110} t="Customer B"/>

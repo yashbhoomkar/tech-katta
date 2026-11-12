@@ -6,14 +6,14 @@
 // How things move (one grammar for every figure, spec §4.8 "the request"): a step fades in instead of blinking on; a request dot eases along its path with a short trail; a line on the path that works (BLUE) carries a
 // glint travelling in its direction. Under reduced motion none of this is drawn (figures draw their still version).
 import React from"react";import{BG,BLUE,BRAND,FB,GREY,INK,LB,LR,RED}from"../theme/palette.js";
-import{LOOP}from"../theme/motion.js";export{LOOP};
+import{LOOP,pace}from"../theme/motion.js";export{LOOP,pace};
 const calm=()=>typeof window!=="undefined"&&typeof window.matchMedia==="function"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 // keyTimes for "off, fade in, on, fade out, off" between t0 and t1 (fractions of a loop of `dur`); each fade takes
-// 0.3 s whatever the loop's length, quick enough that a box's new state drawn over its old one reads as one change
-const win=(t0,t1,dur=LOOP)=>{const e=Math.min(.3/(parseFloat(dur)||8),(t1-t0)/4),k=[0,t0,t0+e,Math.max(t0+e,t1-e),t1],v=[0,0,1,1,0];if(t1<1){k.push(1);v.push(0)}return{keyTimes:k.map(x=>+x.toFixed(4)).join(";"),values:v.join(";")}};
-// a glint along a line: a short bright dash that travels from (x1,y1) to (x2,y2) every 2.2 s, fading in and out at the ends
+// 0.22 s whatever the loop's length, quick enough that a box's new state drawn over its old one reads as one change
+const win=(t0,t1,dur=LOOP)=>{const e=Math.min(.22/(parseFloat(dur)||8),(t1-t0)/4),k=[0,t0,t0+e,Math.max(t0+e,t1-e),t1],v=[0,0,1,1,0];if(t1<1){k.push(1);v.push(0)}return{keyTimes:k.map(x=>+x.toFixed(4)).join(";"),values:v.join(";")}};
+// a glint along a line: a short bright dash that travels from (x1,y1) to (x2,y2) every 1.6 s, fading in and out at the ends
 const Glint=({x1,y1,x2,y2,w=1})=>{if(calm())return null;const L=Math.hypot(x2-x1,y2-y1);if(L<24)return null;
-return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={BRAND} strokeWidth={(+w||1)+2.5} strokeLinecap="round" strokeDasharray={`10 ${Math.round(L+40)}`} pointerEvents="none"><animate attributeName="stroke-dashoffset" values={`0;${-Math.round(L-10)}`} dur="2.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".4 0 .2 1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.12;.62;.8;1" dur="2.2s" repeatCount="indefinite"/></line>};
+return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={BRAND} strokeWidth={(+w||1)+2.5} strokeLinecap="round" strokeDasharray={`10 ${Math.round(L+40)}`} pointerEvents="none"><animate attributeName="stroke-dashoffset" values={`0;${-Math.round(L-10)}`} dur="1.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".4 0 .2 1"/><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.12;.62;.8;1" dur="1.6s" repeatCount="indefinite"/></line>};
 const Bead=({x1,x2,y,y2,t0,t1,dur,r,o,fill})=>{const kt=`0;${t0};${t1};1`,sp="0 0 1 1;.45 0 .2 1;0 0 1 1",f=win(t0,t1,dur);return <circle cx={x1} cy={y} r={r} fill={fill} opacity="0"><animate attributeName="cx" values={`${x1};${x1};${x2};${x2}`} keyTimes={kt} calcMode="spline" keySplines={sp} dur={dur} repeatCount="indefinite"/>{y2!==y&&<animate attributeName="cy" values={`${y};${y};${y2};${y2}`} keyTimes={kt} calcMode="spline" keySplines={sp} dur={dur} repeatCount="indefinite"/>}<animate attributeName="opacity" values={f.values.split(";").map(v=>v*o).join(";")} keyTimes={f.keyTimes} dur={dur} repeatCount="indefinite"/></circle>};
 export const Dot=({x1,x2,y,y2=y,t0,t1,dur=LOOP})=>{const d=Math.min(.02,(t1-t0)/6),p={x1,x2,y,y2,dur};return <g pointerEvents="none">
 <Bead {...p} t0={t0} t1={t1} r={9} o={.22} fill={BRAND}/>{t1+2*d<=1&&<><Bead {...p} t0={t0+2*d} t1={t1+2*d} r={2} o={.35} fill={BLUE}/><Bead {...p} t0={t0+d} t1={t1+d} r={3} o={.6} fill={BLUE}/></>}
@@ -46,7 +46,7 @@ export const Msg=({x1,x2,y,t,m,c=INK,dash,w,tx})=><g><Ar x1={x1} y1={y} x2={x2+(
 //         `last` state with the last caption); `top` is drawn above everything else
 //   X / OK a cross and a tick
 export const T=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
-export const Steps=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
+export const Steps=({caps,g,D=pace(14),only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
 export const Fig=({still,h,id,title,M,base,caps,g,only,last,c,top})=><svg viewBox={`0 0 640 ${h}`} role="img" aria-labelledby={id}><title id={id}>{title}</title>{M&&<Mk m={M}/>}{base}
 {still?<g>{last}<Cap t={caps[3][0]} c={c??caps[3][1]}/></g>:<Steps caps={caps} g={g} only={only}/>}{top}</svg>;
 export const X=({x,y,c=RED,r=5})=><g stroke={c} strokeWidth="2"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;

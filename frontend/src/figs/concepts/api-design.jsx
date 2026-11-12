@@ -1,6 +1,6 @@
 // Concepts › API design: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "api-design").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Cap,Caps}from"../parts.jsx";
+import{BG,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Show,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,OK,Cap,Caps,pace}from"../parts.jsx";
 
 // The API step, FIG 1: three questions pick the style.
 function ChooseFig({still,uid=""}){const M=`ac${uid}`;
@@ -49,7 +49,7 @@ return <Fig still={still} h={246} id={`ant${uid}`} caps={caps} title="The N+1 pr
 base={top} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // RPC, FIG 1: a remote call through generated stubs.
-function RpcFig({still,uid=""}){const M=`ar${uid}`,D="14s";
+function RpcFig({still,uid=""}){const M=`ar${uid}`,D=pace(14);
 const base=<g><Bx x={10} y={96} w={120} h={44} t="Orders" s="your code"/><Bx x={150} y={96} w={100} h={44} t="client stub" s="generated"/><Bx x={390} y={96} w={100} h={44} t="server stub" s="generated"/><Bx x={510} y={96} w={120} h={44} t="Payments" s="your code"/>
 <rect x={262} y={92} width={116} height={52} fill="none" stroke={GREY} strokeDasharray="3 3"/><T x={320} y={122} t="HTTP/2" a="middle"/><T x={320} y={84} t="network" a="middle"/></g>;
 const s1=<g><rect x={10} y={96} width={120} height={44} fill="none" stroke={BLUE} strokeWidth="2"/><T x={10} y={168} t="charge = payments.ChargeOrder(9101, 34900)" c={BLUE}/><T x={10} y={182} t="looks like a local function call"/></g>;
@@ -111,7 +111,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
 // Shaping an API, FIG 1: offset or cursor. Page 1 shows orders 50 to 46; order 51 arrives; ?offset=5 then
 // returns 46 to 42, repeating 46; ?before=46 returns 45 to 41, with nothing repeated or missed.
-function ApiPagesFig({still,uid=""}){const D="14s",X=[20,240,460],Y=i=>96+i*30;
+function ApiPagesFig({still,uid=""}){const D=pace(14),X=[20,240,460],Y=i=>96+i*30;
 const caps=[["1 · page 1 of a restaurant's orders, newest first: 50 down to 46",INK],["2 · a new order, 51, arrives before the next page is loaded",INK],["3 · ?offset=5 skips five rows of the new list, so order 46 shows up twice",RED],["4 · ?before=46 asks for orders older than the last one seen: no repeats, no gaps",BLUE]];
 const row=(x,i,n,c=GREY,fill=BG)=><g key={x+"-"+n}><rect x={x} y={Y(i)-14} width="160" height="26" fill={fill} stroke={c}/><text x={x+12} y={Y(i)+4} className="fl">order {n}</text></g>;
 const col=(i,t)=><text x={X[i]} y="72" className="fb">{t}</text>;

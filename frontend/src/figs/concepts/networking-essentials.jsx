@@ -1,11 +1,11 @@
 // Concepts › Networking essentials: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "networking").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,LINE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Line,SBox,Glow,Box}from"../parts.jsx";
+import{BG,LINE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Dot,Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Line,SBox,Glow,Box,pace}from"../parts.jsx";
 
 // ---------- 01 Layers ----------
 
 // FIG 1: a request is wrapped layer by layer on the phone and unwrapped on the server.
-function StackFig({still,uid=""}){const M=`ns${uid}`,D="14s";
+function StackFig({still,uid=""}){const M=`ns${uid}`,D=pace(14);
 const L=[["Application","HTTP"],["Transport","TCP"],["Network","IP"],["Link","Wi-Fi, fibre"]],Y=[44,86,128,170];
 const stack=(x,hi)=>L.map(([t,s],i)=><Bx key={i} x={x} y={Y[i]} w={150} h={34} t={t} s={s} c={hi?BLUE:GREY} fill={hi?LB:BG}/>);
 const pay=y=><Bx x={364} y={y} w={104} h={34} t="GET /menu/42" c={BLUE} fill={LB}/>;
@@ -17,7 +17,7 @@ return <Fig still={still} h={222} id={`nst${uid}`} M={M} caps={caps} title="How 
 base={<g>{stack(10)}{stack(480)}<T x={85} y={216} t="phone" a="middle"/><T x={555} y={216} t="server" a="middle"/></g>} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 2: private addresses inside a network, public ones on the internet.
-function IpFig({still,uid=""}){const M=`ni${uid}`,D="14s";
+function IpFig({still,uid=""}){const M=`ni${uid}`,D=pace(14);
 const base=<g><Bx x={10} y={96} w={120} h={44} t="Phone" s="192.168.1.23"/><Ar x1={132} y1={118} x2={186} y2={118} m={M}/><Bx x={190} y={96} w={130} h={44} t="Home router" s="public 49.36.80.14"/><Ar x1={322} y1={118} x2={366} y2={118} m={M}/><Bx x={370} y={96} w={90} h={44} t="Internet" s="many routers"/><Ar x1={462} y1={118} x2={486} y2={118} m={M}/><Bx x={490} y={96} w={140} h={44} t="Zotato LB" s="13.235.4.20"/>
 <rect x={4} y={58} width={322} height={132} fill="none" stroke={GREY} strokeDasharray="3 3"/><T x={10} y={72} t="home Wi-Fi: private addresses"/><rect x={484} y={58} width={152} height={176} fill="none" stroke={GREY} strokeDasharray="3 3"/><T x={490} y={72} t="Zotato's network"/></g>;
 const caps=[["1 · the home router lends the phone a private address with DHCP",INK],["2 · private addresses can't cross the internet: the router swaps in its public one (NAT)",BLUE],["3 · routers on the way forward it by the destination address's prefix",BLUE],["4 · inside Zotato, the load balancer passes it on to a server's private address",BLUE]];
@@ -166,7 +166,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // ---------- 07 Peer to peer ----------
 
 // FIG 1: setting up a WebRTC call: signalling, STUN, exchange, then direct (or TURN).
-function WebRtcFig({still,uid=""}){const M=`nc${uid}`,D="14s";
+function WebRtcFig({still,uid=""}){const M=`nc${uid}`,D=pace(14);
 const base=<g><Bx x={10} y={120} w={120} h={44} t="Customer" s="behind NAT"/><Bx x={510} y={120} w={120} h={44} t="Rider" s="behind NAT"/><Bx x={255} y={42} w={130} h={36} t="Signalling server"/><Bx x={170} y={214} w={120} h={34} t="STUN server"/></g>;
 const s1=<g><line x1={110} y1={120} x2={265} y2={78} stroke={INK}/><line x1={530} y1={120} x2={375} y2={78} stroke={INK}/><T x={150} y={92} t="WebSocket" a="end"/><T x={490} y={92} t="WebSocket"/></g>;
 const s2=<g><Ar x1={60} y1={166} x2={192} y2={212} m={M} c={BLUE} dash/><Ar x1={520} y1={166} x2={290} y2={212} m={M} c={BLUE} dash/><T x={10} y={268} t="you are 49.36.80.14:53012" c={BLUE}/><T x={630} y={268} t="you are 106.51.7.9:41877" a="end" c={BLUE}/></g>;
@@ -190,7 +190,7 @@ return <Fig still={still} h={244} id={`nvt${uid}`} M={M} caps={caps} title="Scal
 base={<line x1={250} y1={44} x2={250} y2={240} stroke={GREY} strokeDasharray="3 3"/>} g={[s1,s2,s3,s4]} only={[0]} last={<g>{s2}{s3}{s4}</g>}/>}
 
 // FIG 2: client-side load balancing with a service registry.
-function ClientLbFig({still,uid=""}){const M=`nl${uid}`,D="14s",I=[["A",84],["B",134],["C",184]];
+function ClientLbFig({still,uid=""}){const M=`nl${uid}`,D=pace(14),I=[["A",84],["B",134],["C",184]];
 const base=<g><Bx x={250} y={42} w={140} h={36} t="Service registry"/><Bx x={10} y={126} w={160} h={50} t="Dispatch" s="calls Orders"/>{I.map(([n,y])=><Bx key={n} x={480} y={y} w={150} h={34} t={`Orders ${n}`}/>)}</g>;
 const s1=<g>{I.map(([n,y])=><Ar key={n} x1={478} y1={y+17} x2={392} y2={70} m={M} dash/>)}<T x={436} y={58} t="I'm alive" a="middle"/></g>;
 const s2=<g><Ar x1={262} y1={80} x2={140} y2={124} m={M} c={BLUE}/><T x={196} y={92} t="A, B, C" a="end" c={BLUE}/><T x={90} y={194} t="cached: A B C" a="middle" c={BLUE}/></g>;
@@ -212,7 +212,7 @@ return <Fig still={still} h={272} id={`ndt${uid}`} M={M} caps={caps} title="Load
 base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 4: a dedicated load balancer, health checks and a new server.
-function DedicatedFig({still,uid=""}){const M=`nb${uid}`,D="14s",Y=[48,96,144,192];
+function DedicatedFig({still,uid=""}){const M=`nb${uid}`,D=pace(14),Y=[48,96,144,192];
 const base=<g><Bx x={10} y={100} w={130} h={50} t="Apps, browsers" s="know one address"/><Ar x1={142} y1={125} x2={206} y2={125} m={M}/><Bx x={210} y={100} w={130} h={50} t="Load balancer" s="api.zotato.in"/>{Y.slice(0,3).map((y,i)=><Bx key={y} x={480} y={y} w={150} h={36} t={`server ${i+1}`}/>)}</g>;
 const ln=(y,c=INK,dash)=><Ar key={y} x1={342} y1={125} x2={476} y2={y+18} m={M} c={c} dash={dash}/>;
 const s2=<g>{Y.slice(0,3).map(y=>ln(y,BLUE))}{!still&&Y.slice(0,3).map((y,k)=><Dot key={y} x1={342} x2={476} y={125} y2={y+18} t0={.28+k*.06} t1={.34+k*.06} dur={D}/>)}</g>;
@@ -236,7 +236,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // ---------- 09 Layer 4 and layer 7 ----------
 
 // FIG 1: a layer 4 load balancer passes a whole connection to one server.
-function L4Fig({still,uid=""}){const M=`n4${uid}`,D="14s",S=[["A",48],["B",98],["C",148]];
+function L4Fig({still,uid=""}){const M=`n4${uid}`,D=pace(14),S=[["A",48],["B",98],["C",148]];
 const base=<g><Bx x={10} y={92} w={120} h={44} t="Rider app" s="port 51234"/><Bx x={220} y={88} w={150} h={52} t="Layer 4 LB" s="reads IP + port only"/>{S.map(([n,y])=><Bx key={n} x={480} y={y} w={150} h={36} t={`server ${n}`}/>)}<Ar x1={132} y1={114} x2={216} y2={114} m={M}/></g>;
 const s1=<g><T x={174} y={106} t="SYN" a="middle"/><Ar x1={372} y1={114} x2={476} y2={116} m={M} c={BLUE}/><T x={424} y={108} t="hash → B" a="middle" c={BLUE}/></g>;
 const s2=<g><T x={295} y={160} t="every packet of this connection → B" a="middle" c={BLUE}/><T x={295} y={174} t="contents: encrypted bytes, unread" a="middle"/>{!still&&[0,1,2].map(k=><Dot key={k} x1={132} x2={476} y={114} y2={116} t0={.3+k*.05} t1={.4+k*.05} dur={D}/>)}</g>;
@@ -274,7 +274,7 @@ return <Fig still={still} h={244} id={`n9t${uid}`} caps={caps} title="Round trip
 base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 
 // FIG 2: regional partitioning: each region serves its own cities.
-function RegionsFig({still,uid=""}){const D="14s";
+function RegionsFig({still,uid=""}){const D=pace(14);
 const reg=(x,n,c,cities)=><g><rect x={x} y={42} width={300} height={130} fill={SURFACE_2} stroke={GREY}/><T x={x+10} y={60} t={n} b/><T x={x+10} y={76} t={cities}/><Bx x={x+16} y={92} w={130} h={36} t="Orders, Dispatch"/><Bx x={x+156} y={92} w={130} h={36} t={`Database (${c})`}/></g>;
 const base=<g>{reg(10,"West region · Mumbai","west","Mumbai, Pune, Ahmedabad …")}{reg(330,"South region · Hyderabad","south","Bengaluru, Chennai, Hyderabad …")}</g>;
 const s1=<g><T x={26} y={152} t="Pune order + Pune riders: all local" c={BLUE}/>{!still&&<Dot x1={80} x2={240} y={140} t0={.05} t1={.18} dur={D}/>}</g>;
@@ -328,7 +328,7 @@ base={base} g={[s1,s2,s3,s4]} only={[0,1,2,3]} last={s4}/>}
 // Moved here from the general Components articles (removed 2026-11-09), drawn the same way.
 // Load balancer, FIG: three ways to pick a server, one row each.
 const ALGOS=[["ROUND ROBIN","Each server in turn.","Fine when requests cost the same."],["LEAST CONNECTIONS","The server with the fewest","requests still open."],["HASH ON A KEY","The same key always goes","to the same server."]];
-function LbAlgosFig({still,uid=""}){const M=`lba${uid}`,D="9s",X=280,BX=420;
+function LbAlgosFig({still,uid=""}){const M=`lba${uid}`,D=pace(9),X=280,BX=420;
 const rows=[{notes:["requests 1, 4","requests 2, 5","requests 3, 6"],to:[0,1,2,0,1,2]},{notes:["9 open","2 open","5 open"],to:[1,1,1],glow:1},{notes:["user 7 · user 12","user 31","user 42"],to:[2,2,2],glow:2,key:"user 42"}];
 return <svg viewBox="0 0 640 330" role="img" aria-labelledby={`lbat${uid}`}><title id={`lbat${uid}`}>Three ways a load balancer picks a server. Round robin sends requests to each server in turn. Least connections sends the next request to the server with the fewest requests still open. Hashing on a key, such as the user ID, sends the same user to the same server every time.</title><Mark m={M}/>
 {ALGOS.map(([a,b,c],i)=><g key={a}>{i>0&&<line x1="0" x2="640" y1={i*110} y2={i*110} stroke={LINE}/>}<text x="0" y={i*110+40} className="fk">{a}</text><text x="0" y={i*110+58} className="fsub">{b}</text><text x="0" y={i*110+74} className="fsub">{c}</text></g>)}
@@ -338,7 +338,7 @@ return <svg viewBox="0 0 640 330" role="img" aria-labelledby={`lbat${uid}`}><tit
 {!still&&<g aria-hidden="true">{r.to.map((j,k)=>{const n=r.to.length,t0=.04+k*(.9/n),t1=t0+.9/n*.8;return <Dot key={k} x1={X+18} x2={BX-4} y={yc} y2={ys[j]} t0={+t0.toFixed(3)} t1={+t1.toFixed(3)} dur={D}/>})}{r.glow!==undefined&&<Glow x={BX} y={ys[r.glow]-12} w={96} h={24} t0={.04} t1={.94} dur={D}/>}</g>}</g>})}</svg>}
 // CDN, FIG: three cities. Pune's edge has the image (hit); Delhi's misses and fetches it through the
 // origin shield from the origin once; Chennai's edge misses but the shield now has it.
-function CdnEdgeFig({still,uid=""}){const M=`cde${uid}`,D="10s",Y=[60,160,260],EX=150,EW=130,SX=350,SW=120,OX=510;
+function CdnEdgeFig({still,uid=""}){const M=`cde${uid}`,D=pace(10),Y=[60,160,260],EX=150,EW=130,SX=350,SW=120,OX=510;
 const notes=["hit · answered here","miss · fetched once","miss · the shield has it"];
 return <svg viewBox="0 0 640 320" role="img" aria-labelledby={`cdet${uid}`}><title id={`cdet${uid}`}>Users in Pune, Delhi and Chennai each reach the CDN edge in their own city. Pune's edge already has the restaurant photo and answers in about 10 milliseconds. Delhi's edge does not, so it asks the origin shield, which fetches it from Zotato's origin once and keeps a copy. When Chennai's edge misses, the shield already has it, so the origin is not asked again.</title><Mark m={M}/>
 {Y.map(y=><Line key={y} x1={96} y1={y} x2={EX-2} y2={y} m={M}/>)}

@@ -1,6 +1,6 @@
 // Concepts › Caching: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "caching").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,DANGER_SOFT,GRID,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show}from"../parts.jsx";
+import{BG,DANGER_SOFT,GRID,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show,pace}from"../parts.jsx";
 
 // Caching in an interview, FIG 1: the same reads with and without a cache.
 function WhyFig({still,uid=""}){const M=`cw${uid}`;
@@ -164,7 +164,7 @@ base={base} g={[hot,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 // Moved here from the general Components articles (removed 2026-11-09), drawn the same way.
 // Cache, FIG: cache-aside for one menu. Hit: Redis answers in about 1 ms. Miss: Redis has nothing,
 // the Order API reads the database and stores the result with a TTL for the next request.
-function CacheAsideFig({still,uid=""}){const M=`cas${uid}`,D="12s",AX=150,RX=468;
+function CacheAsideFig({still,uid=""}){const M=`cas${uid}`,D=pace(12),AX=150,RX=468;
 const lanes=[[60,"GET menu:r42",false,"→"],[84,"the menu (hit) · nothing (miss)",true,"←"],[108,"SET menu:r42 EX 300",false,"→"],[204,"SELECT … FROM menu_items",false,"→"],[228,"rows",true,"←"]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`cast${uid}`}><title id={`cast${uid}`}>Cache-aside for one restaurant menu. The Order API first asks Redis for menu:r42. On a hit, Redis returns the menu in about a millisecond and the database is never asked. On a miss, Redis returns nothing, the Order API reads the menu from the database in about 5 milliseconds, and stores it in Redis with a 5 minute expiry for the next request. When the restaurant changes its menu, the API updates the database and deletes the key.</title><Mark m={M}/>
 <rect x="20" y="40" width={AX-20} height="210" fill={BG} stroke={GREY}/><text x={(20+AX)/2} y="140" textAnchor="middle" className="fb">Order API</text><text x={(20+AX)/2} y="156" textAnchor="middle" className="fl">your code</text>
@@ -179,7 +179,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`cast${uid}`}><tit
 // Cache, FIG: the "cache restarts at dinner" challenge. 12,000 queries a second, 90% hits, 10% writes:
 // the database (db.m5.large, about 2,500 a second) normally sees about 2,300. The cache is down for
 // 10 minutes (every query goes to the database), then comes back empty and warms up over 10 minutes.
-function CacheWarmFig({still,uid=""}){const D="10s",x=t=>80+t*11.5,y=q=>232-q*.0145,CAP=2500,BASE=2280,ALL=12000;
+function CacheWarmFig({still,uid=""}){const D=pace(10),x=t=>80+t*11.5,y=q=>232-q*.0145,CAP=2500,BASE=2280,ALL=12000;
 const load=[[0,BASE],[15,BASE],[15,ALL],[25,ALL],[35,BASE],[45,BASE]],path=load.map(([t,q],i)=>`${i?"L":"M"}${x(t)} ${y(q)}`).join("");
 const over=`M${x(15)} ${y(CAP)}L${x(15)} ${y(ALL)}L${x(25)} ${y(ALL)}L${x(25+10*(ALL-CAP)/(ALL-BASE))} ${y(CAP)}Z`;
 return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>Database queries a second during Zotato's dinner rush. With the cache working, the database sees about 2,300 a second, just under the 2,500 a db.m5.large handles. At 8:15 the cache crashes and every one of the 12,000 queries a second goes to the database for 10 minutes. When the cache returns at 8:25 it is empty, so the load falls back only as the cache warms up, reaching normal at 8:35. For about 20 minutes the database is asked for far more than it can handle.</title>
