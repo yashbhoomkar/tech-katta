@@ -14,6 +14,21 @@ const FIG_FAILED=<p className="a-fig-err">This figure couldn't be drawn. The res
 function useLoopInView(ref,still,key){useEffect(()=>{const b=ref.current;if(!b||still||typeof IntersectionObserver!=="function")return;let seen=false;
 const io=new IntersectionObserver(([e])=>{const s=b.querySelector("svg");if(!s?.pauseAnimations)return;try{if(e.isIntersecting){if(!seen){seen=true;s.setCurrentTime(0)}s.unpauseAnimations()}else s.pauseAnimations()}catch{}},{threshold:.3});
 io.observe(b);return()=>io.disconnect()},[still,key])}// eslint-disable-line
-export function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const body=useRef(null);useLoopInView(body,still,id+theme);const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
-return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body" ref={body}><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>
+// On a phone (≤680 px) a figure is drawn at a readable size (600 px wide, labels about 9 to 11 px instead of 5.7) and
+// scrolls sideways in its frame. Its step line is shown above the frame, following the steps, so it stays readable
+// while the reader pans; a fade on the right edge and a hint say there is more.
+const PHONE="(max-width: 680px)";
+function usePhone(){const[m,setM]=useState(()=>typeof matchMedia==="function"&&matchMedia(PHONE).matches);
+useEffect(()=>{if(typeof matchMedia!=="function")return;const q=matchMedia(PHONE),on=()=>setM(q.matches);q.addEventListener("change",on);return()=>q.removeEventListener("change",on)},[]);return m}
+function useStepLine(ref,on,key){const[line,setLine]=useState(null);
+useEffect(()=>{if(!on){setLine(null);return}const show=x=>setLine(l=>x?(l?.t===x.textContent?l:{t:x.textContent,c:x.style.fill}):null);
+const tick=()=>{const s=ref.current?.querySelector("svg");if(!s)return;const one=s.querySelector(".tk-cap");if(one)return show(one);const g=s.querySelector(".tk-caps");if(!g)return show(null);
+if(s.animationsPaused?.())return;const t=g.querySelectorAll("text"),d=+g.dataset.dur||8,now=s.getCurrentTime?.()||0;show(t[Math.min(t.length-1,Math.floor((now%d)/d*t.length))])};
+tick();const i=setInterval(tick,200);return()=>clearInterval(i)},[on,key]);// eslint-disable-line
+return line}
+export function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const body=useRef(null);useLoopInView(body,still,id+theme);
+const phone=usePhone(),line=useStepLine(body,phone,id+theme+still),[moved,setMoved]=useState(false),[end,setEnd]=useState(false);
+const pan=e=>{const b=e.currentTarget;if(b.scrollLeft>8)setMoved(true);setEnd(b.scrollLeft+b.clientWidth>=b.scrollWidth-4)};const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
+return <figure className={"a-fig"+rd+(phone?" a-fig-pan":"")+(end?" at-end":"")}><div className="a-fig-head">{title}</div>{phone&&line&&<div className="a-fig-step" style={line.c?{color:line.c}:undefined} aria-hidden="true">{line.t}</div>}
+<div className="a-fig-body" ref={body} onScroll={phone?pan:undefined}><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>{phone&&!moved&&<p className="a-fig-hint" aria-hidden="true">⇆ Swipe the figure sideways to see all of it</p>}
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id+theme} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
