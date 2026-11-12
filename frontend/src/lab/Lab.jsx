@@ -12,6 +12,6 @@ import{Canvas}from"./Canvas.jsx";
 
 // Signed in, the account's designs are merged in before the Lab opens (at most 4 s), so a stale copy
 // in this browser is never what gets edited.
-export default function Lab({challenge,embedded,problem,onDesign,trace,replay}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
+export default function Lab({challenge,embedded,problem,onDesign,trace,replay,flow}){const[st,set]=useState({});const go=()=>{set({});getJSON("/v1/lab").then(async lab=>{useCatalogue(lab);await Promise.race([syncLab(),new Promise(r=>setTimeout(r,4000))]);set({lab})},()=>set({err:1}))};useEffect(go,[]);
 if(st.err)return <LoadError what="the canvas" retry={go}/>;if(!st.lab)return <Loading label="Loading the canvas"/>;
-return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas trace={trace} replay={replay} lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}
+return <div className="lab-wrap"><div className="lab-small">{st.lab.smallScreen}</div><ReactFlowProvider><Canvas trace={trace} replay={replay} flow={flow} lab={st.lab} start={challenge} embedded={embedded} problem={problem} onDesign={onDesign}/></ReactFlowProvider></div>}

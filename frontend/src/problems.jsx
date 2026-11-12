@@ -22,7 +22,9 @@ return{prog,lab,err,designed,tick,stats}}
 
 // The question list: status, number, title, difficulty, its related challenge's stars; filters by difficulty.
 export function QuestionTable({p,qs,groups,base,data,todo}){
-const s=p.solve||{cols:["","#","","","",""],designed:"",solved:""},[level,setLevel]=useState("all");const{prog,lab,designed,stats}=data;
+const s=p.solve||{cols:["","#","","","",""],designed:"",solved:""},[level,setLevel]=useState("all");
+// a problem solved for the first time in this visit (set by solve.jsx): its tick is marked once, then forgotten
+const[fresh]=useState(()=>{try{const v=sessionStorage.getItem("tk-just-solved");sessionStorage.removeItem("tk-just-solved");return v}catch{return null}});const{prog,lab,designed,stats}=data;
 const levels=(groups||[]).filter(g=>qs.some(a=>a.group===g[0]));
 const rows=qs.map(a=>({a,done:!!prog.steps["solved:"+a.slug],tried:!!prog.steps["practice:"+a.slug]||designed.has(a.slug)||readSubs(a.slug).length>0,best:bestScore(a.slug),ch:a.lab&&lab?.challenges.find(x=>x.id===a.lab)}))
 .filter(r=>(level==="all"||r.a.group===level)&&(!todo||!r.done));
@@ -31,7 +33,7 @@ return <div className="qt">
 {levels.length>1&&<div className="qt-levels" role="group" aria-label={s.cols[3]}>{[["all",p.all],...levels.map(g=>[g[0],g[1]])].map(([id,t])=><button key={id} type="button" aria-pressed={level===id} className={(level===id?"on ":"")+id} onClick={()=>setLevel(id)}>{t}</button>)}</div>}
 {rows.length?<table className="qt-table"><thead><tr>{head.map((c,i)=><th key={i} scope="col" className={cls[i]}>{c}</th>)}</tr></thead><tbody>
 {rows.map(({a,done,tried,best,ch})=><tr key={a.slug}>
-<td className="c0">{done?<span className="qt-st done" title={s.solved}>✓<span className="sr">{s.solved}</span></span>:tried?<span className="qt-st tried" title={s.designed}>◐<span className="sr">{s.designed}</span></span>:<span className="qt-st" aria-hidden="true"></span>}</td>
+<td className="c0">{done?<span className={"qt-st done"+(fresh===a.slug?" fresh":"")} title={s.solved}>✓<span className="sr">{s.solved}</span></span>:tried?<span className="qt-st tried" title={s.designed}>◐<span className="sr">{s.designed}</span></span>:<span className="qt-st" aria-hidden="true"></span>}</td>
 <td className="c1">{qno(a)}</td>
 <td className="c2"><a href={`#${base}/${a.slug}`}>{a.title}</a></td>
 <td className="c3"><em className={"pb-tag "+a.group}>{a.tag}</em></td>

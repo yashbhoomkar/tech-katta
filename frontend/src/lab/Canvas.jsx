@@ -4,7 +4,7 @@ import{ReactFlow,Background,Controls,addEdge,useNodesState,useEdgesState,useReac
 import{catalogue,displayName}from"./engine.js";
 import{STORE_KEY,MAX_NODES}from"./store.js";import{runChallenge}from"../eval/challenge.js";import{recordStars}from"../progress.js";import{track}from"../analytics.js";import{paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
 import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes}from"./nodes.jsx";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
-export function Canvas({lab,start,embedded,problem,onDesign,trace,replay}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
+export function Canvas({lab,start,embedded,problem,onDesign,trace,replay,flow}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
 const followRf=useReactFlow();useEffect(()=>{if(!trace)return;const go=()=>{const ns=[trace.at,trace.from].filter(Boolean).map(id=>followRf.getNode(id)).filter(Boolean);if(!ns.length)return;
@@ -85,7 +85,7 @@ const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 // Arrowheads take the current ink colour (saved designs carry the colour of the theme they were drawn in).
 const flowEdges=React.useMemo(()=>edges.map(e=>e.markerEnd&&typeof e.markerEnd==="object"?{...e,markerEnd:{...e.markerEnd,color:INK}}:e),[edges,theme]);// eslint-disable-line
-return <Ctx.Provider value={{cat,trace,replay}}><div className={"lab"+(trace?" lab-watch":"")}>
+return <Ctx.Provider value={{cat,trace,replay,flow}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
