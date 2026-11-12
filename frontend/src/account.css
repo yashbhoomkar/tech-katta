@@ -33,3 +33,13 @@
 .acct-signin-link{height:36px;padding:0 16px;border:1px solid var(--brand-edge);border-radius:var(--r-md);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font)}
 .acct-signin-link:hover{background:var(--brand-strong)}
 .header .acct .acct-err{border-radius:var(--r-md)}
+
+/* Sign-in dialog (landing header): a card over the page, like the sign-in card on locked pages */
+button.acct-signin-link{cursor:pointer}
+.acct-dialog{width:min(420px,calc(100vw - 32px));max-width:none;padding:0;border:0;background:none;color:var(--ink)}
+.acct-dialog::backdrop{background:var(--scrim)}
+.acct-dialog-card{position:relative;padding:28px 24px 24px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-3)}
+.acct-dialog-card>b{display:block;margin:0 40px 10px 0;font:600 26px/1.15 var(--font-display);letter-spacing:-.015em;color:var(--ink)}
+.acct-dialog-card>p{margin:0 0 18px;font:400 15.5px/1.55 var(--font);color:var(--ink-2)}
+.acct-dialog-x{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;border-radius:var(--r-full);background:none;color:var(--muted);font-size:17px;cursor:pointer;transition:background-color var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
+.acct-dialog-x:hover{background:var(--hover);color:var(--ink)}

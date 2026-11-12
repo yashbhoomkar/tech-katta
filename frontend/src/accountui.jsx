@@ -11,11 +11,13 @@ useEffect(()=>{if(a.ready&&a.enabled&&!a.user&&g.current)renderGoogleButton(g.cu
 return <span className="acct-gwrap"><span ref={g} className="acct-g"/>{blocked&&t?.googleBlocked&&<span className="acct-err" role="alert">{t.googleBlocked}</span>}</span>}
 
 // Header control. Signed out: Google's button (unless `button` is false). Signed in: avatar + menu.
-export function AccountControl({t,privacyHref="#privacy",button=true,signInHref}){const a=useAccount(),box=useRef(null);const[open,setOpen]=useState(false);
+export function AccountControl({t,privacyHref="#privacy",button=true,signInHref,termsBase="/dashboard/"}){const a=useAccount(),box=useRef(null);const[open,setOpen]=useState(false),[signing,setSigning]=useState(false);
 useEffect(()=>{if(!open)return;const k=e=>{if(e.key==="Escape")setOpen(false)};const m=e=>{if(!box.current?.contains(e.target))setOpen(false)};addEventListener("keydown",k);addEventListener("pointerdown",m,true);return()=>{removeEventListener("keydown",k);removeEventListener("pointerdown",m,true)}},[open]);
 if(!t||!a.ready||!a.enabled)return null;
-// signed out, the header only points to the sign-in card (where the Terms box is)
-if(!a.user)return button&&signInHref?<div className="acct"><a className="acct-signin-link" href={signInHref}>{t.signIn}</a></div>:null;
+// signed out: Sign in opens a dialog right here (the Terms box and Google's button); without its copy, the
+// header only points to the sign-in card on the page
+if(!a.user){if(!button)return null;if(t.signInDialog)return <div className="acct"><button type="button" className="acct-signin-link" aria-haspopup="dialog" onClick={()=>setSigning(true)}>{t.signIn}</button>{signing&&<SignInDialog t={t} base={termsBase} onClose={()=>setSigning(false)}/>}</div>;
+return signInHref?<div className="acct"><a className="acct-signin-link" href={signInHref}>{t.signIn}</a></div>:null}
 const who=a.user.name||a.user.email||t.menu;
 return <div className="acct" ref={box}><button type="button" className="acct-btn" aria-expanded={open} aria-haspopup="true" aria-label={`${t.menu}: ${who}`} onClick={()=>setOpen(o=>!o)}>{a.user.picture?<img src={a.user.picture} alt="" referrerPolicy="no-referrer"/>:<i aria-hidden="true">{who[0].toUpperCase()}</i>}<span>{who}</span></button>
 {open&&<div className="acct-menu"><b>{a.user.name}</b><small>{a.user.email}</small><p className={a.error?"bad":""}>{a.syncing?t.syncing:a.error?t.syncFailed:t.saved}</p>
@@ -23,6 +25,14 @@ return <div className="acct" ref={box}><button type="button" className="acct-btn
 <a href={privacyHref} onClick={()=>setOpen(false)}>{t.privacy}</a><button type="button" onClick={()=>{setOpen(false);signOut()}}>{t.signOut}</button>
 {t.signOutAll&&<button type="button" onClick={async()=>{if(confirm(t.signOutAllConfirm)){setOpen(false);try{await signOutAll()}catch{alert(t.syncFailed)}}}}>{t.signOutAll}</button>}
 <button type="button" className="danger" onClick={async()=>{if(confirm(t.deleteConfirm)){setOpen(false);try{await deleteAccount()}catch{alert(t.syncFailed)}}}}>{t.delete}</button></div>}</div>}
+
+// The header's sign-in, as a dialog over the page: Esc, the close button or a tap outside closes it, and focus
+// goes back to the Sign in button. Signing in closes it (the header then shows the account button).
+function SignInDialog({t,base,onClose}){const d=useRef(null),a=useAccount(),x=t.signInDialog;
+useEffect(()=>{const el=d.current;try{el.showModal()}catch{el.setAttribute("open","")}const c=()=>onClose();el.addEventListener("close",c);return()=>{el.removeEventListener("close",c);if(el.open)el.close()}},[]);// eslint-disable-line
+return <dialog ref={d} className="acct-dialog" aria-labelledby="acct-dlg-t" onClick={e=>{if(e.target===d.current)d.current.close()}}><div className="acct-dialog-card">
+<button type="button" className="acct-dialog-x" aria-label={x.close||t.signIn} onClick={()=>d.current.close()}>✕</button>
+<b id="acct-dlg-t">{x.title}</b><p>{x.text}</p><SignInBox t={t} base={base}/>{a.error&&<span className="acct-err" role="alert">{t.signInFailed}</span>}</div></dialog>}
 
 // Under a challenge score while signed out: why signing in helps, and the button right there.
 export function KeepStars({t}){const a=useAccount();if(!t?.keepStars||!a.ready||!a.enabled||a.user)return null;
