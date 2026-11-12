@@ -9,6 +9,11 @@ return createPortal(<div className="fs" role="dialog" aria-modal="true" aria-lab
 // A figure that fails to draw says so in its own box; the article around it is unaffected. The boundary is keyed
 // by the figure id: the next article reuses this block, and a working figure there must not inherit the failure.
 const FIG_FAILED=<p className="a-fig-err">This figure couldn't be drawn. The rest of the article is fine.</p>;
-export function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
-return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body"><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>
+// A figure's loop starts from its first step when it first comes into view (not when the page loaded, which left
+// readers arriving mid-loop), and it pauses while it is off screen.
+function useLoopInView(ref,still,key){useEffect(()=>{const b=ref.current;if(!b||still||typeof IntersectionObserver!=="function")return;let seen=false;
+const io=new IntersectionObserver(([e])=>{const s=b.querySelector("svg");if(!s?.pauseAnimations)return;try{if(e.isIntersecting){if(!seen){seen=true;s.setCurrentTime(0)}s.unpauseAnimations()}else s.pauseAnimations()}catch{}},{threshold:.3});
+io.observe(b);return()=>io.disconnect()},[still,key])}// eslint-disable-line
+export function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const body=useRef(null);useLoopInView(body,still,id+theme);const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
+return <figure className={"a-fig"+rd}><div className="a-fig-head">{title}</div><div className="a-fig-body" ref={body}><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id+theme} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
