@@ -10,16 +10,6 @@
   "dek": "Zotato wants its food search to know what India's restaurant sites and food blogs say: menus, timings, reviews. That means fetching about 100 crore public pages a month, without ever hammering a small restaurant's website or fetching the same page twice.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A crawler is a loop: take a URL, fetch the page, save it, pull out its links, and add the new ones to the list of URLs to fetch (the frontier).",
-        "Be polite: one queue per site, one page at a time per site, a pause between pages, and robots.txt always respected. Speed comes from crawling many sites at once, never one site hard.",
-        "Never fetch the same URL twice in a round: check every new link against a filter of URLs already seen. Spot pages that are copies of each other by their content.",
-        "The web has traps (endless calendars, URLs that grow forever). Cap pages per site, URL length and depth.",
-        "Recrawl by how often a page changes: a restaurant's menu page every few days, an old blog post every few months."
-      ]
-    },
-    {
       "t": "example"
     },
     {

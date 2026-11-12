@@ -10,16 +10,6 @@
   "dek": "The method in an interview, where to cache (device, edge, shared cache or in the process), who talks to the cache and when, what to evict when it's full, and what goes wrong.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Add a cache only after naming a problem with numbers: too many reads for the database, a slow query, a busy database CPU, or a latency target the database can't meet.",
-        "A shared cache (Redis, Memcached) that every app server talks to over the network is what interviewers mean by 'a cache'. Start there.",
-        "Cache-aside (lazy loading): your code checks the cache, and on a miss reads the database and fills the cache. Lean and simple: the one to remember.",
-        "LRU removes the entry unused for the longest time. It fits most workloads, because what was used recently tends to be used again.",
-        "Stampede: a popular entry expires and thousands of requests hit the database together. Let one request rebuild it while the others wait (request coalescing), or refresh it before it expires."
-      ]
-    },
-    {
       "t": "example"
     },
     {

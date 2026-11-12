@@ -10,15 +10,6 @@
   "dek": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Design the service that sends them the match: the crowd arrives at the toss within minutes, the last over is the busiest moment, and a stall of a few seconds is seen by crores.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A CDN carries the match. No server farm takes 87.5 lakh requests a second; the edges answer 99 in 100 near the viewers, so your servers see 87,500.",
-        "Live is harder than recorded video: every 4-second segment is new, so the edges fetch it from your origin first, and an origin failure reaches every viewer within seconds.",
-        "The crowd arrives at the toss in minutes, faster than servers boot. Start the capacity before 7 pm, sized from past matches; keep autoscaling for surprises.",
-        "Plan to degrade, not to fall over: drop the highest quality, switch off the extras, keep the picture going."
-      ]
-    },
-    {
       "t": "h2",
       "x": "1. Requirements"
     },

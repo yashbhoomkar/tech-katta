@@ -10,14 +10,6 @@
   "dek": "PostgreSQL is where most designs should start: transactions, SQL, rich indexes, JSON, geospatial queries and a huge set of extensions. Here is what is going on underneath (row versions, processes, the write-ahead log), how it scales, and where it stops.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "PostgreSQL keeps old and new versions of rows side by side (MVCC), so readers never block writers. VACUUM cleans up the old versions.",
-        "Each connection is a separate server process, so many app servers need a pooler such as PgBouncer in front.",
-        "One primary with replicas goes a long way: thousands of writes and tens of thousands of reads a second on good hardware. Beyond that, partition, then shard (for example with Citus)."
-      ]
-    },
-    {
       "t": "example"
     },
     {

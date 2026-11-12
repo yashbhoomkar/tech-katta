@@ -10,14 +10,6 @@
   "dek": "Most apps read far more than they write, and a database that copes with the writes can still sink under the reads. Here is how each layer, from the CDN to read replicas, takes its share, how to handle the one key everyone wants, and how to keep users from seeing their own changes vanish.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Most apps read far more than they write. A database that takes the writes easily can still sink under the reads.",
-        "Add layers that answer reads before they reach the database: the CDN, a cache, read replicas, and copies of data shaped for one screen.",
-        "Every layer serves slightly old data. Decide which reads must be fresh and send only those to the primary, and plan for the few hot keys every layer sees."
-      ]
-    },
-    {
       "t": "example"
     },
     {

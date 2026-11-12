@@ -10,14 +10,6 @@
   "dek": "How many different people saw this ad today? Which dishes are trending this hour? What is the p99 latency across 200 servers? Exact answers need memory that grows with the data. Sketches answer in a few kilobytes with a small, known error, and they merge, so each server or hour can keep its own.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A sketch is a small structure that answers one question approximately with a known error: Bloom filters for 'seen before?', HyperLogLog for 'how many distinct?', Count-Min for 'how often?', t-digest for percentiles.",
-        "Memory stays fixed however much data arrives: 12 KB counts distinct users to within about 1%, whether there are a thousand or a crore.",
-        "Sketches of the same kind merge, so you can keep one per server or per hour and combine them later. Use them for dashboards and decisions, not for billing."
-      ]
-    },
-    {
       "t": "example"
     },
     {

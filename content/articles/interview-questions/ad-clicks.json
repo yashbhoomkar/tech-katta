@@ -10,16 +10,6 @@
   "dek": "Restaurants on Zotato can pay to appear higher in the list. They want to watch views and clicks minute by minute, and they're billed per click. Count crores of events a day fast enough to watch, and exactly enough to bill.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Don't update a counter row per click. Stream events into a log, and count them in memory per ad per minute; write one row per ad per minute.",
-        "Count each click in the minute it happened, not the minute it arrived. Keep each minute open a few extra minutes for late arrivals, then close it.",
-        "Every click has an id, so a resent click counts once. The aggregator remembers ids for as long as a minute stays open; later resends are left to the recount. Repeat clicks by the same person on the same ad within a few minutes count once too.",
-        "Two paths: a fast count for dashboards, and a nightly recount from the raw events for the bill. Where they differ, the recount wins.",
-        "Very popular ads are hot keys: count them on several machines and add up the parts."
-      ]
-    },
-    {
       "t": "example"
     },
     {

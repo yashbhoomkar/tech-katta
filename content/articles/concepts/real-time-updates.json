@@ -10,16 +10,6 @@
   "dek": "The two hops and when you need them, polling to WebSockets for the first, routing each update to the server holding the connection for the second, the deep dives (reconnection, huge fan-out, ordering), and the whole path at scale.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "HTTP is ask-then-answer. To show changes as they happen, either the client asks very often (polling) or the server keeps a connection open and pushes (long polling, SSE, WebSockets).",
-        "Polling asks every few seconds: simple and stateless, but always up to one interval late and wasteful when nothing changes. Long polling holds each request open until there's news.",
-        "Pull: each connection server polls the database or a queue for its users' updates. Simple, but adds delay and load.",
-        "Reconnection: number every update, let the client say the last one it saw, and replay what it missed; detect dead connections with heartbeats; reconnect with backoff and jitter.",
-        "Getting an update to a phone takes two hops: from the service where it happened to the server holding that phone's open connection, then down that connection."
-      ]
-    },
-    {
       "t": "example"
     },
     {

@@ -10,16 +10,6 @@
   "dek": "Zotato Snaps lets diners post photos of what they ate. Each one shows on their profile and on the restaurant's page within seconds, loads fast on a 4G phone, and survives a dish going viral.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Photos are big and written once; their details (who, where, when) are small and read a lot. Bytes go to object storage behind a CDN, details go to a database.",
-        "Phones upload straight to object storage with a short-lived signed URL. A queue then hands each photo to workers that make the sizes the app shows.",
-        "Nobody downloads the original: the app asks for the size it needs, and the CDN serves almost all of them.",
-        "Store details by owner, and keep a second table by restaurant, because both pages list photos newest first.",
-        "A viral photo's like count is one hot row. Spread it over several rows, or count in memory and save every few seconds."
-      ]
-    },
-    {
       "t": "example"
     },
     {

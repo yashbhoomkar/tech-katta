@@ -10,14 +10,6 @@
   "dek": "Placing an order means charging a card, telling the restaurant, finding a rider and telling the customer, over minutes and across services. Any step can fail or stall. Here is how to keep such a process in a known state, move it on when nothing happens, and survive a crash halfway through.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "An order, a payout or a refund is a process whose steps span minutes or days and several services. Any step can fail, and the process must still end somewhere sensible.",
-        "Model it as a state machine: each record is in one named state, only listed moves are allowed, and timers move it on when nothing happens.",
-        "For long processes with many steps, a workflow engine saves each step's result, so after a crash the process resumes instead of starting over or repeating steps."
-      ]
-    },
-    {
       "t": "example"
     },
     {

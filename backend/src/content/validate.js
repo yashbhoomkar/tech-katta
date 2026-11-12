@@ -4,7 +4,8 @@ import { validatePractice2 } from './validate-practice2.js';
 import { FIGS } from './figs/index.js';
 // Checks loaded content before the API serves it, so a typo in a JSON file is rejected at deploy
 // (and at startup) instead of breaking the site. Returns a list of problems; empty means valid.
-const BLOCKS = new Set(['tldr', 'example', 'fig', 'h2', 'h3', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy', 'lab']);
+// no 'tldr': the "In 30 seconds" box was removed from every article (owner, 2026-11-12: it added no value)
+const BLOCKS = new Set(['example', 'fig', 'h2', 'h3', 'p', 'list', 'type', 'code', 'table', 'more', 'analogy', 'lab']);
 // Figure ids the frontend can draw: one list per sub-tab in ./figs/<tab>/<sub-tab>.js (see ./figs/index.js).
 export { FIGS };
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -19,7 +20,7 @@ function checkBlocks(blocks, where, problems, targets = { challenges: new Set(),
     const at = `${where}[${i}]`;
     if (!b || !BLOCKS.has(b.t)) { problems.push(`${at}: unknown block type ${b && b.t}`); return; }
     if (['h2', 'h3', 'p', 'analogy'].includes(b.t) && !isText(b.x)) problems.push(`${at}: needs text x`);
-    if (['list', 'tldr'].includes(b.t) && !(Array.isArray(b.items) && b.items.length && b.items.every(isText))) problems.push(`${at}: needs items`);
+    if (b.t === 'list' && !(Array.isArray(b.items) && b.items.length && b.items.every(isText))) problems.push(`${at}: needs items`);
     if (b.t === 'fig') { if (!FIGS.has(b.id)) problems.push(`${at}: unknown figure ${b.id}`); if (!isText(b.cap)) problems.push(`${at}: needs cap`); }
     if (b.t === 'type') {
       for (const key of ['name', 'kind', 'what', 'use', 'avoid', 'ex']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);

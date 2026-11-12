@@ -10,14 +10,6 @@
   "dek": "Why old figures mislead, what one machine holds today, what caches, databases, app servers and queues can each take, and how to use the numbers without over-building.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Old limits ('shard at 100 GB', 'keep big objects out of memory') come from hardware a decade old. Using them makes designs over-engineered, and interviewers notice.",
-        "Cache (Redis, Memcached): around 1 lakh to several lakh simple operations a second per node, sub-millisecond, with tens to hundreds of GB of memory.",
-        "Premature sharding: do the arithmetic first. Crores of users with a few KB each is tens or hundreds of GB, which one machine holds with room to spare."
-      ]
-    },
-    {
       "t": "example"
     },
     {

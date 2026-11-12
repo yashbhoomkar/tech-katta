@@ -10,14 +10,6 @@
   "dek": "Most people meet Redis as a cache, but it is a server of data structures kept in memory: strings, hashes, sorted sets, streams. Here is what each is for, why one command never interrupts another, how it keeps data across a restart, and how a cluster splits keys over machines.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Redis keeps everything in memory and runs commands one at a time, so each command is atomic and most finish in microseconds. One node handles around a lakh simple operations a second.",
-        "Pick the data structure for the job: strings for cached values, hashes for objects, sorted sets for rankings, streams for logs, counters with an expiry for rate limits.",
-        "It can save to disk, but a crash can still lose the last second of writes. Treat it as a cache or as fast secondary state, not as the only copy of orders or payments."
-      ]
-    },
-    {
       "t": "example"
     },
     {

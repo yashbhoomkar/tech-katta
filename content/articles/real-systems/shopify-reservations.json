@@ -10,14 +10,6 @@
   "dek": "While a buyer pays, Shopify holds the units in their cart so nobody else can buy them. It moved those holds out of Redis and into the MySQL database that keeps the stock: one row per unit, SKIP LOCKED to share the rows out, and a slowdown that turned out to be connections, not queries.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "While payment runs, Shopify reserves the units being bought. The reservations were in Redis and the stock ledger in MySQL, and nothing could change both in one step, so a crash between the two could oversell or undersell.",
-        "They moved reservations into the same MySQL database: one row per unit for sale (at most 1,000 per item and location), handed out with `FOR UPDATE SKIP LOCKED`, so checkouts at the same moment take different rows instead of waiting for one.",
-        "In load tests the ceiling wasn't the queries. Other checkout code held database connections too long. Tagging every query with the process that sent it showed who, and fixing that removed the limit."
-      ]
-    },
-    {
       "t": "h2",
       "x": "The problem"
     },

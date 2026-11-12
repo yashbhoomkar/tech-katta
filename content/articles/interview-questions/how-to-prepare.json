@@ -10,15 +10,6 @@
   "dek": "What to learn first, how to practise so it holds up in the room, how long it takes, and how to tell when you're ready.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Learn the vocabulary first (the core concepts and the ten named technologies), then spend most of your time practising questions out loud, against a clock.",
-        "Practise actively: answer a question before reading the worked answer, then compare. Reading answers alone feels like progress but doesn't hold up in an interview.",
-        "Four to eight weeks at about an hour a day is a common plan: less if you design systems at work, more if you never have.",
-        "You're ready when you can take a question you haven't seen, reach a working design in about 20 minutes, and go deep on its hardest part."
-      ]
-    },
-    {
       "t": "h2",
       "x": "Weeks 1 and 2: the vocabulary"
     },

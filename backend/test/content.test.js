@@ -286,6 +286,13 @@ test('validation reports typos: unknown figure, bad table, unknown section', () 
   assert.ok(problems.some((p) => p.includes('every row needs 2 cells')));
 });
 
+test('the "In 30 seconds" box (tldr) is no longer a block: an article with one is refused', () => {
+  const article = structuredClone(allArticles.find((a) => a.slug === 'caching'));
+  article.body.unshift({ t: 'tldr', items: ['a summary'] });
+  assert.ok(validateContent({ site, examples, articles: [article] }).some((p) => p.includes('unknown block type tldr')));
+  assert.ok(allArticles.every((a) => !a.body.some((b) => b.t === 'tldr')));
+});
+
 test('validation checks every site.json field the pages render', () => {
   const check = (change) => { const bad = structuredClone(site); change(bad); return validateContent({ site: bad, examples, articles: allArticles, lab }); };
   assert.deepEqual(check(() => {}), []);

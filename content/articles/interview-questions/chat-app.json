@@ -10,16 +10,6 @@
   "dek": "Zotato Chat lets friends plan dinner together: one-to-one chats and small groups, messages that arrive in a blink, ticks that show they were delivered and read, and nothing lost when a phone drops off the network in a lift.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Phones keep a connection open to a gateway server, so messages can be pushed to them instantly. A registry remembers which gateway each person is on.",
-        "A message is saved before it's acknowledged. Then it's passed to the gateways of everyone in the conversation, or to a phone notification for anyone offline.",
-        "Every conversation numbers its messages: 41, 42, 43. That gives one order for everyone, and lets a phone that was offline ask for \"everything after 42\".",
-        "Phones attach their own id to each message they send, so a resend after a bad network is saved once, not twice.",
-        "Ticks are just more small messages: \"delivered up to 45\", \"read up to 45\"."
-      ]
-    },
-    {
       "t": "example"
     },
     {

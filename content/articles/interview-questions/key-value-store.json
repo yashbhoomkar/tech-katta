@@ -10,16 +10,6 @@
   "dek": "Zotato keeps carts, sessions and app settings for 20 crore accounts: about a terabyte of small values, read lakhs of times a second. Build a store that spreads them over many machines, keeps three copies, and keeps working when a machine dies.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "The API is tiny: get, put and delete by key. All the work is in where keys live and how copies agree.",
-        "Place keys with consistent hashing: machines and keys are hashed onto a ring, and each key lives on the next few machines clockwise. Adding a machine moves only a small slice of keys.",
-        "Keep three copies. A write waits for two to confirm, a read asks two; since 2 + 2 > 3, every read reaches at least one copy with the latest write.",
-        "Copies can disagree for a while. Version every value, return the newest, and repair stale copies in the background.",
-        "On each machine, writes go to a log on disk first, then to memory, and are written out in sorted files later. Fast writes, and nothing lost in a crash."
-      ]
-    },
-    {
       "t": "example"
     },
     {

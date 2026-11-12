@@ -10,16 +10,6 @@
   "dek": "A bakery owner in Pune fixes a price in the menu PDF on the counter laptop, and the copy on their phone updates a few seconds later. Store people's files safely, keep every device in step, and don't resend a 200 MB video because one second of it changed.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Two kinds of data: the file bytes go to object storage, and the file list (names, folders, versions, which chunks make up each file) goes to a database.",
-        "Split every file into 4 MB chunks named by their hash. Upload only the chunks the server doesn't already have, straight to storage with short-lived signed URLs.",
-        "A file changes only when its new chunk list is committed, with a version check. A half-finished upload never shows, and two edits can't silently overwrite each other.",
-        "Every change goes into a per-user change log with a rising number. Each device remembers how far it has read and asks for everything after that.",
-        "A push or a held-open connection tells devices \"something changed\"; the change log tells them what. A missed push costs a few seconds, never a file."
-      ]
-    },
-    {
       "t": "example"
     },
     {

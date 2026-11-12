@@ -10,14 +10,6 @@
   "dek": "Databases find rows by keys and ranges. A search box needs something else: every dish whose name contains these words, ranked by how well it matches, with typos forgiven and results near the user. Here is how an inverted index does that, how to keep it in step with the database, and how to size it.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Elasticsearch (and its fork OpenSearch) keeps an inverted index: for every word, the list of documents containing it. A search reads a few short lists instead of every document.",
-        "Text is analysed on the way in: split into words, lowercased, stemmed, with synonyms if you add them. Results are ranked by relevance (BM25 by default).",
-        "It is a copy, not the source of truth. Feed it from the database through a change stream, expect about a second of delay, and be able to rebuild it."
-      ]
-    },
-    {
       "t": "example"
     },
     {

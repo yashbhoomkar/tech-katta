@@ -10,16 +10,6 @@
   "dek": "A customer pays ₹480 for an order by UPI or card, through a payment gateway. Charge them exactly once, never tell them \"failed\" when the money actually went, and keep books that match the bank's to the paisa.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "You don't move the money yourself: a payment gateway talks to UPI and the card networks. Your job is to ask once, track the answer, and keep correct books.",
-        "One payment per order attempt, with the order as its idempotency key on your API, and passed to the gateway as your reference. A double tap or a retry finds the same payment instead of making a second.",
-        "A timeout doesn't mean failed. Mark it unknown, ask the gateway until it settles, and never invite the person to pay again while it's unknown.",
-        "Record every money movement as entries in a ledger that are only ever added, never edited, and that always balance.",
-        "Every day, match the gateway's settlement report against your ledger. Anything that doesn't match goes to a person, not a script."
-      ]
-    },
-    {
       "t": "example"
     },
     {

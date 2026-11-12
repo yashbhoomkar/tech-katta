@@ -5,7 +5,6 @@ switch(b.t){
 case"h2":return <h2 id={`s-${k}`} className={cls("")}>{b.x}</h2>;case"h3":return <h3 id={`s-${k}`} className={cls("")}>{b.x}</h3>;
 case"p":return <p className={cls("")}>{inline(b.x)}</p>;
 case"list":return <ul className={cls("")}>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul>;
-case"tldr":return <aside className={cls("a-tldr")} aria-label="In 30 seconds"><b>IN 30 SECONDS</b><ul>{b.items.map(x=><li key={x}>{inline(x)}</li>)}</ul></aside>;
 case"example":return <aside className={cls("a-example")} aria-label="Example system"><div className="a-ex-head"><b>EXAMPLE SYSTEM</b><span>{example.name}</span><small>{example.kind}</small></div><p>{example.text}</p><dl>{example.parts.map(([k,v])=><React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl></aside>;
 case"type":return <section className={cls("a-type")}><h3>{b.name}<small>{b.kind}</small></h3><p className="a-what">{inline(b.what)}</p><dl><dt>Use it for</dt><dd>{inline(b.use)}</dd><dt>Avoid it for</dt><dd>{inline(b.avoid)}</dd><dt className="ex">In {example.name}</dt><dd className="ex">{inline(b.ex)}</dd>{b.like&&<><dt className="like">In real life</dt><dd className="like">{inline(b.like)}</dd></>}</dl>{b.more&&<details className="a-more"><summary>How it works and what it costs</summary>{b.more.map(x=><p key={x}>{inline(x)}</p>)}</details>}</section>;
 case"analogy":return <aside className={cls("a-analogy")} aria-label="In real life"><b>IN REAL LIFE</b><p>{inline(b.x)}</p></aside>;

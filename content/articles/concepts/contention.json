@@ -10,14 +10,6 @@
   "dek": "The last plate of biryani, seat 14C, a shared wallet: when many requests change the same thing at once, code that reads and then writes sells it twice. Here is how to let the database pick one winner, when to lock and when to retry, and what to do about one very hot item.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Contention is many requests changing the same thing at once. Code that reads a value and then writes a new one oversells, double-books and loses updates.",
-        "Let the database decide in one step: a conditional update, a unique constraint or a row lock. Use version numbers when conflicts are rare and locks when they are common.",
-        "When people take minutes to pay, hold the item with an expiry instead of locking it. For one very hot item, line the requests up in a single queue."
-      ]
-    },
-    {
       "t": "example"
     },
     {

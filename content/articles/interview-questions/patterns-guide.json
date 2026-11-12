@@ -10,14 +10,6 @@
   "dek": "Seven problems that show up in question after question, the usual answer to each, and where you'll meet them in the worked questions. Each points to its full article in Concepts.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Most interview questions are two or three familiar problems in a new setting: the same seat wanted by many, reads that swamp the database, a file too big for the API.",
-        "Spotting the pattern early tells you where the deep dives will be and gives you a tested answer to start from.",
-        "Seven patterns cover most questions: real-time updates, contention, processes with many steps, scaling reads, scaling writes, big files and long jobs."
-      ]
-    },
-    {
       "t": "table",
       "head": [
         "Pattern",

@@ -10,16 +10,6 @@
   "dek": "\"Ask for a rating an hour after delivery.\" \"Pay every restaurant at 9 pm.\" \"Sync menus every 15 minutes.\" Zotato has crores of jobs that must run at a set time. Run each one close to on time, never lose one, and survive the moment 9 pm arrives.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Store every job with the time it should run. Group jobs by the minute they're due, so finding what to run now never means scanning the whole table.",
-        "A scheduler claims each due job with a lease (\"mine for 30 seconds\") and puts it on a queue. If the worker dies, the lease runs out and another picks the job up.",
-        "That means a job can occasionally run twice. Make every job safe to repeat, using the job's id, rather than chase \"exactly once\".",
-        "A recurring job is one job at a time: when it finishes, add its next run.",
-        "9 pm brings lakhs of jobs due in the same second. A queue spreads the burst, and jobs that don't need the exact second get a little random delay."
-      ]
-    },
-    {
       "t": "example"
     },
     {

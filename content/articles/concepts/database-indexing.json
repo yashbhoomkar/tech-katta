@@ -10,15 +10,6 @@
   "dek": "Why indexes exist and what they cost, B-trees, LSM trees and hash indexes, and the indexes for special data: geospatial, full-text and more.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A table's rows sit on disk in pages, in no useful order. Without an index, finding one row means reading page after page until it turns up.",
-        "A B-tree node holds hundreds of sorted keys and pointers and fills one disk page. Three or four levels reach any of crores of keys.",
-        "LSM tree: writes go to a log and an in-memory table, which is flushed to sorted, immutable files on disk; background compaction merges the files. Writes are cheap and sequential.",
-        "Geospatial: a B-tree on latitude, then longitude, still scans a whole band of the map. Geohashes, quadtrees and R-trees index two dimensions so 'restaurants within 3 km' reads only nearby cells."
-      ]
-    },
-    {
       "t": "example"
     },
     {

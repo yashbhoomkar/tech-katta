@@ -10,14 +10,6 @@
   "dek": "Temporal runs ordinary code, such as 'charge, wait for the restaurant, find a rider, refund on failure', as a workflow that survives crashes, deploys and waits of days. Here is who does what in a Temporal setup, the rules workflow code must follow, and when it is worth bringing in.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A Temporal service stores each workflow's history and timers; your workers poll task queues and run the code. Workers keep no state, so any worker can continue any workflow.",
-        "Workflow code must be deterministic, because it is replayed from history after a crash. Anything with side effects (calling Payments, sending an SMS) goes in an activity, which is retried on its own.",
-        "Waiting is free: a workflow can wait days for a timer or a signal without holding a thread."
-      ]
-    },
-    {
       "t": "example"
     },
     {

@@ -10,16 +10,6 @@
   "dek": "What to decide in an interview and when, choosing a database model, keys and relationships, indexes and normalisation, and how to split the data when one database isn't enough.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Twice in an interview: name the core entities right after the requirements; sketch a schema (keys, links, indexes, maybe a shard key) when the database enters the design.",
-        "Default to a relational database (PostgreSQL is a safe, well-understood choice). It gives a fixed schema, joins and transactions, and scales much further than its reputation suggests.",
-        "Three inputs decide the schema: data volume (does it fit on one machine?), access patterns (which queries must be fast?) and consistency (what must change together?).",
-        "Add an index for each important query, and say which endpoint needs it: GET /users/{id}/orders needs an index on orders (user_id, created_at).",
-        "Shard only when one machine can't hold the data or its writes; replicas and caching come first for read load."
-      ]
-    },
-    {
       "t": "example"
     },
     {

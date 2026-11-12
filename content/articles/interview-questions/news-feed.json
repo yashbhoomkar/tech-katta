@@ -10,16 +10,6 @@
   "dek": "Open Zotato Snaps and the home screen shows new posts from the diners and restaurants you follow, newest first. Build it so it opens instantly, even when a food blogger with 50 lakh followers posts at dinner time.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Two ways to build a feed: gather posts from everyone you follow when you open the app (pull), or drop each new post into every follower's feed when it's posted (push).",
-        "Pull is cheap to write and slow to read; push is fast to read and expensive to write. Feeds are read far more than posted to, so push is the default.",
-        "Push breaks for accounts with lakhs of followers: one post becomes lakhs of writes. Pull those few accounts at read time and merge them in.",
-        "Keep each person's feed as a short list of post ids (a few hundred) in memory; fetch the posts themselves from a cache when showing them.",
-        "Don't build feeds for people who haven't opened the app in weeks. Build theirs when they come back."
-      ]
-    },
-    {
       "t": "example"
     },
     {

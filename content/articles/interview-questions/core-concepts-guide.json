@@ -10,14 +10,6 @@
   "dek": "The nine ideas that come up in almost every design: what each one is, when it enters an interview, and what to say about it. Each points to its full article in Concepts.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Nine ideas cover most of what interviewers ask: networking, API design, data modelling, caching, sharding, consistent hashing, CAP, database indexing and the numbers to know.",
-        "You won't need all nine in every answer. Bring each one in when a requirement or a number calls for it, and say why.",
-        "Each part below is a summary; the article of the same name in Concepts has the full story, with figures."
-      ]
-    },
-    {
       "t": "table",
       "head": [
         "Concept",

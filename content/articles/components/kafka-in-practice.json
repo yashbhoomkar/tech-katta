@@ -10,15 +10,6 @@
   "dek": "The stream most systems reach for: how it differs from a queue, choosing keys and partitions, the settings that decide whether an acknowledged event can be lost, how consumer groups share work and rebalance, and what to do when consumers fall behind.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "Kafka is a stream: an append-only log, kept for days, that many services read at their own pace. A queue hands each job to one worker and forgets it once done.",
-        "Producers append to partitions chosen by key; consumers in a group each own some partitions and track their offsets. Order holds only within a partition.",
-        "For no loss: replication factor 3, `acks=all`, `min.insync.replicas=2`, and an idempotent producer. Then an acknowledged event survives one broker failing.",
-        "Commit offsets after processing, so a crash means reprocessing (at least once), never skipping. Make consumers idempotent."
-      ]
-    },
-    {
       "t": "example"
     },
     {

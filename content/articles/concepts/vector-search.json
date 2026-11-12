@@ -10,14 +10,6 @@
   "dek": "A customer types \"something spicy with cottage cheese\" and expects chilli paneer, though not one word matches. Embeddings turn text and images into points where similar meanings sit close together, and vector indexes find the nearest points among crores in milliseconds, at the price of sometimes missing one.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "An embedding model turns text (or an image) into a vector of hundreds of numbers; things with similar meaning get vectors that point the same way.",
-        "Search becomes 'find the nearest vectors to the query's vector'. Exact search compares with every vector; approximate indexes such as HNSW and IVF check a small fraction and find the true nearest most of the time.",
-        "Vectors are big (1 crore × 768 numbers is about 31 GB), filters such as 'veg, open now' are tricky to combine, and changing the model means re-embedding everything."
-      ]
-    },
-    {
       "t": "example"
     },
     {

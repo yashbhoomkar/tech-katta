@@ -10,14 +10,6 @@
   "dek": "ZippyDB, Meta's most used key-value store, had more than a million client hosts, each connecting straight to the database hosts it needed. ZGateway, a stateless proxy tier, cut each host's connections by about 97%, and gave Meta one place to batch requests, merge duplicate reads, shed load per tenant and steer traffic.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "With direct access, a typical client held tens of thousands of connections and a typical database host accepted tens of thousands, a number that grew with every new client. A storm of reconnections once sent database hosts into a reboot loop.",
-        "ZGateway sits between the clients and the database. Each client keeps a few connections to its regional gateways, and database hosts see only the gateway fleet, whose size Meta controls.",
-        "Sitting in the path of many clients, it can do what no client library could: batch and merge requests from different clients, shed load per tenant, cache with invalidation from change data capture, and be switched on or off by configuration."
-      ]
-    },
-    {
       "t": "h2",
       "x": "The problem: a mesh of connections"
     },

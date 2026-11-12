@@ -10,16 +10,6 @@
   "dek": "During an IPL match, Zotato runs a quiz: a question after every few overs, 20 seconds to answer, points for being right. 50 lakh people play, and each wants the top 100 and their own rank, updated seconds after every question.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A sorted set (in Redis) keeps players ordered by score: adding points, reading the top 100 and finding one player's rank are each fast, even with lakhs of players.",
-        "The hard moment is the 20-second window: up to 50 lakh answers arrive at once. Save the answers first, and add the points when the question closes, in batches.",
-        "One sorted set can't take 50 lakh updates in seconds, so split players across a few shards. The top 100 is the best of each shard's top 100, merged.",
-        "A player's exact rank across shards means asking every shard. Keeping counts per score band gives a close rank (\"about 80,000th, top 2%\") with one lookup.",
-        "The saved answers are the truth. The leaderboard is a fast copy that can always be rebuilt from them."
-      ]
-    },
-    {
       "t": "example"
     },
     {

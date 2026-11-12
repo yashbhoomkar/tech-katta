@@ -10,15 +10,6 @@
   "dek": "When to bring sharding into an answer, partitioning against sharding, shard keys and how to spread them, and what sharding breaks: hot spots, cross-shard queries and transactions.",
   "body": [
     {
-      "t": "tldr",
-      "items": [
-        "A bigger machine, read replicas and a cache come first. Shard only when the numbers show one database can't hold the data or take the writes.",
-        "Partitioning splits a large table into pieces inside one database: by rows (one partition per month) or by columns (rarely used, large columns kept apart). No new machines; queries and maintenance touch only the pieces they need.",
-        "A good shard key has many distinct values, spreads data and traffic evenly, and appears in your most common queries. user_id or customer_id usually qualifies; a boolean, a country or a timestamp usually doesn't.",
-        "Hot spots: a celebrity key or a time-based key sends most traffic to one shard. Give the hottest keys their own shard, use a compound key, or let the database split busy shards."
-      ]
-    },
-    {
       "t": "example"
     },
     {
