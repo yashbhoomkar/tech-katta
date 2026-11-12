@@ -61,3 +61,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 @media(min-width:681px) and (max-width:900px){.brand span{display:none}.nav{gap:18px}}
 @media(max-width:680px){.header{height:60px}.nav{top:59px;gap:0;background:var(--bg);box-shadow:var(--shadow-3);font-size:16px}.brand{font-size:19px}.hero h1{font-size:40px}.hero p{font-size:17px}.btn{flex:1 1 auto;justify-content:center}.inside h2,.ch-title{font-size:30px}}
 @media(prefers-reduced-motion:reduce){.btn,.inside-grid a,.nav a{transition:none}.inside-grid a:hover{transform:none}}
+
+/* Narrow phones: the header holds the logo, Sign in, the theme button and MENU without pushing MENU off screen */
+@media(max-width:420px){.header{padding:0 14px;gap:6px}.brand{gap:8px;font-size:16px}.brand>i{width:24px;height:24px}.header .acct-signin-link{padding:0 10px;font-size:13px}.header .menu{padding:8px 9px;font-size:12px}}
+@media(max-width:350px){.brand{gap:0;font-size:0}}
