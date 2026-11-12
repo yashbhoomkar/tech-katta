@@ -14,9 +14,10 @@ const problems = content.articles.filter((a) => a.practice);
 const v2 = (d) => ({ ...d, v: 2 });
 // the heaviest problem to judge (the most simulated hours)
 const heavy = () => problems.map((p) => [p, p.practice.tests.reduce((h, t) => h + (t.hours || 0), 0)]).sort((x, y) => y[1] - x[1])[0][0];
-// the problem's reference against its load tests a hundred times over: seconds on any machine (one pass takes
-// about a tenth of a second)
-const slowJob = (a) => { const j = job(a.practice.reference, a), load = j.practice.tests.filter((t) => !t.op); return { ...j, practice: { ...j.practice, tests: Array.from({ length: 100 }, () => load).flat().map((t, i) => ({ ...t, id: `${t.id}-${i}` })) } }; };
+// the problem's reference against its load tests a thousand times over: well past every time limit below on any
+// machine. A hundred passes took 5-10 s once, but only 1.7 s on CI runners in 2026-11, inside the 2 s limit, so the
+// time-limit test failed with "Missing expected rejection". The limits stop the job early, so the test is no slower.
+const slowJob = (a) => { const j = job(a.practice.reference, a), load = j.practice.tests.filter((t) => !t.op); return { ...j, practice: { ...j.practice, tests: Array.from({ length: 1000 }, () => load).flat().map((t, i) => ({ ...t, id: `${t.id}-${i}` })) } }; };
 const job = (design, a) => { const { wrong, ...practice } = a.practice; return { design: cleanDesign(v2(design), lab, 'submitted'), lab, practice }; };
 
 test('a worker judges exactly like the API used to, for every problem and its reference', async () => {
