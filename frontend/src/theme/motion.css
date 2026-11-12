@@ -17,11 +17,11 @@
   .hero>div>:nth-child(2){animation-delay:.06s}
   .hero>div>:nth-child(3){animation-delay:.12s}
   .hero>div>:nth-child(4){animation-delay:.18s}
-  .hero>.figure{animation:tk-rise .5s var(--ease) .16s backwards}
-  h1 .tk-mark{background-repeat:no-repeat;animation:tk-mark .6s var(--ease) .5s backwards}
+  .hero>.figure{animation:tk-rise .38s var(--ease) .12s backwards}
+  h1 .tk-mark{background-repeat:no-repeat;animation:tk-mark .45s var(--ease) .36s backwards}
   /* 2. Dashboard pages: the page rises once when you arrive; cards follow one after another (first eight only) */
   .d-body>.d-panel,.d-read>.d-article{animation:tk-rise var(--dur-enter) var(--ease) backwards}
-  .d-read>.d-rail{animation:tk-fade .4s var(--ease) .15s backwards}
+  .d-read>.d-rail{animation:tk-fade .3s var(--ease) .1s backwards}
   :is(.d-list,.cards,.pb-group) :is(li,.card):nth-child(-n+8){animation:tk-rise var(--dur-enter) var(--ease) backwards}
   :is(.d-list,.cards,.pb-group) :is(li,.card):nth-child(2){animation-delay:.04s}
   :is(.d-list,.cards,.pb-group) :is(li,.card):nth-child(3){animation-delay:.08s}
@@ -33,22 +33,22 @@
   /* 3. Small feedback: the arrow on a card leans forward; opened details and hints fade in */
   .d-list em,.inside-grid em,.card-go,.a-lab em,.a-next b{transition:transform var(--dur) var(--ease)}
   .d-list a:hover em,.inside-grid a:hover em,.card:hover .card-go,.a-lab:hover em{transform:translateX(4px)}
-  .a-more[open]>:not(summary),.sv-hints li.open>:not(button){animation:tk-rise .24s var(--ease) backwards}
+  .a-more[open]>:not(summary),.sv-hints li.open>:not(button){animation:tk-rise .18s var(--ease) backwards}
   /* 4. Things that open over the page: menus pop, the phone drawer's backdrop fades, sheets slide up */
   .acct-menu,.lab-menu,.tour-card,.lock-card,.acct-dialog-card{animation:tk-pop .16s var(--ease) backwards}
   .acct-dialog::backdrop{animation:tk-fade var(--dur) var(--ease) backwards}
   .scrim{animation:tk-fade var(--dur) var(--ease) backwards}
-  .sv-console,.lab-score{animation:tk-sheet .26s var(--ease) backwards}
-  .sv-test:nth-child(-n+6){animation:tk-rise .24s var(--ease) backwards}
-  .sv-test:nth-child(2){animation-delay:.05s}
-  .sv-test:nth-child(3){animation-delay:.1s}
-  .sv-test:nth-child(4){animation-delay:.15s}
-  .sv-test:nth-child(5){animation-delay:.2s}
-  .sv-test:nth-child(6){animation-delay:.25s}
-  .ll-res{animation:tk-pop .22s var(--ease) backwards}
+  .sv-console,.lab-score{animation:tk-sheet .2s var(--ease) backwards}
+  .sv-test:nth-child(-n+6){animation:tk-rise .18s var(--ease) backwards}
+  .sv-test:nth-child(2){animation-delay:.04s}
+  .sv-test:nth-child(3){animation-delay:.08s}
+  .sv-test:nth-child(4){animation-delay:.12s}
+  .sv-test:nth-child(5){animation-delay:.16s}
+  .sv-test:nth-child(6){animation-delay:.2s}
+  .ll-res{animation:tk-pop .18s var(--ease) backwards}
   /* 8. Tech Katta's own moments (spec section 4.8): the verdict, the stars, a server going down, a figure opening */
-  .sv-v.good b{animation:tk-mark .5s var(--ease) .3s backwards}
-  .lab-score .lab-stars,.ll-res .ll-stars{display:inline-block;animation:tk-pop .3s var(--ease) .25s backwards}
+  .sv-v.good b{animation:tk-mark .38s var(--ease) .22s backwards}
+  .lab-score .lab-stars,.ll-res .ll-stars{display:inline-block;animation:tk-pop .24s var(--ease) .18s backwards}
   .ln.down{animation:tk-shake .32s linear}
   .zoom{animation:tk-fade var(--dur) var(--ease) backwards}
   .zoom-box{animation:tk-pop .18s var(--ease) backwards}

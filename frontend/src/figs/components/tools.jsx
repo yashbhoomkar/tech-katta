@@ -1,7 +1,7 @@
 // Components › Tools by name: the figures this sub-tab's articles draw (site.json dashboard.groups.components, "tools").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // The tools: Redis, Elasticsearch, Kafka, Temporal, gateways, Cassandra, DynamoDB, PostgreSQL, Flink, ZooKeeper.
-import{BG,GRID,LINE,LINE_SOFT,SURFACE}from"../../theme/palette.js";import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Mark,Line,Box,Dot,SBox}from"../parts.jsx";
+import{BG,GRID,LINE,LINE_SOFT,SURFACE}from"../../theme/palette.js";import React from"react";import{Glow,Show,Mk,Bx,Ar,Cap,Life,Msg,INK,GREY,RED,BLUE,LB,LR,FB,T,Steps,Mark,Line,Box,Dot,SBox,pace}from"../parts.jsx";
 
 // Redis, FIG 1: five data types, each with one command and the Zotato job it does.
 function RedisTypesFig({still,uid=""}){
@@ -130,7 +130,7 @@ const part=hi=><g><rect x={185} y={154} width={115} height={58} fill={hi?LB:SURF
 const s3=<g>{part(1)}<T x={20} y={246} t="WHERE chat_id = 512 LIMIT 50 → one partition, in order" c={BLUE}/></g>;
 const s4=<g>{NX.map((x,i)=><rect key={i} x={x} y={130} width={135} height={90} fill="none" stroke={RED} strokeDasharray="4 3"/>)}<T x={20} y={262} t="WHERE sender = 'asha' → rejected, or ALLOW FILTERING: every node" c={RED}/></g>;
 return <svg viewBox="0 0 640 272" role="img" aria-labelledby={`cmt${uid}`}><title id={`cmt${uid}`}>A Cassandra table designed for one question: messages by chat, with chat ID as the partition key and send time as the clustering column, newest first. The partition key decides which nodes hold a chat's rows, and inside the partition the rows are sorted by time. Asking for the last 50 messages of chat 512 reads one partition, already in order. Asking for every message from Asha names no partition, so Cassandra rejects it unless you allow filtering, which scans every node.</title><Mk m={M}/>
-{base}{still?<g>{s3}{s4}<Cap t={caps[3][0]} c={RED}/></g>:<Steps caps={caps} g={[part(0),<g><Glow x={185} y={154} w={115} h={58} t0={.25} t1={.5} dur="14s"/></g>,s3,s4]}/>}</svg>}
+{base}{still?<g>{s3}{s4}<Cap t={caps[3][0]} c={RED}/></g>:<Steps caps={caps} g={[part(0),<g><Glow x={185} y={154} w={115} h={58} t0={.25} t1={.5} dur={pace(14)}/></g>,s3,s4]}/>}</svg>}
 
 // Cassandra, FIG 2: tombstones. A delete writes a marker; a queue-like table with 990 of 1,000 rows deleted
 // makes a read step over 990 tombstones; warn at 1,000, fail at 1 lakh; dropped after gc_grace (10 days).
@@ -206,7 +206,7 @@ return <svg viewBox="0 0 640 244" role="img" aria-labelledby={`fwt${uid}`}><titl
 
 // Flink, FIG 2: checkpoints. A barrier flows through source, count and sink; each saves its state, with the
 // Kafka offsets, as checkpoint 42 in object storage. After a crash the job restores 42 and rewinds Kafka.
-function FlinkCkptFig({still,uid=""}){const M=`fc${uid}`,D="14s";
+function FlinkCkptFig({still,uid=""}){const M=`fc${uid}`,D=pace(14);
 const caps=[["1 · every few seconds, Flink sends a checkpoint barrier through the stream",INK],["2 · as it passes, each operator saves its state; with the Kafka offsets, that is checkpoint 42",BLUE],["3 · a machine dies; the job restarts from checkpoint 42: counts restored, Kafka rewound",RED],["4 · events after the checkpoint are read again, so each event is counted exactly once",BLUE]];
 const base=<g><Bx x={10} y={80} w={110} h={44} t="Kafka" s="ad-clicks"/><Ar x1={122} y1={102} x2={176} y2={102} m={M}/><Bx x={180} y={80} w={120} h={44} t="Source" s="offset 8,812"/><Ar x1={302} y1={102} x2={356} y2={102} m={M}/><Bx x={360} y={80} w={120} h={44} t="Count per ad" s="ad 7: 1,204"/><Ar x1={482} y1={102} x2={516} y2={102} m={M}/><Bx x={520} y={80} w={110} h={44} t="Sink" s="dashboard"/>
 <Bx x={180} y={180} w={300} h={40} t="Object storage" s="checkpoints"/></g>;
@@ -246,7 +246,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`zqt${uid}`}><titl
 // API gateway, FIG: one front door. The customer app's request passes the four checks and is routed
 // to Orders; a restaurant's billing system goes over its limit and gets 429 back.
 const GW_STEPS=["1  HTTPS ends here","2  Who is calling?","3  Within their limit?","4  Route by path"];
-function GwFrontFig({still,uid=""}){const M=`gwf${uid}`,D="10s",GX=200,GW=210,SX=490,SY=[70,150,230],RY=[88,132,176,220];
+function GwFrontFig({still,uid=""}){const M=`gwf${uid}`,D=pace(10),GX=200,GW=210,SX=490,SY=[70,150,230],RY=[88,132,176,220];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`gwft${uid}`}><title id={`gwft${uid}`}>Every request to Zotato goes through one API gateway. It ends HTTPS, checks who is calling, checks that they are within their rate limit, and routes by path to the Orders, Menus or Payments service. A customer's order passes all four checks and reaches Orders. A restaurant's billing system that has sent too many requests gets 429 Too Many Requests and never reaches a service.</title><Mark m={M}/>
 <Line x1={130} y1={90} x2={GX-2} y2={90} m={M}/><Line x1={130} y1={210} x2={GX-2} y2={210} m={M}/>
 {SY.map(y=><Line key={y} x1={GX+GW} y1={220} x2={SX-2} y2={y} m={M} c={GREY}/>)}
@@ -268,7 +268,7 @@ const fixedW=()=>{const n={};return RT.map(t=>{const w=Math.floor(t);n[w]=(n[w]|
 const slideW=()=>{const ok=[];return RT.map(t=>{const c=ok.filter(x=>x>t-1).length;if(c<5){ok.push(t);return true}return false})};
 const bucket=()=>{let tok=5,last=0;return RT.map(t=>{tok=Math.min(5,tok+(t-last)*5);last=t;if(tok>=1){tok-=1;return true}return false})};
 const LIMITERS=[["FIXED WINDOW","5 per clock second",fixedW()],["SLIDING WINDOW","5 in any 1 second",slideW()],["TOKEN BUCKET","holds 5, refills 5 a second",bucket()]];
-function RateFig({still,uid=""}){const D="10s",x=t=>150+t*135,RY0=56;
+function RateFig({still,uid=""}){const D=pace(10),x=t=>150+t*135,RY0=56;
 const dot=(t,ok,y)=>ok?<circle cx={x(t)} cy={y} r="4" fill={BLUE}/>:<circle cx={x(t)} cy={y} r="3.5" fill={BG} stroke={RED} strokeWidth="1.5"/>;
 const at=t=>+(t/3*.85+.03).toFixed(3);
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><title id={`rlt${uid}`}>The same 17 requests, a burst just before one second, a burst just after it, then one every quarter second, go through three rate limiters that each allow 5 requests a second. The fixed window lets 10 requests through within about two thirds of a second because the count resets at one second. The sliding window never lets more than 5 through in any second. The token bucket starts full and keeps refilling, so it lets most of the bursts through and then about one request every fifth of a second.</title>
@@ -286,7 +286,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rlt${uid}`}><titl
 // Messaging, FIG: the same order events through a queue and through a stream. The queue gives each
 // message to one worker, which deletes it when done. The stream keeps every event in order; three
 // services read all of it, each at its own position (offset).
-function QueueStreamFig({still,uid=""}){const M=`qs${uid}`,D="10s",Q=78,S=228;
+function QueueStreamFig({still,uid=""}){const M=`qs${uid}`,D=pace(10),Q=78,S=228;
 const cell=(x,y,t,on)=><g key={x}><rect x={x} y={y-12} width="26" height="24" fill={on?LB:BG} stroke={on?BLUE:GREY}/><text x={x+13} y={y+4} textAnchor="middle" className="fl">{t}</text></g>;
 return <svg viewBox="0 0 640 320" role="img" aria-labelledby={`qst${uid}`}><title id={`qst${uid}`}>Top: the Order API puts jobs on a queue. Each job goes to one of two workers, which deletes it once done. Bottom: the Order API appends order events to a stream, a log that keeps them in order for seven days. Notifications, analytics and the restaurant tablet service each read every event, each from its own position, so analytics can lag behind or replay old events without affecting the others.</title><Mark m={M}/>
 <text x="0" y="22" className="fb">Queue · SQS, RabbitMQ</text><text x="0" y="38" className="fl">each job to one worker, then deleted</text>

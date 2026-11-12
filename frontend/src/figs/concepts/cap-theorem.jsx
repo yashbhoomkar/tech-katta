@@ -1,6 +1,6 @@
 // Concepts › CAP theorem: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "cap").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,FB,LINE_SOFT,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,SBox,Line,Mark,Dot,Glow,Show}from"../parts.jsx";
+import{BG,FB,LINE_SOFT,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,SBox,Line,Mark,Dot,Glow,Show,pace}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=8})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
@@ -64,7 +64,7 @@ base={null} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // readers see over the next half-second: a strong read always shows the newest value; the restaurant
 // owner, reading their own write, sees it at once; a customer on a replica 250 ms behind sees it late;
 // a customer bounced between two replicas sees ₹280, then ₹250 again, then ₹280.
-function ConsistencyTimelineFig({still,uid=""}){const D="10s",X0=200,X1=620,T=500,x=(t)=>X0+(t/T)*(X1-X0);
+function ConsistencyTimelineFig({still,uid=""}){const D=pace(10),X0=200,X1=620,T=500,x=(t)=>X0+(t/T)*(X1-X0);
 const rows=[["Leader (the truth)",[[0,100,0],[100,500,1]],"price changed at 100 ms"],["Strong read",[[0,100,0],[100,500,1]],"always the newest"],["The owner, reading own write",[[0,100,0],[100,500,1]],"reads go to the leader"],["Replica 250 ms behind",[[0,350,0],[350,500,1]],"eventual: late, then right"],["Two replicas, no stickiness",[[0,100,0],[100,180,1],[180,300,0],[300,500,1]],"₹280, then ₹250 again"]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`ctt${uid}`}><title id={`ctt${uid}`}>A restaurant changes a biryani from 250 to 280 rupees at 100 milliseconds. The leader and any strongly consistent read show 280 from that moment. The owner, whose own reads go to the leader after a change, also sees 280 at once. A customer reading from a replica 250 milliseconds behind sees 250 until 350 milliseconds, then 280: eventually consistent. A customer whose reads land on two different replicas sees 280, then 250 again, then 280, as if time went backwards.</title>
 {rows.map(([n,segs,note],i)=>{const y=60+i*44;return <g key={n}><text x="0" y={y+4} className="fb">{n}</text><text x="0" y={y+18} className="fl">{note}</text>
@@ -75,7 +75,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`ctt${uid}`}><titl
 // Consistency, FIG: two riders tap Accept on order 123 within milliseconds. On an eventually
 // consistent store each replica says yes and both ride to the restaurant. With one copy deciding
 // (UPDATE … WHERE rider_id IS NULL), the second rider's update changes no row and they're told no.
-function DoubleAcceptFig({still,uid=""}){const M=`da${uid}`,D="12s";
+function DoubleAcceptFig({still,uid=""}){const M=`da${uid}`,D=pace(12);
 const half=(y,title,sub,strong)=><g><text x="0" y={y-38} className="fb" style={!strong?{fill:RED}:{fill:BLUE}}>{title}</text><text x="0" y={y-22} className="fl">{sub}</text>
 <SBox x={0} y={y} w={100} t="Rider Asha"/><SBox x={0} y={y+44} w={100} t="Rider Ravi"/>
 {strong?<><SBox x={250} y={y+22} w={150} t="Orders · leader" blue/><Line x1={102} y1={y} x2={246} y2={y+16} m={M}/><Line x1={102} y1={y+44} x2={246} y2={y+28} m={M}/>
@@ -92,7 +92,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`dat${uid}`}><titl
 // breaks. A wallet top-up arriving in Hyderabad is refused (consistency first: Hyderabad can't check
 // with Mumbai). A menu edit arriving in Hyderabad is accepted (availability first), so the two copies
 // differ until the link is back and the edits are merged.
-function CapSplitFig({still,uid=""}){const M=`cap${uid}`,D="14s";
+function CapSplitFig({still,uid=""}){const M=`cap${uid}`,D=pace(14);
 const caps=[["1 · normally every change is copied both ways",INK],["2 · the link between the regions breaks",RED],["3 · wallet top-up in Hyderabad: refused (consistency first)",BLUE],["4 · menu edit in Hyderabad: accepted (availability first); merged later",BLUE]];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`capt${uid}`}><title id={`capt${uid}`}>Zotato keeps a copy of its data in Mumbai and in Hyderabad, and normally every change is copied between them. When the network link between the regions breaks, each side can still serve its own users but can't reach the other. A wallet top-up arriving in Hyderabad is refused, because Hyderabad can't be sure of the balance without Mumbai: consistency first. A restaurant's menu edit arriving in Hyderabad is accepted, so the two copies differ for a while and the edits are merged when the link returns: availability first.</title><Mark m={M}/>
 <rect x="20" y="70" width="220" height="150" fill={BG} stroke={GREY}/><text x="130" y="92" textAnchor="middle" className="fb">Mumbai</text><SBox x={60} y={140} w={140} t="Copy of the data" blue/>
@@ -107,7 +107,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`capt${uid}`}><tit
 <Show t0={.75} t1={1} dur={D}><text x="510" y="196" textAnchor="middle" className="fl" style={{fill:BLUE}}>menu edit: saved here</text><text x="130" y="196" textAnchor="middle" className="fl">still shows the old menu</text></Show></g>}</svg>}
 // Consensus, FIG: a network split. Five machines, three in Mumbai and two in Hyderabad. The link between
 // the cities breaks: the three still make a majority and keep accepting writes; the two can't, so they wait.
-function QuorumSplitFig({still,uid=""}){const D="10s";const X=[10,130,250,400,520];
+function QuorumSplitFig({still,uid=""}){const D=pace(10);const X=[10,130,250,400,520];
 const city=(i)=>i<3?"Mumbai":"Hyderabad";
 const after=<g><line x1={370} y1={40} x2={370} y2={190} stroke={RED} strokeWidth="2" strokeDasharray="6 4"/><text x={370} y={30} textAnchor="middle" className="fl" style={{fill:RED}}>link down</text>
 <text x={130} y={170} textAnchor="middle" className="fb" style={{fill:BLUE}}>3 of 5: a majority</text><text x={130} y={188} textAnchor="middle" className="fl">elects a leader, keeps taking writes</text>

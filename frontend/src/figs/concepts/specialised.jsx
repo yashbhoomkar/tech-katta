@@ -1,13 +1,13 @@
 // Concepts › Specialised data: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "specialised").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{ACCENT_LINE,BG,FB,GRID,LB,LR}from"../../theme/palette.js";import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_LINE,BG,FB,GRID,LB,LR}from"../../theme/palette.js";import React from"react";import{Show,Mk,Bx,Ar,Caps,Cap,INK,GREY,RED,BLUE,pace}from"../parts.jsx";
 
 // ---- Specialised data: shared bits for the figures below.
 const LBq=LB,LRq=LR,FBq=FB;
 
 const Tq=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
 
-const Stq=({caps,g,D="14s",only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
+const Stq=({caps,g,D=pace(14),only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
 
 // Proximity, FIG 1: geohash precision. Pune's centre (18.5204, 73.8567) is tek92es…; each extra character
 // cuts a cell into 32. Sizes at the equator: 4 chars ≈ 39 × 20 km, 5 ≈ 4.9 km, 6 ≈ 1.2 × 0.6 km, 7 ≈ 153 m.

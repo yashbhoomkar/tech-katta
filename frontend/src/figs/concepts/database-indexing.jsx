@@ -1,6 +1,6 @@
 // Concepts › Database indexing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "indexing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,FB,GRID,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Mk,Cap,Caps,Glow,Show,Dot}from"../parts.jsx";
+import{BG,FB,GRID,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Mk,Cap,Caps,Glow,Show,Dot,pace}from"../parts.jsx";
 
 const Pg=({x,y,w,h,c=GREY,fill=BG,t})=><g><rect x={x} y={y} width={w} height={h} fill={fill} stroke={c}/>{t&&<text x={x+w/2} y={y+h/2+4} textAnchor="middle" className="fl" style={{fill:c===GREY?INK:c}}>{t}</text>}</g>;
 
@@ -125,7 +125,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s3}{s4}</g>}/>}
 // Indexes, FIG 1: a B-tree lookup. Finding Priya Nair among 6.4 crore customers: the root page sends N–S down
 // one branch, that page sends Pm–Pz to one leaf, and the leaf holds the name with the address of its row.
 // With about 400 keys a page, three levels cover 1 → 400 → 1,60,000 pages: 6.4 crore names.
-function BtreeFig({still,uid=""}){const M=`bt${uid}`,D="14s";
+function BtreeFig({still,uid=""}){const M=`bt${uid}`,D=pace(14);
 const caps=[["1 · find Priya Nair among 6.4 crore customers: start at the root page",INK],["2 · the root sends N to S down one branch, and that page narrows it to Pm–Pz",BLUE],["3 · the leaf page holds the names in order, each with the address of its row",BLUE],["4 · one more read fetches the row: 4 page reads instead of 6.4 crore rows",BLUE]];
 const node=(x,y,w,ts,hi,cls="fb")=><g>{ts.map((t,i)=><g key={i}><rect x={x+i*w} y={y} width={w} height="28" fill={i===hi?FB:BG} stroke={i===hi?BLUE:GREY}/><text x={x+i*w+w/2} y={y+18} textAnchor="middle" className={cls} style={i===hi?{fill:BLUE}:undefined}>{t}</text></g>)}</g>;
 const stub=(x,y)=><line key={x} x1={x} y1={y} x2={x} y2={y+12} stroke={GREY}/>;
@@ -144,7 +144,7 @@ return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`btt${uid}`}><titl
 // Indexes, FIG 2: column order. An index on (restaurant, status, time) is a sorted list, like a phone book.
 // "Restaurant 42, preparing" is one short range; "restaurant 42, newest first" is one range in status order,
 // so it still needs a sort; "everything preparing" is scattered over the whole list, so the index can't help.
-function IndexOrderFig({still,uid=""}){const D="14s",Y=i=>78+i*21;
+function IndexOrderFig({still,uid=""}){const D=pace(14),Y=i=>78+i*21;
 const E=[[41,"delivered","18:52"],[41,"preparing","19:08"],[42,"delivered","18:40"],[42,"delivered","18:58"],[42,"preparing","19:05"],[42,"preparing","19:11"],[42,"ready","19:02"],[43,"delivered","18:47"],[43,"preparing","19:09"],[44,"preparing","19:03"]];
 const caps=[["1 · an index on (restaurant, status, time) keeps its entries sorted, like a phone book",INK],["2 · restaurant 42, preparing: the matches sit together, so it reads one short range",BLUE],["3 · restaurant 42, newest first: one range, but in status order, so it still sorts",INK],["4 · everything preparing: the matches are scattered, so the index can't narrow it",RED]];
 const Q3=[1,4,5,8,9];

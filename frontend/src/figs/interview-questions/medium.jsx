@@ -1,11 +1,11 @@
 // Interview Questions › Medium: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "medium").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{ACCENT_LINE,BG,DANGER_LINE,LB,LINE,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_LINE,BG,DANGER_LINE,LB,LINE,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Dot,Glow,Show,Mark,Line,SBox,INK,GREY,RED,BLUE,pace}from"../parts.jsx";
 
 // Ticket booking, FIG: the waiting room. 50 lakh people join the line (random places before noon); it admits
 // about 110 a second, as fast as booking can serve, so about 20,000 shop at once. Booking holds seats and
 // takes payment; everyone still in line sees their place, then "sold out".
-function WaitingRoomFig({still,uid=""}){const M=`wr${uid}`,D="10s";
+function WaitingRoomFig({still,uid=""}){const M=`wr${uid}`,D=pace(10);
 return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`wrt${uid}`}><title id={`wrt${uid}`}>50 lakh people join the line for tickets; everyone who joins before noon gets a random place. The waiting room admits about 110 people a second, as fast as booking can serve, so about 20,000 are shopping at once. Booking holds their seats in the seat database and takes payment. Everyone still in line sees their place, and then "sold out" once every seat is sold or held.</title><Mark m={M}/>
 <SBox x={0} y={110} w={120} t="50 lakh people"/><SBox x={170} y={110} w={150} t="Waiting room" blue/><text x="245" y="140" textAnchor="middle" className="fl">random places before 12:00</text>
 <SBox x={380} y={110} w={110} t="Booking"/><text x="435" y="140" textAnchor="middle" className="fl">~20,000 shopping</text>
@@ -19,7 +19,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`wrt${uid}`}><titl
 
 // Ticket booking, FIG: a seat's three states. Available → held (one conditional update, 10 minutes) → sold
 // when payment lands in time; held → available when 10 minutes pass with no payment.
-function SeatStatesFig({still,uid=""}){const M=`ss${uid}`,D="12s";
+function SeatStatesFig({still,uid=""}){const M=`ss${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`sst${uid}`}><title id={`sst${uid}`}>A seat is available, held or sold. A hold moves an available seat to held for 10 minutes. Payment in time moves it to sold. If 10 minutes pass with no payment, it goes back to available. Each move is one conditional update, so two buyers can't both win the same seat.</title><Mark m={M}/>
 <SBox x={0} y={100} w={150} t="Available"/><SBox x={245} y={100} w={150} t="Held, 10 min" blue/><SBox x={490} y={100} w={150} t="Sold"/>
 <Line x1={152} y1={100} x2={241} y2={100} m={M}/><text x="196" y="70" textAnchor="middle" className="fl">hold: only if</text><text x="196" y="84" textAnchor="middle" className="fl">still available</text>
@@ -32,7 +32,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`sst${uid}`}><titl
 // Photo sharing, FIG: an upload's life. 1 the app creates the record and gets a signed URL, 2 puts the
 // original straight into object storage, 3 storage queues the new file, 4 a worker makes the sizes and
 // checks the image, 5 marks the photo live; 6 phones fetch the size they need through the CDN.
-function PhotoUploadFig({still,uid=""}){const M=`pu${uid}`,D="14s";
+function PhotoUploadFig({still,uid=""}){const M=`pu${uid}`,D=pace(14);
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`put${uid}`}><title id={`put${uid}`}>An upload's life. First, the app asks the photo service to create the photo and gets a signed upload URL. Second, it puts the original straight into object storage. Third, storage puts a message on a queue. Fourth, a worker makes three sizes and checks the image. Fifth, it marks the photo live in the photo service. Sixth, phones fetch the size they need through the CDN, which reads from storage only on a miss.</title><Mark m={M}/>
 <SBox x={0} y={140} w={100} t="App"/><SBox x={160} y={50} w={140} t="Photo service" blue/><SBox x={160} y={230} w={140} t="Object storage"/>
 <SBox x={360} y={230} w={100} t="Queue"/><SBox x={510} y={230} w={130} t="Resize workers"/><SBox x={360} y={140} w={100} t="CDN"/>
@@ -49,7 +49,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`put${uid}`}><titl
 
 // Photo sharing, FIG: a viral photo's like count. One row taking every like makes writers queue up;
 // the same count split over 8 rows takes an eighth of the writes per row, and a read adds the 8 up.
-function LikeCounterFig({still,uid=""}){const M=`lc${uid}`,D="8s",parts=[6027,6031,6019,6025,6030,6022,6034,6025],X=200,W=46,G=6;
+function LikeCounterFig({still,uid=""}){const M=`lc${uid}`,D=pace(8),parts=[6027,6031,6019,6025,6030,6022,6034,6025],X=200,W=46,G=6;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lct${uid}`}><title id={`lct${uid}`}>A viral photo's like count. Kept in one row, every like waits for the one before, so writers queue up. Split over 8 rows, each like adds 1 to a random one, so each row takes an eighth of the writes, and reading the count adds the 8 rows up: 48,213.</title><Mark m={M}/>
 <text x="0" y="64" className="fb">One row</text><Line x1={110} y1={60} x2={196} y2={60} m={M}/><SBox x={200} y={60} w={180} t="likes: 48,213"/><text x="200" y="92" className="fl" style={{fill:RED}}>every like waits for the one before</text>
 <text x="0" y="174" className="fb">Split over 8</text><Line x1={110} y1={170} x2={196} y2={170} m={M}/>
@@ -60,7 +60,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lct${uid}`}><titl
 
 // News feed, FIG: push. Posting saves the post and queues it; fan-out workers add the id to each follower's
 // list in Redis. Opening the feed reads one list (1) and fetches the posts from a cache (2).
-function FeedFanoutFig({still,uid=""}){const M=`ff${uid}`,D="12s";
+function FeedFanoutFig({still,uid=""}){const M=`ff${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`fft${uid}`}><title id={`fft${uid}`}>Posting saves the post and puts a message on a queue. Fan-out workers look up the author's followers and add the post id to each follower's feed list in Redis. Opening the feed reads one list of post ids and fetches the posts themselves from a cache.</title><Mark m={M}/>
 <SBox x={0} y={60} w={100} t="Author"/><SBox x={150} y={60} w={130} t="Post service" blue/><SBox x={330} y={60} w={90} t="Queue"/><SBox x={470} y={60} w={170} t="Fan-out workers"/>
 <SBox x={470} y={170} w={170} t="Feed lists (Redis)"/><SBox x={0} y={210} w={100} t="Reader"/><SBox x={150} y={210} w={130} t="Feed service" blue/><SBox x={330} y={250} w={110} t="Post cache"/>
@@ -74,7 +74,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`fft${uid}`}><titl
 
 // News feed, FIG: the hybrid. Posts from ordinary accounts are pushed into your list; the few big
 // accounts you follow are pulled when you open the feed; the two are merged by time.
-function FeedHybridFig({still,uid=""}){const M=`fh${uid}`,D="10s",W=190;
+function FeedHybridFig({still,uid=""}){const M=`fh${uid}`,D=pace(10),W=190;
 const pushed=[["Ananya · 8:02 pm",55],["Rohit · 7:59 pm",80],["Meera · 7:51 pm",105]],pulled=[["Food blogger · 8:04 pm",175],["Biryani chain · 7:58 pm",200]];
 const merged=[["Food blogger · 8:04 pm",1],["Ananya · 8:02 pm",0],["Rohit · 7:59 pm",0],["Biryani chain · 7:58 pm",1],["Meera · 7:51 pm",0]];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fht${uid}`}><title id={`fht${uid}`}>Opening the feed. Posts from ordinary accounts, Ananya, Rohit and Meera, were pushed into your list when they posted. Posts from the two big accounts you follow, a food blogger and a biryani chain, are pulled when you open the feed. The two are merged by time: the blogger at 8:04, Ananya at 8:02, Rohit at 7:59, the biryani chain at 7:58 and Meera at 7:51.</title><Mark m={M}/>
@@ -88,7 +88,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`fht${uid}`}><titl
 // the pair's row; when both have said yes, a message goes on a queue and both phones get a push. Browsing:
 // the deck service hands out the next profiles from a deck kept in Redis, which a deck builder refills
 // from the profiles near you, skipping anyone you've already seen.
-function SwipeFlowFig({still,uid=""}){const M=`sf${uid}`,D="12s";
+function SwipeFlowFig({still,uid=""}){const M=`sf${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sft${uid}`}><title id={`sft${uid}`}>Swiping: the phone sends each swipe to the swipe service, which updates one row for the pair of people. When both have said yes, a message goes on a queue and both phones get a push. Browsing: the phone asks the deck service for the next profiles, which come from a deck kept in Redis. A deck builder refills the deck from profiles near you, skipping anyone you have already seen.</title><Mark m={M}/>
 <text x="0" y="24" className="fb">Swiping</text>
 <SBox x={0} y={60} w={90} t="Phone"/><SBox x={140} y={60} w={130} t="Swipe service" blue/><SBox x={320} y={60} w={120} t="Pair rows"/><SBox x={500} y={60} w={140} t="Queue"/><SBox x={500} y={130} w={140} t="Push to both"/>
@@ -107,7 +107,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`sft${uid}`}><titl
 // Dating app, FIG: the pair row. Ananya and Rohit swipe right on each other at the same moment. Both swipes
 // update the same row in one step each and read the other side's flag back. Ananya's lands first and sees
 // "no", so nothing happens; Rohit's sees "yes" and creates the match. Exactly one of them creates it.
-function PairRowFig({still,uid=""}){const D="10s",L=200,W=240,V=400;
+function PairRowFig({still,uid=""}){const D=pace(10),L=200,W=240,V=400;
 const val=(y,t0,before,after)=>still?<text x={V} y={y} className="fb" style={{fill:BLUE}}>{after}</text>:<><Show t0={.001} t1={t0} dur={D}><text x={V} y={y} className="fb" style={{fill:GREY}}>{before}</text></Show><Show t0={t0} t1={.98} dur={D}><text x={V} y={y} className="fb" style={{fill:BLUE}}>{after}</text></Show></>;
 const note=(x,y,t0,t,anchor)=>still?<text x={x} y={y} textAnchor={anchor} className="fl">{t}</text>:<Show t0={t0} t1={.98} dur={D}><text x={x} y={y} textAnchor={anchor} className="fl">{t}</text></Show>;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><title id={`prt${uid}`}>Ananya and Rohit swipe right on each other at the same moment. Both swipes update the same row, one row per pair of people, and each update reads the other side's answer back in the same step. Ananya's update lands first and sees that Rohit hasn't said yes, so nothing happens. Rohit's update sees that Ananya has, so it marks the pair matched and both get the news. Exactly one of the two creates the match.</title>
@@ -125,7 +125,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`prt${uid}`}><titl
 // Coding judge, FIG: the path of a submission. The API saves the code and puts its id on a queue, then
 // answers at once. Judge workers take ids, run the code in a sandbox against the tests, and save the
 // verdict; the leaderboard updates and the candidate's screen gets the result.
-function JudgeFlowFig({still,uid=""}){const M=`jf${uid}`,D="12s";
+function JudgeFlowFig({still,uid=""}){const M=`jf${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`jft${uid}`}><title id={`jft${uid}`}>A submission's path. The candidate's code goes to the API, which saves it and puts its id on a queue, then answers straight away. Judge workers take ids from the queue, run the code in a sandbox against the test cases, and save the verdict. The leaderboard updates and the candidate's screen shows the result.</title><Mark m={M}/>
 <SBox x={0} y={50} w={100} t="Candidate"/><SBox x={150} y={50} w={110} t="API" blue/><SBox x={320} y={50} w={110} t="Queue"/><SBox x={490} y={50} w={150} t="Judge workers"/>
 <SBox x={150} y={140} w={110} t="Code store"/><SBox x={490} y={140} w={150} t="Sandbox · tests"/><SBox x={320} y={220} w={110} t="Verdicts"/><SBox x={490} y={220} w={150} t="Leaderboard"/>
@@ -141,7 +141,7 @@ return <svg viewBox="0 0 640 260" role="img" aria-labelledby={`jft${uid}`}><titl
 // Coding judge, FIG: inside one sandbox. The code runs with no network, capped memory, CPU time,
 // processes and output, on a read-only copy of the code and test input. Tests run one after another; the first one that fails
 // (here test 4, over the time limit) decides the verdict.
-function SandboxFig({still,uid=""}){const D="10s";
+function SandboxFig({still,uid=""}){const D=pace(10);
 const limits=["No network","256 MB memory","2 s CPU per test","64 processes","Output capped at 1 MB","Read-only code and input"];
 const tests=[["Test 1","passed",0],["Test 2","passed",0],["Test 3","passed",0],["Test 4","over 2 s",1],["Test 5","not run",2]];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sbt${uid}`}><title id={`sbt${uid}`}>One sandbox. The candidate's code runs with no network, at most 256 MB of memory, 2 seconds of CPU per test, 64 processes and 1 MB of output, with a read-only copy of the code and the test input. Tests run one after another: tests 1 to 3 pass, test 4 goes over the time limit, so the verdict is "Time limit exceeded on test 4" and test 5 is not run.</title>
@@ -154,7 +154,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sbt${uid}`}><titl
 // Chat app, FIG: a message's path. Ananya's phone holds a connection to gateway A. The chat service gives the
 // message the conversation's next number, saves it, and asks the registry where Rohit is connected:
 // gateway B, which pushes it down his open connection. If he's offline, a phone notification goes instead.
-function ChatFlowFig({still,uid=""}){const M=`cf${uid}`,D="12s";
+function ChatFlowFig({still,uid=""}){const M=`cf${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`cft${uid}`}><title id={`cft${uid}`}>A message's path. Ananya's phone keeps a connection open to gateway A. The chat service gives the message the conversation's next number, saves it, and asks the registry which gateway Rohit is connected to, and hands it to gateway B, which sends it down Rohit's open connection. If Rohit is offline, a phone notification goes instead.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="Ananya's phone"/><SBox x={160} y={50} w={110} t="Gateway A"/><SBox x={320} y={50} w={130} t="Chat service" blue/><SBox x={500} y={50} w={140} t="Messages"/>
 <SBox x={320} y={140} w={130} t="Registry"/><SBox x={160} y={230} w={110} t="Gateway B"/><SBox x={0} y={230} w={110} t="Rohit's phone"/><SBox x={500} y={230} w={140} t="Phone notification"/>
@@ -169,7 +169,7 @@ return <svg viewBox="0 0 640 270" role="img" aria-labelledby={`cft${uid}`}><titl
 
 // Chat app, FIG: catching up. Every message in a conversation has the next number. Rohit's phone was
 // offline after #42; when it reconnects it says "I have up to 42" and gets 43, 44 and 45, in order.
-function ChatSyncFig({still,uid=""}){const D="10s";
+function ChatSyncFig({still,uid=""}){const D=pace(10);
 const msgs=[[41,"Ananya: 8 pm?"],[42,"Rohit: done"],[43,"Meera: me too"],[44,"Ananya: booked"],[45,"Meera: 4 of us"]];
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><title id={`cst${uid}`}>Catching up. Every message in a conversation gets the next number. Rohit's phone has messages up to number 42, then goes offline. When it reconnects, it says "I have up to 42", and the server sends 43, 44 and 45, in order.</title>
 <text x="0" y="28" className="fb">The conversation, in order</text>
@@ -183,7 +183,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`cst${uid}`}><titl
 // Notifications, FIG: the path. Order, login and marketing services send events to the notification API,
 // which checks preferences and devices, then puts each message in the lane for its priority. Channel
 // workers send through push, SMS and email providers and record what happened.
-function NotifyFlowFig({still,uid=""}){const M=`nf${uid}`,D="12s";
+function NotifyFlowFig({still,uid=""}){const M=`nf${uid}`,D=pace(12);
 const lanes=[["Urgent: OTPs",70],["Normal: order updates",120],["Bulk: promos",170]];
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><title id={`nft${uid}`}>Order, login and marketing services send events to the notification API. It checks the person's preferences, then puts each message in a lane for its priority: urgent for OTPs, normal for order updates, bulk for promotions. Channel workers take from the lanes, urgent first, and send through push, SMS and email providers.</title><Mark m={M}/>
 <SBox x={0} y={70} w={100} t="Login"/><SBox x={0} y={120} w={100} t="Orders"/><SBox x={0} y={170} w={100} t="Marketing"/>
@@ -200,7 +200,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`nft${uid}`}><titl
 // Notifications, FIG: priority lanes. A promotion to 5 crore people fills the bulk lane, which drains at
 // a steady rate for an hour. An OTP arrives in the middle of it, goes into the empty urgent lane and is
 // sent in about 2 seconds, not after the promotion.
-function LanesFig({still,uid=""}){const D="10s",X=150,W=360;
+function LanesFig({still,uid=""}){const D=pace(10),X=150,W=360;
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lnt${uid}`}><title id={`lnt${uid}`}>Two lanes. The bulk lane holds a promotion to 5 crore people and is drained at a steady rate over about an hour. An OTP arrives in the middle of it. It goes into the urgent lane, which is empty, and is sent in about 2 seconds instead of waiting behind the promotion.</title>
 <text x={0} y={64} className="fb">Bulk lane</text><rect x={X} y={44} width={W} height={32} fill={BG} stroke={GREY}/>
@@ -215,7 +215,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lnt${uid}`}><titl
 // creates one with the order as its idempotency key and hands the app over to the payment gateway (UPI or
 // card). The gateway tells us the result by a signed webhook; the payment service records it in the ledger
 // and tells the order service. The app asks the payment service, never the gateway, whether it's paid.
-function PayFlowFig({still,uid=""}){const M=`pf${uid}`,D="12s";
+function PayFlowFig({still,uid=""}){const M=`pf${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`pft${uid}`}><title id={`pft${uid}`}>The order service asks the payment service for a payment for order 91. The payment service creates one, using the order as its idempotency key, and hands the app over to the payment gateway for UPI or card. The gateway sends the result back by a signed webhook. The payment service records it in the ledger and tells the order service. The app asks the payment service, not the gateway, whether it has paid.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="App"/><SBox x={160} y={50} w={130} t="Order service"/><SBox x={340} y={50} w={140} t="Payment service" blue/><SBox x={530} y={50} w={110} t="Gateway"/>
 <SBox x={340} y={160} w={140} t="Ledger"/><text x={410} y={196} textAnchor="middle" className="fl">entries only added</text>
@@ -229,7 +229,7 @@ return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`pft${uid}`}><titl
 // Payments, FIG: a payment's states. Created, then pending while the person is in their UPI app. It ends
 // succeeded or failed. If the gateway doesn't answer in time it's unknown, never "failed": we ask the
 // gateway until it settles. A success can later be refunded.
-function PayStatesFig({still,uid=""}){const M=`ps${uid}`,D="12s";
+function PayStatesFig({still,uid=""}){const M=`ps${uid}`,D=pace(12);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`pst${uid}`}><title id={`pst${uid}`}>A payment's states. It starts created, then becomes pending while the person approves it in their UPI app. It ends succeeded or failed. If the gateway doesn't answer in time, the payment is unknown, never failed: the payment service keeps asking the gateway until it is succeeded or failed. A succeeded payment can later be refunded.</title><Mark m={M}/>
 <SBox x={0} y={110} w={90} t="created"/><SBox x={130} y={110} w={90} t="pending"/>
@@ -245,7 +245,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`pst${uid}`}><titl
 // Job scheduler, FIG: the path. Services add jobs with a run time. Schedulers look only at minutes that are
 // due, claim each job with a lease, and put them on a queue. Executors run them, record the
 // result, retry failures later, and add the next run of a recurring job.
-function SchedFlowFig({still,uid=""}){const M=`sc${uid}`,D="12s";
+function SchedFlowFig({still,uid=""}){const M=`sc${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sct${uid}`}><title id={`sct${uid}`}>Services add jobs with a time to run. The jobs table is grouped by minute. Schedulers look only at minutes that are due, claim each job with a lease, and put it on a queue. Executors run the jobs, record the result, put failures back with a later time to retry, and add the next run of a recurring job.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="Services"/><SBox x={160} y={50} w={150} t="Jobs (by minute)" blue/><SBox x={160} y={150} w={150} t="Schedulers"/><SBox x={360} y={150} w={100} t="Queue"/><SBox x={510} y={150} w={130} t="Executors"/>
 <Line x1={112} y1={50} x2={156} y2={50} m={M}/><text x={134} y={36} textAnchor="middle" className="fl">run at 21:00</text>
@@ -258,7 +258,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`sct${uid}`}><titl
 // Job scheduler, FIG: a lease runs out. Worker A claims the 21:00 payout job with a 30-second lease and dies
 // at 21:00:10. Nobody touches the job until the lease ends at 21:00:30; then worker B claims it and runs it.
 // If A was only paused, the job id stops its late work from counting twice.
-function LeaseFig({still,uid=""}){const D="12s",X=110,W=500,T=60;const x=(s)=>X+s/T*W;
+function LeaseFig({still,uid=""}){const D=pace(12),X=110,W=500,T=60;const x=(s)=>X+s/T*W;
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><title id={`lst${uid}`}>A lease running out. Worker A claims the 9 pm payout job with a 30-second lease and dies 10 seconds in, before its next heartbeat. Nobody else touches the job until the lease ends at 30 seconds. Then worker B claims it with a new lease and runs it to the end. If A was only paused and wakes up, the job's id makes its late work harmless.</title>
 {[0,10,20,30,40,50,60].map(s=><g key={s}><line x1={x(s)} y1={40} x2={x(s)} y2={180} stroke={LINE_SOFT}/><text x={x(s)} y={198} textAnchor="middle" className="fl">{s===60?"21:01:00":`21:00:${String(s).padStart(2,"0")}`}</text></g>)}
@@ -270,7 +270,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`lst${uid}`}><titl
 
 // Web crawler, FIG: the loop. The frontier hands out URLs; fetchers check robots.txt and download pages;
 // pages are saved and parsed; new links go through the seen filter, and only new ones join the frontier.
-function CrawlFlowFig({still,uid=""}){const M=`cw${uid}`,D="12s";
+function CrawlFlowFig({still,uid=""}){const M=`cw${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 200" role="img" aria-labelledby={`cwt${uid}`}><title id={`cwt${uid}`}>The crawl loop. The frontier hands out URLs to fetchers, which check each site's robots.txt and download the page. Pages are saved and parsed for links. Each new link goes through the seen filter; only links never seen before join the frontier, and the loop continues.</title><Mark m={M}/>
 <SBox x={0} y={60} w={120} t="Frontier" blue/><SBox x={170} y={60} w={130} t="Fetchers"/><SBox x={350} y={60} w={120} t="Page store"/><SBox x={520} y={60} w={120} t="Parser"/>
 <SBox x={350} y={170} w={170} t="Seen filter"/>
@@ -284,7 +284,7 @@ return <svg viewBox="0 0 640 200" role="img" aria-labelledby={`cwt${uid}`}><titl
 // Web crawler, FIG: politeness. The frontier keeps one queue per site and a "not before" time for each.
 // Fetchers take the next URL only from sites whose time has come, so one big site's 10 lakh URLs never
 // hammer it, and never block the small sites.
-function PoliteFig({still,uid=""}){const D="10s";
+function PoliteFig({still,uid=""}){const D=pace(10);
 const hosts=[["pune-foodie.example","10 lakh URLs","in 1 s"],["chennai-eats.example","4,200 URLs","now"],["dhaba-diaries.example","18 URLs","now"],["mumbai-menus.example","90,000 URLs","in 3 s"]];
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`plt${uid}`}><title id={`plt${uid}`}>Politeness. The frontier keeps one queue per site, each with a not-before time. Fetchers take the next URL only from sites whose time has come. A big food blog with 10 lakh URLs waits a second between pages, so it is never hammered, and small sites with a few URLs are not stuck behind it.</title>
 <text x={0} y={24} className="fb">Site</text><text x={210} y={24} className="fb">Waiting</text><text x={340} y={24} className="fb">Next fetch</text>
@@ -294,7 +294,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`plt${uid}`}><titl
 // Leaderboard, FIG: the path. Answers are saved as they arrive. When a question closes, the scorer adds
 // points for the right answers in batches to sorted sets split across several Redis shards. The leaderboard
 // API serves the top 100 (cached for a second) and each player's own rank.
-function LbFlowFig({still,uid=""}){const M=`lb${uid}`,D="12s";
+function LbFlowFig({still,uid=""}){const M=`lb${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><title id={`lbt${uid}`}>Players' answers are saved as they arrive. When a question closes, the scorer adds points for every right answer, in batches, to sorted sets split across several Redis shards. The leaderboard API serves the top 100, cached for a second, and each player's own rank. The saved answers are the record; the shards can always be rebuilt from them.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="Players"/><SBox x={160} y={50} w={130} t="Answer service"/><SBox x={340} y={50} w={120} t="Answers (saved)"/>
 <SBox x={340} y={130} w={120} t="Scorer"/><SBox x={510} y={100} w={130} t="Shard 1" blue/><SBox x={510} y={130} w={130} t="Shard 2" blue/><SBox x={510} y={160} w={130} t="Shard 3" blue/>
@@ -307,7 +307,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`lbt${uid}`}><titl
 // Leaderboard, FIG: rank from counts. Keep how many players have each score band. Ananya has 340 points:
 // the 37,200 players in the bands above are ahead, plus those above her in her own band: about rank 80,000,
 // the top 2%, without asking every shard.
-function LbRankFig({still,uid=""}){const D="10s";
+function LbRankFig({still,uid=""}){const D=pace(10);
 const bands=[["400+",1200],["350–399",36000],["300–349",173200],["250–299",410000],["200–249",820000]],max=820000,X=120,W=330;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><title id={`lrt${uid}`}>Rank from counts. The leaderboard keeps how many players have each band of scores: 1,200 have 400 or more, 36,000 have 350 to 399, 1,73,200 have 300 to 349, and so on. Ananya has 340 points. Everyone in the two bands above hers, 37,200 players, is ahead, plus those above her within her own band, so her rank, about 80,000th, the top 2% of 50 lakh, is estimated from these counts instead of asking every shard.</title>
 <text x={0} y={22} className="fb">Score band</text><text x={X} y={22} className="fb">Players</text>
@@ -317,7 +317,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`lrt${uid}`}><titl
 // Ad clicks, FIG: two paths for the same events. Fast: clicks go through a log to an aggregator that counts
 // per ad per minute in memory and writes minute totals for dashboards. Exact: the same events are kept raw,
 // and a nightly recount produces the numbers advertisers are billed on.
-function ClickFlowFig({still,uid=""}){const M=`ck${uid}`,D="12s";
+function ClickFlowFig({still,uid=""}){const M=`ck${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ckt${uid}`}><title id={`ckt${uid}`}>Two paths for the same click events. Fast path: the click service logs each click to an event log, an aggregator counts clicks per ad per minute in memory, and writes minute totals that dashboards read within a minute. Exact path: the same events are kept raw in storage, and a nightly recount produces the numbers advertisers are billed on.</title><Mark m={M}/>
 <SBox x={0} y={60} w={100} t="App"/><SBox x={140} y={60} w={120} t="Click service"/><SBox x={300} y={60} w={100} t="Event log"/>
 <SBox x={440} y={30} w={130} t="Aggregator" blue/><SBox x={440} y={90} w={130} t="Minute totals"/><text x={505} y={124} textAnchor="middle" className="fl">dashboards, in a minute</text>
@@ -331,7 +331,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`ckt${uid}`}><titl
 // Ad clicks, FIG: windows by event time. Clicks are counted in the minute they happened, not the minute
 // they arrived. A click from 20:41 that arrives at 20:43 (a phone back in signal) still counts for 20:41.
 // After a 5-minute allowance the minute is closed; anything later is left to the nightly recount.
-function WindowsFig({still,uid=""}){const D="10s",X=60,W=110;
+function WindowsFig({still,uid=""}){const D=pace(10),X=60,W=110;
 const mins=["20:40","20:41","20:42","20:43","20:44"];
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`wnt${uid}`}><title id={`wnt${uid}`}>Counting by the minute a click happened. Each minute from 20:40 to 20:44 is its own window. A click made at 20:41 that only arrives at 20:43, from a phone that was out of signal, is still counted in the 20:41 window. Each window stays open for 5 minutes after it ends; clicks later than that are left to the nightly recount.</title>
@@ -343,7 +343,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`wnt${uid}`}><titl
 
 // Key-value store, FIG: the ring. Machines sit at points on a ring of hash values. A key is hashed to a
 // point and stored on the next three machines clockwise. Adding a machine takes over only the slice next to it.
-function RingFig({still,uid=""}){const D="12s",CX=180,CY=120,RAD=88;
+function RingFig({still,uid=""}){const D=pace(12),CX=180,CY=120,RAD=88;
 const nodes=[["A",20],["B",110],["C",200],["D",290]],pt=(deg,r=RAD)=>[CX+r*Math.cos((deg-90)*Math.PI/180),CY+r*Math.sin((deg-90)*Math.PI/180)];
 const key=70,[kx,ky]=pt(key);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
@@ -358,7 +358,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`rgt${uid}`}><titl
 // Key-value store, FIG: quorums. Three copies (N = 3). A write waits for two (W = 2); C was slow and missed
 // it. A read asks two (R = 2), C and B: B has version 8, C still has 7. The newer one wins, and C is fixed.
 // Because 2 + 2 > 3, every read set overlaps every write set.
-function QuorumFig({still,uid=""}){const M=`qr${uid}`,D="12s";
+function QuorumFig({still,uid=""}){const M=`qr${uid}`,D=pace(12);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`qrt${uid}`}><title id={`qrt${uid}`}>Quorums with three copies. A write of version 8 waits for two of the three copies; A and B confirm it, C is slow and still has version 7. A read asks two copies, B and C. B answers version 8 and C answers version 7, so the newer version 8 is returned and C is fixed in the background. Because two plus two is more than three, every read overlaps at least one copy that took the write.</title><Mark m={M}/>
 <SBox x={0} y={110} w={90} t="Client" blue/>
@@ -372,7 +372,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`qrt${uid}`}><titl
 // Shared editor, FIG: the path. Everyone editing menu #214 is connected to the one doc server that owns it
 // (a registry says which). The server puts each edit in order, appends it to the doc's log with the next
 // number, and sends it to the other editors. Every few hundred edits it saves a snapshot.
-function DocFlowFig({still,uid=""}){const M=`dc${uid}`,D="12s";
+function DocFlowFig({still,uid=""}){const M=`dc${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><title id={`dct${uid}`}>Everyone editing menu 214 is connected to the one doc server that owns it; a registry says which server that is. The server puts each edit in order, appends it to the document's log with the next number, and sends it to the other editors. Every few hundred edits it saves a snapshot of the whole document.</title><Mark m={M}/>
 <SBox x={0} y={40} w={120} t="Ananya (laptop)"/><SBox x={0} y={100} w={120} t="Rohit (phone)"/><SBox x={0} y={160} w={120} t="Meera (tablet)"/>
 <SBox x={190} y={100} w={170} t="Doc server: menu #214" blue/><SBox x={190} y={30} w={170} t="Registry"/>
@@ -387,7 +387,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dct${uid}`}><titl
 // Rohit, at the same moment, changes 220 to 240 (characters 7 to 9). The server takes Ananya's first (#41).
 // Rohit's edit was made against #40, so the server moves it right by the 7 characters Ananya added: it now
 // applies to 14 to 16. Everyone ends with "Paneer Tikka ₹240".
-function TransformFig({still,uid=""}){const D="12s";
+function TransformFig({still,uid=""}){const D=pace(12);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><title id={`tft${uid}`}>Two edits at once. The menu line reads "Tikka ₹220". Ananya inserts "Paneer " at the start. At the same moment Rohit replaces the 3 characters at position 7, 220, with 240. The server takes Ananya's edit first, as number 41. Rohit's edit was made on number 40, so the server shifts it right by the 7 characters Ananya added, to position 14. Everyone ends with "Paneer Tikka ₹240".</title>
 <text x={0} y={24} className="fb">Version #40</text><rect x={120} y={8} width={170} height={24} fill={BG} stroke={GREY}/><text x={130} y={25} className="fb">Tikka ₹220</text>
@@ -399,7 +399,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`tft${uid}`}><titl
 // Rider dispatch, FIG: the path. Rider apps send their location every few seconds to a location service,
 // which keeps only the latest one per rider in an in-memory map of the city. When an order is placed, the
 // dispatcher asks the map for free riders near the restaurant, scores them, and offers the order to the best.
-function DispatchFig({still,uid=""}){const M=`dp${uid}`,D="12s";
+function DispatchFig({still,uid=""}){const M=`dp${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dpt${uid}`}><title id={`dpt${uid}`}>Rider apps send their location every few seconds to a location service, which keeps only each rider's latest location in an in-memory map of the city. When an order is placed, the dispatcher asks the map for free riders near the restaurant, scores each by how soon they can reach it compared with when the food will be ready, and offers the order to the best one.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="Rider apps"/><SBox x={160} y={50} w={140} t="Location service"/><SBox x={350} y={50} w={170} t="City map (in memory)" blue/>
 <SBox x={0} y={150} w={110} t="New order"/><SBox x={160} y={150} w={140} t="Dispatcher" blue/><SBox x={350} y={150} w={170} t="Offer to best rider"/>
@@ -412,7 +412,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`dpt${uid}`}><titl
 // Rider dispatch, FIG: a rider's states. Free, then offered (held for this order for 20 seconds; nobody else
 // can offer them anything), then assigned if they accept, then delivering, then free again. A decline or no
 // answer in 20 seconds puts them back to free, and the order goes to the next rider.
-function OfferStatesFig({still,uid=""}){const M=`of${uid}`,D="12s";
+function OfferStatesFig({still,uid=""}){const M=`of${uid}`,D=pace(12);
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;
 return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`oft${uid}`}><title id={`oft${uid}`}>A rider's states. Free, then offered: held for one order for 20 seconds, so no other order can be offered to them. If they accept, assigned, then delivering, then free again. If they decline or don't answer in 20 seconds, they go back to free and the order is offered to the next rider.</title><Mark m={M}/>
 <SBox x={0} y={70} w={100} t="free" blue/><SBox x={150} y={70} w={110} t="offered (20 s)"/><SBox x={310} y={70} w={100} t="assigned"/><SBox x={460} y={70} w={110} t="delivering"/>
@@ -424,7 +424,7 @@ return <svg viewBox="0 0 640 210" role="img" aria-labelledby={`oft${uid}`}><titl
 // Video, FIG: the pipeline. The chef's app uploads the original straight to storage. A queue hands it to
 // transcoders, which split it into chunks and encode each chunk in five sizes at once. The result is short
 // segments plus a playlist, served through a CDN to viewers.
-function VideoPipeFig({still,uid=""}){const M=`vp${uid}`,D="12s";
+function VideoPipeFig({still,uid=""}){const M=`vp${uid}`,D=pace(12);
 const sizes=["240p","360p","480p","720p","1080p"];
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`vpt${uid}`}><title id={`vpt${uid}`}>The chef's app uploads the original video straight to storage. A queue hands it to transcoders, which split it into chunks and encode each chunk in five sizes, from 240p to 1080p, at the same time. The result is 4-second segments for each size plus a playlist, served through a CDN to viewers.</title><Mark m={M}/>
 <SBox x={0} y={50} w={100} t="Chef's app"/><SBox x={140} y={50} w={110} t="Storage"/><SBox x={290} y={50} w={80} t="Queue"/><SBox x={410} y={50} w={130} t="Transcoders" blue/>
@@ -439,7 +439,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`vpt${uid}`}><titl
 // Video, FIG: changing quality. The player fetches 4-second segments and picks a size for each one from how
 // fast the last few downloaded. Strong 4G: 720p. In a lift the speed drops, so the next segments are 240p
 // and the video keeps playing. Out of the lift it climbs back to 480p, then 720p.
-function AbrFig({still,uid=""}){const D="10s",X=110,SW=40;
+function AbrFig({still,uid=""}){const D=pace(10),X=110,SW=40;
 const seg=[[720,"4G"],[720,"4G"],[720,"4G"],[240,"lift"],[240,"lift"],[480,"back"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"],[720,"4G"]];
 const h=(q)=>q===720?70:q===480?46:22;
 return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`abt${uid}`}><title id={`abt${uid}`}>The player fetches 4-second segments and picks a size for each one from how fast the last few downloaded. On strong 4G it fetches 720p. In a lift the speed drops, so the next two segments are 240p and the video keeps playing without a pause. Out of the lift it climbs back to 480p, then 720p.</title>
@@ -453,7 +453,7 @@ return <svg viewBox="0 0 640 220" role="img" aria-labelledby={`abt${uid}`}><titl
 // Menu search, FIG: the path. A query is cleaned up (spelling, Hinglish, synonyms), sent to every shard of
 // the city's index at once, each returns its best 20, and the merged list is re-ranked for this person.
 // Separately, menu changes flow from the menus database through an indexer into the shards within a minute.
-function SearchFlowFig({still,uid=""}){const M=`sr${uid}`,D="12s";
+function SearchFlowFig({still,uid=""}){const M=`sr${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`srt${uid}`}><title id={`srt${uid}`}>A search for "panir butter masala" goes to the query service, which fixes the spelling and adds synonyms. It asks every shard of the city's index at once; each shard returns its best 20 dishes, and the query service merges them and re-ranks the list for this person by distance, open now and past orders. Separately, menu changes flow from the menus database through an indexer into the shards within a minute.</title><Mark m={M}/>
 <SBox x={0} y={60} w={120} t="Search box"/><SBox x={160} y={60} w={140} t="Query service" blue/>
 <SBox x={360} y={30} w={130} t="Pune shard 1"/><SBox x={360} y={70} w={130} t="Pune shard 2"/><SBox x={360} y={110} w={130} t="Pune shard 3"/>
@@ -467,7 +467,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`srt${uid}`}><titl
 
 // Menu search, FIG: the inverted index. Each word points to the dishes that contain it. "paneer butter
 // masala" reads three short lists and combines them: d12 has all three words, d40 has two, d55 and d77 one.
-function InvertedFig({still,uid=""}){const D="10s";
+function InvertedFig({still,uid=""}){const D=pace(10);
 const rows=[["paneer",["d12","d40","d77"]],["butter",["d12","d55"]],["masala",["d12","d40","d90"]]];
 const res=[["d12","Paneer Butter Masala · 3 of 3",1],["d40","Paneer Masala Dosa · 2 of 3",0],["d55","Butter Naan · 1 of 3",0]];
 const step=(t0,el)=>still?el:<Show t0={t0} t1={.98} dur={D}>{el}</Show>;

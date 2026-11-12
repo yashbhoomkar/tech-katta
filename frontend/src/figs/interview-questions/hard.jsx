@@ -1,11 +1,11 @@
 // Interview Questions › Hard: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "hard").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import React from"react";import{Dot,Glow,Mark,Line,SBox,T,Fig,Mk,INK,GREY,RED,BLUE,LR}from"../parts.jsx";
+import React from"react";import{Dot,Glow,Mark,Line,SBox,T,Fig,Mk,INK,GREY,RED,BLUE,LR,pace}from"../parts.jsx";
 
 // IND vs PAK, FIG: the live pipeline. One stadium feed is encoded into six sizes and cut into 4-second segments;
 // the packager writes segments and playlists to storage. Players fetch both through the CDN: 87.5 lakh requests a
 // second at the peak, 99 in 100 answered at the edge, so the origin servers see 87,500.
-function LivePipeFig({still,uid=""}){const M=`lp${uid}`,D="12s";
+function LivePipeFig({still,uid=""}){const M=`lp${uid}`,D=pace(12);
 return <svg viewBox="0 0 640 236" role="img" aria-labelledby={`lpt${uid}`}><title id={`lpt${uid}`}>The live pipeline. The stadium feed goes to encoders, which make six sizes, and to a packager, which cuts each size into 4-second segments and writes them and the playlists to storage. 3.5 crore players fetch playlists and segments from CDN edges near them, 87.5 lakh requests a second at the peak. The edges answer 99 in 100; the rest, 87,500 a second, reach the origin servers, which read from storage.</title><Mark m={M}/>
 <SBox x={0} y={50} w={110} t="Stadium feed"/><SBox x={150} y={50} w={110} t="Encoders" blue/><SBox x={300} y={50} w={110} t="Packager"/><SBox x={450} y={50} w={150} t="Storage"/>
 <Line x1={112} y1={50} x2={146} y2={50} m={M}/><Line x1={262} y1={50} x2={296} y2={50} m={M}/><Line x1={412} y1={50} x2={446} y2={50} m={M}/>

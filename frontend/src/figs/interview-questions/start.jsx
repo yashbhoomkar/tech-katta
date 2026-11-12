@@ -1,10 +1,10 @@
 // Interview Questions › Start here: the figures this sub-tab's articles draw (site.json dashboard.groups.interview-questions, "start").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{ACCENT_LINE,ACCENT_MID,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";import React from"react";import{Glow,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{ACCENT_LINE,ACCENT_MID,LINE_SOFT,ON_ACCENT}from"../../theme/palette.js";import React from"react";import{Glow,INK,GREY,RED,BLUE,pace}from"../parts.jsx";
 
 // Method, FIG: a 45-minute interview as a bar. Requirements 5, entities 2, API 5, high-level design 15,
 // deep dives 13, questions at the end 5. A marker walks the clock and the current step lights up.
-function ClockFig({still,uid=""}){const D="15s",X0=20,W=600,Y=120,T=45;
+function ClockFig({still,uid=""}){const D=pace(15),X0=20,W=600,Y=120,T=45;
 const steps=[["Requirements",5,""],["Entities",2,""],["API",5,""],["High-level design",15,"a design that works end to end"],["Deep dives",13,"make it hold up"],["Your questions",5,""]];
 let at=0;const segs=steps.map(([n,m,sub])=>{const s={n,m,sub,a:at};at+=m;return s});const x=(m)=>X0+(m/T)*W;
 return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`ckt${uid}`}><title id={`ckt${uid}`}>A 45-minute system design interview split into steps: about 5 minutes on requirements, 2 on the core entities, 5 on the API, 15 on a high-level design that works end to end, 13 on deep dives that make it hold up, and the last 5 for your questions.</title>

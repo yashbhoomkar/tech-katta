@@ -1,6 +1,6 @@
 // Concepts › Sharding: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "sharding").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{ACCENT_MID,BG,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Show,Mark,Box,Line,SBox,Dot,Glow}from"../parts.jsx";
+import{ACCENT_MID,BG,LINE_SOFT}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Show,Mark,Box,Line,SBox,Dot,Glow,pace}from"../parts.jsx";
 
 // Sharding in an interview: scale up hits a ceiling, scale out keeps growing.
 function CeilingFig({still,uid=""}){
@@ -120,7 +120,7 @@ base={base} g={[s1,s2,s3,s4]} last={<g>{s1}{s2}{s3}{s4}</g>}/>}
 // Sharding, FIG: orders sharded by restaurant_id. At 7 pm the four shards are even. On IND vs PAK night
 // one biryani chain takes 30% of all orders, all of them on shard 3, which goes past its capacity
 // while the others idle. Splitting the chain's key over eight sub-keys spreads it out again.
-function HotShardFig({still,uid=""}){const D="12s",B=250,U=1.2;// 100% load = 120 px
+function HotShardFig({still,uid=""}){const D=pace(12),B=250,U=1.2;// 100% load = 120 px
 const phases=[[40,45,42,38],[52,48,150,50],[70,66,74,68]],X=[90,220,350,480];
 const kt="0;.3;.33;.63;.66;1",h=(i)=>phases.map(p=>p[i]*U);
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`hst${uid}`}><title id={`hst${uid}`}>Four shards of Zotato's orders, split by restaurant ID. At 7 pm each carries about 40% of its capacity. On IND vs PAK night one biryani chain takes 30% of all orders; they all land on shard 3, which runs at 150% of capacity and slows down while the other shards sit near half load. After the chain's orders are spread over eight sub-keys, all four shards run at about 70%.</title>
@@ -134,7 +134,7 @@ return <g key={i}><rect x={x} y={B-shown} width="90" height={shown} rx="2" fill=
 // Sharding, FIG: orders split over four shards by hash(customer_id). "My orders" for one customer
 // goes to one shard; "a restaurant's orders today" has no customer in it, so every shard is asked
 // and the router merges the answers.
-function ShardKeyFig({still,uid=""}){const M=`shk${uid}`,D="12s",YS=[60,120,180,240];
+function ShardKeyFig({still,uid=""}){const M=`shk${uid}`,D=pace(12),YS=[60,120,180,240];
 return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`shkt${uid}`}><title id={`shkt${uid}`}>Zotato's orders are split over four database shards by a hash of the customer ID. A request for one customer's orders includes the shard key, so the router sends it to one shard. A request for one restaurant's orders today has no customer ID, so the router asks all four shards and merges the results.</title><Mark m={M}/>
 <Box x={0} y={150} w={110} t="Order API"/><Line x1={112} y1={150} x2={166} y2={150} m={M}/>
 <Box x={170} y={150} w={150} t="Router" blue/><text x="245" y="186" textAnchor="middle" className="fl">hash(customer_id) % 4</text>

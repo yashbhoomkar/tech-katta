@@ -1,7 +1,7 @@
 // Concepts › Consistent hashing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "consistent-hashing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
 // Ring positions run 0–100 clockwise from the top, like the articles' 100-position ring.
-import{BG,CAT_AMBER,CAT_GREEN,CAT_PINK,CAT_TEAL,CAT_VIOLET,GRID,LINE,ON_ACCENT,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Cap,Caps,Show}from"../parts.jsx";
+import{BG,CAT_AMBER,CAT_GREEN,CAT_PINK,CAT_TEAL,CAT_VIOLET,GRID,LINE,ON_ACCENT,SURFACE}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Cap,Caps,Show,pace}from"../parts.jsx";
 
 const X=({x,y,c=RED,r=6})=><g stroke={c} strokeWidth="2.5"><line x1={x-r} y1={y-r} x2={x+r} y2={y+r}/><line x1={x-r} y1={y+r} x2={x+r} y2={y-r}/></g>;
 
@@ -179,7 +179,7 @@ return <svg viewBox="0 0 640 300" role="group" aria-labelledby={`cpg${uid}`}><ti
 // Moved here from the older Concepts groups (removed 2026-11-09), drawn the same way.
 // Hash rings, FIG 1: going from 4 servers to 5. With hash % N, 16 of 20 carts change server; on a ring with
 // servers at 10, 35, 60 and 85, a fifth server at 72 takes only the hashes from 61 to 72 from D: 4 of 20.
-function HashMoveFig({still,uid=""}){const D="14s",K=[2,4,9,10,11,13,28,36,42,44,50,53,56,63,65,69,70,76,77,83],L="ABCDE",x=i=>20+i*30;
+function HashMoveFig({still,uid=""}){const D=pace(14),K=[2,4,9,10,11,13,28,36,42,44,50,53,56,63,65,69,70,76,77,83],L="ABCDE",x=i=>20+i*30;
 const ring=k=>k<=10||k>85?"A":k<=35?"B":k<=60?"C":"D",ring5=k=>k>60&&k<=72?"E":ring(k);
 const caps=[["1 · 20 carts hashed to 0–99; with 4 servers, each cart lives on server hash % 4",INK],["2 · a fifth server, so hash % 5: 16 of the 20 carts now belong somewhere else",RED],["3 · on a ring, each server owns the hashes up to its point: 10, 35, 60 and 85",INK],["4 · E joins at 72 and takes only 61–72 from D: 4 carts move, the other 16 stay",BLUE]];
 const cells=(y,f,cls="fb")=><g>{K.map((k,i)=>{const[t,c]=f(k);return <g key={i}><rect x={x(i)} y={y} width="26" height="24" fill={c===RED?LR:c===BLUE?LB:BG} stroke={c||GREY} strokeWidth={c?1.5:1}/><text x={x(i)+13} y={y+16} textAnchor="middle" className={cls} style={c?{fill:c}:undefined}>{t}</text></g>})}</g>;
@@ -194,7 +194,7 @@ return <svg viewBox="0 0 640 256" role="img" aria-labelledby={`hmt${uid}`}><titl
 // Hash rings, FIG 2: virtual nodes. With one point per server the arcs are uneven (C holds 39%), and when B
 // fails all of its keys land on C (50%). With six points per server, mixed around the ring, every share is
 // near 25%, and B's six small arcs go to A, C and D, which end up with about a third each.
-function VnodesFig({still,uid=""}){const D="14s",R=62,CY=160;
+function VnodesFig({still,uid=""}){const D=pace(14),R=62,CY=160;
 const at=(cx,a,r=R)=>[cx+r*Math.sin(a*Math.PI/180),CY-r*Math.cos(a*Math.PI/180)];
 const arc=(cx,a1,a2,c)=>{const[x1,y1]=at(cx,a1),[x2,y2]=at(cx,a2);return <path d={`M${x1} ${y1}A${R} ${R} 0 ${a2-a1>180?1:0} 1 ${x2} ${y2}`} fill="none" stroke={c} strokeWidth="6" strokeOpacity=".45"/>};
 const P1=[[20,"A"],[60,"B"],[200,"C"],[290,"D"]];

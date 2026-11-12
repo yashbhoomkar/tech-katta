@@ -1,11 +1,11 @@
 // Concepts › Recurring patterns: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "patterns").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,FB,GRID,LB,LR}from"../../theme/palette.js";import React from"react";import{Dot,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE}from"../parts.jsx";
+import{BG,FB,GRID,LB,LR}from"../../theme/palette.js";import React from"react";import{Dot,Show,Mk,Bx,Ar,Caps,Cap,Life,Msg,INK,GREY,RED,BLUE,pace}from"../parts.jsx";
 
 // Live updates, FIG 1: one event to the one connection server holding the customer's phone. The order service
 // publishes "order 9051 ready"; the registry says customer 77 is connected to C2; only C2 gets it and writes it
 // down the open connection.
-function LiveFanoutFig({still,uid=""}){const M=`lf${uid}`,D="14s";
+function LiveFanoutFig({still,uid=""}){const M=`lf${uid}`,D=pace(14);
 const caps=[["1 · the kitchen marks order 9051 ready; the order service publishes one event",INK],["2 · the registry says customer 77's phone is connected to server C2",BLUE],["3 · only C2 gets the event, and writes it down the phone's open connection",BLUE],["4 · Asha sees \"ready\" within a second; C1 and C3 never handled it",BLUE]];
 const base=<g><Bx x={10} y={110} w={120} h={44} t="Order service" s="9051: ready"/><Ar x1={132} y1={132} x2={176} y2={132} m={M}/>
 <Bx x={180} y={110} w={110} h={44} t="Event bus" s="order.updated"/><Bx x={180} y={196} w={110} h={44} t="Registry" s="user → server"/>
@@ -23,7 +23,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`lft${uid}`}><titl
 // Live updates, FIG 2: resuming after a dropped connection. Updates carry numbers; the phone has seen 42 when
 // it enters a tunnel; 43 and 44 reach no one; it reconnects with "last seen 42" and the server replays 43 and
 // 44 from a short log before carrying on live.
-function LiveResumeFig({still,uid=""}){const M=`lr${uid}`,D="14s",P=90,S=320,L=540;
+function LiveResumeFig({still,uid=""}){const M=`lr${uid}`,D=pace(14),P=90,S=320,L=540;
 const caps=[["1 · every update carries a number; the phone has seen up to 42",INK],["2 · the phone goes into a tunnel, so 43 and 44 reach no one",RED],["3 · it reconnects, waiting longer after each failed try, and says: last seen 42",INK],["4 · the server replays 43 and 44 from the log, then carries on live",BLUE]];
 const lanes=<g><Life x={P} t="Phone" y1={292}/><Life x={S} t="Connection server" y1={292}/><Life x={L} t="Update log" s="kept for an hour" y1={292}/></g>;
 const m=[<g key={1}><Msg x1={S} x2={P} y={98} t="#41 rider picked up" m={M}/><Msg x1={S} x2={P} y={122} t="#42 rider 2 km away" m={M}/><text x="10" y="146" className="fl" style={{fill:BLUE}}>seen: 42</text></g>,
@@ -36,7 +36,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`lrt${uid}`}><titl
 
 // Contention, FIG 1: two buyers, one plate left. Read-then-write lets both read 1 and both write 0: two sold.
 // One conditional update (stock - 1 where stock > 0) lets exactly one win.
-function RaceFig({still,uid=""}){const M=`rc${uid}`,D="14s";
+function RaceFig({still,uid=""}){const M=`rc${uid}`,D=pace(14);
 const caps=[["1 · one plate of biryani is left, and two customers press Buy at the same moment",INK],["2 · both requests read the stock first, and both see 1 left",INK],["3 · both write 0 and both are confirmed: two plates sold, one in the kitchen",RED],["4 · one conditional update instead: the database lets exactly one of them win",BLUE]];
 const lanes=(o,t)=><g><text x={o} y="48" className="fk">{t}</text><Life x={o+40} t="Buyer A" y0={72} y1={236}/><Life x={o+150} t="items · id 7" s="stock 1" y0={72} y1={236}/><Life x={o+260} t="Buyer B" y0={72} y1={236}/></g>;
 const s2=<g><Msg x1={50} x2={160} y={118} t="read" m={M}/><Msg x1={160} x2={50} y={138} t="1 left" m={M}/><Msg x1={270} x2={160} y={118} t="read" m={M}/><Msg x1={160} x2={270} y={138} t="1 left" m={M}/></g>;
@@ -50,7 +50,7 @@ return <svg viewBox="0 0 640 300" role="img" aria-labelledby={`rct${uid}`}><titl
 
 // Contention, FIG 2: a seat held for 10 minutes. Asha holds 14C at 10:00; Ravi is refused at 10:03; Asha
 // never pays and the hold expires at 10:10; Ravi holds it at 10:11 and pays at 10:13.
-function SeatHoldFig({still,uid=""}){const D="14s",x=m=>60+m*36;
+function SeatHoldFig({still,uid=""}){const D=pace(14),x=m=>60+m*36;
 const caps=[["1 · Asha picks seat 14C: it is held for her for 10 minutes, not sold yet",BLUE],["2 · Ravi tries 14C at 10:03 and is told it's taken, so he can pick another",RED],["3 · Asha never pays: at 10:10 the hold runs out and the seat is free again",INK],["4 · Ravi holds it at 10:11 and pays at 10:13: sold once, to one person",BLUE]];
 const seg=(a,b,t,fill,c)=><g><rect x={x(a)} y="104" width={x(b)-x(a)} height="30" fill={fill} stroke={c}/>{t&&<text x={(x(a)+x(b))/2} y="123" textAnchor="middle" className="fl" style={{fill:c}}>{t}</text>}</g>;
 const mk=(m,up,t,c=INK,a="middle")=><g><line x1={x(m)} y1={up?92:134} x2={x(m)} y2={up?104:148} stroke={c} strokeDasharray="2 2"/><text x={x(m)} y={up?88:160} textAnchor={a} className="fl" style={{fill:c}}>{t}</text></g>;
@@ -64,7 +64,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`sht${uid}`}><titl
 
 // Multi-step processes, FIG 1: an order as a state machine. Placed → accepted → preparing → picked up →
 // delivered; with no answer in 5 minutes a timer cancels it and a refund follows; a late "accept" is refused.
-function OrderStatesFig({still,uid=""}){const M=`os${uid}`,D="14s",X=[10,138,266,394,522],N=["Placed","Accepted","Preparing","Picked up","Delivered"];
+function OrderStatesFig({still,uid=""}){const M=`os${uid}`,D=pace(14),X=[10,138,266,394,522],N=["Placed","Accepted","Preparing","Picked up","Delivered"];
 const caps=[["1 · an order is always in exactly one state, and only the listed moves are allowed",INK],["2 · the restaurant accepts within 5 minutes, and the order moves on to preparing",BLUE],["3 · if nobody accepts in 5 minutes, a timer cancels it and starts the refund",BLUE],["4 · a late accept for a cancelled order is refused: that move isn't in the table",RED]];
 const st=(x,y,t,c=GREY,fill=BG)=><Bx key={t} x={x} y={y} w={108} h={36} t={t} c={c} fill={fill}/>;
 const base=<g>{N.map((n,i)=>st(X[i],70,n))}{X.slice(0,4).map(x=><Ar key={x} x1={x+110} y1={88} x2={x+125} y2={88} m={M}/>)}{st(10,170,"Cancelled")}{st(138,170,"Refunded")}
@@ -78,7 +78,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`ost${uid}`}><titl
 
 // Multi-step processes, FIG 2: a durable workflow survives a crash. Worker A does steps 1 and 2, saving each
 // result, then dies; worker B replays the history, skips the finished steps and runs 3 and 4.
-function WorkflowResumeFig({still,uid=""}){const D="14s",Y=[96,128,160,192],S=["1 · charge the card","2 · tell the restaurant","3 · find a rider","4 · tell the customer"],H=["card charged, ref c-81","restaurant told","rider Ravi assigned","customer told"];
+function WorkflowResumeFig({still,uid=""}){const D=pace(14),Y=[96,128,160,192],S=["1 · charge the card","2 · tell the restaurant","3 · find a rider","4 · tell the customer"],H=["card charged, ref c-81","restaurant told","rider Ravi assigned","customer told"];
 const caps=[["1 · a workflow runs its steps in order and saves each result in its history",INK],["2 · worker A charges the card and tells the restaurant, then its machine dies",RED],["3 · worker B takes over and replays the history: steps 1 and 2 are already done",INK],["4 · it runs steps 3 and 4 only, so the card is never charged twice",BLUE]];
 const base=<g><text x="20" y="62" className="fk">STEPS</text><text x="230" y="62" className="fk">WORKER A</text><text x="330" y="62" className="fk">WORKER B</text><text x="440" y="62" className="fk">HISTORY, SAVED</text>
 <rect x="440" y="74" width="190" height="136" fill={BG} stroke={GREY}/>{S.map((s,i)=><text key={s} x="20" y={Y[i]} className="fb">{s}</text>)}
@@ -91,7 +91,7 @@ return <svg viewBox="0 0 640 256" role="img" aria-labelledby={`wrt${uid}`}><titl
 
 // Scaling reads, FIG 1: where 1 lakh reads a second end up. The CDN answers 60,000; the cache 36,000 of the
 // 40,000 left; replicas 3,600 of 4,000; 400 that must be fresh reach the primary. Bar width = reads arriving.
-function ReadLayersFig({still,uid=""}){const D="14s",X0=120,W=v=>Math.max(2,v/250);
+function ReadLayersFig({still,uid=""}){const D=pace(14),X0=120,W=v=>Math.max(2,v/250);
 const caps=[["1 · 1 lakh reads a second at dinner; one database handles thousands, not lakhs",INK],["2 · the CDN answers images and menus from a nearby city: 60,000 never reach us",BLUE],["3 · the cache answers 9 in 10 of the rest, so only 4,000 a second reach a database",BLUE],["4 · replicas take most of those; only reads that must be fresh go to the primary",BLUE]];
 const R=[["Phones",100000,0,"1,00,000 reads a second at dinner"],["CDN",100000,60000,"answers 60,000: images and menus · passes on 40,000"],["Cache",40000,36000,"answers 36,000 · passes on 4,000"],["Replicas",4000,3600,"answer 3,600 · pass on 400"],["Primary",400,400,"400 reads a second that must be fresh: easy for one machine"]];
 const row=([n,a,s,t],i)=>{const y=52+i*42;return <g key={n}><text x="10" y={y+11} className="fb">{n}</text><rect x={X0} y={y} width={W(a)} height="14" fill={GRID} stroke={GREY}/>{s>0&&<rect x={X0} y={y} width={W(s)} height="14" fill={FB} stroke={BLUE}/>}<text x={X0} y={y+30} className="fl">{t}</text></g>};
@@ -100,7 +100,7 @@ return <svg viewBox="0 0 640 264" role="img" aria-labelledby={`rlt${uid}`}><titl
 
 // Scaling reads, FIG 2: a hot key. 1,000 requests for restaurant 42's menu arrive as its cache entry expires.
 // Without coalescing all of them query the database; with it, one fetches and the rest share the answer.
-function HotKeyFig({still,uid=""}){const M=`hk${uid}`,D="14s",Y=[70,92,114,136,158,180,202,224];
+function HotKeyFig({still,uid=""}){const M=`hk${uid}`,D=pace(14),Y=[70,92,114,136,158,180,202,224];
 const caps=[["1 · during the match, 1,000 requests a second ask for restaurant 42's menu",INK],["2 · its cache entry expires, and all of them go to the database in the same moment",RED],["3 · coalesce: the first request fetches it, and the others wait for that answer",BLUE],["4 · each server also keeps the menu in memory for 5 seconds, so the key cools down",BLUE]];
 const reqs=x=><g>{Y.map(y=><g key={y}><rect x={x} y={y-8} width="52" height="16" fill={BG} stroke={GREY}/><text x={x+26} y={y+4} textAnchor="middle" className="fl">menu 42</text></g>)}</g>;
 const base=<g><text x="10" y="50" className="fk">WITHOUT COALESCING</text><text x="340" y="50" className="fk">WITH COALESCING</text>{reqs(10)}{reqs(340)}<Bx x={200} y={127} w={100} h={40} t="Database"/><Bx x={440} y={124} w={86} h={46} t="one fetch" s="others wait"/><Bx x={550} y={127} w={80} h={40} t="Database"/></g>;
@@ -113,7 +113,7 @@ return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`hkt${uid}`}><titl
 // Scaling writes, FIG 1: a spike through a queue. Analytics events: 3,000 a second, then 20,000 a second for
 // 10 minutes from 8:00; the database writes at most 8,000. The queue peaks at 72 lakh (12,000 × 600 s) and
 // drains at 5,000 a second, empty 24 minutes later at 8:34.
-function WriteBufferFig({still,uid=""}){const D="14s",x=m=>60+m*13.5,y=v=>230-v*0.008;
+function WriteBufferFig({still,uid=""}){const D=pace(14),x=m=>60+m*13.5,y=v=>230-v*0.008;
 const caps=[["1 · app events for analytics: 3,000 writes a second, until the 8 pm flash sale",INK],["2 · for 10 minutes 20,000 a second arrive, but the database writes 8,000 at most",RED],["3 · the queue holds the difference: about 72 lakh events at the peak",BLUE],["4 · then the database keeps writing 8,000 a second, and the queue is empty by 8:34",BLUE]];
 const inc=`M${x(0)} ${y(3000)}H${x(5)}V${y(20000)}H${x(15)}V${y(3000)}H${x(40)}`,db=`M${x(0)} ${y(3000)}H${x(5)}V${y(8000)}H${x(39)}V${y(3000)}H${x(40)}`;
 const axes=<g><line x1="60" y1="60" x2="60" y2="230" stroke={GREY}/><line x1="60" y1="230" x2="604" y2="230" stroke={GREY}/>{[[20000,"20,000/s"],[8000,"8,000/s"],[0,"0"]].map(([v,t])=><text key={v} x="54" y={y(v)+4} textAnchor="end" className="fl">{t}</text>)}
@@ -125,7 +125,7 @@ return <svg viewBox="0 0 640 256" role="img" aria-labelledby={`wbt${uid}`}><titl
 
 // Scaling writes, FIG 2: a hot counter split ten ways. All likes for one dish go to one key on one shard; at
 // 10,000 a second that shard is overloaded. Ten parts on five shards take 1,000 a second each; a read adds them.
-function SplitCounterFig({still,uid=""}){const M=`sc${uid}`,D="14s",px=i=>i<5?460:550,py=i=>58+(i%5)*38;
+function SplitCounterFig({still,uid=""}){const M=`sc${uid}`,D=pace(14),px=i=>i<5?460:550,py=i=>58+(i%5)*38;
 const caps=[["1 · a dish's like count is one key, so every like lands on the same shard",INK],["2 · a video of the dish goes viral: 10,000 likes a second, too many for one shard",RED],["3 · split the key into 10 parts on different shards; each like adds to a random one",BLUE],["4 · reading the count adds up the 10 parts: one bigger read, and no hot shard",BLUE]];
 const left=<g><text x="10" y="44" className="fk">ONE KEY</text><Bx x={10} y={116} w={80} h={36} t="like +1"/><Ar x1={92} y1={134} x2={136} y2={134} m={M}/><Bx x={140} y={110} w={150} h={48} t="likes:dish-9" s="shard 3"/></g>;
 const hot=<g><Bx x={140} y={110} w={150} h={48} t="likes:dish-9" s="shard 3" c={RED} fill={LR}/><text x="10" y="200" className="fl" style={{fill:RED}}>10,000 writes a second,</text><text x="10" y="216" className="fl" style={{fill:RED}}>all on one shard</text></g>;
@@ -136,7 +136,7 @@ return <svg viewBox="0 0 640 264" role="img" aria-labelledby={`sct${uid}`}><titl
 
 // Large files, FIG 1: a multipart upload. A 1.6 GB video in 16 parts of 100 MB, three in flight at a time;
 // part 11 fails on a network switch and only it is sent again; one "complete" call joins the parts.
-function MultipartFig({still,uid=""}){const M=`mp${uid}`,D="14s",px=i=>20+(i%8)*76,py=i=>60+Math.floor(i/8)*44;
+function MultipartFig({still,uid=""}){const M=`mp${uid}`,D=pace(14),px=i=>20+(i%8)*76,py=i=>60+Math.floor(i/8)*44;
 const caps=[["1 · a 1.6 GB video is cut into 16 parts of 100 MB, each with its own signed URL",INK],["2 · the phone sends three parts at a time; each part is checked when it arrives",BLUE],["3 · part 11 fails when the phone switches networks: only part 11 is sent again",RED],["4 · when all 16 are in, one \"complete\" call joins them into a single file",BLUE]];
 const part=(i,c=GREY,fill=BG,t="100 MB")=><g key={i}><rect x={px(i)} y={py(i)} width="66" height="34" fill={fill} stroke={c} strokeWidth={c===GREY?1:1.5}/><text x={px(i)+33} y={py(i)+15} textAnchor="middle" className="fb" style={c!==GREY?{fill:c}:undefined}>{i+1}</text><text x={px(i)+33} y={py(i)+28} textAnchor="middle" className="fl">{t}</text></g>;
 const P=[...Array(16).keys()],done=i=>part(i,BLUE,FB,"in");
@@ -149,7 +149,7 @@ return <svg viewBox="0 0 640 250" role="img" aria-labelledby={`mpt${uid}`}><titl
 
 // Large files, FIG 2: an upload's states in the database. pending (row written, URLs handed out) → uploaded
 // (storage event) → processing (checks, resizing) → ready; bad files go to failed; nothing after 24 h → swept.
-function FileStatesFig({still,uid=""}){const M=`fs${uid}`,D="14s",X=[10,170,330,490];
+function FileStatesFig({still,uid=""}){const M=`fs${uid}`,D=pace(14),X=[10,170,330,490];
 const S=[["pending","row written, URLs out"],["uploaded","bytes in storage"],["processing","scan, resize, convert"],["ready","shown to customers"]];
 const caps=[["1 · before any bytes move, the API writes the row: video 88, pending",BLUE],["2 · storage reports the finished upload, and a worker checks and converts it",BLUE],["3 · only then is it ready; customers never see a half-processed file",BLUE],["4 · uploads nobody finishes are swept after a day: the row and any stored parts",INK]];
 const st=(i,c=GREY,fill=BG)=><Bx key={i} x={X[i]} y={74} w={140} h={44} t={S[i][0]} s={S[i][1]} c={c} fill={fill}/>;
@@ -163,7 +163,7 @@ return <svg viewBox="0 0 640 230" role="img" aria-labelledby={`fst${uid}`}><titl
 
 // Long-running jobs, FIG 1: a lease. Worker A takes job 512 with a 60 s lease and renews it every 20 s; it
 // crashes at 50 s, the lease (last renewed at 40 s) runs out at 100 s, and worker B takes the job and finishes.
-function JobLeaseFig({still,uid=""}){const D="14s",x=s=>130+s*2.4,A=84,L=134,B=184;
+function JobLeaseFig({still,uid=""}){const D=pace(14),x=s=>130+s*2.4,A=84,L=134,B=184;
 const caps=[["1 · worker A takes job 512 and gets a 60-second lease on it",INK],["2 · while it works, it renews the lease every 20 seconds",BLUE],["3 · worker A crashes at 50 s; with no renewals, the lease runs out at 100 s",RED],["4 · job 512 is free again: worker B takes it and finishes at 190 s",BLUE]];
 const base=<g>{[["Worker A",A],["Lease, job 512",L],["Worker B",B]].map(([t,y])=><text key={t} x="10" y={y+4} className="fb">{t}</text>)}<line x1={x(0)} y1="214" x2={x(200)} y2="214" stroke={GREY}/>{[0,50,100,150,200].map(s=><text key={s} x={x(s)} y="230" textAnchor="middle" className="fl">{s} s</text>)}
 <rect x={x(0)} y={A-10} width={x(50)-x(0)} height="20" fill={FB} stroke={BLUE}/><text x={(x(0)+x(50))/2} y={A+4} textAnchor="middle" className="fl">working</text></g>;
@@ -177,7 +177,7 @@ return <svg viewBox="0 0 640 240" role="img" aria-labelledby={`jlt${uid}`}><titl
 
 // Long-running jobs, FIG 2: retries, then a dead-letter queue. A payout fails at 0 s, 32 s and 155 s (waits of
 // about 30 s and 2 min, with jitter), then moves to a dead-letter queue with an alert; other jobs keep flowing.
-function JobRetryFig({still,uid=""}){const M=`jr${uid}`,D="14s",x=s=>120+s*2.5,T=[0,32,155];
+function JobRetryFig({still,uid=""}){const M=`jr${uid}`,D=pace(14),x=s=>120+s*2.5,T=[0,32,155];
 const caps=[["1 · paying restaurant 77 fails: the bank's API doesn't answer in time",RED],["2 · it is tried again after about 30 seconds, then after about 2 minutes",INK],["3 · the third failure moves it to a dead-letter queue and alerts a person",RED],["4 · the other jobs never waited: the queue kept moving the whole time",BLUE]];
 const att=i=><g key={i}><rect x={x(T[i])} y="80" width="10" height="24" fill={LR} stroke={RED}/><text x={x(T[i])+5} y="72" textAnchor="middle" className="fl" style={{fill:RED}}>try {i+1}</text><text x={x(T[i])+5} y="120" textAnchor="middle" className="fl">{T[i]} s</text></g>;
 const base=<g><text x="10" y="96" className="fb">Payout 77</text><text x="10" y="236" className="fb">Other jobs</text>{[...Array(62).keys()].map(i=><rect key={i} x={120+i*8} y="226" width="4" height="12" fill={FB} stroke={BLUE} strokeWidth=".5"/>)}{att(0)}</g>;

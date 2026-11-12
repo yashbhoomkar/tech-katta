@@ -94,7 +94,7 @@
   /* Motion: every transition uses these, and reduced motion sets them to 0 (theme/base.css) */
   --dur-fast:.12s;
   --dur:.2s;
-  --dur-enter:.36s;       /* things arriving on the page (theme/motion.css) */
+  --dur-enter:.28s;       /* things arriving on the page (theme/motion.css) */
   --ease:cubic-bezier(.2,.7,.2,1);
 }
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
