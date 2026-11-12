@@ -559,6 +559,11 @@
     ],
     "dashboard": [
       {
+        "target": ".lock-card",
+        "title": "Sign in to open everything",
+        "text": "Articles, problems and notes are free with a Google account. Sign in once and they open on every device, with your progress saved."
+      },
+      {
         "target": ".cards",
         "title": "Three ways in",
         "text": "Learn the ideas in Concepts and Components, see full answers in Interview Questions, then practise in Problems, where your design is tested and scored. New here? Go in that order."

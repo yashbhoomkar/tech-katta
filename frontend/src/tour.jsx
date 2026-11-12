@@ -9,9 +9,10 @@ import React,{useEffect,useLayoutEffect,useRef,useState}from"react";import{creat
 const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=="hidden"};
 const find=sel=>{try{return[...document.querySelectorAll(sel)].find(visible)||null}catch{return null}};
 const wait=(sel,ms)=>new Promise(res=>{const t0=Date.now();const go=()=>{const el=find(sel);if(el||Date.now()-t0>ms)res(el);else setTimeout(go,80)};go()});
-export default function Tour({steps,labels,onClose}){
-// steps that can't be shown here at all (no target and nothing to click open) are left out of the count
-const[list]=useState(()=>steps.filter(s=>s.click?find(s.click):find(s.target)));
+export default function Tour({steps,fallback,labels,onClose}){
+// steps that can't be shown here at all (no target and nothing to click open) are left out of the count; when fewer
+// than three are left (a page behind the sign-in card shows almost none of its own), the general tour is used instead
+const[list]=useState(()=>{const can=x=>(x||[]).filter(s=>s.click?find(s.click):find(s.target)),own=can(steps);return own.length>=3||!fallback?own:can(fallback)});
 const[i,setI]=useState(0),[dir,setDir]=useState(1),[el,setEl]=useState(null),[box,setBox]=useState(null),[ch,setCh]=useState(0);const card=useRef(null);
 const step=list[i],last=i===list.length-1;
 const move=d=>{setDir(d);setEl(null);setBox(null);setI(v=>Math.max(0,Math.min(list.length-1,v+d)))};
