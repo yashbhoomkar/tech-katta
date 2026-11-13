@@ -17,6 +17,7 @@ import TextEditor from "./editor.jsx";
 import Builder, { Sheet } from "./form.jsx";
 import { useDrag, settleMs } from "../theme/gesture.js";
 import Scene from "../theme/Scene.jsx";
+import { shareCard } from "./card.js";
 import Diagram from "./diagram.jsx";
 import { Testcase, Result } from "./console.jsx";
 import * as B from "./builder.js";
@@ -196,7 +197,7 @@ function Workspace({ problem, list, account, narrow, t }) {
   const consoleBox = <div className="pr-console">
     <div className="pr-tabs" role="tablist">{[["case", S.testcase], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={ctab === k} className={ctab === k ? "on" : ""} onClick={() => setCtab(k)}>{l}</button>)}</div>
     {ctab === "case" ? <Testcase problem={problem} test={caseTest} setTest={(x) => { setCaseTest(x); setDirty(true); }} pick={pick} setPick={(id) => setPick(id)}/>
-      : <Result result={result} busy={busy} showTip={showTip} onNext={next ? () => { location.hash = `practice/${next.slug}`; } : null} canShare={result?.kind === "submit" && !!result.submission_id} onShare={async (note) => { try { await api.share(result.submission_id, note); return true; } catch { return false; } }}/>}
+      : <Result result={result} busy={busy} showTip={showTip} onCard={result?.verdict === "Accepted" && lastGood.current ? () => shareCard({ problem, design: lastGood.current, result }) : null} onNext={next ? () => { location.hash = `practice/${next.slug}`; } : null} canShare={result?.kind === "submit" && !!result.submission_id} onShare={async (note) => { try { await api.share(result.submission_id, note); return true; } catch { return false; } }}/>}
   </div>;
   const left = <div className="pr-left">
     <div className="pr-tabs" role="tablist">{[["desc", S.description], ["ed", S.editorial], ["sol", S.solutions], ["subs", S.submissions]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={ltab === k} className={ltab === k ? "on" : ""} onClick={() => setLtab(k)}>{l}</button>)}</div>
