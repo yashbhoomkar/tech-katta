@@ -113,18 +113,6 @@ const auth = authConfig();
 const accounts = auth.enabled ? openAccounts({ uri: auth.uri, dbName: auth.dbName, secret: auth.secret }) : null;
 // Submissions are judged on worker threads, so a slow design never stalls the API (judge-pool.js).
 const judges = judgePool();
-const handleAccount = accountRoutes({
-  enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
-  // a problem's tests and rubric, from the content release being served (with its calibration designs)
-  practiceFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice)?.practice || null,
-  judgeDesign: (job) => judges.run(job),
-  analyticsOrigin: process.env.ANALYTICS_ORIGIN ?? 'https://analytics.katta.cc',
-  verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
-});
-// Practice (tech-katta-context/21-PROBLEM-EXPERIENCE-LEETCODE-STYLE.md): its own judging thread, so a Submit never
-// waits behind a canvas problem's simulation, and a time limit per design. The limit is 1 s, not the spec's 250 ms: a
-// fresh worker spends most of 250 ms loading the engine on the VPS, which would turn a first Submit into a Judge Error.
-const practiceJudges = judgePool({ size: 1, timeoutMs: 1_000, maxQueue: 50, workerUrl: new URL('./practice/judge-worker.js', import.meta.url) });
 // The interviewer (tech-katta-context/22-EVALUATOR-V3.md §12; the model is chosen in 29-SELF-HOSTED-LLM-ON-A-VPS.md §12):
 // settings from the environment (AI_*), the mock interviewer until a provider is set.
 const aiSettings = aiConfig();
@@ -132,6 +120,21 @@ const ai = { config: aiSettings, client: createClient(aiSettings), store: accoun
 const aiProblems = configProblems(aiSettings);
 for (const problem of aiProblems) console.error(`Interviewer: ${problem}; every review falls back to the report.`);
 if (aiProblems.length) aiSettings.enabled = false;
+const handleAccount = accountRoutes({
+  enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
+  // a problem's tests and rubric, from the content release being served (with its calibration designs)
+  practiceFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice)?.practice || null,
+  articleFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice) || null,
+  judgeDesign: (job) => judges.run(job),
+  judgeEvidence: (job) => judges.run({ ...job, task: 'evidence' }),
+  ai,
+  analyticsOrigin: process.env.ANALYTICS_ORIGIN ?? 'https://analytics.katta.cc',
+  verify: auth.enabled ? googleVerifier({ clientId: auth.clientId, ...(auth.jwksUrl ? { jwksUrl: auth.jwksUrl } : {}) }) : null,
+});
+// Practice (tech-katta-context/21-PROBLEM-EXPERIENCE-LEETCODE-STYLE.md): its own judging thread, so a Submit never
+// waits behind a canvas problem's simulation, and a time limit per design. The limit is 1 s, not the spec's 250 ms: a
+// fresh worker spends most of 250 ms loading the engine on the VPS, which would turn a first Submit into a Judge Error.
+const practiceJudges = judgePool({ size: 1, timeoutMs: 1_000, maxQueue: 50, workerUrl: new URL('./practice/judge-worker.js', import.meta.url) });
 const handlePractice = practiceRoutes({
   problems: () => content.practice, accounts, store: accounts ? openPractice(accounts.db) : null, enabled: auth.enabled, allowedOrigin,
   judge: (job) => practiceJudges.run(job),

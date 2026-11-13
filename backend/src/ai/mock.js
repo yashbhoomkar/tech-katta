@@ -27,7 +27,7 @@ export function mockReview(pack) {
     else if (part && has(first, 'rho')) add({ kind: 'problem', facts: [first.id], text: `${part} is your bottleneck: it ran at {{${first.id}.rho}} of what it can take, so ${req || 'the request'} broke its promise. Everything behind it waits.`, ask: `How would you take load off ${part}, and what would that cost you?` });
     else add({ kind: 'problem', facts: [first.id], text: `The verdict comes from this: ${reason}${req ? ` on ${req}` : ''}${part ? ` at ${part}` : ''}. Fix this before anything else.`, ask: null });
   }
-  for (const f of findings.slice(1, 2)) add({ kind: 'problem', facts: [f.id], text: `The same test also shows that ${why(f.id.split(':')[1])}${f.about?.request ? ` on ${f.about.request}` : ''}. It may go away with the first fix; check after you change it.`, ask: null });
+  for (const f of findings.slice(1, 2)) add({ kind: 'problem', facts: [f.id], text: `${f.about?.test && f.about.test !== first?.about?.test ? 'Another test also shows' : 'The same test also shows'} that ${why(f.id.split(':')[1])}${f.about?.request ? ` on ${f.about.request}` : ''}. It may go away with the first fix; check after you change it.`, ask: null });
 
   const loads = facts.filter((f) => f.kind === 'load' && f.tone === 'risk').sort((a, b) => (b.n?.peak_rho ?? 0) - (a.n?.peak_rho ?? 0));
   for (const f of loads.slice(0, first ? 1 : 2)) {
@@ -37,6 +37,7 @@ export function mockReview(pack) {
   }
   const tight = facts.find((f) => f.id === 'margin:tightest');
   if (tight?.tone === 'risk') add({ kind: 'risk', facts: [tight.id], text: has(tight, 'spare') ? `Everything passes, but {{${tight.id}.promise}} has only {{${tight.id}.spare}} to spare. An interviewer will push on exactly this.` : 'Everything passes, but one promise has very little room left.', ask: 'What would you change first if that promise got stricter?' });
+  for (const f of facts.filter((x) => x.kind === 'advice' && x.tone === 'risk').slice(0, 1)) add({ kind: 'risk', facts: [f.id], text: `The judge flags ${f.about?.part || 'part of the design'}. Fix it before an interviewer asks about it.`, ask: null });
   for (const f of facts.filter((x) => x.kind === 'static' && x.tone === 'risk').slice(0, 1)) add({ kind: 'risk', facts: [f.id], text: `${f.about?.part || 'One part'} has no spare. One failure there takes requests down with it, which is the first thing a failure question tests.`, ask: null });
 
   if (tight?.tone === 'good') add({ kind: 'strength', facts: [tight.id], text: has(tight, 'spare') ? `Every promise holds, and even the tightest one keeps {{${tight.id}.spare}} to spare. That is the headroom an interviewer wants to see.` : 'Every promise holds with room to spare.', ask: null });
@@ -45,9 +46,9 @@ export function mockReview(pack) {
     if (ok) add({ kind: 'strength', facts: [ok.id], text: 'The calm case already works, so the shape of the design is sound. The work left is about the harder moments.', ask: null });
   }
   if (items.length < 2) {
-    const cost = facts.find((f) => f.id === 'cost:total');
-    if (cost && verdictWord === 'Accepted') add({ kind: 'strength', facts: ['verdict', cost.id], text: 'It passes, at {{cost:total.inr}} a month. Know which part takes most of that before you are asked.', ask: null });
-    else if (cost) add({ kind: 'problem', facts: ['verdict', cost.id], text: 'Until this test passes nothing else counts. The design costs {{cost:total.inr}} a month, so keep an eye on cost while you fix it.', ask: 'Which part would you change first, and why that one?' });
+    const cost = facts.find((f) => f.id === 'cost:total'), money = cost && (has(cost, 'inr') ? 'inr' : 'usd');
+    if (cost && verdictWord === 'Accepted') add({ kind: 'strength', facts: ['verdict', cost.id], text: `It passes, at {{cost:total.${money}}} a month. Know which part takes most of that before you are asked.`, ask: null });
+    else if (cost) add({ kind: 'problem', facts: ['verdict', cost.id], text: `Until this test passes nothing else counts. The design costs {{cost:total.${money}}} a month, so keep an eye on cost while you fix it.`, ask: 'Which part would you change first, and why that one?' });
   }
 
   const repair = facts.find((f) => f.kind === 'repair');

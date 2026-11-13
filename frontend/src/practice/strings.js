@@ -44,7 +44,7 @@ export const S = {
   editorialLocked: "Sign in to read the editorial.", sortCost: "By cost", sortSpeed: "By speed", usedBy: (n) => `Used by ${n} people`,
   time: "Time", verdict: "Verdict", tests: "Tests", p99: "p99", openPicture: "Picture",
   // the interviewer (spec 22 §14.3)
-  askInterviewer: "Ask the interviewer", askReport: "Get the report's review", reviewing: "The interviewer is reading…",
+  askInterviewer: "Ask the interviewer", signInToAsk: "Sign in to ask the interviewer.", askReport: "Get the report's review", reviewing: "The interviewer is reading…",
   reviewingLong: "Reading your design and what the judge measured. This can take a little while.",
   reviewsLeft: (left, total) => `${left} of ${total} reviews left this month`, reviewTitle: "Review of your design",
   fromInterviewer: "From the interviewer", fromReport: "From the report", preview: "Preview",

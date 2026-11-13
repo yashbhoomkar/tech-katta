@@ -24,6 +24,18 @@ export const REASON_WORDS = {
   p50: 'the median request was too slow',
   backlog: 'accepted work waited too long',
   budget: 'the design costs more than the budget',
+  // the canvas judge's checks (Interview Questions; adapters/eval.js)
+  response: 'a call returned the wrong answer',
+  slo: 'calls missed their targets',
+  completes: 'work did not finish in time',
+  noCrash: 'a part crashed from overload',
+  noLostWrites: 'acknowledged writes were lost',
+  cost: 'the bill went over budget',
+  noDuplicates: 'the same work was done twice',
+  fresh: 'reads returned old data',
+  atomic: 'a change was only half made',
+  ordered: 'events arrived out of order',
+  error: 'the design could not be run',
 };
 
 const q = (s) => `'${s}'`;
