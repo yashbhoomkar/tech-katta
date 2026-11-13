@@ -98,3 +98,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 /* Phones: a solid header instead of the see-through blurred one. A blur behind a sticky header is redrawn on every
    scroll frame, which costs frames on the low-end phones most readers use (tech-katta-context 24 §4.3, §9). */
 @media(max-width:680px){.d-head{background:var(--page);backdrop-filter:none;-webkit-backdrop-filter:none}}
+/* Section marks (icons.jsx MARK, spec 24 G4): lines in the row's colour, the request dot in ochre; on the current
+   section the dot is marigold with an ink edge, like the figures' request dot */
+.ico-mark .ico-dot{fill:var(--accent);stroke:none}
+.side-link.active .ico-mark .ico-dot,.tab.on .ico-mark .ico-dot{fill:var(--brand-strong);stroke:var(--ink);stroke-width:.8}

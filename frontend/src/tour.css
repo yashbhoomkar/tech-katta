@@ -25,3 +25,5 @@
 .tour-act .tour-next:hover,.tour-act .tour-next:focus-visible{color:var(--on-brand);background:var(--brand-strong);border-color:var(--brand-edge)}
 .tour-act .tour-skip{border-color:transparent}
 .tour-prog i{background:var(--brand-strong)}
+/* phones: the card follows a sideways swipe (tour.jsx, spec 24 S6); vertical stays native */
+@media(max-width:639px){.tour-card,.tour-card *{touch-action:pan-y}}

@@ -5,7 +5,7 @@
 //   cta:   {label, href} on the last step: a link that closes the tour and goes there.
 // A step whose target is missing or hidden (e.g. on a phone) is skipped, forwards or backwards. Esc
 // or Skip closes it; Back/Next and ←/→ move; focus stays on the card. Opens only from the Tour button.
-import React,{useEffect,useLayoutEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import"./tour.css";
+import React,{useEffect,useLayoutEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import"./tour.css";import{useDrag,settleMs}from"./theme/gesture.js";
 const visible=el=>{if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=="hidden"};
 const find=sel=>{try{return[...document.querySelectorAll(sel)].find(visible)||null}catch{return null}};
 const wait=(sel,ms)=>new Promise(res=>{const t0=Date.now();const go=()=>{const el=find(sel);if(el||Date.now()-t0>ms)res(el);else setTimeout(go,80)};go()});
@@ -16,6 +16,9 @@ const[list]=useState(()=>{const can=x=>(x||[]).filter(s=>s.click?find(s.click):f
 const[i,setI]=useState(0),[dir,setDir]=useState(1),[el,setEl]=useState(null),[box,setBox]=useState(null),[ch,setCh]=useState(0);const card=useRef(null);
 const step=list[i],last=i===list.length-1;
 const move=d=>{setDir(d);setEl(null);setBox(null);setI(v=>Math.max(0,Math.min(list.length-1,v+d)))};
+// phones: the card follows a sideways swipe; left is Next, right is Back (tech-katta-context 24, S6). The buttons stay.
+const slide=(d,ms)=>{const c=card.current;if(!c)return;c.style.transition=ms?`transform ${ms}ms var(--ease)`:"none";c.style.transform=d?`translateX(${d}px)`:""};
+useDrag(card,{on:innerWidth<640&&!!box,axis:"x",min:last?0:-Infinity,max:i===0?0:Infinity,onMove:d=>slide(d),onEnd:(go,d)=>{slide(0,go?0:settleMs(d,card.current?.offsetWidth||320));if(go)move(-go)}});
 // open what the step needs, wait for its target; a step that can't be shown is skipped the way we were going
 useEffect(()=>{if(!step)return;let on=true;(async()=>{if(step.click){const c=find(step.click);try{for(const t of["mousedown","mouseup"])c?.dispatchEvent(new MouseEvent(t,{bubbles:true,view:window}));c?.click()}catch{}}
 const t=await wait(step.target,step.click?2000:400);if(!on)return;if(t){setEl(t);return}
