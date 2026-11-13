@@ -135,6 +135,13 @@ const handleAccount = accountRoutes({
 // waits behind a canvas problem's simulation, and a time limit per design. The limit is 1 s, not the spec's 250 ms: a
 // fresh worker spends most of 250 ms loading the engine on the VPS, which would turn a first Submit into a Judge Error.
 const practiceJudges = judgePool({ size: 1, timeoutMs: 1_000, maxQueue: 50, workerUrl: new URL('./practice/judge-worker.js', import.meta.url) });
+// The interviewer (tech-katta-context/22-EVALUATOR-V3.md §12; the model is chosen in 29-SELF-HOSTED-LLM-ON-A-VPS.md §12):
+// settings from the environment (AI_*), the mock interviewer until a provider is set.
+const aiSettings = aiConfig();
+const ai = { config: aiSettings, client: createClient(aiSettings), store: accounts ? openAiStore(accounts.db) : null };
+const aiProblems = configProblems(aiSettings);
+for (const problem of aiProblems) console.error(`Interviewer: ${problem}; every review falls back to the report.`);
+if (aiProblems.length) aiSettings.enabled = false;
 const handlePractice = practiceRoutes({
   problems: () => content.practice, accounts, store: accounts ? openPractice(accounts.db) : null, enabled: auth.enabled, allowedOrigin,
   judge: (job) => practiceJudges.run(job),
