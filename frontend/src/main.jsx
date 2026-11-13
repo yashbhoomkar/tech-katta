@@ -1,4 +1,4 @@
-import"./theme/index.js";import ThemeToggle from"./theme/ThemeToggle.jsx";import{useTheme}from"./theme/mode.js";import{useStill,LOOP}from"./theme/motion.js";import{BG,BLUE,FAINT,BRAND,BRAND_EDGE,ON_BRAND}from"./theme/palette.js";import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./styles.css";import{prefetchAccount,startAccount,wireSync}from"./account.js";import{AccountControl,LabLock}from"./accountui.jsx";import{track,referrer}from"./analytics.js";import{HostAnalytics}from"./hostanalytics.jsx";
+import"./theme/index.js";import ThemeToggle from"./theme/ThemeToggle.jsx";import CountUp from"./theme/CountUp.jsx";import{useTheme}from"./theme/mode.js";import{useStill,LOOP}from"./theme/motion.js";import{BG,BLUE,FAINT,BRAND,BRAND_EDGE,ON_BRAND}from"./theme/palette.js";import React,{useEffect,useRef,useState}from"react";import{createRoot}from"react-dom/client";import{createPortal}from"react-dom";import{getJSON}from"./api.js";import{Loading,LoadError,Boundary}from"./status.jsx";import"./styles.css";import{prefetchAccount,startAccount,wireSync}from"./account.js";import{AccountControl,LabLock}from"./accountui.jsx";import{track,referrer}from"./analytics.js";import{HostAnalytics}from"./hostanalytics.jsx";
 // FIG. 01 — one 8s loop: the producer hashes each key to a partition, the broker appends it to that partition's log, and each consumer in the group reads its own partition in offset order. On narrow screens it scales down and a zoom button opens it full-screen.
 // Box fill, text and label colours of a log slot: empty, being written, being consumed. A function, so a theme change is picked up.
 const SLOT=()=>({E:[BG,BG,FAINT],W:[BG,BLUE,BLUE],C:[BRAND,BRAND_EDGE,ON_BRAND]});
@@ -40,9 +40,12 @@ function App(){const[open,setOpen]=useState(false);useEffect(()=>track("page_vie
 </main><footer className="footer"><div className="wrap foot"><div><b><i/>{c.footer.label}</b><p>{c.brand.footer}<br/>{c.brand.footerNote}</p></div><nav aria-label="Footer">{c.footer.links.map(x=><a key={x} href={c.nav.find(n=>n[0]===x)?.[1]??"#"+x.toLowerCase()}>{x}</a>)}</nav><small>{c.footer.updated}: {__BUILD_DATE__}</small></div></footer></>}
 // What's inside (site.json "inside"): the four things the site offers, with live counts from /v1/site
 // ("10 QUESTIONS"). An item whose count isn't known yet drops the number rather than showing "{x}".
-function Inside({t,n={}}){const v={...n,articles:(n.concepts||0)+(n.components||0)||undefined};const fill=s=>s.replace(/\{(\w+)\}\s*/g,(_,k)=>v[k]?v[k]+" ":"");
+// The counts on the cards ("22 problems") count up from 0 when the cards scroll into view (spec 24 A7)
+function Inside({t,n={}}){const v={...n,articles:(n.concepts||0)+(n.components||0)||undefined};const grid=useRef(null),[go,setGo]=useState(false);
+useEffect(()=>{const el=grid.current;if(!el)return;if(typeof IntersectionObserver!=="function"){setGo(true);return}const io=new IntersectionObserver(e=>{if(e.some(x=>x.isIntersecting)){setGo(true);io.disconnect()}},{threshold:.3});io.observe(el);return()=>io.disconnect()},[]);
+const fill=s=>s.split(/(\{\w+\}\s*)/).map((p,i)=>{const m=p.match(/^\{(\w+)\}\s*$/);return m?(v[m[1]]?<React.Fragment key={i}><CountUp n={v[m[1]]} go={go}/>{" "}</React.Fragment>:null):p});
 return <section className="inside wrap" aria-labelledby="inside-t"><label>{t.eyebrow}</label><h2 id="inside-t">{t.title}</h2><p className="inside-desc">{t.desc}</p>
-<ol className="inside-grid">{t.items.map(x=><li key={x.title}><a href={x.href}><small>{fill(x.kind)}</small><b>{x.title}</b><p>{x.text}</p><em>{x.link} →</em></a></li>)}</ol>
+<ol className="inside-grid" ref={grid}>{t.items.map(x=><li key={x.title}><a href={x.href}><small>{fill(x.kind)}</small><b>{x.title}</b><p>{x.text}</p><em>{x.link} →</em></a></li>)}</ol>
 <a className="btn primary inside-cta" href={t.ctaHref}>{t.cta} →</a></section>}
 // Content comes from the API; render the page once it has loaded.
 let c;const root=createRoot(document.getElementById("root"));

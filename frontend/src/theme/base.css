@@ -2,3 +2,5 @@
 *{box-sizing:border-box}body{margin:0}
 /* Reduced motion: every transition that uses the motion tokens stops. */
 @media(prefers-reduced-motion:reduce){:root{--dur-fast:0s;--dur:0s}}
+/* CountUp.jsx: the final number for screen readers while the digits move (landing and dashboard) */
+.tk-count{font-variant-numeric:tabular-nums}.tk-count>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
