@@ -80,7 +80,7 @@
 .pd-unused rect{stroke-dasharray:4 3}.pd-unused text{opacity:.6}
 .pd-blamed rect{stroke:var(--red);stroke-width:2.5}.pd-blamed .pd-facts{fill:var(--danger);font-weight:600}
 .pd-edge{fill:none;stroke-width:1.4}.pd-read{stroke:var(--ink-3)}.pd-write{stroke:var(--accent)}.pd-later{stroke-dasharray:5 4}
-.pd-head{fill:none;stroke:var(--muted)}.pd-lbl{font:10.5px var(--mono);fill:var(--muted)}
+.pd-head{fill:none;stroke:var(--muted);stroke-width:1.5}.pd-lbl{font:10.5px var(--mono);fill:var(--muted)}
 /* console */
 .pr-console{display:flex;flex-direction:column}
 .pc-empty{padding:18px 16px;color:var(--muted);font-size:14px;margin:0}
@@ -253,3 +253,10 @@
   .pd-edge:not(.pd-later){stroke-dasharray:1;animation:pd-draw .3s var(--ease) backwards}
   .pd-blamed{transform-box:fill-box;animation:tk-shake .32s linear .15s}
 }
+/* One arrow per hop (was one per kind of request, drawn 3 px apart: two arrows that looked doubled). A hop used by
+   reads and writes is drawn darker; the key under the diagram says which is which when there is more than one kind. */
+.pd-both{stroke:var(--ink);stroke-width:3.2}.pd-core{stroke:var(--accent);stroke-width:1.2}
+.pd-key{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px;font:500 11px var(--mono);color:var(--muted)}
+.pd-key span{display:inline-flex;align-items:center;gap:6px}
+.pd-key i{display:inline-block;width:18px;height:0;border-top:2px solid}
+.pd-key i.pd-read{border-color:var(--ink-3)}.pd-key i.pd-write{border-color:var(--accent)}.pd-key i.pd-both{height:4px;border:0;background:linear-gradient(var(--ink) 0 30%,var(--accent) 30% 70%,var(--ink) 70%)}
