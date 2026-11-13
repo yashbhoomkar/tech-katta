@@ -71,3 +71,27 @@
   :root:not(#_) :is(.d-article>p,.d-article>ul,.d-article>ol,.a-type>p){font-size:17px;max-width:none}
   :root:not(#_) .d-article h3{font-size:19px}
 }
+
+/* ---- Part E (spec 30 "left for later") ---- */
+/* The sliding sidebar marker (dashboard/shell.jsx SideMark): the active row's fill is one shape that moves between
+   rows; the links sit above it. Across a page change the browser morphs it (its own view-transition name). */
+:root:not(#_) .side-nav{position:relative}
+:root:not(#_) .side-nav>a{position:relative;z-index:1}
+:root:not(#_) .side-nav:has(>.side-mark:not([hidden]))>a.side-link.active{background:transparent}
+:root:not(#_) .side-mark[hidden]{display:none}
+:root:not(#_) .side-mark{position:absolute;left:0;top:0;border-radius:var(--r-md);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);pointer-events:none;view-transition-name:tk-side-mark}
+@media(prefers-reduced-motion:no-preference){
+  :root:not(#_) .side-mark{transition:transform .42s var(--ease),height .42s var(--ease),width .42s var(--ease)}
+  ::view-transition-group(tk-side-mark){animation-duration:.42s;animation-timing-function:var(--ease)}
+}
+/* The header firms up as you scroll: no edge over the top of the page (it melts into the hero), a hairline and
+   shadow once content runs under it. It follows the reader's own scrolling (like the reading progress line), so it stays on under reduced motion. */
+@supports (animation-timeline:scroll()){
+  @keyframes tk-firm{from{border-bottom-color:transparent;box-shadow:none}}
+  :root:not(#_) .header{animation:tk-firm linear both;animation-timeline:scroll(root);animation-range:0 96px}
+}
+/* Numbered sections on the landing: a small "— 01 —" above each section's title, counted down the page */
+:root:not(#_) body{counter-reset:tk-sec}
+:root:not(#_) .inside>h2::before,:root:not(#_) .lp>.lp-eyebrow::before{counter-increment:tk-sec;content:counter(tk-sec,decimal-leading-zero)}
+:root:not(#_) .inside>h2::before{display:block;width:max-content;margin:0 auto 18px;padding:0 34px;font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--accent);background:linear-gradient(var(--line-strong),var(--line-strong)) left center/22px 1px no-repeat,linear-gradient(var(--line-strong),var(--line-strong)) right center/22px 1px no-repeat}
+:root:not(#_) .lp>.lp-eyebrow::before{margin-right:.7em;padding-right:.7em;border-right:1px solid var(--line-strong)}
