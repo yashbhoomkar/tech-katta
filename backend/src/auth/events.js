@@ -24,6 +24,9 @@ export const EVENTS = {
   practice_open: { problem: N, editor: S }, practice_first_edit: { problem: N, seconds: N },
   practice_run: { problem: N, verdict: S, seconds: N, editor: S }, practice_submit: { problem: N, verdict: S, attempt: N },
   practice_switch_editor: { from: S, to: S },
+  // swipes and figure steps (tech-katta-context 24 §11.5): how a reader first stepped a figure (once per figure per
+  // page view), and each move between the phone Practice panes
+  fig_step: { fig: S, via: S }, practice_pane: { problem: N, to: S, via: S },
   sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
 };
 export const MAX_BATCH = 50;

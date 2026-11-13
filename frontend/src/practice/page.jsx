@@ -138,14 +138,14 @@ function Workspace({ problem, list, account, narrow, t }) {
   // position. Tapping a tab does the same. A drag never starts on a stepper or the diagram (they have their own).
   const PANES = ["problem", "design", "result"], ix = PANES.indexOf(mtab), [dir, setDir] = useState(0);
   const pbody = useRef(null), ptabs = useRef(null), at = useRef({}), cur = useRef(mtab);
-  const goPane = (k) => { if (!PANES.includes(k) || k === mtab) return; setDir(PANES.indexOf(k) > ix ? 1 : -1); setMtab(k); };
+  const goPane = (k, via) => { if (!PANES.includes(k) || k === mtab) return; if (via) track("practice_pane", { problem: problem.id, to: k, via }); setDir(PANES.indexOf(k) > ix ? 1 : -1); setMtab(k); };
   useEffect(() => { if (!narrow) return; const f = () => { at.current[cur.current] = scrollY; }; addEventListener("scroll", f, { passive: true }); return () => removeEventListener("scroll", f); }, [narrow]);
   useLayoutEffect(() => { if (!narrow || cur.current === mtab) return; cur.current = mtab; scrollTo(0, at.current[mtab] || 0); }, [mtab, narrow]);
   const follow = (d, ms) => { const b = pbody.current, n = ptabs.current; if (!b) return; b.style.transition = ms ? `transform ${ms}ms var(--ease)` : "none"; b.style.transform = d ? `translateX(${d}px)` : "";
     if (n) { n.style.setProperty("--pt", ms ? "" : "none"); n.style.setProperty("--p", d ? String(-d / b.clientWidth) : "0"); } };
   useDrag(pbody, { on: narrow, axis: "x", min: ix >= PANES.length - 1 ? 0 : -Infinity, max: ix <= 0 ? 0 : Infinity, ignore: ".pb-step,.pr-diagram",
-    onMove: (d) => follow(d), onEnd: (go, d) => { if (go) { follow(0); goPane(PANES[ix - go]); } else follow(0, settleMs(d, pbody.current?.clientWidth || 360)); } });
-  const tabKey = (e) => { const k = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!k) return; e.preventDefault(); const n = PANES[Math.max(0, Math.min(2, ix + k))]; goPane(n); requestAnimationFrame(() => ptabs.current?.querySelector(".on")?.focus()); };
+    onMove: (d) => follow(d), onEnd: (go, d) => { if (go) { follow(0); goPane(PANES[ix - go], "swipe"); } else follow(0, settleMs(d, pbody.current?.clientWidth || 360)); } });
+  const tabKey = (e) => { const k = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!k) return; e.preventDefault(); const n = PANES[Math.max(0, Math.min(2, ix + k))]; goPane(n, "key"); requestAnimationFrame(() => ptabs.current?.querySelector(".on")?.focus()); };
 
   const run = () => {
     const r = judgeAll(text, problem, dirty ? { tests: [caseTest] } : {});
@@ -218,7 +218,7 @@ function Workspace({ problem, list, account, narrow, t }) {
     {top}
     <div className="pr-phone-body" ref={pbody}><div key={mtab} className={"pr-pane" + (dir > 0 ? " pr-in-r" : dir < 0 ? " pr-in-l" : "")}>{mtab === "problem" ? left : mtab === "design" ? <div className="pr-pdesign">{designHead}{editor}</div> : consoleBox}</div></div>
     {mtab !== "problem" && <div className="pr-phone-act">{actions}</div>}
-    <nav className="pr-phone-tabs" ref={ptabs} role="tablist" aria-label="Problem page" onKeyDown={tabKey} style={{ "--i": ix }}><i className="pr-phone-ind" aria-hidden="true"/>{[["problem", "Problem"], ["design", S.design], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={mtab === k} tabIndex={mtab === k ? 0 : -1} className={mtab === k ? "on" : ""} onClick={() => goPane(k)}>{l}</button>)}</nav>
+    <nav className="pr-phone-tabs" ref={ptabs} role="tablist" aria-label="Problem page" onKeyDown={tabKey} style={{ "--i": ix }}><i className="pr-phone-ind" aria-hidden="true"/>{[["problem", "Problem"], ["design", S.design], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={mtab === k} tabIndex={mtab === k ? 0 : -1} className={mtab === k ? "on" : ""} onClick={() => goPane(k, "tap")}>{l}</button>)}</nav>
     {dialogs}
   </div>;
   return <div className="pr" style={{ "--pr-left": `${layout.left * 100}%` }}>

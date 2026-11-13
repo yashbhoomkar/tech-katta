@@ -65,3 +65,5 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 /* Narrow phones: the header holds the logo, Sign in, the theme button and MENU without pushing MENU off screen */
 @media(max-width:420px){.header{padding:0 14px;gap:6px}.brand{gap:8px;font-size:16px}.brand>i{width:24px;height:24px}.header .acct-signin-link{padding:0 10px;font-size:13px}.header .menu{padding:8px 9px;font-size:12px}}
 @media(max-width:350px){.brand{gap:0;font-size:0}}
+/* Phones: a solid header, not blurred (tech-katta-context 24 §4.3, §9) */
+@media(max-width:680px){.header{background:var(--page);backdrop-filter:none;-webkit-backdrop-filter:none}}
