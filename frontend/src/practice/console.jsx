@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { S } from "./strings.js";
 import Scene from "../theme/Scene.jsx";
 import { inrExact } from "../tkd/inr.js";
+import { AskInterviewer } from "./review.jsx";
 
 const EVENTS = { none: undefined, server: [{ kill_role: "server" }], sql: [{ kill_role: "sql" }, { kill_role: "nosql" }], cache: [{ flush_role: "cache" }] };
 const eventOf = (ev) => (!ev?.length ? "none" : ev.some((e) => e.kill_role === "sql") ? "sql" : ev.some((e) => e.flush_role) ? "cache" : "server");
@@ -69,6 +70,7 @@ export function Result({ result, busy, showTip, onNext, onShare, canShare, howHr
         {canShare && !shared && (sharing ? <span className="pc-share"><input value={note} maxLength={280} placeholder={S.sharePrompt} aria-label={S.sharePrompt} onChange={(e) => setNote(e.target.value)}/><button type="button" className="pb-btn" onClick={async () => { if (await onShare(note)) setShared(true); }}>{S.share}</button></span> : <button type="button" className="pb-btn" onClick={() => setSharing(true)}>{S.share}</button>)}
         {shared && <span className="pc-muted">{S.shared}</span>}</div>
     </div>}
+    {r.kind === "submit" && r.submission_id && r.verdict !== "Judge Error" && <AskInterviewer submissionId={r.submission_id}/>}
     {howHref && <p className="pc-how"><a href={howHref}>{S.howJudged}</a></p>}
   </div>;
 }
