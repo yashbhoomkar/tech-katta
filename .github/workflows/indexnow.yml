@@ -1,0 +1,45 @@
+name: IndexNow
+
+# After a push to main that changes the site, tell the IndexNow engines (Bing, Yandex, Seznam, Naver...)
+# which pages changed (tools/indexnow/submit.mjs). Vercel deploys main on its own, so this waits for the
+# deploy before submitting. Run it by hand with "all" to submit every page in the sitemap.
+on:
+  push:
+    branches: [main]
+    paths: ['frontend/**', 'content/**']
+  workflow_dispatch:
+    inputs:
+      all:
+        description: Submit every page in the sitemap
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    name: Submit changed pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Wait for the Vercel deploy, then submit
+        env:
+          ALL: ${{ inputs.all && '--all' || '' }}
+        run: |
+          [ "${{ github.event_name }}" = "push" ] && sleep 150
+          for i in 1 2 3 4 5; do
+            node tools/indexnow/submit.mjs $ALL && exit 0
+            echo "retrying in 60 s"; sleep 60
+          done
+          exit 1
