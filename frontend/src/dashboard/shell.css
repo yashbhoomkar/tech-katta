@@ -95,3 +95,6 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 @media(prefers-reduced-motion:reduce){.icon-btn,.d-tour,.d-home,.side-link,.tab{transition:none}}
 @media(min-width:901px){.collapsed .side-priv{display:none}}
 @media(max-width:900px){.open .side,.open .side-nav{touch-action:pan-y}}
+/* Phones: a solid header instead of the see-through blurred one. A blur behind a sticky header is redrawn on every
+   scroll frame, which costs frames on the low-end phones most readers use (tech-katta-context 24 §4.3, §9). */
+@media(max-width:680px){.d-head{background:var(--page);backdrop-filter:none;-webkit-backdrop-filter:none}}

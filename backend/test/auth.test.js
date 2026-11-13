@@ -237,6 +237,12 @@ test('usage events: allowlisted events and fields stored, signed-in ones tied to
   assert.equal(cleanBatch({ visitor, events: Array(80).fill({ name: 'sign_in' }) }).length, MAX_BATCH);
   const [old] = cleanBatch({ visitor, events: [{ name: 'sign_in', age: 1e12 }] }, { now: 1e13 });
   assert.equal(old.at.getTime(), 1e13 - 15 * 60_000);
+  // swipes and figure steps (tech-katta-context 24 §11.5): only their allowlisted fields are kept
+  const [fs, pp] = cleanBatch({ visitor, events: [
+    { name: 'fig_step', props: { fig: 'idx-scan', via: 'swipe', x: 1 } },
+    { name: 'practice_pane', props: { problem: 3, to: 'result', via: 'tap', text: 'design' } } ] });
+  assert.deepEqual(fs.props, { fig: 'idx-scan', via: 'swipe' });
+  assert.deepEqual(pp.props, { problem: 3, to: 'result', via: 'tap' });
 });
 
 test('sign-in needs the Terms ticked (recorded on the account); the ads opt-in is only the menu switch; names and country stored', async () => {
