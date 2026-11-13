@@ -263,3 +263,6 @@
 /* A state with its scene (theme/Scene.jsx): the drawing above the sentence, left-aligned with it */
 .pr-state{display:grid;justify-items:start;gap:4px;padding:8px 0}.pr-state .scene{margin:0 0 2px}
 .pr-missing .scene{margin:0 0 10px}
+/* The streak went up today: the marker is drawn under it once (list.jsx, spec 24 A6) */
+.pl-streak.up .pl-mk{background:linear-gradient(transparent 58%,var(--mark) 58% 92%,transparent 92%) no-repeat;background-size:100% 100%}
+@media(prefers-reduced-motion:no-preference){.pl-streak.up .pl-mk{animation:tk-mark .45s var(--ease) .35s backwards}}

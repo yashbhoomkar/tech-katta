@@ -1,10 +1,13 @@
 // The problem list (/dashboard/practice/, spec section 12): progress, filters, a daily problem, the table.
 import React, { useMemo, useState } from "react";
 import { S, DIFF } from "./strings.js";
+// the day the streak goes up, it is marked once (spec 24 A6): compared with the last value this browser saw
+function useStreakUp(n) { const [up] = useState(() => { if (!Number.isFinite(n) || n < 1) return false; try { const last = Number(localStorage.getItem("tk-practice-streak")) || 0; localStorage.setItem("tk-practice-streak", String(n)); return n > last; } catch { return false; } }); return up; }
 
 // one problem a day, the same for everyone: (days since 2026-01-01 in India) mod n
 export const dailyIndex = (n, now = Date.now()) => { const ist = now + 5.5 * 3600_000, day = Math.floor((ist - Date.UTC(2026, 0, 1)) / 86_400_000); return ((day % n) + n) % n; };
 
+function Streak({ n }) { const up = useStreakUp(n); return <span className={"pl-streak" + (up ? " up" : "")}><span className="pl-mk">{S.streak(n)}</span></span>; }
 export default function ProblemList({ list, streak, error, retry }) {
   const [status, setStatus] = useState("all"), [diff, setDiff] = useState("all"), [topics, setTopics] = useState([]), [q, setQ] = useState(""), [sort, setSort] = useState("id");
   const all = list || [];
@@ -19,7 +22,7 @@ export default function ProblemList({ list, streak, error, retry }) {
   const pill = (v, cur, set, label) => <button key={v} type="button" className={"pb-chip" + (cur === v ? " on" : "")} aria-pressed={cur === v} onClick={() => set(v)}>{label}</button>;
   return <section className="pl" aria-labelledby="pl-t">
     <h1 id="pl-t" className="pl-title">{S.listTitle}</h1><p className="pl-desc">{S.listDesc}</p>
-    <p className="pl-progress">{S.solvedOf(solved, all.length)} {["easy", "medium", "hard"].map(bar)}{streak !== null && <span className="pl-streak">{S.streak(streak)}</span>}</p>
+    <p className="pl-progress">{S.solvedOf(solved, all.length)} {["easy", "medium", "hard"].map(bar)}{streak !== null && <Streak n={streak}/>}</p>
     {daily && <a className="pl-daily" href={`#practice/${daily.slug}`}><small>{S.daily}</small><b>{daily.id}. {daily.title}</b><span className={`pr-diff pr-${daily.difficulty}`}>{DIFF[daily.difficulty]}</span></a>}
     <div className="pl-filters">
       <span>{pill("all", status, setStatus, S.all)}{pill("open", status, setStatus, S.notDone)}{pill("solved", status, setStatus, S.solvedF)}</span>
