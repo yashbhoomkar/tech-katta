@@ -1,22 +1,26 @@
-import React,{useEffect,useLayoutEffect,useRef,useState}from"react";import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";import{readArticle,track}from"../analytics.js";import{knownFig,loadFigs,prefetchFigs}from"../figs/index.js";import{useStill}from"../theme/motion.js";import{c,d,articles}from"./site.js";import{words,extraWords}from"./text.jsx";import{useReader,Reader}from"./reader.jsx";import{Share}from"./share.jsx";import{Block}from"./blocks.jsx";import{previewOf}from"../preview.js";import{lsGet,lsSet}from"./storage.js";
+import React,{useEffect,useLayoutEffect,useMemo,useRef,useState}from"react";import{topicsOf,TopicCards,TopicSheet}from"./topics.jsx";import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";import{readArticle,track}from"../analytics.js";import{knownFig,loadFigs,prefetchFigs}from"../figs/index.js";import{useStill}from"../theme/motion.js";import{c,d,articles,example}from"./site.js";import{words,extraWords}from"./text.jsx";import{useReader,Reader}from"./reader.jsx";import{Share}from"./share.jsx";import{Block}from"./blocks.jsx";import{previewOf}from"../preview.js";import{lsGet,lsSet}from"./storage.js";
 // lock (signed-out readers): only the public preview (preview.js), then the sign-in card passed in; read
 // times stay those of the whole article.
 export function Article({a:full,pane,lock}){const a=lock?previewOf(full):full;
-// "Figures only" (tech-katta-context 25 §7: the industry expert found too much to read): one tap hides the paragraphs
-// and leaves the headings, the figures with their captions, and the worked example's picture; the choice is kept.
-const[skim,setSkim]=useState(()=>{try{return localStorage.getItem("tk-skim")==="1"}catch{return false}});
-const toggleSkim=()=>setSkim(v=>{const n=!v;try{localStorage.setItem("tk-skim",n?"1":"0")}catch{}track("article_skim",{on:n});return n});const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
+// Cards or full text (tech-katta-context 27): an article opens as topic cards (topics.jsx); "Full text" shows it as one
+// page, as before. The choice is kept in this browser (tk-view). Listening to the article switches to the full text,
+// where the sentence being read is marked.
+const[view,setViewState]=useState(()=>lsGet("tk-view")==="text"?"text":"cards");const setView=v=>{setViewState(v);lsSet("tk-view",v);track("article_view",{view:v})};
+const[open,setOpen]=useState(null);const ts=useMemo(()=>topicsOf(a),[a]);const cards=view==="cards"&&ts.length>1;
+const openTopic=(k,via)=>{setOpen(k);track("topic_open",{n:k+1,via})};
+const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
 // Interview Questions (not the method page) open their problem workspace: design it on the canvas, Run, Submit.
 const pr=a.section==="interview-questions"&&a.group!=="start";
+useEffect(()=>{if(r.cur!=null&&view==="cards")setViewState("text")},[r.cur]);// eslint-disable-line
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
 const fn={};a.body.reduce((n,b,i)=>b.t==="fig"?(fn[i]=n+1):n,0);
 const main=Math.max(1,Math.round(words(full)/220)),all=Math.max(main,Math.round((words(full)+extraWords(full))/220));
-return <div className="d-read"><article className={"d-panel d-article"+(lock?" a-preview":"")+(skim&&!lock?" a-skim":"")} aria-labelledby="d-title">
+return <div className="d-read"><article className={"d-panel d-article"+(lock?" a-preview":"")+(cards?" a-cards":"")} aria-labelledby="d-title">
 <nav className="crumbs" aria-label="Breadcrumb"><a href={`#${a.section}`}>{label}</a><span aria-hidden="true">/</span><span>{a.no}</span></nav>
-<label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{a.date} · {main} MIN READ{all>main?` · ${all} WITH DETAILS`:""}</span>{!lock&&<button type="button" className={"r-btn a-skim-btn"+(skim?" on":"")} aria-pressed={skim} onClick={toggleSkim}>{skim?"Show the full text":"Figures only"}</button>}<Share a={a}/></div>
+<label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{cards?`${ts.length} topics · `:""}{main} min read{all>main?` · ${all} with details`:""}</span>{ts.length>1&&<div className="a-view" role="group" aria-label="How to read this article"><button type="button" aria-pressed={view==="cards"} onClick={()=>setView("cards")}>Cards</button><button type="button" aria-pressed={view==="text"} onClick={()=>setView("text")}>Full text</button></div>}<Share a={a}/></div>
 {pr&&!pane&&!lock&&c.problems?.solve&&<a className="pr-solve" href={`#problems/${a.slug}`}>{c.problems.solve.button} →</a>}
-{a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
-{lock?<div className="a-locked">{lock}</div>:<NextProblem a={a}/>}<a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>{!pane&&!lock&&<Rail a={a}/>}</div>}
+{cards?<>{a.body.some(b=>b.t==="example")&&<details className="a-ex-mini"><summary>Examples use <b>{example?.name}</b>, a made-up {String(example?.kind||"system").toLowerCase()}</summary><Block b={{t:"example"}} i="ex" still={still}/></details>}<TopicCards ts={ts} still={still} onOpen={openTopic}/></>:a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}{cards&&open!=null&&<TopicSheet ts={ts} n={open} setN={setOpen} onClose={()=>setOpen(null)} still={still} fn={fn}/>}
+{lock?<div className="a-locked">{lock}</div>:<NextProblem a={a}/>}<a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>{!pane&&!lock&&!cards&&<Rail a={a}/>}</div>}
 // Wide screens: a column beside the article with its sections (the one you are reading is marked) and,
 // for an article with a card to a problem or challenge, a shortcut to it. Hidden below 1240 px, where the article fills the width.
 function Rail({a}){const hs=a.body.map((b,i)=>b.t==="h2"?{id:`s-${i}`,x:b.x}:null).filter(Boolean);const lab=a.body.find(b=>b.t==="lab");const[on,setOn]=useState(null);
