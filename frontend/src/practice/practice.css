@@ -236,3 +236,20 @@
 @keyframes pr-in-l{from{opacity:0;transform:translateX(-28px)}}
 @media(prefers-reduced-motion:no-preference){.pr-in-r{animation:pr-in-r .22s var(--ease) backwards}.pr-in-l{animation:pr-in-l .22s var(--ease) backwards}}
 @media(prefers-reduced-motion:reduce){.pr-phone-ind{transition:none}}
+
+/* Phones: the learner's own design, drawn (tech-katta-context 24 §11.1): on top of the Result pane after Run or
+   Submit, and from "See the diagram" in the Design pane. It scrolls sideways in its own frame. */
+.pr-pdiag{margin:0 0 4px;border-bottom:1px solid var(--line);background:var(--bg)}
+.pr-pdiag .pr-dlabel{padding:10px 16px 0}
+.pr-pdiag .pd,.pb-sheet .pd{overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+.pr-seediag{display:block;margin:2px 16px 8px;font-size:14px}
+/* Diagram motion (diagram.jsx, spec 24 A3): parts fade in, solid arrows are drawn once, the blamed part shudders
+   once, request dots run after Accepted (SMIL, three loops). */
+.pd-dot.pd-read{fill:var(--ink)}.pd-dot.pd-write{fill:var(--accent)}
+.pd .pd-dot{stroke:var(--bg);stroke-width:1.5}
+@keyframes pd-draw{from{stroke-dashoffset:1}}
+@media(prefers-reduced-motion:no-preference){
+  .pd-box{animation:tk-fade .22s var(--ease) backwards}
+  .pd-edge:not(.pd-later){stroke-dasharray:1;animation:pd-draw .3s var(--ease) backwards}
+  .pd-blamed{transform-box:fill-box;animation:tk-shake .32s linear .15s}
+}

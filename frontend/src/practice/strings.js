@@ -4,7 +4,7 @@ export const S = {
   problems: "Problems", prev: "‹ prev", next: "next ›", pick: "🎲 Pick one", run: "▶ Run", submit: "Submit", judging: "Judging…",
   description: "Description", editorial: "Editorial", solutions: "Solutions", submissions: "Submissions",
   design: "Design", text: "Text", form: "Builder", reset: "Reset", resetAsk: "Throw away your design and start from the template?",
-  diagram: "Diagram (from your design, read-only)", fixErrors: "Fix the errors to update the picture.",
+  diagram: "Diagram (from your design, read-only)", seeDiagram: "See the diagram", fixErrors: "Fix the errors to update the picture.",
   testcase: "Testcase", result: "Result", runFirst: "Run your design to see how it does.",
   requests: "Requests", constraints: "Constraints", hint: (n) => `Hint ${n}`, example: (n, t) => `Example ${n}: ${t}`,
   copyReference: "Copy to my design", copyAsk: "Replace your design with the reference?",

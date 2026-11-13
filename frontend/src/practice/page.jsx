@@ -128,7 +128,7 @@ function Workspace({ problem, list, account, narrow, t }) {
   const [pick, setPickRaw] = useState(visible[0]?.id), [caseTest, setCaseTest] = useState(() => JSON.parse(JSON.stringify(visible[0]))), [dirty, setDirty] = useState(false);
   const setPick = (id) => { setPickRaw(id); setCaseTest(JSON.parse(JSON.stringify(visible.find((x) => x.id === id)))); setDirty(false); };
   const [result, setResult] = useState(null), [busy, setBusy] = useState(false), [ctab, setCtab] = useState("case"), [mtab, setMtab] = useState("design"), [ltab, setLtab] = useState("desc");
-  const [signIn, setSignIn] = useState(false), [refresh, setRefresh] = useState(0), [focusLine, setFocusLine] = useState(null), [ask, setAsk] = useState(null);
+  const [diag, setDiag] = useState(false), [signIn, setSignIn] = useState(false), [refresh, setRefresh] = useState(0), [focusLine, setFocusLine] = useState(null), [ask, setAsk] = useState(null);
   const fails = useRef(Number(lsGet(`tk-practice-fails-${problem.id}`)) || 0);
   const [coach, setCoach] = useState(() => (lsGet("tk-practice-coach") ? -1 : 0));
   const nextCoach = () => setCoach((c) => { const n = c + 1; if (n > 2) { lsSet("tk-practice-coach", "1"); return -1; } return n; });
@@ -143,13 +143,13 @@ function Workspace({ problem, list, account, narrow, t }) {
   useLayoutEffect(() => { if (!narrow || cur.current === mtab) return; cur.current = mtab; scrollTo(0, at.current[mtab] || 0); }, [mtab, narrow]);
   const follow = (d, ms) => { const b = pbody.current, n = ptabs.current; if (!b) return; b.style.transition = ms ? `transform ${ms}ms var(--ease)` : "none"; b.style.transform = d ? `translateX(${d}px)` : "";
     if (n) { n.style.setProperty("--pt", ms ? "" : "none"); n.style.setProperty("--p", d ? String(-d / b.clientWidth) : "0"); } };
-  useDrag(pbody, { on: narrow, axis: "x", min: ix >= PANES.length - 1 ? 0 : -Infinity, max: ix <= 0 ? 0 : Infinity, ignore: ".pb-step,.pr-diagram",
+  useDrag(pbody, { on: narrow, axis: "x", min: ix >= PANES.length - 1 ? 0 : -Infinity, max: ix <= 0 ? 0 : Infinity, ignore: ".pb-step,.pr-diagram,.pr-pdiag",
     onMove: (d) => follow(d), onEnd: (go, d) => { if (go) { follow(0); goPane(PANES[ix - go], "swipe"); } else follow(0, settleMs(d, pbody.current?.clientWidth || 360)); } });
   const tabKey = (e) => { const k = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!k) return; e.preventDefault(); const n = PANES[Math.max(0, Math.min(2, ix + k))]; goPane(n, "key"); requestAnimationFrame(() => ptabs.current?.querySelector(".on")?.focus()); };
 
   const run = () => {
     const r = judgeAll(text, problem, dirty ? { tests: [caseTest] } : {});
-    setResult({ ...r, kind: "run" }); showResult();
+    setResult({ ...r, kind: "run", at: Date.now(), text }); showResult();
     track("practice_run", { problem: problem.id, verdict: r.verdict, seconds: Math.round((Date.now() - opened.current) / 1000), editor: mode });
   };
   const submit = async () => {
@@ -159,7 +159,7 @@ function Workspace({ problem, list, account, narrow, t }) {
     try {
       const r = await api.submitDesign(problem.slug, text);
       if (r.verdict !== "Accepted" && r.verdict !== "Judge Error") { fails.current += 1; lsSet(`tk-practice-fails-${problem.id}`, String(fails.current)); }
-      setResult({ ...r, kind: "submit" }); setRefresh((x) => x + 1);
+      setResult({ ...r, kind: "submit", at: Date.now(), text }); setRefresh((x) => x + 1);
       track("practice_submit", { problem: problem.id, verdict: r.verdict, attempt: fails.current + (r.verdict === "Accepted" ? 1 : 0) });
     } catch (e) {
       if (e.status === 401) setSignIn(true);
@@ -184,7 +184,7 @@ function Workspace({ problem, list, account, narrow, t }) {
   const editAsText = (line) => { setMode("text"); setFocusLine(line); if (narrow) setMtab("design"); };
 
   const showTip = result?.kind === "run" || fails.current >= 2;
-  const diagram = <Diagram design={compiled.ok ? compiled.design : lastGood.current} stale={compiled.ok ? null : lastGood.current ? S.fixErrors : S.fixErrors} blame={result?.failed?.blame}/>;
+  const diagram = <Diagram key={result?.at || "d"} design={compiled.ok ? compiled.design : lastGood.current} stale={compiled.ok ? null : lastGood.current ? S.fixErrors : S.fixErrors} blame={result?.failed?.blame} accepted={result?.verdict === "Accepted" && text === result.text}/>;
   const editor = mode === "builder"
     ? <Builder problem={problem} text={text} setText={setText} compiled={compiled} canUndo={undo.current.length > 0} canRedo={redo.current.length > 0} undo={doUndo} redo={doRedo} cost={cost} onEditAsText={editAsText} picture={diagram} coach={coach} onCoach={nextCoach}/>
     : <TextEditor text={text} onChange={setText} compiled={compiled} cost={cost} label={`${S.design}: ${problem.title}`} focusLine={focusLine}/>;
@@ -208,6 +208,7 @@ function Workspace({ problem, list, account, narrow, t }) {
     <span className="pr-clock" aria-label="Time on this problem">⏱ {clock(secs)}</span>
   </div>;
   const dialogs = <>
+    {diag && <Sheet title={S.diagram} onClose={() => setDiag(false)}>{diagram}</Sheet>}
     {signIn && <Sheet title={S.submit} onClose={() => setSignIn(false)}><p>{S.submitSignIn}</p>{t && account.enabled ? <SignInBox t={t} base="/dashboard/"/> : null}</Sheet>}
     {ask && <Sheet title={S.design} onClose={() => setAsk(null)}><p>{ask.text}</p><div className="pb-row"><button type="button" className="pb-btn pb-danger-b" onClick={ask.go}>OK</button><button type="button" className="pb-btn" onClick={() => setAsk(null)}>{S.cancel}</button></div></Sheet>}
   </>;
@@ -216,7 +217,7 @@ function Workspace({ problem, list, account, narrow, t }) {
 
   if (narrow) return <div className="pr pr-phone">
     {top}
-    <div className="pr-phone-body" ref={pbody}><div key={mtab} className={"pr-pane" + (dir > 0 ? " pr-in-r" : dir < 0 ? " pr-in-l" : "")}>{mtab === "problem" ? left : mtab === "design" ? <div className="pr-pdesign">{designHead}{editor}</div> : consoleBox}</div></div>
+    <div className="pr-phone-body" ref={pbody}><div key={mtab} className={"pr-pane" + (dir > 0 ? " pr-in-r" : dir < 0 ? " pr-in-l" : "")}>{mtab === "problem" ? left : mtab === "design" ? <div className="pr-pdesign">{designHead}<button type="button" className="pb-link pr-seediag" onClick={() => setDiag(true)}>{S.seeDiagram}</button>{editor}</div> : <>{result && <div className="pr-pdiag"><p className="pr-dlabel">{S.diagram}</p>{diagram}</div>}{consoleBox}</>}</div></div>
     {mtab !== "problem" && <div className="pr-phone-act">{actions}</div>}
     <nav className="pr-phone-tabs" ref={ptabs} role="tablist" aria-label="Problem page" onKeyDown={tabKey} style={{ "--i": ix }}><i className="pr-phone-ind" aria-hidden="true"/>{[["problem", "Problem"], ["design", S.design], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={mtab === k} tabIndex={mtab === k ? 0 : -1} className={mtab === k ? "on" : ""} onClick={() => goPane(k, "tap")}>{l}</button>)}</nav>
     {dialogs}
