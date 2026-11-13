@@ -25,12 +25,12 @@
 .acct-menu a:hover,.acct-menu button:hover{color:var(--ink);text-decoration:underline}
 .acct-ads input,.acct-consent input{accent-color:var(--brand-strong)}
 .lock-card{width:min(420px,calc(100% - 32px));border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-3);padding:28px;gap:12px}
-.lock-card b{font:600 26px/1.15 var(--font-display);letter-spacing:-.015em}
+.lock-card b{font:500 26px/1.15 var(--font-display);letter-spacing:-.015em}
 .lock-card p{font-size:15.5px;line-height:1.55;color:var(--muted)}
 .lock-card em{font:500 11px var(--mono);letter-spacing:.06em;color:var(--muted)}
 .lock-skel{border:1px solid var(--line);border-radius:var(--r-xl)}
 .lock-skel i{border-radius:var(--r-sm)}
-.acct-signin-link{height:36px;padding:0 16px;border:1px solid var(--brand-edge);border-radius:var(--r-md);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font)}
+.acct-signin-link{height:36px;padding:0 16px;border:1px solid var(--brand-edge);border-radius:var(--r-btn);background:var(--brand);color:var(--on-brand);font:600 13.5px var(--font)}
 .acct-signin-link:hover{background:var(--brand-strong)}
 .header .acct .acct-err{border-radius:var(--r-md)}
 
@@ -39,7 +39,7 @@ button.acct-signin-link{cursor:pointer}
 .acct-dialog{width:min(420px,calc(100vw - 32px));max-width:none;padding:0;border:0;background:none;color:var(--ink)}
 .acct-dialog::backdrop{background:var(--scrim)}
 .acct-dialog-card{position:relative;padding:28px 24px 24px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-3)}
-.acct-dialog-card>b{display:block;margin:0 40px 10px 0;font:600 26px/1.15 var(--font-display);letter-spacing:-.015em;color:var(--ink)}
+.acct-dialog-card>b{display:block;margin:0 40px 10px 0;font:500 26px/1.15 var(--font-display);letter-spacing:-.015em;color:var(--ink)}
 .acct-dialog-card>p{margin:0 0 18px;font:400 15.5px/1.55 var(--font);color:var(--ink-2)}
 .acct-dialog-x{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;border-radius:var(--r-full);background:none;color:var(--muted);font-size:17px;cursor:pointer;transition:background-color var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
 .acct-dialog-x:hover{background:var(--hover);color:var(--ink)}

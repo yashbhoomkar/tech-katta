@@ -42,7 +42,7 @@
 .d-panel label{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;border:0;background:none;padding:0}
 .d-panel label::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--brand)}
 .d-panel .r-rate::before{content:none}
-.d-panel h1{margin:14px 0 12px;font:600 44px/1.08 var(--font-display);letter-spacing:-.02em}
+.d-panel h1{margin:14px 0 12px;font:500 44px/1.08 var(--font-display);letter-spacing:-.02em}
 .d-desc{max-width:640px;font-size:17px;line-height:1.6;color:var(--ink-3)}
 .d-list{margin-top:32px;border-top:0;padding-top:0}
 .d-list>span,.d-empty span{font:600 10px var(--mono);letter-spacing:.12em;color:var(--faint)}
@@ -51,11 +51,11 @@
 .d-list a{height:100%;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg);padding:20px 20px 18px;box-shadow:var(--shadow-1);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),border-color var(--dur) var(--ease)}
 .d-list a:hover{border-color:var(--line-strong);box-shadow:var(--shadow-2);transform:translateY(-2px)}
 .d-list small{font:600 10px var(--mono);letter-spacing:.1em;color:var(--faint)}
-.d-list b{margin:10px 0 6px;font:600 20px/1.22 var(--font-display);letter-spacing:-.01em}
+.d-list b{margin:10px 0 6px;font:500 20px/1.22 var(--font-display);letter-spacing:-.01em}
 .d-list p{font-size:14.5px;line-height:1.55;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .d-list em{margin-top:auto;padding-top:16px;font:600 13px var(--font);color:var(--ink)}
 .d-group{margin-top:44px}
-.d-group>h2{padding-top:0;border-top:0;font:600 26px/1.15 var(--font-display);letter-spacing:-.015em;text-transform:none}
+.d-group>h2{padding-top:0;border-top:0;font:500 26px/1.15 var(--font-display);letter-spacing:-.015em;text-transform:none}
 .d-group>p{margin:6px 0 0;font-size:15px}
 .d-group>ol{margin-top:16px}
 .d-group .d-soon{border-radius:var(--r-lg);border-color:var(--line-strong)}
@@ -64,7 +64,7 @@
 .d-notes b{font-size:15px}
 .d-notes em{border:0;border-radius:var(--r-full);background:var(--surface);padding:4px 10px}
 .d-notes em.draft{color:var(--brand-ink);background:var(--brand-tint)}
-.priv h2{font:600 20px var(--font-display)}
+.priv h2{font:500 20px var(--font-display)}
 .priv p{font-size:16px;line-height:1.7}
 .d-panel.d-start{max-width:1100px}
 @media(max-width:760px){.d-list ol{grid-template-columns:1fr}}

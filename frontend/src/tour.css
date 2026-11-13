@@ -18,8 +18,8 @@
 .tour-hole{border:2px solid var(--brand);border-radius:var(--r-md)}
 .tour-card{border:1px solid var(--line);border-radius:var(--r-xl);padding:20px 22px;box-shadow:var(--shadow-3)}
 .tour-card small{font:600 10px var(--mono);letter-spacing:.12em;color:var(--muted)}
-.tour-card b{font:600 21px/1.2 var(--font-display)}
-.tour-act button,.tour-act a{height:38px;padding:0 14px;border:1px solid var(--line-strong);border-radius:var(--r-md);font:600 13.5px var(--font)}
+.tour-card b{font:500 21px/1.2 var(--font-display)}
+.tour-act button,.tour-act a{height:38px;padding:0 14px;border:1px solid var(--line-strong);border-radius:var(--r-btn);font:600 13.5px var(--font)}
 .tour-act a:hover,.tour-act button:hover,.tour-act button:focus-visible,.tour-act a:focus-visible{border-color:var(--ink);color:var(--ink)}
 .tour-act .tour-next{background:var(--brand);border-color:var(--brand-edge);color:var(--on-brand)}
 .tour-act .tour-next:hover,.tour-act .tour-next:focus-visible{color:var(--on-brand);background:var(--brand-strong);border-color:var(--brand-edge)}

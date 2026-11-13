@@ -35,7 +35,7 @@
 .a-fig{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg);box-shadow:var(--shadow-1);overflow:hidden}
 .a-fig-head{border-bottom:1px solid var(--line);background:var(--surface-2);font:600 10px var(--mono);letter-spacing:.1em;color:var(--muted)}
 .a-fig figcaption{border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
-.fs-btn{border:1px solid var(--line-strong);border-radius:var(--r-md);color:var(--ink)}
+.fs-btn{border:1px solid var(--line-strong);border-radius:var(--r-btn);color:var(--ink)}
 .fs-btn:hover,.fs-btn:focus-visible{border-color:var(--ink)}
 
 /* Phones (≤680 px): the figure is drawn 600 px wide so its labels are readable, and scrolls sideways in its frame

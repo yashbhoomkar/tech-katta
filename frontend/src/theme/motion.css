@@ -18,7 +18,6 @@
   .hero>div>:nth-child(3){animation-delay:.12s}
   .hero>div>:nth-child(4){animation-delay:.18s}
   .hero>.figure{animation:tk-rise .38s var(--ease) .12s backwards}
-  h1 .tk-mark{background-repeat:no-repeat;animation:tk-mark .45s var(--ease) .36s backwards}
   /* 2. Dashboard pages: the page rises once when you arrive; cards follow one after another (first eight only) */
   .d-body>.d-panel,.d-read>.d-article{animation:tk-rise var(--dur-enter) var(--ease) backwards}
   .d-read>.d-rail{animation:tk-fade .3s var(--ease) .1s backwards}
