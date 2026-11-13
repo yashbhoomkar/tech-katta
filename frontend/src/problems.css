@@ -70,3 +70,7 @@
 .qt-start:hover{background:var(--brand-tint);border-color:var(--brand-edge)}
 @media(max-width:760px){.qt-table{border:0;background:none;box-shadow:none;overflow:visible}.qt-table tr{margin-bottom:10px;padding:14px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg)}.qt-table td{border:0;padding:0}.qt-table tbody tr:nth-child(even){background:var(--bg)}}
 @media(prefers-reduced-motion:reduce){.pb-group a:not(.pb-lab){transition:none}.pb-group a:not(.pb-lab):hover{transform:none}}
+/* Difficulty: a neutral pill with a small coloured dot (green, orange, red), not a tinted block (spec 25 §8) */
+.pb-tag.easy,.pb-tag.medium,.pb-tag.hard{background:var(--surface);color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+.pb-tag.easy::before,.pb-tag.medium::before,.pb-tag.hard::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.pb-tag.easy::before{background:var(--success)}.pb-tag.medium::before{background:var(--warn-mid)}.pb-tag.hard::before{background:var(--danger)}

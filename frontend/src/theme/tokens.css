@@ -4,39 +4,40 @@
    Dark mode: the same names with dark values, below. It follows the device's setting unless the visitor picked
    one with the theme button (<html data-theme="light|dark">, set before the page draws by public/theme-boot.js; theme/mode.js keeps it up to date).
    Rules for colour names: name the role, not the hue (--brand, not --yellow), so a new brand colour still reads right.
-   The look ("Katta Paper"): warm paper page, white cards, ink text, one brand colour (marigold) for the main button,
-   the highlighter mark and "you are here"; ochre (the dark end of the same family) for links, focus, and lines in figures and on the canvas. */
+   The look ("Stage", spec 26): a soft cool-grey page with white cards that float on it, near-black ink and black pill buttons,
+   one indigo accent for links, focus and figure lines; the landing hero and the dashboard sidebar are dark in both themes
+   (class .on-dark: the dark values below, scoped to that element). */
 :root{
   color-scheme:light;
   /* Surfaces */
-  --page:#f5f3f1;         /* the page background (paper) */
+  --page:#eef0f3;         /* the page background (paper) */
   --bg:#fff;              /* cards, inputs, figure boxes */
-  --surface:#f8f7f6;      /* wells, quiet panels, inline code */
-  --surface-2:#faf9f8;    /* sidebar, table heads, very faint panels */
-  --hover:#efedea;        /* hover on rows and quiet buttons */
-  --inverse:#0d0d0d;      /* the one dark card per page (practise call-out), selected chips */
-  --on-inverse:#fff;
+  --surface:#f4f5f7;      /* wells, quiet panels, inline code */
+  --surface-2:#f8f9fa;    /* sidebar, table heads, very faint panels */
+  --hover:#e9ebef;        /* hover on rows and quiet buttons */
+  --inverse:#09090b;      /* the one dark card per page (practise call-out), selected chips */
+  --on-inverse:#fafafa;
   /* Text */
-  --ink:#0d0d0d;
-  --ink-2:#2e2e2e;
-  --ink-3:#454545;
-  --muted:#666;
-  --muted-2:#6b6b6b;
-  --faint:#6b6b6b;
-  --disabled:#d6d6d6;
+  --ink:#09090b;
+  --ink-2:#27272a;
+  --ink-3:#3f3f46;
+  --muted:#52525b;
+  --muted-2:#5f5f68;
+  --faint:#64646d;
+  --disabled:#d4d4d8;
   /* Lines */
-  --line-strong:#c4c4c4;
-  --line:#e4e4e4;
-  --line-soft:#dedede;
-  --grid:#eee;
+  --line-strong:#c3c7ce;
+  --line:#e2e5e9;
+  --line-soft:#e9ebee;
+  --grid:#f1f2f4;
   /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
-  --brand:#0d0d0d;
-  --brand-strong:#2e2e2e; /* hover on the main button, active marker lines */
-  --brand-edge:#0d0d0d;   /* border of the main button */
+  --brand:#09090b;
+  --brand-strong:#27272a; /* hover on the main button, active marker lines */
+  --brand-edge:#09090b;   /* border of the main button */
   --brand-ink:#4338ca;    /* brand-coloured text on light tints */
-  --brand-line:#d8d9f7;   /* border of brand-tinted boxes */
-  --brand-tint:#f1efec;   /* brand-tinted boxes, active sidebar row */
-  --on-brand:#fff;
+  --brand-line:#e2e5e9;   /* border of brand-tinted boxes */
+  --brand-tint:#e9ebef;   /* brand-tinted boxes, active sidebar row */
+  --on-brand:#fafafa;
   --mark:#dfe1ff;         /* the highlighter stroke under a headline word */
   /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
@@ -70,14 +71,15 @@
   --cat-teal:#0e7490;
   --cat-pink:#be185d;
   /* The same colours as r g b triples, for see-through shadows and backdrops */
-  --ink-rgb:13 13 13;
+  --ink-rgb:9 9 11;
   --bg-rgb:255 255 255;
-  --page-rgb:245 243 241;
+  --page-rgb:238 240 243;
   --accent-rgb:79 70 229;
   /* Shadows and backdrops */
   --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
   --shadow-2:0 2px 4px rgb(var(--ink-rgb) / .05),0 10px 24px rgb(var(--ink-rgb) / .09);
   --shadow-3:0 4px 8px rgb(var(--ink-rgb) / .06),0 18px 44px rgb(var(--ink-rgb) / .18);
+  --card-shadow:0 1px 2px rgb(var(--ink-rgb) / .05),0 8px 24px -10px rgb(var(--ink-rgb) / .14); /* white cards floating on the grey page */
   --scrim:rgb(var(--ink-rgb) / .36);
   --glass:rgb(var(--page-rgb) / .86);
   /* Type */
@@ -99,33 +101,33 @@
   --ease:cubic-bezier(.2,.7,.2,1);
 }
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
-:root[data-theme=dark]{
+.on-dark,:root[data-theme=dark]{
   color-scheme:dark;
-  --page:#121212;
-  --bg:#1b1b1b;
-  --surface:#222;
-  --surface-2:#161616;
-  --hover:#272727;
-  --inverse:#f5f5f5;
-  --on-inverse:#0d0d0d;
-  --ink:#f5f5f5;
-  --ink-2:#d9d9d9;
-  --ink-3:#c6c6c6;
-  --muted:#a3a3a3;
-  --muted-2:#999;
-  --faint:#8c8c8c;
-  --disabled:#3a3a3a;
-  --line-strong:#4a4a4a;
-  --line:#2b2b2b;
-  --line-soft:#333;
-  --grid:#1c1c1c;
-  --brand:#f5f5f5;
+  --page:#09090b;
+  --bg:#111113;
+  --surface:#18181b;
+  --surface-2:#0c0c0e;
+  --hover:#1f1f23;
+  --inverse:#fafafa;
+  --on-inverse:#09090b;
+  --ink:#fafafa;
+  --ink-2:#d4d4d8;
+  --ink-3:#c4c4cc;
+  --muted:#a1a1aa;
+  --muted-2:#93939c;
+  --faint:#8a8a93;
+  --disabled:#3f3f46;
+  --line-strong:#46464f;
+  --line:#26262b;
+  --line-soft:#2e2e33;
+  --grid:#141417;
+  --brand:#fafafa;
   --brand-strong:#fff;
-  --brand-edge:#f5f5f5;
+  --brand-edge:#fafafa;
   --brand-ink:#b9b6ff;
-  --brand-line:#34386e;
-  --brand-tint:#262626;
-  --on-brand:#0d0d0d;
+  --brand-line:#2e2e33;
+  --brand-tint:#1f1f23;
+  --on-brand:#09090b;
   --mark:#3a3680;
   --accent:#a5a1ff;
   --accent-strong:#c4c2ff;
@@ -155,12 +157,13 @@
   --cat-teal:#22b8cf;
   --cat-pink:#f472b6;
   --ink-rgb:0 0 0;
-  --bg-rgb:27 27 27;
-  --page-rgb:18 18 18;
+  --bg-rgb:17 17 19;
+  --page-rgb:9 9 11;
   --accent-rgb:165 161 255;
   --shadow-1:0 1px 2px rgb(0 0 0 / .4);
   --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);
   --shadow-3:0 4px 8px rgb(0 0 0 / .4),0 18px 44px rgb(0 0 0 / .55);
+  --card-shadow:0 0 0 1px var(--line);
   --scrim:rgb(0 0 0 / .6);
   --glass:rgb(var(--page-rgb) / .86);
 }

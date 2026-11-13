@@ -1,9 +1,22 @@
-import React from"react";import{Thumb}from"./figure.jsx";import Problems,{Questions}from"../problems.jsx";import Numbers from"../numbers.jsx";import LibraryCards from"../library.jsx";import{c,d,articles}from"./site.js";
-// The dashboard's start page (no tab selected): the three library cards. A card opens its section
-// (tab selected in the sidebar and top bar) and that section's first article, or the section itself
-// while it has none.
-export function Home(){const href=x=>{const sec=d.sections.find(s=>s[2]===x.id)?.[0];if(!sec)return"#";const first=articles.find(a=>a.section===sec);return first?`#${sec}/${first.slug}`:`#${sec}`};
-return <section className="d-panel d-start" aria-labelledby="d-title"><label>{c.topics.eyebrow}</label><h1 id="d-title">{c.topics.title}</h1><LibraryCards cards={c.topics.cards} href={href}/></section>}
+import React,{useEffect,useState}from"react";import{readProgress}from"../progress.js";import{lsGet}from"./storage.js";import{Thumb}from"./figure.jsx";import Problems,{Questions}from"../problems.jsx";import Numbers from"../numbers.jsx";import LibraryCards from"../library.jsx";import{c,d,articles}from"./site.js";
+// The dashboard's start page (spec 26): a greeting, "continue reading" (the last article opened here, how far you got),
+// your progress (problems solved, challenge stars), the three library cards, and the next problems to solve.
+// Copy in site.json dashboard.home; progress from progress.js (kept in this browser, synced when signed in).
+const libHref=x=>{const sec=d.sections.find(s=>s[2]===x.id)?.[0];if(!sec)return"#";const first=articles.find(a=>a.section===sec);return first?`#${sec}/${first.slug}`:`#${sec}`};
+const lastRead=()=>{try{const o=JSON.parse(lsGet("tk-last")||"null");const a=o&&articles.find(x=>x.slug===o.slug);return a?{a,p:Math.max(0,Math.min(1,+o.p||0))}:null}catch{return null}};
+function Continue({h}){const last=lastRead(),a=last?.a||articles.find(x=>x.section==="interview-questions"&&x.group==="start")||articles[0];if(!a)return null;const pct=Math.round((last?.p||0)*100);
+return <a className="h-card h-cont" href={`#${a.section}/${a.slug}`}>{a.fig&&<Thumb id={a.fig}/>}<span className="h-cont-t"><small>{last?h.continue:h.start}</small><b>{a.title.split(":")[0]}</b>{a.dek&&<p>{a.dek}</p>}{last&&<span className="h-bar" role="img" aria-label={`${pct}% ${h.read}`}><i style={{width:`${Math.max(4,pct)}%`}}/></span>}<em>{last?h.resume:h.begin} →</em></span></a>}
+function Progress({h}){const[p,setP]=useState(readProgress);useEffect(()=>{const f=()=>setP(readProgress());addEventListener("tk-progress",f);addEventListener("storage",f);return()=>{removeEventListener("tk-progress",f);removeEventListener("storage",f)}},[]);
+const qs=articles.filter(a=>a.tests),done=qs.filter(a=>p.steps["solved:"+a.slug]).length,stars=Object.values(p.stars).reduce((x,y)=>x+y,0),max=(c.counts?.challenges||0)*3,r=15.5,len=2*Math.PI*r,k=qs.length?done/qs.length:0;
+return <div className="h-card h-prog"><div className="h-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r={r} className="h-ring-bg"/><circle cx="18" cy="18" r={r} className="h-ring-on" strokeDasharray={`${Math.max(.001,k*len)} ${len}`} transform="rotate(-90 18 18)"/></svg><span><b>{done} <i>of {qs.length}</i></b>{h.solved}</span></div>
+{max>0&&<div className="h-stars"><b>{stars} <i>of {max}</i></b>{h.stars}</div>}<p>{h.progressNote}</p></div>}
+function UpNext({h}){const[p]=useState(readProgress);const list=articles.filter(a=>a.tests&&!p.steps["solved:"+a.slug]).slice(0,4);if(!list.length)return null;
+return <><div className="h-head"><h2>{h.next}</h2><a href="#problems">{h.all} →</a></div><ol className="h-next">{list.map(a=><li key={a.slug}><a className="h-card" href={`#problems/${a.slug}`}><small className={"lv "+(a.group||"")}>{h.levels?.[a.group]||a.group}</small><b>{a.title.split(":")[0]}</b><em>{h.solve} →</em></a></li>)}</ol></>}
+export function Home(){const h=d.home||{};const hour=new Date().getHours(),g=h.greet||[];
+return <section className="d-panel d-start" aria-labelledby="d-title"><h1 id="d-title">{g[hour<12?0:hour<17?1:2]||c.topics.title}</h1>{h.sub&&<p className="d-desc">{h.sub}</p>}
+<div className="h-row"><Continue h={h}/><Progress h={h}/></div>
+<div className="h-head"><h2>{h.explore||c.topics.eyebrow}</h2></div><LibraryCards cards={c.topics.cards} href={libHref}/>
+<UpNext h={h}/></section>}
 // Privacy and Terms pages (site.json "privacy", "terms").
 export function Policy({p}){return <section className="d-panel" aria-labelledby="d-title"><label>{p.eyebrow}</label><h1 id="d-title">{p.title}</h1><p className="d-desc">{p.updated}</p>
 {p.sections.map(([h,x])=><div className="priv" key={h}><h2>{h}</h2><p>{x}</p></div>)}</section>}
