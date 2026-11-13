@@ -2,6 +2,8 @@
 
 # Design.md — the look we are moving towards
 
+> **2026-11-14:** the site's own type and motion are now in tech-katta-context/30-PREMIUM-RENOVATION.md (Instrument Sans, Source Serif 4, Geist Mono; expo-out and spring motion; `frontend/src/theme/premium.css`). This file stays the record of the fanout.sh study.
+
 **Source of inspiration:** fanout.sh, observed on 2026-11-12 (owner: "take inspiration of their UI"; then "make the
 design.md more detailed"). This file has two halves:
 
