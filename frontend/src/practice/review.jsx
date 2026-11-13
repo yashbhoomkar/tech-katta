@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import * as api from "./client.js";
 import { S } from "./strings.js";
+import "./review.css";
 
 const KIND = { problem: "pv-problem", risk: "pv-risk", strength: "pv-strength", note: "pv-note" };
 
@@ -22,15 +23,17 @@ export function ReviewCard({ data }) {
   </section>;
 }
 
-// submissionId: the stored Submit to review. The credit line comes from GET /me/credits and is refreshed by each review.
-export function AskInterviewer({ submissionId }) {
+// submissionId: a Practice Submit to review; or request: a function that asks for the review (the canvas, which sends
+// its design; solve.jsx), with resetKey changing for each new result. The credit line comes from GET /me/credits and
+// is refreshed by each review.
+export function AskInterviewer({ submissionId, request, resetKey }) {
   const [credits, setCredits] = useState(null), [state, setState] = useState("idle"), [data, setData] = useState(null), [err, setErr] = useState(null);
   useEffect(() => { let live = true; api.aiCredits().then((c) => { if (live) setCredits(c); }, () => {}); return () => { live = false; }; }, []);
-  useEffect(() => { setState("idle"); setData(null); setErr(null); }, [submissionId]);
+  useEffect(() => { setState("idle"); setData(null); setErr(null); }, [submissionId, resetKey]);
   const ask = async () => {
     setState("busy"); setErr(null);
     try {
-      const d = await api.reviewSubmission(submissionId);
+      const d = request ? await request() : await api.reviewSubmission(submissionId);
       setData(d); setState("done");
       if (d.credits) setCredits((c) => ({ ...(c || {}), ...d.credits }));
     } catch (e) { setErr(e.status === 429 ? (e.message || S.tooMany) : S.reviewFailed); setState("idle"); }
@@ -38,11 +41,11 @@ export function AskInterviewer({ submissionId }) {
   const left = credits?.month?.left, on = credits?.enabled !== false;
   if (state === "done" && data) return <ReviewCard data={data}/>;
   return <div className="pv-ask-box">
-    <button type="button" className="pr-primary pv-btn" disabled={state === "busy" || !submissionId} onClick={ask}>
+    <button type="button" className="pv-btn" disabled={state === "busy" || !(submissionId || request)} onClick={ask}>
       {state === "busy" ? S.reviewing : on ? S.askInterviewer : S.askReport}
     </button>
-    {on && Number.isFinite(left) && <span className="pc-muted pv-credits">{S.reviewsLeft(left, credits.month.total)}{credits.preview ? ` · ${S.preview}` : ""}</span>}
-    {state === "busy" && <p className="pc-muted" role="status">{S.reviewingLong}</p>}
+    {on && Number.isFinite(left) && <span className="pv-credits">{S.reviewsLeft(left, credits.month.total)}{credits.preview ? ` · ${S.preview}` : ""}</span>}
+    {state === "busy" && <p className="pv-credits" role="status">{S.reviewingLong}</p>}
     {err && <p className="pv-err" role="alert">{err}</p>}
   </div>;
 }

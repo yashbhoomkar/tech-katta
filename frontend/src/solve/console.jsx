@@ -2,9 +2,9 @@ import React,{useEffect,useState}from"react";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
 useEffect(()=>{if(v===n)return;let raf,t0;const step=t=>{t0??=t;const k=Math.min(1,(t-t0)/800);setV(Math.round(n*(1-(1-k)**3)));if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf)},[n]);// eslint-disable-line
-return v}import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js";import{Json,reqOf}from"./player.jsx";import{Findings,HowRead}from"./v2.jsx";
+return v}import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js";import{Json,reqOf}from"./player.jsx";import{Findings,HowRead}from"./v2.jsx";import{AskInterviewer}from"../practice/review.jsx";
 // ---- Results under the canvas ----
-export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,review}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
 const{kind,j,g,sc,crash}=res;
 if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
@@ -18,6 +18,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
+{kind==="submit"&&review&&res.server&&res.server!=="pending"&&res.server!=="off"&&<AskInterviewer request={review} resetKey={res.j}/>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
 {!err&&<ol className="sv-results">{j.results.map((r,k)=><li key={r.id} className={r.ok?"ok":"no"} style={{"--i":Math.min(k,14)}}><details open={!r.ok&&r===j.first}><summary><i aria-hidden="true">{r.ok?"✓":"✕"}</i><span>Test {k+1}: {r.test.name}</span><small>{r.metrics?`${pct(r.metrics.availability)} · p99 ${fmt(r.metrics.p99)} ms · $${fmt(r.metrics.avgMonthly)}/mo`:(r.request||r.test.request)&&r.output?`${(r.request||r.test.request).method} ${(r.request||r.test.request).path} → ${r.output.status}${r.ok?"":` (expected ${r.expect.status})`}`:r.error}</small></summary>
 <p className="sv-tdesc">{r.test.desc}</p>{r.why?.length>0&&<ul className="sv-why">{r.why.map(x=><li key={x}>{x}</li>)}</ul>}

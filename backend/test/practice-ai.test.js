@@ -122,3 +122,32 @@ test('deleting the account takes its credits', async () => {
   assert.ok(del.status < 300, `delete: ${del.status}`);
   assert.equal(await db().collection('practice_credits').countDocuments({ user_id: { $in: [user._id, String(user._id)] } }), 0);
 });
+
+// ---- Interview Questions (the canvas): POST /v1/me/submissions/review -------------------------------------------
+const iq = JSON.parse(readFileSync(new URL('../../content/articles/interview-questions/url-shortener.json', import.meta.url), 'utf8')).practice;
+const canvasReview = (cookie, body, extra = {}) => call('/v1/me/submissions/review', { method: 'POST', cookie, body, ...extra });
+const designOf = (w) => ({ nodes: w.nodes, edges: w.edges });
+
+test('canvas: the interviewer reviews a design the server judges itself; credits are shared with Practice', async () => {
+  const cookie = await signIn('5101');
+  assert.equal((await canvasReview(null, { slug: 'url-shortener', design: designOf(iq.reference) })).status, 401);
+  assert.equal((await canvasReview(cookie, { slug: 'no-such-problem', design: designOf(iq.reference) })).status, 404);
+  assert.equal((await canvasReview(cookie, { slug: 'url-shortener', design: 'x' })).status, 400);
+  const noCache = iq.wrong.find((w) => w.name === 'No cache');
+  const r = await canvasReview(cookie, { slug: 'url-shortener', design: designOf(noCache) });
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.deepEqual([body.source, body.preview, body.verdict, body.slug], ['interviewer', true, 'Failed', 'url-shortener']);
+  assert.ok(body.review.items.length >= 2 && body.review.items[0].kind === 'problem');
+  assert.equal(body.credits.month.used, 1);
+  // a Practice review afterwards counts against the same month (a design no other test reviews, so not cached)
+  const s = await (await submit(cookie, wrong('day-long-cache-no-invalidate'))).json();
+  const p = await (await review(cookie, s.submission_id)).json();
+  assert.equal(p.credits.month.used, 2);
+  // the same canvas design again: cached, free
+  const again = await (await canvasReview(cookie, { slug: 'url-shortener', design: designOf(noCache) })).json();
+  assert.deepEqual([again.cached, again.credits.month.used], [true, 2]);
+  // an accepted design gets a review too
+  const ok = await (await canvasReview(cookie, { slug: 'url-shortener', design: designOf(iq.reference) })).json();
+  assert.equal(ok.verdict, 'Accepted');
+});

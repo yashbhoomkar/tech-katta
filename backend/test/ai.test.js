@@ -11,6 +11,9 @@ import { aiConfig, configProblems, createClient } from '../src/ai/client.js';
 import { SYSTEM, problemBlock, reviewRequest, reviewSchema, factsFor } from '../src/ai/prompt.js';
 import { runReview, reviewKey } from '../src/ai/jobs/review.js';
 import { monthOf, dayOf } from '../src/ai/store.js';
+import { judge as judgeCanvas } from '../../frontend/src/judge/judge.js';
+import { cleanDesign } from '../../frontend/src/lab/store.js';
+import { canvasEvidence, canvasProblem } from '../../frontend/src/v3/adapters/eval.js';
 
 const dir = new URL('../../content/problems2/', import.meta.url);
 const problems = readdirSync(dir).filter((f) => /^\d{3}-.*\.json$/.test(f)).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
@@ -220,4 +223,25 @@ test('the job: a provider failure or a review the verifier rejects gives the cre
 test('months and days are counted in India', () => {
   const t = Date.UTC(2026, 10, 30, 19, 0); // 30 Nov 19:00 UTC = 1 Dec 00:30 IST
   assert.deepEqual([monthOf(t), dayOf(t)], ['2026-12', '2026-12-01']);
+});
+
+test('the mock interviewer passes the verifier on every canvas design of every Interview Question', () => {
+  const content = new URL('../../content/', import.meta.url);
+  const lab = { ...JSON.parse(readFileSync(new URL('lab.json', content))), eval: JSON.parse(readFileSync(new URL('eval.json', content))) };
+  const iq = new URL('articles/interview-questions/', content);
+  let n = 0;
+  for (const f of readdirSync(iq).filter((x) => x.endsWith('.json'))) {
+    const a = JSON.parse(readFileSync(new URL(f, iq), 'utf8'));
+    if (!a.practice?.reference) continue;
+    const { wrong, ...problem } = a.practice, p = canvasProblem(a);
+    for (const w of [a.practice.reference, a.practice.start, ...wrong]) {
+      const d = cleanDesign({ nodes: w.nodes, edges: w.edges, v: 2 }, lab, 'x');
+      if (!d) continue;
+      const pack = canvasEvidence(judgeCanvas(d, lab, problem), a), v = verifyReview(mockReview(pack), pack, { names: namesOf(pack, p.requests.map((r) => r.name)) });
+      assert.ok(v.ok, `${a.slug}: ${v.why}`);
+      assert.deepEqual(v.dropped, [], a.slug);
+      n += 1;
+    }
+  }
+  assert.ok(n >= 150);
 });
