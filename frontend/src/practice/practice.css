@@ -266,3 +266,7 @@
 /* The streak went up today: the marker is drawn under it once (list.jsx, spec 24 A6) */
 .pl-streak.up .pl-mk{background:linear-gradient(transparent 58%,var(--mark) 58% 92%,transparent 92%) no-repeat;background-size:100% 100%}
 @media(prefers-reduced-motion:no-preference){.pl-streak.up .pl-mk{animation:tk-mark .45s var(--ease) .35s backwards}}
+/* Difficulty: a neutral pill with a small coloured dot, as on Problems (spec 25 §8) */
+.pr-diff.pr-easy,.pr-diff.pr-medium,.pr-diff.pr-hard{background:var(--surface);color:var(--ink-2);border-color:var(--line);display:inline-flex;align-items:center;gap:6px}
+.pr-diff.pr-easy::before,.pr-diff.pr-medium::before,.pr-diff.pr-hard::before{content:"";width:6px;height:6px;border-radius:50%;flex:none}
+.pr-diff.pr-easy::before{background:var(--success)}.pr-diff.pr-medium::before{background:var(--warn-mid)}.pr-diff.pr-hard::before{background:var(--danger)}

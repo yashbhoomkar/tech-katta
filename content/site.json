@@ -27,13 +27,23 @@
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
     "description": "Design it on a canvas. Real traffic, crashed servers and the bill judge it. Built for Indian scale.",
-    "primary": "Dashboard",
+    "primary": "Start learning",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
     "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
-    "primaryHref": "/dashboard/concepts/",
-    "secondaryHref": "#ind-vs-pak"
+    "primaryHref": "/dashboard/",
+    "secondaryHref": "#ind-vs-pak",
+    "chip": "New",
+    "chipText": "8 challenges, scored out of 3 stars",
+    "chipHref": "/dashboard/problems/",
+    "judge": {
+      "title": "THE JUDGE · URL SHORTENER",
+      "rows": [["A quiet afternoon", "Passed"], ["Evening peak", "Passed"], ["A server dies at peak", "Passed"], ["Inside ₹1 lakh a month", "Yes"]],
+      "stars": 3,
+      "label": "Example run: the URL shortener's tests, all passed, three stars"
+    },
+    "stats": [["{questions}", "problems with tests"], ["{stars}", "challenge stars to earn"], ["{articles}", "visual notes"], ["3.5 cr", "watching one match: can yours hold?"]]
   },
   "topics": {
     "eyebrow": "LIBRARY",
@@ -217,6 +227,24 @@
   },
   "dashboard": {
     "label": "SYSTEM DESIGN LIBRARY",
+    "home": {
+      "label": "Home",
+      "greet": ["Good morning", "Good afternoon", "Good evening"],
+      "sub": "Pick up where you left off, or start a problem.",
+      "continue": "Continue reading",
+      "start": "Start here",
+      "resume": "Resume",
+      "begin": "Begin",
+      "read": "read",
+      "solved": "problems solved",
+      "stars": "challenge stars",
+      "progressNote": "Kept in this browser, and in your account when you sign in.",
+      "explore": "Explore",
+      "next": "Up next",
+      "all": "All problems",
+      "solve": "Solve",
+      "levels": {"easy": "Easy", "medium": "Medium", "hard": "Hard", "practice": "Practice"}
+    },
     "back": "Back to site",
     "empty": "Nothing published here yet. New pages will be listed here as they are written.",
     "sections": [
@@ -735,6 +763,7 @@
         "title": "Interview Questions",
         "text": "Real interview problems, worked end to end.",
         "link": "See the questions",
+        "visual": "mini:steps",
         "href": "/dashboard/interview-questions/"
       },
       {
@@ -742,6 +771,8 @@
         "title": "Problems, judged",
         "text": "Build, run the tests, submit. The judge decides.",
         "link": "Solve a problem",
+        "visual": "tests",
+        "tests": [["Evening peak", "Passed"], ["The database primary fails", "Passed"], ["The cache restarts", "2 issues"]],
         "href": "/dashboard/problems/"
       },
       {
@@ -749,6 +780,7 @@
         "title": "Challenges",
         "text": "Score your design out of three stars.",
         "link": "See the challenges",
+        "visual": "stars",
         "href": "/dashboard/problems/"
       },
       {
@@ -756,6 +788,7 @@
         "title": "Concepts and Components",
         "text": "Short, visual notes on the ideas every design uses.",
         "link": "Start reading",
+        "visual": "mini:cap",
         "href": "/dashboard/concepts/"
       }
     ],
