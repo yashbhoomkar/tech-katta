@@ -1,5 +1,10 @@
 /* Rules every page shares. Page stylesheets add their own layout on top. */
 *{box-sizing:border-box}body{margin:0}
+/* Typesetting for the whole site (spec 30 §3): crisp rendering, real kerning and ligatures, balanced headlines (no
+   lone word on the last line), paragraphs without orphans, and figures in tables and stats that line up. */
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-kerning:normal;font-synthesis-weight:none}
+h1,h2,h3,h4{text-wrap:balance}p,li,dd,blockquote{text-wrap:pretty}
+table,.tk-num,[data-num]{font-variant-numeric:tabular-nums}
 /* Reduced motion: every transition that uses the motion tokens stops. */
 @media(prefers-reduced-motion:reduce){:root{--dur-fast:0s;--dur:0s}}
 /* CountUp.jsx: the final number for screen readers while the digits move (landing and dashboard) */

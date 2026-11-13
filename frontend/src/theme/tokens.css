@@ -7,6 +7,12 @@
    The colours ("Katta Paper", back by the owner's choice on 2026-11-13, spec 28): warm white paper, white cards that float on it,
    ink text, marigold for the main buttons and highlights, ochre (marigold in dark) for links, focus and figure lines; the layout is Stage (spec 26): the landing hero and the dashboard sidebar are dark in both themes
    (class .on-dark: the dark values below, scoped to that element). */
+/* Local faces measured against the web fonts (spec 30 §3.4): same average width and line box, so a page drawn in the
+   fallback and redrawn in the web font keeps its line breaks. */
+@font-face{font-family:"TK Sans Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101.6%;ascent-override:95%;descent-override:24.5%;line-gap-override:0%}
+@font-face{font-family:"TK Serif Fallback";src:local("Georgia");size-adjust:103%;ascent-override:101%;descent-override:33%;line-gap-override:0%}
+@font-face{font-family:"TK Serif Fallback 2";src:local("Times New Roman"),local("Liberation Serif");size-adjust:118%;ascent-override:88%;descent-override:29%;line-gap-override:0%}
+@font-face{font-family:"TK Mono Fallback";src:local("Courier New"),local("Liberation Mono");size-adjust:100%;ascent-override:101%;descent-override:30%;line-gap-override:0%}
 :root{
   color-scheme:light;
   /* Surfaces */
@@ -83,9 +89,12 @@
   --scrim:rgb(var(--ink-rgb) / .36);
   --glass:rgb(var(--page-rgb) / .86);
   /* Type */
-  --font:Inter,Arial,sans-serif;
-  --font-display:"Fraunces Variable",Georgia,"Times New Roman",serif;
-  --mono:"IBM Plex Mono",monospace;
+  /* Type (spec 30): Instrument Sans for the interface and reading, Source Serif 4 for headlines, Geist Mono for figures,
+     code and numbers (theme/fonts.js). Each is followed by a local face sized to match it, so nothing jumps when the
+     font arrives. */
+  --font:"Instrument Sans Variable","TK Sans Fallback",Arial,sans-serif;
+  --font-display:"Source Serif 4 Variable","TK Serif Fallback","TK Serif Fallback 2",Georgia,serif;
+  --mono:"Geist Mono Variable","TK Mono Fallback",ui-monospace,monospace;
   /* Shape */
   --radius:8px;
   --r-sm:6px;

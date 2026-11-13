@@ -6,7 +6,7 @@
 import { TOKENS as T } from "../theme/palette.js";
 import { layout, facts } from "./diagram.jsx";
 const W = 1200, H = 630, BOX_W = 132, BOX_H = 48;
-const MONO = '"IBM Plex Mono", ui-monospace, monospace', SANS = "Inter, Arial, sans-serif", SERIF = '"Fraunces Variable", Georgia, serif';
+const MONO = '"Geist Mono Variable", ui-monospace, monospace', SANS = '"Instrument Sans Variable", Arial, sans-serif', SERIF = '"Source Serif 4 Variable", Georgia, serif';
 
 function wrap(g, text, maxW, max) { const out = []; let line = ""; for (const w of text.split(" ")) { const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out.slice(0, max); }
 function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
