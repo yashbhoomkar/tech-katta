@@ -1,0 +1,19 @@
+/* The interviewer's button and review card (review.jsx), in Practice and under the canvas (Interview Questions) */
+.pv-ask-box{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.pv-btn{min-height:36px;padding:0 14px;border-radius:var(--r-btn,var(--r-sm));border:1px solid var(--brand-edge);background:var(--brand);color:var(--on-brand);font:600 13px var(--font);cursor:pointer}.pv-btn:hover{background:var(--brand-strong)}.pv-btn:disabled{opacity:.55;cursor:default}.pv-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pv-credits{color:var(--muted);font-size:13px}
+.pv-ask-box p{flex-basis:100%;margin:0}.pv-err{color:var(--danger);font-size:13px}
+.pv-card{margin:14px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
+.pv-from{margin:0 0 6px;font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pv-tag{padding:1px 7px;border-radius:var(--r-full);background:var(--warn-tint);color:var(--warn-strong);border:1px solid var(--warn-line);text-transform:none;letter-spacing:0}
+.pv-why{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.pv-head{margin:0 0 10px;font:600 15.5px/1.4 var(--font)}
+.pv-items{list-style:none;padding:0;margin:0 0 10px;display:flex;flex-direction:column;gap:8px}
+.pv-items li{padding:8px 10px 8px 12px;border-left:3px solid var(--line-strong);background:var(--bg);border-radius:0 var(--r-sm) var(--r-sm) 0}
+.pv-items li small{font:600 11px var(--mono);text-transform:uppercase;color:var(--muted)}
+.pv-items li p{margin:3px 0 0;font-size:14px;line-height:1.5}
+.pv-items .pv-problem{border-left-color:var(--danger)}.pv-items .pv-problem small{color:var(--danger)}
+.pv-items .pv-risk{border-left-color:var(--warn)}.pv-items .pv-risk small{color:var(--warn-strong)}
+.pv-items .pv-strength{border-left-color:var(--success)}.pv-items .pv-strength small{color:var(--success)}
+.pv-ask{color:var(--ink-2);font-style:italic}
+.pv-next{margin:0;font-size:14px}.pv-next b{font-weight:700}
