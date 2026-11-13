@@ -30,23 +30,23 @@
   --line-soft:#dedede;
   --grid:#eee;
   /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
-  --brand:#ffc233;
-  --brand-strong:#f2ac00; /* hover on the main button, active marker lines */
-  --brand-edge:#d79a00;   /* border of the main button */
-  --brand-ink:#6e4a00;    /* brand-coloured text on light tints */
-  --brand-line:#e4e4e4;   /* border of brand-tinted boxes */
+  --brand:#0d0d0d;
+  --brand-strong:#2e2e2e; /* hover on the main button, active marker lines */
+  --brand-edge:#0d0d0d;   /* border of the main button */
+  --brand-ink:#4338ca;    /* brand-coloured text on light tints */
+  --brand-line:#d8d9f7;   /* border of brand-tinted boxes */
   --brand-tint:#f1efec;   /* brand-tinted boxes, active sidebar row */
-  --on-brand:#0d0d0d;
-  --mark:#ffd866;         /* the highlighter stroke under a headline word */
+  --on-brand:#fff;
+  --mark:#dfe1ff;         /* the highlighter stroke under a headline word */
   /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
-  --accent:#94600a;
-  --accent-strong:#754a00;
-  --accent-mid:#e9b949;
-  --accent-line:#f0d388;
-  --accent-soft:#ece9e3;
-  --accent-tint-2:#f0eeea;
-  --accent-tint:#f7f6f4;
+  --accent:#4f46e5;
+  --accent-strong:#4338ca;
+  --accent-mid:#9a9cf2;
+  --accent-line:#c9cbf5;
+  --accent-soft:#e0e1fc;
+  --accent-tint-2:#ebecfd;
+  --accent-tint:#f5f5fe;
   --on-accent:#fff;
   /* Status */
   --danger:#b3261e;
@@ -62,7 +62,7 @@
   --warn-mid:#e8700c;
   --warn-line:#f5cfa9;
   --warn-tint:#fff3e6;
-  --star:#e8a308;
+  --star:#4f46e5;
   /* Categories, where a figure needs several colours that mean nothing more than "different" */
   --cat-green:#1f8a5b;
   --cat-amber:#b7791f;
@@ -73,7 +73,7 @@
   --ink-rgb:13 13 13;
   --bg-rgb:255 255 255;
   --page-rgb:245 243 241;
-  --accent-rgb:148 96 10;
+  --accent-rgb:79 70 229;
   /* Shadows and backdrops */
   --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
   --shadow-2:0 2px 4px rgb(var(--ink-rgb) / .05),0 10px 24px rgb(var(--ink-rgb) / .09);
@@ -119,22 +119,22 @@
   --line:#2b2b2b;
   --line-soft:#333;
   --grid:#1c1c1c;
-  --brand:#ffc233;
-  --brand-strong:#ffd466;
-  --brand-edge:#b88400;
-  --brand-ink:#ffd87a;
-  --brand-line:#3a3a3a;
+  --brand:#f5f5f5;
+  --brand-strong:#fff;
+  --brand-edge:#f5f5f5;
+  --brand-ink:#b9b6ff;
+  --brand-line:#34386e;
   --brand-tint:#262626;
   --on-brand:#0d0d0d;
-  --mark:#7d5c00;
-  --accent:#ffc233;
-  --accent-strong:#ffd466;
-  --accent-mid:#a87a10;
-  --accent-line:#5f4813;
-  --accent-soft:#2c2c2c;
-  --accent-tint-2:#262626;
-  --accent-tint:#1e1e1e;
-  --on-accent:#1d1b16;
+  --mark:#3a3680;
+  --accent:#a5a1ff;
+  --accent-strong:#c4c2ff;
+  --accent-mid:#6d68e6;
+  --accent-line:#34386e;
+  --accent-soft:#262a55;
+  --accent-tint-2:#1f2247;
+  --accent-tint:#191b38;
+  --on-accent:#0d0d0d;
   --danger:#ff8a80;
   --red:#ff7b72;
   --danger-line:#6b2c28;
@@ -148,7 +148,7 @@
   --warn-mid:#e8700c;
   --warn-line:#693c14;
   --warn-tint:#2d1d10;
-  --star:#f2b01e;
+  --star:#a5a1ff;
   --cat-green:#3fb97a;
   --cat-amber:#e0a43a;
   --cat-violet:#a78bfa;
@@ -157,7 +157,7 @@
   --ink-rgb:0 0 0;
   --bg-rgb:27 27 27;
   --page-rgb:18 18 18;
-  --accent-rgb:255 194 51;
+  --accent-rgb:165 161 255;
   --shadow-1:0 1px 2px rgb(0 0 0 / .4);
   --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);
   --shadow-3:0 4px 8px rgb(0 0 0 / .4),0 18px 44px rgb(0 0 0 / .55);

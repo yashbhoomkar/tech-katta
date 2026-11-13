@@ -70,3 +70,8 @@
 @media(max-width:760px){.d-list ol{grid-template-columns:1fr}}
 @media(max-width:680px){.d-panel{padding:0}.d-panel h1{font-size:32px}.d-desc{font-size:16px}.d-group>h2{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.d-list a{transition:none}.d-list a:hover{transform:none}}
+/* Picture cards (pages.jsx Item, 25 §7): the figure on top, then the title and two lines at most */
+.d-list a.has-thumb{padding:0;overflow:hidden}
+.d-card-t{display:flex;flex-direction:column;flex:1;padding:16px 20px 18px}
+.d-list a.has-thumb b{margin-top:8px}
+.d-list .d-card-t p{-webkit-line-clamp:2}

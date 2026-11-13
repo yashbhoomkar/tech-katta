@@ -90,3 +90,9 @@
 .d-rail li a.on{border-left-color:var(--line)}
 .rail-mark{position:absolute;left:0;top:0;width:2px;background:var(--brand-strong);pointer-events:none;transition:transform var(--dur) var(--ease),height var(--dur) var(--ease)}
 @media(prefers-reduced-motion:reduce){.rail-mark{transition:none}}
+/* "Figures only" (article.jsx, tech-katta-context 25 §7): headings and figures (with captions) stay; the reading text,
+   lists, tables, asides, code and "Go deeper" are hidden until the reader asks for the full text again */
+.a-skim>:is(p:not(.d-dek),ul,ol,.a-example,.a-type,.a-analogy,.a-code,.a-table,.a-more,.a-deeper){display:none}
+.a-skim>.a-fig{margin-top:18px}
+.a-skim>h3{display:none}
+.d-meta .r-btn.a-skim-btn.on,.d-meta .r-btn.a-skim-btn.on:hover{background:var(--inverse);color:var(--on-inverse);border-color:var(--inverse)}
