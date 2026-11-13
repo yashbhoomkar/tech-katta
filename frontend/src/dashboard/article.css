@@ -84,3 +84,9 @@
 .pr-solve:active{transform:translateY(1px)}
 @media(max-width:680px){.d-article h1{font-size:31px}.d-article>.d-dek{font-size:17px}.d-article h2{font-size:24px;margin-top:44px}.d-article>p,.d-article>ul,.a-type>p{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.a-next>a:first-child:not(.a-all),.pr-solve{transition:none}.a-next>a:first-child:not(.a-all):hover{transform:none}}
+/* "On this page": the marigold piece of the line is one marker that slides to the current heading (article.jsx Rail,
+   tech-katta-context 24 A4); the current link keeps the plain line under it */
+.d-rail ol{position:relative}
+.d-rail li a.on{border-left-color:var(--line)}
+.rail-mark{position:absolute;left:0;top:0;width:2px;background:var(--brand-strong);pointer-events:none;transition:transform var(--dur) var(--ease),height var(--dur) var(--ease)}
+@media(prefers-reduced-motion:reduce){.rail-mark{transition:none}}

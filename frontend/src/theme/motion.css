@@ -58,11 +58,16 @@
   .ll-res{animation:tk-pop .18s var(--ease) backwards}
   /* 8. Tech Katta's own moments (spec section 4.8): the verdict, the stars, a server going down, a figure opening */
   .sv-v.good b{animation:tk-mark .38s var(--ease) .22s backwards}
-  .lab-score .lab-stars,.ll-res .ll-stars{display:inline-block;animation:tk-pop .24s var(--ease) .18s backwards}
+  /* the stars fill one after another, 0.15 s apart, each with a small pop (tech-katta-context 24, A5) */
+  .lab-score .lab-stars b{display:inline-block;animation:tk-pop .24s var(--ease) backwards;animation-delay:calc(.2s + var(--k,0) * .15s)}
+  .ll-res .ll-stars{display:inline-block;animation:tk-pop .24s var(--ease) .18s backwards}
   .ln.down{animation:tk-shake .32s linear}
   .zoom{animation:tk-fade var(--dur) var(--ease) backwards}
   .zoom-box{animation:tk-pop .18s var(--ease) backwards}
   .lab-meter i{transition:width var(--dur) var(--ease)}
+  /* 9. Changing page or theme cross-fades (theme/motion.js viewChange; browsers with view transitions only) */
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.15s;animation-timing-function:var(--ease)}
+  :root[data-vt="theme"]::view-transition-old(root),:root[data-vt="theme"]::view-transition-new(root){animation-duration:.22s}
   /* 5. Waiting: the grey lines of a loading page shimmer (a sweep, not a pulse) */
   .lock-skel i{background-image:linear-gradient(90deg,transparent 0,rgb(var(--bg-rgb) / .7) 50%,transparent 100%);background-size:200% 100%;background-position:200% 0;animation:tk-shimmer 1.4s ease-in-out infinite}
   /* 6. Landing sections below the fold rise as they scroll into view. Browsers without scroll timelines just show them. */
