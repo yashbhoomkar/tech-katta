@@ -23,7 +23,7 @@ export function templateReview(pack) {
   const risks = [
     ...by((x) => x.kind === 'load' && x.tone === 'risk').sort((a, b) => (b.n.peak_rho ?? 0) - (a.n.peak_rho ?? 0)),
     ...by((x) => x.kind === 'margin' && x.tone === 'risk'),
-    ...by((x) => x.kind === 'static' && x.tone === 'risk'),
+    ...by((x) => (x.kind === 'static' || x.kind === 'advice') && x.tone === 'risk'),
   ];
   for (const f of risks.slice(0, 2)) push('risk', f);
   // one strength the facts support

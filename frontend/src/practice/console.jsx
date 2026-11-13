@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { S } from "./strings.js";
 import Scene from "../theme/Scene.jsx";
 import { inrExact } from "../tkd/inr.js";
-import { AskInterviewer } from "./review.jsx";
+import { ReviewPanel } from "./review.jsx";
 
 const EVENTS = { none: undefined, server: [{ kill_role: "server" }], sql: [{ kill_role: "sql" }, { kill_role: "nosql" }], cache: [{ flush_role: "cache" }] };
 const eventOf = (ev) => (!ev?.length ? "none" : ev.some((e) => e.kill_role === "sql") ? "sql" : ev.some((e) => e.flush_role) ? "cache" : "server");
@@ -38,7 +38,7 @@ const verdictClass = (v) => (v === "Accepted" ? "pc-v-ok" : BAD.has(v) ? "pc-v-b
 
 // "Share as image" (card.js): the share sheet where the device takes files, otherwise a saved PNG
 function CardButton({ onCard }) { const [st, setSt] = useState(""); return <button type="button" className="pb-btn" disabled={st === "busy"} onClick={async () => { setSt("busy"); const r = await onCard().catch(() => null); setSt(r === "saved" ? "saved" : ""); if (r === "saved") setTimeout(() => setSt(""), 2500); }}>{st === "saved" ? S.cardSaved : S.cardShare}</button>; }
-export function Result({ result, busy, showTip, onNext, onShare, canShare, howHref, onCard }) {
+export function Result({ result, busy, review, credits, showTip, onNext, onShare, canShare, howHref, onCard }) {
   const [note, setNote] = useState(""), [shared, setShared] = useState(false), [sharing, setSharing] = useState(false);
   if (busy) return <p className="pc-empty" role="status">{S.judging}</p>;
   if (!result) return <p className="pc-empty">{S.runFirst}</p>;
@@ -70,7 +70,7 @@ export function Result({ result, busy, showTip, onNext, onShare, canShare, howHr
         {canShare && !shared && (sharing ? <span className="pc-share"><input value={note} maxLength={280} placeholder={S.sharePrompt} aria-label={S.sharePrompt} onChange={(e) => setNote(e.target.value)}/><button type="button" className="pb-btn" onClick={async () => { if (await onShare(note)) setShared(true); }}>{S.share}</button></span> : <button type="button" className="pb-btn" onClick={() => setSharing(true)}>{S.share}</button>)}
         {shared && <span className="pc-muted">{S.shared}</span>}</div>
     </div>}
-    {r.kind === "submit" && r.submission_id && r.verdict !== "Judge Error" && <AskInterviewer submissionId={r.submission_id}/>}
+    <ReviewPanel review={review} credits={credits}/>
     {howHref && <p className="pc-how"><a href={howHref}>{S.howJudged}</a></p>}
   </div>;
 }

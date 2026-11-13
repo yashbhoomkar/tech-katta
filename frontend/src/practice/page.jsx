@@ -20,6 +20,7 @@ import Scene from "../theme/Scene.jsx";
 import { shareCard } from "./card.js";
 import Diagram from "./diagram.jsx";
 import { Testcase, Result } from "./console.jsx";
+import { AskButton, useCredits, reviewError } from "./review.jsx";
 import * as B from "./builder.js";
 
 const narrowQ = () => typeof window !== "undefined" && window.matchMedia?.("(max-width:899px)");
@@ -161,12 +162,26 @@ function Workspace({ problem, list, account, narrow, t }) {
     try {
       const r = await api.submitDesign(problem.slug, text);
       if (r.verdict !== "Accepted" && r.verdict !== "Judge Error") { fails.current += 1; lsSet(`tk-practice-fails-${problem.id}`, String(fails.current)); }
-      setResult({ ...r, kind: "submit", at: Date.now(), text }); setRefresh((x) => x + 1);
+      setResult({ ...r, kind: "submit", at: Date.now(), text }); setRefresh((x) => x + 1); setReview(null);
       track("practice_submit", { problem: problem.id, verdict: r.verdict, attempt: fails.current + (r.verdict === "Accepted" ? 1 : 0) });
+      return { ...r, text };
     } catch (e) {
       if (e.status === 401) setSignIn(true);
       setResult({ verdict: "Judge Error", message: e.status === 429 ? (e.message || S.tooMany) : S.noReach, busy: e.status === 429, kind: "submit" });
     } finally { setBusy(false); }
+  };
+  // The interviewer, next to Run and Submit: reviews the latest Submit of this exact design, submitting it first if needed.
+  const [review, setReview] = useState(null);
+  const credits = useCredits(review);
+  useEffect(() => { setReview(null); }, [problem.slug]);
+  const askReview = async () => {
+    if (busy || review?.busy) return;
+    if (!account.user) { setSignIn(true); return; }
+    let id = result?.kind === "submit" && result.text === text ? result.submission_id : null;
+    if (!id) { const r = await submit(); id = r?.verdict !== "Judge Error" ? r?.submission_id : null; if (!id) return; }
+    setReview({ busy: true }); showResult();
+    try { setReview({ data: await api.reviewSubmission(id) }); }
+    catch (e) { if (e.status === 401) setSignIn(true); setReview({ err: reviewError(e) }); }
   };
   useEffect(() => { track("practice_open", { problem: problem.id, editor: mode }); }, []); // eslint-disable-line
   useEffect(() => {
@@ -193,11 +208,12 @@ function Workspace({ problem, list, account, narrow, t }) {
   const toggle = <span className="pr-toggle" role="group" aria-label={S.design}><button type="button" className={mode === "text" ? "on" : ""} aria-pressed={mode === "text"} onClick={() => setMode("text")}>{S.text}</button><button type="button" className={mode === "builder" ? "on" : ""} aria-pressed={mode === "builder"} onClick={() => setMode("builder")}>{S.form}</button></span>;
   const actions = <span className="pr-actions">
     <span className="pr-run-w">{coach === 2 && <span className="pb-coach pb-coach-run" role="note">{S.coach[2]} <button type="button" className="pb-link" onClick={nextCoach}>{S.coachNext}</button></span>}<button type="button" className="pr-run" disabled={busy} onClick={run} title="Ctrl + '">{S.run}</button></span>
-    <button type="button" className="pr-primary" disabled={busy} onClick={submit} title="Ctrl + Enter">{busy ? S.judging : S.submit}</button></span>;
+    <button type="button" className="pr-primary" disabled={busy} onClick={submit} title="Ctrl + Enter">{busy ? S.judging : S.submit}</button>
+    <AskButton className="pr-ask" busy={!!review?.busy} disabled={busy} onClick={askReview} credits={credits}/></span>;
   const consoleBox = <div className="pr-console">
     <div className="pr-tabs" role="tablist">{[["case", S.testcase], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={ctab === k} className={ctab === k ? "on" : ""} onClick={() => setCtab(k)}>{l}</button>)}</div>
     {ctab === "case" ? <Testcase problem={problem} test={caseTest} setTest={(x) => { setCaseTest(x); setDirty(true); }} pick={pick} setPick={(id) => setPick(id)}/>
-      : <Result result={result} busy={busy} showTip={showTip} onCard={result?.verdict === "Accepted" && lastGood.current ? () => shareCard({ problem, design: lastGood.current, result }) : null} onNext={next ? () => { location.hash = `practice/${next.slug}`; } : null} canShare={result?.kind === "submit" && !!result.submission_id} onShare={async (note) => { try { await api.share(result.submission_id, note); return true; } catch { return false; } }}/>}
+      : <Result result={result} busy={busy} review={review} credits={credits} showTip={showTip} onCard={result?.verdict === "Accepted" && lastGood.current ? () => shareCard({ problem, design: lastGood.current, result }) : null} onNext={next ? () => { location.hash = `practice/${next.slug}`; } : null} canShare={result?.kind === "submit" && !!result.submission_id} onShare={async (note) => { try { await api.share(result.submission_id, note); return true; } catch { return false; } }}/>}
   </div>;
   const left = <div className="pr-left">
     <div className="pr-tabs" role="tablist">{[["desc", S.description], ["ed", S.editorial], ["sol", S.solutions], ["subs", S.submissions]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={ltab === k} className={ltab === k ? "on" : ""} onClick={() => setLtab(k)}>{l}</button>)}</div>

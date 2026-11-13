@@ -1,9 +1,10 @@
-// "Ask the interviewer" (tech-katta-context/22-EVALUATOR-V3.md §14.3): under a Submit's result, one button that shows
-// what it costs and what is left; then the review card. The card is the same whether the interviewer wrote it or
+// "Ask the interviewer" (tech-katta-context/22-EVALUATOR-V3.md §14.3): a button next to Run and Submit; then the
+// review card. The card is the same whether the interviewer wrote it or
 // the report did (the floor, §12.5); a line says which, and why when it is the report's.
 import React, { useEffect, useState } from "react";
 import * as api from "./client.js";
 import { S } from "./strings.js";
+import "./review.css";
 
 const KIND = { problem: "pv-problem", risk: "pv-risk", strength: "pv-strength", note: "pv-note" };
 
@@ -22,27 +23,29 @@ export function ReviewCard({ data }) {
   </section>;
 }
 
-// submissionId: the stored Submit to review. The credit line comes from GET /me/credits and is refreshed by each review.
-export function AskInterviewer({ submissionId }) {
-  const [credits, setCredits] = useState(null), [state, setState] = useState("idle"), [data, setData] = useState(null), [err, setErr] = useState(null);
+// The interviewer's button sits with Run and Submit (practice/page.jsx, solve.jsx); its review shows in the result area.
+// review: null | {busy} | {data} | {err}. The credit line comes from GET /me/credits, refreshed by each review.
+export function useCredits(review) {
+  const [credits, setCredits] = useState(null);
   useEffect(() => { let live = true; api.aiCredits().then((c) => { if (live) setCredits(c); }, () => {}); return () => { live = false; }; }, []);
-  useEffect(() => { setState("idle"); setData(null); setErr(null); }, [submissionId]);
-  const ask = async () => {
-    setState("busy"); setErr(null);
-    try {
-      const d = await api.reviewSubmission(submissionId);
-      setData(d); setState("done");
-      if (d.credits) setCredits((c) => ({ ...(c || {}), ...d.credits }));
-    } catch (e) { setErr(e.status === 429 ? (e.message || S.tooMany) : S.reviewFailed); setState("idle"); }
-  };
-  const left = credits?.month?.left, on = credits?.enabled !== false;
-  if (state === "done" && data) return <ReviewCard data={data}/>;
+  useEffect(() => { if (review?.data?.credits) setCredits((c) => ({ ...(c || {}), ...review.data.credits })); }, [review]);
+  return credits;
+}
+export function AskButton({ className, busy, disabled, onClick, credits }) {
+  const on = credits?.enabled !== false, left = credits?.month?.left;
+  return <button type="button" className={className} disabled={disabled || busy} onClick={onClick}
+    title={Number.isFinite(left) ? S.reviewsLeft(left, credits.month.total) : S.askInterviewer}>
+    {busy ? S.reviewing : on ? S.askInterviewer : S.askReport}</button>;
+}
+// An error text for a failed review request.
+export const reviewError = (e) => e?.status === 401 ? S.signInToAsk : e?.status === 429 ? (e.message || S.tooMany) : S.reviewFailed;
+export function ReviewPanel({ review, credits }) {
+  if (!review) return null;
+  const left = credits?.month?.left;
   return <div className="pv-ask-box">
-    <button type="button" className="pr-primary pv-btn" disabled={state === "busy" || !submissionId} onClick={ask}>
-      {state === "busy" ? S.reviewing : on ? S.askInterviewer : S.askReport}
-    </button>
-    {on && Number.isFinite(left) && <span className="pc-muted pv-credits">{S.reviewsLeft(left, credits.month.total)}{credits.preview ? ` · ${S.preview}` : ""}</span>}
-    {state === "busy" && <p className="pc-muted" role="status">{S.reviewingLong}</p>}
-    {err && <p className="pv-err" role="alert">{err}</p>}
+    {review.busy ? <p className="pv-credits" role="status">{S.reviewingLong}</p>
+      : review.err ? <p className="pv-err" role="alert">{review.err}</p>
+      : <ReviewCard data={review.data}/>}
+    {credits?.enabled !== false && Number.isFinite(left) && <span className="pv-credits">{S.reviewsLeft(left, credits.month.total)}{credits.preview ? ` · ${S.preview}` : ""}</span>}
   </div>;
 }

@@ -2,10 +2,11 @@ import React,{useEffect,useState}from"react";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
 useEffect(()=>{if(v===n)return;let raf,t0;const step=t=>{t0??=t;const k=Math.min(1,(t-t0)/800);setV(Math.round(n*(1-(1-k)**3)));if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf)},[n]);// eslint-disable-line
-return v}import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js";import{Json,reqOf}from"./player.jsx";import{Findings,HowRead}from"./v2.jsx";
+return v}import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js";import{Json,reqOf}from"./player.jsx";import{Findings,HowRead}from"./v2.jsx";import{ReviewPanel}from"../practice/review.jsx";
 // ---- Results under the canvas ----
-export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,credits}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
+if(res.kind==="review")return <section className="sv-console" aria-live="polite" aria-label="The interviewer's review"><header className="sv-v"><div><b>The interviewer</b><small>{res.busy?"Reading your design and every test…":"On the design that is on the canvas now"}</small></div><span className="sv-vbtns"><button type="button" onClick={close} aria-label="Close the review">✕</button></span></header><div className="sv-review"><ReviewPanel review={res} credits={credits}/></div></section>;
 const{kind,j,g,sc,crash}=res;
 if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
 const acc=j.verdict==="accepted",err=j.verdict==="error";

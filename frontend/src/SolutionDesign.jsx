@@ -1,7 +1,7 @@
 // The Solution tab's design: the problem's reference design (GET /v1/articles/<slug>/solution), drawn
 // read-only the way the Lab draws it (components where the Lab puts them, arrows between them), with
-// what each part does and the tables each database holds, and a button that copies it onto the canvas
-// (solve.jsx puts it there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
+// what each part does and the tables each database holds, and a button that copies the whole solution: the design onto
+// the canvas and the model answer into Your answer (solve.jsx puts both there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
 // submission of the copied design unchanged isn't counted as solved (judge.js sameDesign). `note`
 // (practice.referenceNote) says where the Lab's version differs from the worked answer's full-size one.
 import{MUTED}from"./theme/palette.js";import{useTheme}from"./theme/mode.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
@@ -39,10 +39,10 @@ const draw=(min,id)=><svg viewBox={`${x0} ${y0} ${W} ${H}`} style={{width:"100%"
 </svg>;
 return <section className="sd" aria-labelledby="sd-h">
 <header className="sd-head"><div><label>SOLUTION DESIGN</label><h2 id="sd-h">A design that passes every test</h2>
-<p>It's one way to solve it, not the only one: any design that passes the tests is accepted. Copy it onto your canvas to run it, watch the API calls travel through it, and change it.</p>{note&&<p className="sd-note">{note}</p>}</div></header>
-<div className="sd-acts">{copied?<p className="sd-done" role="status">✓ Copied to your canvas.{undo&&<> <button type="button" className="sv-linkbtn" onClick={undo} disabled={busy}>Undo: put my design back</button></>}</p>
+<p>It's one way to solve it, not the only one: any design that passes the tests is accepted. Copy it to run it, watch the API calls travel through it, and change it. Copying also fills in Your answer: the requirements, numbers, estimates, API and key decisions.</p>{note&&<p className="sd-note">{note}</p>}</div></header>
+<div className="sd-acts">{copied?<p className="sd-done" role="status">✓ Copied: the design is on your canvas and the full answer is in Your answer.{undo&&<> <button type="button" className="sv-linkbtn" onClick={undo} disabled={busy}>Undo: put mine back</button></>}</p>
 :<button type="button" className="sd-copy" onClick={copy} disabled={busy||!lab}>Copy to my canvas</button>}
-<small>{copied?"A copied design that you submit unchanged isn't counted as solved.":"It replaces the design on your canvas; you can undo it."}</small></div>
+<small>{copied?"A copied design that you submit unchanged isn't counted as solved.":"It replaces your design and your answer; you can undo it."}</small></div>
 <div className="sd-fig" ref={box} tabIndex={0} role="img" aria-label={`The solution design: ${parts.map(p=>p.name).join(", ")}`}>{draw(Math.min(W,Math.round(W*.6)),"sd-a1")}</div>
 <div className="sd-under">{wide&&<p className="sd-swipe">Scroll the diagram sideways to see all of it.</p>}<button type="button" className="sv-linkbtn" onClick={()=>dlg.current?.showModal?.()}>⤢ Full size</button></div>
 <dialog ref={dlg} className="sd-dlg" aria-label="The solution design, full size" onClick={e=>{if(e.target===dlg.current)dlg.current.close()}}><div className="sd-dlg-bar"><b>Solution design</b><button type="button" onClick={()=>dlg.current.close()} aria-label="Close" autoFocus>✕</button></div><div className="sd-fig sd-fig-big">{draw(Math.round(W*.85),"sd-a2")}</div></dialog>

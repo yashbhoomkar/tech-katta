@@ -8,6 +8,8 @@
 //   POST   /v1/auth/signout-all                           — end every session of this account
 //   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
+//   POST /v1/me/submissions/review {slug, design}         — the interviewer's review of a canvas design (Interview
+//                                                           Questions), judged here; tech-katta-context/22 §12
 //   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
 //   GET    /v1/admin/summary?days=7   analytics summary (admin accounts only; also readable from
 //                                      ANALYTICS_ORIGIN, the dashboard at analytics.katta.cc)
@@ -18,6 +20,8 @@
 //   GET    /v1/problems/stats per problem: submissions, accepted, solvers (public, cached a minute)
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
+import { canvasEvidence, canvasProblem } from '../../../frontend/src/v3/adapters/eval.js';
+import { runReview } from '../ai/jobs/review.js';
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
 import { cleanDesign } from '../../../frontend/src/lab/store.js';
 import { judge, gradeAnswer, score, sameDesign } from '../../../frontend/src/judge/judge.js';
@@ -75,12 +79,14 @@ export function cleanAnswer(a) {
 }
 
 // Every path accountRoutes answers; the server sends exactly these here (and nothing else).
-export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
+export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/lab', '/v1/me/submissions', '/v1/me/submissions/review', '/v1/problems/stats']);
 
+// A canvas design's evidence pack built in place, for callers without a pool (judge-worker.js task "evidence").
+const evidenceInline = async ({ design, lab, practice, article }) => ({ judged: canvasEvidence(judge(design, lab, practice), article) });
 // A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
 const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.v === 2 ? { ...practice.reference, v: 2 } : practice.reference, lab, 'reference')) });
 
-export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, judgeDesign = judgeInline, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
+export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, articleFor = () => null, judgeDesign = judgeInline, judgeEvidence = evidenceInline, ai = null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
   const judging = new Set(); // accounts with a design being judged now
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
@@ -209,6 +215,27 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const doc = { userId: me.id, slug, at: new Date(), verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, cost: j.metrics ? Math.round(j.metrics.avgMonthly) : null, p99: j.metrics ? Math.round(j.metrics.p99) : null, hints, ...(practice.v === 2 ? { engine: 2 } : {}), ...(copied ? { copied: true } : {}) };
         const stats = await accounts.addSubmission(doc);
         return send(request, response, 200, { verdict: j.verdict, passed: j.passed, total: j.total, score: sc.total, ...(copied ? { copied: true } : {}), ...stats });
+      }
+      // The interviewer on a canvas design (Interview Questions): judged here with every test, turned into the same
+      // evidence pack as Practice (v3/adapters/eval.js), then the same review job, credits and cache (ai/jobs/review.js).
+      if (pathname === '/v1/me/submissions/review' && method === 'POST') {
+        if (limited(request, 'review', 5, 60_000)) return send(request, response, 429, { error: 'too_many_requests', message: 'Too many reviews at once. Wait a minute.' });
+        const b = await readJson(request, 256 * 1024);
+        const slug = typeof b?.slug === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(b.slug) ? b.slug : null;
+        const practice = slug && practiceFor(slug), article = slug && articleFor(slug);
+        if (!practice || !article) return send(request, response, 404, { error: 'no_such_problem' });
+        const lab = labCatalogue();
+        const design = cleanDesign(practice.v === 2 && b.design && typeof b.design === 'object' ? { ...b.design, v: 2 } : b.design, lab, 'submitted');
+        if (!design) return send(request, response, 400, { error: 'bad_design' });
+        const account = String(me.id);
+        if (judging.has(account)) return send(request, response, 429, { error: 'judge_in_progress' });
+        const { wrong, ...problem } = practice;
+        judging.add(account);
+        let pack;
+        try { pack = (await judgeEvidence({ design, lab, practice: problem, article: { slug: article.slug } })).judged; } finally { judging.delete(account); }
+        const off = { config: { enabled: false, monthly: 0, daily: 0 } }, noStore = { credits: async () => ({ month: { total: 0, used: 0, left: 0 }, day: { total: 0, used: 0, left: 0 } }) };
+        const out = ai?.store ? await runReview({ pack, problem: canvasProblem(article), userId: me.id, ai, store: ai.store, log }) : await runReview({ pack, problem: canvasProblem(article), userId: me.id, ai: off, store: noStore, log });
+        return send(request, response, 200, { slug, verdict: pack.verdict.word, passed: pack.verdict.passed, total: pack.verdict.total, ...out });
       }
       if (pathname === '/v1/me/lab' && method === 'GET') return send(request, response, 200, storable(mergeLab(await accounts.getLab(me.id), {}, labCatalogue())));
       if (pathname === '/v1/me/lab' && method === 'POST') {
