@@ -1,7 +1,7 @@
 // The problem page (spec section 11): one screen, a loop under a minute. Left: Description, Editorial, Solutions,
 // Submissions. Right: the design (Builder or Text, over the same text), the diagram drawn from it, the console.
 // Phones (< 900 px): three tabs at the bottom, Problem · Design · Result.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { compile } from "../tkd/compile.js";
 import { judgeAll } from "../tkd/judge.js";
 import { costOf } from "../tkd/verdict.js";
@@ -15,6 +15,7 @@ import { Md } from "./md.jsx";
 import * as api from "./client.js";
 import TextEditor from "./editor.jsx";
 import Builder, { Sheet } from "./form.jsx";
+import { useDrag, settleMs } from "../theme/gesture.js";
 import Diagram from "./diagram.jsx";
 import { Testcase, Result } from "./console.jsx";
 import * as B from "./builder.js";
@@ -132,6 +133,19 @@ function Workspace({ problem, list, account, narrow, t }) {
   const [coach, setCoach] = useState(() => (lsGet("tk-practice-coach") ? -1 : 0));
   const nextCoach = () => setCoach((c) => { const n = c + 1; if (n > 2) { lsSet("tk-practice-coach", "1"); return -1; } return n; });
   const showResult = () => { setCtab("result"); if (narrow) setMtab("result"); };
+  // Phones: the three panes are pages of a notebook (tech-katta-context 24, S1). Swipe sideways to the next or previous
+  // one; the pane follows the finger and the tab line under the tabs slides with it. Each pane keeps its own scroll
+  // position. Tapping a tab does the same. A drag never starts on a stepper or the diagram (they have their own).
+  const PANES = ["problem", "design", "result"], ix = PANES.indexOf(mtab), [dir, setDir] = useState(0);
+  const pbody = useRef(null), ptabs = useRef(null), at = useRef({}), cur = useRef(mtab);
+  const goPane = (k) => { if (!PANES.includes(k) || k === mtab) return; setDir(PANES.indexOf(k) > ix ? 1 : -1); setMtab(k); };
+  useEffect(() => { if (!narrow) return; const f = () => { at.current[cur.current] = scrollY; }; addEventListener("scroll", f, { passive: true }); return () => removeEventListener("scroll", f); }, [narrow]);
+  useLayoutEffect(() => { if (!narrow || cur.current === mtab) return; cur.current = mtab; scrollTo(0, at.current[mtab] || 0); }, [mtab, narrow]);
+  const follow = (d, ms) => { const b = pbody.current, n = ptabs.current; if (!b) return; b.style.transition = ms ? `transform ${ms}ms var(--ease)` : "none"; b.style.transform = d ? `translateX(${d}px)` : "";
+    if (n) { n.style.setProperty("--pt", ms ? "" : "none"); n.style.setProperty("--p", d ? String(-d / b.clientWidth) : "0"); } };
+  useDrag(pbody, { on: narrow, axis: "x", min: ix >= PANES.length - 1 ? 0 : -Infinity, max: ix <= 0 ? 0 : Infinity, ignore: ".pb-step,.pr-diagram",
+    onMove: (d) => follow(d), onEnd: (go, d) => { if (go) { follow(0); goPane(PANES[ix - go]); } else follow(0, settleMs(d, pbody.current?.clientWidth || 360)); } });
+  const tabKey = (e) => { const k = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (!k) return; e.preventDefault(); const n = PANES[Math.max(0, Math.min(2, ix + k))]; goPane(n); requestAnimationFrame(() => ptabs.current?.querySelector(".on")?.focus()); };
 
   const run = () => {
     const r = judgeAll(text, problem, dirty ? { tests: [caseTest] } : {});
@@ -202,9 +216,9 @@ function Workspace({ problem, list, account, narrow, t }) {
 
   if (narrow) return <div className="pr pr-phone">
     {top}
-    <div className="pr-phone-body">{mtab === "problem" ? left : mtab === "design" ? <div className="pr-pdesign">{designHead}{editor}</div> : consoleBox}</div>
+    <div className="pr-phone-body" ref={pbody}><div key={mtab} className={"pr-pane" + (dir > 0 ? " pr-in-r" : dir < 0 ? " pr-in-l" : "")}>{mtab === "problem" ? left : mtab === "design" ? <div className="pr-pdesign">{designHead}{editor}</div> : consoleBox}</div></div>
     {mtab !== "problem" && <div className="pr-phone-act">{actions}</div>}
-    <nav className="pr-phone-tabs" role="tablist" aria-label="Problem page">{[["problem", "Problem"], ["design", S.design], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={mtab === k} className={mtab === k ? "on" : ""} onClick={() => setMtab(k)}>{l}</button>)}</nav>
+    <nav className="pr-phone-tabs" ref={ptabs} role="tablist" aria-label="Problem page" onKeyDown={tabKey} style={{ "--i": ix }}><i className="pr-phone-ind" aria-hidden="true"/>{[["problem", "Problem"], ["design", S.design], ["result", S.result]].map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={mtab === k} tabIndex={mtab === k ? 0 : -1} className={mtab === k ? "on" : ""} onClick={() => goPane(k)}>{l}</button>)}</nav>
     {dialogs}
   </div>;
   return <div className="pr" style={{ "--pr-left": `${layout.left * 100}%` }}>

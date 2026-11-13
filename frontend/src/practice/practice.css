@@ -225,3 +225,14 @@
 .pl-table th,.pl-table td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left}.pl-table th{font:600 12px var(--font);color:var(--muted);background:var(--surface-2)}
 .pl-table a{color:var(--ink);font-weight:600}.pl-table a:hover{color:var(--accent)}.pl-topics{color:var(--muted);font-size:13px}.pl-lock{margin-left:6px}
 @media(max-width:680px){.pl-table thead{display:none}.pl-table tr{display:grid;grid-template-columns:24px 28px 1fr;grid-template-areas:"s n t" ". . d";padding:8px}.pl-table td{border:0;padding:2px 4px}.pl-table td:nth-child(5),.pl-table td:nth-child(6){display:none}.pl-table tr{border-bottom:1px solid var(--line)}.pl-search{min-width:0;width:100%}}
+
+/* Phones: the panes follow a sideways swipe (page.jsx, tech-katta-context 24 S1). touch-action keeps vertical scrolling
+   native on the pane and on the boxes inside it that are scroll containers; sideways scrollers inside (tables, the
+   chain of a request) keep their own pan. The tab line is one marker that slides with the finger and between tabs. */
+.pr-phone-body,.pr-phone .pr-console,.pr-phone .pr-editor,.pr-phone .pr-left-body,.pr-phone .pd{touch-action:pan-y}
+.pr-phone-tabs{position:fixed}.pr-phone-tabs button.on{border-top-color:transparent}
+.pr-phone-ind{position:absolute;top:0;left:0;width:calc(100% / 3);height:3px;background:var(--brand-strong);border-radius:0 0 2px 2px;transform:translateX(calc((var(--i,0) + var(--p,0)) * 100%));transition:var(--pt,transform var(--dur) var(--ease));pointer-events:none}
+@keyframes pr-in-r{from{opacity:0;transform:translateX(28px)}}
+@keyframes pr-in-l{from{opacity:0;transform:translateX(-28px)}}
+@media(prefers-reduced-motion:no-preference){.pr-in-r{animation:pr-in-r .22s var(--ease) backwards}.pr-in-l{animation:pr-in-l .22s var(--ease) backwards}}
+@media(prefers-reduced-motion:reduce){.pr-phone-ind{transition:none}}
