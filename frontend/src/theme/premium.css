@@ -1,0 +1,38 @@
+/* The premium layer (tech-katta-context 30, parts B to D): depth, pointer feedback and arrivals for the whole site,
+   on top of every page stylesheet. Selectors start with :root:not(#_) (the weight of one id) so they win over the older layered rules in
+   the page stylesheets, which load after this file. Remove its import in theme/index.js to go back to the look of
+   #342 (fonts aside). Only transform, opacity, filter and shadows change; all motion sits inside
+   prefers-reduced-motion:no-preference. */
+
+/* 1. Depth: every card rests on the soft card shadow and lifts onto a deeper, layered one */
+:root:not(#_) :is(a.card,a.h-card,a.has-thumb,button.tc,a.qt-start,.inside-grid a,.pb-group li>a){transition:transform var(--dur) var(--ease-spring),box-shadow var(--dur) var(--ease),border-color var(--dur-fast) var(--ease),background-color var(--dur-fast) var(--ease)}
+:root:not(#_) :is(a.card,a.h-card,a.has-thumb,button.tc,.inside-grid a):is(:hover,:focus-visible){box-shadow:var(--lift-shadow);border-color:var(--line)}
+/* main buttons: a lit top edge and a warm glow under them */
+:root:not(#_) :is(.btn.primary,.r-btn.primary,.sv-submit,.pr-primary,.h-cont .h-go,.d-start a.btn){transition:transform var(--dur) var(--ease-spring),box-shadow var(--dur) var(--ease),background-color var(--dur-fast) var(--ease)}
+:root:not(#_) :is(.btn.primary,.r-btn.primary,.sv-submit,.pr-primary):hover{box-shadow:var(--glow-brand)}
+
+@media(prefers-reduced-motion:no-preference){
+  /* 2. Pointer feedback: cards rise 3 px under the pointer and press down on click; buttons too, a little */
+  :root:not(#_) :is(a.card,a.h-card,a.has-thumb,button.tc,.inside-grid a):hover{transform:translateY(-3px)}
+  :root:not(#_) :is(a.card,a.h-card,a.has-thumb,button.tc,.inside-grid a):active{transform:translateY(-1px) scale(.995);transition-duration:var(--dur-fast)}
+  :root:not(#_) :is(.btn,.r-btn,.sv-run,.sv-submit,.sv-ask,.pr-run,.pr-primary,.pr-ask,.pb-btn,.d-tour,.theme-btn):active{transform:scale(.97);transition:transform var(--dur-fast) var(--ease)}
+  :root:not(#_) :is(.btn.primary,.r-btn.primary,.sv-submit,.pr-primary):hover{transform:translateY(-1px)}
+  /* the thumbnail inside a card drifts up a touch while the card lifts */
+  :root:not(#_) :is(a.card,a.h-card,a.has-thumb) :is(svg,img){transition:transform var(--dur-enter) var(--ease)}
+  :root:not(#_) :is(a.card,a.h-card,a.has-thumb):hover :is(svg,img){transform:scale(1.02)}
+
+  /* 3. The landing headline comes into focus as it rises (blur to sharp); the italic word follows a beat later */
+  @keyframes tk-unmask{from{transform:translateY(.32em);opacity:0;filter:blur(8px)}}
+  :root:not(#_) .hero h1{animation:tk-unmask var(--dur-slow) var(--ease) .05s both}
+  :root:not(#_) .hero h1 .tk-mark{display:inline-block;animation:tk-unmask var(--dur-slow) var(--ease) .28s both}
+  :root:not(#_) .hero>div>:not(h1){animation-duration:var(--dur-enter)}
+  /* 4. Section headings and lists further down the landing and the dashboard arrive as they come into view
+     (scroll-driven; browsers without it just show them) */
+  @supports (animation-timeline:view()){
+    :root:not(#_) :is(.inside>h2,.inside-desc,.numbers,.lp-eyebrow,.d-group>h2,.d-group>p){animation:tk-rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
+    :root:not(#_) :is(.d-list,.cards) :is(li,.card):nth-child(n+9){animation:tk-rise linear both;animation-timeline:view();animation-range:entry 0% entry 50%}
+  }
+  /* 5. Links in the header and footer grow an underline from the left */
+  :root:not(#_) :is(.nav a,.foot nav a){background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size var(--dur) var(--ease),color var(--dur-fast) var(--ease)}
+  :root:not(#_) :is(.nav a,.foot nav a):hover{background-size:100% 1px}
+}
