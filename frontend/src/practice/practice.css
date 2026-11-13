@@ -260,3 +260,6 @@
 .pd-key span{display:inline-flex;align-items:center;gap:6px}
 .pd-key i{display:inline-block;width:18px;height:0;border-top:2px solid}
 .pd-key i.pd-read{border-color:var(--ink-3)}.pd-key i.pd-write{border-color:var(--accent)}.pd-key i.pd-both{height:4px;border:0;background:linear-gradient(var(--ink) 0 30%,var(--accent) 30% 70%,var(--ink) 70%)}
+/* A state with its scene (theme/Scene.jsx): the drawing above the sentence, left-aligned with it */
+.pr-state{display:grid;justify-items:start;gap:4px;padding:8px 0}.pr-state .scene{margin:0 0 2px}
+.pr-missing .scene{margin:0 0 10px}

@@ -1,0 +1,9 @@
+/* Scenes for empty, error and busy states (Scene.jsx). Tokens only, so they follow the theme. */
+.scene{display:block;max-width:100%;height:auto;margin:0 auto 4px}
+.scene .sc-box{fill:var(--bg);stroke:var(--line-strong);stroke-width:1.5}
+.scene .sc-you{fill:var(--brand-tint);stroke:var(--brand-line)}
+.scene .sc-dash{stroke-dasharray:4 4}
+.scene .sc-line{stroke:var(--line-strong);stroke-width:1.5}
+.scene .sc-t{font:600 11px var(--mono);fill:var(--muted);letter-spacing:.04em}
+.scene .sc-dot{fill:var(--accent);stroke:var(--bg);stroke-width:2}
+.scene .sc-x path{stroke:var(--danger);stroke-width:2.5;stroke-linecap:round;fill:none}

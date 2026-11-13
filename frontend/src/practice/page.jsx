@@ -16,6 +16,7 @@ import * as api from "./client.js";
 import TextEditor from "./editor.jsx";
 import Builder, { Sheet } from "./form.jsx";
 import { useDrag, settleMs } from "../theme/gesture.js";
+import Scene from "../theme/Scene.jsx";
 import Diagram from "./diagram.jsx";
 import { Testcase, Result } from "./console.jsx";
 import * as B from "./builder.js";
@@ -60,7 +61,7 @@ function Editorial({ problem, signedIn, onCopy }) {
   const [d, setD] = useState(null), [err, setErr] = useState(null);
   useEffect(() => { if (signedIn) api.editorial(problem.slug).then(setD, setErr); }, [signedIn, problem.slug]);
   if (!signedIn) return <p className="pr-locked">{S.editorialLocked}</p>;
-  if (err) return <p className="pr-locked">{S.noReach}</p>;
+  if (err) return <div className="pr-state"><Scene kind="offline"/><p className="pr-locked">{S.noReach}</p></div>;
   if (!d) return <Loading/>;
   return <div className="pr-ed"><Md text={d.editorial}/><pre className="pr-code">{d.reference}</pre><button type="button" className="pb-btn" onClick={() => onCopy(d.reference)}>{S.copyReference}</button></div>;
 }
@@ -68,7 +69,7 @@ function Solutions({ problem, signedIn, onCopy }) {
   const [sort, setSort] = useState("cost"), [d, setD] = useState(null), [err, setErr] = useState(null);
   useEffect(() => { if (!signedIn) return; setD(null); setErr(null); api.solutions(problem.slug, sort).then(setD, setErr); }, [signedIn, problem.slug, sort]);
   if (!signedIn) return <p className="pr-locked">{S.signInFirst}</p>;
-  if (err) return <p className="pr-locked">{err.status === 403 ? S.solveFirst : S.noReach}</p>;
+  if (err) return err.status === 403 ? <p className="pr-locked">{S.solveFirst}</p> : <div className="pr-state"><Scene kind="offline"/><p className="pr-locked">{S.noReach}</p></div>;
   if (!d) return <Loading/>;
   return <div><p className="pc-row"><button type="button" className={"pb-chip" + (sort === "cost" ? " on" : "")} onClick={() => setSort("cost")}>{S.sortCost}</button><button type="button" className={"pb-chip" + (sort === "speed" ? " on" : "")} onClick={() => setSort("speed")}>{S.sortSpeed}</button></p>
     {d.solutions.length ? d.solutions.map((s, i) => <div key={i} className="pr-sol"><p><b>{inrExact(s.cost_inr)}/month</b>{Number.isFinite(s.p99_ms) ? ` · p99 ${s.p99_ms} ms` : ""}{s.count > 1 ? ` · ${S.usedBy(s.count)}` : ""}</p>{s.note && <p className="pr-note">{s.note}</p>}<pre className="pr-code">{s.source}</pre><button type="button" className="pb-link" onClick={() => onCopy(s.source)}>{S.copyReference}</button></div>) : <p className="pr-locked">{S.noSubmissions}</p>}</div>;
@@ -78,7 +79,7 @@ function Submissions({ problem, signedIn, refresh, onRestore }) {
   useEffect(() => { if (signedIn) api.mySubmissions(problem.slug).then(setD, () => setD({ submissions: [] })); }, [signedIn, problem.slug, refresh]);
   if (!signedIn) return <p className="pr-locked">{S.signInFirst}</p>;
   if (!d) return <Loading/>;
-  if (!d.submissions.length) return <p className="pr-locked">{S.noSubmissions}</p>;
+  if (!d.submissions.length) return <div className="pr-state"><Scene kind="empty"/><p className="pr-locked">{S.noSubmissions}</p></div>;
   return <div>{open && <div className="pr-sub-open"><pre className="pr-code">{open.source}</pre>{open.judge_version !== problem.judge_version && <p className="pc-muted">{S.older}</p>}<button type="button" className="pb-btn" onClick={() => onRestore(open.source)}>{S.restore}</button> <button type="button" className="pb-link" onClick={() => setOpen(null)}>{S.cancel}</button></div>}
     <div className="pr-table-w"><table className="pr-table pr-subs"><thead><tr><th>{S.time}</th><th>{S.verdict}</th><th>{S.tests}</th><th>Cost</th><th>{S.p99}</th></tr></thead>
       <tbody>{d.submissions.map((s) => <tr key={s.id} tabIndex={0} onClick={() => api.oneSubmission(s.id).then(setOpen, () => {})} onKeyDown={(e) => { if (e.key === "Enter") api.oneSubmission(s.id).then(setOpen, () => {}); }}>
@@ -98,7 +99,7 @@ export default function ProblemPage({ slug, list, t }) {
   const [problem, setProblem] = useState(null), [loadErr, setLoadErr] = useState(null);
   const account = useAccount(), narrow = useNarrow();
   useEffect(() => { setProblem(null); setLoadErr(null); api.getProblem(slug).then(setProblem, setLoadErr); }, [slug]);
-  if (loadErr) return <div className="pr-missing"><p>{loadErr.status === 404 ? S.notFound : S.noReach}</p><a href="#practice">{S.backToList}</a></div>;
+  if (loadErr) return <div className="pr-missing"><Scene kind={loadErr.status === 404 ? "missing" : "offline"}/><p>{loadErr.status === 404 ? S.notFound : S.noReach}</p><a href="#practice">{S.backToList}</a></div>;
   if (!problem) return <Loading label={S.loading}/>;
   return <Workspace key={problem.id} problem={problem} list={list} account={account} narrow={narrow} t={t}/>;
 }
@@ -163,7 +164,7 @@ function Workspace({ problem, list, account, narrow, t }) {
       track("practice_submit", { problem: problem.id, verdict: r.verdict, attempt: fails.current + (r.verdict === "Accepted" ? 1 : 0) });
     } catch (e) {
       if (e.status === 401) setSignIn(true);
-      setResult({ verdict: "Judge Error", message: e.status === 429 ? (e.message || S.tooMany) : S.noReach, kind: "submit" });
+      setResult({ verdict: "Judge Error", message: e.status === 429 ? (e.message || S.tooMany) : S.noReach, busy: e.status === 429, kind: "submit" });
     } finally { setBusy(false); }
   };
   useEffect(() => { track("practice_open", { problem: problem.id, editor: mode }); }, []); // eslint-disable-line
