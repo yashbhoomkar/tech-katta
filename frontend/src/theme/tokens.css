@@ -9,34 +9,34 @@
 :root{
   color-scheme:light;
   /* Surfaces */
-  --page:#faf7f0;         /* the page background (paper) */
+  --page:#f5f3f1;         /* the page background (paper) */
   --bg:#fff;              /* cards, inputs, figure boxes */
-  --surface:#f3efe5;      /* wells, quiet panels, inline code */
-  --surface-2:#fcfaf5;    /* sidebar, table heads, very faint panels */
-  --hover:#efeadd;        /* hover on rows and quiet buttons */
-  --inverse:#1d1b16;      /* the one dark card per page (practise call-out), selected chips */
-  --on-inverse:#faf7f0;
+  --surface:#f8f7f6;      /* wells, quiet panels, inline code */
+  --surface-2:#faf9f8;    /* sidebar, table heads, very faint panels */
+  --hover:#efedea;        /* hover on rows and quiet buttons */
+  --inverse:#0d0d0d;      /* the one dark card per page (practise call-out), selected chips */
+  --on-inverse:#fff;
   /* Text */
-  --ink:#1d1b16;
-  --ink-2:#3a372f;
-  --ink-3:#4d493f;
-  --muted:#625c4f;
-  --muted-2:#6b6557;
-  --faint:#736d5d;
-  --disabled:#cdc7b6;
+  --ink:#0d0d0d;
+  --ink-2:#2e2e2e;
+  --ink-3:#454545;
+  --muted:#666;
+  --muted-2:#6b6b6b;
+  --faint:#6b6b6b;
+  --disabled:#d6d6d6;
   /* Lines */
-  --line-strong:#b9b2a0;
-  --line:#e6e0d1;
-  --line-soft:#ddd6c4;
-  --grid:#f0ebde;
+  --line-strong:#c4c4c4;
+  --line:#e4e4e4;
+  --line-soft:#dedede;
+  --grid:#eee;
   /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
   --brand:#ffc233;
   --brand-strong:#f2ac00; /* hover on the main button, active marker lines */
   --brand-edge:#d79a00;   /* border of the main button */
   --brand-ink:#6e4a00;    /* brand-coloured text on light tints */
-  --brand-line:#f0d388;   /* border of brand-tinted boxes */
-  --brand-tint:#fff3cf;   /* brand-tinted boxes, active sidebar row */
-  --on-brand:#1d1b16;
+  --brand-line:#e4e4e4;   /* border of brand-tinted boxes */
+  --brand-tint:#f1efec;   /* brand-tinted boxes, active sidebar row */
+  --on-brand:#0d0d0d;
   --mark:#ffd866;         /* the highlighter stroke under a headline word */
   /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
@@ -44,9 +44,9 @@
   --accent-strong:#754a00;
   --accent-mid:#e9b949;
   --accent-line:#f0d388;
-  --accent-soft:#ffe08a;
-  --accent-tint-2:#ffedb8;
-  --accent-tint:#fff6dc;
+  --accent-soft:#ece9e3;
+  --accent-tint-2:#f0eeea;
+  --accent-tint:#f7f6f4;
   --on-accent:#fff;
   /* Status */
   --danger:#b3261e;
@@ -70,9 +70,9 @@
   --cat-teal:#0e7490;
   --cat-pink:#be185d;
   /* The same colours as r g b triples, for see-through shadows and backdrops */
-  --ink-rgb:29 27 22;
+  --ink-rgb:13 13 13;
   --bg-rgb:255 255 255;
-  --page-rgb:250 247 240;
+  --page-rgb:245 243 241;
   --accent-rgb:148 96 10;
   /* Shadows and backdrops */
   --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
@@ -91,6 +91,7 @@
   --r-lg:14px;
   --r-xl:18px;
   --r-full:999px;
+  --r-btn:999px;          /* buttons are pills (spec 25 §6, Brilliant-inspired) */
   /* Motion: every transition uses these, and reduced motion sets them to 0 (theme/base.css) */
   --dur-fast:.12s;
   --dur:.2s;
@@ -100,39 +101,39 @@
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
 :root[data-theme=dark]{
   color-scheme:dark;
-  --page:#15140f;
-  --bg:#1e1c16;
-  --surface:#28261e;
-  --surface-2:#191812;
-  --hover:#2e2b22;
-  --inverse:#f4f1e8;
-  --on-inverse:#1d1b16;
-  --ink:#f4f1e8;
-  --ink-2:#dbd7ca;
-  --ink-3:#c8c3b4;
-  --muted:#aca695;
-  --muted-2:#9f9988;
-  --faint:#8d8777;
-  --disabled:#504c40;
-  --line-strong:#5e594a;
-  --line:#322f26;
-  --line-soft:#3d3a2f;
-  --grid:#22201a;
+  --page:#121212;
+  --bg:#1b1b1b;
+  --surface:#222;
+  --surface-2:#161616;
+  --hover:#272727;
+  --inverse:#f5f5f5;
+  --on-inverse:#0d0d0d;
+  --ink:#f5f5f5;
+  --ink-2:#d9d9d9;
+  --ink-3:#c6c6c6;
+  --muted:#a3a3a3;
+  --muted-2:#999;
+  --faint:#8c8c8c;
+  --disabled:#3a3a3a;
+  --line-strong:#4a4a4a;
+  --line:#2b2b2b;
+  --line-soft:#333;
+  --grid:#1c1c1c;
   --brand:#ffc233;
   --brand-strong:#ffd466;
   --brand-edge:#b88400;
   --brand-ink:#ffd87a;
-  --brand-line:#5f4813;
-  --brand-tint:#30260f;
-  --on-brand:#1d1b16;
+  --brand-line:#3a3a3a;
+  --brand-tint:#262626;
+  --on-brand:#0d0d0d;
   --mark:#7d5c00;
   --accent:#ffc233;
   --accent-strong:#ffd466;
   --accent-mid:#a87a10;
   --accent-line:#5f4813;
-  --accent-soft:#4a3a12;
-  --accent-tint-2:#3a2e10;
-  --accent-tint:#2b230f;
+  --accent-soft:#2c2c2c;
+  --accent-tint-2:#262626;
+  --accent-tint:#1e1e1e;
   --on-accent:#1d1b16;
   --danger:#ff8a80;
   --red:#ff7b72;
@@ -154,8 +155,8 @@
   --cat-teal:#22b8cf;
   --cat-pink:#f472b6;
   --ink-rgb:0 0 0;
-  --bg-rgb:30 28 22;
-  --page-rgb:21 20 15;
+  --bg-rgb:27 27 27;
+  --page-rgb:18 18 18;
   --accent-rgb:255 194 51;
   --shadow-1:0 1px 2px rgb(0 0 0 / .4);
   --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);

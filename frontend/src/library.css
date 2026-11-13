@@ -11,7 +11,7 @@
 .meta{font:600 10px var(--mono);letter-spacing:.1em;color:var(--faint)}
 .meta span:first-child{color:var(--brand-ink)}
 .mini{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2);margin-bottom:18px}
-.card h2{font:600 23px/1.2 var(--font-display);letter-spacing:-.01em;margin:0 0 8px}
+.card h2{font:500 23px/1.2 var(--font-display);letter-spacing:-.01em;margin:0 0 8px}
 .card>p{font-size:14.5px;line-height:1.55;color:var(--muted)}
 .card-foot{border-top:1px solid var(--line);min-height:48px;font:500 10px var(--mono);letter-spacing:.08em;color:var(--faint)}
 .card-go{font:600 13px var(--font);letter-spacing:0;color:var(--ink)}

@@ -2,4 +2,4 @@
 
 /* ===== Katta Paper skin ===== */
 .st i{border-radius:2px;background:var(--brand)}
-.st-err button{height:44px;padding:0 20px;border:1px solid var(--brand-edge);border-radius:var(--r-md);background:var(--brand);color:var(--on-brand);font:600 15px var(--font)}
+.st-err button{height:44px;padding:0 20px;border:1px solid var(--brand-edge);border-radius:var(--r-btn);background:var(--brand);color:var(--on-brand);font:600 15px var(--font)}
