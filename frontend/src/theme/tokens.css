@@ -4,50 +4,50 @@
    Dark mode: the same names with dark values, below. It follows the device's setting unless the visitor picked
    one with the theme button (<html data-theme="light|dark">, set before the page draws by public/theme-boot.js; theme/mode.js keeps it up to date).
    Rules for colour names: name the role, not the hue (--brand, not --yellow), so a new brand colour still reads right.
-   The look ("Stage", spec 26): a soft cool-grey page with white cards that float on it, near-black ink and black pill buttons,
-   one indigo accent for links, focus and figure lines; the landing hero and the dashboard sidebar are dark in both themes
+   The colours ("Katta Paper", back by the owner's choice on 2026-11-13, spec 28): warm white paper, white cards that float on it,
+   ink text, marigold for the main buttons and highlights, ochre (marigold in dark) for links, focus and figure lines; the layout is Stage (spec 26): the landing hero and the dashboard sidebar are dark in both themes
    (class .on-dark: the dark values below, scoped to that element). */
 :root{
   color-scheme:light;
   /* Surfaces */
-  --page:#eef0f3;         /* the page background (paper) */
+  --page:#faf7f0;         /* the page background (paper) */
   --bg:#fff;              /* cards, inputs, figure boxes */
-  --surface:#f4f5f7;      /* wells, quiet panels, inline code */
-  --surface-2:#f8f9fa;    /* sidebar, table heads, very faint panels */
-  --hover:#e9ebef;        /* hover on rows and quiet buttons */
-  --inverse:#09090b;      /* the one dark card per page (practise call-out), selected chips */
-  --on-inverse:#fafafa;
+  --surface:#f3efe5;      /* wells, quiet panels, inline code */
+  --surface-2:#fcfaf5;    /* sidebar, table heads, very faint panels */
+  --hover:#efeadd;        /* hover on rows and quiet buttons */
+  --inverse:#1d1b16;      /* the one dark card per page (practise call-out), selected chips */
+  --on-inverse:#faf7f0;
   /* Text */
-  --ink:#09090b;
-  --ink-2:#27272a;
-  --ink-3:#3f3f46;
-  --muted:#52525b;
-  --muted-2:#5f5f68;
-  --faint:#64646d;
-  --disabled:#d4d4d8;
+  --ink:#1d1b16;
+  --ink-2:#3a372f;
+  --ink-3:#4d493f;
+  --muted:#625c4f;
+  --muted-2:#6b6557;
+  --faint:#736d5d;
+  --disabled:#cdc7b6;
   /* Lines */
-  --line-strong:#c3c7ce;
-  --line:#e2e5e9;
-  --line-soft:#e9ebee;
-  --grid:#f1f2f4;
+  --line-strong:#b9b2a0;
+  --line:#e6e0d1;
+  --line-soft:#ddd6c4;
+  --grid:#f0ebde;
   /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
-  --brand:#09090b;
-  --brand-strong:#27272a; /* hover on the main button, active marker lines */
-  --brand-edge:#09090b;   /* border of the main button */
-  --brand-ink:#4338ca;    /* brand-coloured text on light tints */
-  --brand-line:#e2e5e9;   /* border of brand-tinted boxes */
-  --brand-tint:#e9ebef;   /* brand-tinted boxes, active sidebar row */
-  --on-brand:#fafafa;
-  --mark:#dfe1ff;         /* the highlighter stroke under a headline word */
+  --brand:#ffc233;
+  --brand-strong:#f2ac00; /* hover on the main button, active marker lines */
+  --brand-edge:#d79a00;   /* border of the main button */
+  --brand-ink:#6e4a00;    /* brand-coloured text on light tints */
+  --brand-line:#f0d388;   /* border of brand-tinted boxes */
+  --brand-tint:#fff3cf;   /* brand-tinted boxes, active sidebar row */
+  --on-brand:#1d1b16;
+  --mark:#ffd866;         /* the highlighter stroke under a headline word */
   /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
-  --accent:#4f46e5;
-  --accent-strong:#4338ca;
-  --accent-mid:#9a9cf2;
-  --accent-line:#c9cbf5;
-  --accent-soft:#e0e1fc;
-  --accent-tint-2:#ebecfd;
-  --accent-tint:#f5f5fe;
+  --accent:#94600a;
+  --accent-strong:#754a00;
+  --accent-mid:#e9b949;
+  --accent-line:#f0d388;
+  --accent-soft:#ffe08a;
+  --accent-tint-2:#ffedb8;
+  --accent-tint:#fff6dc;
   --on-accent:#fff;
   /* Status */
   --danger:#b3261e;
@@ -63,7 +63,7 @@
   --warn-mid:#e8700c;
   --warn-line:#f5cfa9;
   --warn-tint:#fff3e6;
-  --star:#4f46e5;
+  --star:#e8a308;
   /* Categories, where a figure needs several colours that mean nothing more than "different" */
   --cat-green:#1f8a5b;
   --cat-amber:#b7791f;
@@ -71,10 +71,10 @@
   --cat-teal:#0e7490;
   --cat-pink:#be185d;
   /* The same colours as r g b triples, for see-through shadows and backdrops */
-  --ink-rgb:9 9 11;
+  --ink-rgb:29 27 22;
   --bg-rgb:255 255 255;
-  --page-rgb:238 240 243;
-  --accent-rgb:79 70 229;
+  --page-rgb:250 247 240;
+  --accent-rgb:148 96 10;
   /* Shadows and backdrops */
   --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
   --shadow-2:0 2px 4px rgb(var(--ink-rgb) / .05),0 10px 24px rgb(var(--ink-rgb) / .09);
@@ -103,40 +103,40 @@
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
 .on-dark,:root[data-theme=dark]{
   color-scheme:dark;
-  --page:#09090b;
-  --bg:#111113;
-  --surface:#18181b;
-  --surface-2:#0c0c0e;
-  --hover:#1f1f23;
-  --inverse:#fafafa;
-  --on-inverse:#09090b;
-  --ink:#fafafa;
-  --ink-2:#d4d4d8;
-  --ink-3:#c4c4cc;
-  --muted:#a1a1aa;
-  --muted-2:#93939c;
-  --faint:#8a8a93;
-  --disabled:#3f3f46;
-  --line-strong:#46464f;
-  --line:#26262b;
-  --line-soft:#2e2e33;
-  --grid:#141417;
-  --brand:#fafafa;
-  --brand-strong:#fff;
-  --brand-edge:#fafafa;
-  --brand-ink:#b9b6ff;
-  --brand-line:#2e2e33;
-  --brand-tint:#1f1f23;
-  --on-brand:#09090b;
-  --mark:#3a3680;
-  --accent:#a5a1ff;
-  --accent-strong:#c4c2ff;
-  --accent-mid:#6d68e6;
-  --accent-line:#34386e;
-  --accent-soft:#262a55;
-  --accent-tint-2:#1f2247;
-  --accent-tint:#191b38;
-  --on-accent:#0d0d0d;
+  --page:#15140f;
+  --bg:#1e1c16;
+  --surface:#28261e;
+  --surface-2:#191812;
+  --hover:#2e2b22;
+  --inverse:#f4f1e8;
+  --on-inverse:#1d1b16;
+  --ink:#f4f1e8;
+  --ink-2:#dbd7ca;
+  --ink-3:#c8c3b4;
+  --muted:#aca695;
+  --muted-2:#9f9988;
+  --faint:#8d8777;
+  --disabled:#504c40;
+  --line-strong:#5e594a;
+  --line:#322f26;
+  --line-soft:#3d3a2f;
+  --grid:#22201a;
+  --brand:#ffc233;
+  --brand-strong:#ffd466;
+  --brand-edge:#b88400;
+  --brand-ink:#ffd87a;
+  --brand-line:#5f4813;
+  --brand-tint:#30260f;
+  --on-brand:#1d1b16;
+  --mark:#7d5c00;
+  --accent:#ffc233;
+  --accent-strong:#ffd466;
+  --accent-mid:#a87a10;
+  --accent-line:#5f4813;
+  --accent-soft:#4a3a12;
+  --accent-tint-2:#3a2e10;
+  --accent-tint:#2b230f;
+  --on-accent:#1d1b16;
   --danger:#ff8a80;
   --red:#ff7b72;
   --danger-line:#6b2c28;
@@ -150,16 +150,16 @@
   --warn-mid:#e8700c;
   --warn-line:#693c14;
   --warn-tint:#2d1d10;
-  --star:#a5a1ff;
+  --star:#f2b01e;
   --cat-green:#3fb97a;
   --cat-amber:#e0a43a;
   --cat-violet:#a78bfa;
   --cat-teal:#22b8cf;
   --cat-pink:#f472b6;
   --ink-rgb:0 0 0;
-  --bg-rgb:17 17 19;
-  --page-rgb:9 9 11;
-  --accent-rgb:165 161 255;
+  --bg-rgb:30 28 22;
+  --page-rgb:21 20 15;
+  --accent-rgb:255 194 51;
   --shadow-1:0 1px 2px rgb(0 0 0 / .4);
   --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);
   --shadow-3:0 4px 8px rgb(0 0 0 / .4),0 18px 44px rgb(0 0 0 / .55);

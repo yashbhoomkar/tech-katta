@@ -74,7 +74,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .on-dark{color:var(--ink)}
 .header{background:rgb(var(--page-rgb) / .82);border-bottom-color:transparent}
 .header .nav{color:var(--muted)}
-.brand>i{background:var(--ink);display:grid;place-items:center}.brand>i::after{content:"TK";font:700 10.5px var(--font);letter-spacing:0;color:var(--page)}
+.brand>i{background:var(--brand);display:grid;place-items:center}.brand>i::after{content:"TK";font:700 10.5px var(--font);letter-spacing:0;color:var(--on-brand)}
 .brand span{display:none}
 .stage{position:relative;background:var(--page);overflow:hidden;isolation:isolate}
 .stage::before{content:"";position:absolute;inset:-64px 0 auto;height:720px;z-index:-1;pointer-events:none;background:radial-gradient(50% 60% at 50% 0%,rgb(var(--accent-rgb) / .24),transparent 72%)}
@@ -87,8 +87,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .stage .actions{justify-content:center;margin-top:32px}
 .stage .btn{box-shadow:none;background:transparent;border-color:var(--line-strong)}
 .stage .btn:hover{border-color:var(--ink);background:transparent}
-.stage .btn.primary{background:var(--ink);color:var(--page);border-color:var(--ink)}
-.stage .btn.primary:hover{background:var(--brand-strong);color:var(--page)}
+.stage .btn.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand-edge)}
+.stage .btn.primary:hover{background:var(--brand-strong);color:var(--on-brand)}
 /* the product window: the live figure, framed, rising out of the stage into the page */
 .figure.frame{position:relative;width:min(1040px,100%);margin-top:60px;text-align:left;overflow:visible;border:0;border-radius:var(--r-xl) var(--r-xl) 0 0;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 -20px 80px -20px rgb(var(--accent-rgb) / .35);padding:0 10px}
 .frame .fig-head{padding:12px 6px 10px;color:var(--faint);font-size:10.5px}
