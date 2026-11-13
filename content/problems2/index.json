@@ -1,5 +1,14 @@
 {
   "problems": [
-    "001-url-shortener"
+    "001-url-shortener",
+    "002-paste-bin",
+    "003-rate-limiter",
+    "004-news-feed",
+    "005-notification-sender",
+    "006-image-serving",
+    "007-leaderboard",
+    "008-ticket-booking",
+    "009-chat-message-store",
+    "010-ind-vs-pak-live-score"
   ]
 }

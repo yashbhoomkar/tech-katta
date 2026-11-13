@@ -1,0 +1,235 @@
+{
+  "id": 5,
+  "slug": "notification-sender",
+  "title": "Design a notification sender",
+  "difficulty": "medium",
+  "topics": [
+    "queues",
+    "workers",
+    "backlog"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "When a match starts or an offer goes live, Zotato sends push notifications to lakhs of users at once. Each **send** request is accepted at once and delivered by a worker in the background, which records it in the database.\n\nThe load is spiky: **5,000 sends a second for a minute**, then a steady 500 a second. Users don't need the notification within milliseconds, but every accepted send must be delivered **within 3 minutes**, must never be lost, and the queue must be empty again before the test ends. The budget is ₹1.75 lakh a month.",
+  "constraints": [
+    "Spikes of 5,000 sends a second for a minute",
+    "Normally 500 sends a second",
+    "Every send delivered within 3 minutes",
+    "Budget ₹1,75,000 a month"
+  ],
+  "total_items": 100000000,
+  "requests": [
+    {
+      "name": "SEND",
+      "mode": "write",
+      "table": "jobs",
+      "key": "id",
+      "durable": true,
+      "unique_id": false,
+      "says": "Accept a notification; a worker delivers it and records it."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "jobs",
+      "columns": [
+        "id",
+        "user_id",
+        "body",
+        "status"
+      ],
+      "pk": "id"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nwrite SEND: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-steady",
+      "title": "A steady hour",
+      "hidden": false,
+      "explain": "500 sends a second. The budget is checked here.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "SEND": 500
+          }
+        }
+      ],
+      "promises": {
+        "done_within_s": {
+          "SEND": 180
+        },
+        "budget_inr": 175000
+      }
+    },
+    {
+      "id": "t02-match-starts",
+      "title": "The match starts",
+      "hidden": false,
+      "explain": "5,000 sends a second for one minute, then 500 a second for ten. Every send delivered within 3 minutes, and nothing left waiting at the end.",
+      "phases": [
+        {
+          "seconds": 60,
+          "rates": {
+            "SEND": 5000
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "SEND": 500
+          }
+        }
+      ],
+      "promises": {
+        "done_within_s": {
+          "SEND": 180
+        },
+        "availability": {
+          "SEND": 0.999
+        }
+      }
+    },
+    {
+      "id": "t03-a-worker-dies",
+      "title": "A worker dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "SEND": 500
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "SEND": 500
+          },
+          "events": [
+            {
+              "kill_role": "worker"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "done_within_s": {
+          "SEND": 180
+        }
+      }
+    },
+    {
+      "id": "t04-database-fails",
+      "title": "The database fails during a spike",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 60,
+          "rates": {
+            "SEND": 4000
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "SEND": 500
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "done_within_s": {
+          "SEND": 180
+        },
+        "availability": {
+          "SEND": 0.999
+        }
+      }
+    },
+    {
+      "id": "t05-two-spikes",
+      "title": "Two spikes in a row",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 60,
+          "rates": {
+            "SEND": 5000
+          }
+        },
+        {
+          "seconds": 120,
+          "rates": {
+            "SEND": 500
+          }
+        },
+        {
+          "seconds": 60,
+          "rates": {
+            "SEND": 5000
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "SEND": 500
+          }
+        }
+      ],
+      "promises": {
+        "done_within_s": {
+          "SEND": 180
+        }
+      }
+    }
+  ],
+  "reference": "lb     = lb()\napi    = server(count=4, size=large)\nqueue  = queue()\nworker = worker(count=2, size=medium)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n",
+  "wrong": [
+    {
+      "name": "no-queue",
+      "expect": "Overloaded",
+      "why": "Without a queue the database takes the spike directly: 5,000 writes a second against a large primary's 2,500.",
+      "source": "lb     = lb()\napi    = server(count=4, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api > db\n"
+    },
+    {
+      "name": "one-small-worker",
+      "expect": "Too Slow",
+      "why": "One small worker does 500 a second, exactly the normal rate: the backlog from the spike never drains.",
+      "source": "lb     = lb()\napi    = server(count=4, size=large)\nqueue  = queue()\nworker = worker(count=1, size=small)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+    },
+    {
+      "name": "async-replica",
+      "expect": "Data Lost",
+      "why": "A failover loses the last second of written notifications.",
+      "source": "lb     = lb()\napi    = server(count=4, size=large)\nqueue  = queue()\nworker = worker(count=2, size=medium)\ndb     = sql(size=large, replicas=1, sync=false)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+    },
+    {
+      "name": "too-few-servers",
+      "expect": "Overloaded",
+      "why": "The servers still take the whole spike before the queue: two large serve 4,000 a second.",
+      "source": "lb     = lb()\napi    = server(count=2, size=large)\nqueue  = queue()\nworker = worker(count=2, size=medium)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+    },
+    {
+      "name": "many-workers",
+      "expect": "Over Budget",
+      "why": "Twelve large workers clear the spike at once, at far more than the budget.",
+      "source": "lb     = lb()\napi    = server(count=4, size=large)\nqueue  = queue()\nworker = worker(count=12, size=large)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n"
+    }
+  ],
+  "hints": [
+    "What if the servers hand each send over without waiting for it to be delivered?",
+    "How big is the backlog after a minute of 5,000 a second, and how fast do your workers clear it?",
+    "The database only needs to keep up with the workers, not with the spike."
+  ],
+  "editorial": "## The approach\n\nA queue turns a spike into a backlog. The servers still take the spike (they accept each send), but the database only sees what the workers pass on.\n\n1. **Hand over, don't wait.** `api ~> queue` answers the user at once; the queue holds the work.\n2. **Workers for the average, plus drain speed.** Two medium workers do 2,000 a second. After the spike about 1.8 lakh sends wait; they drain at 1,500 a second, and the longest wait is about 90 seconds.\n3. **A database for the workers' pace.** A large primary takes 2,500 writes a second; the workers send at most 2,000. A synchronous replica keeps every delivered send.\n\n## The reference design\n\n```\nlb     = lb()\napi    = server(count=4, size=large)\nqueue  = queue()\nworker = worker(count=2, size=medium)\ndb     = sql(size=large, replicas=1, sync=true)\n\ntable db.jobs(id pk, user_id, body, status)\n\nwrite SEND: client > lb > api ~> queue > worker > db\n```\n\nIt costs ₹1.56 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **No queue: Overloaded.** Without a queue the database takes the spike directly: 5,000 writes a second against a large primary's 2,500.\n- **One small worker: Too Slow.** One small worker does 500 a second, exactly the normal rate: the backlog from the spike never drains.\n- **Async replica: Data Lost.** A failover loses the last second of written notifications.\n- **Too few servers: Overloaded.** The servers still take the whole spike before the queue: two large serve 4,000 a second.\n- **Many workers: Over Budget.** Twelve large workers clear the spike at once, at far more than the budget.\n\n## Read more\n\n- [Kafka in practice](/dashboard/components/kafka-in-practice/)\n"
+}

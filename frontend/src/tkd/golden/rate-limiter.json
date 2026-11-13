@@ -1,0 +1,491 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 138000,
+  "worst_p99_ms": {
+   "CHECK": 72.4,
+   "GET_USAGE": 72.4
+  },
+  "worst_p50_ms": {
+   "CHECK": 18.1,
+   "GET_USAGE": 18.1
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-normal-day",
+   "margin": 0.1375,
+   "text": "Tightest promise: budget, 14 % to spare."
+  },
+  "rank_p99_ms": 72.4,
+  "tests": [
+   {
+    "id": "t01-normal-day",
+    "title": "A normal afternoon",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-sustained-peak",
+    "title": "A long evening",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "sql-counters": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 143000,
+   "worst_p99_ms": {
+    "CHECK": 356.3,
+    "GET_USAGE": 256.3
+   },
+   "worst_p50_ms": {
+    "CHECK": 89.1,
+    "GET_USAGE": 64.1
+   },
+   "failed": {
+    "test": "t02-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "CHECK",
+    "phase": 2,
+    "expected": "at most 2,509 calls a second",
+    "actual": "10,050 calls a second",
+    "message": "db received 10,050 calls a second but can serve 2,509.",
+    "blame": {
+     "part": "db",
+     "line": 3,
+     "rho": 4.0063,
+     "note": "db is at 401 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.5,
+      "rho": 0.201
+     },
+     {
+      "part": "api",
+      "ms": 53.78,
+      "rho": 0.6281
+     },
+     {
+      "part": "db",
+      "ms": 300,
+      "rho": 4.0063
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "CHECK",
+     "message": "CHECK took 356.3 ms at the 99th percentile; the promise is 100 ms. Slowest hop: db at 401 % of capacity."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 356.3,
+   "tests": [
+    {
+     "id": "t01-normal-day",
+     "title": "A normal afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-sustained-peak",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 3,
+     "col": 1,
+     "message": "\"db\" has no spare. If it fails, CHECK and GET_USAGE stop.",
+     "part": "db"
+    }
+   ],
+   "judge_version": 2
+  },
+  "write-to-all-copies": {
+   "verdict": "Unavailable",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 138000,
+   "worst_p99_ms": {
+    "CHECK": 72.4,
+    "GET_USAGE": 72.4
+   },
+   "worst_p50_ms": {
+    "CHECK": 18.1,
+    "GET_USAGE": 18.1
+   },
+   "failed": {
+    "test": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "reason": "unavailable",
+    "request": "CHECK",
+    "phase": 2,
+    "expected": "99.00%",
+    "actual": "50.00%",
+    "message": "CHECK was available 50.00% of the time; the promise is 99.00%. kv had no spare when it failed.",
+    "blame": {
+     "part": "kv",
+     "line": 3,
+     "rho": null,
+     "note": "kv failed"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.27,
+      "rho": 0.1204
+     },
+     {
+      "part": "api",
+      "ms": 32.06,
+      "rho": 0.3762
+     },
+     {
+      "part": "kv",
+      "ms": null,
+      "rho": null,
+      "down": true
+     }
+    ]
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 72.4,
+   "tests": [
+    {
+     "id": "t01-normal-day",
+     "title": "A normal afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": "Unavailable"
+    },
+    {
+     "id": "t05-sustained-peak",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "too-few-servers": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 90000,
+   "worst_p99_ms": {
+    "CHECK": 418.6,
+    "GET_USAGE": 418.6
+   },
+   "worst_p50_ms": {
+    "CHECK": 104.7,
+    "GET_USAGE": 104.7
+   },
+   "failed": {
+    "test": "t02-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "CHECK",
+    "phase": 2,
+    "expected": "at most 8,000 calls a second",
+    "actual": "10,050 calls a second",
+    "message": "api received 10,050 calls a second but can serve 8,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 1.2563,
+     "note": "api is at 126 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.5,
+      "rho": 0.201
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 1.2563
+     },
+     {
+      "part": "kv",
+      "ms": 16.08,
+      "rho": 0.5025
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "CHECK",
+     "message": "CHECK took 418.6 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 126 % of capacity."
+    }
+   ],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 418.6,
+   "tests": [
+    {
+     "id": "t01-normal-day",
+     "title": "A normal afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-sustained-peak",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "three-nodes": {
+   "verdict": "Too Slow",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 104000,
+   "worst_p99_ms": {
+    "CHECK": 149.8,
+    "GET_USAGE": 149.8
+   },
+   "worst_p50_ms": {
+    "CHECK": 37.5,
+    "GET_USAGE": 37.5
+   },
+   "failed": {
+    "test": "t02-peak",
+    "title": "Evening peak",
+    "hidden": false,
+    "reason": "p99",
+    "request": "CHECK",
+    "phase": 2,
+    "expected": "p99 ≤ 100 ms",
+    "actual": "p99 149.8 ms",
+    "message": "CHECK took 149.8 ms at the 99th percentile; the promise is 100 ms. Slowest hop: api at 84 % of capacity.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 0.8375,
+     "note": "api is at 84 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.5,
+      "rho": 0.201
+     },
+     {
+      "part": "api",
+      "ms": 123.08,
+      "rho": 0.8375
+     },
+     {
+      "part": "kv",
+      "ms": 24.24,
+      "rho": 0.67
+     }
+    ]
+   },
+   "also": [],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 149.8,
+   "tests": [
+    {
+     "id": "t01-normal-day",
+     "title": "A normal afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-sustained-peak",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "huge-cluster": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 266000,
+   "worst_p99_ms": {
+    "CHECK": 31.1,
+    "GET_USAGE": 31.1
+   },
+   "worst_p50_ms": {
+    "CHECK": 7.8,
+    "GET_USAGE": 7.8
+   },
+   "failed": {
+    "test": "t01-normal-day",
+    "title": "A normal afternoon",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,60,000",
+    "actual": "₹2,66,000",
+    "message": "This design costs ₹2,66,000 a month; the budget is ₹1,60,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": null,
+     "note": "api is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 31.1,
+   "tests": [
+    {
+     "id": "t01-normal-day",
+     "title": "A normal afternoon",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-peak",
+     "title": "Evening peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-sustained-peak",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

@@ -1,0 +1,243 @@
+{
+  "id": 9,
+  "slug": "chat-message-store",
+  "title": "Design a chat message store",
+  "difficulty": "hard",
+  "topics": [
+    "nosql",
+    "quorum",
+    "read your writes"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "Zotato's delivery partners chat with customers while an order is on its way. Each chat is short but there are crores of them.\n\nDesign the message store. A **send** saves one message; opening a chat **reads** its recent messages. The rules:\n\n- After sending, you must **see your own message** at once when the chat reloads.\n- An acknowledged message must **never be lost**, even when a storage node dies.\n- Sending must **keep working when one node dies**.\n- Message ids must never repeat.\n\nMessages pour in at **5,000 a second** at dinner time, too many for one SQL primary. The budget is ₹2.25 lakh a month.",
+  "constraints": [
+    "Up to 500 crore messages",
+    "Peak: 10,000 chat reads and 5,000 sends a second",
+    "p99 under 150 ms",
+    "Budget ₹2,25,000 a month"
+  ],
+  "total_items": 5000000000,
+  "requests": [
+    {
+      "name": "GET_MESSAGES",
+      "mode": "read",
+      "table": "messages",
+      "key": "chat_id",
+      "distinct_keys": 1000000,
+      "item_bytes": 8000,
+      "skew": 0.5,
+      "read_your_writes": true,
+      "cdn_ok": false,
+      "says": "Open a chat: return its recent messages."
+    },
+    {
+      "name": "SEND_MESSAGE",
+      "mode": "write",
+      "table": "messages",
+      "key": "chat_id",
+      "durable": true,
+      "unique_id": true,
+      "says": "Save a message with an id that never repeats."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "messages",
+      "columns": [
+        "chat_id",
+        "message_id",
+        "body",
+        "sent_at"
+      ],
+      "pk": "chat_id"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nread  GET_MESSAGES: client > lb > api > \nwrite SEND_MESSAGE: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-lunch",
+      "title": "Lunch time",
+      "hidden": false,
+      "explain": "2,000 reads and 1,000 sends a second. The budget is checked here.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_MESSAGES": 2000,
+            "SEND_MESSAGE": 1000
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_MESSAGES": 150,
+          "SEND_MESSAGE": 150
+        },
+        "budget_inr": 225000
+      }
+    },
+    {
+      "id": "t02-dinner",
+      "title": "Dinner time",
+      "hidden": false,
+      "explain": "5,000 then 10,000 reads, with half as many sends.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_MESSAGES": 5000,
+            "SEND_MESSAGE": 2500
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_MESSAGES": 10000,
+            "SEND_MESSAGE": 5000
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_MESSAGES": 150,
+          "SEND_MESSAGE": 150
+        },
+        "availability": {
+          "SEND_MESSAGE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_MESSAGES": 8000,
+            "SEND_MESSAGE": 4000
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_MESSAGES": 8000,
+            "SEND_MESSAGE": 4000
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "SEND_MESSAGE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t04-a-node-dies",
+      "title": "A storage node dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_MESSAGES": 6000,
+            "SEND_MESSAGE": 3000
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_MESSAGES": 6000,
+            "SEND_MESSAGE": 3000
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "availability": {
+          "SEND_MESSAGE": 0.999,
+          "GET_MESSAGES": 0.999
+        }
+      }
+    },
+    {
+      "id": "t05-late-night",
+      "title": "A long night",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 1800,
+          "rates": {
+            "GET_MESSAGES": 9000,
+            "SEND_MESSAGE": 4500
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_MESSAGES": 150
+        }
+      }
+    }
+  ],
+  "reference": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=2, r=2)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n",
+  "wrong": [
+    {
+      "name": "one-copy-each-way",
+      "expect": "Wrong Answer",
+      "why": "r=1 and w=1 with rf=3: a read can miss the copy that has your new message (r + w must be more than rf).",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=1, r=1)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "write-all-read-one",
+      "expect": "Unavailable",
+      "why": "w=3 needs every copy; when one node dies, no message can be sent.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=3, r=1)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "write-one-read-all",
+      "expect": "Data Lost",
+      "why": "w=1: a message acknowledged by one node dies with that node.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=1, r=3)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "sql-messages",
+      "expect": "Overloaded",
+      "why": "5,000 messages a second against a large SQL primary's 2,500 writes.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\ndb  = sql(size=large, replicas=1, sync=true)\nids = idgen(kind=snowflake)\n\ntable db.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > db\nwrite SEND_MESSAGE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "random-ids",
+      "expect": "Wrong Answer",
+      "why": "Random 32-bit message ids repeat across 500 crore messages.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=2, r=2)\nids = idgen(kind=random, bits=32)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "big-cluster",
+      "expect": "Over Budget",
+      "why": "It passes every test at more than the budget.",
+      "source": "lb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=20, rf=3, w=2, r=2)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n"
+    }
+  ],
+  "hints": [
+    "With rf copies, a write waiting for w of them and a read asking r of them: when does every read see the newest write?",
+    "If a write waits for every copy, what happens when one node is down?",
+    "If a write waits for only one copy, what happens when that node dies?"
+  ],
+  "editorial": "## The approach\n\nThree rules pull the quorum settings in different directions; with `rf=3`, `w=2, r=2` satisfies all of them.\n\n1. **See your own message:** `r + w > rf`, so every read meets at least one copy that has the newest write (2 + 2 > 3).\n2. **Never lose a message:** `w = 2`, so an acknowledged message is on two nodes.\n3. **Keep working with a node down:** a replica set of 3 can still gather 2 answers when one node is gone.\n4. **Capacity:** 15,000 calls a second over six nodes of 5,000 each, half busy; ten large servers in front.\n\n## The reference design\n\n```\nlb  = lb()\napi = server(count=10, size=large)\nkv  = nosql(nodes=6, rf=3, w=2, r=2)\nids = idgen(kind=snowflake)\n\ntable kv.messages(chat_id pk, message_id, body, sent_at)\n\nread  GET_MESSAGES: client > lb > api > kv\nwrite SEND_MESSAGE: client > lb > api > ids > kv\n```\n\nIt costs ₹1.82 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **One copy each way: Wrong Answer.** r=1 and w=1 with rf=3: a read can miss the copy that has your new message (r + w must be more than rf).\n- **Write all read one: Unavailable.** w=3 needs every copy; when one node dies, no message can be sent.\n- **Write one read all: Data Lost.** w=1: a message acknowledged by one node dies with that node.\n- **Sql messages: Overloaded.** 5,000 messages a second against a large SQL primary's 2,500 writes.\n- **Random ids: Wrong Answer.** Random 32-bit message ids repeat across 500 crore messages.\n- **Big cluster: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Cassandra](/dashboard/components/cassandra/)\n- [CAP theorem](/dashboard/concepts/cap-theorem/)\n"
+}

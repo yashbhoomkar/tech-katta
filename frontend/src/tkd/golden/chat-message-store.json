@@ -1,0 +1,536 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 182000,
+  "worst_p99_ms": {
+   "GET_MESSAGES": 98.9,
+   "SEND_MESSAGE": 98.9
+  },
+  "worst_p50_ms": {
+   "GET_MESSAGES": 24.7,
+   "SEND_MESSAGE": 24.7
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-lunch",
+   "margin": 0.1911,
+   "text": "Tightest promise: budget, 19 % to spare."
+  },
+  "rank_p99_ms": 98.9,
+  "tests": [
+   {
+    "id": "t01-lunch",
+    "title": "Lunch time",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-late-night",
+    "title": "A long night",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "one-copy-each-way": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 182000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 34.6,
+    "SEND_MESSAGE": 34.6
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 8.6,
+    "SEND_MESSAGE": 8.6
+   },
+   "failed": {
+    "test": "t01-lunch",
+    "title": "Lunch time",
+    "hidden": false,
+    "reason": "ryw",
+    "request": "GET_MESSAGES",
+    "phase": null,
+    "expected": "the newest data after a write",
+    "actual": "up to 1 s old",
+    "message": "After a write, GET_MESSAGES must show the new data at once. Yours reads from kv, which can be behind.",
+    "blame": {
+     "part": "kv",
+     "line": 3,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Asking more copies on each read from \"kv\" would fix this.",
+   "rank_p99_ms": 34.6,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "write-all-read-one": {
+   "verdict": "Unavailable",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 182000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 98.9,
+    "SEND_MESSAGE": 98.9
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 24.7,
+    "SEND_MESSAGE": 24.7
+   },
+   "failed": {
+    "test": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "reason": "unavailable",
+    "request": "GET_MESSAGES",
+    "phase": 2,
+    "expected": "99.90%",
+    "actual": "50.00%",
+    "message": "GET_MESSAGES was available 50.00% of the time; the promise is 99.90%. kv had no spare when it failed.",
+    "blame": {
+     "part": "kv",
+     "line": 3,
+     "rho": null,
+     "note": "kv failed"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.44,
+      "rho": 0.18
+     },
+     {
+      "part": "api",
+      "ms": 36.36,
+      "rho": 0.45
+     },
+     {
+      "part": "kv",
+      "ms": null,
+      "rho": null,
+      "down": true
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "unavailable",
+     "request": "SEND_MESSAGE",
+     "message": "SEND_MESSAGE was available 50.00% of the time; the promise is 99.90%. kv had no spare when it failed."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 98.9,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": "Unavailable"
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "write-one-read-all": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 182000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 98.9,
+    "SEND_MESSAGE": 98.9
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 24.7,
+    "SEND_MESSAGE": 24.7
+   },
+   "failed": {
+    "test": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "reason": "lost",
+    "request": "SEND_MESSAGE",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 3000 lost",
+    "message": "When kv failed, about 3,000 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "kv",
+     "line": 3,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [
+    {
+     "reason": "unavailable",
+     "request": "GET_MESSAGES",
+     "message": "GET_MESSAGES was available 50.00% of the time; the promise is 99.90%. kv had no spare when it failed."
+    },
+    {
+     "reason": "unavailable",
+     "request": "SEND_MESSAGE",
+     "message": "SEND_MESSAGE was available 50.00% of the time; the promise is 99.90%. kv had no spare when it failed."
+    }
+   ],
+   "tip": "Waiting for more copies on each write to \"kv\" would fix this.",
+   "rank_p99_ms": 98.9,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "sql-messages": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 212000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 282.9,
+    "SEND_MESSAGE": 682.9
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 70.7,
+    "SEND_MESSAGE": 170.7
+   },
+   "failed": {
+    "test": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_MESSAGES",
+    "phase": 2,
+    "expected": "at most 4,615 calls a second",
+    "actual": "15,000 calls a second",
+    "message": "db received 15,000 calls a second but can serve 4,615.",
+    "blame": {
+     "part": "db",
+     "line": 3,
+     "rho": 3.25,
+     "note": "db is at 325 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.86,
+      "rho": 0.3
+     },
+     {
+      "part": "api",
+      "ms": 80,
+      "rho": 0.75
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 3.25
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_MESSAGES",
+     "message": "GET_MESSAGES took 282.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity."
+    },
+    {
+     "reason": "p99",
+     "request": "SEND_MESSAGE",
+     "message": "SEND_MESSAGE took 682.9 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 325 % of capacity."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 282.9,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "random-ids": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 182000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 34.6,
+    "SEND_MESSAGE": 34.6
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 8.6,
+    "SEND_MESSAGE": 8.6
+   },
+   "failed": {
+    "test": "t01-lunch",
+    "title": "Lunch time",
+    "hidden": false,
+    "reason": "collision",
+    "request": "SEND_MESSAGE",
+    "phase": null,
+    "expected": "no repeated ids",
+    "actual": "about 2,91,03,83,046 repeats expected",
+    "message": "With 500 crore items, 32-bit random ids are expected to collide. Use more bits, or a counter.",
+    "blame": {
+     "part": "ids",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "More bits in the ids of \"ids\" would fix this.",
+   "rank_p99_ms": 34.6,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "big-cluster": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 322000,
+   "worst_p99_ms": {
+    "GET_MESSAGES": 33.9,
+    "SEND_MESSAGE": 33.9
+   },
+   "worst_p50_ms": {
+    "GET_MESSAGES": 8.5,
+    "SEND_MESSAGE": 8.5
+   },
+   "failed": {
+    "test": "t01-lunch",
+    "title": "Lunch time",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹2,25,000",
+    "actual": "₹3,22,000",
+    "message": "This design costs ₹3,22,000 a month; the budget is ₹2,25,000.",
+    "blame": {
+     "part": "kv",
+     "line": 3,
+     "rho": null,
+     "note": "kv is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "A smaller \"kv\" would fix this.",
+   "rank_p99_ms": 33.9,
+   "tests": [
+    {
+     "id": "t01-lunch",
+     "title": "Lunch time",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-late-night",
+     "title": "A long night",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

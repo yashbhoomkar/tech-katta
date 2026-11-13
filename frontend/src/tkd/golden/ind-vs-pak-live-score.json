@@ -1,0 +1,504 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 227000,
+  "worst_p99_ms": {
+   "GET_SCORE": 120.2,
+   "UPDATE_SCORE": 102.5
+  },
+  "worst_p50_ms": {
+   "GET_SCORE": 4.7,
+   "UPDATE_SCORE": 25.6
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-toss",
+   "margin": 0.1269,
+   "text": "Tightest promise: budget, 13 % to spare."
+  },
+  "rank_p99_ms": 120.2,
+  "tests": [
+   {
+    "id": "t01-toss",
+    "title": "The toss",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-last-over",
+    "title": "The last over",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies in the last over",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-cache-restarts",
+    "title": "The cache restarts mid-over",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "no-cdn": {
+   "verdict": "Overloaded",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 224000,
+   "worst_p99_ms": {
+    "GET_SCORE": 416,
+    "UPDATE_SCORE": 433.3
+   },
+   "worst_p50_ms": {
+    "GET_SCORE": 101.5,
+    "UPDATE_SCORE": 108.3
+   },
+   "failed": {
+    "test": "t01-toss",
+    "title": "The toss",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_SCORE",
+    "phase": 1,
+    "expected": "at most 14,000 calls a second",
+    "actual": "20,001 calls a second",
+    "message": "api received 20,001 calls a second but can serve 14,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 1.4286,
+     "note": "api is at 143 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 3.33,
+      "rho": 0.4
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 1.4286
+     },
+     {
+      "part": "cache",
+      "ms": 2.5,
+      "rho": 0.2,
+      "hit": 0.99
+     },
+     {
+      "part": "db",
+      "ms": 10.13,
+      "rho": 0.0129
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_SCORE",
+     "message": "GET_SCORE took 416.0 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 143 % of capacity."
+    }
+   ],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 416,
+   "tests": [
+    {
+     "id": "t01-toss",
+     "title": "The toss",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t02-last-over",
+     "title": "The last over",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies in the last over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-cache-restarts",
+     "title": "The cache restarts mid-over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "cdn-minute-ttl": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 227000,
+   "worst_p99_ms": {
+    "GET_SCORE": 50.9,
+    "UPDATE_SCORE": 53.6
+   },
+   "worst_p50_ms": {
+    "GET_SCORE": 3.8,
+    "UPDATE_SCORE": 13.4
+   },
+   "failed": {
+    "test": "t01-toss",
+    "title": "The toss",
+    "hidden": false,
+    "reason": "stale",
+    "request": "GET_SCORE",
+    "phase": null,
+    "expected": "at most 5 s old",
+    "actual": "up to 62 s old",
+    "message": "GET_SCORE can return data up to 62 s old, but this problem allows 5 s. Look at the cache TTL, or invalidate on write.",
+    "blame": {
+     "part": "cdn",
+     "line": 1,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Clearing \"cdn\" when the data changes would fix this.",
+   "rank_p99_ms": 50.9,
+   "tests": [
+    {
+     "id": "t01-toss",
+     "title": "The toss",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-last-over",
+     "title": "The last over",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies in the last over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-cache-restarts",
+     "title": "The cache restarts mid-over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "thin-origin": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 191000,
+   "worst_p99_ms": {
+    "GET_SCORE": 433.5,
+    "UPDATE_SCORE": 432.5
+   },
+   "worst_p50_ms": {
+    "GET_SCORE": 4.7,
+    "UPDATE_SCORE": 108.1
+   },
+   "failed": {
+    "test": "t02-last-over",
+    "title": "The last over",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_SCORE",
+    "phase": 2,
+    "expected": "at most 8,000 calls a second",
+    "actual": "10,001 calls a second",
+    "message": "api received 10,001 calls a second but can serve 8,000.",
+    "blame": {
+     "part": "api",
+     "line": 3,
+     "rho": 1.2501,
+     "note": "api is at 125 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "cdn",
+      "ms": 18.75,
+      "rho": 0.2,
+      "hit": 0.95
+     },
+     {
+      "part": "lb",
+      "ms": 2.5,
+      "rho": 0.2
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 1.2501
+     },
+     {
+      "part": "cache",
+      "ms": 2.22,
+      "rho": 0.1,
+      "hit": 0.99
+     },
+     {
+      "part": "db",
+      "ms": 10.07,
+      "rho": 0.0067
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_SCORE",
+     "message": "GET_SCORE took 433.5 ms at the 99th percentile; the promise is 250 ms. Slowest hop: api at 125 % of capacity."
+    }
+   ],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 433.5,
+   "tests": [
+    {
+     "id": "t01-toss",
+     "title": "The toss",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-last-over",
+     "title": "The last over",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies in the last over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-cache-restarts",
+     "title": "The cache restarts mid-over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "primary-only": {
+   "verdict": "Unavailable",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 137000,
+   "worst_p99_ms": {
+    "GET_SCORE": 293.5,
+    "UPDATE_SCORE": 372.5
+   },
+   "worst_p50_ms": {
+    "GET_SCORE": 4.7,
+    "UPDATE_SCORE": 93.1
+   },
+   "failed": {
+    "test": "t04-cache-restarts",
+    "title": "The cache restarts mid-over",
+    "hidden": true,
+    "reason": "unavailable",
+    "request": "GET_SCORE",
+    "phase": 1,
+    "expected": "99.90%",
+    "actual": "95.99%",
+    "message": "GET_SCORE was available 95.99% of the time; the promise is 99.90%. db had no spare when it failed.",
+    "blame": {
+     "part": "db",
+     "line": 5,
+     "rho": 1.2504,
+     "note": "db is at 125 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "cdn",
+      "ms": 18.75,
+      "rho": 0.2,
+      "hit": 0.95
+     },
+     {
+      "part": "lb",
+      "ms": 2.5,
+      "rho": 0.2
+     },
+     {
+      "part": "api",
+      "ms": 70.03,
+      "rho": 0.7144
+     },
+     {
+      "part": "cache",
+      "ms": 2.22,
+      "rho": 0.1,
+      "hit": 0
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 1.2504
+     }
+    ]
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 293.5,
+   "tests": [
+    {
+     "id": "t01-toss",
+     "title": "The toss",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-last-over",
+     "title": "The last over",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies in the last over",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-cache-restarts",
+     "title": "The cache restarts mid-over",
+     "hidden": true,
+     "verdict": "Unavailable"
+    },
+    {
+     "id": "t05-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 5,
+     "col": 1,
+     "message": "\"db\" has no spare. If it fails, GET_SCORE and UPDATE_SCORE stop.",
+     "part": "db"
+    }
+   ],
+   "judge_version": 2
+  },
+  "big-origin": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 383000,
+   "worst_p99_ms": {
+    "GET_SCORE": 49.9,
+    "UPDATE_SCORE": 52.6
+   },
+   "worst_p50_ms": {
+    "GET_SCORE": 3.8,
+    "UPDATE_SCORE": 13.1
+   },
+   "failed": {
+    "test": "t01-toss",
+    "title": "The toss",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹2,60,000",
+    "actual": "₹3,83,000",
+    "message": "This design costs ₹3,83,000 a month; the budget is ₹2,60,000.",
+    "blame": {
+     "part": "api",
+     "line": 3,
+     "rho": null,
+     "note": "api is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 49.9,
+   "tests": [
+    {
+     "id": "t01-toss",
+     "title": "The toss",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-last-over",
+     "title": "The last over",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies in the last over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-cache-restarts",
+     "title": "The cache restarts mid-over",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

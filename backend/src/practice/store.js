@@ -52,6 +52,18 @@ export function openPractice(db, { now = () => Date.now() } = {}) {
       const rows = await subs.aggregate([{ $match: { user_id: userId } }, { $group: { _id: '$problem_id', ok: { $max: { $cond: [{ $eq: ['$verdict', 'Accepted'] }, 1, 0] } } } }]).toArray();
       return Object.fromEntries(rows.map((r) => [r._id, r.ok ? 'solved' : 'tried']));
     },
+    // Consecutive days (in India) with at least one Accepted submission, ending today or yesterday (12).
+    async streak(userId) {
+      await init();
+      const IST = 5.5 * 3600_000, day = (t) => Math.floor((t + IST) / 86_400_000);
+      const rows = await subs.aggregate([{ $match: { user_id: userId, verdict: 'Accepted' } }, { $project: { at: '$created_at' } }]).toArray();
+      const days = new Set(rows.map((r) => day(new Date(r.at).getTime())));
+      let d = day(now());
+      if (!days.has(d)) d -= 1;
+      let n = 0;
+      while (days.has(d)) { n += 1; d -= 1; }
+      return n;
+    },
     async solved(userId, problemId) { await init(); return !!(await subs.findOne({ user_id: userId, problem_id: problemId, verdict: 'Accepted' }, { projection: { _id: 1 } })); },
     // The caller's submissions of a problem, newest first (at most 50), without their source.
     async list(userId, problemId) {

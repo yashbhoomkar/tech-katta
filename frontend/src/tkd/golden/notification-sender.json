@@ -1,0 +1,468 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 156000,
+  "worst_p99_ms": {
+   "SEND": 55.6
+  },
+  "worst_p50_ms": {
+   "SEND": 13.9
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-steady",
+   "margin": 0.1086,
+   "text": "Tightest promise: budget, 11 % to spare."
+  },
+  "rank_p99_ms": 55.6,
+  "tests": [
+   {
+    "id": "t01-steady",
+    "title": "A steady hour",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-match-starts",
+    "title": "The match starts",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-worker-dies",
+    "title": "A worker dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-database-fails",
+    "title": "The database fails during a spike",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-two-spikes",
+    "title": "Two spikes in a row",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "no-queue": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 140000,
+   "worst_p99_ms": {
+    "SEND": 655.6
+   },
+   "worst_p50_ms": {
+    "SEND": 163.9
+   },
+   "failed": {
+    "test": "t02-match-starts",
+    "title": "The match starts",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "SEND",
+    "phase": 1,
+    "expected": "at most 2,500 calls a second",
+    "actual": "5,000 calls a second",
+    "message": "db received 5,000 calls a second but can serve 2,500.",
+    "blame": {
+     "part": "db",
+     "line": 3,
+     "rho": 2,
+     "note": "db is at 200 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.22,
+      "rho": 0.1
+     },
+     {
+      "part": "api",
+      "ms": 53.33,
+      "rho": 0.625
+     },
+     {
+      "part": "db",
+      "ms": 600,
+      "rho": 2
+     }
+    ]
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 655.6,
+   "tests": [
+    {
+     "id": "t01-steady",
+     "title": "A steady hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match-starts",
+     "title": "The match starts",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-worker-dies",
+     "title": "A worker dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database fails during a spike",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-two-spikes",
+     "title": "Two spikes in a row",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "one-small-worker": {
+   "verdict": "Too Slow",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 147000,
+   "worst_p99_ms": {
+    "SEND": 55.6
+   },
+   "worst_p50_ms": {
+    "SEND": 13.9
+   },
+   "failed": {
+    "test": "t02-match-starts",
+    "title": "The match starts",
+    "hidden": false,
+    "reason": "backlog",
+    "request": "SEND",
+    "phase": 1,
+    "expected": "done within 180 s",
+    "actual": "waited 540 s",
+    "message": "SEND was still waiting 540 s after it was accepted; the promise is 180 s. worker can do 500 a second but 5,000 arrive.",
+    "blame": {
+     "part": "worker",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.22,
+      "rho": 0.1
+     },
+     {
+      "part": "api",
+      "ms": 53.33,
+      "rho": 0.625
+     },
+     {
+      "part": "queue",
+      "ms": 6.67,
+      "rho": 0.25,
+      "bg": true
+     },
+     {
+      "part": "worker",
+      "ms": 400,
+      "rho": 1,
+      "bg": true
+     },
+     {
+      "part": "db",
+      "ms": 37.5,
+      "rho": 0.2,
+      "bg": true
+     }
+    ]
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 55.6,
+   "tests": [
+    {
+     "id": "t01-steady",
+     "title": "A steady hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match-starts",
+     "title": "The match starts",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t03-a-worker-dies",
+     "title": "A worker dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database fails during a spike",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-two-spikes",
+     "title": "Two spikes in a row",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "async-replica": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 156000,
+   "worst_p99_ms": {
+    "SEND": 55.6
+   },
+   "worst_p50_ms": {
+    "SEND": 13.9
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database fails during a spike",
+    "hidden": true,
+    "reason": "lost",
+    "request": "SEND",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 2000 lost",
+    "message": "When db failed, about 2,000 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "db",
+     "line": 5,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Making \"db\" wait for its replicas would fix this.",
+   "rank_p99_ms": 55.6,
+   "tests": [
+    {
+     "id": "t01-steady",
+     "title": "A steady hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match-starts",
+     "title": "The match starts",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-worker-dies",
+     "title": "A worker dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database fails during a spike",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-two-spikes",
+     "title": "Two spikes in a row",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "too-few-servers": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 132000,
+   "worst_p99_ms": {
+    "SEND": 402.2
+   },
+   "worst_p50_ms": {
+    "SEND": 100.6
+   },
+   "failed": {
+    "test": "t02-match-starts",
+    "title": "The match starts",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "SEND",
+    "phase": 1,
+    "expected": "at most 4,000 calls a second",
+    "actual": "5,000 calls a second",
+    "message": "api received 5,000 calls a second but can serve 4,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 1.25,
+     "note": "api is at 125 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.22,
+      "rho": 0.1
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 1.25
+     },
+     {
+      "part": "queue",
+      "ms": 6.67,
+      "rho": 0.25,
+      "bg": true
+     },
+     {
+      "part": "worker",
+      "ms": 400,
+      "rho": 1,
+      "bg": true
+     },
+     {
+      "part": "db",
+      "ms": 150,
+      "rho": 0.8,
+      "bg": true
+     }
+    ]
+   },
+   "also": [],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 402.2,
+   "tests": [
+    {
+     "id": "t01-steady",
+     "title": "A steady hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match-starts",
+     "title": "The match starts",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-worker-dies",
+     "title": "A worker dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database fails during a spike",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-two-spikes",
+     "title": "Two spikes in a row",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "many-workers": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 288000,
+   "worst_p99_ms": {
+    "SEND": 23.4
+   },
+   "worst_p50_ms": {
+    "SEND": 5.8
+   },
+   "failed": {
+    "test": "t01-steady",
+    "title": "A steady hour",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,75,000",
+    "actual": "₹2,88,000",
+    "message": "This design costs ₹2,88,000 a month; the budget is ₹1,75,000.",
+    "blame": {
+     "part": "worker",
+     "line": 4,
+     "rho": null,
+     "note": "worker is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 23.4,
+   "tests": [
+    {
+     "id": "t01-steady",
+     "title": "A steady hour",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-match-starts",
+     "title": "The match starts",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-worker-dies",
+     "title": "A worker dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database fails during a spike",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-two-spikes",
+     "title": "Two spikes in a row",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

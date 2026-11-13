@@ -1,0 +1,510 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 31000,
+  "worst_p99_ms": {
+   "GET_IMAGE": 142.4,
+   "UPLOAD_IMAGE": 126.5
+  },
+  "worst_p50_ms": {
+   "GET_IMAGE": 4,
+   "UPLOAD_IMAGE": 31.6
+  },
+  "tightest": {
+   "promise": "p99",
+   "request": "GET_IMAGE",
+   "test": "t02-dinner",
+   "margin": 0.11,
+   "text": "Tightest promise: GET_IMAGE p99, 11 % to spare."
+  },
+  "rank_p99_ms": 142.4,
+  "tests": [
+   {
+    "id": "t01-afternoon",
+    "title": "An afternoon",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-upload-rush",
+    "title": "A menu-update rush",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-long-evening",
+    "title": "A long evening",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "no-cdn": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 28000,
+   "worst_p99_ms": {
+    "GET_IMAGE": 482.6,
+    "UPLOAD_IMAGE": 482.6
+   },
+   "worst_p50_ms": {
+    "GET_IMAGE": 120.6,
+    "UPLOAD_IMAGE": 120.6
+   },
+   "failed": {
+    "test": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_IMAGE",
+    "phase": 2,
+    "expected": "at most 4,000 calls a second",
+    "actual": "60,050 calls a second",
+    "message": "api received 60,050 calls a second but can serve 4,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 15.0125,
+     "note": "api is at 1501 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 40,
+      "rho": 1.201
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 15.0125
+     },
+     {
+      "part": "files",
+      "ms": 42.56,
+      "rho": 0.0601
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_IMAGE",
+     "message": "GET_IMAGE took 482.6 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity."
+    },
+    {
+     "reason": "p50",
+     "request": "GET_IMAGE",
+     "message": "GET_IMAGE took 120.6 ms for the median request; the promise is 10 ms."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 482.6,
+   "tests": [
+    {
+     "id": "t01-afternoon",
+     "title": "An afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-upload-rush",
+     "title": "A menu-update rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-long-evening",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "cache-behind-servers": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 34000,
+   "worst_p99_ms": {
+    "GET_IMAGE": 521.1,
+    "UPLOAD_IMAGE": 481.1
+   },
+   "worst_p50_ms": {
+    "GET_IMAGE": 120,
+    "UPLOAD_IMAGE": 120.3
+   },
+   "failed": {
+    "test": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_IMAGE",
+    "phase": 2,
+    "expected": "at most 4,000 calls a second",
+    "actual": "60,050 calls a second",
+    "message": "api received 60,050 calls a second but can serve 4,000.",
+    "blame": {
+     "part": "api",
+     "line": 3,
+     "rho": 15.0125,
+     "note": "api is at 1501 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 40,
+      "rho": 1.201
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 15.0125
+     },
+     {
+      "part": "cache",
+      "ms": 40,
+      "rho": 1.2,
+      "hit": 0.537159
+     },
+     {
+      "part": "files",
+      "ms": 41.14,
+      "rho": 0.0278
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_IMAGE",
+     "message": "GET_IMAGE took 521.1 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 1501 % of capacity."
+    },
+    {
+     "reason": "p50",
+     "request": "GET_IMAGE",
+     "message": "GET_IMAGE took 120.0 ms for the median request; the promise is 10 ms."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 521.1,
+   "tests": [
+    {
+     "id": "t01-afternoon",
+     "title": "An afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-upload-rush",
+     "title": "A menu-update rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-long-evening",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 1,
+     "col": 1,
+     "message": "\"cache\" has no spare. If it fails, GET_IMAGE stop.",
+     "part": "cache"
+    }
+   ],
+   "judge_version": 2
+  },
+  "one-server": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 13000,
+   "worst_p99_ms": {
+    "GET_IMAGE": 458.2,
+    "UPLOAD_IMAGE": 442.3
+   },
+   "worst_p50_ms": {
+    "GET_IMAGE": 4,
+    "UPLOAD_IMAGE": 110.6
+   },
+   "failed": {
+    "test": "t02-dinner",
+    "title": "Dinner time",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_IMAGE",
+    "phase": 2,
+    "expected": "at most 1,000 calls a second",
+    "actual": "3,050 calls a second",
+    "message": "api received 3,050 calls a second but can serve 1,000.",
+    "blame": {
+     "part": "api",
+     "line": 3,
+     "rho": 3.05,
+     "note": "api is at 305 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "cdn",
+      "ms": 15.96,
+      "rho": 0.06,
+      "hit": 0.95
+     },
+     {
+      "part": "lb",
+      "ms": 2.13,
+      "rho": 0.061
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 3.05
+     },
+     {
+      "part": "files",
+      "ms": 40.12,
+      "rho": 0.0031
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_IMAGE",
+     "message": "GET_IMAGE took 458.2 ms at the 99th percentile; the promise is 160 ms. Slowest hop: api at 305 % of capacity."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 458.2,
+   "tests": [
+    {
+     "id": "t01-afternoon",
+     "title": "An afternoon",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-upload-rush",
+     "title": "A menu-update rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-long-evening",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 3,
+     "col": 1,
+     "message": "\"api\" has no spare. If it fails, GET_IMAGE and UPLOAD_IMAGE stop.",
+     "part": "api"
+    }
+   ],
+   "judge_version": 2
+  },
+  "random-32-bit-ids": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 31000,
+   "worst_p99_ms": {
+    "GET_IMAGE": 77.6,
+    "UPLOAD_IMAGE": 62.6
+   },
+   "worst_p50_ms": {
+    "GET_IMAGE": 3.8,
+    "UPLOAD_IMAGE": 15.6
+   },
+   "failed": {
+    "test": "t01-afternoon",
+    "title": "An afternoon",
+    "hidden": false,
+    "reason": "collision",
+    "request": "UPLOAD_IMAGE",
+    "phase": null,
+    "expected": "no repeated ids",
+    "actual": "about 46,56,613 repeats expected",
+    "message": "With 20 crore items, 32-bit random ids are expected to collide. Use more bits, or a counter.",
+    "blame": {
+     "part": "ids",
+     "line": 5,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "More bits in the ids of \"ids\" would fix this.",
+   "rank_p99_ms": 77.6,
+   "tests": [
+    {
+     "id": "t01-afternoon",
+     "title": "An afternoon",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-upload-rush",
+     "title": "A menu-update rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-long-evening",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "many-servers": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 247000,
+   "worst_p99_ms": {
+    "GET_IMAGE": 77.1,
+    "UPLOAD_IMAGE": 62.1
+   },
+   "worst_p50_ms": {
+    "GET_IMAGE": 3.8,
+    "UPLOAD_IMAGE": 15.5
+   },
+   "failed": {
+    "test": "t01-afternoon",
+    "title": "An afternoon",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹60,000",
+    "actual": "₹2,47,000",
+    "message": "This design costs ₹2,47,000 a month; the budget is ₹60,000.",
+    "blame": {
+     "part": "api",
+     "line": 3,
+     "rho": null,
+     "note": "api is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 77.1,
+   "tests": [
+    {
+     "id": "t01-afternoon",
+     "title": "An afternoon",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-dinner",
+     "title": "Dinner time",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-upload-rush",
+     "title": "A menu-update rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-long-evening",
+     "title": "A long evening",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

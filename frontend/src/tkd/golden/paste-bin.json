@@ -1,0 +1,550 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 114000,
+  "worst_p99_ms": {
+   "GET_PASTE": 62.8,
+   "CREATE_PASTE": 124.6
+  },
+  "worst_p50_ms": {
+   "GET_PASTE": 15.7,
+   "CREATE_PASTE": 31.2
+  },
+  "tightest": {
+   "promise": "p99",
+   "request": "GET_PASTE",
+   "test": "t02-incident",
+   "margin": 0.2388,
+   "text": "Tightest promise: GET_PASTE p99, 24 % to spare."
+  },
+  "rank_p99_ms": 62.8,
+  "tests": [
+   {
+    "id": "t01-quiet-hour",
+    "title": "A quiet hour",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-incident",
+    "title": "An incident link goes round",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-cold-cache",
+    "title": "The cache restarts",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "small-cache": {
+   "verdict": "Too Slow",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 93000,
+   "worst_p99_ms": {
+    "GET_PASTE": 89.2,
+    "CREATE_PASTE": 164.6
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 12.6,
+    "CREATE_PASTE": 41.2
+   },
+   "failed": {
+    "test": "t02-incident",
+    "title": "An incident link goes round",
+    "hidden": false,
+    "reason": "p99",
+    "request": "GET_PASTE",
+    "phase": 2,
+    "expected": "p99 ≤ 80 ms",
+    "actual": "p99 89.2 ms",
+    "message": "GET_PASTE took 89.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: db at 74 % of capacity.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 0.742,
+     "note": "db is at 74 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.2,
+      "rho": 0.0906
+     },
+     {
+      "part": "api",
+      "ms": 46.11,
+      "rho": 0.5663
+     },
+     {
+      "part": "cache",
+      "ms": 2.09,
+      "rho": 0.045,
+      "hit": 0.525306
+     },
+     {
+      "part": "db",
+      "ms": 38.76,
+      "rho": 0.742
+     }
+    ]
+   },
+   "also": [],
+   "tip": "Bigger machines for \"db\" would fix this.",
+   "rank_p99_ms": 89.2,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "no-cache-small-servers": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 54000,
+   "worst_p99_ms": {
+    "GET_PASTE": 602.2,
+    "CREATE_PASTE": 1002.2
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 150.6,
+    "CREATE_PASTE": 250.6
+   },
+   "failed": {
+    "test": "t02-incident",
+    "title": "An incident link goes round",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_PASTE",
+    "phase": 2,
+    "expected": "at most 2,000 calls a second",
+    "actual": "4,530 calls a second",
+    "message": "api received 4,530 calls a second but can serve 2,000.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 2.265,
+     "note": "api is at 227 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.2,
+      "rho": 0.0906
+     },
+     {
+      "part": "api",
+      "ms": 400,
+      "rho": 2.265
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 1.53
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_PASTE",
+     "message": "GET_PASTE took 602.2 ms at the 99th percentile; the promise is 80 ms. Slowest hop: api at 227 % of capacity."
+    }
+   ],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 602.2,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "no-replica": {
+   "verdict": "Unavailable",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 94000,
+   "worst_p99_ms": {
+    "GET_PASTE": 60.9,
+    "CREATE_PASTE": 64
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 12.6,
+    "CREATE_PASTE": 16
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "reason": "unavailable",
+    "request": "GET_PASTE",
+    "phase": 2,
+    "expected": "95.00%",
+    "actual": "50.00%",
+    "message": "GET_PASTE was available 50.00% of the time; the promise is 95.00%. db had no spare when it failed.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": "db failed"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.08,
+      "rho": 0.0404
+     },
+     {
+      "part": "api",
+      "ms": 26.76,
+      "rho": 0.2525
+     },
+     {
+      "part": "cache",
+      "ms": 2.04,
+      "rho": 0.02,
+      "hit": 0.99
+     },
+     {
+      "part": "db",
+      "ms": null,
+      "rho": null,
+      "down": true
+     }
+    ]
+   },
+   "also": [],
+   "tip": "A replica of \"db\" would fix this.",
+   "rank_p99_ms": 60.9,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": "Unavailable"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [
+    {
+     "code": "W003",
+     "line": 4,
+     "col": 1,
+     "message": "\"db\" has no spare. If it fails, GET_PASTE and CREATE_PASTE stop.",
+     "part": "db"
+    }
+   ],
+   "judge_version": 2
+  },
+  "async-replica": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 114000,
+   "worst_p99_ms": {
+    "GET_PASTE": 60.9,
+    "CREATE_PASTE": 64
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 12.6,
+    "CREATE_PASTE": 16
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "reason": "lost",
+    "request": "CREATE_PASTE",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 20 lost",
+    "message": "When db failed, about 20 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Making \"db\" wait for its replicas would fix this.",
+   "rank_p99_ms": 60.9,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "random-32-bit-ids": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 114000,
+   "worst_p99_ms": {
+    "GET_PASTE": 35,
+    "CREATE_PASTE": 53.4
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 6.2,
+    "CREATE_PASTE": 13.4
+   },
+   "failed": {
+    "test": "t01-quiet-hour",
+    "title": "A quiet hour",
+    "hidden": false,
+    "reason": "collision",
+    "request": "CREATE_PASTE",
+    "phase": null,
+    "expected": "no repeated ids",
+    "actual": "about 2,91,038 repeats expected",
+    "message": "With 5 crore items, 32-bit random ids are expected to collide. Use more bits, or a counter.",
+    "blame": {
+     "part": "ids",
+     "line": 5,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "More bits in the ids of \"ids\" would fix this.",
+   "rank_p99_ms": 35,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "huge-cache": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 186000,
+   "worst_p99_ms": {
+    "GET_PASTE": 35,
+    "CREATE_PASTE": 53.4
+   },
+   "worst_p50_ms": {
+    "GET_PASTE": 6.2,
+    "CREATE_PASTE": 13.4
+   },
+   "failed": {
+    "test": "t01-quiet-hour",
+    "title": "A quiet hour",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,50,000",
+    "actual": "₹1,86,000",
+    "message": "This design costs ₹1,86,000 a month; the budget is ₹1,50,000.",
+    "blame": {
+     "part": "cache",
+     "line": 3,
+     "rho": null,
+     "note": "cache is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "A smaller \"cache\" would fix this.",
+   "rank_p99_ms": 35,
+   "tests": [
+    {
+     "id": "t01-quiet-hour",
+     "title": "A quiet hour",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-incident",
+     "title": "An incident link goes round",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

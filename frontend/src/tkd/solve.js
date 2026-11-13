@@ -88,7 +88,10 @@ function solveSegment(design, problem, state, rates, seconds, cond, backlog) {
     const after = Math.max(0, before + (arr - cap) * seconds);
     backlog[worker] = after;
     ratios[worker] = arr > 0 ? serve / arr : 1;
-    queueInfo[worker] = { arrive: arr, cap, serve, backlog: after, delay_s: cap > 0 ? after / cap : null, stuck: cap === 0 && after > 0 };
+    // blocked (something after the worker is down): the work waits and is done once it is back up, so the wait is
+    // the blocked time plus the backlog at the worker's own pace; a worker with no instance left is stuck
+    const own = CAP.server[p.size] * s.alive;
+    queueInfo[worker] = { arrive: arr, cap, serve, backlog: after, delay_s: cap > 0 ? after / cap : own > 0 ? seconds + after / own : null, stuck: own === 0 && after > 0 };
   }
 
   // pass 2: load on every part
@@ -176,7 +179,7 @@ export function runTest(design, problem, test) {
   for (const [name, p] of Object.entries(P)) state[name] = KINDS[p.kind].initState(p);
   const backlog = {}, segments = [], lost = {}, events = [];
   const totalSeconds = (test.phases || []).reduce((t, ph) => t + (ph.seconds || 0), 0);
-  let faultSeen = false, t0 = 0;
+  let faultSeen = false, t0 = 0, lastWalks = null;
   (test.phases || []).forEach((phase, pi) => {
     const T = phase.seconds, rates = phase.rates || {};
     // events at the start of the phase: new state, and windows (failover, cold cache) that cut the phase
@@ -200,10 +203,12 @@ export function runTest(design, problem, test) {
       // writes acknowledged but only on a part that failed (7.2, 7.6): counted once, at the phase's first segment
       if (i === 0) for (const part of lagParts) for (const R of problem.requests) {
         if (R.mode !== 'write' || !R.durable) continue;
-        const st = seg.walks[R.name]?.find((x) => x.part === part);
+        // the writes that reached the part just before it failed (the segment before, if there is one)
+        const st = (lastWalks || seg.walks)[R.name]?.find((x) => x.part === part);
         if (st && st.x > 0) { const l = (lost[R.name] ||= { n: 0, part, phase: pi + 1 }); l.n += st.x * REPLICA_LAG_S; }
       }
       segments.push({ phase: pi + 1, start: t0 + a, seconds: b - a, faultSeen, ...seg });
+      lastWalks = seg.walks;
     }
     t0 += T;
   });

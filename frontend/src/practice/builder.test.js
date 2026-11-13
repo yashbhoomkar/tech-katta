@@ -14,11 +14,13 @@ const problem = JSON.parse(readFileSync(new URL("../../../content/problems2/001-
 const [GET, CREATE] = problem.requests;
 const text = (p) => B.write(p, problem);
 
-test("text → Builder → text keeps every reference and wrong design", () => {
-  for (const src of [problem.reference, ...problem.wrong.map((w) => w.source)]) {
-    const once = text(B.read(src));
-    assert.equal(text(B.read(once)), once);
-    assert.equal(canonical(once, problem), canonical(src, problem));
+const DIR = new URL("../../../content/problems2/", import.meta.url);
+const all = JSON.parse(readFileSync(new URL("index.json", DIR), "utf8")).problems.map((f) => JSON.parse(readFileSync(new URL(`${f}.json`, DIR), "utf8")));
+test("text → Builder → text keeps every reference and wrong design of every problem", () => {
+  for (const p of all) for (const src of [p.reference, ...p.wrong.map((w) => w.source)]) {
+    const once = B.write(B.read(src), p);
+    assert.equal(B.write(B.read(once), p), once, p.slug);
+    assert.equal(canonical(once, p), canonical(src, p), p.slug);
   }
 });
 

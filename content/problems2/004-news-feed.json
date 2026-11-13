@@ -1,0 +1,239 @@
+{
+  "id": 4,
+  "slug": "news-feed",
+  "title": "Design a news feed (read path)",
+  "difficulty": "medium",
+  "topics": [
+    "caching",
+    "invalidation",
+    "nosql"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "Zotato's community app shows each user a home feed of posts from the restaurants and friends they follow. A feed is kept ready per user (about **4 KB**: the newest 20 posts) and rebuilt when someone they follow posts.\n\nDesign the **feed read** and the **post write**. Opening the app reads one feed; a post updates the feeds it belongs to.\n\nFeeds must be fresh: a feed may be at most **30 seconds** old. A post that was accepted must not be lost. Opens should feel instant: half of them under 14 ms. The budget is ₹1.75 lakh a month.",
+  "constraints": [
+    "50 lakh users with a feed",
+    "Peak: 8,000 feed opens and 800 posts a second",
+    "Median open under 14 ms; 99th percentile under 120 ms",
+    "Budget ₹1,75,000 a month"
+  ],
+  "total_items": 1000000000,
+  "requests": [
+    {
+      "name": "GET_FEED",
+      "mode": "read",
+      "table": "feeds",
+      "key": "user_id",
+      "distinct_keys": 5000000,
+      "item_bytes": 4000,
+      "skew": 0.5,
+      "max_stale_s": 30,
+      "read_your_writes": false,
+      "cdn_ok": false,
+      "says": "Open the app: return the user's feed."
+    },
+    {
+      "name": "POST",
+      "mode": "write",
+      "table": "feeds",
+      "key": "user_id",
+      "durable": true,
+      "unique_id": true,
+      "says": "Publish a post and update the feeds it belongs to."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "feeds",
+      "columns": [
+        "user_id",
+        "posts",
+        "updated_at"
+      ],
+      "pk": "user_id"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nread  GET_FEED: client > lb > api > \nwrite POST:     client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-morning",
+      "title": "Morning",
+      "hidden": false,
+      "explain": "1,000 opens and 100 posts a second. The budget is checked here.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_FEED": 1000,
+            "POST": 100
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_FEED": 120
+        },
+        "budget_inr": 175000
+      }
+    },
+    {
+      "id": "t02-dinner-peak",
+      "title": "Dinner-time peak",
+      "hidden": false,
+      "explain": "4,000 then 8,000 opens a second. Half the opens must take under 14 ms.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_FEED": 4000,
+            "POST": 400
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_FEED": 8000,
+            "POST": 800
+          }
+        }
+      ],
+      "promises": {
+        "p50_ms": {
+          "GET_FEED": 14
+        },
+        "p99_ms": {
+          "GET_FEED": 120
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_FEED": 6000,
+            "POST": 600
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_FEED": 6000,
+            "POST": 600
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_FEED": 0.999
+        }
+      }
+    },
+    {
+      "id": "t04-a-node-dies",
+      "title": "A storage node dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_FEED": 6000,
+            "POST": 600
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_FEED": 6000,
+            "POST": 600
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "availability": {
+          "GET_FEED": 0.99
+        }
+      }
+    },
+    {
+      "id": "t05-cold-cache",
+      "title": "The cache restarts",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_FEED": 3000,
+            "POST": 300
+          },
+          "events": [
+            {
+              "flush_role": "cache"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_FEED": 0.999
+        }
+      }
+    }
+  ],
+  "reference": "lb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=3600)\nkv    = nosql(nodes=3, rf=3, w=2, r=2)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv then invalidate cache\n",
+  "wrong": [
+    {
+      "name": "short-ttl-no-invalidate",
+      "expect": "Too Slow",
+      "why": "A 30-second TTL keeps the feeds fresh, but with 50 lakh feeds hardly any is asked for twice in 30 seconds: most opens miss.",
+      "source": "lb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=30)\nkv    = nosql(nodes=3, rf=3, w=2, r=2)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "long-ttl-no-invalidate",
+      "expect": "Wrong Answer",
+      "why": "A feed could be an hour old; the problem allows 30 seconds.",
+      "source": "lb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=3600)\nkv    = nosql(nodes=3, rf=3, w=2, r=2)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv\n"
+    },
+    {
+      "name": "sql-feeds",
+      "expect": "Overloaded",
+      "why": "800 posts a second land on one SQL primary with the cache's misses; a medium primary takes 1,000 writes a second in all.",
+      "source": "lb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | db\nwrite POST:     client > lb > api > ids > db then invalidate cache\n"
+    },
+    {
+      "name": "quick-writes",
+      "expect": "Data Lost",
+      "why": "w=1: a post is acknowledged when one copy has it; that node's death loses it.",
+      "source": "lb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=3600)\nkv    = nosql(nodes=3, rf=3, w=1, r=3)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv then invalidate cache\n"
+    },
+    {
+      "name": "big-everything",
+      "expect": "Over Budget",
+      "why": "It passes every test at more than the budget.",
+      "source": "lb    = lb()\napi   = server(count=12, size=large)\ncache = cache(nodes=8, memory_gb=16, ttl_s=3600)\nkv    = nosql(nodes=3, rf=3, w=2, r=2)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv then invalidate cache\n"
+    }
+  ],
+  "hints": [
+    "With 50 lakh feeds and a 30-second TTL, how likely is a feed to be asked for twice within its TTL?",
+    "If every post clears its feed from the cache, the TTL can be long. What does that do to the hit ratio?",
+    "800 writes a second plus the cache misses: which store takes that comfortably?"
+  ],
+  "editorial": "## The approach\n\nFreshness fights with the hit ratio here. A 30-second TTL would keep feeds fresh, but with 50 lakh feeds and low skew almost no feed is opened twice in 30 seconds, so the cache would miss most of the time.\n\n1. **Long TTL, cleared on write.** Each post clears its feed from the cache (`then invalidate cache`), so a cached feed is never stale and can stay an hour. Some opens still miss, because 800 posts clear feeds every second.\n2. **A store for the writes.** 800 posts a second plus the misses go to a NoSQL store; `w=2` keeps a post on two copies before it is acknowledged.\n3. **Servers for the median.** Eight large servers keep the median open near 12 ms. A 16 GB cache holds most of the feeds (80 %), so about 80 % of opens are hits.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=8, size=large)\ncache = cache(nodes=4, memory_gb=4, ttl_s=3600)\nkv    = nosql(nodes=3, rf=3, w=2, r=2)\nids   = idgen(kind=snowflake)\n\ntable kv.feeds(user_id pk, posts, updated_at)\n\nread  GET_FEED: client > lb > api > cache | kv\nwrite POST:     client > lb > api > ids > kv then invalidate cache\n```\n\nIt costs ₹1.52 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Short ttl no invalidate: Too Slow.** A 30-second TTL keeps the feeds fresh, but with 50 lakh feeds hardly any is asked for twice in 30 seconds: most opens miss.\n- **Long ttl no invalidate: Wrong Answer.** A feed could be an hour old; the problem allows 30 seconds.\n- **Sql feeds: Overloaded.** 800 posts a second land on one SQL primary with the cache's misses; a medium primary takes 1,000 writes a second in all.\n- **Quick writes: Data Lost.** w=1: a post is acknowledged when one copy has it; that node's death loses it.\n- **Big everything: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Caching](/dashboard/concepts/caching/)\n- [Cassandra](/dashboard/components/cassandra/)\n"
+}

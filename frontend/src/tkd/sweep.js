@@ -1,6 +1,7 @@
 // Design-space sweep (spec 22.11): judge a grid of plausible designs built from the problem's reference, and say
 // whether the problem is fit to ship. Used by backend/scripts/sweep-problem.mjs; pure, like the rest of tkd/.
-// The grid varies the reference's own parts: servers (count 1, 2, 3, 4, 6, 8 × three sizes), caches (none, or 1, 4,
+// The grid varies the reference's own parts: servers and workers (count 1, 2, 3, 4, 6, 8 and the reference's own,
+// × three sizes), nosql stores (3, 4, 6, 8, 12 nodes and the reference's, × quorums w1r1, w2r2, w3r1, w1r3), caches (none, or 1, 4,
 // 16 GB with a TTL of 1 minute, 1 hour or 1 day, cleared on write, written through, or neither), sql (three sizes ×
 // 0, 1, 2 replicas × sync on/off) and id kinds (random and hash at 32 and 64 bits). The spec's grid plus a day-long TTL
 // and 32-bit ids, so that the Wrong Answer mistakes are in it too.
@@ -31,7 +32,11 @@ export function grid(problem) {
   const product = (name, options) => { designs = designs.flatMap((d) => options.map((o) => { const st = o.apply(clone(d.stmts)); return st ? { label: [...d.label, `${name}:${o.label}`], stmts: st } : null; }).filter(Boolean)); };
   for (const p of base.filter((s) => s.type === 'part')) {
     const on = (fn) => (stmts) => { fn(stmts.find((s) => s.type === 'part' && s.name === p.name), stmts); return stmts; };
-    if (p.kind === 'server') product(p.name, [1, 2, 3, 4, 6, 8].flatMap((n) => SIZES.map((z) => ({ label: `${n}×${z}`, apply: on((s) => { setArg(s, 'count', n); setArg(s, 'size', z); }) }))));
+    // servers and workers: the spec's counts plus the reference's own, so the reference is always in the grid
+    const refArg = (n, d) => p.args.find((a) => a.name === n)?.value ?? d;
+    if (p.kind === 'server' || p.kind === 'worker') product(p.name, [...new Set([1, 2, 3, 4, 6, 8, refArg('count', 1)])].sort((a, b) => a - b).flatMap((n) => SIZES.map((z) => ({ label: `${n}×${z}`, apply: on((s) => { setArg(s, 'count', n); setArg(s, 'size', z); }) }))));
+    // nosql: nodes and the quorum (w, r) with rf 3
+    if (p.kind === 'nosql') product(p.name, [...new Set([3, 4, 6, 8, 12, refArg('nodes', 3)])].sort((a, b) => a - b).flatMap((n) => [[1, 1], [2, 2], [3, 1], [1, 3]].map(([w, r]) => ({ label: `${n}n/w${w}r${r}`, apply: on((s) => { setArg(s, 'nodes', n); setArg(s, 'rf', 3); setArg(s, 'w', w); setArg(s, 'r', r); }) }))));
     if (p.kind === 'sql') product(p.name, SIZES.flatMap((z) => [0, 1, 2].flatMap((r) => [true, false].map((y) => ({ label: `${z}+${r}${y ? 'sync' : ''}`, apply: on((s) => { setArg(s, 'size', z); setArg(s, 'replicas', r); setArg(s, 'sync', y); }) })))));
     // id kinds; random and hash at 32 and 64 bits (too few bits is a mistake worth having in the grid)
     if (p.kind === 'idgen') product(p.name, ID_KINDS.flatMap((k) => (k === 'random' || k === 'hash' ? [32, 64] : [64]).map((b) => ({ label: `${k}${k === 'random' || k === 'hash' ? b : ''}`, apply: on((s) => { setArg(s, 'kind', k); setArg(s, 'bits', b); }) }))));

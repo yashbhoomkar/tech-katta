@@ -3,6 +3,7 @@
 // (press Escape first to move focus on with Tab).
 import React, { useRef, useState, useEffect } from "react";
 import { KIND_NAMES } from "../tkd/catalogue.js";
+import { suggest, accept } from "./complete.js";
 
 const KEYWORDS = new Set(["read", "write", "table", "then", "invalidate", "update", "index", "pk", "client"]);
 const KINDS = new Set(KIND_NAMES);
@@ -25,7 +26,9 @@ function paint(line, mark) {
 
 export default function TextEditor({ text, onChange, compiled, cost, label, focusLine }) {
   const ta = useRef(null), over = useRef(null), gut = useRef(null), esc = useRef(false);
-  const [, force] = useState(0);
+  const [, force] = useState(0), [sug, setSug] = useState(null); // autocomplete: {from, items, sel, line, col}
+  const take = (t, item) => { const cur = t.selectionStart, r = accept(t.value, sug, item, cur); onChange(r.text); setSug(null); requestAnimationFrame(() => { t.selectionStart = t.selectionEnd = r.cursor; const again = suggest(r.text, r.cursor); if (again && item.insert.endsWith("(")) open(again, r.text, r.cursor); }); };
+  const open = (s, v, cur) => { if (!s) return setSug(null); const ls = v.lastIndexOf("\n", cur - 1) + 1; setSug({ ...s, sel: 0, line: v.slice(0, ls).split("\n").length - 1, col: s.from - ls }); };
   const lines = text.split("\n");
   const errs = compiled && !compiled.ok ? compiled.errors : [], warns = compiled?.ok ? compiled.warnings : [];
   const byLine = new Map();
@@ -35,6 +38,11 @@ export default function TextEditor({ text, onChange, compiled, cost, label, focu
   useEffect(sync);
   useEffect(() => { if (!focusLine || !ta.current) return; const t = ta.current, at = lines.slice(0, focusLine - 1).join("\n").length + (focusLine > 1 ? 1 : 0); t.focus(); t.setSelectionRange(at, at); t.scrollTop = Math.max(0, (focusLine - 3) * 21); }, [focusLine]); // eslint-disable-line
   const key = (e) => {
+    if (sug) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); const n = sug.items.length; setSug({ ...sug, sel: (sug.sel + (e.key === "ArrowDown" ? 1 : n - 1)) % n }); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); take(e.target, sug.items[sug.sel]); return; }
+      if (e.key === "Escape") { e.preventDefault(); setSug(null); return; }
+    }
     if (e.key === "Escape") { esc.current = true; return; }
     if (e.key === "Tab" && !e.shiftKey && !esc.current && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
@@ -51,7 +59,10 @@ export default function TextEditor({ text, onChange, compiled, cost, label, focu
       <div className="pe-area">
         <pre className="pe-over" aria-hidden="true"><code ref={over}>{lines.map((l, i) => <div key={i} className="pe-line">{paint(l, byLine.get(i + 1))}{"\n"}</div>)}</code></pre>
         <textarea ref={ta} className="pe-ta" value={text} spellCheck={false} autoCapitalize="off" autoComplete="off" autoCorrect="off" wrap="off" aria-label={label} aria-describedby="pe-msg"
-          onChange={(e) => { onChange(e.target.value); force((x) => x + 1); }} onScroll={sync} onKeyDown={key}/>
+          onChange={(e) => { const t = e.target; onChange(t.value); force((x) => x + 1); open(t.selectionStart === t.selectionEnd ? suggest(t.value, t.selectionStart) : null, t.value, t.selectionStart); }}
+          onScroll={() => { sync(); setSug(null); }} onKeyDown={key} onBlur={() => setTimeout(() => setSug(null), 150)} aria-autocomplete="list" aria-expanded={!!sug} aria-controls="pe-sug"/>
+        {sug && <ul id="pe-sug" className="pe-sug" role="listbox" style={{ top: `${10 + (sug.line + 1) * 21 - (ta.current?.scrollTop || 0)}px`, left: `calc(12px + ${sug.col}ch - ${ta.current?.scrollLeft || 0}px)` }}>
+          {sug.items.map((x, i) => <li key={x.label} role="option" aria-selected={i === sug.sel} className={i === sug.sel ? "on" : ""} onMouseDown={(e) => { e.preventDefault(); take(ta.current, x); }}>{x.label}</li>)}</ul>}
       </div>
     </div>
     <div className="pe-foot">

@@ -5,7 +5,7 @@ import { S, DIFF } from "./strings.js";
 // one problem a day, the same for everyone: (days since 2026-01-01 in India) mod n
 export const dailyIndex = (n, now = Date.now()) => { const ist = now + 5.5 * 3600_000, day = Math.floor((ist - Date.UTC(2026, 0, 1)) / 86_400_000); return ((day % n) + n) % n; };
 
-export default function ProblemList({ list, error, retry }) {
+export default function ProblemList({ list, streak, error, retry }) {
   const [status, setStatus] = useState("all"), [diff, setDiff] = useState("all"), [topics, setTopics] = useState([]), [q, setQ] = useState(""), [sort, setSort] = useState("id");
   const all = list || [];
   const shown = useMemo(() => all.filter((p) => (status === "all" || (status === "solved" ? p.status === "solved" : p.status !== "solved")) && (diff === "all" || p.difficulty === diff) && topics.every((t) => p.topics.includes(t)) && (!q || p.title.toLowerCase().includes(q.toLowerCase())))
@@ -19,7 +19,7 @@ export default function ProblemList({ list, error, retry }) {
   const pill = (v, cur, set, label) => <button key={v} type="button" className={"pb-chip" + (cur === v ? " on" : "")} aria-pressed={cur === v} onClick={() => set(v)}>{label}</button>;
   return <section className="pl" aria-labelledby="pl-t">
     <h1 id="pl-t" className="pl-title">{S.listTitle}</h1><p className="pl-desc">{S.listDesc}</p>
-    <p className="pl-progress">{S.solvedOf(solved, all.length)} {["easy", "medium", "hard"].map(bar)}</p>
+    <p className="pl-progress">{S.solvedOf(solved, all.length)} {["easy", "medium", "hard"].map(bar)}{streak !== null && <span className="pl-streak">{S.streak(streak)}</span>}</p>
     {daily && <a className="pl-daily" href={`#practice/${daily.slug}`}><small>{S.daily}</small><b>{daily.id}. {daily.title}</b><span className={`pr-diff pr-${daily.difficulty}`}>{DIFF[daily.difficulty]}</span></a>}
     <div className="pl-filters">
       <span>{pill("all", status, setStatus, S.all)}{pill("open", status, setStatus, S.notDone)}{pill("solved", status, setStatus, S.solvedF)}</span>

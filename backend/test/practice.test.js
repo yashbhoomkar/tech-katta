@@ -13,6 +13,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
 import { practiceRoutes, lru } from '../src/practice/routes.js';
 import { JudgeError } from '../src/auth/judge-pool.js';
+import { JUDGE_VERSION } from '../../frontend/src/tkd/judge.js';
+const COUNT = JSON.parse(readFileSync(new URL('../../content/problems2/index.json', import.meta.url), 'utf8')).problems.length;
 
 const ORIGIN = 'http://localhost:5411', CLIENT = 'test-client.apps.googleusercontent.com';
 const problem = JSON.parse(readFileSync(new URL('../../content/problems2/001-url-shortener.json', import.meta.url), 'utf8'));
@@ -46,7 +48,9 @@ const db = () => client.db('tk_practice');
 
 test('the list and the problem are public; hidden numbers, the reference, wrong designs and the editorial are not', async () => {
   const list = await (await call('/v1/practice/problems', { origin: null })).json();
-  assert.deepEqual(list.problems.map((p) => [p.id, p.slug, p.difficulty, p.acceptance, 'status' in p]), [[1, 'url-shortener', 'easy', null, false]]);
+  assert.equal(list.problems.length, COUNT);
+  assert.deepEqual([list.problems[0]].map((p) => [p.id, p.slug, p.difficulty, p.acceptance, 'status' in p]), [[1, 'url-shortener', 'easy', null, false]]);
+  assert.deepEqual(list.problems.map((p) => p.id), list.problems.map((_, i) => i + 1));
   const r = await call('/v1/practice/problems/url-shortener', { origin: null });
   assert.equal(r.status, 200);
   const text = await r.text(), p = JSON.parse(text);
@@ -54,7 +58,7 @@ test('the list and the problem are public; hidden numbers, the reference, wrong 
   assert.deepEqual(p.tests.filter((t) => t.hidden).map((t) => Object.keys(t).sort()), [['hidden', 'id', 'title'], ['hidden', 'id', 'title'], ['hidden', 'id', 'title']]);
   assert.equal(p.tests.filter((t) => !t.hidden).length, 2);
   assert.equal(p.template, problem.template);
-  assert.equal((await (await fetch(base + '/health')).json()).content.practice, 1);
+  assert.equal((await (await fetch(base + '/health')).json()).content.practice, COUNT);
   const missing = await call('/v1/practice/problems/nope');
   assert.equal(missing.status, 404);
   assert.deepEqual(await missing.json(), { error: { code: 'not_found', message: "This problem doesn't exist." } });
@@ -85,12 +89,13 @@ test('the server judges the source itself: every test, hidden detail stripped, s
   assert.equal(bad.failed.blame.part, 'db');
   assert.ok(bad.failed.expected && bad.failed.actual);
   const stored = await db().collection('practice_submissions').find({}).sort({ created_at: 1 }).toArray();
-  assert.deepEqual(stored.map((s) => [s.verdict, s.cost_inr, s.problem_id, s.judge_version]), [['Accepted', 69_000, 1, 1], ['Unavailable', 49_000, 1, 1]]);
+  assert.deepEqual(stored.map((s) => [s.verdict, s.cost_inr, s.problem_id, s.judge_version]), [['Accepted', 69_000, 1, JUDGE_VERSION], ['Unavailable', 49_000, 1, JUDGE_VERSION]]);
   assert.equal(stored[0].source, problem.reference);
   assert.deepEqual(await db().collection('practice_stats').findOne({ _id: 1 }), { _id: 1, submitted: 2, accepted: 1 });
   // the list shows this user's status
   const list = await (await call('/v1/practice/problems', { cookie })).json();
   assert.equal(list.problems[0].status, 'solved');
+  assert.equal(list.streak, 1, 'an Accepted design today starts a streak');
 });
 
 test("a person's submissions: newest first without source; one with its source, only for its owner", async () => {
