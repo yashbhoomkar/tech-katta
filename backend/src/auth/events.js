@@ -27,6 +27,7 @@ export const EVENTS = {
   // swipes and figure steps (tech-katta-context 24 §11.5): how a reader first stepped a figure (once per figure per
   // page view), and each move between the phone Practice panes
   fig_step: { fig: S, via: S }, practice_pane: { problem: N, to: S, via: S },
+  article_skim: { on: B }, // the "Figures only" switch on an article (25 §7)
   sign_in: { ads: B }, sign_out: {}, sign_out_all: {}, delete_account: {}, ads_consent: { ads: B },
 };
 export const MAX_BATCH = 50;

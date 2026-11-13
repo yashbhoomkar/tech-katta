@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import{Part}from"../status.jsx";import{figOf}from"../figs/index.js";import{useTheme}from"../theme/mode.js";import{useDrag,settleMs}from"../theme/gesture.js";import{example}from"./site.js";import{inline}from"./text.jsx";import{track}from"../analytics.js";import{PHONE_FIGS}from"../figs/phone.jsx";
+import React,{useEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import{Part}from"../status.jsx";import{figOf,loadFigs,knownFig}from"../figs/index.js";import{useTheme}from"../theme/mode.js";import{useDrag,settleMs}from"../theme/gesture.js";import{example}from"./site.js";import{inline}from"./text.jsx";import{track}from"../analytics.js";import{PHONE_FIGS}from"../figs/phone.jsx";
 // Figures: fit the column (zoomed out on phones) plus a full-screen view. In portrait the
 // full-screen figure is turned sideways so it uses the long side of the screen.
 // Swiping down on the full-screen view closes it, as in a photo viewer (tech-katta-context 24, S5).
@@ -69,3 +69,10 @@ const pan=e=>{const b=e.currentTarget;if(b.scrollLeft>8)setMoved(true);setEnd(b.
 return <figure className={"a-fig"+rd+(phone?" a-fig-pan":"")+(P?" a-fig-portrait":"")+(end?" at-end":"")}><div className="a-fig-head">{title}</div><StepBar s={steps} phone={phone} still={still}/>
 <div className="a-fig-body" ref={body} onScroll={phone?pan:undefined}><Part key={id+theme+(P?"p":"")} fallback={FIG_FAILED}><C still={still}/></Part></div>{phone&&!P&&!moved&&<p className="a-fig-hint" aria-hidden="true">⇆ Swipe the figure sideways to see all of it</p>}
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id+theme} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
+
+// A card's picture (section lists, tech-katta-context 25 §7: fewer words, more pictures): the article's first figure,
+// drawn still and small. Its module loads only when the card comes near the screen, so a long list stays light.
+export function Thumb({id}){const box=useRef(null),[f,setF]=useState(()=>figOf(id)||null);
+useEffect(()=>{if(f||!knownFig(id))return;const el=box.current;if(!el)return;let gone=false;const go=()=>loadFigs([id]).then(()=>{if(!gone)setF(figOf(id)||null)}).catch(()=>{});
+if(typeof IntersectionObserver!=="function"){go();return()=>{gone=true}}const io=new IntersectionObserver(e=>{if(e.some(x=>x.isIntersecting)){io.disconnect();go()}},{rootMargin:"300px"});io.observe(el);return()=>{gone=true;io.disconnect()}},[id]);// eslint-disable-line
+const C=f?.C;return <span className="d-thumb" ref={box} aria-hidden="true">{C&&<Part fallback={null}><C still={true} uid={"t"+id}/></Part>}</span>}

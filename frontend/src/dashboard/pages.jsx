@@ -1,4 +1,4 @@
-import React from"react";import Problems,{Questions}from"../problems.jsx";import Numbers from"../numbers.jsx";import LibraryCards from"../library.jsx";import{c,d,articles}from"./site.js";
+import React from"react";import{Thumb}from"./figure.jsx";import Problems,{Questions}from"../problems.jsx";import Numbers from"../numbers.jsx";import LibraryCards from"../library.jsx";import{c,d,articles}from"./site.js";
 // The dashboard's start page (no tab selected): the three library cards. A card opens its section
 // (tab selected in the sidebar and top bar) and that section's first article, or the section itself
 // while it has none.
@@ -18,7 +18,8 @@ return <section className="d-panel" aria-labelledby="d-title"><label>{h.eyebrow}
 // article "group"), in that order; articles without a known group come last. No groups: one plain list.
 export const grouped=(id,list)=>{const g=d.groups?.[id];if(!g)return[[null,list]];const known=new Set(g.map(x=>x[0]));const rest=list.filter(a=>!known.has(a.group));
 return[...g.map(([gid,label,desc])=>[{gid,label,desc},list.filter(a=>a.group===gid)]),...(rest.length?[[null,rest]]:[])]};
-const Item=({id,a})=><li><a href={`#${id}/${a.slug}`}><small>{a.no}</small><b>{a.title}</b><p>{a.dek}</p><em>Read →</em></a></li>;
+// a card is a picture first (the article's first figure, still), then the title and a short line (25 §7)
+const Item=({id,a})=><li><a href={`#${id}/${a.slug}`} className={a.fig?"has-thumb":undefined}>{a.fig&&<Thumb id={a.fig}/>}<span className="d-card-t"><small>{a.no}</small><b>{a.title.split(":")[0]}</b><p>{a.dek}</p><em>Read →</em></span></a></li>;
 function List({id}){const list=articles.filter(a=>a.section===id);return list.length?<div className="d-list"><span>{list.length} {list.length>1?"PAGES":"PAGE"}</span>
 {grouped(id,list).map(([g,items],i)=>g?<section className="d-group" key={g.gid} aria-labelledby={`g-${g.gid}`}><h2 id={`g-${g.gid}`}>{g.label}</h2><p>{g.desc}</p>{items.length?<ol>{items.map(a=><Item key={a.slug} id={id} a={a}/>)}</ol>:<p className="d-soon">{d.groupEmpty||"Coming soon."}</p>}</section>:<ol key={i}>{items.map(a=><Item key={a.slug} id={id} a={a}/>)}</ol>)}</div>
 :<div className="d-empty"><span>0 PAGES</span><p>{d.empty}</p></div>}

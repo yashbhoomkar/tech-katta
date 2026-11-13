@@ -26,7 +26,7 @@
   "hero": {
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
-    "description": "Design interview problems on a canvas and have them judged: real traffic, crashed servers and the bill decide, and you get a score out of 100. Plus short, plain articles, built for Indian scale.",
+    "description": "Design it on a canvas. Real traffic, crashed servers and the bill judge it. Built for Indian scale.",
     "primary": "Dashboard",
     "secondary": "Try IND vs PAK",
     "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
@@ -728,33 +728,33 @@
   "inside": {
     "eyebrow": "WHAT'S INSIDE",
     "title": "Practise system design the way interviews test it",
-    "desc": "Problems with test suites, challenges that score your design, and short articles to learn from. Sign in with Google to start.",
+    "desc": "Problems with tests, scored challenges, and visual notes.",
     "items": [
       {
         "kind": "{questions} QUESTIONS",
         "title": "Interview Questions",
-        "text": "From a URL shortener to a chat app, each one worked from requirements and rough numbers to a design you can defend, with the traps an interviewer looks for.",
+        "text": "Real interview problems, worked end to end.",
         "link": "See the questions",
         "href": "/dashboard/interview-questions/"
       },
       {
         "kind": "{questions} PROBLEMS",
         "title": "Problems, judged",
-        "text": "Build your design on the canvas, Run the example tests, then Submit: peaks, spikes, a dead server and the monthly bill decide whether it's accepted. Your requirements, estimates and APIs are checked too.",
+        "text": "Build, run the tests, submit. The judge decides.",
         "link": "Solve a problem",
         "href": "/dashboard/problems/"
       },
       {
         "kind": "{challenges} CHALLENGES",
         "title": "Challenges",
-        "text": "Build a design, send it a real evening's traffic, and earn up to three stars for staying up, not crashing and keeping to the budget.",
+        "text": "Score your design out of three stars.",
         "link": "See the challenges",
         "href": "/dashboard/problems/"
       },
       {
         "kind": "{articles} ARTICLES",
         "title": "Concepts and Components",
-        "text": "Short, plain articles on the ideas every design uses, such as caching, sharding and consistency, and on the tools that put them to work.",
+        "text": "Short, visual notes on the ideas every design uses.",
         "link": "Start reading",
         "href": "/dashboard/concepts/"
       }
@@ -765,7 +765,7 @@
   "landingLab": {
     "eyebrow": "TRY IT NOW",
     "title": "Can your design survive IND vs PAK?",
-    "desc": "On 14 October 2023, 3.5 crore people watched India play Pakistan live on one streaming app, all at the same time. Here is that match as a problem, on a real canvas. Add what's missing, press Run, and see if the stream holds at the toss and in the last over.",
+    "desc": "3.5 crore people watched India play Pakistan on one app. Add what's missing, press Run, see if the stream holds.",
     "problem": "ind-vs-pak",
     "loading": "Loading the canvas",
     "run": "▶ Run the tests",

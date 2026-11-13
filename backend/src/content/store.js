@@ -46,7 +46,10 @@ const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[ke
 const CHALLENGE = 'problems/challenge/';
 const labOf = (a) => { const card = (a.body || []).find((b) => b && b.t === 'lab' && typeof b.to === 'string' && b.to.startsWith(CHALLENGE)); return card ? card.to.slice(CHALLENGE.length) : undefined; };
 // `tests`: how many judge tests the question has (its `practice`), for the Problems table.
-const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.length }, [...SUMMARY_FIELDS, 'lab', 'tests']);
+// `fig`: the article's first figure id, drawn small on its card in section lists (tech-katta-context 25 §7: fewer
+// words, more pictures).
+const figOf = (a) => (a.body || []).find((b) => b && b.t === 'fig' && typeof b.id === 'string')?.id;
+const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.length, fig: figOf(a) }, [...SUMMARY_FIELDS, 'lab', 'tests', 'fig']);
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
 export function buildBodies({ site, examples, articles, lab }) {

@@ -75,3 +75,15 @@
   .a-fig-portrait .a-fig-body>svg{min-width:0;max-width:420px;margin-left:auto;margin-right:auto}
   .a-fig-portrait .a-fig-body .fb{font-size:13px}.a-fig-portrait .a-fig-body .fl{font-size:10.5px}
 }
+/* A card's picture (Thumb): the article's first figure, still, with the figures' text styles; its caption line hidden */
+.d-thumb{display:block;aspect-ratio:16/8.5;overflow:hidden;background:var(--surface-2);border-bottom:1px solid var(--line);padding:4px 12px 0}
+.d-thumb svg{display:block;width:100%;height:auto;margin-top:-18px}
+.d-thumb .tk-cap,.d-thumb .tk-caps{display:none}
+.d-thumb .fk{font:600 10px var(--mono);letter-spacing:.06em;fill:var(--accent)}
+.d-thumb .fsub{font:12px var(--font);fill:var(--muted)}
+.d-thumb .fb{font:600 12px var(--font);fill:var(--ink)}
+.d-thumb .fl{font:500 10px var(--mono);fill:var(--muted)}
+.d-thumb .fq{font:500 12px var(--font);fill:var(--ink)}
+.d-thumb .fh{font:600 10.5px var(--font);fill:var(--ink)}
+.d-thumb .fx{font:700 14px var(--font);fill:var(--ink)}
+.d-thumb .halo{paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
