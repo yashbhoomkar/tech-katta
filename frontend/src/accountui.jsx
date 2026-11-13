@@ -65,6 +65,12 @@ useEffect(()=>{if(!seen.current){seen.current=true;track("page_locked",{section,
 return <div className="lock lock-page"><div className="lock-blur lock-skel" ref={inert} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div>
 <div className="lock-card" role="region" aria-label={lock.title}><b>{lock.title}</b>{title&&<em>{title}</em>}<p>{lock.text}</p><SignInBox t={t}/>{a.error&&<span className="acct-err" role="alert">{a.error==="terms_required"?t.agreeFirst:t.signInFailed}</span>}</div></div>}
 
+// Under the public preview of an article while signed out (owner, 2026-11-13, like fanout.sh): the opening
+// is readable (and in the page's HTML for search engines), the rest is behind this card.
+export function PreviewLock({t,lock,section,slug}){const a=useAccount(),seen=useRef(false);
+useEffect(()=>{if(!seen.current){seen.current=true;track("page_locked",{section,slug,preview:true})}},[section,slug]);
+return <div className="lock-card lock-inline" role="region" aria-label={lock.title}><small>{lock.eyebrow}</small><b>{lock.title}</b><p>{lock.text}</p><SignInBox t={t} base="/dashboard/"/>{a.error&&<span className="acct-err" role="alert">{a.error==="terms_required"?t.agreeFirst:t.signInFailed}</span>}</div>}
+
 // Account menu switch for the ads opt-in: flips at once, goes back if the API can't be reached.
 function AdsSwitch({t,on}){const[v,setV]=useState(on);useEffect(()=>setV(on),[on]);
 return <label className="acct-ads"><input type="checkbox" checked={v} onChange={e=>{const want=e.target.checked;setV(want);setAdsConsent(want).catch(()=>{setV(!want);alert(t.syncFailed)})}}/><span>{t.adsMenu}</span></label>}

@@ -835,6 +835,11 @@
     "pageLock": {
       "title": "Sign in to open this",
       "text": "Articles, problems and notes are free with a Google account. Sign in once and everything opens, on every device."
+    },
+    "previewLock": {
+      "eyebrow": "FREE WITH A GOOGLE ACCOUNT",
+      "title": "Continue reading",
+      "text": "The rest of this article, its diagrams and read-aloud are free once you sign in. One sign-in opens every article, problem and note, on every device."
     }
   },
   "privacy": {
