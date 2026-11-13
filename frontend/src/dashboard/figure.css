@@ -69,3 +69,9 @@
 @media(max-width:680px){.a-fig-ctl{border-bottom:0}.a-fig-top .a-fig-step{padding-bottom:4px}}
 @media(prefers-reduced-motion:reduce){.a-fig-b,.a-fig-dots i{transition:none}}
 .fs-stage{touch-action:pinch-zoom}
+/* Phones: a portrait version (figs/phone.jsx) fits the column, so no sideways frame, fade or hint (spec 24 G1) */
+@media(max-width:680px){
+  .a-fig-portrait .a-fig-body{overflow-x:visible;-webkit-mask-image:none;mask-image:none;padding:6px 6px 10px}
+  .a-fig-portrait .a-fig-body>svg{min-width:0;max-width:420px;margin-left:auto;margin-right:auto}
+  .a-fig-portrait .a-fig-body .fb{font-size:13px}.a-fig-portrait .a-fig-body .fl{font-size:10.5px}
+}

@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import{Part}from"../status.jsx";import{figOf}from"../figs/index.js";import{useTheme}from"../theme/mode.js";import{useDrag,settleMs}from"../theme/gesture.js";import{example}from"./site.js";import{inline}from"./text.jsx";import{track}from"../analytics.js";
+import React,{useEffect,useRef,useState}from"react";import{createPortal}from"react-dom";import{Part}from"../status.jsx";import{figOf}from"../figs/index.js";import{useTheme}from"../theme/mode.js";import{useDrag,settleMs}from"../theme/gesture.js";import{example}from"./site.js";import{inline}from"./text.jsx";import{track}from"../analytics.js";import{PHONE_FIGS}from"../figs/phone.jsx";
 // Figures: fit the column (zoomed out on phones) plus a full-screen view. In portrait the
 // full-screen figure is turned sideways so it uses the long side of the screen.
 // Swiping down on the full-screen view closes it, as in a photo viewer (tech-katta-context 24, S5).
@@ -64,8 +64,8 @@ return <div className={"a-fig-top"+(many&&phone?" a-fig-swipe":"")} ref={top}>{p
 <span className="a-fig-dots" aria-hidden="true">{Array.from({length:s.n},(_,k)=><i key={k} className={k<s.i?"on":k===s.i?"on cur":undefined}/>)}</span>
 <span className="a-fig-n">Step {s.i+1} of {s.n}</span><span className="sr-only" aria-live="polite">{s.held?`Step ${s.i+1} of ${s.n}: ${s.t||""}`:""}</span></div>}</div>}
 export function Fig({id,n,cap,still,rd}){const[full,setFull]=useState(false);const theme=useTheme();const body=useRef(null);
-const phone=usePhone(),steps=useSteps(body,still,id+theme+still,id),[moved,setMoved]=useState(false),[end,setEnd]=useState(false);
-const pan=e=>{const b=e.currentTarget;if(b.scrollLeft>8)setMoved(true);setEnd(b.scrollLeft+b.clientWidth>=b.scrollWidth-4)};const f=figOf(id);if(!f)return null;const C=f.C;const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
-return <figure className={"a-fig"+rd+(phone?" a-fig-pan":"")+(end?" at-end":"")}><div className="a-fig-head">{title}</div><StepBar s={steps} phone={phone} still={still}/>
-<div className="a-fig-body" ref={body} onScroll={phone?pan:undefined}><Part key={id+theme} fallback={FIG_FAILED}><C still={still}/></Part></div>{phone&&!moved&&<p className="a-fig-hint" aria-hidden="true">⇆ Swipe the figure sideways to see all of it</p>}
+const phone=usePhone(),steps=useSteps(body,still,id+theme+still+(phone?"p":""),id),[moved,setMoved]=useState(false),[end,setEnd]=useState(false);
+const pan=e=>{const b=e.currentTarget;if(b.scrollLeft>8)setMoved(true);setEnd(b.scrollLeft+b.clientWidth>=b.scrollWidth-4)};const f=figOf(id);if(!f)return null;const P=phone?PHONE_FIGS[id]:null,C=P?P.C:f.C;/* phones: a portrait version where there is one (figs/phone.jsx) */const title=`FIG. ${String(n).padStart(2,"0")} — ${f.title(example.name.toUpperCase())}`;
+return <figure className={"a-fig"+rd+(phone?" a-fig-pan":"")+(P?" a-fig-portrait":"")+(end?" at-end":"")}><div className="a-fig-head">{title}</div><StepBar s={steps} phone={phone} still={still}/>
+<div className="a-fig-body" ref={body} onScroll={phone?pan:undefined}><Part key={id+theme+(P?"p":"")} fallback={FIG_FAILED}><C still={still}/></Part></div>{phone&&!P&&!moved&&<p className="a-fig-hint" aria-hidden="true">⇆ Swipe the figure sideways to see all of it</p>}
 <button type="button" className="fs-btn" onClick={()=>setFull(true)}>⤢ Tap to view full screen</button><figcaption>{inline(cap)}</figcaption>{full&&<FullFig title={title} ar={f.ar} onClose={()=>setFull(false)}><Part key={id+theme} fallback={FIG_FAILED}><C still={still} uid="fs"/></Part></FullFig>}</figure>}
