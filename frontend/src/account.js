@@ -39,7 +39,6 @@ export async function signOut(){track("sign_out");try{await call("/v1/auth/signo
 // Opt in or out later, from the account menu.
 // A problem's Submit, judged again on the API and counted (solve.jsx); null when signed out or it fails.
 export async function submitProblem(body){if(!state.user)return null;try{return await call("/v1/me/submissions",{method:"POST",body})}catch{return null}}
-export async function setAdsConsent(ads){const r=await call("/v1/me/consent",{method:"POST",body:{ads:!!ads}});setState({user:r.user});track("ads_consent",{ads:!!ads})}
 // Every device signed in to this account is signed out (lost phone, shared computer).
 export async function signOutAll(){track("sign_out_all");await call("/v1/auth/signout-all",{method:"POST"});try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}
 export async function deleteAccount(){await call("/v1/me",{method:"DELETE"});track("delete_account");try{window.google?.accounts?.id?.disableAutoSelect()}catch{}setState({user:null})}

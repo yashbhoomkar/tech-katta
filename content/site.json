@@ -853,7 +853,6 @@
     "menu": "Account",
     "keepStars": "Sign in to keep your designs and stars on every device.",
     "googleBlocked": "Your browser blocked Google sign-in. Turn off strict tracking protection for this site, or try another browser.",
-    "adsMenu": "Tech Katta updates on Facebook and Instagram",
     "termsLink": "Terms and conditions",
     "privacyLink": "Privacy policy",
     "agree": "I agree to the",
@@ -878,7 +877,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 10 November 2026",
+    "updated": "Last updated 13 November 2026",
     "sections": [
       [
         "Signing in",
@@ -886,7 +885,7 @@
       ],
       [
         "What is kept",
-        "When you sign in with Google: your Google account ID, name (first and last), email address, the link to your profile picture, the country you signed in from, and when you signed in. Your designs and challenge stars, so they follow you to other devices. When you accepted the Terms and conditions, and whether (and when) you turned on Tech Katta updates on Facebook and Instagram. Your Google password is never seen by this site."
+        "When you sign in with Google: your Google account ID, name (first and last), email address, the link to your profile picture, the country you signed in from, and when you signed in. Your designs and challenge stars, so they follow you to other devices. When you accepted the Terms and conditions, which include Tech Katta updates on Facebook and Instagram. Your Google password is never seen by this site."
       ],
       [
         "Where it is kept",
@@ -902,7 +901,7 @@
       ],
       [
         "Ads on Facebook and Instagram",
-        "Only if you turn on \"Tech Katta updates on Facebook and Instagram\" in the account menu (it is off until you do). Then your email, name and country are hashed and uploaded to Meta to show you Tech Katta ads. The full details are in the Terms and conditions. Turn it off any time in the same menu."
+        "When you sign in you agree to Tech Katta updates on Facebook and Instagram: your email, name and country are hashed and uploaded to Meta to show you Tech Katta ads. The full details are in the Terms and conditions. To be left out, delete your account from the account menu, or hide Tech Katta ads in your Facebook or Instagram ad settings."
       ],
       [
         "What is not done with it",
@@ -917,7 +916,7 @@
   "terms": {
     "eyebrow": "TERMS",
     "title": "Terms and conditions",
-    "updated": "Last updated 10 November 2026",
+    "updated": "Last updated 13 November 2026",
     "sections": [
       [
         "Using Tech Katta",
@@ -933,7 +932,7 @@
       ],
       [
         "Updates on Facebook and Instagram",
-        "This applies only if you turn on \"Tech Katta updates on Facebook and Instagram\" in the account menu. It is off until you turn it on, and you can use everything on the site without it. While it is on, your email address, first and last name and country are turned into codes (SHA-256 hashes) and uploaded to Meta from time to time, so Meta can show Tech Katta ads to you on Facebook and Instagram, and to people with similar interests. Meta matches the codes against its own accounts. It does not get your designs, your stars or what you do on this site. Turn it off any time in the same menu; you are then left out of the next upload, and you can ask Meta to forget you in your Facebook or Instagram ad settings."
+        "By signing in you agree to Tech Katta updates on Facebook and Instagram. Your email address, first and last name and country are turned into codes (SHA-256 hashes) and uploaded to Meta from time to time, so Meta can show Tech Katta ads to you on Facebook and Instagram, and to people with similar interests. Meta matches the codes against its own accounts. It does not get your designs, your stars or what you do on this site. To be left out, delete your account from the account menu: you are then left out of the next upload. You can also hide Tech Katta ads and ask Meta to forget you in your Facebook or Instagram ad settings. If you turned these updates off in the account menu before 13 November 2026, they stay off."
       ],
       [
         "How the site is used",
@@ -941,7 +940,7 @@
       ],
       [
         "Changes",
-        "If these terms change, the date at the top changes too. Anything that affects the Facebook and Instagram updates will ask you again."
+        "If these terms change, the date at the top changes too, and you agree to the new terms the next time you sign in."
       ]
     ]
   }

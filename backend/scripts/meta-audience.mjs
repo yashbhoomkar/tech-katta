@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Prints the Meta Custom Audience CSV (hashed; consented accounts only) to stdout. Upload it in
+// Prints the Meta Custom Audience CSV (hashed; accounts with users.adsConsent.ads true only) to stdout. Upload it in
 // Meta Ads Manager → Audiences → Create audience → Custom audience → Customer list.
 //   MONGODB_URI=... [ACCOUNTS_DB=techkatta_app] node scripts/meta-audience.mjs > audience.csv
 //   node scripts/meta-audience.mjs --json users.json > audience.csv   (users exported as a JSON array)

@@ -54,12 +54,12 @@ test('config says sign-in is on and gives the public client ID; health says auth
 test('a valid Google token signs in: HttpOnly SameSite cookie, user stored, session stored as a hash', async () => {
   const { r, cookie } = await signIn();
   assert.equal(r.status, 200);
-  assert.deepEqual(await r.json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: false } });
+  assert.deepEqual(await r.json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: true } });
   const set = r.headers.get('set-cookie');
   assert.match(set, /tk_session=[\w-]{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=2592000/);
   assert.equal(r.headers.get('access-control-allow-origin'), ORIGIN);
   assert.equal(r.headers.get('access-control-allow-credentials'), 'true');
-  assert.deepEqual(await (await call('/v1/me', { cookie })).json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: false } });
+  assert.deepEqual(await (await call('/v1/me', { cookie })).json(), { user: { name: 'Asha', email: 'asha@example.com', picture: 'https://example.com/a.png', adsConsent: true } });
   const db = client.db('tk_test');
   assert.equal(await db.collection('users').countDocuments({ googleSub: '1001' }), 1);
   const s = await db.collection('sessions').findOne({});
@@ -254,30 +254,30 @@ test('sign-in needs the Terms ticked (recorded on the account); the ads opt-in i
     assert.equal(r.status, 400); assert.equal((await r.json()).error, 'terms_required'); assert.equal(r.headers.get('set-cookie'), null);
   }
   assert.equal(await users.countDocuments({ googleSub: '8008' }), 0);
-  // ticked; an old client still sending adsConsent:true does not opt in
-  let r = await post({ termsAccepted: true, adsConsent: true, credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }) }, { 'CF-IPCountry': 'IN' });
+  // ticked: the Terms include Tech Katta ads on Facebook/Instagram, so the consent is recorded with them
+  let r = await post({ termsAccepted: true, credential: idToken({ sub: '8008', given_name: 'Asha', family_name: 'Rao' }) }, { 'CF-IPCountry': 'IN' });
   assert.equal(r.status, 200);
   const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
-  assert.equal((await r.json()).user.adsConsent, false);
+  assert.equal((await r.json()).user.adsConsent, true);
   let u = await users.findOne({ googleSub: '8008' });
-  assert.deepEqual([u.firstName, u.lastName, u.country, u.lastCountry, u.adsConsent], ['Asha', 'Rao', 'IN', 'IN', undefined]);
-  assert.ok(u.terms.at instanceof Date); assert.equal(u.terms.version, '2026-11-05');
+  assert.deepEqual([u.firstName, u.lastName, u.country, u.lastCountry], ['Asha', 'Rao', 'IN', 'IN']);
+  assert.ok(u.terms.at instanceof Date); assert.equal(u.terms.version, '2026-11-13');
+  assert.deepEqual([u.adsConsent.ads, u.adsConsent.version, u.adsConsent.via], [true, '2026-11-13', 'terms']);
   await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) }, { 'CF-IPCountry': 'XX' });
   u = await users.findOne({ googleSub: '8008' });
   assert.equal(u.country, 'IN'); assert.equal(u.lastCountry, 'IN', 'bogus country ignored');
-  // the menu switch
-  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: 'no' } })).status, 400);
-  assert.equal((await call('/v1/me/consent', { method: 'POST', body: { ads: true } })).status, 401);
-  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true }, origin: 'https://evil.example' })).status, 403);
-  r = await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
-  assert.equal((await r.json()).user.adsConsent, true);
-  u = await users.findOne({ googleSub: '8008' });
-  assert.equal(u.adsConsent.ads, true); assert.equal(u.adsConsent.version, '2026-11-05');
-  // signing in again keeps the choice
-  await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) });
-  assert.equal((await users.findOne({ googleSub: '8008' })).adsConsent.ads, true);
-  r = await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
+  assert.equal(u.adsConsentLog.length, 1, 'signing in again under the same Terms logs nothing new');
+  // the menu switch is gone
+  assert.equal((await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } })).status, 404);
+  // an account that turned the old switch off stays off when it signs in again
+  await users.updateOne({ googleSub: '8008' }, { $set: { adsConsent: { ads: false, at: new Date(), version: '2026-11-05' } } });
+  r = await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) });
   assert.equal((await r.json()).user.adsConsent, false);
+  assert.equal((await users.findOne({ googleSub: '8008' })).adsConsent.ads, false);
+  // an account that signed in under the old Terms (no ads consent) gets it at its next sign-in
+  await users.updateOne({ googleSub: '8008' }, { $unset: { adsConsent: '' } });
+  r = await post({ termsAccepted: true, credential: idToken({ sub: '8008' }) });
+  assert.equal((await r.json()).user.adsConsent, true);
 });
 
 test('Meta audience export: consented accounts only, normalised and SHA-256 hashed', async () => {
@@ -314,18 +314,15 @@ test('Lab saves from many devices at the same moment all land (no lost updates);
   assert.equal(after.rev, 1); assert.equal(after.designs.length, 11);
 });
 
-test('first sign-in from two tabs at once makes one account; consent changes are logged; delete leaves no account behind', async () => {
+test('first sign-in from two tabs at once makes one account; the Terms consent is logged once; delete leaves no account behind', async () => {
   const users = client.db('tk_test').collection('users');
   const rs = await Promise.all([signIn({ sub: '9301' }), signIn({ sub: '9301' }), signIn({ sub: '9301' })]);
   assert.deepEqual(rs.map((x) => x.r.status), [200, 200, 200]);
   assert.equal(await users.countDocuments({ googleSub: '9301' }), 1);
   const r = await call('/v1/auth/google', { method: 'POST', body: { termsAccepted: true, credential: idToken({ sub: '9301' }) } });
   const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
-  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
-  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: false } });
-  await call('/v1/me/consent', { method: 'POST', cookie, body: { ads: true } });
   const u = await users.findOne({ googleSub: '9301' });
-  assert.deepEqual(u.adsConsentLog.map((c) => c.ads), [true, false, true], 'every change kept, in order');
+  assert.deepEqual(u.adsConsentLog.map((c) => c.ads), [true], 'four sign-ins, one consent record');
   assert.ok(u.adsConsentLog.every((c) => c.at instanceof Date && c.version));
   await call('/v1/me', { method: 'DELETE', cookie });
   assert.equal(await users.countDocuments({ googleSub: '9301' }), 0);
@@ -407,8 +404,7 @@ test('admin analytics: 401 signed out, 403 for non-admins, summary and Meta CSV 
   // range is clamped, other sites can't read it
   assert.equal((await (await get('/v1/admin/summary?days=99999', owner.cookie)).json()).days, 395);
   assert.equal((await get('/v1/admin/summary', owner.cookie, 'https://evil.example')).headers.get('access-control-allow-origin'), null);
-  // the Meta file: consented accounts only, hashed
-  await call('/v1/me/consent', { method: 'POST', cookie: owner.cookie, body: { ads: true } });
+  // the Meta file: accounts included in ads (signing in accepted them), hashed
   const csv = await get('/v1/admin/audience.csv', owner.cookie);
   assert.equal(csv.status, 200); assert.match(csv.headers.get('content-type'), /text\/csv/); assert.match(csv.headers.get('content-disposition'), /attachment/);
   const lines = (await csv.text()).trim().split('\n');

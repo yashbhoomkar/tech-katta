@@ -7,7 +7,7 @@
 .header .acct{margin-left:0;flex:none}.header .acct .acct-err{position:absolute;top:40px;right:0;width:220px;background:var(--bg);border:1px solid var(--danger-line);padding:6px 8px;z-index:20}
 .acct-keep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:grid;gap:8px;justify-items:start}.acct-keep p{margin:0;font-size:13px;line-height:1.5;color:var(--ink-2)}
 @media(max-width:680px){.acct-btn span{display:none}.acct-btn{padding:0 4px}.acct-menu{position:fixed;left:12px;right:12px;top:64px;width:auto}}
-.acct-ads,.acct-consent{display:flex;gap:8px;align-items:flex-start;font:12px/1.45 var(--font);color:var(--ink-2);cursor:pointer}.acct-ads{padding:8px 0;border-top:1px solid var(--grid)}.acct-ads input,.acct-consent input{margin:2px 0 0;flex:none;width:16px;height:16px;accent-color:var(--accent)}.acct-consent{max-width:320px}.acct-consent a{color:var(--accent);text-decoration:underline}
+.acct-consent{display:flex;gap:8px;align-items:flex-start;font:12px/1.45 var(--font);color:var(--ink-2);cursor:pointer}.acct-consent input{margin:2px 0 0;flex:none;width:16px;height:16px;accent-color:var(--accent)}.acct-consent{max-width:320px}.acct-consent a{color:var(--accent);text-decoration:underline}
 .lock{position:relative}.lock-blur{filter:blur(6px);opacity:.55;pointer-events:none;user-select:none}.lock-card{position:absolute;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%);width:min(360px,calc(100% - 32px));background:var(--bg);border:1px solid var(--ink);box-shadow:var(--shadow-3);padding:20px;display:grid;gap:10px;justify-items:start}.lock-card b{font-size:18px;letter-spacing:-.02em}.lock-card p{margin:0;font-size:14px;line-height:1.55;color:var(--ink-2)}
 @media(max-width:680px){.lock-card{top:24px;transform:translateX(-50%)}.lock{min-height:420px}}
 .acct-agree,.lock-card .acct-agree{margin:0;font:11px/1.5 var(--font);color:var(--accent);text-decoration:underline}
@@ -23,7 +23,7 @@
 .acct-btn i{background:var(--brand);color:var(--on-brand)}
 .acct-menu{top:46px;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-3);padding:16px}
 .acct-menu a:hover,.acct-menu button:hover{color:var(--ink);text-decoration:underline}
-.acct-ads input,.acct-consent input{accent-color:var(--brand-strong)}
+.acct-consent input{accent-color:var(--brand-strong)}
 .lock-card{width:min(420px,calc(100% - 32px));border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-3);padding:28px;gap:12px}
 .lock-card b{font:500 26px/1.15 var(--font-display);letter-spacing:-.015em}
 .lock-card p{font-size:15.5px;line-height:1.55;color:var(--muted)}

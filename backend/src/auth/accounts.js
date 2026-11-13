@@ -2,9 +2,11 @@
 //   users    { _id, googleSub (unique), role? ("admin": may read analytics.katta.cc; see isAdmin), email, name, firstName, lastName, picture, country (first
 //              sign-in), lastCountry, createdAt, lastLoginAt,
 //              terms: { at, version },  — when the Terms and conditions + Privacy policy were accepted
-//              adsConsent: { ads: bool, at, version },  — opt-in to Tech Katta ads on Facebook/Instagram
-//                                                       (account menu switch only, off until turned on)
-//              adsConsentLog: [{ ads, at, version }] }   — every change, newest last (at most 50)
+//              adsConsent: { ads: bool, at, version, via? },  — Tech Katta ads on Facebook/Instagram. Since
+//                                                       2026-11-13 accepting the Terms at sign-in includes them
+//                                                       (via "terms"); an explicit "off" from the old account
+//                                                       menu switch (removed) is kept and never overwritten
+//              adsConsentLog: [{ ads, at, version, via? }] }   — every change, newest last (at most 50)
 //   sessions { tokenHash (unique), userId, createdAt, expiresAt }  — removed by a TTL index on expiry.
 //            A session lasts SESSION_DAYS from its last use (renewed at most once a day), and never
 //            more than MAX_SESSION_DAYS after sign-in.
@@ -25,10 +27,10 @@ import { RETENTION_DAYS } from './events.js';
 import { adminSummary } from './admin.js';
 
 export const SESSION_DAYS = 30, MAX_SESSION_DAYS = 90;
-// The wording the user agreed to is site.json account.adsConsent; bump this when it changes.
-export const CONSENT_VERSION = '2026-11-05'; // ads switch in the account menu only
+// The ads wording is part of the Terms (site.json terms, "Updates on Facebook and Instagram"); bump both together.
+export const CONSENT_VERSION = '2026-11-13'; // included in the Terms accepted at sign-in
 // Version of the Terms and conditions + Privacy policy a sign-in accepts (site.json terms/privacy).
-export const TERMS_VERSION = '2026-11-05';
+export const TERMS_VERSION = '2026-11-13';
 const DAY = 86_400_000;
 // The free Atlas cluster holds 512 MB. Usage events stop being written (accounts keep working) once
 // this database passes EVENTS_MAX_MB, so analytics can never fill the cluster and break sign-in.
@@ -90,21 +92,23 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
   return {
     // Sign in (or sign up) with a verified Google profile; returns a new session token.
     // `country` (2 letters, from Cloudflare) is optional. Accepting the Terms is checked by the route;
-    // each sign-in records it. The ads opt-in is never set here (account menu only).
-    async signIn(profile, { country = '', adsConsent = false } = {}) {
+    // each sign-in records it, and the Terms include Tech Katta ads on Facebook/Instagram, so the ads
+    // consent is recorded with them, except for an account that turned the old menu switch off.
+    async signIn(profile, { country = '' } = {}) {
       await init();
       const now = new Date(clock());
       const set = { email: profile.email, name: profile.name, firstName: profile.firstName || '', lastName: profile.lastName || '', picture: profile.picture, lastLoginAt: now, terms: { at: now, version: TERMS_VERSION } };
       if (country) set.lastCountry = country;
-      const consent = { ads: true, at: now, version: CONSENT_VERSION };
-      if (adsConsent) set.adsConsent = consent;
-      const update = { $set: set, $setOnInsert: { googleSub: profile.sub, createdAt: now, ...(country ? { country } : {}) },
-        ...(adsConsent ? { $push: { adsConsentLog: { $each: [consent], $slice: -50 } } } : {}) };
+      const update = { $set: set, $setOnInsert: { googleSub: profile.sub, createdAt: now, ...(country ? { country } : {}) } };
       const upsert = () => users.findOneAndUpdate({ googleSub: profile.sub }, update, { upsert: true, returnDocument: 'after' });
       // two first sign-ins at the same moment: one inserts, the other hits the unique index; run it
       // again and it updates the account the first one made
       let user;
       try { user = await upsert(); } catch (error) { if (error?.code !== DUPLICATE) throw error; user = await upsert(); }
+      if (user.adsConsent?.ads !== false && user.adsConsent?.version !== CONSENT_VERSION) {
+        const consent = { ads: true, at: now, version: CONSENT_VERSION, via: 'terms' };
+        user = await users.findOneAndUpdate({ _id: user._id, 'adsConsent.ads': { $ne: false }, 'adsConsent.version': { $ne: CONSENT_VERSION } }, { $set: { adsConsent: consent }, $push: { adsConsentLog: { $each: [consent], $slice: -50 } } }, { returnDocument: 'after' }) || await users.findOne({ _id: user._id }) || user;
+      }
       const token = randomBytes(32).toString('base64url');
       await sessions.insertOne({ tokenHash: hash(token), userId: user._id, createdAt: now, expiresAt: new Date(now.getTime() + SESSION_DAYS * DAY) });
       return { token, user: view(user) };
@@ -127,13 +131,7 @@ export function openAccounts({ uri, dbName = 'techkatta_app', secret, client, no
       }
       return { id: user._id, user: view(user), renewedUntil };
     },
-    // Opt in or out of Tech Katta ads on Facebook/Instagram (Meta Custom Audiences); returns the user.
-    async setAdsConsent(userId, ads) {
-      const consent = { ads: !!ads, at: new Date(clock()), version: CONSENT_VERSION };
-      const user = await users.findOneAndUpdate({ _id: userId }, { $set: { adsConsent: consent }, $push: { adsConsentLog: { $each: [consent], $slice: -50 } } }, { returnDocument: 'after' });
-      return user ? view(user) : null;
-    },
-    // Accounts that opted in, for the Meta audience export (scripts/meta-audience.mjs).
+    // Accounts included in Tech Katta ads, for the Meta audience export (scripts/meta-audience.mjs).
     async consentedUsers() { return users.find({ 'adsConsent.ads': true }, { projection: { email: 1, firstName: 1, lastName: 1, country: 1, lastCountry: 1 } }).toArray(); },
     async signOut(token) { if (typeof token === 'string') await sessions.deleteOne({ tokenHash: hash(token) }); },
     // Every session of the account ends (lost phone, shared computer). Returns how many there were.
