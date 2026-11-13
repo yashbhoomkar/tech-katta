@@ -2,7 +2,7 @@
 // follows the device's setting, including changes while it is open. public/theme-boot.js sets <html data-theme>
 // before anything draws (no white flash); this module keeps it up to date and lets React redraw what reads
 // colours in code (figures, the canvas) through useTheme().
-import{useSyncExternalStore}from"react";import{readTokens}from"./palette.js";
+import{useSyncExternalStore}from"react";import{readTokens}from"./palette.js";import{viewChange}from"./motion.js";
 const KEY="tk-theme",Q="(prefers-color-scheme: dark)";
 const subs=new Set();
 const stored=()=>{try{const v=localStorage.getItem(KEY);return v==="light"||v==="dark"?v:null}catch{return null}};
@@ -12,7 +12,7 @@ function apply(t){if(typeof document==="undefined")return;const el=document.docu
   const meta=document.querySelector('meta[name="theme-color"]');readTokens(el);if(meta)meta.content=getComputedStyle(el).getPropertyValue("--page").trim()||meta.content;
   subs.forEach(f=>f())}
 // Set the theme ("light" or "dark") and remember it; null forgets the choice and follows the device again.
-export function setTheme(t){try{t?localStorage.setItem(KEY,t):localStorage.removeItem(KEY)}catch{}apply(t||system())}
+export function setTheme(t){try{t?localStorage.setItem(KEY,t):localStorage.removeItem(KEY)}catch{}viewChange(()=>apply(t||system()),"theme")}
 export const toggleTheme=()=>setTheme(current()==="dark"?"light":"dark");
 // Once per page, at start: apply the theme (theme-boot.js may have run already) and follow the device setting.
 let started=false;

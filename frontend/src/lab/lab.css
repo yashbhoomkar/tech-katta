@@ -133,3 +133,4 @@
 
 /* After a passing Run or Submit, a dot travels each arrow of the design (lab/nodes.jsx Arrow, `flow`) */
 .lab-flow{fill:var(--brand);pointer-events:none}.lab-flow>circle:last-of-type{stroke:var(--brand-edge);stroke-width:1}.lab-flow-halo{opacity:.3}
+.lab-stars b{font-weight:inherit}
