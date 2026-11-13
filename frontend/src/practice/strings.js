@@ -39,7 +39,7 @@ export const S = {
   groups: [["Edge", [["lb", "Load balancer", "Spreads calls over servers"], ["cdn", "CDN", "Serves copies from nearby"]]], ["Compute", [["server", "Server", "Runs your application"], ["worker", "Worker", "Does background jobs from a queue"]]], ["Data", [["cache", "Cache", "Fast memory for hot data"], ["sql", "SQL database", "Tables, one primary, replicas"], ["nosql", "NoSQL store", "Many nodes, tunable consistency"], ["objectstore", "Object store", "Large files"]]], ["Async", [["queue", "Queue", "Hold work for later"]]], ["Helpers", [["idgen", "ID generator", "Makes unique ids"]]]],
   listTitle: "Practice", listDesc: "System design problems, judged like code: write a design, run it on the examples, submit it to the hidden tests.",
   solvedOf: (s, n) => `${s} of ${n} solved`, all: "All", notDone: "Not done", solvedF: "Solved", search: "Search problems",
-  daily: "Daily problem", status: "Status", title: "Title", difficulty: "Difficulty", acceptance: "Acceptance", topics: "Topics",
+  daily: "Daily problem", streak: (n) => (n ? `Streak: ${n} day${n === 1 ? "" : "s"}` : "No streak yet: solve one today"), status: "Status", title: "Title", difficulty: "Difficulty", acceptance: "Acceptance", topics: "Topics",
   tightest: "Tightest promise", close: "Close", read: "Read", howJudged: "How was this judged?", loading: "Loading the problem",
   editorialLocked: "Sign in to read the editorial.", sortCost: "By cost", sortSpeed: "By speed", usedBy: (n) => `Used by ${n} people`,
   time: "Time", verdict: "Verdict", tests: "Tests", p99: "p99", openPicture: "Picture",

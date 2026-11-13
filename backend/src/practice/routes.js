@@ -117,12 +117,12 @@ export function practiceRoutes({ problems, accounts, store, judge, allowedOrigin
       if (parts[0] === 'problems' && parts.length === 1) {
         if (!read) return fail(request, response, 405, 'method_not_allowed', { Allow: 'GET, HEAD, OPTIONS' });
         const user = await me(request).catch(() => null);
-        const [stats, status] = await Promise.all([enabled && store ? store.stats().catch(() => ({})) : {}, user ? store.status(user.id).catch(() => ({})) : null]);
+        const [stats, status, streak] = await Promise.all([enabled && store ? store.stats().catch(() => ({})) : {}, user ? store.status(user.id).catch(() => ({})) : null, user ? store.streak(user.id).catch(() => 0) : null]);
         const list = problems().map((p) => {
           const s = stats[p.id];
           return { ...summaryOf(p), acceptance: s && s.submitted >= MIN_COMPARE ? Math.round((1000 * s.accepted) / s.submitted) / 10 : null, ...(status ? { status: status[p.id] || null } : {}) };
         });
-        return send(request, response, 200, { problems: list, judge_version: JUDGE_VERSION });
+        return send(request, response, 200, { problems: list, judge_version: JUDGE_VERSION, ...(user ? { streak } : {}) });
       }
       if (parts[0] === 'problems' && parts.length >= 2) {
         const problem = find(parts[1]);

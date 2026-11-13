@@ -8,7 +8,7 @@ import ProblemList from "./list.jsx";
 import ProblemPage from "./page.jsx";
 
 export default function Practice({ slug, t }) {
-  const a = useAccount(), [list, setList] = useState(null), [err, setErr] = useState(null), [n, setN] = useState(0);
-  useEffect(() => { setErr(null); listProblems().then((d) => setList(d.problems), setErr); }, [a.user, n, slug]);
-  return slug ? <ProblemPage slug={slug} list={list} t={t}/> : <ProblemList list={list} error={err} retry={() => setN((x) => x + 1)}/>;
+  const a = useAccount(), [list, setList] = useState(null), [streak, setStreak] = useState(null), [err, setErr] = useState(null), [n, setN] = useState(0);
+  useEffect(() => { setErr(null); listProblems().then((d) => { setList(d.problems); setStreak(Number.isInteger(d.streak) ? d.streak : null); }, setErr); }, [a.user, n, slug]);
+  return slug ? <ProblemPage slug={slug} list={list} t={t}/> : <ProblemList list={list} streak={streak} error={err} retry={() => setN((x) => x + 1)}/>;
 }
