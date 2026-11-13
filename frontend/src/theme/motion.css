@@ -3,7 +3,8 @@
    the figures' own loops; at most one or two things animate into a screen; everything here is inside
    prefers-reduced-motion:no-preference, so visitors who asked for less motion get the finished state at once.
    Speeds come from tokens.css (--dur-enter, --ease). To switch all of it off, remove this file's import in index.js. */
-@keyframes tk-rise{from{opacity:0;transform:translateY(10px)}}
+@keyframes tk-vt-in{from{opacity:0;transform:translateY(8px)}}
+@keyframes tk-rise{from{opacity:0;transform:translateY(var(--rise,16px))}}
 @keyframes tk-fade{from{opacity:0}}
 @keyframes tk-pop{from{opacity:0;transform:scale(.96)}}
 @keyframes tk-sheet{from{opacity:0;transform:translateY(24px)}}
@@ -65,8 +66,10 @@
   .zoom-box{animation:tk-pop .18s var(--ease) backwards}
   .lab-meter i{transition:width var(--dur) var(--ease)}
   /* 9. Changing page or theme cross-fades (theme/motion.js viewChange; browsers with view transitions only) */
-  ::view-transition-old(root),::view-transition-new(root){animation-duration:.15s;animation-timing-function:var(--ease)}
+  ::view-transition-old(root){animation-duration:.14s;animation-timing-function:var(--ease)}
+  ::view-transition-new(root){animation:tk-vt-in .34s var(--ease) both}
   :root[data-vt="theme"]::view-transition-old(root),:root[data-vt="theme"]::view-transition-new(root){animation-duration:.22s}
+  :root[data-vt="theme"]::view-transition-new(root){animation-name:tk-fade}
   /* 5. Waiting: the grey lines of a loading page shimmer (a sweep, not a pulse) */
   .lock-skel i{background-image:linear-gradient(90deg,transparent 0,rgb(var(--bg-rgb) / .7) 50%,transparent 100%);background-size:200% 100%;background-position:200% 0;animation:tk-shimmer 1.4s ease-in-out infinite}
   /* 6. Landing sections below the fold rise as they scroll into view. Browsers without scroll timelines just show them. */
