@@ -14,7 +14,7 @@ export const S = {
   noReach: "Couldn't reach the judge. Your design is saved here; try again.", tooMany: "Too many submissions. Wait a minute.",
   paid: "This problem is part of Tech Katta Plus.",
   passed: (p, t) => `${p} / ${t} tests passed`, expected: "Expected", yours: "Your design",
-  nextProblem: "Next problem", share: "Share this design", shared: "Shared. Thank you.", sharePrompt: "A note for others (optional)",
+  nextProblem: "Next problem", cardShare: "Share as image", cardSaved: "Image saved ✓", share: "Share this design", shared: "Shared. Thank you.", sharePrompt: "A note for others (optional)",
   notEnough: "Not enough designs yet to compare.", cheaper: (c, p) => `Cost ${c}/month · cheaper than ${p} %`, faster: (ms, p) => `p99 ${ms} ms · faster than ${p} %`,
   otherThings: "Other things that went wrong in this test", hiddenTest: "Hidden test", older: "Judged with an older version.",
   restore: "Restore this design", restoreAsk: "Replace your design with this submission?", noSubmissions: "No submissions yet.",

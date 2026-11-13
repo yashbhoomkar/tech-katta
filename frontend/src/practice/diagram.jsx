@@ -9,7 +9,7 @@ import { STORES } from "../tkd/catalogue.js";
 import { useStill } from "../theme/motion.js";
 
 const W = 132, H = 48, GX = 46, GY = 18, PAD = 14;
-const facts = (p) => {
+export const facts = (p) => {
   if (p.kind === "server" || p.kind === "worker") return `×${p.count} ${p.size}`;
   if (p.kind === "cache") return `${p.nodes} × ${p.memory_gb} GB`;
   if (p.kind === "sql") return `1 + ${p.replicas} replica${p.replicas === 1 ? "" : "s"}${p.sync ? " · sync" : ""}`;
