@@ -2,6 +2,7 @@
 // expected against yours, the trace with a load bar per hop, every test ✓/✕, and on Accepted the cost and rank).
 import React, { useState } from "react";
 import { S } from "./strings.js";
+import Scene from "../theme/Scene.jsx";
 import { inrExact } from "../tkd/inr.js";
 
 const EVENTS = { none: undefined, server: [{ kill_role: "server" }], sql: [{ kill_role: "sql" }, { kill_role: "nosql" }], cache: [{ flush_role: "cache" }] };
@@ -42,7 +43,7 @@ export function Result({ result, busy, showTip, onNext, onShare, canShare, howHr
   return <div className="pc-res" aria-live="polite">
     <p className={"pc-verdict " + verdictClass(r.verdict)}><span className={r.verdict === "Accepted" ? "tk-mark" : ""}>{r.verdict}</span></p>
     {r.verdict !== "Invalid Design" && r.verdict !== "Judge Error" && <p className="pc-count">{S.passed(r.passed, r.total)}{r.kind === "submit" ? "" : " · Run"}</p>}
-    {r.verdict === "Judge Error" && <p className="pc-msg">{r.message}</p>}
+    {r.verdict === "Judge Error" && <div className="pr-state"><Scene kind={r.busy ? "busy" : "offline"}/><p className="pc-msg">{r.message}</p></div>}
     {r.verdict === "Invalid Design" && <ul className="pc-errs">{r.errors.map((e, i) => <li key={i}><b>Line {e.line}</b> {e.message}</li>)}</ul>}
     {f && <>
       {f.message && <p className="pc-msg">{f.message}</p>}
