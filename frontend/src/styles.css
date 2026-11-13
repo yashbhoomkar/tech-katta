@@ -72,8 +72,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 /* ===== Stage (spec 26): a dark hero, then a soft grey page with white cards that float on it ===== */
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .on-dark{color:var(--ink)}
-.header.on-dark{background:rgb(var(--page-rgb) / .82);border-bottom-color:transparent}
-.header.on-dark .nav{color:var(--muted)}
+.header{background:rgb(var(--page-rgb) / .82);border-bottom-color:transparent}
+.header .nav{color:var(--muted)}
 .brand>i{background:var(--ink);display:grid;place-items:center}.brand>i::after{content:"TK";font:700 10.5px var(--font);letter-spacing:0;color:var(--page)}
 .brand span{display:none}
 .stage{position:relative;background:var(--page);overflow:hidden;isolation:isolate}
@@ -95,7 +95,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .frame .fig-head b i{width:9px;height:9px;border-radius:50%;background:var(--line-strong);box-shadow:15px 0 0 var(--line-strong),30px 0 0 var(--line-strong);margin-right:38px}
 .frame .fig-head>span{background:var(--success-tint);color:var(--success)}
 .frame .diagram{margin:0;border-radius:var(--r-md) var(--r-md) 0 0;background:var(--bg);padding:18px 16px 8px}
-.judge{position:absolute;right:-28px;top:96px;width:260px;padding:16px 18px 14px;border-radius:var(--r-lg);background:var(--bg);box-shadow:0 0 0 1px var(--line),0 24px 60px -16px rgb(var(--ink-rgb) / .7);font:13.5px/1.3 var(--font);color:var(--ink-2)}
+.judge{position:absolute;right:-28px;top:96px;width:260px;padding:16px 18px 14px;border-radius:var(--r-lg);background:var(--bg);box-shadow:0 0 0 1px var(--line),var(--shadow-3);font:13.5px/1.3 var(--font);color:var(--ink-2)}
 .judge small{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;color:var(--faint);margin-bottom:10px}
 .judge div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);animation:tk-judge .4s var(--ease) both;animation-delay:calc(1.2s + var(--i,0) * .45s)}
 .judge div:first-of-type{border-top:0}
@@ -138,3 +138,12 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 @media(max-width:1339px){.judge{position:relative;right:auto;top:auto;width:auto;margin:12px 0 14px;box-shadow:0 0 0 1px var(--line);display:grid;grid-template-columns:repeat(4,1fr) auto;align-items:center;gap:0 18px}.judge small{grid-column:1/-1}.judge div{border-top:0;flex-direction:column;gap:2px}.judge em{margin:0}}
 @media(max-width:760px){.judge{display:block}.judge div{flex-direction:row;border-top:1px solid var(--line)}.judge div:first-of-type{border-top:0}.figure.frame{border-radius:var(--r-xl);padding-bottom:0;margin-top:44px}.frame .diagram{border-radius:var(--r-md)}.stage .hero{padding-top:44px}.stage .hero h1{margin:22px 0 16px}}
 @media(prefers-reduced-motion:reduce){.judge div,.judge em{animation:none}}
+
+/* Light theme (spec 27 §1): the hero and header follow the theme. A white-to-grey stage with a soft indigo glow,
+   the figure in a white window that floats, the judge's card on a white sheet. Dark is unchanged. */
+:root:not([data-theme=dark]) .stage{background:linear-gradient(var(--bg),var(--page) 78%)}
+:root:not([data-theme=dark]) .stage::before{background:radial-gradient(48% 56% at 50% 0%,rgb(var(--accent-rgb) / .13),transparent 72%)}
+:root:not([data-theme=dark]) .figure.frame{background:var(--bg);box-shadow:0 0 0 1px var(--line),0 30px 80px -30px rgb(var(--accent-rgb) / .35),var(--shadow-2)}
+:root:not([data-theme=dark]) .frame .diagram{background:var(--surface-2)}
+:root:not([data-theme=dark]) .hero-chip{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line),var(--shadow-1)}
+:root:not([data-theme=dark]) .header{background:rgb(var(--bg-rgb) / .8);box-shadow:0 1px 0 var(--line)}

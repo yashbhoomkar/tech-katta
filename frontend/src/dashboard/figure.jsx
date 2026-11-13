@@ -16,7 +16,7 @@ const FIG_FAILED=<p className="a-fig-err">This figure couldn't be drawn. The res
 // scrolls sideways in its frame. Its step line is shown above the frame, following the steps, so it stays readable
 // while the reader pans; a fade on the right edge and a hint say there is more.
 const PHONE="(max-width: 680px)";
-function usePhone(){const[m,setM]=useState(()=>typeof matchMedia==="function"&&matchMedia(PHONE).matches);
+export function usePhone(){const[m,setM]=useState(()=>typeof matchMedia==="function"&&matchMedia(PHONE).matches);
 useEffect(()=>{if(typeof matchMedia!=="function")return;const q=matchMedia(PHONE),on=()=>setM(q.matches);q.addEventListener("change",on);return()=>q.removeEventListener("change",on)},[]);return m}
 // The figure's clock (tech-katta-context 24, A1/S2). A figure written with Caps has n equal steps over a loop of d
 // seconds (`tk-caps`, data-dur). Its loop starts from step 1 when it first comes into view (not when the page loaded,
@@ -30,7 +30,7 @@ useEffect(()=>{if(typeof matchMedia!=="function")return;const q=matchMedia(PHONE
 const FIGS=new Set();
 function arbitrate(){const phone=typeof matchMedia==="function"&&matchMedia(PHONE).matches;let best=null;
 for(const f of FIGS){f.on=f.r>=.3&&!phone;if(!phone||f.r<.3)continue;if(!best||f.r>best.r+.01||(Math.abs(f.r-best.r)<=.01&&f.el.getBoundingClientRect().top<best.el.getBoundingClientRect().top))best=f}if(best)best.on=true}
-function useSteps(ref,still,key,fig){const[st,setSt]=useState({n:0,i:0,t:null,c:null,held:false});const held=useRef(false),sent=useRef(false);
+export function useSteps(ref,still,key,fig){const[st,setSt]=useState({n:0,i:0,t:null,c:null,held:false});const held=useRef(false),sent=useRef(false);
 // fig_step: once per figure per page view, how the reader first stepped or paused it (spec 24 §11.5)
 const note=via=>{if(sent.current||!via)return;sent.current=true;track("fig_step",{fig,via})};
 const svg=()=>ref.current?.querySelector("svg"),read=(s,i)=>{const g=s?.querySelector(".tk-caps");if(!g){const one=s?.querySelector(".tk-cap");return one?{n:1,i:0,t:one.textContent,c:one.style.fill}:{n:0,i:0,t:null,c:null}}

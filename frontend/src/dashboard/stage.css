@@ -1,8 +1,9 @@
-/* Stage (tech-katta-context 26): the dashboard's frame and cards. The sidebar is dark in both themes (.on-dark, tokens.css);
+/* Stage (tech-katta-context 26): the dashboard's frame and cards. In dark the sidebar is the page colour; in light it is white beside the grey page (spec 27 §1);
    the page is the soft grey --page; cards are white (--bg) and float on it (--card-shadow). One navigation: the sidebar
    (the top tabs are gone); no small capital labels over headings. Every rule starts with .dash so it wins over the
    section stylesheets loaded after this one. */
-.dash .side{background:var(--page);border-right:1px solid var(--line);color:var(--ink)}
+.dash .side{background:var(--bg);border-right:1px solid var(--line);color:var(--ink)}
+:root[data-theme=dark] .dash .side{background:var(--page)}
 .dash .side-label{display:none}
 .dash .side-head{height:72px}
 .dash .side-brand b{background:var(--ink);color:var(--page);font-family:var(--font)}
@@ -82,3 +83,13 @@ a.h-card:hover{box-shadow:var(--card-shadow),0 0 0 1px var(--line-strong);transf
 @media(prefers-reduced-motion:reduce){.h-card,.dash .d-list a,.dash .cards .card{transition:none}.dash .d-list a:hover,.dash .cards .card:hover,a.h-card:hover{transform:none}}
 /* section marks: the current section's request dot is the accent */
 .dash .side-link.active .ico-mark .ico-dot{fill:var(--accent);stroke:none}
+/* light: the current row is an ink pill with a soft tint, the brand square black */
+:root:not([data-theme=dark]) .dash .side-link.active{background:var(--surface)}
+:root:not([data-theme=dark]) .dash .d-head{background:rgb(var(--page-rgb) / .86)}
+/* articles (spec 27): a plain "← Concepts" link instead of "CONCEPTS / CONCEPT // 04", and the meta line in sentence case */
+.dash .crumbs{font:500 14px var(--font);letter-spacing:0;text-transform:none;color:var(--muted)}
+.dash .crumbs>span{display:none}
+.dash .crumbs a{color:var(--muted)}.dash .crumbs a:hover{color:var(--ink)}
+.dash .crumbs a::before{content:"← "}
+.dash .d-article>.d-meta{align-items:center;gap:12px;flex-wrap:wrap}
+.dash .d-article>.d-meta>span{font:500 13.5px var(--font);letter-spacing:0;text-transform:none;color:var(--muted)}
