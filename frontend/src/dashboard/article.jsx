@@ -1,16 +1,18 @@
-import React,{useEffect,useRef,useState}from"react";import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";import{readArticle}from"../analytics.js";import{knownFig,loadFigs,prefetchFigs}from"../figs/index.js";import{useStill}from"../theme/motion.js";import{c,d,articles}from"./site.js";import{words,extraWords}from"./text.jsx";import{useReader,Reader}from"./reader.jsx";import{Share}from"./share.jsx";import{Block}from"./blocks.jsx";
-export function Article({a,pane}){const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
+import React,{useEffect,useRef,useState}from"react";import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";import{readArticle}from"../analytics.js";import{knownFig,loadFigs,prefetchFigs}from"../figs/index.js";import{useStill}from"../theme/motion.js";import{c,d,articles}from"./site.js";import{words,extraWords}from"./text.jsx";import{useReader,Reader}from"./reader.jsx";import{Share}from"./share.jsx";import{Block}from"./blocks.jsx";import{previewOf}from"../preview.js";
+// lock (signed-out readers): only the public preview (preview.js), then the sign-in card passed in; read
+// times stay those of the whole article.
+export function Article({a:full,pane,lock}){const a=lock?previewOf(full):full;const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const r=useReader(a);const rd=k=>r.cur===k?" reading":"";
 // Interview Questions (not the method page) open their problem workspace: design it on the canvas, Run, Submit.
 const pr=a.section==="interview-questions"&&a.group!=="start";
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
 const fn={};a.body.reduce((n,b,i)=>b.t==="fig"?(fn[i]=n+1):n,0);
-const main=Math.max(1,Math.round(words(a)/220)),all=Math.max(main,Math.round((words(a)+extraWords(a))/220));
-return <div className="d-read"><article className="d-panel d-article" aria-labelledby="d-title">
+const main=Math.max(1,Math.round(words(full)/220)),all=Math.max(main,Math.round((words(full)+extraWords(full))/220));
+return <div className="d-read"><article className={"d-panel d-article"+(lock?" a-preview":"")} aria-labelledby="d-title">
 <nav className="crumbs" aria-label="Breadcrumb"><a href={`#${a.section}`}>{label}</a><span aria-hidden="true">/</span><span>{a.no}</span></nav>
 <label>{a.tag}</label><h1 id="d-title">{a.title}</h1><p className={"d-dek"+rd("head")}>{a.dek}</p><Reader r={r}/><div className="d-meta"><span>{a.date} · {main} MIN READ{all>main?` · ${all} WITH DETAILS`:""}</span><Share a={a}/></div>
-{pr&&!pane&&c.problems?.solve&&<a className="pr-solve" href={`#problems/${a.slug}`}>{c.problems.solve.button} →</a>}
+{pr&&!pane&&!lock&&c.problems?.solve&&<a className="pr-solve" href={`#problems/${a.slug}`}>{c.problems.solve.button} →</a>}
 {a.body.map((b,i)=><Block key={i} b={b} i={i} rd={rd} still={still} fn={fn}/>)}
-<NextProblem a={a}/><a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>{!pane&&<Rail a={a}/>}</div>}
+{lock?<div className="a-locked">{lock}</div>:<NextProblem a={a}/>}<a className="a-back" href={`#${a.section}`}>← All {label.toLowerCase()}</a></article>{!pane&&!lock&&<Rail a={a}/>}</div>}
 // Wide screens: a column beside the article with its sections (the one you are reading is marked) and,
 // for an article with a card to a problem or challenge, a shortcut to it. Hidden below 1240 px, where the article fills the width.
 function Rail({a}){const hs=a.body.map((b,i)=>b.t==="h2"?{id:`s-${i}`,x:b.x}:null).filter(Boolean);const lab=a.body.find(b=>b.t==="lab");const[on,setOn]=useState(null);
@@ -34,5 +36,5 @@ const knownFigs=a=>a.body.some(x=>x.t==="fig"&&!knownFig(x.id))?{...a,body:a.bod
 // the article, once the modules that draw its figures have loaded (figs/index.js), so it shows complete
 export const withFigs=a=>{const k=knownFigs(a);return loadFigs(k.body.filter(x=>x.t==="fig").map(x=>x.id)).then(()=>k)};
 // A late answer for the article the visitor has already left is dropped (cur), so it never replaces the one on screen.
-export function ArticlePage({s}){const[st,set]=useState({});const cur=useRef(s.slug);cur.current=s.slug;const load=()=>{const want=s.slug;set({});prefetchFigs(s.section,s.group);getJSON(`/v1/articles/${want}`).then(withFigs).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":e.figs?"figs":"failed"})})};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
-return st.a?<Article a={st.a}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={st.err==="figs"?()=>location.reload():load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}
+export function ArticlePage({s,lock}){const[st,set]=useState({});const cur=useRef(s.slug);cur.current=s.slug;const load=()=>{const want=s.slug;set({});prefetchFigs(s.section,s.group);getJSON(`/v1/articles/${want}`).then(withFigs).then(a=>{if(cur.current===want)set({a})},e=>{if(cur.current===want)set({err:e.status===404?"missing":e.figs?"figs":"failed"})})};useEffect(load,[s.slug]);useEffect(()=>readArticle(s.section,s.slug),[s.section,s.slug]);
+return st.a?<Article a={st.a} lock={lock}/>:st.err?<section className="d-panel">{st.err==="missing"?<p className="d-desc">This article is no longer available. <a href={`#${s.section}`}>Back to {s.section}</a></p>:<LoadError what="this article" retry={st.err==="figs"?()=>location.reload():load}/>}</section>:<section className="d-panel"><Loading label={s.title}/></section>}

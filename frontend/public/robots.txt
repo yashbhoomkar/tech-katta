@@ -1,3 +1,38 @@
+# Tech Katta: system design, explained. Search engines and AI assistants are welcome.
+# Articles show a public preview; the full text needs a (free) sign-in. Discovery files list public summaries only.
 User-agent: *
 Allow: /
+Disallow: /analytics/
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
 Sitemap: https://tech.katta.cc/sitemap.xml
+# LLM content map: https://tech.katta.cc/llms.txt

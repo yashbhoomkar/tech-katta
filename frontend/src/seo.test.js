@@ -42,6 +42,36 @@ test('the API gives the same pages as the content folder', async () => {
   const fs = await import('node:fs');
   const site = JSON.parse(fs.readFileSync(path.join(content, 'site.json'), 'utf8'));
   const refs = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'index.json'), 'utf8')).articles;
-  const list = refs.map((r) => { const { body, ...rest } = JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8')); return rest; });
+  const list = refs.map((r) => JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8')));
   assert.deepEqual(pagesOf(site, list), pagesFrom(content));
+});
+
+test('an article page holds its public preview, never the locked text, and Article markup', async () => {
+  const { previewCut } = await import('./preview.js');
+  const fs = await import('node:fs');
+  const a = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'concepts', 'consistent-hashing.json'), 'utf8'));
+  const page = pagesFrom(content).find((p) => p.key === 'concepts/consistent-hashing');
+  const html = render('<html><head><title>x</title><script type="module" src="/a.js"></script></head><body><div id="root"><p style="x">Loading…</p></div></body></html>', page);
+  assert.match(html, /<div id="root"><div class="tk-static"><main>/);
+  assert.match(html, /<h1>Consistent hashing/);
+  assert.match(html, /class="tk-locked"/);
+  assert.match(html, /"isAccessibleForFree":false/);
+  assert.match(html, /"cssSelector":".tk-locked"/);
+  const cut = previewCut(a.body);
+  assert.ok(cut > 0 && cut < a.body.length);
+  const firstP = a.body.slice(0, cut).find((b) => b.t === 'p' && !/`/.test(b.x));
+  assert.ok(firstP && html.includes(firstP.x.slice(0, 40).replace(/&/g, '&amp;')));
+  // nothing after the cut (paragraphs only, long enough to be unique)
+  for (const b of a.body.slice(cut)) if (b.t === 'p' && b.x.length > 60 && !/`/.test(b.x)) assert.ok(!html.includes(b.x.slice(0, 60).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')), b.x.slice(0, 60));
+});
+
+test('every article preview stops before the end and shows some text', async () => {
+  const { previewCut } = await import('./preview.js');
+  const fs = await import('node:fs');
+  const refs = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'index.json'), 'utf8')).articles;
+  for (const r of refs) {
+    const a = JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8'));
+    const cut = previewCut(a.body);
+    assert.ok(cut >= 1 && cut < a.body.length, r);
+  }
 });
