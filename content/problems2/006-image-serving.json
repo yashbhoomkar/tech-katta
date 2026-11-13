@@ -1,0 +1,210 @@
+{
+  "id": 6,
+  "slug": "image-serving",
+  "title": "Design image upload and serving",
+  "difficulty": "medium",
+  "topics": [
+    "cdn",
+    "object storage",
+    "static content"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "Every restaurant on Zotato has photos: dishes, menus, the shop front. Restaurants **upload** photos now and then, and customers **view** them all the time: each menu page shows a dozen.\n\nDesign the service that stores and serves the photos. A photo is about **200 KB** and never changes after upload (a new photo gets a new name). Views come from all over India at up to **60,000 a second** in the evening, and a few photos (the famous biryani) take most of them.\n\nViews must be quick: half under 10 ms, and the 99th percentile under 160 ms. Names must never repeat. The budget is ₹60,000 a month.",
+  "constraints": [
+    "Up to 20 crore photos, 200 KB each",
+    "Peak: 60,000 views and 50 uploads a second",
+    "Median view under 10 ms",
+    "Budget ₹60,000 a month"
+  ],
+  "total_items": 200000000,
+  "requests": [
+    {
+      "name": "GET_IMAGE",
+      "mode": "read",
+      "distinct_keys": 10000000,
+      "item_bytes": 200000,
+      "skew": 0.9,
+      "max_stale_s": 86400,
+      "read_your_writes": false,
+      "cdn_ok": true,
+      "says": "Show a photo."
+    },
+    {
+      "name": "UPLOAD_IMAGE",
+      "mode": "write",
+      "durable": true,
+      "unique_id": true,
+      "says": "Store a new photo under a name that never repeats."
+    }
+  ],
+  "tables_hint": [],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts and routes\nread  GET_IMAGE:    client > lb > api > \nwrite UPLOAD_IMAGE: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-afternoon",
+      "title": "An afternoon",
+      "hidden": false,
+      "explain": "2,000 views a second. The budget is checked here.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_IMAGE": 2000,
+            "UPLOAD_IMAGE": 10
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_IMAGE": 160
+        },
+        "budget_inr": 60000
+      }
+    },
+    {
+      "id": "t02-dinner",
+      "title": "Dinner time",
+      "hidden": false,
+      "explain": "30,000 then 60,000 views a second. Half the views under 10 ms.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_IMAGE": 30000,
+            "UPLOAD_IMAGE": 30
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_IMAGE": 60000,
+            "UPLOAD_IMAGE": 50
+          }
+        }
+      ],
+      "promises": {
+        "p50_ms": {
+          "GET_IMAGE": 10
+        },
+        "p99_ms": {
+          "GET_IMAGE": 160
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_IMAGE": 40000,
+            "UPLOAD_IMAGE": 30
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_IMAGE": 40000,
+            "UPLOAD_IMAGE": 30
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_IMAGE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t04-upload-rush",
+      "title": "A menu-update rush",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_IMAGE": 20000,
+            "UPLOAD_IMAGE": 500
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_IMAGE": 160
+        },
+        "availability": {
+          "UPLOAD_IMAGE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t05-long-evening",
+      "title": "A long evening",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 1800,
+          "rates": {
+            "GET_IMAGE": 55000,
+            "UPLOAD_IMAGE": 50
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_IMAGE": 160
+        },
+        "availability": {
+          "GET_IMAGE": 0.999
+        }
+      }
+    }
+  ],
+  "reference": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n",
+  "wrong": [
+    {
+      "name": "no-cdn",
+      "expect": "Overloaded",
+      "why": "Every image view reaches the load balancer: 60,000 a second against its 50,000.",
+      "source": "lb    = lb()\napi   = server(count=4, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+    },
+    {
+      "name": "cache-behind-servers",
+      "expect": "Overloaded",
+      "why": "A cache behind the servers doesn't protect the servers or the load balancer: all 60,000 views still go through them.",
+      "source": "cache = cache(nodes=1, memory_gb=4, ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > lb > api > cache | files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+    },
+    {
+      "name": "one-server",
+      "expect": "Overloaded",
+      "why": "5 % of views miss the CDN: 3,000 a second, more than one medium server's 1,000.",
+      "source": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=1, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+    },
+    {
+      "name": "random-32-bit-ids",
+      "expect": "Wrong Answer",
+      "why": "20 crore images with random 32-bit names repeat.",
+      "source": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=medium)\nfiles = objectstore()\nids   = idgen(kind=random, bits=32)\n\nread  GET_IMAGE:    client > cdn | lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+    },
+    {
+      "name": "many-servers",
+      "expect": "Over Budget",
+      "why": "Forty servers do what the CDN already does, at far more than the budget.",
+      "source": "cdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=40, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n"
+    }
+  ],
+  "hints": [
+    "A photo never changes. Where could a copy live that is close to the viewer and in front of everything else?",
+    "A cache behind your servers still makes every view pass through the servers. Does that help them?",
+    "What stores 20 crore files of 200 KB cheaply?"
+  ],
+  "editorial": "## The approach\n\nPhotos are large, never change and are viewed far more than uploaded: the job of a CDN.\n\n1. **A CDN in front of everything.** `client > cdn | lb`: 95 % of views are answered at the edge in about 15 ms, so the median view is about 4 ms and only 3,000 views a second reach the servers.\n2. **An object store for the files.** It holds any number of large files cheaply and serves a million calls a second.\n3. **A few servers for the misses and uploads.** Four medium servers take the 3,000 misses with room to lose one.\n4. **Names that never repeat.** Snowflake ids.\n\n## The reference design\n\n```\ncdn   = cdn(ttl_s=86400)\nlb    = lb()\napi   = server(count=4, size=medium)\nfiles = objectstore()\nids   = idgen(kind=snowflake)\n\nread  GET_IMAGE:    client > cdn | lb > api > files\nwrite UPLOAD_IMAGE: client > lb > api > ids > files\n```\n\nIt costs ₹31,000 a month.\n\n## Why the usual wrong designs fail\n\n- **No cdn: Overloaded.** Every image view reaches the load balancer: 60,000 a second against its 50,000.\n- **Cache behind servers: Overloaded.** A cache behind the servers doesn't protect the servers or the load balancer: all 60,000 views still go through them.\n- **One server: Overloaded.** 5 % of views miss the CDN: 3,000 a second, more than one medium server's 1,000.\n- **Random 32 bit ids: Wrong Answer.** 20 crore images with random 32-bit names repeat.\n- **Many servers: Over Budget.** Forty servers do what the CDN already does, at far more than the budget.\n\n## Read more\n\n- [Caching and CDNs](/dashboard/concepts/caching/)\n"
+}

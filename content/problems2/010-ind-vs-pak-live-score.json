@@ -1,0 +1,239 @@
+{
+  "id": 10,
+  "slug": "ind-vs-pak-live-score",
+  "title": "Design the IND vs PAK live score",
+  "difficulty": "hard",
+  "topics": [
+    "cdn",
+    "read spike",
+    "replicas"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "IND vs PAK, last over. Three crore fans have the Zotato app open on the live score, and the app refreshes it every few seconds: about **2 lakh reads a second**. The scorer **updates** the score once a ball.\n\nDesign the score service. There are only a handful of matches, so almost every read asks for the same few scores. A score may be at most **5 seconds** old: fans watching on TV notice anything slower.\n\nThe spike is extreme and the origin must survive it, including when its cache restarts mid-over. The median read must be instant (under 10 ms), and no score update may be lost. The budget is ₹2.6 lakh a month.",
+  "constraints": [
+    "A handful of matches, 3 crore viewers",
+    "Peak: 2,00,000 score reads a second, one update a second",
+    "A score at most 5 seconds old",
+    "Budget ₹2,60,000 a month"
+  ],
+  "total_items": 1000,
+  "requests": [
+    {
+      "name": "GET_SCORE",
+      "mode": "read",
+      "table": "scores",
+      "key": "match_id",
+      "distinct_keys": 10,
+      "item_bytes": 1000,
+      "skew": 0.95,
+      "max_stale_s": 5,
+      "read_your_writes": false,
+      "cdn_ok": true,
+      "says": "Show the live score of a match."
+    },
+    {
+      "name": "UPDATE_SCORE",
+      "mode": "write",
+      "table": "scores",
+      "key": "match_id",
+      "durable": true,
+      "unique_id": false,
+      "says": "The scorer updates a match's score."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "scores",
+      "columns": [
+        "match_id",
+        "score",
+        "updated_at"
+      ],
+      "pk": "match_id"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nread  GET_SCORE:    client > lb > api > \nwrite UPDATE_SCORE: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-toss",
+      "title": "The toss",
+      "hidden": false,
+      "explain": "20,000 reads a second before play. The budget is checked here.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_SCORE": 20000,
+            "UPDATE_SCORE": 1
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_SCORE": 250
+        },
+        "budget_inr": 260000
+      }
+    },
+    {
+      "id": "t02-last-over",
+      "title": "The last over",
+      "hidden": false,
+      "explain": "1 lakh, then 2 lakh reads a second. Half the reads under 10 ms.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_SCORE": 100000,
+            "UPDATE_SCORE": 1
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_SCORE": 200000,
+            "UPDATE_SCORE": 1
+          }
+        }
+      ],
+      "promises": {
+        "p50_ms": {
+          "GET_SCORE": 10
+        },
+        "p99_ms": {
+          "GET_SCORE": 250
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies in the last over",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_SCORE": 150000,
+            "UPDATE_SCORE": 1
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_SCORE": 150000,
+            "UPDATE_SCORE": 1
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_SCORE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t04-cache-restarts",
+      "title": "The cache restarts mid-over",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_SCORE": 200000,
+            "UPDATE_SCORE": 1
+          },
+          "events": [
+            {
+              "flush_role": "cache"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_SCORE": 0.999
+        }
+      }
+    },
+    {
+      "id": "t05-database-fails",
+      "title": "The database primary fails",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_SCORE": 100000,
+            "UPDATE_SCORE": 1
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_SCORE": 100000,
+            "UPDATE_SCORE": 1
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "availability": {
+          "GET_SCORE": 0.999
+        }
+      }
+    }
+  ],
+  "reference": "cdn   = cdn(ttl_s=2)\nlb    = lb()\napi   = server(count=7, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n",
+  "wrong": [
+    {
+      "name": "no-cdn",
+      "expect": "Overloaded",
+      "why": "2 lakh reads a second reach the load balancer, which takes 50,000.",
+      "source": "lb    = lb()\napi   = server(count=7, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n"
+    },
+    {
+      "name": "cdn-minute-ttl",
+      "expect": "Wrong Answer",
+      "why": "The CDN keeps a score for a minute; the problem allows 5 seconds.",
+      "source": "cdn   = cdn(ttl_s=60)\nlb    = lb()\napi   = server(count=7, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n"
+    },
+    {
+      "name": "thin-origin",
+      "expect": "Overloaded",
+      "why": "5 % of 2 lakh reads miss the CDN: 10,000 a second, more than four large servers serve.",
+      "source": "cdn   = cdn(ttl_s=2)\nlb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n"
+    },
+    {
+      "name": "primary-only",
+      "expect": "Unavailable",
+      "why": "When the cache restarts, all 10,000 origin reads hit one primary that serves 8,000.",
+      "source": "cdn   = cdn(ttl_s=2)\nlb    = lb()\napi   = server(count=7, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=0, sync=false)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db\nwrite UPDATE_SCORE: client > lb > api > db\n"
+    },
+    {
+      "name": "big-origin",
+      "expect": "Over Budget",
+      "why": "It passes every test at more than the budget.",
+      "source": "cdn   = cdn(ttl_s=2)\nlb    = lb()\napi   = server(count=20, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n"
+    }
+  ],
+  "hints": [
+    "Two lakh reads a second for a handful of scores: where can most of them be answered before they reach you?",
+    "A copy at the edge may be as old as its TTL. What TTL keeps a score within 5 seconds?",
+    "If the origin's cache restarts, where do its 10,000 reads a second go?"
+  ],
+  "editorial": "## The approach\n\nThe read spike has to be absorbed in layers, and each layer adds to how old a score can be.\n\n1. **A CDN with a short TTL.** 95 % of the 2 lakh reads are answered at the edge. A 2-second TTL keeps the edge copy fresh enough.\n2. **An origin for the 5 % that miss.** 10,000 reads a second need seven large servers.\n3. **A cache, and replicas behind it.** The origin's cache answers almost every read; when it restarts, two read replicas (8,000 each) take the 10,000 reads a second. The replicas are synchronous, so they add no staleness: 2 + 2 = 4 seconds at most.\n4. **Updates on the primary**, one a second, kept on the replicas before they are acknowledged, so a failover loses none.\n\n## The reference design\n\n```\ncdn   = cdn(ttl_s=2)\nlb    = lb()\napi   = server(count=7, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=2)\ndb    = sql(size=large, replicas=2, sync=true)\n\ntable db.scores(match_id pk, score, updated_at)\n\nread  GET_SCORE:    client > cdn | lb > api > cache | db[replica]\nwrite UPDATE_SCORE: client > lb > api > db\n```\n\nIt costs ₹2.27 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **No cdn: Overloaded.** 2 lakh reads a second reach the load balancer, which takes 50,000.\n- **Cdn minute ttl: Wrong Answer.** The CDN keeps a score for a minute; the problem allows 5 seconds.\n- **Thin origin: Overloaded.** 5 % of 2 lakh reads miss the CDN: 10,000 a second, more than four large servers serve.\n- **Primary only: Unavailable.** When the cache restarts, all 10,000 origin reads hit one primary that serves 8,000.\n- **Big origin: Over Budget.** It passes every test at more than the budget.\n\n## Read more\n\n- [Caching and CDNs](/dashboard/concepts/caching/)\n"
+}

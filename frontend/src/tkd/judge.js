@@ -14,7 +14,7 @@ import { msg } from './messages.js';
 import { round } from './round.js';
 
 // Raise whenever a formula, a catalogue number, a rule or a message that depends on numbers changes (21.7).
-export const JUDGE_VERSION = 1;
+export const JUDGE_VERSION = 2; // 2: a worker blocked by a failover waits instead of being stuck; lost writes counted from the rate just before a failure
 
 export function judge(design, problem, test) {
   const cost = costOf(design);

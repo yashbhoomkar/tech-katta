@@ -1,0 +1,472 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 167000,
+  "worst_p99_ms": {
+   "GET_TOP": 94.5,
+   "SUBMIT_SCORE": 81.2
+  },
+  "worst_p50_ms": {
+   "GET_TOP": 23.6,
+   "SUBMIT_SCORE": 20.3
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-warm-up",
+   "margin": 0.1211,
+   "text": "Tightest promise: budget, 12 % to spare."
+  },
+  "rank_p99_ms": 94.5,
+  "tests": [
+   {
+    "id": "t01-warm-up",
+    "title": "Before the match",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-match",
+    "title": "During the match",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-cold-cache",
+    "title": "The cache restarts",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "no-index": {
+   "verdict": "Too Slow",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_TOP": 1169.2,
+    "SUBMIT_SCORE": 40.6
+   },
+   "worst_p50_ms": {
+    "GET_TOP": 6.6,
+    "SUBMIT_SCORE": 10.1
+   },
+   "failed": {
+    "test": "t01-warm-up",
+    "title": "Before the match",
+    "hidden": false,
+    "reason": "p99",
+    "request": "GET_TOP",
+    "phase": 1,
+    "expected": "p99 ≤ 120 ms",
+    "actual": "p99 1169.2 ms",
+    "message": "GET_TOP took 1169.2 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 13 % of capacity.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 0.125,
+     "note": "db is at 13 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.05,
+      "rho": 0.024
+     },
+     {
+      "part": "api",
+      "ms": 22.22,
+      "rho": 0.1
+     },
+     {
+      "part": "cache",
+      "ms": 2.02,
+      "rho": 0.01,
+      "hit": 0.99
+     },
+     {
+      "part": "db",
+      "ms": 1142.86,
+      "rho": 0.125
+     }
+    ]
+   },
+   "also": [],
+   "tip": "An index on the lookup column would fix this.",
+   "rank_p99_ms": 1169.2,
+   "tests": [
+    {
+     "id": "t01-warm-up",
+     "title": "Before the match",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t02-match",
+     "title": "During the match",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "minute-ttl": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_TOP": 36.3,
+    "SUBMIT_SCORE": 40.6
+   },
+   "worst_p50_ms": {
+    "GET_TOP": 6.6,
+    "SUBMIT_SCORE": 10.1
+   },
+   "failed": {
+    "test": "t01-warm-up",
+    "title": "Before the match",
+    "hidden": false,
+    "reason": "stale",
+    "request": "GET_TOP",
+    "phase": null,
+    "expected": "at most 5 s old",
+    "actual": "up to 61 s old",
+    "message": "GET_TOP can return data up to 61 s old, but this problem allows 5 s. Look at the cache TTL, or invalidate on write.",
+    "blame": {
+     "part": "cache",
+     "line": 3,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Clearing \"cache\" when the data changes would fix this.",
+   "rank_p99_ms": 36.3,
+   "tests": [
+    {
+     "id": "t01-warm-up",
+     "title": "Before the match",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-match",
+     "title": "During the match",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "medium-db": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 117000,
+   "worst_p99_ms": {
+    "GET_TOP": 64.7,
+    "SUBMIT_SCORE": 352.3
+   },
+   "worst_p50_ms": {
+    "GET_TOP": 13.6,
+    "SUBMIT_SCORE": 88.1
+   },
+   "failed": {
+    "test": "t02-match",
+    "title": "During the match",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_TOP",
+    "phase": 2,
+    "expected": "at most 1,050 calls a second",
+    "actual": "1,260 calls a second",
+    "message": "db received 1,260 calls a second but can serve 1,050.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 1.2,
+     "note": "db is at 120 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.34,
+      "rho": 0.144
+     },
+     {
+      "part": "api",
+      "ms": 50,
+      "rho": 0.6
+     },
+     {
+      "part": "cache",
+      "ms": 2.13,
+      "rho": 0.06,
+      "hit": 0.99
+     },
+     {
+      "part": "db",
+      "ms": 10.2,
+      "rho": 0.02
+     }
+    ]
+   },
+   "also": [],
+   "tip": "Bigger machines for \"db\" would fix this.",
+   "rank_p99_ms": 64.7,
+   "tests": [
+    {
+     "id": "t01-warm-up",
+     "title": "Before the match",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match",
+     "title": "During the match",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "no-cache": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 164000,
+   "worst_p99_ms": {
+    "GET_TOP": 252.3,
+    "SUBMIT_SCORE": 352.3
+   },
+   "worst_p50_ms": {
+    "GET_TOP": 63.1,
+    "SUBMIT_SCORE": 88.1
+   },
+   "failed": {
+    "test": "t02-match",
+    "title": "During the match",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_TOP",
+    "phase": 2,
+    "expected": "at most 5,854 calls a second",
+    "actual": "7,200 calls a second",
+    "message": "db received 7,200 calls a second but can serve 5,854.",
+    "blame": {
+     "part": "db",
+     "line": 3,
+     "rho": 1.23,
+     "note": "db is at 123 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.34,
+      "rho": 0.144
+     },
+     {
+      "part": "api",
+      "ms": 50,
+      "rho": 0.6
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 1.23
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_TOP",
+     "message": "GET_TOP took 252.3 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 123 % of capacity."
+    }
+   ],
+   "tip": "Reading GET_TOP from replicas of \"db\" would fix this.",
+   "rank_p99_ms": 252.3,
+   "tests": [
+    {
+     "id": "t01-warm-up",
+     "title": "Before the match",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-match",
+     "title": "During the match",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "big-everything": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 329000,
+   "worst_p99_ms": {
+    "GET_TOP": 35.1,
+    "SUBMIT_SCORE": 39.4
+   },
+   "worst_p50_ms": {
+    "GET_TOP": 6.3,
+    "SUBMIT_SCORE": 9.9
+   },
+   "failed": {
+    "test": "t01-warm-up",
+    "title": "Before the match",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,90,000",
+    "actual": "₹3,29,000",
+    "message": "This design costs ₹3,29,000 a month; the budget is ₹1,90,000.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": "db is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 35.1,
+   "tests": [
+    {
+     "id": "t01-warm-up",
+     "title": "Before the match",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-match",
+     "title": "During the match",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

@@ -1,0 +1,508 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 167000,
+  "worst_p99_ms": {
+   "GET_SEATS": 117.4,
+   "BOOK": 169.3
+  },
+  "worst_p50_ms": {
+   "GET_SEATS": 22.6,
+   "BOOK": 42.3
+  },
+  "tightest": {
+   "promise": "budget",
+   "request": null,
+   "test": "t01-day-before",
+   "margin": 0.165,
+   "text": "Tightest promise: budget, 17 % to spare."
+  },
+  "rank_p99_ms": 117.4,
+  "tests": [
+   {
+    "id": "t01-day-before",
+    "title": "The day before",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-ten-am",
+    "title": "10 am: sales open",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies during the rush",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-cold-cache",
+    "title": "The cache restarts",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "cache-not-cleared": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_SEATS": 35.2,
+    "BOOK": 53.6
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 6.3,
+    "BOOK": 13.4
+   },
+   "failed": {
+    "test": "t01-day-before",
+    "title": "The day before",
+    "hidden": false,
+    "reason": "ryw",
+    "request": "GET_SEATS",
+    "phase": null,
+    "expected": "the newest data after a write",
+    "actual": "up to 60 s old",
+    "message": "After a write, GET_SEATS must show the new data at once. Yours reads from cache, which can be behind.",
+    "blame": {
+     "part": "cache",
+     "line": 3,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Clearing \"cache\" when the data changes would fix this.",
+   "rank_p99_ms": 35.2,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "replica-reads": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_SEATS": 35.1,
+    "BOOK": 38.3
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 6.3,
+    "BOOK": 9.6
+   },
+   "failed": {
+    "test": "t01-day-before",
+    "title": "The day before",
+    "hidden": false,
+    "reason": "ryw",
+    "request": "GET_SEATS",
+    "phase": null,
+    "expected": "the newest data after a write",
+    "actual": "up to 1 s old",
+    "message": "After a write, GET_SEATS must show the new data at once. Yours reads from db, which can be behind.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Making \"db\" wait for its replicas would fix this.",
+   "rank_p99_ms": 35.1,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "async-replica": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_SEATS": 117.4,
+    "BOOK": 128.7
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 22.6,
+    "BOOK": 32.2
+   },
+   "failed": {
+    "test": "t04-database-fails",
+    "title": "The database primary fails",
+    "hidden": true,
+    "reason": "lost",
+    "request": "BOOK",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 600 lost",
+    "message": "When db failed, about 600 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Making \"db\" wait for its replicas would fix this.",
+   "rank_p99_ms": 117.4,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "medium-db": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 117000,
+   "worst_p99_ms": {
+    "GET_SEATS": 290.4,
+    "BOOK": 688.2
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 22.6,
+    "BOOK": 172.1
+   },
+   "failed": {
+    "test": "t02-ten-am",
+    "title": "10 am: sales open",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_SEATS",
+    "phase": 2,
+    "expected": "at most 1,500 calls a second",
+    "actual": "2,400 calls a second",
+    "message": "db received 2,400 calls a second but can serve 1,500.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 1.6,
+     "note": "db is at 160 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.45,
+      "rho": 0.184
+     },
+     {
+      "part": "api",
+      "ms": 85.73,
+      "rho": 0.7667
+     },
+     {
+      "part": "cache",
+      "ms": 2.2,
+      "rho": 0.092,
+      "hit": 0.85
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 1.6
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_SEATS",
+     "message": "GET_SEATS took 290.4 ms at the 99th percentile; the promise is 150 ms. Slowest hop: db at 160 % of capacity."
+    },
+    {
+     "reason": "p99",
+     "request": "BOOK",
+     "message": "BOOK took 688.2 ms at the 99th percentile; the promise is 250 ms. Slowest hop: db at 160 % of capacity."
+    }
+   ],
+   "tip": "Bigger machines for \"db\" would fix this.",
+   "rank_p99_ms": 290.4,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "random-ids": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 167000,
+   "worst_p99_ms": {
+    "GET_SEATS": 35.3,
+    "BOOK": 53.8
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 6.3,
+    "BOOK": 13.5
+   },
+   "failed": {
+    "test": "t01-day-before",
+    "title": "The day before",
+    "hidden": false,
+    "reason": "collision",
+    "request": "BOOK",
+    "phase": null,
+    "expected": "no repeated ids",
+    "actual": "about 2,91,03,830 repeats expected",
+    "message": "With 50 crore items, 32-bit random ids are expected to collide. Use more bits, or a counter.",
+    "blame": {
+     "part": "ids",
+     "line": 5,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "More bits in the ids of \"ids\" would fix this.",
+   "rank_p99_ms": 35.3,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "big-everything": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 329000,
+   "worst_p99_ms": {
+    "GET_SEATS": 34.8,
+    "BOOK": 53.3
+   },
+   "worst_p50_ms": {
+    "GET_SEATS": 6.1,
+    "BOOK": 13.3
+   },
+   "failed": {
+    "test": "t01-day-before",
+    "title": "The day before",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹2,00,000",
+    "actual": "₹3,29,000",
+    "message": "This design costs ₹3,29,000 a month; the budget is ₹2,00,000.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": null,
+     "note": "db is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 34.8,
+   "tests": [
+    {
+     "id": "t01-day-before",
+     "title": "The day before",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-ten-am",
+     "title": "10 am: sales open",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies during the rush",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-database-fails",
+     "title": "The database primary fails",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

@@ -1,0 +1,462 @@
+{
+ "judge_version": 2,
+ "reference": {
+  "verdict": "Accepted",
+  "passed": 5,
+  "total": 5,
+  "cost_inr": 152000,
+  "worst_p99_ms": {
+   "GET_FEED": 58.5,
+   "POST": 56.4
+  },
+  "worst_p50_ms": {
+   "GET_FEED": 12.2,
+   "POST": 14.1
+  },
+  "tightest": {
+   "promise": "p50",
+   "request": "GET_FEED",
+   "test": "t02-dinner-peak",
+   "margin": 0.1286,
+   "text": "Tightest promise: GET_FEED p50, 13 % to spare."
+  },
+  "rank_p99_ms": 58.5,
+  "tests": [
+   {
+    "id": "t01-morning",
+    "title": "Morning",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t02-dinner-peak",
+    "title": "Dinner-time peak",
+    "hidden": false,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t03-a-server-dies",
+    "title": "A server dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "verdict": "Passed"
+   },
+   {
+    "id": "t05-cold-cache",
+    "title": "The cache restarts",
+    "hidden": true,
+    "verdict": "Passed"
+   }
+  ],
+  "warnings": [],
+  "judge_version": 2
+ },
+ "wrong": {
+  "short-ttl-no-invalidate": {
+   "verdict": "Too Slow",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 152000,
+   "worst_p99_ms": {
+    "GET_FEED": 64.4,
+    "POST": 62.4
+   },
+   "worst_p50_ms": {
+    "GET_FEED": 16.1,
+    "POST": 15.6
+   },
+   "failed": {
+    "test": "t02-dinner-peak",
+    "title": "Dinner-time peak",
+    "hidden": false,
+    "reason": "p50",
+    "request": "GET_FEED",
+    "phase": 2,
+    "expected": "p50 ≤ 14 ms",
+    "actual": "p50 16.1 ms",
+    "message": "GET_FEED took 16.1 ms for the median request; the promise is 14 ms.",
+    "blame": {
+     "part": "api",
+     "line": 2,
+     "rho": 0.55,
+     "note": "api is at 55 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.43,
+      "rho": 0.176
+     },
+     {
+      "part": "api",
+      "ms": 44.44,
+      "rho": 0.55
+     },
+     {
+      "part": "cache",
+      "ms": 2.08,
+      "rho": 0.04,
+      "hit": 0.193631
+     },
+     {
+      "part": "kv",
+      "ms": 15.49,
+      "rho": 0.4834
+     }
+    ]
+   },
+   "also": [],
+   "tip": "More capacity in \"api\" would fix this.",
+   "rank_p99_ms": 64.4,
+   "tests": [
+    {
+     "id": "t01-morning",
+     "title": "Morning",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner-peak",
+     "title": "Dinner-time peak",
+     "hidden": false,
+     "verdict": "Too Slow"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "long-ttl-no-invalidate": {
+   "verdict": "Wrong Answer",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 152000,
+   "worst_p99_ms": {
+    "GET_FEED": 33.8,
+    "POST": 31.8
+   },
+   "worst_p50_ms": {
+    "GET_FEED": 6.4,
+    "POST": 7.9
+   },
+   "failed": {
+    "test": "t01-morning",
+    "title": "Morning",
+    "hidden": false,
+    "reason": "stale",
+    "request": "GET_FEED",
+    "phase": null,
+    "expected": "at most 30 s old",
+    "actual": "up to 3600 s old",
+    "message": "GET_FEED can return data up to 3600 s old, but this problem allows 30 s. Look at the cache TTL, or invalidate on write.",
+    "blame": {
+     "part": "cache",
+     "line": 3,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "Clearing \"cache\" when the data changes would fix this.",
+   "rank_p99_ms": 33.8,
+   "tests": [
+    {
+     "id": "t01-morning",
+     "title": "Morning",
+     "hidden": false,
+     "verdict": "Wrong Answer"
+    },
+    {
+     "id": "t02-dinner-peak",
+     "title": "Dinner-time peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "sql-feeds": {
+   "verdict": "Overloaded",
+   "passed": 1,
+   "total": 5,
+   "cost_inr": 162000,
+   "worst_p99_ms": {
+    "GET_FEED": 249,
+    "POST": 646.9
+   },
+   "worst_p50_ms": {
+    "GET_FEED": 12.2,
+    "POST": 161.7
+   },
+   "failed": {
+    "test": "t02-dinner-peak",
+    "title": "Dinner-time peak",
+    "hidden": false,
+    "reason": "overloaded",
+    "request": "GET_FEED",
+    "phase": 2,
+    "expected": "at most 1,791 calls a second",
+    "actual": "2,370 calls a second",
+    "message": "db received 2,370 calls a second but can serve 1,791.",
+    "blame": {
+     "part": "db",
+     "line": 4,
+     "rho": 1.3234,
+     "note": "db is at 132 % of its capacity"
+    },
+    "trace": [
+     {
+      "part": "lb",
+      "ms": 2.43,
+      "rho": 0.176
+     },
+     {
+      "part": "api",
+      "ms": 44.44,
+      "rho": 0.55
+     },
+     {
+      "part": "cache",
+      "ms": 2.09,
+      "rho": 0.044,
+      "hit": 0.803715
+     },
+     {
+      "part": "db",
+      "ms": 200,
+      "rho": 1.3234
+     }
+    ]
+   },
+   "also": [
+    {
+     "reason": "p99",
+     "request": "GET_FEED",
+     "message": "GET_FEED took 249.0 ms at the 99th percentile; the promise is 120 ms. Slowest hop: db at 132 % of capacity."
+    }
+   ],
+   "tip": "Bigger machines for \"db\" would fix this.",
+   "rank_p99_ms": 249,
+   "tests": [
+    {
+     "id": "t01-morning",
+     "title": "Morning",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner-peak",
+     "title": "Dinner-time peak",
+     "hidden": false,
+     "verdict": "Overloaded"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "quick-writes": {
+   "verdict": "Data Lost",
+   "passed": 3,
+   "total": 5,
+   "cost_inr": 152000,
+   "worst_p99_ms": {
+    "GET_FEED": 58.5,
+    "POST": 56.4
+   },
+   "worst_p50_ms": {
+    "GET_FEED": 12.2,
+    "POST": 14.1
+   },
+   "failed": {
+    "test": "t04-a-node-dies",
+    "title": "A storage node dies",
+    "hidden": true,
+    "reason": "lost",
+    "request": "POST",
+    "phase": 2,
+    "expected": "no acknowledged write lost",
+    "actual": "about 600 lost",
+    "message": "When kv failed, about 600 acknowledged writes were lost. They were only on the primary.",
+    "blame": {
+     "part": "kv",
+     "line": 4,
+     "rho": null,
+     "note": ""
+    },
+    "trace": []
+   },
+   "also": [
+    {
+     "reason": "unavailable",
+     "request": "GET_FEED",
+     "message": "GET_FEED was available 50.00% of the time; the promise is 99.00%. kv had no spare when it failed."
+    }
+   ],
+   "tip": "Waiting for more copies on each write to \"kv\" would fix this.",
+   "rank_p99_ms": 58.5,
+   "tests": [
+    {
+     "id": "t01-morning",
+     "title": "Morning",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t02-dinner-peak",
+     "title": "Dinner-time peak",
+     "hidden": false,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": "Passed"
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": "Data Lost"
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  },
+  "big-everything": {
+   "verdict": "Over Budget",
+   "passed": 0,
+   "total": 5,
+   "cost_inr": 368000,
+   "worst_p99_ms": {
+    "GET_FEED": 33.3,
+    "POST": 31.3
+   },
+   "worst_p50_ms": {
+    "GET_FEED": 6.3,
+    "POST": 7.8
+   },
+   "failed": {
+    "test": "t01-morning",
+    "title": "Morning",
+    "hidden": false,
+    "reason": "budget",
+    "request": null,
+    "phase": null,
+    "expected": "≤ ₹1,75,000",
+    "actual": "₹3,68,000",
+    "message": "This design costs ₹3,68,000 a month; the budget is ₹1,75,000.",
+    "blame": {
+     "part": "cache",
+     "line": 3,
+     "rho": null,
+     "note": "cache is the most expensive part"
+    },
+    "trace": []
+   },
+   "also": [],
+   "tip": "There is more than one thing to fix here.",
+   "rank_p99_ms": 33.3,
+   "tests": [
+    {
+     "id": "t01-morning",
+     "title": "Morning",
+     "hidden": false,
+     "verdict": "Over Budget"
+    },
+    {
+     "id": "t02-dinner-peak",
+     "title": "Dinner-time peak",
+     "hidden": false,
+     "verdict": null
+    },
+    {
+     "id": "t03-a-server-dies",
+     "title": "A server dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t04-a-node-dies",
+     "title": "A storage node dies",
+     "hidden": true,
+     "verdict": null
+    },
+    {
+     "id": "t05-cold-cache",
+     "title": "The cache restarts",
+     "hidden": true,
+     "verdict": null
+    }
+   ],
+   "warnings": [],
+   "judge_version": 2
+  }
+ }
+}

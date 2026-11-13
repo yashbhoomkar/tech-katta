@@ -1,0 +1,248 @@
+{
+  "id": 2,
+  "slug": "paste-bin",
+  "title": "Design a paste bin",
+  "difficulty": "easy",
+  "topics": [
+    "caching",
+    "item size",
+    "ids"
+  ],
+  "companies": [],
+  "free": true,
+  "statement": "Zotato's engineers paste logs and config snippets to share in chats. A paste is about **10 KB** of text with a short id, and it never changes after it is created.\n\nDesign the service that **creates** pastes (a few hundred a minute) and **opens** them (thousands a second when an incident link goes round every team).\n\nPastes are opened far more than they are made, and the same pastes are opened again and again in the first day. Ids must never repeat, a created paste must never be lost, and an opened paste may be up to a day old (nothing changes anyway). The budget is ₹1.5 lakh a month.",
+  "constraints": [
+    "Up to 5 crore pastes in total",
+    "About 10 lakh pastes opened in a day, 10 KB each",
+    "Peak: 4,500 opens a second",
+    "Budget ₹1,50,000 a month"
+  ],
+  "total_items": 50000000,
+  "requests": [
+    {
+      "name": "GET_PASTE",
+      "mode": "read",
+      "table": "pastes",
+      "key": "id",
+      "distinct_keys": 1000000,
+      "item_bytes": 10000,
+      "skew": 0.6,
+      "max_stale_s": 86400,
+      "read_your_writes": false,
+      "cdn_ok": false,
+      "says": "Open a paste: return its text."
+    },
+    {
+      "name": "CREATE_PASTE",
+      "mode": "write",
+      "table": "pastes",
+      "key": "id",
+      "durable": true,
+      "unique_id": true,
+      "says": "Save a new paste and give it an id that never repeats."
+    }
+  ],
+  "tables_hint": [
+    {
+      "name": "pastes",
+      "columns": [
+        "id",
+        "body",
+        "created_at"
+      ],
+      "pk": "id"
+    }
+  ],
+  "template": "lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts, tables and routes\nread  GET_PASTE:    client > lb > api > \nwrite CREATE_PASTE: client > lb > api > \n",
+  "tests": [
+    {
+      "id": "t01-quiet-hour",
+      "title": "A quiet hour",
+      "hidden": false,
+      "explain": "300 opens and 5 new pastes a second. This is where the ₹1.5 lakh budget is checked.",
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_PASTE": 300,
+            "CREATE_PASTE": 5
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_PASTE": 100
+        },
+        "availability": {
+          "GET_PASTE": 0.999
+        },
+        "budget_inr": 150000
+      }
+    },
+    {
+      "id": "t02-incident",
+      "title": "An incident link goes round",
+      "hidden": false,
+      "explain": "Every team opens the same incident pastes: 1,500 opens a second, then 4,500. Opens must stay under 80 ms at the 99th percentile.",
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_PASTE": 1500,
+            "CREATE_PASTE": 20
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_PASTE": 4500,
+            "CREATE_PASTE": 30
+          }
+        }
+      ],
+      "promises": {
+        "p99_ms": {
+          "GET_PASTE": 80
+        }
+      }
+    },
+    {
+      "id": "t03-a-server-dies",
+      "title": "A server dies",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_PASTE": 3000,
+            "CREATE_PASTE": 20
+          }
+        },
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_PASTE": 3000,
+            "CREATE_PASTE": 20
+          },
+          "events": [
+            {
+              "kill_role": "server"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_PASTE": 0.999
+        },
+        "p99_ms": {
+          "GET_PASTE": 120
+        }
+      }
+    },
+    {
+      "id": "t04-database-fails",
+      "title": "The database primary fails",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_PASTE": 2000,
+            "CREATE_PASTE": 20
+          }
+        },
+        {
+          "seconds": 600,
+          "rates": {
+            "GET_PASTE": 2000,
+            "CREATE_PASTE": 20
+          },
+          "events": [
+            {
+              "kill_role": "sql"
+            },
+            {
+              "kill_role": "nosql"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "no_data_loss": true,
+        "availability": {
+          "GET_PASTE": 0.95
+        }
+      }
+    },
+    {
+      "id": "t05-cold-cache",
+      "title": "The cache restarts",
+      "hidden": true,
+      "phases": [
+        {
+          "seconds": 300,
+          "rates": {
+            "GET_PASTE": 2000,
+            "CREATE_PASTE": 20
+          },
+          "events": [
+            {
+              "flush_role": "cache"
+            }
+          ]
+        }
+      ],
+      "promises": {
+        "availability": {
+          "GET_PASTE": 0.999
+        }
+      }
+    }
+  ],
+  "reference": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=8, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n",
+  "wrong": [
+    {
+      "name": "small-cache",
+      "expect": "Too Slow",
+      "why": "2 GB holds only a fifth of the hot pastes at 10 KB each; half the reads miss and the database runs hot.",
+      "source": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=1, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "no-cache-small-servers",
+      "expect": "Overloaded",
+      "why": "Two medium servers serve 2,000 calls a second; the peak sends 4,500.",
+      "source": "lb    = lb()\napi   = server(count=2, size=medium)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "no-replica",
+      "expect": "Unavailable",
+      "why": "When the only database dies, nothing takes over.",
+      "source": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=8, ttl_s=3600)\ndb    = sql(size=medium, replicas=0, sync=false)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "async-replica",
+      "expect": "Data Lost",
+      "why": "The replica is a second behind; the pastes of that second are gone after a failover.",
+      "source": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=8, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=false)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "random-32-bit-ids",
+      "expect": "Wrong Answer",
+      "why": "5 crore random 32-bit ids repeat lakhs of times.",
+      "source": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=8, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=random, bits=32)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    },
+    {
+      "name": "huge-cache",
+      "expect": "Over Budget",
+      "why": "It passes every test, but 64 GB of cache costs more than the whole budget allows.",
+      "source": "lb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=32, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n"
+    }
+  ],
+  "hints": [
+    "A paste is 10 KB. How many of the day's hot pastes fit in your cache's memory?",
+    "What happens to the database when half the opens miss the cache?",
+    "Snowflake and counter ids never repeat; random ones can."
+  ],
+  "editorial": "## The approach\n\nThe size of an item decides this problem. Ten lakh pastes are opened in a day, and at 10 KB each the hot set is 10 GB. A cache helps only as much as the share of that set it can hold.\n\n1. **A cache big enough for the hot set.** Two nodes of 8 GB hold 16 lakh pastes, more than the day's hot set, so almost every open is a hit.\n2. **Servers for the incident peak.** Four large servers serve 8,000 calls a second; at 4,530 they are about half busy.\n3. **Never lose a paste.** One replica, written on every write.\n4. **Ids that never repeat.** Snowflake ids: time, machine and a sequence.\n\n## The reference design\n\n```\nlb    = lb()\napi   = server(count=4, size=large)\ncache = cache(nodes=2, memory_gb=8, ttl_s=3600)\ndb    = sql(size=medium, replicas=1, sync=true)\nids   = idgen(kind=snowflake)\n\ntable db.pastes(id pk, body, created_at)\n\nread  GET_PASTE:    client > lb > api > cache | db\nwrite CREATE_PASTE: client > lb > api > ids > db\n```\n\nIt costs ₹1.14 lakh a month.\n\n## Why the usual wrong designs fail\n\n- **Small cache: Too Slow.** 2 GB holds only a fifth of the hot pastes at 10 KB each; half the reads miss and the database runs hot.\n- **No cache small servers: Overloaded.** Two medium servers serve 2,000 calls a second; the peak sends 4,500.\n- **No replica: Unavailable.** When the only database dies, nothing takes over.\n- **Async replica: Data Lost.** The replica is a second behind; the pastes of that second are gone after a failover.\n- **Random 32 bit ids: Wrong Answer.** 5 crore random 32-bit ids repeat lakhs of times.\n- **Huge cache: Over Budget.** It passes every test, but 64 GB of cache costs more than the whole budget allows.\n\n## Read more\n\n- [Caching](/dashboard/concepts/caching/)\n- [PostgreSQL replication](/dashboard/components/postgresql/)\n"
+}
