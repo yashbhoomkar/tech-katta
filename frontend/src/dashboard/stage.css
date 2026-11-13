@@ -6,7 +6,7 @@
 :root[data-theme=dark] .dash .side{background:var(--page)}
 .dash .side-label{display:none}
 .dash .side-head{height:72px}
-.dash .side-brand b{background:var(--ink);color:var(--page);font-family:var(--font)}
+.dash .side-brand b{background:var(--brand);color:var(--on-brand);font-family:var(--font)}
 .dash .side-brand span{font-size:18px}
 .dash .side-nav{padding-top:8px;gap:3px}
 .dash .side-link{height:40px;color:var(--muted);border-radius:var(--r-md)}
@@ -21,7 +21,7 @@
 .dash .d-head .tabs,.dash .d-head .d-home{display:none}
 .dash .d-head>.mob:first-child{margin-right:-2px}
 .d-brand{align-items:center;gap:9px;margin-right:auto;white-space:nowrap}
-.d-brand b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--ink);color:var(--page);font:700 10.5px var(--font)}
+.d-brand b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--brand);color:var(--on-brand);font:700 10.5px var(--font)}
 .d-brand span{font:500 17px var(--font-display);letter-spacing:-.01em}
 .dash .d-tour{margin-left:0}
 /* pages: no eyebrow labels or "21 PAGES" counters over the headings */
