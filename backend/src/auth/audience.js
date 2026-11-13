@@ -1,4 +1,5 @@
-// Meta Custom Audience file for the accounts that opted in to Tech Katta ads (users.adsConsent.ads).
+// Meta Custom Audience file for the accounts included in Tech Katta ads (users.adsConsent.ads: accepted the
+// Terms since 2026-11-13, or opted in with the old menu switch).
 // Meta's format: one row per person, columns email, fn, ln, country, each value normalised the way
 // Meta asks (lowercase; names without punctuation; 2-letter country) and then SHA-256 hashed, so the
 // file never holds a readable email. Rows without an email are skipped.

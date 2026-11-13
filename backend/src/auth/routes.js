@@ -9,7 +9,6 @@
 //   GET    /v1/me             {user} ({user: null} when signed out)
 //   DELETE /v1/me                                         — delete the account and all its data
 //   POST   /v1/events         {visitor, device, events} → 204  — usage events for analysis (events.js)
-//   POST   /v1/me/consent     {ads} → {user}               — opt in/out of Tech Katta ads on Facebook/Instagram
 //   GET    /v1/admin/summary?days=7   analytics summary (admin accounts only; also readable from
 //                                      ANALYTICS_ORIGIN, the dashboard at analytics.katta.cc)
 //   GET    /v1/admin/audience.csv     Meta Custom Audience file of the accounts that opted in (admin)
@@ -76,7 +75,7 @@ export function cleanAnswer(a) {
 }
 
 // Every path accountRoutes answers; the server sends exactly these here (and nothing else).
-export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/consent', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
+export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.csv', '/v1/auth/config', '/v1/auth/google', '/v1/auth/signout', '/v1/auth/signout-all', '/v1/events', '/v1/me', '/v1/me/lab', '/v1/me/submissions', '/v1/problems/stats']);
 
 // A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
 const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.v === 2 ? { ...practice.reference, v: 2 } : practice.reference, lab, 'reference')) });
@@ -147,7 +146,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
         const previous = tokenOf(request);
         if (previous) await accounts.signOut(previous);
         const cc = String(request.headers['cf-ipcountry'] || '').toUpperCase();
-        const { token, user } = await accounts.signIn(profile, { country: /^[A-Z]{2}$/.test(cc) && cc !== 'XX' && cc !== 'T1' ? cc : '', adsConsent: false });
+        const { token, user } = await accounts.signIn(profile, { country: /^[A-Z]{2}$/.test(cc) && cc !== 'XX' && cc !== 'T1' ? cc : '' });
         return send(request, response, 200, { user }, { 'Set-Cookie': cookie(token, SESSION_DAYS * 86_400) });
       }
       if (pathname === '/v1/auth/signout' && method === 'POST') {
@@ -182,11 +181,6 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       if (pathname === '/v1/me' && method === 'DELETE') {
         await accounts.deleteAccount(me.id);
         return send(request, response, 200, { ok: true }, { 'Set-Cookie': cookie('', 0) });
-      }
-      if (pathname === '/v1/me/consent' && method === 'POST') {
-        const b = await readJson(request);
-        if (typeof b?.ads !== 'boolean') return send(request, response, 400, { error: 'bad_consent' });
-        return send(request, response, 200, { user: await accounts.setAdsConsent(me.id, b.ads) });
       }
       if (pathname === '/v1/me/submissions' && method === 'POST') {
         if (limited(request, 'submit', 30, 10 * 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
