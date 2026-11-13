@@ -43,5 +43,14 @@ export const S = {
   tightest: "Tightest promise", close: "Close", read: "Read", howJudged: "How was this judged?", loading: "Loading the problem",
   editorialLocked: "Sign in to read the editorial.", sortCost: "By cost", sortSpeed: "By speed", usedBy: (n) => `Used by ${n} people`,
   time: "Time", verdict: "Verdict", tests: "Tests", p99: "p99", openPicture: "Picture",
+  // the interviewer (spec 22 §14.3)
+  askInterviewer: "Ask the interviewer", askReport: "Get the report's review", reviewing: "The interviewer is reading…",
+  reviewingLong: "Reading your design and what the judge measured. This can take a little while.",
+  reviewsLeft: (left, total) => `${left} of ${total} reviews left this month`, reviewTitle: "Review of your design",
+  fromInterviewer: "From the interviewer", fromReport: "From the report", preview: "Preview",
+  previewWhy: "A practice interviewer built into the site, standing in until the AI interviewer is switched on. Every number comes from the judge.",
+  whyReport: { off: "The interviewer is off right now. This review is built from the judge's report.", not_allowed: "The interviewer is being tested with a few people first. This review is built from the judge's report.", no_credits: "You have used this month's (or today's) reviews. This one is built from the judge's report and costs nothing.", busy: "The interviewer is very busy right now. This review is built from the judge's report; try again later.", failed: "The interviewer couldn't answer this time. This review is built from the judge's report; nothing was used." },
+  reviewKind: { problem: "Problem", risk: "Risk", strength: "Strength", note: "Note" }, askLabel: "An interviewer would ask:", nextStep: "Next:",
+  reviewFailed: "Couldn't reach the interviewer. Try again.",
 };
 export const DIFF = { easy: "Easy", medium: "Medium", hard: "Hard" };

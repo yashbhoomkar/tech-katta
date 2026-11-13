@@ -270,3 +270,20 @@
 .pr-diff.pr-easy,.pr-diff.pr-medium,.pr-diff.pr-hard{background:var(--surface);color:var(--ink-2);border-color:var(--line);display:inline-flex;align-items:center;gap:6px}
 .pr-diff.pr-easy::before,.pr-diff.pr-medium::before,.pr-diff.pr-hard::before{content:"";width:6px;height:6px;border-radius:50%;flex:none}
 .pr-diff.pr-easy::before{background:var(--success)}.pr-diff.pr-medium::before{background:var(--warn-mid)}.pr-diff.pr-hard::before{background:var(--danger)}
+/* The interviewer (review.jsx) */
+.pv-ask-box{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.pv-ask-box p{flex-basis:100%;margin:0}.pv-err{color:var(--danger);font-size:13px}
+.pv-card{margin:14px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
+.pv-from{margin:0 0 6px;font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pv-tag{padding:1px 7px;border-radius:var(--r-full);background:var(--warn-tint);color:var(--warn-strong);border:1px solid var(--warn-line);text-transform:none;letter-spacing:0}
+.pv-why{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.pv-head{margin:0 0 10px;font:600 15.5px/1.4 var(--font)}
+.pv-items{list-style:none;padding:0;margin:0 0 10px;display:flex;flex-direction:column;gap:8px}
+.pv-items li{padding:8px 10px 8px 12px;border-left:3px solid var(--line-strong);background:var(--bg);border-radius:0 var(--r-sm) var(--r-sm) 0}
+.pv-items li small{font:600 11px var(--mono);text-transform:uppercase;color:var(--muted)}
+.pv-items li p{margin:3px 0 0;font-size:14px;line-height:1.5}
+.pv-items .pv-problem{border-left-color:var(--danger)}.pv-items .pv-problem small{color:var(--danger)}
+.pv-items .pv-risk{border-left-color:var(--warn)}.pv-items .pv-risk small{color:var(--warn-strong)}
+.pv-items .pv-strength{border-left-color:var(--success)}.pv-items .pv-strength small{color:var(--success)}
+.pv-ask{color:var(--ink-2);font-style:italic}
+.pv-next{margin:0;font-size:14px}.pv-next b{font-weight:700}

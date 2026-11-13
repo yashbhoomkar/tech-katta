@@ -9,6 +9,8 @@ import { accountRoutes, ACCOUNT_PATHS, JSON_CSP } from './auth/routes.js';
 import { judgePool } from './auth/judge-pool.js';
 import { practiceRoutes } from './practice/routes.js';
 import { openPractice } from './practice/store.js';
+import { aiConfig, configProblems, createClient } from './ai/client.js';
+import { openAiStore } from './ai/store.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -123,10 +125,20 @@ const handleAccount = accountRoutes({
 // waits behind a canvas problem's simulation, and a time limit per design. The limit is 1 s, not the spec's 250 ms: a
 // fresh worker spends most of 250 ms loading the engine on the VPS, which would turn a first Submit into a Judge Error.
 const practiceJudges = judgePool({ size: 1, timeoutMs: 1_000, maxQueue: 50, workerUrl: new URL('./practice/judge-worker.js', import.meta.url) });
+// The interviewer (tech-katta-context/22-EVALUATOR-V3.md §12; the model is chosen in 29-SELF-HOSTED-LLM-ON-A-VPS.md §12):
+// settings from the environment (AI_*), the mock interviewer until a provider is set.
+const aiSettings = aiConfig();
+const ai = { config: aiSettings, client: createClient(aiSettings), store: accounts ? openAiStore(accounts.db) : null };
+const aiProblems = configProblems(aiSettings);
+for (const problem of aiProblems) console.error(`Interviewer: ${problem}; every review falls back to the report.`);
+if (aiProblems.length) aiSettings.enabled = false;
 const handlePractice = practiceRoutes({
   problems: () => content.practice, accounts, store: accounts ? openPractice(accounts.db) : null, enabled: auth.enabled, allowedOrigin,
   judge: (job) => practiceJudges.run(job),
+  evidence: (job) => practiceJudges.run({ ...job, task: 'evidence' }),
+  ai,
 });
+console.log(`Interviewer: ${aiSettings.enabled ? `on (${aiSettings.provider === 'mock' ? 'mock' : 'provider set'})` : 'off'}`);
 console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: off (missing ${auth.missing.join(', ')})`);
 // indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
 accounts?.warmUp().then(() => accounts.health());

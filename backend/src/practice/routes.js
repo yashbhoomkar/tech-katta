@@ -8,6 +8,9 @@
 //   GET  /v1/practice/problems/:slug/editorial       the editorial and the reference design (signed in)
 //   GET  /v1/practice/problems/:slug/solutions       shared designs (signed in and solved)
 //   POST /v1/practice/submissions/:id/share {note}   share one's own Accepted design
+//   POST /v1/practice/submissions/:id/review         the interviewer's review of one's own submission, or the report's
+//                                                    (tech-katta-context/22-EVALUATOR-V3.md §12, §17.1)
+//   GET  /v1/practice/me/credits                     the caller's interviewer reviews left this month and today
 // The server judges the source itself and never takes a verdict, cost or p99 from the browser.
 import { createHash } from 'node:crypto';
 import { judgeAll, stripHidden, JUDGE_VERSION } from '../../../frontend/src/tkd/judge.js';
@@ -17,6 +20,8 @@ import { msg } from '../../../frontend/src/tkd/messages.js';
 import { makeLimiter, clientIp, COOKIE, JSON_CSP } from '../auth/routes.js';
 import { JudgeError } from '../auth/judge-pool.js';
 import { MIN_COMPARE } from './store.js';
+import { buildEvidence, redact } from '../../../frontend/src/v3/evidence.js';
+import { runReview } from '../ai/jobs/review.js';
 
 // Until payments exist every signed-in visitor is treated as paid (section 14).
 export const PRACTICE_ALL_PAID = true;
@@ -35,11 +40,14 @@ const MESSAGES = {
   sign_in_not_configured: 'Sign-in is not available here.',
   bad_origin: 'Not allowed from this site.',
   unavailable: "Couldn't reach the judge. Your design is saved here; try again.",
+  too_many_reviews: 'Too many reviews at once. Wait a minute.',
   method_not_allowed: 'Method not allowed.',
   too_large: 'The request is too large.',
   bad_json: 'The request is not valid JSON.',
 };
 const hash = (s) => createHash('sha256').update(s).digest('hex');
+const NO_CREDITS = { month: { total: 0, used: 0, left: 0 }, day: { total: 0, used: 0, left: 0 } };
+const NO_STORE = { credits: async () => NO_CREDITS };
 
 // A small least-recently-used cache: the same design always gets the same result, so a repeat costs nothing.
 export function lru(max) {
@@ -49,9 +57,12 @@ export function lru(max) {
 
 // problems(): the loaded problems. accounts: userFor(token). store: openPractice(). judge(job) → {judged}: a worker
 // pool (judge-pool.js with practice/judge-worker.js); without one, judged inline.
-export function practiceRoutes({ problems, accounts, store, judge, allowedOrigin, enabled, log = console }) {
+// evidence(job) → {judged: pack}: the same pool with task "evidence"; without one, built inline. ai: { config, client,
+// store } (server.js); without it the review route answers with the report's review.
+export function practiceRoutes({ problems, accounts, store, judge, evidence, ai, allowedOrigin, enabled, log = console }) {
   const limiter = makeLimiter(), cache = lru(RESULT_CACHE), judging = new Set();
   const runJudge = judge || (async ({ source, problem }) => ({ judged: judgeAll(source, problem, { all: true }) }));
+  const runEvidence = evidence || (async ({ source, problem }) => ({ judged: buildEvidence(source, problem, { mode: 'submit' }) }));
   const cors = (request) => (request.headers.origin === allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : { 'Access-Control-Allow-Origin': '*' });
   const send = (request, response, status, body, extra = {}) => {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Content-Security-Policy': JSON_CSP, ...cors(request), ...extra });
@@ -105,6 +116,22 @@ export function practiceRoutes({ problems, accounts, store, judge, allowedOrigin
     return send(request, response, 200, { ...stripHidden(result, { full: PRACTICE_ALL_PAID || problem.free }), submission_id: id, rank });
   }
 
+  // The interviewer's review of one's own submission (spec 22 §12, §17.1). The pack is built here from the stored
+  // source with every test, then redacted: the interviewer and the browser see the same facts (V9).
+  async function review(request, response, user, id) {
+    if (limiter(`practice-review:${String(user.id)}`, 5, 60_000)) return fail(request, response, 429, 'too_many_reviews');
+    const sub = await store.one(user.id, id);
+    if (!sub) return fail(request, response, 404, 'not_found');
+    const problem = problems().find((p) => p.id === sub.problem_id);
+    if (!problem) return fail(request, response, 404, 'not_found');
+    let pack;
+    try { pack = redact((await runEvidence({ source: sub.source, problem })).judged); }
+    catch (e) { if (e instanceof JudgeError) return fail(request, response, 503, 'unavailable'); throw e; }
+    const out = ai?.store ? await runReview({ pack, problem, userId: user.id, ai, store: ai.store, log })
+      : await runReview({ pack, problem, userId: user.id, ai: { config: { enabled: false, monthly: 0, daily: 0 } }, store: NO_STORE, log });
+    return send(request, response, 200, { submission_id: id, verdict: sub.verdict, ...out });
+  }
+
   return async function handle(request, response, pathname) {
     const method = request.method || 'GET';
     if (method === 'OPTIONS') {
@@ -150,6 +177,15 @@ export function practiceRoutes({ problems, accounts, store, judge, allowedOrigin
         }
         return fail(request, response, 404, 'not_found');
       }
+      if (parts[0] === 'me' && parts[1] === 'credits' && parts.length === 2) {
+        if (!read) return fail(request, response, 405, 'method_not_allowed', { Allow: 'GET, HEAD, OPTIONS' });
+        if (!enabled) return fail(request, response, 503, 'sign_in_not_configured');
+        const user = await me(request);
+        if (!user) return fail(request, response, 401, 'signed_out');
+        const c = ai?.config, on = !!(c?.enabled && ai?.store && (!c.allow || c.allow.has(String(user.id))));
+        const credits = ai?.store ? await ai.store.credits(user.id, { monthly: c.monthly, daily: c.daily }) : NO_CREDITS;
+        return send(request, response, 200, { enabled: on, ...(on && ai.client.preview ? { preview: true } : {}), ...credits });
+      }
       if (parts[0] === 'submissions' && ID.test(parts[1] || '') && parts.length <= 3) {
         if (!enabled) return fail(request, response, 503, 'sign_in_not_configured');
         if (!read && request.headers.origin !== allowedOrigin) return fail(request, response, 403, 'bad_origin');
@@ -160,6 +196,7 @@ export function practiceRoutes({ problems, accounts, store, judge, allowedOrigin
           const s = await store.one(user.id, parts[1]);
           return s ? send(request, response, 200, s) : fail(request, response, 404, 'not_found');
         }
+        if (parts[2] === 'review') { if (method !== 'POST') return fail(request, response, 405, 'method_not_allowed', { Allow: 'POST, OPTIONS' }); return await review(request, response, user, parts[1]); }
         if (parts[2] === 'share' && method === 'POST') {
           if (limited(request)) return fail(request, response, 429, 'too_many_requests');
           const { body, error } = await readJson(request);
