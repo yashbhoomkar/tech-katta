@@ -287,16 +287,6 @@
           "core",
           "Core concepts",
           "The ideas every design rests on: networking, APIs, data models, caching, sharding, consistent hashing, CAP, indexing and the numbers to know."
-        ],
-        [
-          "patterns",
-          "Recurring patterns",
-          "Problems that come up in many designs, and the usual ways to solve them."
-        ],
-        [
-          "specialised",
-          "Specialised data",
-          "Where ordinary tables and indexes stop: places on a map, meanings, time series, huge counts and streams of changes."
         ]
       ],
       "interview-questions": [
@@ -427,7 +417,7 @@
       {
         "target": ".d-desc",
         "title": "Concepts",
-        "text": "21 articles in three groups. Read the nine Core concepts in order: each one builds on the one before. Recurring patterns and Specialised data are for when a problem needs them."
+        "text": "Nine core concepts. Read them in order: each one builds on the one before."
       },
       {
         "target": ".side-sub",

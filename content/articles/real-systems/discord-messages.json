@@ -134,7 +134,7 @@
         "For many identical reads at once, coalesce them, and route by key so the duplicates reach the same coalescer.",
         "With quorum reads, one slow replica slows every query that needs it, so a hot spot spreads.",
         "For a big migration: write new data to both, copy old data with checkpoints so the copy can resume, compare reads between old and new, then switch.",
-        "Related: 'Cassandra' in Components, 'Sharding' and 'When reads outnumber writes' in Concepts, and 'Design a chat app' in Interview Questions."
+        "Related: 'Cassandra' in Components, 'Sharding' in Concepts, and 'Design a chat app' in Interview Questions."
       ]
     },
     {

@@ -1,5 +1,6 @@
 // Concepts › Database indexing: the figure ids this article's frontend module (frontend/src/figs/concepts/database-indexing.jsx) draws.
 export const FIGS = [
+  'prox-quadtree',
   'ix-scan',
   'ix-cost',
   'ix-btree-find',

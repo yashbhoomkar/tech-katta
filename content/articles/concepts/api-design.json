@@ -88,7 +88,7 @@
     },
     {
       "t": "p",
-      "x": "REST covers the great majority of interview problems. If nothing in the requirements points elsewhere, say 'I'll use a REST API' and start listing resources; nobody will mark you down for it. Live updates are a separate decision: SSE and WebSockets are persistent connections rather than request-and-response APIs, and they are covered under 'Pushing updates' in Networking essentials and 'Live updates at scale' in Recurring patterns."
+      "x": "REST covers the great majority of interview problems. If nothing in the requirements points elsewhere, say 'I'll use a REST API' and start listing resources; nobody will mark you down for it. Live updates are a separate decision: SSE and WebSockets are persistent connections rather than request-and-response APIs, and they are covered under 'Pushing updates' in Networking essentials."
     },
     {
       "t": "h3",

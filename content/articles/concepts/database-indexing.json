@@ -376,7 +376,7 @@
     },
     {
       "t": "p",
-      "x": "The concept 'Finding what's nearby' covers cell sizes, hexagon grids and places that move."
+      "x": "Cell sizes, hexagon grids and places that move are refinements of the same two ideas: a grid, or a tree that splits where it is busy."
     },
     {
       "t": "h3",
