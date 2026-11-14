@@ -229,3 +229,9 @@
 .lab-pill.err{border-color:var(--danger)}.lab-pill.err::before{background:var(--danger);animation:tk-alarm .8s ease-in-out 3}
 .lab-pill.dead{opacity:.75}.lab-pill.dead::before{background:var(--line-strong)}.lab-pill em{font-style:normal;font-weight:500;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.ln-rp::after,.ln-beat::after,.ln-crack path,.ln-slot,.ln-blocks i,.lab-pill.err::before{animation:none!important}.ln-crack path{stroke-dashoffset:0}.lab .react-flow__edge-path{animation:none!important}}
+
+/* Export menu (export.js) */
+.lab-export{position:relative;margin-left:auto}.lab-export>summary{list-style:none;display:inline-flex;align-items:center}.lab-export>summary::-webkit-details-marker{display:none}
+.lab-export-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:210px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:var(--shadow-2);display:grid}
+.lab-export-menu button{border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font:500 13.5px var(--font);color:var(--ink);cursor:pointer}.lab-export-menu button:hover{background:var(--surface)}
+.lab-export-menu button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.lab-export-menu p{margin:4px 10px 6px;font:600 11px var(--mono);color:var(--success)}

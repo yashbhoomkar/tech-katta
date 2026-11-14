@@ -181,3 +181,15 @@
 .sd-fig{border:1px solid var(--line);border-radius:var(--r-lg);background-color:var(--bg)}
 @media(prefers-reduced-motion:reduce){.sv-run,.sv-submit,.sv-clock,.sv-reset,.sv-tabs a,.sv-tabs button{transition:none}}
 .sv-v.good b{display:inline-block;color:var(--ink);padding:0 .08em;background:linear-gradient(transparent 62%,var(--mark) 62%,var(--mark) 94%,transparent 94%) no-repeat}
+
+/* Walk through the solution and export (spec 33): the part being explained stands out, the rest fade back. */
+.sd-tools{display:flex;flex-wrap:wrap;gap:4px 14px;margin-left:auto;justify-content:flex-end}
+.sd-walking g,.sd-walking path{transition:opacity .3s cubic-bezier(.22,1,.36,1)}
+.sd-walking .sd-dim{opacity:.18}
+.sd-walking .sd-lit .sd-node{stroke:var(--accent);stroke-width:2}
+.sd-story{padding:14px 18px 18px;border-top:1px solid var(--line);display:grid;gap:6px;max-width:72ch}
+.sd-story small{font:600 11px var(--mono);color:var(--muted)}.sd-story h3{margin:0;font-size:18px}.sd-story p{margin:0;font-size:14px;line-height:1.55}
+.sd-walk-btns{display:flex;gap:8px;margin-top:6px}
+.sd-walk-btns button{height:34px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--bg);font:600 13px var(--font);color:var(--ink);cursor:pointer}
+.sd-walk-btns button:last-child{background:var(--ink);color:var(--bg);border-color:var(--ink)}.sd-walk-btns button:disabled{opacity:.4;cursor:default}
+@media(prefers-reduced-motion:reduce){.sd-walking g,.sd-walking path{transition:none}}
