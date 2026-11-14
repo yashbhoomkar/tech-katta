@@ -1,0 +1,180 @@
+{
+  "section": "concepts",
+  "slug": "time-series",
+  "group": "specialised",
+  "no": "CONCEPT // 19",
+  "tag": "TIME SERIES",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Data that arrives by the clock: storing time series",
+  "dek": "Rider speeds every 10 seconds, orders per minute per city, the latency of every API: data that arrives in time order, is read by time range, and matters less as it ages. Here is why general databases struggle with it, how time-series stores compress and expire it, and the one mistake that sinks them: too many series.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "What makes this data different"
+    },
+    {
+      "t": "list",
+      "items": [
+        "It is written in time order, almost never updated, and arrives fast: 2 lakh riders reporting every 10 seconds is 20,000 points a second.",
+        "It is read by range and summarised: 'average speed per 5 minutes in Pune over the last hour', 'p99 latency today'.",
+        "Its value fades: last hour in full detail, last year as hourly summaries, and older than that, not at all.",
+        "A general database can do it, but one row per point with indexes wastes space and makes deleting old data a heavy job."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "How time-series stores keep it small"
+    },
+    {
+      "t": "fig",
+      "id": "ts-blocks",
+      "cap": "Points from one series are similar to their neighbours, so storing only what changed shrinks them about tenfold."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Each series' points are kept together, so reading one series over an hour reads one block, not points scattered among others.",
+        "Old data is removed by dropping whole blocks, which is instant compared with deleting crores of rows.",
+        "Compression of times (delta of delta) and values (XOR with the previous value) brings a point from 16 bytes to around 1.4 in typical monitoring data."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Keeping less detail as data ages"
+    },
+    {
+      "t": "fig",
+      "id": "ts-rollup",
+      "cap": "Dashboards rarely need ten-second detail from last year. Summaries keep the shape of old data at a fraction of the cost."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Store summaries (minimum, maximum, sum, count) rather than only averages, so the average over a longer window can still be computed correctly.",
+        "Percentiles can't be averaged. Keep a histogram or a sketch per interval and merge those instead.",
+        "Decide retention per metric: business numbers for years, debugging detail for days."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Series, labels and cardinality"
+    },
+    {
+      "t": "list",
+      "items": [
+        "A series is a metric plus a set of label values: orders_placed{city=pune, app=android} is one series; changing any label makes another.",
+        "Labels should have few values: city, app version, status. Each label multiplies the number of series by its number of values.",
+        "Never put an ID in a label (order_id, user_id, request_id). It makes a series per ID, each with one point, and the index of series grows until the store falls over. Put IDs in logs or traces instead.",
+        "Check with arithmetic: 30 cities × 5 app versions × 4 statuses is 600 series; adding user_id with 1 crore users is 600 crore."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "TWO WAYS TO ASK FOR ORDERS PER MINUTE",
+      "x": "# PromQL (Prometheus): orders a second, per city, over 5-minute windows\nsum by (city) (rate(orders_placed_total[5m]))\n\n-- TimescaleDB (PostgreSQL): average rider speed per 5 minutes, last hour\nSELECT time_bucket('5 minutes', at) AS t, avg(kmph)\nFROM rider_speed\nWHERE at > now() - interval '1 hour'\nGROUP BY t ORDER BY t;",
+      "say": "Two queries. In Prometheus, the rate of the orders placed counter over 5-minute windows, summed per city. In TimescaleDB, average rider speed in 5-minute buckets over the last hour."
+    },
+    {
+      "t": "h2",
+      "x": "Choosing a store"
+    },
+    {
+      "t": "table",
+      "label": "Common choices",
+      "head": [
+        "Store",
+        "What it is",
+        "Good for"
+      ],
+      "rows": [
+        [
+          "Prometheus",
+          "Pulls metrics from services on a schedule; keeps them locally",
+          "Monitoring and alerting on your own systems"
+        ],
+        [
+          "TimescaleDB",
+          "PostgreSQL with tables split into time chunks",
+          "Time series next to relational data, in SQL"
+        ],
+        [
+          "InfluxDB",
+          "A database built for time series, written to by push",
+          "IoT and application metrics"
+        ],
+        [
+          "ClickHouse",
+          "A columnar database for analytics",
+          "Very large event data, aggregated many ways"
+        ],
+        [
+          "Cassandra with time buckets",
+          "Rows per (series, day), sorted by time",
+          "Huge write rates when you control the queries"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Bytes per point after compression",
+          "around 1.4 for typical metrics, versus 16 raw"
+        ],
+        [
+          "Prometheus block",
+          "2 hours; 15 days kept by default"
+        ],
+        [
+          "Common scrape interval",
+          "15 to 60 seconds"
+        ],
+        [
+          "One year at 10-second resolution",
+          "about 31.5 lakh points per series"
+        ],
+        [
+          "Series a single Prometheus handles comfortably",
+          "a few lakh to a few tens of lakhs active"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Name it as time series when data is append-only, time-ordered and read by range: metrics, sensor readings, location trails.",
+        "Give the write rate (sources × frequency) and retention, then the storage after compression.",
+        "Plan rollups for old data and say which store you'd use.",
+        "Watch cardinality: list the labels and multiply.",
+        "Where it appears here: the Ad clicks problem stores counts per ad per minute, a time series built by a stream job."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why counters, not gauges, for rates",
+      "body": [
+        {
+          "t": "p",
+          "x": "A counter only goes up (orders placed since the server started); a gauge goes up and down (riders online now). To chart orders per minute, store the counter and let the query compute the rate between samples. If a sample is missed, the next one still contains every order, so nothing is lost; a stored 'orders this minute' value that is missed is simply gone. Rate functions also handle the counter resetting to zero when a server restarts."
+        }
+      ]
+    }
+  ]
+}

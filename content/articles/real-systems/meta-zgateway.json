@@ -130,7 +130,7 @@
         "A proxy costs an extra network hop and a tier to run. It pays off when the clients are many, varied and not yours to change.",
         "In the proxy you can batch and merge requests across clients, and add per-tenant admission control, caching and gradual rollouts, all in one place.",
         "Shed load per tenant, not for everyone, so one noisy neighbour can't take the others down.",
-        "Related: 'API gateways' in Components; 'Caching' in Concepts; and 'Design a distributed key-value store' in Interview Questions."
+        "Related: 'API gateways' in Components; 'Caching', 'When reads outnumber writes' and 'Change data capture' in Concepts; and 'Design a distributed key-value store' in Interview Questions."
       ]
     },
     {

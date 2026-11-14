@@ -1,0 +1,130 @@
+{
+  "section": "concepts",
+  "slug": "workflows",
+  "group": "patterns",
+  "no": "CONCEPT // 12",
+  "tag": "WORKFLOWS",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Processes with many steps: state machines and durable workflows",
+  "dek": "Placing an order means charging a card, telling the restaurant, finding a rider and telling the customer, over minutes and across services. Any step can fail or stall. Here is how to keep such a process in a known state, move it on when nothing happens, and survive a crash halfway through.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "Why one request can't do it all"
+    },
+    {
+      "t": "p",
+      "x": "The simplest way to place an order is one request handler that charges the card, tells the restaurant, finds a rider and tells the customer. If the server dies just after the charge, nobody knows the order exists. If finding a rider takes ten minutes, the request times out long before. A process this long needs its progress written down somewhere that outlives any one server."
+    },
+    {
+      "t": "h2",
+      "x": "One state, a few allowed moves"
+    },
+    {
+      "t": "fig",
+      "id": "order-states",
+      "cap": "Every order is in one state, and the table of allowed moves rules out the impossible ones, like accepting an order that was already cancelled."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Keep the state on the record (`orders.status`) and change it with a conditional update: `SET status = 'accepted' WHERE id = 9051 AND status = 'placed'`. A move that isn't allowed changes no rows.",
+        "Keep the table of allowed moves in one place in the code, and record every change with its time and reason. That history answers most support questions.",
+        "Timers belong to the design: 'no answer in 5 minutes', 'not picked up in 30'. Store a due time with the state, and let a scheduler pick up overdue records every few seconds.",
+        "A move often triggers work, such as a charge, a message or a refund. Save the state change and the message together with an outbox: write the message to an outbox table in the same transaction, and let a separate process send it. The Change data capture concept shows how."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Who runs the steps"
+    },
+    {
+      "t": "table",
+      "label": "Orchestration or choreography",
+      "head": [
+        "Compared",
+        "Orchestration",
+        "Choreography"
+      ],
+      "rows": [
+        [
+          "How it works",
+          "One coordinator calls each service in turn and decides what comes next",
+          "Each service reacts to the others' events: 'payment done' makes the kitchen start"
+        ],
+        [
+          "Good for",
+          "Processes with many steps, branches and timeouts",
+          "A few loosely related reactions"
+        ],
+        [
+          "Easy",
+          "Answering 'where is order 9051, and why?': the coordinator knows",
+          "Adding a new reaction without touching the other services"
+        ],
+        [
+          "Watch out for",
+          "All the business rules piling up in the coordinator",
+          "Nobody sees the whole process; events bouncing between services in loops"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Durable workflows"
+    },
+    {
+      "t": "fig",
+      "id": "workflow-resume",
+      "cap": "The history is what makes the crash harmless. Replaying it tells the new worker which steps are done and what they returned."
+    },
+    {
+      "t": "p",
+      "x": "A workflow engine (Temporal, Cadence, or the one your cloud provider offers) runs process code as if crashes didn't happen; the Temporal page in Components goes further. It records the result of every step in a history. When a worker dies, another one replays the history: finished steps hand back their saved results at once, and the code carries on from the first step that hasn't run."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Steps still run at least once: a worker can finish a step and die before it is recorded. Make every step idempotent, for example by using the order ID as the payment's idempotency key.",
+        "The workflow code must be deterministic, so a replay takes the same path: no reading the clock or random numbers directly. Engines give you their own versions of both.",
+        "Waiting is cheap. A workflow can sleep for days, as in 'remind the restaurant in 30 days', without holding a thread.",
+        "Undoing is explicit: when step 3 fails for good, run the compensating steps for 2 and 1 in reverse, as in a saga."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "When an engine is too much"
+    },
+    {
+      "t": "p",
+      "x": "Many processes need only the state machine: a status column, the table of allowed moves, a scheduler for timeouts and a queue for the work each move starts. Bring in a workflow engine when processes have many steps, branches and long waits, or when you notice you are writing a scheduler, retries and step history by hand."
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Draw the states and moves of the main record (order, booking, payment) before drawing the services.",
+        "Name the timers: what happens when nobody accepts, nobody pays, nobody picks up.",
+        "Say where progress is saved, so a crash resumes the process instead of restarting it.",
+        "Make every step safe to run twice, and say how a failed process is undone."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: steps that wait for a person",
+      "body": [
+        {
+          "t": "p",
+          "x": "Some steps wait for a person: a restaurant approving a refund, a check of a rider's documents. Model each as a state with a deadline and a reminder, such as 'waiting for approval; remind after 4 hours, escalate after 24', not as a request left hanging. The process should always know who it is waiting for, and until when."
+        }
+      ]
+    }
+  ]
+}

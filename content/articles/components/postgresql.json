@@ -86,7 +86,7 @@
       "t": "list",
       "items": [
         "`jsonb` stores flexible attributes with indexes, covering many uses of a document store.",
-        "Extensions add whole capabilities: PostGIS for maps, pg_stat_statements for finding slow queries, pgvector for similarity search.",
+        "Extensions add whole capabilities: PostGIS for maps, pg_stat_statements for finding slow queries, pgvector for similarity search (see 'Searching by meaning').",
         "Declarative partitioning splits a big table by range or list (orders by month), so old months can be dropped in a second."
       ]
     },
