@@ -73,7 +73,8 @@ no file exists (like Vercel), so there the dashboard fallback is a plain `/dashb
 The deploy workflow works on any VPS that has:
 - Node 22, Git, and a checkout of this repository at `/opt/tech-katta` owned by a user `techkatta`;
 - a systemd service `tech-katta-api` that runs `node backend/src/server.js` in `/opt/tech-katta` as `techkatta`
-  (the deploy adds its settings in a drop-in: host, port, content folder, sign-in secrets);
+  (the deploy adds its settings in a drop-in: host, port, content folder, and `/etc/tech-katta/api.env`, rewritten
+  whole from GitHub secrets and variables on every deploy: see `ops/README.md`, "The server keeps nothing of its own");
 - passwordless `sudo` for the SSH user for `systemctl`, `journalctl`, `mkdir`, `chown`, `tee`, `sh` and `sudo -u techkatta`;
 - Nginx proxying to `http://127.0.0.1:5000` with `X-Real-IP $remote_addr`, and Nginx's real-IP module trusting
   `CF-Connecting-IP` only from Cloudflare's published IP ranges (so `$remote_addr` is the visitor);
@@ -87,7 +88,8 @@ MongoDB Atlas network access list, run the deploy, and point the `tech-api` DNS 
 
 One command sets up a new server (`ops/provision-vps.sh`); then three GitHub variables, the deploy with "Moving
 servers" ticked, and the "Point API at the server" workflow (which checks the new server and moves the DNS record).
-Everything else the server needs (deploy key, Origin certificate, Cloudflare token, sign-in) stays in GitHub.
+Everything else the server needs (deploy key, Origin certificate, Cloudflare token, sign-in and AI settings) stays in
+GitHub; nothing is set on a server by hand.
 
 ### To a container platform (DigitalOcean App Platform, Cloud Run, Render, Fly, Railway, ECS…)
 
