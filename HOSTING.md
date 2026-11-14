@@ -79,40 +79,15 @@ The deploy workflow works on any VPS that has:
   `CF-Connecting-IP` only from Cloudflare's published IP ranges (so `$remote_addr` is the visitor);
 - a firewall that lets only Cloudflare's IP ranges reach ports 80 and 443.
 
-Then set the GitHub secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` and `VPS_FINGERPRINT` for the new server
-(the workflows still fall back to the current server when they are missing), add the server's IP address to the
+Then set the GitHub variables `VPS_HOST`, `VPS_USER` and `VPS_FINGERPRINT` for the new server (the workflows
+still fall back to the old Bluehost server when they are missing; `ops/provision-vps.sh` does all of the list above), add the server's IP address to the
 MongoDB Atlas network access list, run the deploy, and point the `tech-api` DNS record at it.
 
-### Step by step: off the Bluehost VPS (2026-11-14)
+### Changing servers: `ops/README.md`
 
-The Bluehost plan expired on 2026-11-04 and runs on grace. `ops/provision-vps.sh` builds the new server; the deploy
-workflow needs no change (both were tested end to end on a fresh Ubuntu 24.04 machine on 2026-11-14: the script,
-then the workflow's own deploy script over SSH as the deploy user). Downtime: none, if DNS moves last.
-
-1. **Buy the VPS.** Ubuntu 24.04 (or 22.04 / 26.04, or Debian 12), 2+ vCPU, 2+ GB memory, IPv4, India (Mumbai)
-   region. The comparison in tech-katta-context `29-SELF-HOSTED-LLM-ON-A-VPS.md` §4 found Contabo Cloud VPS 10
-   (Mumbai) the best value; Hostinger KVM 2 (India, UPI and GST invoices) costs more.
-2. **Provision** (as root, in the provider's console or `ssh root@IP`):
-   `curl -fsSL https://raw.githubusercontent.com/yashbhoomkar/tech-katta/main/ops/provision-vps.sh -o p.sh && bash p.sh`
-   About 3 minutes. At the end it prints `VPS_HOST`, `VPS_USER`, `VPS_FINGERPRINT` and a new private key for
-   `VPS_SSH_KEY`. Optional afterwards: `HARDEN_SSH=1 bash p.sh` (keys only).
-3. **GitHub secrets** (tech-katta → Settings → Secrets and variables → Actions): set those four. Then delete the key
-   copy on the server: `rm /root/tech-katta-deploy-key /root/tech-katta-deploy-key.pub`. Setting `VPS_SSH_KEY` stops
-   deploys to Bluehost; that is intended.
-4. **Cloudflare Origin certificate** (the zone uses Full (strict), so the server needs a certificate Cloudflare trusts):
-   Cloudflare → katta.cc → SSL/TLS → Origin Server → Create Certificate (RSA, `tech-api.katta.cc`, 15 years).
-   On the server: `nano /etc/tech-katta/tls/origin.pem` (paste the certificate), `nano /etc/tech-katta/tls/origin.key`
-   (paste the private key), then `chmod 600 /etc/tech-katta/tls/origin.key && systemctl reload nginx`.
-5. **MongoDB Atlas:** nothing to do today (the network access list allows 0.0.0.0/0). After the move, replace that
-   entry with the new IP alone.
-6. **Deploy:** GitHub → Actions → "Deploy Tech Katta Backend" → Run workflow. The deploy step must pass ("deployed …");
-   the last step ("Verify public API endpoint") still checks the old server until DNS moves, so it may fail; that is
-   expected here.
-7. **Move DNS:** Cloudflare → katta.cc → DNS → the `tech-api` A record → new IP, **proxied (orange cloud)**.
-   Check: `curl https://tech-api.katta.cc/health` shows the release from step 6; sign in on the site; Run, Submit and
-   "Ask the interviewer" on a problem.
-8. **Then:** run the deploy once more (all steps green), remove the `129.121.133.47` and `yash` fallbacks from
-   `deploy-backend.yml` and `vps-audit.yml`, tighten Atlas, and let the Bluehost plan lapse (or cancel it).
+One command sets up a new server (`ops/provision-vps.sh`); then three GitHub variables, the deploy with "Moving
+servers" ticked, and the "Point API at the server" workflow (which checks the new server and moves the DNS record).
+Everything else the server needs (deploy key, Origin certificate, Cloudflare token, sign-in) stays in GitHub.
 
 ### To a container platform (DigitalOcean App Platform, Cloud Run, Render, Fly, Railway, ECS…)
 

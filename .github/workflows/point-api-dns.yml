@@ -1,0 +1,101 @@
+name: Point API at the server
+
+# The last step of changing servers (ops/README.md): makes tech-api.katta.cc point at the server in the VPS_HOST
+# variable (or the address given here). It first checks over SSH that the server is serving the API on its own and
+# through Nginx, and refuses to switch otherwise; then it changes the Cloudflare A record (kept proxied) and waits
+# until the public API answers. Needs the secret CLOUDFLARE_API_TOKEN (a token with Zone → DNS → Edit on katta.cc).
+on:
+  workflow_dispatch:
+    inputs:
+      ip:
+        description: 'Server IPv4 address (empty = the VPS_HOST variable)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tech-katta-backend-production
+  cancel-in-progress: false
+
+env:
+  ZONE: katta.cc
+  RECORD: tech-api.katta.cc
+
+jobs:
+  point:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Choose the server
+        env:
+          INPUT_IP: ${{ inputs.ip }}
+          VAR_IP: ${{ vars.VPS_HOST || secrets.VPS_HOST }}
+        run: |
+          set -eu
+          IP="${INPUT_IP:-$VAR_IP}"
+          echo "$IP" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo "No valid IPv4 address (input or VPS_HOST): '$IP'"; exit 1; }
+          echo "IP=$IP" >> "$GITHUB_ENV"
+          echo "Target: $IP"
+
+      - name: Check the server serves the API
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          SSH_USER: ${{ vars.VPS_USER || secrets.VPS_USER || 'deploy' }}
+          FINGERPRINT: ${{ vars.VPS_FINGERPRINT || secrets.VPS_FINGERPRINT }}
+        run: |
+          set -eu
+          [ -n "$SSH_KEY" ] && [ -n "$FINGERPRINT" ] || { echo 'Set the secret VPS_SSH_KEY and the variable VPS_FINGERPRINT first.'; exit 1; }
+          install -d -m 700 ~/.ssh; printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy; chmod 600 ~/.ssh/deploy
+          # pin the server's host key: only a server whose key matches VPS_FINGERPRINT is trusted
+          ssh-keyscan -T 10 -t ed25519 "$IP" 2>/dev/null > ~/.ssh/server_hosts
+          SEEN=$(ssh-keygen -lf ~/.ssh/server_hosts -E sha256 | awk '{print $2}')
+          [ "$SEEN" = "$FINGERPRINT" ] || { echo "Host key $SEEN does not match VPS_FINGERPRINT $FINGERPRINT."; exit 1; }
+          on() { ssh -i ~/.ssh/deploy -o UserKnownHostsFile=~/.ssh/server_hosts -o StrictHostKeyChecking=yes -o ConnectTimeout=10 "$SSH_USER@$IP" "$@"; }
+          HEALTH=$(on 'curl --fail --silent --show-error --max-time 10 http://127.0.0.1:5000/health')
+          echo "API on its own: $HEALTH"
+          on 'curl --fail --silent --show-error --max-time 10 --insecure --resolve tech-api.katta.cc:443:127.0.0.1 https://tech-api.katta.cc/health >/dev/null' && echo 'Nginx answers on 443.'
+          # Cloudflare (Full strict) only accepts a certificate it trusts: the Origin certificate, not the stand-in.
+          ISSUER=$(on 'sudo -n openssl x509 -in /etc/tech-katta/tls/origin.pem -noout -issuer 2>/dev/null || true')
+          if echo "$ISSUER" | grep -qi cloudflare; then echo 'Cloudflare Origin certificate installed.'
+          elif [ -n "$ISSUER" ]; then echo 'Not a Cloudflare Origin certificate yet: set ORIGIN_CERT / ORIGIN_KEY and run the deploy first.'; exit 1
+          else echo 'No /etc/tech-katta/tls (not set up by ops/provision-vps.sh); continuing.'; fi
+          # the release this server serves: the public check below waits for exactly this one
+          REL=$(echo "$HEALTH" | grep -o '"release":"[^"]*"' | head -1 | cut -d'"' -f4)
+          [ -n "$REL" ] || { echo 'No release in the health answer.'; exit 1; }
+          echo "RELEASE=$REL" >> "$GITHUB_ENV"; echo "Serving release $REL"
+
+      - name: Point the DNS record
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -eu
+          [ -n "$CF_TOKEN" ] || { echo 'Add the secret CLOUDFLARE_API_TOKEN (Cloudflare → My Profile → API Tokens → "Edit zone DNS" for katta.cc).'; exit 1; }
+          api() { curl --fail-with-body --silent --show-error -H "Authorization: Bearer $CF_TOKEN" -H 'Content-Type: application/json' "$@"; }
+          ZID=$(api "https://api.cloudflare.com/client/v4/zones?name=$ZONE" | jq -r '.result[0].id // empty')
+          [ -n "$ZID" ] || { echo "Zone $ZONE not found for this token."; exit 1; }
+          REC=$(api "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records?type=A&name=$RECORD")
+          RID=$(echo "$REC" | jq -r '.result[0].id // empty'); OLD=$(echo "$REC" | jq -r '.result[0].content // empty')
+          echo "Before: $RECORD → ${OLD:-none}"
+          BODY=$(jq -cn --arg ip "$IP" --arg name "$RECORD" '{type:"A",name:$name,content:$ip,proxied:true,ttl:1}')
+          if [ -n "$RID" ]; then OUT=$(api -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records/$RID" --data "$BODY")
+          else OUT=$(api -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records" --data "$BODY"); fi
+          echo "$OUT" | jq -e '.success == true' >/dev/null || { echo "$OUT" | jq '.errors'; exit 1; }
+          echo "After:  $RECORD → $(echo "$OUT" | jq -r '.result.content') (proxied: $(echo "$OUT" | jq -r '.result.proxied'))"
+          echo "Undo: run this workflow again with ip = $OLD"
+
+      - name: Verify the public API
+        run: |
+          set -eu
+          # Proxied records switch at Cloudflare's edge within seconds; allow two minutes. The old server answers /health
+          # too, so success means the public API serves the new server's own release ($RELEASE).
+          for _ in $(seq 1 24); do
+            if curl --fail --silent --show-error --max-time 10 https://tech-api.katta.cc/health >/tmp/health.json && grep -q "\"release\":\"$RELEASE\"" /tmp/health.json; then
+              cat /tmp/health.json; echo
+              for path in /v1/site /v1/articles /v1/auth/config; do curl --fail --silent --show-error -o /dev/null "https://tech-api.katta.cc$path"; done
+              echo 'Public API OK.'; exit 0
+            fi
+            sleep 5
+          done
+          echo "The public API did not serve $RELEASE. Undo with the address printed above, or check Cloudflare SSL mode and the certificate."
+          exit 1
