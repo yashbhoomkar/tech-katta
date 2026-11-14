@@ -172,3 +172,25 @@
 /* After a passing Run or Submit, a dot travels each arrow of the design (lab/nodes.jsx Arrow, `flow`) */
 .lab-flow{fill:var(--brand);pointer-events:none}.lab-flow>circle:last-of-type{stroke:var(--brand-edge);stroke-width:1}.lab-flow-halo{opacity:.3}
 .lab-stars b{font-weight:inherit}
+
+/* Checks while you build (checks.js): the status line names the first problem; the list opens under it; a flagged card
+   wears a small badge. */
+.lab-status{position:relative}.lab-checks{display:flex;align-items:center;gap:10px;min-width:0}
+.lab-chk{border:1px solid currentColor;border-radius:999px;background:var(--bg);padding:3px 10px;font:600 11px var(--mono);cursor:pointer;white-space:nowrap}
+.lab-chk.bad{color:var(--danger)}.lab-chk.warn{color:var(--warn)}.lab-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lab-chk-first{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-family:var(--font);font-size:12.5px}
+.lab-ok{color:var(--success);font-family:var(--font);font-size:12.5px}
+.lab-chk-list{position:absolute;left:16px;top:100%;z-index:30;width:min(520px,calc(100% - 32px));margin:4px 0 0;padding:6px;list-style:none;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:var(--shadow-2);animation:tk-chk-in .2s cubic-bezier(.22,1,.36,1)}
+.lab-chk-list button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px 8px 26px;border-radius:8px;font:500 13px/1.45 var(--font);color:var(--ink);cursor:pointer;position:relative}
+.lab-chk-list button:disabled{cursor:default}.lab-chk-list button:not(:disabled):hover{background:var(--surface)}
+.lab-chk-list li.error button::before,.lab-chk-list li.warn button::before{content:"";position:absolute;left:10px;top:14px;width:7px;height:7px;border-radius:50%;background:var(--danger)}
+.lab-chk-list li.warn button::before{background:var(--warn-mid)}
+@keyframes tk-chk-in{from{opacity:0;transform:translateY(-4px)}}
+.ln{position:relative}.ln-flag{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--mono);color:var(--on-accent);background:var(--danger);box-shadow:0 0 0 2px var(--bg)}
+.ln-flag.warn{background:var(--warn-mid)}
+.lab-acts{display:flex;flex-wrap:wrap;gap:8px}
+.lab .react-flow__controls-button:disabled{opacity:.35}
+.lab .lab-mini{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg);width:180px;height:120px}
+.lab .lab-mini svg{width:180px;height:120px}
+@media(max-width:900px){.lab .lab-mini{display:none}}
+@media(prefers-reduced-motion:reduce){.lab-chk-list{animation:none}}

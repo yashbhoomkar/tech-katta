@@ -106,7 +106,7 @@ function Look({ edge, setLook, autoProto }) {
 }
 
 // What a selected arrow carries: every call, only reads, only writes, or the operations chosen.
-export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, autoProto, H }) {
+export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, autoProto, reverse, canReverse, H }) {
   const c = edge.data?.carries, mode = !c ? 'all' : c.length === 1 && c[0] === 'reads' ? 'reads' : c.length === 1 && c[0] === 'writes' ? 'writes' : 'some';
   const pick = (m) => setCarries(edge.id, m === 'all' ? undefined : m === 'reads' ? ['reads'] : m === 'writes' ? ['writes'] : ops.map((o) => o.id));
   const toggle = (id) => { const now = mode === 'some' ? c : []; const next = now.includes(id) ? now.filter((x) => x !== id) : [...now, id]; setCarries(edge.id, next.length ? ops.map((o) => o.id).filter((x) => next.includes(x)) : undefined); };
@@ -115,5 +115,5 @@ export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, a
     <p className="lab-desc">Calls flow this way. By default an arrow carries every call; choose fewer to send reads and writes, or each call, their own way.</p>
     <Field label="Carries"><select value={mode} onChange={(e) => pick(e.target.value)}><option value="all">Every call</option><option value="reads">Only reads</option><option value="writes">Only writes</option>{ops.length > 0 && <option value="some">Calls I choose…</option>}</select></Field>
     {mode === 'some' && ops.map((o) => <label key={o.id} className="lab-check"><input type="checkbox" checked={c.includes(o.id)} onChange={() => toggle(o.id)} />{o.name}</label>)}
-    <button type="button" className="lab-btn ghost" onClick={() => removeEdge(edge.id)}>Remove arrow</button><p className="lab-note">Shortcut: select an arrow and press Delete, or use the ✕ on it.</p></aside>;
+    <div className="lab-acts"><button type="button" className="lab-btn ghost" onClick={() => reverse?.(edge.id)} disabled={!canReverse} title={canReverse ? 'Shift+R' : 'This arrow can\'t go the other way'}>⇄ Reverse</button><button type="button" className="lab-btn ghost" onClick={() => removeEdge(edge.id)}>Remove arrow</button></div><p className="lab-note">Shortcut: select an arrow and press Delete, or use the ✕ on it.</p></aside>;
 }
