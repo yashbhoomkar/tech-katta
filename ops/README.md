@@ -60,6 +60,10 @@ Then let the old plan lapse. Optional: `HARDEN_SSH=1 bash p.sh` on the new serve
   firewall rule for HTTPS (443)** (only 22 and 80 are open by default). Lightsail's own firewall can stay open to
   all on 80/443: the server's firewall lets only Cloudflare through. Log in with the browser SSH button and run the
   setup command with `sudo bash p.sh`.
+- **Akamai Cloud (Linode)** (the chosen plan: Nanode 1 GB, Mumbai): Create → Linode → image Ubuntu 24.04 LTS, region
+  Mumbai (or Chennai), plan Shared CPU → Nanode 1 GB, set a root password. The IPv4 address is fixed. No Cloud Firewall
+  is needed (the server's firewall lets only Cloudflare reach 80/443); if one is added, allow 22, 80 and 443. Log in
+  with the "Launch LISH Console" button or `ssh root@IP` and run the setup command.
 - **Any provider:** a fixed public IPv4 address that survives reboots, and no provider firewall blocking 22/80/443.
 
 ## Without a VPS
