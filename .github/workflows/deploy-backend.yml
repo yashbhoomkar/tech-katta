@@ -8,6 +8,11 @@ on:
       - 'content/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
+    inputs:
+      moving:
+        description: 'Moving servers: the new server is not behind tech-api.katta.cc yet, so skip the public check (then run "Point API at the server")'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -56,8 +61,10 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          ORIGIN_CERT: ${{ secrets.ORIGIN_CERT }}
+          ORIGIN_KEY: ${{ secrets.ORIGIN_KEY }}
         run: |
-          for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET; do
+          for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET ORIGIN_CERT ORIGIN_KEY; do
             value=$(printenv "$name" || true)
             if [ -n "$value" ]; then encoded=$(printf %s "$value" | base64 -w0); echo "::add-mask::$encoded"; else encoded=''; fi
             echo "${name}_B64=$encoded" >> "$GITHUB_ENV"
@@ -80,12 +87,14 @@ jobs:
       - name: Deploy to VPS and check local endpoint
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
-          envs: GOOGLE_CLIENT_ID_B64,MONGODB_URI_B64,SESSION_SECRET_B64
-          # TODO(owner): add VPS_HOST, VPS_USER and VPS_FINGERPRINT secrets, then delete the fallbacks.
-          host: ${{ secrets.VPS_HOST || '129.121.133.47' }}
-          username: ${{ secrets.VPS_USER || 'yash' }}
+          envs: GOOGLE_CLIENT_ID_B64,MONGODB_URI_B64,SESSION_SECRET_B64,ORIGIN_CERT_B64,ORIGIN_KEY_B64
+          # The server: repository variables VPS_HOST, VPS_USER, VPS_FINGERPRINT (Settings → Secrets and variables →
+          # Actions → Variables; secrets of the same names also work). Changing servers = changing these (ops/README.md).
+          # The fallbacks are the old Bluehost server; remove them once the variables are set.
+          host: ${{ vars.VPS_HOST || secrets.VPS_HOST || '129.121.133.47' }}
+          username: ${{ vars.VPS_USER || secrets.VPS_USER || 'yash' }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          fingerprint: ${{ vars.VPS_FINGERPRINT || secrets.VPS_FINGERPRINT }}
           port: 22
           script_stop: false # the script sets -eu itself and rolls back on any failure
           script: |
@@ -155,6 +164,22 @@ jobs:
               echo 'Sign-in secrets not all set; leaving sign-in settings as they are.'
             fi
 
+            # TLS for servers set up by ops/provision-vps.sh (they have /etc/tech-katta/tls): the Cloudflare Origin
+            # certificate from the ORIGIN_CERT / ORIGIN_KEY secrets, so no server needs it pasted by hand. Written only
+            # when it differs; Nginx is checked before it reloads, and a bad pair is put back.
+            TLS=/etc/tech-katta/tls
+            if [ -n "${ORIGIN_CERT_B64:-}" ] && [ -n "${ORIGIN_KEY_B64:-}" ] && sudo -n test -d "$TLS"; then
+              printf %s "$ORIGIN_CERT_B64" | base64 -d > /tmp/tk-origin.pem
+              printf %s "$ORIGIN_KEY_B64" | base64 -d > /tmp/tk-origin.key; chmod 600 /tmp/tk-origin.key
+              if ! sudo -n cmp -s /tmp/tk-origin.pem "$TLS/origin.pem" || ! sudo -n cmp -s /tmp/tk-origin.key "$TLS/origin.key"; then
+                sudo -n cp -a "$TLS/origin.pem" "$TLS/origin.pem.prev"; sudo -n cp -a "$TLS/origin.key" "$TLS/origin.key.prev"
+                sudo -n install -m 644 /tmp/tk-origin.pem "$TLS/origin.pem"; sudo -n install -m 600 /tmp/tk-origin.key "$TLS/origin.key"
+                if sudo -n nginx -t -q; then sudo -n systemctl reload nginx; echo 'Origin certificate installed.'
+                else sudo -n mv -f "$TLS/origin.pem.prev" "$TLS/origin.pem"; sudo -n mv -f "$TLS/origin.key.prev" "$TLS/origin.key"; echo 'Origin certificate rejected by Nginx; kept the previous one.'; fi
+              else echo 'Origin certificate unchanged.'; fi
+              rm -f /tmp/tk-origin.pem /tmp/tk-origin.key
+            fi
+
             sudo -n mkdir -p /etc/systemd/system/tech-katta-api.service.d
             printf '%s\n' '[Service]' 'Restart=always' 'RestartSec=2' 'Environment=NODE_ENV=production' 'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' "Environment=CONTENT_DIR=$BASE/current" "EnvironmentFile=-$ENVDIR/api.env" | sudo -n tee /etc/systemd/system/tech-katta-api.service.d/production.conf >/dev/null
             sudo -n systemctl daemon-reload
@@ -168,9 +193,10 @@ jobs:
             echo "deployed $SHA, content current -> $REL"
 
       - name: Verify public API endpoint
+        if: ${{ !inputs.moving }}
         run: |
           set -eu
-          for attempt in $(seq 1 10); do
+          for _ in $(seq 1 10); do
             if curl --fail --silent --show-error https://tech-api.katta.cc/health >/tmp/health.json; then
               cat /tmp/health.json; echo
               # The public API must serve the release this run just deployed.

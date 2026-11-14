@@ -4,9 +4,11 @@
 #
 #   As root on the new server:
 #     curl -fsSL https://raw.githubusercontent.com/yashbhoomkar/tech-katta/main/ops/provision-vps.sh -o provision-vps.sh
-#     bash provision-vps.sh                       # makes a new deploy key and prints it
-#     bash provision-vps.sh "ssh-ed25519 AAAA…"   # or: use this public key for the deploy user
+#     bash provision-vps.sh                       # installs the project's deploy key (ops/deploy-key.pub)
+#     bash provision-vps.sh "ssh-ed25519 AAAA…"   # or: this public key instead
+#   With no ops/deploy-key.pub in the repository yet (the very first move), it makes a key and prints it.
 #   Options (environment): DEPLOY_USER (default deploy), HARDEN_SSH=1 (keys only, no root password login),
+#   DEPLOY_PUBKEY_URL (where the project's deploy key is read from),
 #   SKIP_FIREWALL=1 (testing in a container that shares its host's network only).
 #
 # What it sets up (HOSTING.md, "To another Linux VPS"):
@@ -28,6 +30,7 @@ APP=/opt/tech-katta
 BASE=/var/lib/tech-katta/content
 TLS=/etc/tech-katta/tls
 PUBKEY=${1:-}
+DEPLOY_PUBKEY_URL=${DEPLOY_PUBKEY_URL:-https://raw.githubusercontent.com/yashbhoomkar/tech-katta/main/ops/deploy-key.pub}
 
 [ "$(id -u)" = 0 ] || { echo "Run as root (sudo bash $0)."; exit 1; }
 say() { printf '\n== %s\n' "$*"; }
@@ -57,6 +60,11 @@ install -d -m 700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$HOME_DIR/.ssh"
 # A key made here is kept root-only in /root/tech-katta-deploy-key until you have copied it into the GitHub secret
 # VPS_SSH_KEY (each run prints it again, so a run that fails later loses nothing); then delete that file.
 KEYFILE=/root/tech-katta-deploy-key
+# the project's own deploy key, the same on every server, so the GitHub secret VPS_SSH_KEY never changes
+if [ -z "$PUBKEY" ] && [ ! -s "$KEYFILE" ]; then
+  REPOKEY=$(curl -fsS "$DEPLOY_PUBKEY_URL" 2>/dev/null | grep -E '^ssh-(ed25519|rsa) ' | head -1 || true)
+  [ -n "$REPOKEY" ] && PUBKEY=$REPOKEY && echo "deploy key: the project's (ops/deploy-key.pub)"
+fi
 if [ -z "$PUBKEY" ] && [ ! -s "$HOME_DIR/.ssh/authorized_keys" ] && [ ! -s "$KEYFILE" ]; then
   ssh-keygen -q -t ed25519 -N '' -C "github-actions-deploy@$API_HOST" -f "$KEYFILE"
   chmod 600 "$KEYFILE"
@@ -189,15 +197,19 @@ fi
 
 IP=$(curl -fsS -4 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
 FP=$(ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256 | awk '{print $2}')
-say "Done. Put these in GitHub → tech-katta → Settings → Secrets and variables → Actions"
+say "Done. In GitHub → tech-katta → Settings → Secrets and variables → Actions → Variables, set:"
 echo "VPS_HOST        = $IP"
 echo "VPS_USER        = $DEPLOY_USER"
 echo "VPS_FINGERPRINT = $FP"
 if [ -s "$KEYFILE" ]; then
-  echo "VPS_SSH_KEY     = the whole private key below, from -----BEGIN to -----END. Once it is saved in GitHub,"
-  echo "                  delete this copy: rm $KEYFILE $KEYFILE.pub"
+  echo
+  echo "First move only: a new deploy key was made. Under Secrets (not Variables), set"
+  echo "VPS_SSH_KEY     = the whole private key below, from -----BEGIN to -----END,"
+  echo "and commit its public half to the repository as ops/deploy-key.pub, so later servers use the same key:"
+  echo "  $(cat "$KEYFILE.pub")"
+  echo "Then delete this copy: rm $KEYFILE $KEYFILE.pub"
   echo; cat "$KEYFILE"; echo
 fi
 echo
-echo "Next (HOSTING.md, 'Moving off a VPS'): Cloudflare Origin certificate into $TLS, this IP in MongoDB Atlas network"
-echo "access, run the deploy workflow, then point the tech-api DNS record at $IP."
+echo "Next (ops/README.md): Actions → Deploy Tech Katta Backend → Run workflow with \"Moving servers\" ticked;"
+echo "then Actions → Point API at the server. The deploy installs the Origin certificate from the ORIGIN_CERT secret."
