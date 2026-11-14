@@ -4,18 +4,15 @@
 // the canvas and the model answer into Your answer (solve.jsx puts both there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
 // submission of the copied design unchanged isn't counted as solved (judge.js sameDesign). `note`
 // (practice.referenceNote) says where the Lab's version differs from the worked answer's full-size one.
-import{MUTED}from"./theme/palette.js";import{useTheme}from"./theme/mode.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
+import{useTheme}from"./theme/mode.js";import{ICON,TINT,SX,SY,box as card,layout}from"./lab/drawing.js";import{protocolOf,DASH}from"./lab/protocols.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
 
 const KIND={btree:"index",unique:"unique index",geo:"geo index",text:"text index"};
-const NW=176,NH=74,PAD=24;
+// Drawn the way the canvas draws it (lab/drawing.js): cards spread out by SX and SY, a curved arrow between the
+// sides that face each other (round other cards when they are in the way), coloured and dashed by its protocol,
+// with the protocol (or the arrow's label) in a pill halfway along.
+const NW=200,NH=74,PAD=28;
 const cut=(t,n)=>t.length>n?t.slice(0,n-1)+"…":t;
-// A curved arrow from the right side of one component to the left side of the next (the Lab's layout
-// runs left to right); an arrow going back left or straight down bends round instead.
-function path(a,b){const x1=a.x+NW,y1=a.y+NH/2,x2=b.x,y2=b.y+NH/2;
-if(x2>=x1+20){const m=(x1+x2)/2;return `M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}`}
-if(Math.abs(a.x-b.x)<NW&&b.y>a.y)return `M${a.x+NW/2},${a.y+NH} L${b.x+NW/2},${b.y}`;
-if(Math.abs(a.x-b.x)<NW&&b.y<a.y)return `M${a.x+NW/2},${a.y} L${b.x+NW/2},${b.y+NH}`;
-const lo=Math.max(a.y,b.y)+NH+30;return `M${a.x+NW/2},${a.y+NH} C${a.x+NW/2},${lo} ${b.x+NW/2},${lo} ${b.x+NW/2},${b.y+NH}`}
+const COLORS=["teal","green","pink","violet","amber","ink"];
 
 export default function SolutionDesign({sol,lab,copy,copied,undo,busy,note}){useTheme();
 const cat=useMemo(()=>lab?catalogue(lab):{},[lab]);
@@ -25,17 +22,26 @@ useEffect(()=>{const el=box.current;if(!el||typeof ResizeObserver==="undefined")
 if(!sol)return null;
 const parts=sol.nodes.map(n=>{const comp=cat[n.type],config=n.config||{},eng=engineOf(comp,config);
 return{n,comp,name:displayName(comp,n),group:(comp?.group||n.type).toUpperCase(),sum:comp?summary(comp,config):"",eng,schema:config.schema?.tables?.length?config.schema:null}});
-const x0=Math.min(...sol.nodes.map(n=>n.x))-PAD,y0=Math.min(...sol.nodes.map(n=>n.y))-PAD,x1=Math.max(...sol.nodes.map(n=>n.x))+NW+PAD,y1=Math.max(...sol.nodes.map(n=>n.y))+NH+PAD+30;
-const W=x1-x0,H=y1-y0,at=Object.fromEntries(sol.nodes.map(n=>[n.id,n]));
+const at=Object.fromEntries(sol.nodes.map(n=>[n.id,card(n.x*SX,n.y*SY,NW,NH)])),kind=Object.fromEntries(sol.nodes.map(n=>[n.id,n.type]));
+const list=sol.edges.filter(e=>at[e.from]&&at[e.to]).map((e,k)=>{const p=protocolOf(e,kind[e.from],kind[e.to]);return{id:String(k),k,from:e.from,to:e.to,p,text:e.label||p.name}});
+const geo=layout(at,list),arrows=list.filter(a=>geo[a.id]).map(a=>({...a,d:geo[a.id].path,lx:geo[a.id].lx,ly:geo[a.id].ly}));
+// the drawing's extent: the cards, every arrow's control points (detours bend outside the cards) and the pills
+const cs=arrows.map(a=>a.d.match(/-?[\d.]+/g).map(Number));
+const xs=[...Object.values(at).flatMap(b=>[b.x,b.x+b.w]),...cs.flatMap(c=>c.filter((_,i)=>i%2===0)),...arrows.flatMap(a=>[a.lx-60,a.lx+60])];
+const ys=[...Object.values(at).flatMap(b=>[b.y,b.y+b.h]),...cs.flatMap(c=>c.filter((_,i)=>i%2===1)),...arrows.flatMap(a=>[a.ly-12,a.ly+12])];
+const x0=Math.min(...xs)-PAD,y0=Math.min(...ys)-PAD,x1=Math.max(...xs)+PAD,y1=Math.max(...ys)+PAD;
+const W=x1-x0,H=y1-y0;
 const draw=(min,id)=><svg viewBox={`${x0} ${y0} ${W} ${H}`} style={{width:"100%",minWidth:min+"px"}} aria-hidden="true">
-<defs><marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill={MUTED}/></marker></defs>
-{sol.edges.map((e,k)=>at[e.from]&&at[e.to]?<path key={k} d={path(at[e.from],at[e.to])} className="sd-edge" markerEnd={`url(#${id})`}/>:null)}
-{parts.map(({n,name,group,sum,comp})=><g key={n.id} transform={`translate(${n.x},${n.y})`}>
-<rect width={NW} height={NH} rx="2" className="sd-node"/>
-<text x="12" y="19" className="sd-grp">{group}</text>
-<text x="12" y="39" className="sd-name">{cut(name,20)}</text>
-<text x="12" y="57" className="sd-sum">{cut(sum,28)}</text>
-</g>)}
+<defs>{COLORS.map(c=><marker key={c} id={id+"-"+c} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" className={"sd-head t-"+c}/></marker>)}</defs>
+{arrows.map(a=><path key={a.k} d={a.d} className={"sd-edge t-"+a.p.color} strokeDasharray={DASH[a.p.dash]} markerEnd={`url(#${id}-${a.p.color})`}/>)}
+{parts.map(({n,name,sum,comp})=>{const b=at[n.id];return <g key={n.id} transform={`translate(${b.x},${b.y})`}>
+<rect width={NW} height={NH} rx="12" className="sd-node"/>
+<g className={"t-"+(TINT[n.type]||"teal")}><rect x="12" y="12" width="32" height="32" rx="9" className="sd-tile"/><path d={ICON[n.type]||ICON.server} transform="translate(19.5 19.5) scale(.85)" className="sd-ico"/></g>
+<text x="54" y="26" className="sd-name">{cut(name,20)}</text>
+<text x="54" y="40" className="sd-sub">{cut(n.name&&comp?comp.name:comp?.group||"",26)}</text>
+<text x="12" y="62" className="sd-sum">{cut(sum,32)}</text>
+</g>})}
+{arrows.map(a=>{const w=a.text.length*5.9+22;return <g key={"p"+a.k} className={"sd-pill t-"+a.p.color} transform={`translate(${a.lx-w/2},${a.ly-9})`}><rect width={w} height="18" rx="9"/><circle cx="10" cy="9" r="3"/><text x="17" y="12.5">{a.text}</text></g>})}
 </svg>;
 return <section className="sd" aria-labelledby="sd-h">
 <header className="sd-head"><div><label>SOLUTION DESIGN</label><h2 id="sd-h">A design that passes every test</h2>

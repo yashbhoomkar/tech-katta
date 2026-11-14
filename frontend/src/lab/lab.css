@@ -42,17 +42,55 @@
 .lab-menu li small{font:500 11px var(--mono);color:var(--muted)}.lab-x{width:40px;border:0;background:none;color:var(--muted);cursor:pointer}.lab-x:hover{color:var(--danger)}
 .lab-close{margin-top:12px}
 /* Component nodes on the canvas */
-.ln{width:176px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--bg);color:var(--ink);font-family:var(--font)}
-.ln.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.ln-head{display:flex;align-items:center;gap:6px;color:var(--accent)}.ln-head small{font:600 9px var(--mono);letter-spacing:.08em}
-.ln b{display:block;margin-top:6px;font-size:14px;letter-spacing:-.01em}.ln-sum{display:block;margin-top:2px;font:500 11px var(--mono);color:var(--muted)}
+/* A card: 200 px wide, 12 px corners, a soft shadow; a 32 px tinted icon tile, the name and what it is, then its
+   settings. The tile takes a category colour per type (TINT in shared.jsx). */
+.ln{width:200px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-family:var(--font);
+  box-shadow:var(--shadow-1);transition:border-color .12s,box-shadow .12s}
+/* A glowing outline in the card's own colour (its tile's): soft at rest, brighter on hover, strongest when selected.
+   Replay states (warn, over, down) set their own border below and drop the glow. */
+.ln[class*=" t-"]{border-color:color-mix(in srgb,var(--tile) 40%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--tile) 12%,transparent),0 0 18px -4px color-mix(in srgb,var(--tile) 45%,transparent),var(--shadow-1)}
+.ln[class*=" t-"]:hover{border-color:color-mix(in srgb,var(--tile) 70%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--tile) 25%,transparent),0 0 24px -2px color-mix(in srgb,var(--tile) 55%,transparent),var(--shadow-2)}
+.ln[class*=" t-"].sel{border-color:var(--tile);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--tile) 35%,transparent),0 0 30px 0 color-mix(in srgb,var(--tile) 60%,transparent),var(--shadow-2)}
+.ln[class*=" t-"]:is(.warn,.over,.down){box-shadow:var(--shadow-1)}
+.ln-head{display:flex;align-items:center;gap:10px;min-width:0}
+.ln-tile{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:9px;color:var(--tile);background:color-mix(in srgb,var(--tile) 13%,transparent)}
+.ln-tile .lab-ico{width:17px;height:17px;stroke-width:1.6}
+.ln-id{display:grid;min-width:0}
+.ln-id b{font-size:13px;font-weight:600;line-height:1.25;letter-spacing:-.01em;overflow-wrap:anywhere}
+.ln-id small{font-size:11px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ln-sum{display:block;margin-top:8px;font:500 10.5px/1.45 var(--mono);color:var(--muted)}
+.t-teal{--tile:var(--cat-teal)}.t-green{--tile:var(--cat-green)}.t-pink{--tile:var(--cat-pink)}.t-violet{--tile:var(--cat-violet)}.t-amber{--tile:var(--cat-amber)}.t-ink{--tile:var(--ink-3)}
 .ln-bar{height:4px;margin-top:8px;background:var(--line)}.ln-bar i{display:block;height:100%;background:var(--ink);transition:width var(--dur)}
 .ln-m{display:block;margin-top:5px;font:500 11px var(--mono);color:var(--ink)}
 .ln.warn{border-color:var(--warn-mid)}.ln.warn .ln-bar i{background:var(--warn-mid)}.ln.warn .ln-m{color:var(--warn)}
 .ln.down{border:1px dashed var(--danger);background:var(--danger-tint)}.ln.down b,.ln.down .ln-sum{color:var(--faint)}.ln-down{color:var(--danger);font-weight:600}.lab .react-flow__edge.dead .react-flow__edge-path{stroke:var(--disabled);stroke-dasharray:4 4}.lab-log-h{margin-top:18px}.lab-log{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.lab-log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.45}.lab-log li small{display:block;font:500 10px var(--mono);color:var(--muted)}.lab-log li.crashed,.lab-log li.failover{color:var(--danger)}.lab-log li.recovered{color:var(--ink)}.ln.over{border-color:var(--danger)}.ln.over .ln-bar i{background:var(--danger)}.ln.over .ln-m{color:var(--danger)}
 .ln-m.ln-q{color:var(--warn);font-weight:600}
-.lab .react-flow__handle{width:10px;height:10px;border:1.5px solid var(--bg);background:var(--accent)}
-.lab .react-flow__edge-path{stroke:var(--ink);stroke-width:1.4}.lab .react-flow__edge.selected .react-flow__edge-path{stroke:var(--accent);stroke-width:2}
+/* A handle on each side: a small hollow dot, filled when the card is hovered or selected; touch screens show them all. */
+.lab .react-flow__handle{width:8px;height:8px;min-width:0;min-height:0;border:1.5px solid var(--line-strong);background:var(--bg);transition:border-color .12s,background .12s}
+.lab .ln:hover .react-flow__handle,.lab .ln.sel .react-flow__handle{border-color:var(--accent)}
+.lab .react-flow__handle:hover,.lab .react-flow__handle.connectingfrom,.lab .react-flow__handle.valid{background:var(--accent);border-color:var(--accent)}
+@media(pointer:coarse){.lab .react-flow__handle{width:12px;height:12px}}
+/* Arrows: the protocol's colour (--edge, set per arrow in nodes.jsx) and dash; thicker when selected. */
+.lab .react-flow__edge .react-flow__edge-path{stroke:var(--edge,var(--ink-3));stroke-width:1.6;stroke-linecap:round}.lab .react-flow__edge:is(.selected,:focus,:focus-visible) .react-flow__edge-path{stroke:var(--edge,var(--ink-3));stroke-width:2.6}
+/* The pill on an arrow: the protocol (or the arrow's own label), coloured like the line. */
+.lab-pill-at{position:absolute;display:flex;align-items:center;gap:6px;pointer-events:all}
+.lab-pill{padding:2px 8px;border:1px solid color-mix(in srgb,var(--tile,var(--line)) 35%,var(--line));border-radius:999px;background:var(--bg);color:var(--ink-2);
+  font:600 10.5px/14px var(--font);white-space:nowrap;cursor:pointer;box-shadow:var(--shadow-1)}
+.lab-pill::before{content:"";display:inline-block;width:6px;height:6px;margin:0 5px 1px 0;border-radius:50%;background:var(--tile,var(--ink-3));vertical-align:middle}
+.lab-pill:hover{border-color:var(--tile,var(--accent))}.lab-pill:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lab-pill-at.sel .lab-pill{border-color:var(--tile,var(--accent));box-shadow:0 0 0 1px var(--tile,var(--accent))}
+/* The arrow panel's protocol chips, each with a sample of its line. */
+.lab-chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lab-chip{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);font:500 12.5px var(--font);color:var(--ink);text-align:left;cursor:pointer}
+.lab-chip:first-child{grid-column:1/-1}
+.lab-chip:hover{border-color:var(--line-strong)}.lab-chip.on{border-color:var(--accent);background:var(--accent-tint);font-weight:600}
+.lab-chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lab-chip i{flex:none;width:16px;border-top:2px solid var(--tile)}.lab-chip i.d-dash{border-top-style:dashed}.lab-chip i.d-dot{border-top-style:dotted}
+.lab-f input[type=text]{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:var(--radius);font:500 13px var(--font);color:var(--ink);background:var(--bg);min-width:0;width:100%}
+.lab-f input[type=text]:focus{outline:none;border-color:var(--accent)}
 .lab .react-flow__edge.live .react-flow__edge-path{stroke:var(--accent)}
 .lab .react-flow{--xy-background-color:transparent}.lab .react-flow__controls{box-shadow:none;border:1px solid var(--line)}.lab .react-flow__controls-button{border-bottom:1px solid var(--line)}
 .lab .react-flow__attribution{background:rgb(var(--bg-rgb) / .7);font:10px var(--mono)}
@@ -68,7 +106,7 @@
 .lab-day figcaption{font:500 11px var(--mono);color:var(--muted);margin-top:4px}
 .lab-note-tight{margin:0 0 12px}
 .lab-log li.scaledOut,.lab-log li.scaledIn{color:var(--accent)}
-.lab-edge-x{position:absolute;pointer-events:all;width:30px;height:30px;padding:0;border:1px solid var(--accent);border-radius:50%;background:var(--bg);color:var(--accent);font:600 13px/1 var(--mono);cursor:pointer;display:grid;place-items:center}
+.lab-edge-x{flex:none;width:26px;height:26px;padding:0;border:1px solid var(--accent);border-radius:50%;background:var(--bg);color:var(--accent);font:600 13px/1 var(--mono);cursor:pointer;display:grid;place-items:center}
 .lab-edge-x:hover,.lab-edge-x:focus-visible{background:var(--accent);color:var(--on-accent);outline:none}
 .lab-log li.writesLost{color:var(--danger)}
 .lab-log li.cold,.lab-log li.dirty{color:var(--warn)}
