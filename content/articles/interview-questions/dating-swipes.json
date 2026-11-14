@@ -81,8 +81,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET  /deck?count=20          → 200 { \"profiles\": [ { \"id\": \"u_42\", \"name\": \"…\", \"km\": 3 }, … ] }\nPUT  /swipes/u_42            { \"says\": \"yes\" }   → 200 { \"match\": false }\n                                                → 200 { \"match\": true, \"with\": \"u_42\" }",
-      "say": "Get the next profiles a few at a time. Record a swipe on a person; the answer says whether it made a match."
+      "x": "GET  /deck?count=20          → 200 { \"profiles\": [ { \"id\": \"u_42\", \"name\": \"…\", \"km\": 3 }, … ] }\nPUT  /swipes/u_42            { \"says\": \"yes\" }   → 200 { \"match\": false }\n                                                → 200 { \"match\": true, \"with\": \"u_42\" }"
     },
     {
       "t": "p",

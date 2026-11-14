@@ -28,8 +28,7 @@
     {
       "t": "code",
       "label": "ZOTATO · A FEW ZNODES",
-      "x": "/zotato\n  /config/payouts/batch_size          \"500\"        persistent\n  /election/payouts/n_0000000017      \"worker-a\"   ephemeral, sequential\n  /services/dispatch/10.0.4.7:8080    \"\"           ephemeral: present while that server's session lives",
-      "say": "Three kinds of znode under /zotato. A persistent setting, the payout batch size, 500. An ephemeral sequential znode for worker A in the payouts election. And an ephemeral znode for one dispatch server, which disappears when its session ends, so the list of children is the list of live servers."
+      "x": "/zotato\n  /config/payouts/batch_size          \"500\"        persistent\n  /election/payouts/n_0000000017      \"worker-a\"   ephemeral, sequential\n  /services/dispatch/10.0.4.7:8080    \"\"           ephemeral: present while that server's session lives"
     },
     {
       "t": "h2",

@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "ticket-booking",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 05",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design match ticket booking",
@@ -82,8 +82,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /events/e_indpak/line            → 200 { \"token\": \"…\", \"position\": 18342 }\nGET  /events/e_indpak/line/me         → 200 { \"position\": 412, \"wait_min\": 3 } or { \"admitted\": true }\n\nGET  /events/e_indpak/blocks          → 200 { \"blocks\": [ { \"id\": \"N2\", \"left\": 214, \"price\": 2500 }, … ] }\nPOST /events/e_indpak/holds   { \"block\": \"N2\", \"count\": 3 }    (needs an admitted token)\n→ 201 { \"order\": \"o_55\", \"seats\": [\"N2-14-7\", \"N2-14-8\", \"N2-14-9\"], \"hold_until\": \"12:13:05\" }\n→ 409 { \"left\": 1 }\n\nPOST /orders/o_55/paid    (from the payment provider)  → tickets issued",
-      "say": "Join the line for an event and get a signed token and a position; poll it until you're admitted. Admitted shoppers see how many seats are left per block, then ask to hold a number of seats in a block. The server picks seats together and holds them for 10 minutes, or answers 409 if there aren't enough. The payment provider confirms payment, and the tickets are issued."
+      "x": "POST /events/e_indpak/line            → 200 { \"token\": \"…\", \"position\": 18342 }\nGET  /events/e_indpak/line/me         → 200 { \"position\": 412, \"wait_min\": 3 } or { \"admitted\": true }\n\nGET  /events/e_indpak/blocks          → 200 { \"blocks\": [ { \"id\": \"N2\", \"left\": 214, \"price\": 2500 }, … ] }\nPOST /events/e_indpak/holds   { \"block\": \"N2\", \"count\": 3 }    (needs an admitted token)\n→ 201 { \"order\": \"o_55\", \"seats\": [\"N2-14-7\", \"N2-14-8\", \"N2-14-9\"], \"hold_until\": \"12:13:05\" }\n→ 409 { \"left\": 1 }\n\nPOST /orders/o_55/paid    (from the payment provider)  → tickets issued"
     },
     {
       "t": "h2",
@@ -219,6 +218,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "Ticket sales open with a wall of traffic. The flash sale challenge is the same shape: five times the usual load for 15 minutes, and the database has to survive it.",
+      "to": "problems/challenge/flash-sale",
+      "go": "Try the flash sale challenge"
     },
     {
       "t": "lab",

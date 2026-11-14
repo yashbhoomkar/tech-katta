@@ -81,8 +81,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET  /stores/nearest?lat=19.1176&lng=72.9060\n→ 200 { \"store\": \"s_17\", \"eta_min\": 9 }\n\nGET  /stores/s_17/items?category=dairy\n→ 200 { \"items\": [ { \"id\": \"milk-500\", \"name\": \"Toned milk 500 ml\", \"left\": 3 }, … ] }\n\nPOST /orders   { \"store\": \"s_17\", \"items\": [ { \"id\": \"milk-500\", \"qty\": 2 } ] }\n→ 201 { \"order\": \"o_91\", \"held_until\": \"20:04:30\", \"pay\": \"…\" }\n→ 409 { \"short\": [ { \"id\": \"milk-500\", \"left\": 1 } ] }\n\nPOST /orders/o_91/paid     (from the payment provider)\nGET  /orders/o_91          → state and live position",
-      "say": "Find the nearest store and its delivery time from the customer's location. List that store's items with how many are left. Placing an order holds the items for a few minutes and returns a payment link, or a 409 listing what ran short. The payment provider confirms payment, and the app polls or subscribes for the order's state."
+      "x": "GET  /stores/nearest?lat=19.1176&lng=72.9060\n→ 200 { \"store\": \"s_17\", \"eta_min\": 9 }\n\nGET  /stores/s_17/items?category=dairy\n→ 200 { \"items\": [ { \"id\": \"milk-500\", \"name\": \"Toned milk 500 ml\", \"left\": 3 }, … ] }\n\nPOST /orders   { \"store\": \"s_17\", \"items\": [ { \"id\": \"milk-500\", \"qty\": 2 } ] }\n→ 201 { \"order\": \"o_91\", \"held_until\": \"20:04:30\", \"pay\": \"…\" }\n→ 409 { \"short\": [ { \"id\": \"milk-500\", \"left\": 1 } ] }\n\nPOST /orders/o_91/paid     (from the payment provider)\nGET  /orders/o_91          → state and live position"
     },
     {
       "t": "h2",

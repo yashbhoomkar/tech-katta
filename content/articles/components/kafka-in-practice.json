@@ -176,8 +176,7 @@
     {
       "t": "code",
       "label": "ZOTATO · THE ORDERS TOPIC AND ITS CLIENTS",
-      "x": "# topic\npartitions=48  replication.factor=3  min.insync.replicas=2\nretention.ms=604800000            # 7 days\n\n# producer\nacks=all\nenable.idempotence=true            # the default since Kafka 3.0\nlinger.ms=5                        # wait up to 5 ms to fill a batch\ncompression.type=lz4\n\n# consumer (group: notifications)\nenable.auto.commit=false           # commit offsets after the work is done",
-      "say": "The orders topic: 48 partitions, three copies, at least two in sync to accept a write, kept 7 days. The producer waits for all in-sync copies, is idempotent, waits up to 5 milliseconds to fill a batch and compresses it. The notifications consumer commits offsets itself, after processing."
+      "x": "# topic\npartitions=48  replication.factor=3  min.insync.replicas=2\nretention.ms=604800000            # 7 days\n\n# producer\nacks=all\nenable.idempotence=true            # the default since Kafka 3.0\nlinger.ms=5                        # wait up to 5 ms to fill a batch\ncompression.type=lz4\n\n# consumer (group: notifications)\nenable.auto.commit=false           # commit offsets after the work is done"
     },
     {
       "t": "h2",

@@ -38,7 +38,7 @@ export async function loadContent(dir) {
   return { site, examples, articles, lab, release, practice: practice.problems };
 }
 
-const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek', 'audio'];
+const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek'];
 const pick = (object, keys) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
 
 // A summary also names the challenge the article's card opens (`lab`: its id, from "problems/challenge/<id>"), for

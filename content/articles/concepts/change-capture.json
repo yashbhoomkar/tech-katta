@@ -46,8 +46,7 @@
     {
       "t": "code",
       "label": "ZOTATO · LETTING A CONNECTOR READ POSTGRESQL",
-      "x": "ALTER SYSTEM SET wal_level = logical;               -- needs a restart\nCREATE PUBLICATION zotato_cdc FOR TABLE orders, restaurants;\n-- the connector creates a replication slot and streams from it\n\n-- how much log each slot is holding back\nSELECT slot_name,\n       pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) AS held\nFROM pg_replication_slots;",
-      "say": "Setting PostgreSQL's write-ahead log level to logical, which needs a restart, and publishing the orders and restaurants tables for change capture. The connector creates a replication slot and streams from it. A monitoring query shows how much log each slot is holding back."
+      "x": "ALTER SYSTEM SET wal_level = logical;               -- needs a restart\nCREATE PUBLICATION zotato_cdc FOR TABLE orders, restaurants;\n-- the connector creates a replication slot and streams from it\n\n-- how much log each slot is holding back\nSELECT slot_name,\n       pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) AS held\nFROM pg_replication_slots;"
     },
     {
       "t": "h2",

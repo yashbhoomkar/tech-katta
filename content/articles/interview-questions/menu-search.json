@@ -79,8 +79,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET /search?q=panir+butter+masala&city=pune&veg=1&max_price=300&lat=18.53&lng=73.89&page=1\n→ 200 { \"results\": [ { \"dish\": \"Paneer Butter Masala\", \"restaurant\": \"…\", \"price\": 240, \"eta\": 28 }, … ], \"corrected\": \"paneer butter masala\" }",
-      "say": "Search a city with words, filters and where you are. The answer says how the query was corrected."
+      "x": "GET /search?q=panir+butter+masala&city=pune&veg=1&max_price=300&lat=18.53&lng=73.89&page=1\n→ 200 { \"results\": [ { \"dish\": \"Paneer Butter Masala\", \"restaurant\": \"…\", \"price\": 240, \"eta\": 28 }, … ], \"corrected\": \"paneer butter masala\" }"
     },
     {
       "t": "h2",

@@ -14,7 +14,6 @@
 .d-article code{font:500 .86em var(--mono);background:var(--surface);border:1px solid var(--line);padding:1px 4px;border-radius:var(--radius);overflow-wrap:anywhere}
 .a-back{display:inline-block;margin-top:36px;font:600 11px var(--mono);color:var(--accent)}
 .a-back:hover{text-decoration:underline}
-.d-article .reading{background-color:var(--accent-tint);box-shadow:-10px 0 0 var(--accent-tint),-12px 0 0 var(--accent)}
 .d-article .a-code pre code{background:none;border:0;padding:0;border-radius:0;font:inherit;overflow-wrap:normal}
 @media(max-width:680px){.d-article h1{font-size:26px}.d-article>.d-dek{font-size:16px}.d-article>p,.d-article>ul,.a-type>p{font-size:15px}}
 .a-next{margin-top:36px;display:grid;gap:10px}
@@ -59,7 +58,6 @@
 .d-article h2{margin:56px 0 0;padding-top:0;border-top:0;font:500 28px/1.2 var(--font-display);letter-spacing:-.015em}
 .d-article h3{font-size:19px;font-weight:650;letter-spacing:-.01em}
 .d-article code{font:500 .86em var(--mono);background:var(--surface);border:0;padding:2px 6px;border-radius:var(--r-sm)}
-.d-article .reading{background-color:var(--mark);box-shadow:-4px 0 0 var(--mark),4px 0 0 var(--mark);border-radius:2px}
 .a-back{font:600 14px var(--font);color:var(--muted)}
 .a-back:hover{color:var(--ink);text-decoration:none}
 .a-next{margin-top:56px}

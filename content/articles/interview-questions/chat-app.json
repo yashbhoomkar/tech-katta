@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "Over the open connection",
-      "x": "→ { \"send\": { \"conv\": \"c_7\", \"client_id\": \"m_ab12\", \"text\": \"8 pm?\" } }\n← { \"saved\": { \"client_id\": \"m_ab12\", \"seq\": 45 } }\n← { \"message\": { \"conv\": \"c_7\", \"seq\": 46, \"from\": \"u_42\", \"text\": \"done\" } }\n→ { \"read\": { \"conv\": \"c_7\", \"up_to\": 46 } }\n→ { \"sync\": { \"conv\": \"c_7\", \"after\": 42 } }",
-      "say": "Send a message and get back its number. Receive messages as they arrive. Say how far you've read. After reconnecting, ask for everything after the last number you have."
+      "x": "→ { \"send\": { \"conv\": \"c_7\", \"client_id\": \"m_ab12\", \"text\": \"8 pm?\" } }\n← { \"saved\": { \"client_id\": \"m_ab12\", \"seq\": 45 } }\n← { \"message\": { \"conv\": \"c_7\", \"seq\": 46, \"from\": \"u_42\", \"text\": \"done\" } }\n→ { \"read\": { \"conv\": \"c_7\", \"up_to\": 46 } }\n→ { \"sync\": { \"conv\": \"c_7\", \"after\": 42 } }"
     },
     {
       "t": "h2",

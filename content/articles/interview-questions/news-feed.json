@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET  /feed?cursor=…           → 200 { \"posts\": [ { \"id\": \"p_9a\", \"author\": \"…\", \"photos\": [ … ] }, … ], \"cursor\": \"…\" }\nPOST /posts                   { \"text\": \"…\", \"photos\": [ \"p_7f\" ] }   → 201\nPUT  /follows/u_42            → 204\nDELETE /follows/u_42          → 204",
-      "say": "Get the feed a page at a time with a cursor. Create a post. Follow or unfollow an account."
+      "x": "GET  /feed?cursor=…           → 200 { \"posts\": [ { \"id\": \"p_9a\", \"author\": \"…\", \"photos\": [ … ] }, … ], \"cursor\": \"…\" }\nPOST /posts                   { \"text\": \"…\", \"photos\": [ \"p_7f\" ] }   → 201\nPUT  /follows/u_42            → 204\nDELETE /follows/u_42          → 204"
     },
     {
       "t": "h2",

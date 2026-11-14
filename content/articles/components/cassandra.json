@@ -103,8 +103,7 @@
     {
       "t": "code",
       "label": "ZOTATO · A RIDER'S PATH, EXPIRING ON ITS OWN",
-      "x": "CREATE TABLE rider_path (\n  order_id bigint, at timestamp, lat double, lng double,\n  PRIMARY KEY ((order_id), at)\n) WITH CLUSTERING ORDER BY (at DESC)\n  AND default_time_to_live = 604800                -- 7 days\n  AND compaction = {'class': 'TimeWindowCompactionStrategy'};",
-      "say": "A table of a rider's path for each order: one partition per order, points sorted newest first. Every row expires after 7 days, and time-window compaction groups rows by time so whole files expire together instead of leaving tombstones scattered through the table."
+      "x": "CREATE TABLE rider_path (\n  order_id bigint, at timestamp, lat double, lng double,\n  PRIMARY KEY ((order_id), at)\n) WITH CLUSTERING ORDER BY (at DESC)\n  AND default_time_to_live = 604800                -- 7 days\n  AND compaction = {'class': 'TimeWindowCompactionStrategy'};"
     },
     {
       "t": "h2",

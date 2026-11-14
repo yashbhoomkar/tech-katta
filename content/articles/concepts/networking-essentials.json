@@ -681,8 +681,7 @@
     {
       "t": "code",
       "label": "REST endpoints",
-      "x": "GET    /restaurants/42                 -> Restaurant\nGET    /restaurants/42/menu            -> Menu\nPOST   /orders            {items, address}   -> 201, Order\nGET    /orders/9101                    -> Order\nPATCH  /orders/9101       {status: \"cancelled\"}\nGET    /users/77/orders?cursor=abc     -> a page of Orders",
-      "say": "Six example endpoints: get a restaurant, get its menu, create an order with POST, read an order, cancel it with PATCH, and list a user's orders a page at a time."
+      "x": "GET    /restaurants/42                 -> Restaurant\nGET    /restaurants/42/menu            -> Menu\nPOST   /orders            {items, address}   -> 201, Order\nGET    /orders/9101                    -> Order\nPATCH  /orders/9101       {status: \"cancelled\"}\nGET    /users/77/orders?cursor=abc     -> a page of Orders"
     },
     {
       "t": "list",
@@ -718,8 +717,7 @@
     {
       "t": "code",
       "label": "A GraphQL query",
-      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n  pageInfo { hasNextPage endCursor }\n}",
-      "say": "A GraphQL query for the home screen: restaurants near a city, the first twenty, with only their name, rating, delivery time, photo and offer titles, plus whether there is a next page and where it starts."
+      "x": "query HomeScreen($city: String!, $first: Int!) {\n  restaurants(near: $city, first: $first) {\n    name\n    rating\n    deliveryMinutes\n    photoUrl\n    offers { title }\n  }\n  pageInfo { hasNextPage endCursor }\n}"
     },
     {
       "t": "p",
@@ -744,8 +742,7 @@
     {
       "t": "code",
       "label": "orders.proto",
-      "x": "message Order {\n  string id = 1;\n  int64 amount_paise = 2;\n  string city = 3;\n}\nservice Orders {\n  rpc GetOrder(GetOrderRequest) returns (Order);\n  rpc WatchOrder(GetOrderRequest) returns (stream OrderEvent);\n}",
-      "say": "A protobuf message for an order with an id, an amount in paise and a city, each field numbered; and an Orders service with a GetOrder call and a WatchOrder call that streams events."
+      "x": "message Order {\n  string id = 1;\n  int64 amount_paise = 2;\n  string city = 3;\n}\nservice Orders {\n  rpc GetOrder(GetOrderRequest) returns (Order);\n  rpc WatchOrder(GetOrderRequest) returns (stream OrderEvent);\n}"
     },
     {
       "t": "p",
@@ -865,8 +862,7 @@
     {
       "t": "code",
       "label": "An event stream",
-      "x": "HTTP/1.1 200 OK\nContent-Type: text/event-stream\n\nid: 1\ndata: {\"status\":\"accepted\"}\n\nid: 2\ndata: {\"status\":\"cooking\"}\n\nid: 3\ndata: {\"status\":\"picked_up\",\"rider\":\"Ravi\"}\n",
-      "say": "An event-stream response: the status line and content type, then three events, each with an id and a line of JSON data, separated by blank lines."
+      "x": "HTTP/1.1 200 OK\nContent-Type: text/event-stream\n\nid: 1\ndata: {\"status\":\"accepted\"}\n\nid: 2\ndata: {\"status\":\"cooking\"}\n\nid: 3\ndata: {\"status\":\"picked_up\",\"rider\":\"Ravi\"}\n"
     },
     {
       "t": "fig",

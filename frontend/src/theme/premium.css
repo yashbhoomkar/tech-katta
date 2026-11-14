@@ -95,3 +95,14 @@
 :root:not(#_) .inside>h2::before,:root:not(#_) .lp>.lp-eyebrow::before{counter-increment:tk-sec;content:counter(tk-sec,decimal-leading-zero)}
 :root:not(#_) .inside>h2::before{display:block;width:max-content;margin:0 auto 18px;padding:0 34px;font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--accent);background:linear-gradient(var(--line-strong),var(--line-strong)) left center/22px 1px no-repeat,linear-gradient(var(--line-strong),var(--line-strong)) right center/22px 1px no-repeat}
 :root:not(#_) .lp>.lp-eyebrow::before{margin-right:.7em;padding-right:.7em;border-right:1px solid var(--line-strong)}
+
+/* The logo is a link home (the landing page's goes to its top). The reviewer only found that out on hover, so at
+   rest it sits in a quiet pill, like a button: border, surface, and a lift on hover; a ring for the keyboard. */
+:root:not(#_) :is(.header .brand,.side-brand,.d-brand){padding:4px 14px 4px 4px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 8%,transparent);cursor:pointer;transition:background var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease)}
+:root:not(#_) :is(.header .brand,.side-brand,.d-brand)>:is(i,b){border-radius:999px}
+:root:not(#_) :is(.header .brand,.side-brand,.d-brand):hover{background:var(--bg);border-color:var(--ink);transform:translateY(-1px);box-shadow:0 3px 10px color-mix(in srgb,var(--ink) 12%,transparent)}
+:root:not(#_) :is(.header .brand,.side-brand,.d-brand):active{transform:translateY(0) scale(.98)}
+:root:not(#_) :is(.header .brand,.side-brand,.d-brand):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+:root:not(#_) .collapsed .side-brand{padding:4px}
+@media(max-width:350px){:root:not(#_) .header .brand{padding:4px}}
+@media(prefers-reduced-motion:reduce){:root:not(#_) :is(.header .brand,.side-brand,.d-brand){transition:none}:root:not(#_) :is(.header .brand,.side-brand,.d-brand):hover{transform:none}}

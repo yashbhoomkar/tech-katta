@@ -37,8 +37,7 @@
     {
       "t": "code",
       "label": "ZOTATO · DISTINCT VIEWERS OF AN AD, IN REDIS",
-      "x": "PFADD ad:7:2026-11-08 u77 u12 u903     # add viewers (repeats change nothing)\nPFCOUNT ad:7:2026-11-08                 # about how many distinct viewers\nPFMERGE ad:7:week ad:7:2026-11-02 ad:7:2026-11-03 ad:7:2026-11-04 ad:7:2026-11-05 ad:7:2026-11-06 ad:7:2026-11-07 ad:7:2026-11-08",
-      "say": "Redis HyperLogLog commands. Add viewer IDs to the sketch for ad 7 today; adding a repeat changes nothing. Count about how many distinct viewers. Merge the seven daily sketches into one for the week."
+      "x": "PFADD ad:7:2026-11-08 u77 u12 u903     # add viewers (repeats change nothing)\nPFCOUNT ad:7:2026-11-08                 # about how many distinct viewers\nPFMERGE ad:7:week ad:7:2026-11-02 ad:7:2026-11-03 ad:7:2026-11-04 ad:7:2026-11-05 ad:7:2026-11-06 ad:7:2026-11-07 ad:7:2026-11-08"
     },
     {
       "t": "h2",

@@ -1,0 +1,9 @@
+/* Small buttons in an article's header and figures (Share, Cards / Full text, full screen). */
+.r-btn{height:36px;padding:0 14px;border:1px solid var(--line-strong);border-radius:var(--r-btn);background:var(--bg);font:600 13px var(--font);letter-spacing:0;color:var(--ink);transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease)}
+.r-btn:hover{border-color:var(--ink);color:var(--ink)}
+.r-btn.primary{border-color:var(--brand-edge);background:var(--brand);color:var(--on-brand)}
+.r-btn.primary:hover{background:var(--brand-strong);color:var(--on-brand);border-color:var(--brand-edge)}
+.r-btn.share{height:30px;flex:none}
+.r-rate{display:inline-flex;align-items:center;gap:6px;font:500 10px var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+@media(max-width:680px){.r-btn{height:44px}}
+@media(prefers-reduced-motion:reduce){.r-btn{transition:none}}
