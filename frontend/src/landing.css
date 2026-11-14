@@ -21,7 +21,9 @@
 :root:not(#_) .header.float .nav{margin-left:0;gap:4px;height:auto;font:500 14px/20px var(--font);color:var(--muted)}
 :root:not(#_) .header.float .nav a{padding:8px 12px;border:0;border-radius:var(--r-btn);background:none;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease)}
 :root:not(#_) .header.float .nav a:hover{background:var(--hover);color:var(--ink)}
-:root:not(#_) .header.float .acct-signin-link{font:600 14px/20px var(--font);padding:8px 12px;border-radius:var(--r-btn)}
+:root:not(#_) .header.float .acct-signin-link{height:36px;font:600 14px/20px var(--font);padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--bg);color:var(--ink);transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+/* Sign in is a quiet button: the hero's "Start learning" is the one filled action above the fold (spec 32 §6) */
+:root:not(#_) .header.float .acct-signin-link:hover{background:var(--hover);border-color:var(--line-strong)}
 :root:not(#_) .header.float .theme-btn{width:36px;height:36px;border-radius:var(--r-btn);border-color:var(--line)}
 /* the menu button: two lines that turn into a cross */
 :root:not(#_) .header.float .menu{display:none;position:relative;width:40px;height:40px;padding:0;border:0;border-radius:var(--r-btn);background:transparent;color:var(--ink);cursor:pointer}
