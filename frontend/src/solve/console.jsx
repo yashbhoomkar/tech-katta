@@ -1,4 +1,5 @@
 import React,{useEffect,useState}from"react";
+import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
 useEffect(()=>{if(v===n)return;let raf,t0;const step=t=>{t0??=t;const k=Math.min(1,(t-t0)/800);setV(Math.round(n*(1-(1-k)**3)));if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step);return()=>cancelAnimationFrame(raf)},[n]);// eslint-disable-line
@@ -6,7 +7,7 @@ return v}import{WEIGHTS}from"../judge/judge.js";import{fmt,pct}from"./format.js"
 // ---- Results under the canvas ----
 export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,credits}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
-if(res.kind==="review")return <section className="sv-console" aria-live="polite" aria-label="The interviewer's review"><header className="sv-v"><div><b>The interviewer</b><small>{res.busy?"Reading your design and every test…":"On the design that is on the canvas now"}</small></div><span className="sv-vbtns"><button type="button" onClick={close} aria-label="Close the review">✕</button></span></header><div className="sv-review"><ReviewPanel review={res} credits={credits}/></div></section>;
+if(res.kind==="review")return <section className="sv-console" aria-live="polite" aria-label="The interviewer's review"><header className="sv-v"><div><b>The interviewer</b><small>{res.busy?"Reading your design and every test…":"On the design that is on the canvas now"}</small></div><span className="sv-vbtns"><button type="button" onClick={close} aria-label="Close the review">✕</button></span></header><CreditMeter to={CREDIT} topped label="The interviewer reads your design and every test; your AWS credit is back to the full amount for your next run"/><div className="sv-review"><ReviewPanel review={res} credits={credits}/></div></section>;
 const{kind,j,g,sc,crash}=res;
 if(crash)return <section className="sv-console" aria-live="polite"><header className="sv-v bad"><b>Something went wrong</b><button type="button" onClick={close} aria-label="Close results">✕</button></header><p className="sv-why">{crash}</p></section>;
 const acc=j.verdict==="accepted",err=j.verdict==="error";
@@ -14,6 +15,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <header className={"sv-v "+(acc?"good":"bad")}><div><b>{err?"Can't run the tests":acc?(kind==="run"?"Example tests passed":"Accepted"):"Wrong design"}</b>
 <small>{err?j.first?.error:`${j.passed} / ${j.total} ${kind==="run"?"example ":""}tests passed`}{j.metrics&&!err?` · worst availability ${pct(j.metrics.availability)} · p99 ${fmt(j.metrics.p99)} ms · up to $${fmt(j.metrics.avgMonthly)}/month`:""}</small></div>
 <span className="sv-vbtns"><button type="button" onClick={()=>setMin(m=>!m)} aria-expanded={!min} aria-label={min?"Show the results":"Make the results smaller"}>{min?"▴":"▾"}</button><button type="button" onClick={close} aria-label="Close results">✕</button></span></header>
+{!min&&!err&&res.credit&&j.results.some(r=>r.timeline)&&<CreditMeter key={j.passed+":"+res.credit.end} to={res.credit.end} label={`Spent ${money(res.credit.spent)} across ${j.results.filter(r=>r.timeline).length} load test${j.results.filter(r=>r.timeline).length===1?"":"s"} · topped back up on every Run, Submit and Ask`} note={res.credit.peakPerHour>0?`at its peak rate (${money(res.credit.peakPerHour)}/hour) the credit lasts ${lasts(res.credit.peakPerHour)}`:""}/>}
 {!min&&<>{sc&&<div className="sv-score"><b aria-label={`${sc.total} out of 100`}><CountUp n={sc.total}/><small>/100</small></b><ul>
 <li>Requirements <span>{Math.round(sc.parts.fr+sc.parts.nfr)}/{WEIGHTS.fr+WEIGHTS.nfr}</span></li><li>Estimates <span>{Math.round(sc.parts.est)}/{WEIGHTS.est}</span></li>
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
