@@ -52,6 +52,12 @@ if [ "$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)" -lt 3000 ] && ! swa
   echo "2 GB swap added"
 else echo "not needed"; fi
 
+say "System log size"
+# The old server's journal grew to 184 MB of memory; on a 1 GB machine keep it small (disk and memory).
+install -d /etc/systemd/journald.conf.d
+printf '%s\n' '[Journal]' 'SystemMaxUse=100M' 'RuntimeMaxUse=50M' > /etc/systemd/journald.conf.d/90-tech-katta.conf
+systemctl restart systemd-journald && echo "journal capped at 100 MB"
+
 say "Users"
 id techkatta >/dev/null 2>&1 || useradd --system --create-home --home-dir /home/techkatta --shell /usr/sbin/nologin techkatta
 id "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$DEPLOY_USER"
