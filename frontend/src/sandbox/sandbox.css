@@ -1,0 +1,21 @@
+/* The sandbox canvas (context 36, step 7): settings on the left, the canvas and its report on the right. */
+.sb{display:grid;grid-template-columns:320px minmax(0,1fr);height:calc(100vh - var(--head));background:var(--bg)}
+.sb-side{overflow:auto;padding:20px 20px 32px;border-right:1px solid var(--line);background:var(--surface-2)}
+.sb-side h1{margin:6px 0 6px;font-size:22px;letter-spacing:-.02em}.sb-side h2{margin:18px 0 6px;font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sb-eyebrow{margin:0;font:600 10px var(--mono);letter-spacing:.08em;color:var(--accent)}
+.sb-paid{display:inline-block;padding:1px 6px;border-radius:999px;border:1px solid var(--accent-line,var(--line));font-weight:600}
+.sb-lead,.sb-note{margin:0 0 10px;font-size:13px;line-height:1.55;color:var(--ink-2)}.sb-note{color:var(--muted)}
+.sb-f{display:grid;gap:4px;margin:0 0 10px;font-size:13px}.sb-f>span{color:var(--ink-2)}
+.sb-f input,.sb-f select,.sb-faults select,.sb-faults input{height:34px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px var(--font);padding:0 8px;min-width:0}
+.sb-f input[type=range]{height:auto;padding:0;border:0;background:none}
+.sb-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sb-faults{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}
+.sb-faults li{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12.5px}
+.sb-faults select{flex:1 1 100%}.sb-faults input{width:64px}
+.sb-x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px}
+.sb-run{display:block;width:100%;margin-top:16px;height:40px}
+.sb .sv-lab{grid-column:2;grid-row:1}
+.sb .lab-wrap{height:calc(100vh - var(--head))}
+.sb-report{padding:0 16px}.sb-report .sv-opres,.sb-report .sv-checks{padding-left:0}
+.sb-events{margin:8px 0;font-size:13px}.sb-events>summary{cursor:pointer;font-weight:600}.sb-events ul{margin:6px 0 0;padding-left:18px}
+@media(max-width:900px){.sb{display:block;height:auto}.sb-side{border-right:0;border-bottom:1px solid var(--line)}.sb .lab-wrap{height:auto}}

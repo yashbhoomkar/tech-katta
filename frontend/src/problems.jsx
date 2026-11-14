@@ -62,6 +62,9 @@ return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebr
 <button type="button" className="pb-pick" onClick={()=>{const left=qs.filter(a=>!prog.steps["solved:"+a.slug]),from=left.length?left:qs;const a=from[Math.floor(Math.random()*from.length)];if(a)location.hash=`#problems/${a.slug}`}}>⚄ Pick one</button></div></div>
 <section className="pb-group" aria-labelledby="pb-q"><h2 id="pb-q">{p.questions}</h2><p>{p.questionsDesc}</p>
 <QuestionTable p={p} qs={qs} groups={groups} base="problems" data={data} todo={todo}/></section>
+{/* The sandbox canvas (context 36, step 7): the canvas with no problem; paid. */}
+<section className="pb-group" aria-labelledby="pb-s"><h2 id="pb-s">Sandbox</h2><p>The canvas with no problem: choose the traffic and what goes wrong, and see how any design holds up and what it costs.</p>
+<ol><li><a href="#problems/sandbox"><span className="pb-meta"><small>PAID · OPEN CANVAS</small></span><b>Design anything</b><span aria-hidden="true">→</span></a></li></ol></section>
 <section className="pb-group" aria-labelledby="pb-c"><h2 id="pb-c">{p.challenges}</h2><p>{p.challengesDesc}</p>
 {err?<p className="pb-none">{p.labError}</p>:!lab?<p className="pb-none">…</p>:showC.length?<ol>{showC.map(({ch,n,max})=><li key={ch.id}><a href={`#problems/challenge/${ch.id}`}><span className="pb-meta"><small>{levels[ch.level]||ch.level}</small></span><b>{ch.title}</b><Stars n={n} max={max} label={fill(p.starsLabel,{n,max})}/></a></li>)}</ol>:<p className="pb-none">{p.allDone}</p>}</section>
 </section>}

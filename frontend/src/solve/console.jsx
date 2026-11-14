@@ -17,7 +17,7 @@ function Compare({c,diff}){return <details className="sv-compare" open><summary>
 {(c.fixed.length>0||c.broke.length>0)&&<ul className="sv-turned">{c.fixed.map(n=><li key={"f"+n} className="ok">Now passes: {n}</li>)}{c.broke.map(n=><li key={"b"+n} className="no">Now fails: {n}</li>)}</ul>}
 {diff?.length>0?<ul className="sv-diff">{diff.slice(0,12).map((x,k)=><li key={k} className={x.kind}>{x.text}</li>)}{diff.length>12&&<li>…and {diff.length-12} more</li>}</ul>:diff&&<p className="sv-tdesc">The design is the same as last time.</p>}</details>}
 // What a load test's month costs, part by part (context 36, step 5).
-function Bill({cost,nameOf}){const rows=[...Object.entries(cost.byNode||{}).map(([id,v])=>[nameOf?nameOf(id):id,v]),["Storage",cost.storage||0],["Data transfer",cost.transfer||0]].filter(r=>r[1]>=1).sort((a,b)=>b[1]-a[1]);const top=rows[0]?.[1]||1;
+export function Bill({cost,nameOf}){const rows=[...Object.entries(cost.byNode||{}).map(([id,v])=>[nameOf?nameOf(id):id,v]),["Storage",cost.storage||0],["Data transfer",cost.transfer||0]].filter(r=>r[1]>=1).sort((a,b)=>b[1]-a[1]);const top=rows[0]?.[1]||1;
 return rows.length>0&&<details className="sv-bill"><summary>The bill, part by part: ${fmt(cost.monthly)}/month</summary><ul>{rows.map(([n,v])=><li key={n}><span>{n}</span><i style={{"--w":`${Math.max(2,100*v/top)}%`}} aria-hidden="true"/><b>${fmt(v)}</b></li>)}</ul></details>}
 // ---- Results under the canvas ----
 export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,credits}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
