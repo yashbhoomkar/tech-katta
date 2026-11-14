@@ -46,8 +46,15 @@
    settings. The tile takes a category colour per type (TINT in shared.jsx). */
 .ln{width:200px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-family:var(--font);
   box-shadow:var(--shadow-1);transition:border-color .12s,box-shadow .12s}
-.ln:hover{border-color:var(--line-strong);box-shadow:var(--shadow-2)}
-.ln.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--shadow-2)}
+/* A glowing outline in the card's own colour (its tile's): soft at rest, brighter on hover, strongest when selected.
+   Replay states (warn, over, down) set their own border below and drop the glow. */
+.ln[class*=" t-"]{border-color:color-mix(in srgb,var(--tile) 40%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--tile) 12%,transparent),0 0 18px -4px color-mix(in srgb,var(--tile) 45%,transparent),var(--shadow-1)}
+.ln[class*=" t-"]:hover{border-color:color-mix(in srgb,var(--tile) 70%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--tile) 25%,transparent),0 0 24px -2px color-mix(in srgb,var(--tile) 55%,transparent),var(--shadow-2)}
+.ln[class*=" t-"].sel{border-color:var(--tile);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--tile) 35%,transparent),0 0 30px 0 color-mix(in srgb,var(--tile) 60%,transparent),var(--shadow-2)}
+.ln[class*=" t-"]:is(.warn,.over,.down){box-shadow:var(--shadow-1)}
 .ln-head{display:flex;align-items:center;gap:10px;min-width:0}
 .ln-tile{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:9px;color:var(--tile);background:color-mix(in srgb,var(--tile) 13%,transparent)}
 .ln-tile .lab-ico{width:17px;height:17px;stroke-width:1.6}

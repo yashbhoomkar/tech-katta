@@ -3,7 +3,7 @@ import{INK,INK_3,LINE,CAT_TEAL,CAT_GREEN,CAT_PINK,CAT_VIOLET,CAT_AMBER}from"../t
 import{ReactFlow,Background,Controls,addEdge,useNodesState,useEdgesState,useReactFlow,ConnectionMode}from"@xyflow/react";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
 import{catalogue,displayName}from"./engine.js";
 import{STORE_KEY,MAX_NODES}from"./store.js";import{runChallenge}from"../eval/challenge.js";import{recordStars}from"../progress.js";import{track}from"../analytics.js";import{paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
-import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes,detour}from"./nodes.jsx";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
+import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes}from"./nodes.jsx";import{layout as arrange}from"./drawing.js";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
 export function Canvas({lab,start,embedded,problem,onDesign,trace,replay,flow}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
@@ -89,14 +89,16 @@ const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
 // Each arrow is drawn with its protocol (the chosen one, else the usual one for the parts it joins): its colour and
 // dash, the arrowhead in the same colour of the current theme (saved designs carry the colour of the theme they
-// were drawn in), and `pair` when an arrow comes back the other way, so the two are drawn apart.
-// An arrow whose straight run would cross other cards gets a `detour` round them (nodes.jsx).
+// were drawn in).
+// Every arrow's path and pill place come from one pass over the whole design (drawing.js layout): routes round
+// cards, ports spread along shared sides, pills clear of cards and of each other.
 const layout=nodes.map(n=>[n.id,n.data.kind,Math.round(n.position.x),Math.round(n.position.y),n.measured?.width|0,n.measured?.height|0].join("\u0000")).join("\u0001");
-const flowEdges=React.useMemo(()=>{const kind=Object.fromEntries(nodes.map(n=>[n.id,n.data.kind])),links=new Set(edges.map(e=>e.source+"\u0000"+e.target)),col={teal:CAT_TEAL,green:CAT_GREEN,pink:CAT_PINK,violet:CAT_VIOLET,amber:CAT_AMBER,ink:INK_3};
-const box=Object.fromEntries(nodes.map(n=>{const w=n.measured?.width||W,h=n.measured?.height||64;return[n.id,{id:n.id,x:n.position.x,y:n.position.y,w,h,cx:n.position.x+w/2,cy:n.position.y+h/2}]})),boxes=Object.values(box);
-return edges.map(e=>{const proto=protocolOf(e.data,kind[e.source],kind[e.target]),pair=links.has(e.target+"\u0000"+e.source);
-const a=box[e.source],b=box[e.target],way=a&&b&&!pair?detour(a,b,boxes.filter(o=>o.id!==e.source&&o.id!==e.target)):null;
-return{...e,data:{...e.data,proto,...(pair?{pair:true}:{}),...(way?{detour:way}:{})},...(e.markerEnd&&typeof e.markerEnd==="object"?{markerEnd:{...e.markerEnd,color:col[proto.color]||INK}}:{})}})},[edges,layout,theme]);// eslint-disable-line
+const flowEdges=React.useMemo(()=>{const kind=Object.fromEntries(nodes.map(n=>[n.id,n.data.kind])),col={teal:CAT_TEAL,green:CAT_GREEN,pink:CAT_PINK,violet:CAT_VIOLET,amber:CAT_AMBER,ink:INK_3};
+const box=Object.fromEntries(nodes.map(n=>{const w=n.measured?.width||W,h=n.measured?.height||64;return[n.id,{x:n.position.x,y:n.position.y,w,h,cx:n.position.x+w/2,cy:n.position.y+h/2}]}));
+const protos=Object.fromEntries(edges.map(e=>[e.id,protocolOf(e.data,kind[e.source],kind[e.target])]));
+const geo=arrange(box,edges.map(e=>({id:e.id,from:e.source,to:e.target,text:e.data?.label||protos[e.id].name})));
+return edges.map(e=>{const proto=protos[e.id];
+return{...e,data:{...e.data,proto,...(geo[e.id]?{geo:geo[e.id]}:{})},...(e.markerEnd&&typeof e.markerEnd==="object"?{markerEnd:{...e.markerEnd,color:col[proto.color]||INK}}:{})}})},[edges,layout,theme]);// eslint-disable-line
 return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}

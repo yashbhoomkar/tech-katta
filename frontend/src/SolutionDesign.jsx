@@ -4,7 +4,7 @@
 // the canvas and the model answer into Your answer (solve.jsx puts both there and offers Undo). Copying is marked in this browser (tk-solution-v1), so a
 // submission of the copied design unchanged isn't counted as solved (judge.js sameDesign). `note`
 // (practice.referenceNote) says where the Lab's version differs from the worked answer's full-size one.
-import{useTheme}from"./theme/mode.js";import{ICON,TINT,SX,SY,box as card,detour,route}from"./lab/drawing.js";import{protocolOf,DASH}from"./lab/protocols.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
+import{useTheme}from"./theme/mode.js";import{ICON,TINT,SX,SY,box as card,layout}from"./lab/drawing.js";import{protocolOf,DASH}from"./lab/protocols.js";import React,{useEffect,useMemo,useRef,useState}from"react";import{catalogue,displayName,summary,engineOf}from"./lab/engine.js";import{schemaSummary}from"./lab/schema.js";
 
 const KIND={btree:"index",unique:"unique index",geo:"geo index",text:"text index"};
 // Drawn the way the canvas draws it (lab/drawing.js): cards spread out by SX and SY, a curved arrow between the
@@ -23,12 +23,12 @@ if(!sol)return null;
 const parts=sol.nodes.map(n=>{const comp=cat[n.type],config=n.config||{},eng=engineOf(comp,config);
 return{n,comp,name:displayName(comp,n),group:(comp?.group||n.type).toUpperCase(),sum:comp?summary(comp,config):"",eng,schema:config.schema?.tables?.length?config.schema:null}});
 const at=Object.fromEntries(sol.nodes.map(n=>[n.id,card(n.x*SX,n.y*SY,NW,NH)])),kind=Object.fromEntries(sol.nodes.map(n=>[n.id,n.type]));
-const links=new Set(sol.edges.map(e=>e.from+"\u0000"+e.to));
-const arrows=sol.edges.filter(e=>at[e.from]&&at[e.to]).map((e,k)=>{const a=at[e.from],b=at[e.to],pair=links.has(e.to+"\u0000"+e.from);
-const way=pair?null:detour(a,b,Object.entries(at).filter(([id])=>id!==e.from&&id!==e.to).map(([,o])=>o));
-const[d,lx,ly]=route(a,b,way,pair?(e.from<e.to?-9:9):0),p=protocolOf(e,kind[e.from],kind[e.to]),text=e.label||p.name;return{k,d,lx,ly,p,text,way}});
-const xs=[...Object.values(at).flatMap(b=>[b.x,b.x+b.w]),...arrows.flatMap(a=>a.way&&(a.way.side==="left"||a.way.side==="right")?[a.way.at]:[])];
-const ys=[...Object.values(at).flatMap(b=>[b.y,b.y+b.h]),...arrows.flatMap(a=>a.way&&(a.way.side==="top"||a.way.side==="bottom")?[a.way.at]:[])];
+const list=sol.edges.filter(e=>at[e.from]&&at[e.to]).map((e,k)=>{const p=protocolOf(e,kind[e.from],kind[e.to]);return{id:String(k),k,from:e.from,to:e.to,p,text:e.label||p.name}});
+const geo=layout(at,list),arrows=list.filter(a=>geo[a.id]).map(a=>({...a,d:geo[a.id].path,lx:geo[a.id].lx,ly:geo[a.id].ly}));
+// the drawing's extent: the cards, every arrow's control points (detours bend outside the cards) and the pills
+const cs=arrows.map(a=>a.d.match(/-?[\d.]+/g).map(Number));
+const xs=[...Object.values(at).flatMap(b=>[b.x,b.x+b.w]),...cs.flatMap(c=>c.filter((_,i)=>i%2===0)),...arrows.flatMap(a=>[a.lx-60,a.lx+60])];
+const ys=[...Object.values(at).flatMap(b=>[b.y,b.y+b.h]),...cs.flatMap(c=>c.filter((_,i)=>i%2===1)),...arrows.flatMap(a=>[a.ly-12,a.ly+12])];
 const x0=Math.min(...xs)-PAD,y0=Math.min(...ys)-PAD,x1=Math.max(...xs)+PAD,y1=Math.max(...ys)+PAD;
 const W=x1-x0,H=y1-y0;
 const draw=(min,id)=><svg viewBox={`${x0} ${y0} ${W} ${H}`} style={{width:"100%",minWidth:min+"px"}} aria-hidden="true">

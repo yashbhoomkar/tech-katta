@@ -17,29 +17,66 @@ export function ends(a,b,off=0){const dx=b.cx-a.cx,dy=b.cy-a.cy;
 const across=Math.abs(dx)/((a.w+b.w)/2)>=Math.abs(dy)/((a.h+b.h)/2);
 const[sp,tp]=across?(dx>=0?["right","left"]:["left","right"]):(dy>=0?["bottom","top"]:["top","bottom"]);
 const[sx,sy]=at(a,sp,off),[tx,ty]=at(b,tp,off);return{sourceX:sx,sourceY:sy,sourcePosition:sp,targetX:tx,targetY:ty,targetPosition:tp}}
-// An arrow whose straight run would cross other cards goes round them instead: over or under them (an arrow
-// running across), or beside them (one running up or down), whichever way is shorter. `others` are the boxes
-// of every other card; returns {side, at} (the line it bends out to) or null when nothing is in the way.
-export function detour(a,b,others){const g=ends(a,b),across=g.sourcePosition==="left"||g.sourcePosition==="right";
-const[u0,v0,u1,v1]=across?[g.sourceX,g.sourceY,g.targetX,g.targetY]:[g.sourceY,g.sourceX,g.targetY,g.targetX];
-const lo=Math.min(u0,u1),hi=Math.max(u0,u1);if(hi-lo<1)return null;
-const v=u=>v0+(v1-v0)*(u-u0)/(u1-u0);
-const hit=others.filter(o=>{const[p0,p1,q0,q1]=across?[o.x,o.x+o.w,o.y,o.y+o.h]:[o.y,o.y+o.h,o.x,o.x+o.w];const s0=Math.max(lo,p0),s1=Math.min(hi,p1);if(s1<=s0)return false;
-const va=v(s0),vb=v(s1);return Math.max(va,vb)>q0-8&&Math.min(va,vb)<q1+8});
-if(!hit.length)return null;
-const top=k=>across?k.y:k.x,bot=k=>across?k.y+k.h:k.x+k.w,all=[a,b,...hit];
-const up=Math.min(...all.map(top))-40,down=Math.max(...all.map(bot))+40;
-const goUp=Math.min(top(a),top(b))-up<=down-Math.max(bot(a),bot(b));
-return{side:across?(goUp?"top":"bottom"):(goUp?"left":"right"),at:goUp?up:down}}
 // A control point the way React Flow's bezier edges place them (curvature .25).
 const pull=d=>d>=0?.5*d:.25*25*Math.sqrt(-d);
 const ctrl=(p,x1,y1,x2,y2)=>p==="left"?[x1-pull(x1-x2),y1]:p==="right"?[x1+pull(x2-x1),y1]:p==="top"?[x1,y1-pull(y1-y2)]:[x1,y1+pull(y2-y1)];
 const mid=(a,b,c,d)=>.125*a+.375*b+.375*c+.125*d;
-// An arrow's path between two boxes, and the point halfway along it (where its pill goes): a curve between the
-// facing sides, or, with a detour, out of the sides that face the detour line and bent out to it.
-export function route(a,b,way,off=0){
-if(way){const{side,at:d}=way,[sx,sy]=at(a,side,off),[tx,ty]=at(b,side,off);
-if(side==="top"||side==="bottom")return[`M${sx},${sy} C${sx},${d} ${tx},${d} ${tx},${ty}`,(sx+tx)/2,mid(sy,d,d,ty)];
-return[`M${sx},${sy} C${d},${sy} ${d},${ty} ${tx},${ty}`,mid(sx,d,d,tx),(sy+ty)/2]}
-const g=ends(a,b,off),[c1x,c1y]=ctrl(g.sourcePosition,g.sourceX,g.sourceY,g.targetX,g.targetY),[c2x,c2y]=ctrl(g.targetPosition,g.targetX,g.targetY,g.sourceX,g.sourceY);
-return[`M${g.sourceX},${g.sourceY} C${c1x},${c1y} ${c2x},${c2y} ${g.targetX},${g.targetY}`,mid(g.sourceX,c1x,c2x,g.targetX),mid(g.sourceY,c1y,c2y,g.targetY)]}
+// The cubic of an arrow: its two ends (sides sp, tp, moved along them by os, ot) and, for a detour, the line it
+// bends out to.
+function cubic(a,b,sp,tp,os,ot,bend){const[sx,sy]=at(a,sp,os),[tx,ty]=at(b,tp,ot);
+if(bend!=null)return sp==="top"||sp==="bottom"?[sx,sy,sx,bend,tx,bend,tx,ty]:[sx,sy,bend,sy,bend,ty,tx,ty];
+const[c1x,c1y]=ctrl(sp,sx,sy,tx,ty),[c2x,c2y]=ctrl(tp,tx,ty,sx,sy);return[sx,sy,c1x,c1y,c2x,c2y,tx,ty]}
+const point=(c,t)=>{const u=1-t;return[u*u*u*c[0]+3*u*u*t*c[2]+3*u*t*t*c[4]+t*t*t*c[6],u*u*u*c[1]+3*u*u*t*c[3]+3*u*t*t*c[5]+t*t*t*c[7]]};
+const pathOf=c=>`M${c[0]},${c[1]} C${c[2]},${c[3]} ${c[4]},${c[5]} ${c[6]},${c[7]}`;
+// An arrow's path between two boxes, and the point halfway along it (for a single arrow; layout() does a design).
+export function route(a,b,way,off=0){const g=ends(a,b);
+const c=way?cubic(a,b,way.side,way.side,off,off,way.at):cubic(a,b,g.sourcePosition,g.targetPosition,off,off);const[lx,ly]=point(c,.5);return[pathOf(c),lx,ly]}
+
+// A whole design's arrows at once (the canvas and the Solution tab): `cards` maps id → box, `arrows` is
+// [{id, from, to, text}] (text: the pill's words). For each arrow:
+//  1. the route: the direct curve, or an arc over, under, left or right of every card in its span; the curve that
+//     crosses fewest other cards wins, then the shortest (each curve is sampled, so a bend that clips a card counts);
+//  2. the ports: arrows that meet a card on the same side are spread along it, in the order of where they go, so
+//     they leave and arrive side by side instead of from one point;
+//  3. the pill: halfway along, or slid along the arrow until it is clear of the cards and of the pills placed so far.
+// Returns id → {path, lx, ly}.
+const PAD=6,SAMPLES=24,PILL_H=18,pillW=t=>t.length*6.4+30;
+const inBox=(x,y,o,pad)=>x>o.x-pad&&x<o.x+o.w+pad&&y>o.y-pad&&y<o.y+o.h+pad;
+const overlap=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
+export function layout(cards,arrows){const all=Object.entries(cards).map(([id,b])=>({id,...b})),out={};
+const live=arrows.filter(e=>cards[e.from]&&cards[e.to]&&e.from!==e.to);
+// 1. routes
+const SIDES=["top","right","bottom","left"];
+const plan=live.map(e=>{const a=cards[e.from],b=cards[e.to],others=all.filter(o=>o.id!==e.from&&o.id!==e.to),g=ends(a,b);
+ const opts=[{sp:g.sourcePosition,tp:g.targetPosition,first:true}];
+ for(const sp of SIDES)for(const tp of SIDES)if(sp!==g.sourcePosition||tp!==g.targetPosition)opts.push({sp,tp});
+ // detours: bend lines just past the two cards, then past each card in the way, nearest first (at most 4 a side)
+ const x0=Math.min(a.x,b.x),x1=Math.max(a.x+a.w,b.x+b.w),y0=Math.min(a.y,b.y),y1=Math.max(a.y+a.h,b.y+b.h);
+ const inX=others.filter(o=>o.x<x1&&o.x+o.w>x0),inY=others.filter(o=>o.y<y1&&o.y+o.h>y0);
+ const levels=(base,more,dir)=>[base,...more.filter(v=>dir<0?v<base:v>base).sort((u,v)=>dir*(u-v))].slice(0,4);
+ for(const v of levels(y0-36,inX.map(o=>o.y-36),-1))opts.push({sp:"top",tp:"top",bend:v});
+ for(const v of levels(y1+36,inX.map(o=>o.y+o.h+36),1))opts.push({sp:"bottom",tp:"bottom",bend:v});
+ for(const v of levels(x0-36,inY.map(o=>o.x-36),-1))opts.push({sp:"left",tp:"left",bend:v});
+ for(const v of levels(x1+36,inY.map(o=>o.x+o.w+36),1))opts.push({sp:"right",tp:"right",bend:v});
+ let best=null;for(const o of opts){const c=cubic(a,b,o.sp,o.tp,0,0,o.bend);let hits=0,len=0,prev=point(c,0);const hit=new Set();
+  for(let i=1;i<=SAMPLES;i++){const t=i/SAMPLES,q=point(c,t);len+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);prev=q;
+   for(const k of others)if(!hit.has(k.id)&&inBox(q[0],q[1],k,PAD)){hit.add(k.id);hits++}
+   // never back through its own two cards (away from where it leaves and arrives)
+   if(t>.12&&t<.88&&(inBox(q[0],q[1],a,-3)||inBox(q[0],q[1],b,-3)))hits+=.5}
+  // the facing sides are preferred: another pair of sides only wins if it is clearly better
+  const score=hits*1e6+len*(o.first?1:1.15)+(o.bend!=null?20:0);if(!best||score<best.score)best={...o,score}}
+ return{e,a,b,...best}});
+// 2. ports: per card side, the arrows that meet it, ordered by the far end's position along that side
+const ports=new Map(),add=(id,side,far,key)=>{const k=id+"|"+side;if(!ports.has(k))ports.set(k,[]);ports.get(k).push({far,key})};
+for(const p of plan){const along=s=>s==="top"||s==="bottom"?"cx":"cy";add(p.e.from,p.sp,p.b[along(p.sp)],p.e.id+"|s");add(p.e.to,p.tp,p.a[along(p.tp)],p.e.id+"|t")}
+const off={};for(const[k,list]of ports){const[id,side]=k.split("|"),c=cards[id],len=side==="top"||side==="bottom"?c.w:c.h;
+ list.sort((x,y)=>x.far-y.far);const n=list.length,gap=Math.min(18,len*.7/Math.max(1,n-1));list.forEach((x,i)=>{off[x.key]=n>1?(i-(n-1)/2)*gap:0})}
+// 3. paths and pills
+const placed=[];
+for(const p of plan){const c=cubic(p.a,p.b,p.sp,p.tp,off[p.e.id+"|s"],off[p.e.id+"|t"],p.bend),w=pillW(p.e.text||"");let pick=null;
+ let fewest=Infinity;
+ for(const t of[.5,.42,.58,.34,.66,.26,.74,.18,.82]){const[x,y]=point(c,t),r={x:x-w/2,y:y-PILL_H/2,w,h:PILL_H};
+  const n=all.filter(o=>overlap(r,{x:o.x-2,y:o.y-2,w:o.w+4,h:o.h+4})).length*2+placed.filter(q=>overlap(r,q)).length;
+  if(n<fewest){fewest=n;pick=r}if(!n)break}
+ placed.push(pick);out[p.e.id]={path:pathOf(c),lx:pick.x+w/2,ly:pick.y+PILL_H/2}}
+return out}
