@@ -866,7 +866,9 @@
     "previewLock": {
       "eyebrow": "FREE WITH A GOOGLE ACCOUNT",
       "title": "Continue reading",
-      "text": "The rest of this article and its diagrams are free once you sign in. One sign-in opens every article, problem and note, on every device."
+      "text": "The rest of this article and its diagrams are free once you sign in. One sign-in opens every article, problem and note, on every device.",
+      "card": "Sign in to read",
+      "rest": "The rest of this topic is free once you sign in."
     }
   },
   "privacy": {

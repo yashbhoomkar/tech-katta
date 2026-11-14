@@ -136,3 +136,12 @@
 .a-ex-mini>summary::after{content:" ↓";color:var(--accent)}
 .a-ex-mini[open]>summary::after{content:" ↑"}
 .a-ex-mini .a-example{margin:0 12px 12px}
+/* Signed out: topics past the preview are locked (article.jsx); a tap leads to the sign-in card. */
+.tc-locked .tc-pic .tm{opacity:.35;filter:blur(1.5px)}
+.tc-lock{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink)}
+.tc-lock svg{padding:12px;box-sizing:content-box;border-radius:999px;background:var(--bg);box-shadow:var(--card-shadow)}
+.tc-locked .tc-t b{color:var(--muted)}
+.tc-locked .tc-t em::after{content:none}
+.ts-cut{margin-top:18px;padding:14px 16px;border:1px dashed var(--line-strong);border-radius:var(--r-lg);color:var(--muted);font-size:15px}
+.ts-cut button{all:unset;cursor:pointer;font-weight:600;color:var(--accent)}
+.ts-cut button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
