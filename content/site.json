@@ -225,6 +225,20 @@
     ],
     "note": "Approximate figures; real hardware varies. Good for estimates, not for benchmarks."
   },
+  "plain": {
+    "jump": "New here? What this site is, in plain words ↓",
+    "eyebrow": "IN PLAIN WORDS",
+    "title": "What is Tech Katta?",
+    "text": "A food delivery app at dinner time, or a cricket stream with crores of people watching at once, runs on hundreds of computers working together. Planning how those computers share the work, and what happens when one of them fails, is called system design. Big companies test it in interviews for software engineers. Tech Katta teaches system design, and lets you practise it.",
+    "points": [
+      ["Read", "Short notes with diagrams that move explain one idea at a time: why apps slow down in a rush, how they cope with a crowd, and what breaks."],
+      ["Practise", "Real interview questions, like \"design a URL shortener\" or \"design live streaming for India vs Pakistan\". You draw your design on a canvas, and a judge sends traffic through it and tells you what held and what failed."],
+      ["Free", "Sign in with a Google account and everything is open: every note, question and challenge."]
+    ],
+    "who": "It is for software engineers and computer science students preparing for interviews, and for anyone curious about how big apps keep working. Know someone like that? Send them this site.",
+    "share": "Share Tech Katta",
+    "copied": "Link copied"
+  },
   "dashboard": {
     "label": "SYSTEM DESIGN LIBRARY",
     "home": {
@@ -940,5 +954,6 @@
         "If these terms change, the date at the top changes too, and you agree to the new terms the next time you sign in."
       ]
     ]
-  }
+  },
+  "backToTop": "Back to top"
 }
