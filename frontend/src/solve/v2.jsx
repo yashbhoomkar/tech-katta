@@ -1,4 +1,5 @@
 import React,{useEffect}from"react";import{fmt,pct,clockOf}from"./format.js";
+import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // ---- v2 problems (tech-katta-context/evaluator.md §12.1): what the system must do, findings, how the design was
 // read, and a test replayed on the canvas ----
 export const fieldsOf=P=>[...new Set(Object.values(P.entities||{}).flatMap(e=>Object.keys(e.fields||{})))];
@@ -20,9 +21,10 @@ for(const[id,n]of Object.entries(tl.nodes)){const mine=evs.filter(e=>e.node===id
  nodes[id]={rho:n.rho[i]??0,up:n.up[i]??1,inst:n.instances[i]??0,backlog:n.backlog[i]??0,held:n.held?.[i]??0,peak:Math.max(1,...(n.backlog||[0])),
   fo:past.some(e=>e.kind==="failover")&&!past.some(e=>e.kind==="recovered"&&e.t>[...past].reverse().find(x=>x.kind==="failover").t),
   warm:cold?.kind==="cold"?(warmAt?Math.min(1,Math.max(0,(t0-cold.t)/Math.max(1,warmAt-cold.t))):0):1,
-  fresh:mine.filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes).map(e=>e.kind)}}
+  fresh:mine.filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes).map(e=>e.kind),perHour:(n.spend?.[i]||0)*60/tl.tickMinutes}}
 const ops=Object.entries(tl.ops).map(([id,o])=>`${P?.operations?.find(x=>x.id===id)?.name||id} ${fmt(o.rate[i]??0)}/s, ${pct(100*(o.ok[i]??1))} ok`).join(" · ");
-return{nodes,status:`${clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)} · ${ops}`}}
+const spentSoFar=(tl.spend||[]).slice(0,i+1).reduce((a,b)=>a+b,0),perHour=(tl.spend?.[i]||0)*60/tl.tickMinutes;
+return{nodes,spent:spentSoFar,perHour,status:`${clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)} · ${ops}${tl.spend?` · burning ${money(perHour)}/hour`:""}`}}
 export function ReplayBar({rep,set,P,nameOf}){const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
 useEffect(()=>{if(!play)return;if(last){set(x=>x&&{...x,play:false});return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,n-1)}),180);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
 useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null)};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
@@ -32,6 +34,7 @@ return <section className="sv-console sv-player" aria-label={`Replay of ${r.test
 <span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
 <div className="sv-scrubw"><input type="range" className="sv-scrub" min={0} max={n-1} value={i} onChange={e=>set(x=>({...x,play:false,i:+e.target.value}))} aria-label="Minute of the test"/>
 <div className="sv-ticks">{marks(r.events,tl.tickMinutes,n).map(m=>{const words=m.evs.map(e=>eventWords(e,nameOf)).join(" ");return <button key={m.i} type="button" className={"sv-tick "+m.level} style={{left:`${100*m.i/Math.max(1,n-1)}%`}} title={words} aria-label={`Go to minute ${m.i*tl.tickMinutes}: ${words}`} onClick={()=>set(x=>({...x,play:false,i:m.i}))}/>})}</div></div>
+{tl.spend&&(()=>{const from=rep.from??CREDIT,spent=tl.spend.slice(0,i+1).reduce((a,b)=>a+b,0),ph=(tl.spend[i]||0)*60/tl.tickMinutes;return <CreditMeter ms={160} from={from-tl.spend.slice(0,Math.max(0,i)).reduce((a,b)=>a+b,0)} to={Math.max(0,from-spent)} label={`This test has spent ${money(spent)} so far · burning ${money(ph)}/hour now`} note={`at this rate the credit lasts ${lasts(ph)}`}/>})()}
 <ul className="sv-opres">{Object.entries(tl.ops).map(([id,o])=><li key={id}><b>{P?.operations?.find(x=>x.id===id)?.name||id}</b> {fmt(o.rate[i]??0)} calls/s · {pct(100*(o.ok[i]??1))} succeed · p99 {fmt(o.p99[i]??0)} ms</li>)}</ul>
 {ev.length>0&&<ul className="sv-why">{ev.map((e,k)=><li key={k}>{eventWords(e,nameOf)}</li>)}</ul>}</section>}
 // Scrubber marks: red for trouble, green for recovery, teal for scaling (spec 33 §1.5).

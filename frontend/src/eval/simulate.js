@@ -399,9 +399,9 @@ export function simulateTest(compiled, lab, practice, test) {
   }
   const nodeT = dict();
   for (const id of order) nodeT[id] = { rhoMax: 0, rhoMaxAt: 0, crashes: 0, downMinutes: 0, cost: 0 };
-  const timeline = { tickMinutes: D, ops: dict(), nodes: dict() };
+  const timeline = { tickMinutes: D, ops: dict(), nodes: dict(), spend: [] };   // spend: dollars spent in each tick (the canvas's credit meter)
   for (const op of ops) timeline.ops[op.id] = { rate: [], ok: [], p99: [] };
-  for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [], held: [], callsLimit: [] };
+  for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [], held: [], callsLimit: [], spend: [] };
   const feedDelay = dict();   // "store|entity" → worst seconds behind (async copies)
   // work done after answering: writes and calls behind a queue (their delay and what is left undone)
   const deferredSteps = recs.filter((r) => (r.hop.kind === 'store' || r.hop.kind === 'call') && r.enq.length);
@@ -504,7 +504,7 @@ export function simulateTest(compiled, lab, practice, test) {
       if (done) break;
     }
     // 4–5. latency and record
-    let transferNow = 0;
+    let transferNow = 0, tickSpend = 0;
     for (const op of ops) {
       const T_ = opT[op.id], pt = perTick[op.id], calls = base[op.id] * secs;
       let ok = 0, slow = 0, p99 = 0, p50 = 0;
@@ -531,9 +531,10 @@ export function simulateTest(compiled, lab, practice, test) {
       tl.backlog.push(r3(enqRecs.filter((e) => e.node === id).reduce((a, e) => a + backlog[e.hop.id], 0)));
       // a Service limited by its calls in progress (§8.9) rather than by its work units
       if (info[id].type === 'server') { const n = info[id], k = instancesNow(id), units = (n.size?.rps || 0) * k * (n.cfg.sandbox ? 0.8 : 1); tl.held.push(r3(holdMs[id] || 0)); tl.callsLimit.push(!isDown(id) && k > 0 && capacityNow(id) < units - 1e-9 ? 1 : 0); } else { tl.held.push(0); tl.callsLimit.push(0); }
-      const c = monthlyNow(id); byNode[id] += c * D / (60 * HOURS_PER_MONTH);
+      const c = monthlyNow(id), paid = c * D / (60 * HOURS_PER_MONTH); byNode[id] += paid; tl.spend.push(paid); tickSpend += paid;
     }
     transferTotal += transferNow * D / (60 * HOURS_PER_MONTH);
+    timeline.spend.push(Math.round((tickSpend + (transferNow + storageMonthly) * D / (60 * HOURS_PER_MONTH)) * 1e4) / 1e4);
     // 6. move on: queues (§8.7)
     for (const e of enqRecs) {
       if (isStream(e)) {
@@ -657,6 +658,8 @@ export function simulateTest(compiled, lab, practice, test) {
     const k = Math.ceil(T / 300), squeeze = (arr, f) => { const o = []; for (let j = 0; j < arr.length; j += k) o.push(f(arr.slice(j, j + k))); return o; };
     for (const id in timeline.ops) { const o = timeline.ops[id]; o.rate = squeeze(o.rate, (a) => a[0]); o.ok = squeeze(o.ok, (a) => Math.min(...a)); o.p99 = squeeze(o.p99, (a) => Math.max(...a)); }
     for (const id in timeline.nodes) { const o = timeline.nodes[id]; o.rho = squeeze(o.rho, (a) => Math.max(...a)); o.up = squeeze(o.up, (a) => Math.min(...a)); o.instances = squeeze(o.instances, (a) => Math.min(...a)); o.backlog = squeeze(o.backlog, (a) => Math.max(...a)); o.held = squeeze(o.held, (a) => Math.max(...a)); o.callsLimit = squeeze(o.callsLimit, (a) => Math.max(...a)); }
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    timeline.spend = squeeze(timeline.spend, sum); for (const id in timeline.nodes) timeline.nodes[id].spend = squeeze(timeline.nodes[id].spend, sum);
     timeline.tickMinutes = D * k;
   }
   const nodeCosts = Object.values(nodeT).reduce((a, n) => a + n.cost, 0), transfer = transferTotal * HOURS_PER_MONTH / hours;
