@@ -2,7 +2,8 @@
 // the v2 evaluator (practice.v === 2). The settings panel is generated from each type's `settings` in
 // content/eval.json (one renderer for every kind), arrows can carry only some calls, and the palette comes from
 // the v2 catalogue. No simulation runs here: the canvas shows a test's timeline when the workspace replays it.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { PROTOCOLS, PROTOCOL, MAX_LABEL } from './protocols.js';
 import SchemaEditor from './SchemaEditor.jsx';
 import { schemaIssues, schemaSummary, vocab, cleanSchema } from './schema.js';
 import { sizesOf } from './engine.js';
@@ -93,12 +94,24 @@ export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, 
     <button type="button" className="lab-btn ghost" onClick={() => remove(node.id)}>Remove from design</button></aside>;
 }
 
+// How the two parts of a selected arrow talk (protocols.js): its protocol, shown as the pill on the arrow (Auto is
+// the usual one for these two parts), and an optional label shown in its place, such as "GET /{code}".
+function Look({ edge, setLook, autoProto }) {
+  const chosen = edge.data?.protocol, auto = PROTOCOL[autoProto];
+  const [label, setLabel] = useState(edge.data?.label || '');
+  useEffect(() => setLabel(edge.data?.label || ''), [edge.id]); // eslint-disable-line
+  const chip = (id, p, text) => <button key={id} type="button" className={'lab-chip' + ((id === 'auto' ? !chosen : chosen === id) ? ' on' : '')} aria-pressed={id === 'auto' ? !chosen : chosen === id} onClick={() => setLook(edge.id, { protocol: id === 'auto' ? undefined : id })}><i className={'t-' + p.color + ' d-' + p.dash} aria-hidden="true" />{text}</button>;
+  return <><div className="lab-f"><span id={'proto-' + edge.id}>Protocol</span><div className="lab-chips" role="group" aria-labelledby={'proto-' + edge.id}>{auto && chip('auto', auto, `Auto · ${auto.name}`)}{PROTOCOLS.map((p) => chip(p.id, p, p.name))}</div></div>
+    <Field label="Label (optional)"><input type="text" value={label} maxLength={MAX_LABEL} placeholder="e.g. GET /{code}" onChange={(e) => { setLabel(e.target.value); setLook(edge.id, { label: e.target.value }); }} /></Field></>;
+}
+
 // What a selected arrow carries: every call, only reads, only writes, or the operations chosen.
-export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, H }) {
+export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, autoProto, H }) {
   const c = edge.data?.carries, mode = !c ? 'all' : c.length === 1 && c[0] === 'reads' ? 'reads' : c.length === 1 && c[0] === 'writes' ? 'writes' : 'some';
   const pick = (m) => setCarries(edge.id, m === 'all' ? undefined : m === 'reads' ? ['reads'] : m === 'writes' ? ['writes'] : ops.map((o) => o.id));
   const toggle = (id) => { const now = mode === 'some' ? c : []; const next = now.includes(id) ? now.filter((x) => x !== id) : [...now, id]; setCarries(edge.id, next.length ? ops.map((o) => o.id).filter((x) => next.includes(x)) : undefined); };
   return <aside className="lab-ins" tabIndex={0} aria-label="Arrow"><div className="lab-h">ARROW</div><H>{labelOf(edge.source)} → {labelOf(edge.target)}</H>
+    <Look edge={edge} setLook={setLook} autoProto={autoProto} />
     <p className="lab-desc">Calls flow this way. By default an arrow carries every call; choose fewer to send reads and writes, or each call, their own way.</p>
     <Field label="Carries"><select value={mode} onChange={(e) => pick(e.target.value)}><option value="all">Every call</option><option value="reads">Only reads</option><option value="writes">Only writes</option>{ops.length > 0 && <option value="some">Calls I choose…</option>}</select></Field>
     {mode === 'some' && ops.map((o) => <label key={o.id} className="lab-check"><input type="checkbox" checked={c.includes(o.id)} onChange={() => toggle(o.id)} />{o.name}</label>)}

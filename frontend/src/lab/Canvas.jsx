@@ -1,9 +1,9 @@
 // The canvas itself: the design, saving, adding and connecting components, a watched request or replay.
-import{INK,LINE}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{useCallback,useEffect,useMemo,useRef,useState}from"react";
-import{ReactFlow,Background,Controls,addEdge,useNodesState,useEdgesState,useReactFlow}from"@xyflow/react";
+import{INK,INK_3,LINE,CAT_TEAL,CAT_GREEN,CAT_PINK,CAT_VIOLET,CAT_AMBER}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{useCallback,useEffect,useMemo,useRef,useState}from"react";
+import{ReactFlow,Background,Controls,addEdge,useNodesState,useEdgesState,useReactFlow,ConnectionMode}from"@xyflow/react";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
 import{catalogue,displayName}from"./engine.js";
 import{STORE_KEY,MAX_NODES}from"./store.js";import{runChallenge}from"../eval/challenge.js";import{recordStars}from"../progress.js";import{track}from"../analytics.js";import{paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
-import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes}from"./nodes.jsx";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
+import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes,detour}from"./nodes.jsx";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
 export function Canvas({lab,start,embedded,problem,onDesign,trace,replay,flow}){const theme=useTheme();const chStart=start?(lab.challenges||[]).find(c=>c.id===start):null;const cat=useMemo(()=>({...catalogue(lab),...evalCatalogue(lab)}),[lab]);const locked=useMemo(()=>new Set(problem?.locked||[]),[problem?.locked]);
 // a request being watched: the view follows it from component to component, centred in the part of the
 // canvas above the results (which cover its lower part)
@@ -69,6 +69,10 @@ const remove=id=>{if(locked.has(id))return;setNodes(ns=>ns.filter(n=>n.id!==id))
 const valid=c=>{const s=nodes.find(n=>n.id===c.source),t=nodes.find(n=>n.id===c.target);if(!s||!t||c.source===c.target||edges.some(e=>e.source===c.source&&e.target===c.target))return false;
 // the arrows eval.json allows (a database may point at a queue for change data capture, the Clients at S3)
 const as=n=>({id:n.id,type:n.data.kind,config:n.data.config});return allowedEdge(as(s),as(t),lab)};
+// An arrow's protocol and label (protocols.js): undefined clears one (the arrow then shows the usual protocol).
+const setLook=(id,patch)=>setEdges(es=>es.map(e=>{if(e.id!==id)return e;const d={...(e.data||{}),...patch};if(!PROTOCOL[d.protocol])delete d.protocol;if(!cleanLabel(d.label))delete d.label;else d.label=cleanLabel(d.label);const{data:_,...rest}=e;return Object.keys(d).length?{...rest,data:d}:rest}));
+// A click on an arrow's pill selects that arrow (and nothing else), so the panel shows it.
+const pickEdge=useCallback(id=>{setNodes(ns=>ns.some(n=>n.selected)?ns.map(n=>n.selected?{...n,selected:false}:n):ns);setEdges(es=>es.map(e=>e.selected!==(e.id===id)?{...e,selected:e.id===id}:e))},[setNodes,setEdges]);
 const setCarries=(id,carries)=>setEdges(es=>es.map(e=>e.id===id?{...e,data:carries?{...e.data,carries}:Object.fromEntries(Object.entries(e.data||{}).filter(([k])=>k!=="carries"))}:e));
 const onConnect=useCallback(c=>setEdges(es=>addEdge(edge(c.source,c.target),es)),[setEdges]);
 const[dragging,setDragging]=useState(false);
@@ -83,9 +87,17 @@ const badStart=start&&!(lab.challenges||[]).some(c=>c.id===start)?start:null;
 const firstStart=useRef(start);useEffect(()=>{if(start&&start!==firstStart.current)startChallenge(start);firstStart.current=null},[start]);// eslint-disable-line
 const scoreIt=()=>{if(!ch)return;const r=runChallenge(fromFlow(nodes,edges),lab,ch);if(!r.error){recordStars(ch.id,r.stars,r.checks.map(c=>c.ok));track("score",{challenge:ch.id,stars:r.stars,max:r.max,passed:r.checks.map(c=>c.ok?1:0).join(""),lite:false})}setScore(r)};
 const nextCh=ch&&(()=>{const list=lab.challenges,i=list.findIndex(c=>c.id===ch.id);return list.slice(i+1).find(c=>(progress.stars[c.id]||0)<c.stars.length)||list.find(c=>c.id!==ch.id&&(progress.stars[c.id]||0)<c.stars.length)})();
-// Arrowheads take the current ink colour (saved designs carry the colour of the theme they were drawn in).
-const flowEdges=React.useMemo(()=>edges.map(e=>e.markerEnd&&typeof e.markerEnd==="object"?{...e,markerEnd:{...e.markerEnd,color:INK}}:e),[edges,theme]);// eslint-disable-line
-return <Ctx.Provider value={{cat,trace,replay,flow}}><div className={"lab"+(trace?" lab-watch":"")}>
+// Each arrow is drawn with its protocol (the chosen one, else the usual one for the parts it joins): its colour and
+// dash, the arrowhead in the same colour of the current theme (saved designs carry the colour of the theme they
+// were drawn in), and `pair` when an arrow comes back the other way, so the two are drawn apart.
+// An arrow whose straight run would cross other cards gets a `detour` round them (nodes.jsx).
+const layout=nodes.map(n=>[n.id,n.data.kind,Math.round(n.position.x),Math.round(n.position.y),n.measured?.width|0,n.measured?.height|0].join("\u0000")).join("\u0001");
+const flowEdges=React.useMemo(()=>{const kind=Object.fromEntries(nodes.map(n=>[n.id,n.data.kind])),links=new Set(edges.map(e=>e.source+"\u0000"+e.target)),col={teal:CAT_TEAL,green:CAT_GREEN,pink:CAT_PINK,violet:CAT_VIOLET,amber:CAT_AMBER,ink:INK_3};
+const box=Object.fromEntries(nodes.map(n=>{const w=n.measured?.width||W,h=n.measured?.height||64;return[n.id,{id:n.id,x:n.position.x,y:n.position.y,w,h,cx:n.position.x+w/2,cy:n.position.y+h/2}]})),boxes=Object.values(box);
+return edges.map(e=>{const proto=protocolOf(e.data,kind[e.source],kind[e.target]),pair=links.has(e.target+"\u0000"+e.source);
+const a=box[e.source],b=box[e.target],way=a&&b&&!pair?detour(a,b,boxes.filter(o=>o.id!==e.source&&o.id!==e.target)):null;
+return{...e,data:{...e.data,proto,...(pair?{pair:true}:{}),...(way?{detour:way}:{})},...(e.markerEnd&&typeof e.markerEnd==="object"?{markerEnd:{...e.markerEnd,color:col[proto.color]||INK}}:{})}})},[edges,layout,theme]);// eslint-disable-line
+return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge}}><div className={"lab"+(trace?" lab-watch":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
@@ -94,9 +106,9 @@ return <Ctx.Provider value={{cat,trace,replay,flow}}><div className={"lab"+(trac
 <Palette lab={lab} comps={paletteV2(lab)} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
 <ReactFlow colorMode={theme} nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
-fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
+fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} connectionMode={ConnectionMode.Loose} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
 <Background gap={20} size={1} color={LINE}/><Controls showInteractive={false} position="bottom-left"/></ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
-<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields||(chStart?[...new Set(Object.values(chStart.entities||{}).flatMap(e=>Object.keys(e.fields||{})))]:undefined)} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} update={update} remove={remove} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} ops={problem?.ops||(chStart?chStart.operations.map(o=>({id:o.id,name:o.name})):undefined)} setCarries={setCarries} lockedIds={locked}/>
+<Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields||(chStart?[...new Set(Object.values(chStart.entities||{}).flatMap(e=>Object.keys(e.fields||{})))]:undefined)} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} update={update} remove={remove} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} ops={problem?.ops||(chStart?chStart.operations.map(o=>({id:o.id,name:o.name})):undefined)} setCarries={setCarries} setLook={setLook} autoProto={selEdge?inferProtocol(nodes.find(n=>n.id===selEdge.source)?.data.kind,nodes.find(n=>n.id===selEdge.target)?.data.kind):null} lockedIds={locked}/>
 {score&&ch&&<Score lab={lab} ch={ch} res={score} close={()=>setScore(null)} next={embedded?.next&&nextCh?(()=>{location.hash=`problems/challenge/${nextCh.id}`}):null} more={embedded?.next?null:embedded}/>}
 </div></Ctx.Provider>}

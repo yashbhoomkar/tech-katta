@@ -3,7 +3,7 @@
 // every design it can repair against the current catalogue and drops what it cannot.
 // Shape (version 1): {version:1, current:id, designs:{id:{id,name,updated,nodes,edges}}}. (Designs saved by the v1
 // Lab also kept the credit they had spent; it is dropped.)
-import{cleanSchema}from"./schema.js";import{cleanDesign2}from"../eval/design.js";
+import{cleanSchema}from"./schema.js";import{cleanArrowLook}from"./protocols.js";import{cleanDesign2}from"../eval/design.js";
 export const STORE_KEY="tk-lab-v1";
 export const STORE_VERSION=1;
 // A design has at most this many components: more is never a real design and makes the canvas crawl.
@@ -24,6 +24,9 @@ export function cleanDesign(d,lab,id){
   const v2=d.v===2&&!!lab?.eval;
   // the store doesn't know the problem's operations: any well-formed id in an arrow's carries is kept (the judge
   // cleans again with the real ones)
+  // an arrow's protocol and label (protocols.js) are drawing only; looked up by the arrow's ends, so they survive
+  // the v2 cleaning below, which keeps only what the judge reads
+  const look=new Map();for(const e of Array.isArray(d.edges)?d.edges:[])if(obj(e)&&!look.has(e.from+"→"+e.to))look.set(e.from+"→"+e.to,cleanArrowLook(e));
   if(v2){const ids=(Array.isArray(d.edges)?d.edges:[]).flatMap(e=>obj(e)&&Array.isArray(e.carries)?e.carries:[]);const c=cleanDesign2(d,lab,ids);d={...d,nodes:c.nodes,edges:c.edges}}
   const cat=Object.fromEntries((lab.components||[]).map(c=>[c.type,c]));
   const nodes=[],seen=new Set();
@@ -46,7 +49,7 @@ export function cleanDesign(d,lab,id){
   for(const e of Array.isArray(d.edges)?d.edges:[]){
     if(!obj(e)||!has(kind,e.from)||!has(kind,e.to)||e.from===e.to)continue;
     if(kind[e.to]==="client"||kind[e.from]==="database")continue;
-    const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to,...(v2&&Array.isArray(e.carries)?{carries:e.carries}:{})});
+    const k=e.from+"→"+e.to;if(links.has(k))continue;links.add(k);edges.push({from:e.from,to:e.to,...(v2&&Array.isArray(e.carries)?{carries:e.carries}:{}),...look.get(k)});
   }
   // a design started from a Lab challenge remembers which one (only if the catalogue still has it)
   const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
