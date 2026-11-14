@@ -400,6 +400,8 @@ export function simulateTest(compiled, lab, practice, test) {
   const nodeT = dict();
   for (const id of order) nodeT[id] = { rhoMax: 0, rhoMaxAt: 0, crashes: 0, downMinutes: 0, cost: 0 };
   const timeline = { tickMinutes: D, ops: dict(), nodes: dict(), spend: [] };   // spend: dollars spent in each tick (the canvas's credit meter)
+  // arrows: calls a second along each arrow in each tick, keyed "from>to" (the replay's pills, context 36 step 6); display only
+  timeline.arrows = dict(); for (const r of recs) if (r.parent && r.parent.node !== r.node) timeline.arrows[`${r.parent.node}>${r.node}`] = [];
   for (const op of ops) timeline.ops[op.id] = { rate: [], ok: [], p99: [] };
   for (const id of order) timeline.nodes[id] = { rho: [], up: [], instances: [], backlog: [], held: [], callsLimit: [], spend: [] };
   const feedDelay = dict();   // "store|entity" → worst seconds behind (async copies)
@@ -503,6 +505,7 @@ export function simulateTest(compiled, lab, practice, test) {
       }
       if (done) break;
     }
+    { const now = dict(); for (const r of recs) if (r.parent && r.parent.node !== r.node && r.in > 0) { const k = `${r.parent.node}>${r.node}`; now[k] = (now[k] || 0) + r.in; } for (const k in timeline.arrows) timeline.arrows[k].push(r3(now[k] || 0)); }
     // 4–5. latency and record
     let transferNow = 0, tickSpend = 0;
     for (const op of ops) {
@@ -656,6 +659,7 @@ export function simulateTest(compiled, lab, practice, test) {
   // keep at most 300 points per series
   if (T > 300) {
     const k = Math.ceil(T / 300), squeeze = (arr, f) => { const o = []; for (let j = 0; j < arr.length; j += k) o.push(f(arr.slice(j, j + k))); return o; };
+    for (const k in timeline.arrows) timeline.arrows[k] = squeeze(timeline.arrows[k], (a) => a[0]);
     for (const id in timeline.ops) { const o = timeline.ops[id]; o.rate = squeeze(o.rate, (a) => a[0]); o.ok = squeeze(o.ok, (a) => Math.min(...a)); o.p99 = squeeze(o.p99, (a) => Math.max(...a)); }
     for (const id in timeline.nodes) { const o = timeline.nodes[id]; o.rho = squeeze(o.rho, (a) => Math.max(...a)); o.up = squeeze(o.up, (a) => Math.min(...a)); o.instances = squeeze(o.instances, (a) => Math.min(...a)); o.backlog = squeeze(o.backlog, (a) => Math.max(...a)); o.held = squeeze(o.held, (a) => Math.max(...a)); o.callsLimit = squeeze(o.callsLimit, (a) => Math.max(...a)); }
     const sum = (a) => a.reduce((x, y) => x + y, 0);

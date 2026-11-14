@@ -24,7 +24,8 @@ for(const[id,n]of Object.entries(tl.nodes)){const mine=evs.filter(e=>e.node===id
   fresh:mine.filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes).map(e=>e.kind),perHour:(n.spend?.[i]||0)*60/tl.tickMinutes}}
 const ops=Object.entries(tl.ops).map(([id,o])=>`${P?.operations?.find(x=>x.id===id)?.name||id} ${fmt(o.rate[i]??0)}/s, ${pct(100*(o.ok[i]??1))} ok`).join(" · ");
 const spentSoFar=(tl.spend||[]).slice(0,i+1).reduce((a,b)=>a+b,0),perHour=(tl.spend?.[i]||0)*60/tl.tickMinutes;
-return{nodes,spent:spentSoFar,perHour,status:`${clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)} · ${ops}${tl.spend?` · burning ${money(perHour)}/hour`:""}`}}
+const arrows={};for(const[k,a]of Object.entries(tl.arrows||{}))arrows[k]=a[i]??0;
+return{nodes,arrows,spent:spentSoFar,perHour,status:`${clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)} · ${ops}${tl.spend?` · burning ${money(perHour)}/hour`:""}`}}
 // Break it yourself (context 36, step 4): what can be done to the design at the minute on the scrubber. Each choice is a
 // fault the tests already use, added to this test from that minute; the test runs again and the replay carries on.
 export function breakOptions(parts,hasCache){return[...parts.map(p=>({id:"crash:"+p.id,label:`${p.name} crashes`,fault:m=>({minute:m,kind:"crash",type:p.type,node:p.id})})),
