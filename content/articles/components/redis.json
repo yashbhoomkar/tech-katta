@@ -28,7 +28,7 @@
         "Hashes hold fields inside one key, so a cart can change one dish without rewriting the whole cart.",
         "Sorted sets keep members ordered by a score; `ZREVRANGE top:pune 0 9` returns the top 10 at once, which is why leaderboards use them.",
         "Streams are append-only logs with consumer groups, like a small Kafka inside Redis. Plain pub/sub, by contrast, delivers only to whoever is listening at that moment and keeps nothing.",
-        "Geo commands keep points in a sorted set, scored by geohash, and find members within a radius: one quick way to answer \"restaurants near me\". 'Database indexing' in Concepts compares the other ways."
+        "Geo commands keep points in a sorted set, scored by geohash, and find members within a radius: one quick way to answer \"restaurants near me\". The concept 'Finding what's nearby' compares the other ways."
       ]
     },
     {

@@ -15,7 +15,7 @@ test('every figure an article shows is mapped to the module that draws it', () =
   const map = figManifest(figs);
   const read = (...p) => JSON.parse(fs.readFileSync(path.join(content, ...p), 'utf8'));
   const used = read('articles', 'index.json').articles.flatMap((ref) => read('articles', ref + '.json').body.filter((b) => b.t === 'fig').map((b) => b.id));
-  assert.ok(used.length > 180, 'articles use figures');   // 196 after Concepts was cut to its nine core articles
+  assert.ok(used.length > 200, 'articles use figures');
   for (const id of used) assert.ok(map[id], `${id} is drawn by no module`);
   for (const [id, mod] of Object.entries(map)) {
     assert.ok(fs.existsSync(path.join(figs, mod + '.jsx')), `${id}: ${mod}.jsx exists`);

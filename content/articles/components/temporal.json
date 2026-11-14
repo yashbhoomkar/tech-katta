@@ -132,7 +132,7 @@
         "Say what happens on a crash: the workflow replays its history on another worker and continues.",
         "Show the waits: timeouts for the restaurant, a signal for approval, a timer for reminders.",
         "Keep the compensations next to the steps they undo.",
-        "The 'Patterns guide' in Interview Questions covers the same ideas without a specific engine."
+        "The 'Processes with many steps' concept covers the same ideas without a specific engine."
       ]
     },
     {

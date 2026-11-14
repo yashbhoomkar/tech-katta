@@ -84,7 +84,7 @@ test('GET /v1/articles lists summaries without bodies, optionally by section', a
   assert.equal(all.articles.find(a => a.slug === 'how-to-answer').lab, undefined);
   // each card can show its article's first figure (25 §7)
   assert.equal(all.articles.find(a => a.slug === 'url-shortener').fig, 'shortener-flow');
-  assert.ok(all.articles.filter(a => a.fig).length >= 45, 'most articles have a first figure');   // 48 of 54 after Concepts was cut to nine
+  assert.ok(all.articles.filter(a => a.fig).length >= 55, 'most articles have a first figure');
   assert.equal((await (await get('/v1/articles?section=concepts')).json()).articles.length, allArticles.filter(a => a.section === 'concepts').length);
   assert.equal((await (await get('/v1/articles?section=components')).json()).articles.length, allArticles.filter(a => a.section === 'components').length);
   assert.equal((await get('/v1/articles?section=Bad!')).status, 400);

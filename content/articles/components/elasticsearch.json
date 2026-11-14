@@ -164,7 +164,7 @@
     {
       "t": "list",
       "items": [
-        "Use a search engine as soon as the question has a search box, fuzzy matching, 'near me' or facet counts.",
+        "Use a search engine as soon as the question has a search box, fuzzy matching, 'near me' or facet counts. For search by meaning rather than words, see 'Searching by meaning'.",
         "Say it is fed from the database through a change stream and can be rebuilt.",
         "Name the analyser steps and the ranking (BM25, plus your own boosts such as rating and distance).",
         "Mention the refresh delay and how you'd reindex for a mapping change (a new index and an alias).",

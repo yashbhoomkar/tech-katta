@@ -149,7 +149,7 @@
     },
     {
       "t": "p",
-      "x": "The number on screen is an estimate. The origin can't count viewers: it sees about 1 request in 100. Instead each player sends a small heartbeat every 30 seconds, or each edge reports how many players it served in the last minute, and a job adds up a few hundred numbers every few seconds and rounds to the nearest lakh. An exact count would mean crores of writes to one table for no gain, and an estimate is all the scoreboard needs."
+      "x": "The number on screen is an estimate. The origin can't count viewers: it sees about 1 request in 100. Instead each player sends a small heartbeat every 30 seconds, or each edge reports how many players it served in the last minute, and a job adds up a few hundred numbers every few seconds and rounds to the nearest lakh. An exact count would mean crores of writes to one table for no gain; 'Counting the uncountable' in Concepts covers the sketches that make such counts cheap."
     },
     {
       "t": "h2",
