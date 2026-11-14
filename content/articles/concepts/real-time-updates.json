@@ -342,12 +342,12 @@
     },
     {
       "t": "p",
-      "x": "A connection server subscribes, on a pub/sub broker, to a channel for each user connected to it (for example user:ravi). A service with an update publishes it to that channel; the broker delivers it to whichever server subscribed. When Ravi reconnects to a different server, that server subscribes instead."
+      "x": "A connection server subscribes, on a pub/sub broker, to a channel for each user connected to it (for example `user:ravi`). A service with an update publishes it to that channel; the broker delivers it to whichever server subscribed. When Ravi reconnects to a different server, that server subscribes instead."
     },
     {
       "t": "fig",
       "id": "rt-pubsub",
-      "cap": "Connection servers subscribe to the channels of the users they hold. The chat service publishes to user:ravi without knowing where Ravi is; the broker delivers it to server 2."
+      "cap": "Connection servers subscribe to the channels of the users they hold. The chat service publishes to `user:ravi` without knowing where Ravi is; the broker delivers it to server 2."
     },
     {
       "t": "list",
@@ -548,7 +548,7 @@
         ],
         [
           "Topic per room",
-          "Servers subscribe to the rooms their users watch (match:ind-pak) and fan out locally",
+          "Servers subscribe to the rooms their users watch (`match:ind-pak`) and fan out locally",
           "One update, many viewers: live scores, a shared document",
           "A room with crores of viewers needs fan-out in layers"
         ],

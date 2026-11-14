@@ -98,7 +98,7 @@
       "t": "list",
       "items": [
         "Step 1: point at the specific problem: database load, query time, or an expensive computation. 'Profile reads hit the database 500 times a second at peak, 30 ms each. That's the bottleneck.'",
-        "Step 2: not everything belongs in a cache. Good candidates are read often, change rarely, and cost something to fetch: a menu is read on every visit and edited a few times a week. Decide the key too, because the key is how every read finds its entry: user:77:profile, popular:pune-kothrud.",
+        "Step 2: not everything belongs in a cache. Good candidates are read often, change rarely, and cost something to fetch: a menu is read on every visit and edited a few times a week. Decide the key too, because the key is how every read finds its entry: `user:77:profile`, `popular:pune-kothrud`.",
         "Step 3: match the pattern to how fresh the data must be. 'Cache-aside: read Redis first; on a miss, read the database, store the answer and return it.' Write-through fits when every read must see the latest value and writes can wait; write-behind fits a flood of writes where losing a few is acceptable. Add a CDN if the system serves images or video, and a small in-process cache only for a few extremely hot keys.",
         "Step 4: say how the cache stays within its memory: LRU is the safe default, and a TTL stops entries living forever. 'LRU eviction, a 10-minute TTL on menus, and the entry is deleted the moment a restaurant edits its menu.'",
         "Step 5: show you know the costs. Invalidation: how does a change reach the cache, by deleting on write, by TTL, or by accepting some delay? Failure: if Redis goes down, every read lands on the database; limit that with a circuit breaker and a small local cache. Stampedes: when a popular entry expires, let one request rebuild it while the rest wait (request coalescing), or refresh it a little early."
@@ -719,7 +719,7 @@
     },
     {
       "t": "p",
-      "x": "For example, during a cricket final Zotato's home banner, the key promo:final-night, is read by every user who opens the app: lakhs of reads a second, all on one Redis node. Everything is working as designed, and that node is still the bottleneck."
+      "x": "For example, during a cricket final Zotato's home banner, the key `promo:final-night`, is read by every user who opens the app: lakhs of reads a second, all on one Redis node. Everything is working as designed, and that node is still the bottleneck."
     },
     {
       "t": "fig",
@@ -729,7 +729,7 @@
     {
       "t": "list",
       "items": [
-        "Replicate the hot key: keep the same value on several nodes (read replicas, or copies under keys such as promo:final-night:1 … :8) and spread reads across them.",
+        "Replicate the hot key: keep the same value on several nodes (read replicas, or copies under keys such as `promo:final-night:1` … :8) and spread reads across them.",
         "Add a local cache: keep extremely hot values in each server's own memory for a few seconds, so most reads never reach Redis.",
         "Rate-limit abusive patterns: if the traffic on one key comes from a few clients hammering it, slow them down.",
         "The same problem appears beyond caches whenever millions of people want the same thing at once; the concept 'When reads outnumber writes' covers it as a pattern."

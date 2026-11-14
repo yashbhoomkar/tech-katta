@@ -284,7 +284,7 @@
       ],
       [
         "real-systems",
-        "Real systems",
+        "Real Systems",
         null
       ]
     ],
@@ -540,7 +540,7 @@
     "real-systems": [
       {
         "target": ".d-desc",
-        "title": "Real systems",
+        "title": "Real Systems",
         "text": "Six case studies of real teams: the hard problem, what they built and the numbers behind it. Read them after Concepts: they show the same ideas under real load."
       },
       {
@@ -567,7 +567,7 @@
       {
         "target": ".qt-levels",
         "title": "Start with Easy",
-        "text": "The four Easy problems teach the method; the URL shortener is the first. Medium and Hard add traffic peaks, crashed servers and a budget."
+        "text": "The seven Easy problems teach the method; the URL shortener is the first. Medium and Hard add traffic peaks, crashed servers and a budget."
       },
       {
         "target": ".qt-table",
