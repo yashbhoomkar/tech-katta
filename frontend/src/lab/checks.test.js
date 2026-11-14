@@ -15,3 +15,10 @@ test("unconnected, unreachable and unread parts are warned about, with the card"
   const c=designChecks(d,lab,P),by=Object.fromEntries(c.filter(x=>x.node).map(x=>[x.node,x.message]));
   assert.match(by.lone,/isn't connected/);assert.match(by.w,/Nothing reaches/);assert.ok(c.every(x=>x.level==="warn"||x.level==="error"))});
 test("nothing for v1, empty or unknown input",()=>{assert.deepEqual(designChecks({nodes:[]},lab,problems[0]),[]);assert.deepEqual(designChecks(problems[0].reference,lab,{v:1}),[]);assert.deepEqual(designChecks(null,lab,problems[0]),[])});
+
+// Export (export.js): Mermaid and SVG of a reference design, and the walk order.
+import{toMermaid,toSvg,walkOrder}from"./export.js";import{catalogue}from"./engine.js";import{evalCatalogue}from"../eval/design.js";
+test("a design exports as Mermaid and SVG, and walks from the Clients",()=>{const P=problems[0],cat={...catalogue(lab),...evalCatalogue(lab)};
+  const m=toMermaid(P.reference,cat);assert.match(m,/^flowchart LR\n/);assert.equal((m.match(/-->|-\.->/g)||[]).length,P.reference.edges.length);
+  const svg=toSvg(P.reference,cat);assert.match(svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);assert.equal((svg.match(/<g transform/g)||[]).length,P.reference.nodes.length+P.reference.edges.length);assert.ok(!/var\(--/.test(svg),"colours are written in");
+  const o=walkOrder(P.reference);assert.equal(new Set(o).size,P.reference.nodes.length);assert.equal(P.reference.nodes.find(n=>n.id===o[0]).type,"client")});

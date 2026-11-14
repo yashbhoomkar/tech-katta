@@ -1,6 +1,6 @@
 // The canvas itself: the design, saving, adding and connecting components, a watched request or replay.
 import{INK,INK_3,LINE,CAT_TEAL,CAT_GREEN,CAT_PINK,CAT_VIOLET,CAT_AMBER}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{useCallback,useEffect,useMemo,useRef,useState}from"react";
-import{ReactFlow,Background,Controls,ControlButton,MiniMap,addEdge,useNodesState,useEdgesState,useReactFlow,ConnectionMode}from"@xyflow/react";import{designChecks}from"./checks.js";import{TINT}from"./drawing.js";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
+import{ReactFlow,Background,Controls,ControlButton,MiniMap,addEdge,useNodesState,useEdgesState,useReactFlow,ConnectionMode}from"@xyflow/react";import{designChecks}from"./checks.js";import{toMermaid,toSvg,download,copyText,fileName}from"./export.js";import{TINT}from"./drawing.js";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
 import{catalogue,displayName}from"./engine.js";
 import{STORE_KEY,MAX_NODES}from"./store.js";import{runChallenge}from"../eval/challenge.js";import{recordStars}from"../progress.js";import{track}from"../analytics.js";import{paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
 import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes}from"./nodes.jsx";import{layout as arrange}from"./drawing.js";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
@@ -91,7 +91,7 @@ useEffect(()=>{const k=e=>{const tag=(e.target?.tagName||"").toLowerCase();if(ta
 const mod=e.metaKey||e.ctrlKey;if(mod&&e.key.toLowerCase()==="z"){e.preventDefault();travel(e.shiftKey?1:-1)}else if(mod&&e.key.toLowerCase()==="y"){e.preventDefault();travel(1)}
 else if(e.key==="Escape"&&showChecks)setShowChecks(false);else if(e.shiftKey&&!mod&&e.key.toLowerCase()==="r"){const s=edges.find(x=>x.selected);if(s){e.preventDefault();reverse(s.id)}}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
 // Checks while you build (checks.js): the evaluator's first stage on the design, 500 ms after edits stop; a problem only.
-const[checks,setChecks]=useState([]);const[showChecks,setShowChecks]=useState(false);
+const[exported,setExported]=useState("");const[checks,setChecks]=useState([]);const[showChecks,setShowChecks]=useState(false);
 useEffect(()=>{if(!problem?.practice){setChecks([]);return}const t=setTimeout(()=>setChecks(designChecks(fromFlow(nodes,edges),lab,problem.practice)),500);return()=>clearTimeout(t)},[nodes,edges,problem?.practice,lab]);// eslint-disable-line
 const flagged=useMemo(()=>new Map(checks.filter(c=>c.node).map(c=>[c.node,c])),[checks]);
 const[dragging,setDragging]=useState(false);
@@ -122,6 +122,11 @@ return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge,flagged:replay||trac
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
+{!embedded&&nodes.length>0&&<details className="lab-export" onToggle={e=>{if(!e.currentTarget.open)setExported("")}}><summary className="lab-btn ghost">Export ▾</summary><div className="lab-export-menu">
+<button type="button" onClick={async()=>{const ok=await copyText(toMermaid(fromFlow(nodes,edges),cat));setExported(ok?"Mermaid copied":"Copy failed: your browser blocked the clipboard");track("design_export",{as:"mermaid"})}}>Copy as Mermaid</button>
+<button type="button" onClick={()=>{download(fileName(name)+".svg",toSvg(fromFlow(nodes,edges),cat,undefined,{title:name}),"image/svg+xml");setExported("SVG saved");track("design_export",{as:"svg"})}}>Download SVG</button>
+<button type="button" onClick={()=>{download(fileName(name)+".mmd",toMermaid(fromFlow(nodes,edges),cat),"text/plain");setExported("Mermaid file saved");track("design_export",{as:"mmd"})}}>Download Mermaid file</button>
+{exported&&<p role="status">✓ {exported}</p>}</div></details>}
 </header>
 <div className="lab-status" aria-live="polite">{replay?<span>{replay.status}</span>:badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:ch?<span className="lab-muted">Score your design to see which stars it earns.</span>:problem?.practice&&checks.length?<span className="lab-checks"><button type="button" className={"lab-chk "+(checks.some(c=>c.level==="error")?"bad":"warn")} aria-expanded={showChecks} onClick={()=>setShowChecks(v=>!v)}>{checks.length===1?"1 thing to fix":`${checks.length} things to fix`} {showChecks?"▴":"▾"}</button>{!showChecks&&<span className="lab-muted lab-chk-first">{checks[0].message}</span>}</span>:problem?.practice&&nodes.length>1?<span className="lab-ok">✓ Nothing stops this design from running. Run or Submit to test it.</span>:<span className="lab-muted">Run or Submit to test this design; then ▶ Replay a load test to watch it here.</span>}
 {showChecks&&!replay&&checks.length>0&&<ul className="lab-chk-list">{checks.map((c,k)=><li key={k} className={c.level}><button type="button" disabled={!c.node} onClick={()=>{if(!c.node)return;setShowChecks(false);setNodes(ns=>ns.map(n=>({...n,selected:n.id===c.node})));const n=rf.getNode(c.node);if(n)rf.setCenter(n.position.x+100,n.position.y+40,{zoom:Math.max(rf.getZoom(),.9),duration:400})}}>{c.message}</button></li>)}</ul>}</div>
