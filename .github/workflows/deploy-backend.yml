@@ -54,8 +54,12 @@ jobs:
       # Deploys exactly the commit the test job checked (github.sha), not whatever main is now.
       # The new release is live only when /health reports it; if the service does not come back,
       # the previous code and content release are restored and the job fails.
-      # Sign-in settings (GitHub secrets) travel base64-encoded, so characters such as & ? = % in the
-      # MongoDB URI survive the shell on the way; the encoded values are masked in the log too.
+      # The server keeps nothing that exists only on it: every API setting lives in GitHub (secrets for private
+      # values, variables for the rest) and this step builds the server's whole settings file from them on every
+      # deploy, so a new server gets exactly the same settings and nothing is ever typed onto a server by hand.
+      # Add a setting by adding its name to OPTIONAL_SECRETS / OPTIONAL_VARS below (and to `env:`).
+      # Values travel base64-encoded, so characters such as & ? = % in the MongoDB URI survive the shell on the
+      # way; the encoded values are masked in the log too.
       - name: Prepare API settings
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -63,12 +67,51 @@ jobs:
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           ORIGIN_CERT: ${{ secrets.ORIGIN_CERT }}
           ORIGIN_KEY: ${{ secrets.ORIGIN_KEY }}
+          # optional, private (secrets)
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          # optional, not private (variables); unset = the API's default (backend/.env.example)
+          AI_ENABLED: ${{ vars.AI_ENABLED }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+          AI_JSON_MODE: ${{ vars.AI_JSON_MODE }}
+          AI_TOKENS_PARAM: ${{ vars.AI_TOKENS_PARAM }}
+          AI_EXTRA_BODY: ${{ vars.AI_EXTRA_BODY }}
+          AI_TIMEOUT_MS: ${{ vars.AI_TIMEOUT_MS }}
+          AI_MAX_OUTPUT_TOKENS: ${{ vars.AI_MAX_OUTPUT_TOKENS }}
+          AI_MONTHLY_REVIEWS: ${{ vars.AI_MONTHLY_REVIEWS }}
+          AI_DAILY_REVIEWS: ${{ vars.AI_DAILY_REVIEWS }}
+          AI_DAILY_TOKEN_CAP: ${{ vars.AI_DAILY_TOKEN_CAP }}
+          AI_ALLOW: ${{ vars.AI_ALLOW }}
+          JUDGE_WORKERS: ${{ vars.JUDGE_WORKERS }}
+          REQUIRED: GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET
+          OPTIONAL_SECRETS: AI_API_KEY ADMIN_EMAILS
+          OPTIONAL_VARS: AI_ENABLED AI_PROVIDER AI_MODEL AI_BASE_URL AI_JSON_MODE AI_TOKENS_PARAM AI_EXTRA_BODY AI_TIMEOUT_MS AI_MAX_OUTPUT_TOKENS AI_MONTHLY_REVIEWS AI_DAILY_REVIEWS AI_DAILY_TOKEN_CAP AI_ALLOW JUDGE_WORKERS
         run: |
-          for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET ORIGIN_CERT ORIGIN_KEY; do
+          set -eu
+          for name in ORIGIN_CERT ORIGIN_KEY; do
             value=$(printenv "$name" || true)
             if [ -n "$value" ]; then encoded=$(printf %s "$value" | base64 -w0); echo "::add-mask::$encoded"; else encoded=''; fi
             echo "${name}_B64=$encoded" >> "$GITHUB_ENV"
           done
+          # The whole settings file (systemd EnvironmentFile lines NAME="value"), from GitHub only.
+          node -e '
+            const names = (k) => (process.env[k] || "").split(/\s+/).filter(Boolean);
+            const missing = names("REQUIRED").filter((n) => !process.env[n]);
+            if (missing.length) { console.log("::error::Missing GitHub secrets: " + missing.join(", ") + ". The server gets its settings only from GitHub (ops/README.md)."); process.exit(1); }
+            const lines = [], set = [];
+            for (const n of [...names("REQUIRED"), ...names("OPTIONAL_SECRETS"), ...names("OPTIONAL_VARS")]) {
+              const v = process.env[n];
+              if (!v) continue;
+              if (/[\r\n]/.test(v)) { console.log("::error::Setting " + n + " has a line break; settings are one line each."); process.exit(1); }
+              lines.push(n + "=\"" + v.replace(/[\\"$]/g, "\\$&") + "\"");
+              set.push(n);
+            }
+            const b64 = Buffer.from(lines.join("\n") + "\n").toString("base64");
+            console.log("::add-mask::" + b64);
+            require("fs").appendFileSync(process.env.GITHUB_ENV, "API_ENV_B64=" + b64 + "\n");
+            console.log("API settings from GitHub (names only): " + set.join(" "));'
           # Shape of MONGODB_URI as yes/no facts only (never the value), so a bad secret is easy to spot.
           node -e '
             const u = process.env.MONGODB_URI || ""; const yn = (b) => (b ? "yes" : "NO");
@@ -87,7 +130,7 @@ jobs:
       - name: Deploy to VPS and check local endpoint
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
         with:
-          envs: GOOGLE_CLIENT_ID_B64,MONGODB_URI_B64,SESSION_SECRET_B64,ORIGIN_CERT_B64,ORIGIN_KEY_B64
+          envs: API_ENV_B64,ORIGIN_CERT_B64,ORIGIN_KEY_B64
           # The server: repository variables VPS_HOST, VPS_USER, VPS_FINGERPRINT (Settings → Secrets and variables →
           # Actions → Variables; secrets of the same names also work). Changing servers = changing these (ops/README.md).
           # The fallbacks are the old Bluehost server; remove them once the variables are set.
@@ -150,19 +193,17 @@ jobs:
             app node "$APP/backend/scripts/check-content.mjs" "$REL"
             point "$REL"
 
-            # Sign-in settings: written to a root-only file when all three secrets are set; otherwise
-            # the file is left as it is (sign-in stays off until it exists). Values never reach the log.
+            # API settings: the whole root-only file is replaced from GitHub on every deploy (built in "Prepare API
+            # settings"), so nothing set by hand on a server survives or is needed. Names that were on the server but
+            # are not in GitHub are listed (names only) so a forgotten setting is visible. Values never reach the log.
             ENVDIR=/etc/tech-katta
-            if [ -n "${GOOGLE_CLIENT_ID_B64:-}" ] && [ -n "${MONGODB_URI_B64:-}" ] && [ -n "${SESSION_SECRET_B64:-}" ]; then
-              sudo -n mkdir -p "$ENVDIR"
-              for name in GOOGLE_CLIENT_ID MONGODB_URI SESSION_SECRET; do
-                eval "encoded=\${${name}_B64}"
-                printf '%s="%s"\n' "$name" "$(printf %s "$encoded" | base64 -d | sed 's/[\\"$]/\\&/g')"
-              done | sudo -n sh -c "umask 077; cat > '$ENVDIR/api.env.next' && mv -f '$ENVDIR/api.env.next' '$ENVDIR/api.env'"
-              echo 'Sign-in settings written.'
-            else
-              echo 'Sign-in secrets not all set; leaving sign-in settings as they are.'
-            fi
+            sudo -n mkdir -p "$ENVDIR"
+            printf %s "$API_ENV_B64" | base64 -d > /tmp/tk-api.env; chmod 600 /tmp/tk-api.env
+            DROPPED=$(sudo -n sh -c "test -f '$ENVDIR/api.env' && sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' '$ENVDIR/api.env'" | while read -r n; do grep -q "^$n=" /tmp/tk-api.env || printf '%s ' "$n"; done || true)
+            [ -z "$DROPPED" ] || echo "Settings removed from the server (not in GitHub; add them there to keep them): $DROPPED"
+            sudo -n sh -c "umask 077; cat /tmp/tk-api.env > '$ENVDIR/api.env.next' && mv -f '$ENVDIR/api.env.next' '$ENVDIR/api.env'"
+            rm -f /tmp/tk-api.env
+            echo 'API settings written from GitHub.'
 
             # TLS for servers set up by ops/provision-vps.sh (they have /etc/tech-katta/tls): the Cloudflare Origin
             # certificate from the ORIGIN_CERT / ORIGIN_KEY secrets, so no server needs it pasted by hand. Written only
