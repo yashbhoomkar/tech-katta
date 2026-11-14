@@ -1,6 +1,6 @@
 // The canvas itself: the design, saving, adding and connecting components, a watched request or replay.
 import{INK,INK_3,LINE,CAT_TEAL,CAT_GREEN,CAT_PINK,CAT_VIOLET,CAT_AMBER}from"../theme/palette.js";import{useTheme}from"../theme/mode.js";import React,{useCallback,useEffect,useMemo,useRef,useState}from"react";
-import{ReactFlow,Background,Controls,ControlButton,MiniMap,addEdge,useNodesState,useEdgesState,useReactFlow,ConnectionMode}from"@xyflow/react";import{designChecks}from"./checks.js";import{toMermaid,toSvg,download,copyText,fileName}from"./export.js";import{TINT}from"./drawing.js";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
+import{ReactFlow,Background,Controls,ControlButton,MiniMap,addEdge,useNodesState,useEdgesState,useReactFlow,useNodesInitialized,ConnectionMode}from"@xyflow/react";import{designChecks}from"./checks.js";import{toMermaid,toSvg,download,copyText,fileName}from"./export.js";import{TINT}from"./drawing.js";import{protocolOf,inferProtocol,cleanLabel,PROTOCOL}from"./protocols.js";
 import{catalogue,displayName}from"./engine.js";
 import{STORE_KEY,MAX_NODES}from"./store.js";import{runChallenge}from"../eval/challenge.js";import{recordStars}from"../progress.js";import{track}from"../analytics.js";import{paletteV2}from"./LabV2.jsx";import{allowedEdge,evalCatalogue}from"../eval/design.js";
 import{deletedIds,W,H,freeSpot,newId,Ctx,load,save,persistNew,toFlow,fromFlow,edge}from"./shared.jsx";import{nodeTypes,edgeTypes}from"./nodes.jsx";import{layout as arrange}from"./drawing.js";import{Palette}from"./Palette.jsx";import{Inspector}from"./Inspector.jsx";import{useProgress,Score}from"./Score.jsx";
@@ -37,7 +37,24 @@ if(!Object.keys(s.designs).length){const id=newId("design");s.designs[id]={id,na
 const cur=store.designs[store.current];const init=useMemo(()=>toFlow(cur),[store.current]);// eslint-disable-line
 const[nodes,setNodes,onNodesChange]=useNodesState(init.nodes);const[edges,setEdges,onEdgesChange]=useEdgesState(init.edges);
 const[name,setName]=useState(cur.name);const wrap=useRef(null);const loaded=useRef(store.current);
-useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);setTimeout(()=>rf.fitView({padding:.25,maxZoom:1}),30)},[store.current]);// eslint-disable-line
+useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.current=store.current;const f=toFlow(store.designs[store.current]);setNodes(f.nodes);setEdges(f.edges);setName(store.designs[store.current].name);moved.current=false;setTimeout(()=>fitVisible(),60)},[store.current]);// eslint-disable-line
+// Fitting the design to what is on screen (context 36, faults 1.1 to 1.3): on the canvas's real size once its cards are
+// measured, again whenever the canvas changes size (the problem pane hidden or shown, the divider dragged, the side
+// panels hidden for a replay) and when the results panel opens, closes or shrinks over its lower part. Never after the
+// visitor has panned or zoomed it themselves, until they press Fit (or F) or a replay starts or ends.
+const moved=useRef(false);const traceRef=useRef(trace);traceRef.current=trace;
+const fitVisible=useCallback((duration=0)=>{const el=wrap.current;const ns=rf.getNodes();if(!el||!ns.length)return;const fr=el.getBoundingClientRect();if(fr.width<80||fr.height<80)return;
+const cover=[...document.querySelectorAll(".sv-console,.sv-player")].map(x=>x.getBoundingClientRect()).filter(r=>r.height>0&&r.top>fr.top+60&&r.top<fr.bottom);
+const visH=(cover.length?Math.min(...cover.map(r=>r.top)):fr.bottom)-fr.top,b=rf.getNodesBounds(ns),pad=Math.min(48,fr.width*.06);
+const zoom=Math.max(.25,Math.min(1,(fr.width-2*pad)/Math.max(b.width,1),(visH-2*pad)/Math.max(b.height,1)));
+rf.setViewport({x:(fr.width-b.width*zoom)/2-b.x*zoom,y:(visH-b.height*zoom)/2-b.y*zoom,zoom},{duration})},[rf]);
+const inited=useNodesInitialized();useEffect(()=>{if(inited&&!moved.current&&!traceRef.current)fitVisible()},[inited]);// eslint-disable-line
+useEffect(()=>{const el=wrap.current;if(!el||typeof ResizeObserver==="undefined")return;let t=0;const again=()=>{clearTimeout(t);t=setTimeout(()=>{if(!moved.current&&!traceRef.current)fitVisible()},90)};
+const ro=new ResizeObserver(again);ro.observe(el);let watched=null;const host=el.closest(".sv-lab");
+const look=()=>{const c=host?.querySelector(".sv-console,.sv-player")||null;if(c===watched)return;if(watched)ro.unobserve(watched);watched=c;if(c)ro.observe(c);again()};
+const mo=host?new MutationObserver(look):null;mo?.observe(host,{childList:true,subtree:true});look();return()=>{clearTimeout(t);ro.disconnect();mo?.disconnect()}},[fitVisible]);
+useEffect(()=>{moved.current=false},[!!replay]);// eslint-disable-line
+const watching=useRef(!!trace);useEffect(()=>{if(watching.current&&!trace){moved.current=false;setTimeout(()=>fitVisible(300),60)}watching.current=!!trace},[!!trace]);// eslint-disable-line
 // Saving (QA H3, H4): every save re-reads what is stored and writes back only this design, so two
 // tabs don't overwrite each other's designs. Edits are saved 400 ms after they stop; leaving the page, the
 // section or the design saves at once. The embedded Lab (landing page) never changes which design the full Lab opens.
@@ -60,6 +77,9 @@ const progress=useProgress();const ch=(lab.challenges||[]).find(c=>c.id===store.
 
 const nodesRef=useRef(nodes);nodesRef.current=nodes;
 const selected=nodes.find(n=>n.selected);const selEdge=selected?null:edges.find(e=>e.selected);
+// The settings float over the canvas's right side: a component selected under them slides left into view.
+useEffect(()=>{if(!selected)return;const t=setTimeout(()=>{const el=wrap.current?.querySelector(`.react-flow__node[data-id="${CSS.escape(selected.id)}"]`),ins=wrap.current?.parentElement?.querySelector(".lab-ins:not(.idle)");if(!el||!ins||getComputedStyle(ins).position!=="relative")return;
+const a=el.getBoundingClientRect(),b=ins.getBoundingClientRect();const over=a.right+16-b.left;if(over<=0||a.bottom<b.top||a.top>b.bottom)return;const v=rf.getViewport();rf.setViewport({...v,x:v.x-over},{duration:250})},60);return()=>clearTimeout(t)},[selected?.id]);// eslint-disable-line
 const labelOf=id=>{const n=nodes.find(x=>x.id===id);return n?displayName(cat[n.data.kind],{name:n.data.name,config:n.data.config,type:n.data.kind}):"?"};const removeEdge=id=>setEdges(es=>es.filter(e=>e.id!==id));
 const add=useCallback((kind,pos)=>{if(nodesRef.current.length>=MAX_NODES)return;track("component_add",{type:kind});const id=newId(kind);const at=pos||rf.screenToFlowPosition({x:(wrap.current?.getBoundingClientRect().left||0)+(wrap.current?.clientWidth||600)/2,y:(wrap.current?.getBoundingClientRect().top||0)+(wrap.current?.clientHeight||400)/2});
 setNodes(ns=>[...ns.map(n=>({...n,selected:false})),{id,type:"comp",position:freeSpot(ns,at.x-W/2,at.y-H/2),selected:true,data:{kind,config:{}}}])},[cat,rf,setNodes]);
@@ -89,12 +109,16 @@ const travel=dir=>{const h=hist.current,from=dir<0?h.past:h.future,to=dir<0?h.fu
 const f=toFlow(JSON.parse(snap));setNodes(f.nodes);setEdges(f.edges);setHistTick(x=>x+1);track("canvas_undo",{dir:dir<0?"undo":"redo"})};
 useEffect(()=>{const k=e=>{const tag=(e.target?.tagName||"").toLowerCase();if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
 const mod=e.metaKey||e.ctrlKey;if(mod&&e.key.toLowerCase()==="z"){e.preventDefault();travel(e.shiftKey?1:-1)}else if(mod&&e.key.toLowerCase()==="y"){e.preventDefault();travel(1)}
-else if(e.key==="Escape"&&showChecks)setShowChecks(false);else if(e.shiftKey&&!mod&&e.key.toLowerCase()==="r"){const s=edges.find(x=>x.selected);if(s){e.preventDefault();reverse(s.id)}}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
+else if(e.key==="Escape"&&showChecks)setShowChecks(false);else if(e.key==="Escape"&&(nodes.some(n=>n.selected)||edges.some(x=>x.selected))){setNodes(ns=>ns.map(n=>n.selected?{...n,selected:false}:n));setEdges(es=>es.map(x=>x.selected?{...x,selected:false}:x))}else if(!mod&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==="f"){e.preventDefault();moved.current=false;fitVisible(300)}else if(e.shiftKey&&!mod&&e.key.toLowerCase()==="r"){const s=edges.find(x=>x.selected);if(s){e.preventDefault();reverse(s.id)}}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)});
 // Checks while you build (checks.js): the evaluator's first stage on the design, 500 ms after edits stop; a problem only.
 const[exported,setExported]=useState("");const[checks,setChecks]=useState([]);const[showChecks,setShowChecks]=useState(false);
 useEffect(()=>{if(!problem?.practice){setChecks([]);return}const t=setTimeout(()=>setChecks(designChecks(fromFlow(nodes,edges),lab,problem.practice)),500);return()=>clearTimeout(t)},[nodes,edges,problem?.practice,lab]);// eslint-disable-line
 const flagged=useMemo(()=>new Map(checks.filter(c=>c.node).map(c=>[c.node,c])),[checks]);
 const[dragging,setDragging]=useState(false);
+// The palette can shrink to icons (context 36, fault 1.2): the visitor's choice is kept; until they choose, it starts as
+// icons inside a problem when the window is narrower than 1,700 px, where the canvas would otherwise get a third of it.
+const[narrow,setNarrowState]=useState(()=>{try{const v=localStorage.getItem("tk-pal-narrow");if(v!==null)return v==="1"}catch{}return!!problem&&typeof innerWidth==="number"&&innerWidth<1700});
+const setNarrow=v=>{setNarrowState(v);try{localStorage.setItem("tk-pal-narrow",v?"1":"0")}catch{}track("palette_narrow",{on:v?1:0})};
 // Drop from the palette: only when released over the canvas.
 const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;add(kind,rf.screenToFlowPosition({x,y}))};
 const pick=id=>{writeDesign(loaded.current);setStore(s=>({...s,current:id}));if(!embedded){const latest=load(lab);if(latest.designs[id]){latest.current=id;save(latest)}}};
@@ -118,7 +142,7 @@ const protos=Object.fromEntries(edges.map(e=>[e.id,protocolOf(e.data,kind[e.sour
 const geo=arrange(box,edges.map(e=>({id:e.id,from:e.source,to:e.target,text:e.data?.label||protos[e.id].name})));
 return edges.map(e=>{const proto=protos[e.id];
 return{...e,data:{...e.data,proto,...(geo[e.id]?{geo:geo[e.id]}:{})},...(e.markerEnd&&typeof e.markerEnd==="object"?{markerEnd:{...e.markerEnd,color:col[proto.color]||INK}}:{})}})},[edges,layout,theme]);// eslint-disable-line
-return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge,flagged:replay||trace?null:flagged}}><div className={"lab"+(trace?" lab-watch":"")}>
+return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge,flagged:replay||trace?null:flagged}}><div className={"lab"+(trace||replay?" lab-watch":"")+(narrow?" pal-narrow":"")}>
 <header className="lab-top">{embedded&&!embedded.h1?<h3 className="sr">{lab.title}</h3>:<h1 className="sr">{lab.title}</h1>}<input className="lab-name" value={name} onChange={e=>setName(e.target.value)} aria-label="Design name" maxLength={60}/>
 {embedded&&<a className="lab-btn ghost lab-open" href={embedded.href}>{embedded.back?`← ${embedded.open}`:`${embedded.open} →`}</a>}
 {ch&&<button type="button" className="lab-btn ghost lab-score-top" onClick={scoreIt}>Score ★</button>}
@@ -130,11 +154,11 @@ return <Ctx.Provider value={{cat,trace,replay,flow,pickEdge,flagged:replay||trac
 </header>
 <div className="lab-status" aria-live="polite">{replay?<span>{replay.status}</span>:badStart?<span className="lab-warn">There is no challenge called “{badStart}”. Pick one on the Problems page.</span>:ch?<span className="lab-muted">Score your design to see which stars it earns.</span>:problem?.practice&&checks.length?<span className="lab-checks"><button type="button" className={"lab-chk "+(checks.some(c=>c.level==="error")?"bad":"warn")} aria-expanded={showChecks} onClick={()=>setShowChecks(v=>!v)}>{checks.length===1?"1 thing to fix":`${checks.length} things to fix`} {showChecks?"▴":"▾"}</button>{!showChecks&&<span className="lab-muted lab-chk-first">{checks[0].message}</span>}</span>:problem?.practice&&nodes.length>1?<span className="lab-ok">✓ Nothing stops this design from running. Run or Submit to test it.</span>:<span className="lab-muted">Run or Submit to test this design; then ▶ Replay a load test to watch it here.</span>}
 {showChecks&&!replay&&checks.length>0&&<ul className="lab-chk-list">{checks.map((c,k)=><li key={k} className={c.level}><button type="button" disabled={!c.node} onClick={()=>{if(!c.node)return;setShowChecks(false);setNodes(ns=>ns.map(n=>({...n,selected:n.id===c.node})));const n=rf.getNode(c.node);if(n)rf.setCenter(n.position.x+100,n.position.y+40,{zoom:Math.max(rf.getZoom(),.9),duration:400})}}>{c.message}</button></li>)}</ul>}</div>
-<Palette lab={lab} comps={paletteV2(lab)} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging}/>
+<Palette lab={lab} comps={paletteV2(lab)} onAdd={k=>add(k)} onDropAt={dropAt} setDragging={setDragging} narrow={narrow} setNarrow={embedded?null:setNarrow}/>
 <div className={"lab-canvas"+(dragging?" drop":"")} ref={wrap}>
 <ReactFlow colorMode={theme} nodes={nodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={ch=>onNodesChange(locked.size?ch.filter(c=>!(c.type==="remove"&&locked.has(c.id))):ch)} onEdgesChange={onEdgesChange} onConnect={onConnect} isValidConnection={valid}
-fitView fitViewOptions={{padding:.25,maxZoom:1}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} connectionMode={ConnectionMode.Loose} onPaneClick={()=>setShowChecks(false)} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
-<Background gap={20} size={1} color={LINE}/><Controls showInteractive={false} position="bottom-left">{!replay&&<><ControlButton onClick={()=>travel(-1)} disabled={!hist.current.past.length} title="Undo (Ctrl+Z)" aria-label="Undo">↶</ControlButton><ControlButton onClick={()=>travel(1)} disabled={!hist.current.future.length} title="Redo (Shift+Ctrl+Z)" aria-label="Redo">↷</ControlButton></>}</Controls>
+onMoveStart={e=>{if(e)moved.current=true}} minZoom={.25} maxZoom={2} snapToGrid snapGrid={[20,20]} connectionMode={ConnectionMode.Loose} onPaneClick={()=>setShowChecks(false)} deleteKeyCode={["Backspace","Delete"]} defaultEdgeOptions={{type:"arrow"}}>
+<Background gap={20} size={1} color={LINE}/><Controls showInteractive={false} showFitView={false} position="bottom-left"><ControlButton className="react-flow__controls-fitview" onClick={()=>{moved.current=false;fitVisible(300)}} title="Fit the design to the screen (F)" aria-label="Fit view">⤢</ControlButton>{!replay&&<><ControlButton onClick={()=>travel(-1)} disabled={!hist.current.past.length} title="Undo (Ctrl+Z)" aria-label="Undo">↶</ControlButton><ControlButton onClick={()=>travel(1)} disabled={!hist.current.future.length} title="Redo (Shift+Ctrl+Z)" aria-label="Redo">↷</ControlButton></>}</Controls>
 {!embedded&&nodes.length>5&&<MiniMap className="lab-mini" position="bottom-right" pannable zoomable ariaLabel="Map of the design" nodeColor={n=>({teal:CAT_TEAL,green:CAT_GREEN,pink:CAT_PINK,violet:CAT_VIOLET,amber:CAT_AMBER})[TINT[n.data?.kind]]||INK_3} nodeStrokeWidth={0} nodeBorderRadius={6} maskColor="transparent"/>}</ReactFlow>
 {!nodes.length&&<div className="lab-empty">Drag components here from the left to start a design.</div>}</div>
 <Inspector hl={embedded&&!embedded.h1?4:2} fieldHints={problem?.fields||(chStart?[...new Set(Object.values(chStart.entities||{}).flatMap(e=>Object.keys(e.fields||{})))]:undefined)} rename={rename} conn={selected&&selected.data.kind!=="database"?{out:edges.filter(e=>e.source===selected.id),targets:nodes.filter(n=>valid({source:selected.id,target:n.id})),add:t=>onConnect({source:selected.id,target:t}),dupName:n=>nodes.filter(x=>x.data.kind===n.data.kind).length>1}:null} lab={lab} node={selected} edge={selEdge} removeEdge={removeEdge} labelOf={labelOf} update={update} remove={remove} ch={ch} best={ch?progress.stars[ch.id]:0} goals={ch?progress.goals[ch.id]:null} score={scoreIt} ops={problem?.ops||(chStart?chStart.operations.map(o=>({id:o.id,name:o.name})):undefined)} setCarries={setCarries} reverse={reverse} canReverse={canReverse(selEdge)} setLook={setLook} autoProto={selEdge?inferProtocol(nodes.find(n=>n.id===selEdge.source)?.data.kind,nodes.find(n=>n.id===selEdge.target)?.data.kind):null} lockedIds={locked}/>

@@ -237,3 +237,22 @@
 .lab-export-menu button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.lab-export-menu p{margin:4px 10px 6px;font:600 11px var(--mono);color:var(--success)}
 
 .ln-m.ln-cost{color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* The canvas gets the window (context 36, fault 1.2): on wide screens the settings float over the canvas's right side and
+   appear only when a component or an arrow is selected (or a challenge's goals are shown), and the palette can shrink to icons. */
+@media(min-width:901px){
+.lab{grid-template-columns:var(--palw,208px) minmax(0,1fr)}
+.lab-pal{grid-column:1;grid-row:3}.lab-canvas{grid-column:2;grid-row:3}
+.lab-ins{grid-column:2;grid-row:3;justify-self:end;align-self:start;position:relative;z-index:6;width:300px;max-height:calc(100% - 24px);margin:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);box-shadow:var(--shadow-2)}
+.lab-ins.idle{display:none}
+.lab.lab-watch .lab-canvas{grid-column:1/-1}
+.lab-pal .lab-h{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.lab-pal-toggle{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:6px;width:24px;height:22px;padding:0;font:600 13px/1 var(--font);cursor:pointer}
+.lab-pal-toggle:hover{color:var(--ink);border-color:var(--line-strong,var(--ink-3))}
+.lab.pal-narrow{--palw:64px}
+.pal-narrow .lab-pal{padding:10px 8px 16px}
+.pal-narrow .lab-h>span,.pal-narrow .lab-tip,.pal-narrow .lab-item>span{display:none}
+.pal-narrow .lab-pal .lab-h{justify-content:center}
+.pal-narrow .lab-g{font-size:0;margin:8px 4px;border-top:1px solid var(--line)}
+.pal-narrow .lab-item{justify-content:center;padding:8px 0;gap:0}
+}
