@@ -26,12 +26,11 @@
   "hero": {
     "eyebrow": "FIELD NOTES / DISTRIBUTED SYSTEMS",
     "title": "System design, explained.",
-    "titleLines": ["System design,", "explained."],
     "description": "Design it on a canvas. Real traffic, crashed servers and the bill judge it. Built for Indian scale.",
     "primary": "Start learning",
     "secondary": "Try IND vs PAK",
-    "figure": "Fig. 01 · Kafka: producer, broker, consumer group",
-    "status": "2 partitions · 2 consumers",
+    "figure": "FIG. 01 — KAFKA: PRODUCER, BROKER, CONSUMER GROUP",
+    "status": "2 PARTITIONS · 2 CONSUMERS",
     "caption": "Each key hashes to one partition, so order holds per key. Each consumer in the group owns one partition and reads it in offset order; records stay in the log after they are read.",
     "primaryHref": "/dashboard/",
     "secondaryHref": "#ind-vs-pak",
@@ -39,7 +38,7 @@
     "chipText": "8 challenges, scored out of 3 stars",
     "chipHref": "/dashboard/problems/",
     "judge": {
-      "title": "The judge · URL shortener",
+      "title": "THE JUDGE · URL SHORTENER",
       "rows": [["A quiet afternoon", "Passed"], ["Evening peak", "Passed"], ["A server dies at peak", "Passed"], ["Inside ₹1 lakh a month", "Yes"]],
       "stars": 3,
       "label": "Example run: the URL shortener's tests, all passed, three stars"
@@ -346,7 +345,6 @@
   "footer": {
     "label": "TECH KATTA / SYSTEMS KNOWLEDGE",
     "updated": "Last updated",
-    "legal": [["Privacy", "/dashboard/privacy/"], ["Terms", "/dashboard/terms/"]],
     "links": [
       "Concepts",
       "Components",
@@ -756,7 +754,7 @@
     "backToProblems": "All problems"
   },
   "inside": {
-    "eyebrow": "What's inside",
+    "eyebrow": "WHAT'S INSIDE",
     "title": "Practise system design the way interviews test it",
     "desc": "Problems with tests, scored challenges, and visual notes.",
     "items": [
@@ -797,56 +795,8 @@
     "cta": "All problems and your progress",
     "ctaHref": "/dashboard/problems/"
   },
-  "tagline": {
-    "eyebrow": "Why it sticks",
-    "text": "Read the idea. Draw the design. Then let real traffic, a dead server and the monthly bill tell you if it holds."
-  },
-  "how": {
-    "eyebrow": "How it works",
-    "title": "From an idea to a design that holds",
-    "desc": "Every topic follows the same three steps, so practice feels like the interview.",
-    "steps": [
-      {
-        "title": "Read the idea",
-        "text": "Short notes with a figure that moves, so you watch a request travel instead of picturing it. {articles} notes on concepts and the tools interviewers name.",
-        "link": "Start reading",
-        "href": "/dashboard/concepts/"
-      },
-      {
-        "title": "Draw your design",
-        "text": "Place load balancers, caches, queues and databases on a canvas and connect them. Write down the decisions an interviewer will ask about.",
-        "link": "See the questions",
-        "href": "/dashboard/interview-questions/"
-      },
-      {
-        "title": "Let the judge decide",
-        "text": "Each problem runs tests with real numbers: a quiet afternoon, the evening peak, a server dying at peak, and the monthly bill. You see which test failed and why.",
-        "link": "Solve a problem",
-        "href": "/dashboard/problems/"
-      }
-    ]
-  },
-  "faq": {
-    "eyebrow": "Questions",
-    "title": "Before you start",
-    "items": [
-      ["Is Tech Katta free?", "Yes. Articles, problems and notes are free with a Google account. Without one, you can read the opening of every article."],
-      ["Who is it for?", "Engineers preparing for system design interviews, and anyone who wants to know how large apps stay up. The examples use Indian scale: crores of users and bills in rupees."],
-      ["How is my design judged?", "A judge runs your design against tests with real numbers: requests a second, what each server can take, failures and cost. Each test passes or fails with the reason. Challenges score out of three stars."],
-      ["What does it cover?", "Networking, APIs, data models, caching, sharding, consistent hashing, CAP and indexing; tools like Redis, Kafka, PostgreSQL and Cassandra; and {questions} interview questions worked end to end."],
-      ["Do I need to install anything?", "No. Everything runs in the browser, on a computer or a phone. The canvas works best on a larger screen."],
-      ["Is my progress saved?", "Your progress is kept in this browser. Sign in and your designs, scores and stars follow you to every device."],
-      ["Who writes it?", "One engineer writes and checks every note and problem. Corrections are welcome."]
-    ]
-  },
-  "final": {
-    "title": "Your next interview has a design question. Practise it here first.",
-    "text": "Start with one idea today. It takes five minutes.",
-    "primary": "Start learning",
-    "primaryHref": "/dashboard/"
-  },
   "landingLab": {
-    "eyebrow": "Try it now",
+    "eyebrow": "TRY IT NOW",
     "title": "Can your design survive IND vs PAK?",
     "desc": "3.5 crore people watched India play Pakistan on one app. Add what's missing, press Run, see if the stream holds.",
     "problem": "ind-vs-pak",
@@ -857,7 +807,7 @@
     "fail": "Not yet. Read why, change the design, and run again.",
     "open": "Open the full problem",
     "openHref": "/dashboard/problems/ind-vs-pak/",
-    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a chunk of 4 seconds every 4 seconds; capacities and prices are rules of thumb.",
+    "note": "Peak of 3.5 crore people watching at once: ICC Men's Cricket World Cup 2023, India vs Pakistan, as reported by the broadcaster. The app here is made up. Each player fetches a 4-second chunk every 4 seconds; capacities and prices are rules of thumb.",
     "lite": {
       "diagram": "Your design, from the viewers down to your servers",
       "viewers": "3.5 crore viewers",

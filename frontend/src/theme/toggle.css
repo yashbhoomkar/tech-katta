@@ -5,5 +5,3 @@
 /* ===== Katta Paper skin ===== */
 .theme-btn{border:1px solid var(--line-strong);border-radius:50%;background:var(--bg);transition:border-color var(--dur-fast) var(--ease)}
 .theme-btn:hover,.theme-btn:focus-visible{border-color:var(--ink);color:var(--ink)}
-/* Phosphor icons are filled shapes (spec 32) */
-.theme-btn .ph{width:16px;height:16px;fill:currentColor;stroke:none}

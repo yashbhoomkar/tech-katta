@@ -10,9 +10,9 @@ const built=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",y
 export const FIRST={"/index.html":["/v1/site"],"/dashboard/index.html":["/v1/site","/v1/articles"]};
 export function apiHints(api){return{name:"api-hints",transformIndexHtml(html,ctx){const first=FIRST[ctx.path];if(!first)return html;
 return html.replace("</title>",`</title><link rel="preconnect" href="${api}" crossorigin/><link rel="preconnect" href="${api}"/>${first.map(p=>`<link rel="preload" as="fetch" href="${api}${p}" crossorigin="anonymous"/>`).join("")}`)}}}
-// The font a first screen draws with (theme/fonts.js, Geist): its Latin file is preloaded, so headline and body text
+// The two fonts a first screen draws with (theme/fonts.js): their Latin files are preloaded, so headline and body text
 // arrive with the page instead of after the stylesheet is read. Names are matched in the finished build (they carry hashes).
-export const FONT_PRELOAD=[/geist-latin-wght-normal/];
+export const FONT_PRELOAD=[/instrument-sans-latin-wght-normal/,/source-serif-4-latin-wght-normal/];
 export function fontPreload(){return{name:"font-preload",transformIndexHtml(html,ctx){if(!ctx.bundle)return html;const files=Object.keys(ctx.bundle).filter(f=>f.endsWith(".woff2")&&FONT_PRELOAD.some(r=>r.test(f)));
 return html.replace("</title>",`</title>${files.map(f=>`<link rel="preload" as="font" type="font/woff2" href="/${f}" crossorigin/>`).join("")}`)}}}
 export default defineConfig(({mode})=>{const api=(loadEnv(mode,__dirname,"VITE_").VITE_API_BASE||"https://tech-api.katta.cc").replace(/\/$/,"");
