@@ -36,6 +36,11 @@ DEPLOY_PUBKEY_URL=${DEPLOY_PUBKEY_URL:-https://raw.githubusercontent.com/yashbho
 say() { printf '\n== %s\n' "$*"; }
 export DEBIAN_FRONTEND=noninteractive
 
+WARN=""
+VIRT=$(systemd-detect-virt 2>/dev/null) || true; VIRT=${VIRT:-unknown}
+say "Machine: $VIRT virtualization, $(nproc) vCPU, $(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo) MB memory"
+case "$VIRT" in openvz|lxc|lxc-libvirt) WARN="$WARN\n- $VIRT is container virtualization (not KVM): swap and the firewall may be refused.";; esac
+
 say "Packages"
 apt-get update -q
 apt-get install -y -q ca-certificates curl git gnupg nginx ufw openssl unattended-upgrades >/dev/null
@@ -47,9 +52,15 @@ echo "node $(node -v), npm $(npm -v), nginx $(nginx -v 2>&1 | sed 's/.*\///')"
 
 say "Swap (only when the machine has under 3 GB of memory and no swap)"
 if [ "$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)" -lt 3000 ] && ! swapon --show | grep -q .; then
-  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
-  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
-  echo "2 GB swap added"
+  # container-style VPSes (OpenVZ, LXC) refuse swap files: warn and go on instead of stopping
+  if { fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none; } 2>/dev/null \
+     && chmod 600 /swapfile && mkswap /swapfile >/dev/null 2>&1 && swapon /swapfile 2>/dev/null; then
+    grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    echo "2 GB swap added"
+  else
+    rm -f /swapfile; WARN="$WARN\n- No swap: this VPS does not allow a swap file. Fine for the API (about 120 MB); deploys may be slower."
+    echo "swap not allowed here; continuing without it"
+  fi
 else echo "not needed"; fi
 
 say "System log size"
@@ -191,8 +202,11 @@ ufw default allow outgoing >/dev/null
 ufw allow 22/tcp comment 'SSH (GitHub Actions deploys)' >/dev/null
 RANGES=$V4; [ "$HAS6" = 1 ] && RANGES="$V4 $V6"
 for c in $RANGES; do ufw allow proto tcp from "$c" to any port 80,443 comment 'Cloudflare' >/dev/null; done
-ufw --force enable >/dev/null
-ufw status | head -5
+if ufw --force enable >/dev/null 2>&1; then ufw status | head -5
+else
+  WARN="$WARN\n- Firewall not active: this VPS does not let ufw manage the firewall. Ports 80/443 are open to everyone (Cloudflare\n  still fronts the site); ask the provider for a KVM plan or set their panel firewall to Cloudflare's ranges."
+  echo "ufw could not be enabled here; continuing"
+fi
 fi
 
 if [ "${HARDEN_SSH:-0}" = 1 ]; then
@@ -201,6 +215,7 @@ if [ "${HARDEN_SSH:-0}" = 1 ]; then
   sshd -t && (systemctl reload ssh 2>/dev/null || systemctl reload sshd)
 fi
 
+if [ -n "$WARN" ]; then say "Warnings"; printf '%b\n' "${WARN#\\n}"; fi
 IP=$(curl -fsS -4 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
 FP=$(ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256 | awk '{print $2}')
 say "Done. In GitHub → tech-katta → Settings → Secrets and variables → Actions → Variables, set:"
