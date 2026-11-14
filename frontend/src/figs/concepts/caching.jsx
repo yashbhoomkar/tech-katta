@@ -1,6 +1,6 @@
 // Concepts › Caching: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "caching").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,DANGER_SOFT,GRID,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show,pace}from"../parts.jsx";
+import{BG,DANGER_SOFT,GRID,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,Life,Msg,INK,GREY,RED,BLUE,LB,LR,T,Fig,X,Mark,Arr,Dot,Glow,Show,Mk,Cap,Caps,pace}from"../parts.jsx";
 
 // Caching in an interview, FIG 1: the same reads with and without a cache.
 function WhyFig({still,uid=""}){const M=`cw${uid}`;
@@ -192,7 +192,21 @@ return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`cwt${uid}`}><titl
 <line x1={x(0)} x2={x(45)} y1={y(0)} y2={y(0)} stroke={GREY}/>{[[0,"8:00 pm"],[15,"8:15"],[25,"8:25"],[35,"8:35"],[45,"8:45"]].map(([t,l])=><g key={t}><line x1={x(t)} x2={x(t)} y1={y(0)-4} y2={y(0)+4} stroke={GREY}/><text x={x(t)} y={y(0)+20} textAnchor="middle" className="fl">{l}</text></g>)}
 {!still&&<g aria-hidden="true"><Dot x1={x(0)} x2={x(45)} y={y(0)} t0={.03} t1={.93} dur={D}/></g>}</svg>}
 
+// Moved from patterns.jsx (that group was removed).
+// Scaling reads, FIG 2: a hot key. 1,000 requests for restaurant 42's menu arrive as its cache entry expires.
+// Without coalescing all of them query the database; with it, one fetches and the rest share the answer.
+function HotKeyMergeFig({still,uid=""}){const M=`hk${uid}`,D=pace(14),Y=[70,92,114,136,158,180,202,224];
+const caps=[["1 · during the match, 1,000 requests a second ask for restaurant 42's menu",INK],["2 · its cache entry expires, and all of them go to the database in the same moment",RED],["3 · coalesce: the first request fetches it, and the others wait for that answer",BLUE],["4 · each server also keeps the menu in memory for 5 seconds, so the key cools down",BLUE]];
+const reqs=x=><g>{Y.map(y=><g key={y}><rect x={x} y={y-8} width="52" height="16" fill={BG} stroke={GREY}/><text x={x+26} y={y+4} textAnchor="middle" className="fl">menu 42</text></g>)}</g>;
+const base=<g><text x="10" y="50" className="fk">WITHOUT COALESCING</text><text x="340" y="50" className="fk">WITH COALESCING</text>{reqs(10)}{reqs(340)}<Bx x={200} y={127} w={100} h={40} t="Database"/><Bx x={440} y={124} w={86} h={46} t="one fetch" s="others wait"/><Bx x={550} y={127} w={80} h={40} t="Database"/></g>;
+const s2=<g>{Y.map(y=><line key={y} x1={64} y1={y} x2={198} y2={147} stroke={RED}/>)}<text x="10" y="252" className="fl" style={{fill:RED}}>1,000 database queries at once</text></g>;
+const s3=<g>{Y.map(y=><line key={y} x1={394} y1={y} x2={438} y2={147} stroke={GREY}/>)}<Ar x1={528} y1={147} x2={548} y2={147} m={M} c={BLUE}/><text x="340" y="252" className="fl" style={{fill:BLUE}}>1 database query; the rest share it</text></g>;
+const s4=<text x="340" y="268" className="fl" style={{fill:BLUE}}>then a copy in each server's memory for 5 s</text>;
+return <svg viewBox="0 0 640 280" role="img" aria-labelledby={`hkt${uid}`}><title id={`hkt${uid}`}>A hot key. During a match, 1,000 requests a second ask for restaurant 42's menu. When its cache entry expires, without coalescing every one of those requests queries the database at the same moment. With coalescing, the first request fetches the menu and the others wait for that one answer, so the database sees one query. Each server also keeps the menu in its own memory for 5 seconds, so the single cache entry is no longer hammered.</title><Mk m={M}/>
+{base}{still?<g>{s2}{s3}{s4}<Cap t={caps[3][0]}/></g>:<g aria-hidden="true"><Caps caps={caps} D={D}/><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g>}</svg>}
+
 export const FIGS={
+"hot-key-merge":{C:HotKeyMergeFig,ar:640/280,title:()=>"ONE KEY EVERYONE WANTS"},
 "ca-why":{C:WhyFig,ar:640/250,title:()=>"THE SAME READS, WITH AND WITHOUT A CACHE"},
 "ca-layers":{C:LayersFig,ar:640/206,title:()=>"ONE MENU VIEW, LAYER BY LAYER"},
 "ca-external":{C:ExternalFig,ar:640/228,title:()=>"ONE CACHE FOR EVERY SERVER"},

@@ -733,7 +733,7 @@
         "Replicate the hot key: keep the same value on several nodes (read replicas, or copies under keys such as promo:final-night:1 … :8) and spread reads across them.",
         "Add a local cache: keep extremely hot values in each server's own memory for a few seconds, so most reads never reach Redis.",
         "Rate-limit abusive patterns: if the traffic on one key comes from a few clients hammering it, slow them down.",
-        "The same problem appears beyond caches whenever millions of people want the same thing at once; the concept 'When reads outnumber writes' covers it as a pattern."
+        "The same problem appears beyond caches whenever millions of people want the same thing at once."
       ]
     },
     {

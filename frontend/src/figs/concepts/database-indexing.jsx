@@ -1,6 +1,6 @@
 // Concepts › Database indexing: the figures this sub-tab's articles draw (site.json dashboard.groups.concepts, "indexing").
 // Shared drawing parts and conventions are in ../parts.jsx. FIGS maps each figure id to { C, ar, title }.
-import{BG,FB,GRID,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Mk,Cap,Caps,Glow,Show,Dot,pace}from"../parts.jsx";
+import{ACCENT_LINE,BG,FB,GRID,SURFACE,SURFACE_2}from"../../theme/palette.js";import React from"react";import{Bx,Ar,INK,GREY,RED,BLUE,LB,LR,T,Fig,Mk,Cap,Caps,Glow,Show,Dot,pace}from"../parts.jsx";
 
 const Pg=({x,y,w,h,c=GREY,fill=BG,t})=><g><rect x={x} y={y} width={w} height={h} fill={fill} stroke={c}/>{t&&<text x={x+w/2} y={y+h/2+4} textAnchor="middle" className="fl" style={{fill:c===GREY?INK:c}}>{t}</text>}</g>;
 
@@ -161,7 +161,29 @@ return <svg viewBox="0 0 640 290" role="img" aria-labelledby={`iot${uid}`}><titl
 <Show t0={.25} t1={.5} dur={D}>{hl([4,5],FB)}</Show><Show t0={.5} t1={.75} dur={D}>{hl([2,3,4,5,6],GRID)}</Show><Show t0={.75} t1={1} dur={D}>{hl(Q3,LR)}</Show></g>{texts}
 <g aria-hidden="true"><Show t0={.25} t1={1} dur={D}>{s2}</Show><Show t0={.5} t1={1} dur={D}>{s3}</Show><Show t0={.75} t1={1} dur={D}>{s4}</Show></g></g>}</svg>}
 
+
+// Moved from specialised.jsx (that group was removed): the quadtree figure and its helpers.
+const FBq=FB;
+const Tq=({x,y,t,c,a,b})=><text x={x} y={y} textAnchor={a} className={b?"fb":"fl"} style={c?{fill:c}:undefined}>{t}</text>;
+const Stq=({caps,g,D=pace(14),only=[]})=><g aria-hidden="true"><Caps caps={caps} D={D}/>{g.map((x,i)=>x&&<Show key={i} t0={i/4} t1={only.includes(i)?(i+1)/4:1} dur={D}>{x}</Show>)}</g>;
+const QPTS=[[.353,.545],[.619,.438],[.341,.492],[.557,.632],[.354,.345],[.585,.557],[.684,.618],[.488,.467],[.808,.465],[.406,.363],[.511,.517],[.459,.493],[.533,.583],[.632,.525],[.285,.584],[.33,.479],[.323,.5],[.407,.526],[.896,.494],[.601,.341],[.465,.579],[.489,.544],[.512,.379],[.568,.403],[.725,.439],[.582,.5],[.91,.47],[.98,.397],[.073,.629],[.779,.27],[.087,.333],[.964,.758],[.118,.246],[.101,.06],[.797,.178],[.559,.447]];
+const qsplit=(x,y,s,d,P)=>{const In=P.filter(([a,b])=>a>=x&&a<x+s&&b>=y&&b<y+s);if(In.length>4&&d<4){const h=s/2;return [[0,0],[h,0],[0,h],[h,h]].flatMap(([dx,dy])=>qsplit(x+dx,y+dy,h,d+1,In))}return [[x,y,s,d,In.length]]};
+function ProxQuadFig({still,uid=""}){const S=220,X0=20,Y0=36,L=qsplit(0,0,1,0,QPTS),Q=[.47,.52];
+const caps=[["1 · start with one square for the whole city: 36 restaurants in it",INK],["2 · split any square holding more than 4 restaurants into four",BLUE],["3 · keep splitting: the busy centre ends in small cells, the outskirts in big ones",BLUE],["4 · a search walks down to the customer's cell and reads it and its neighbours",BLUE]];
+const rect=([x,y,s,d],k,c=GREY,fill="none")=><rect key={k} x={X0+x*S} y={Y0+y*S} width={s*S} height={s*S} fill={fill} stroke={c}/>;
+const leaf=L.find(([x,y,s])=>Q[0]>=x&&Q[0]<x+s&&Q[1]>=y&&Q[1]<y+s);
+const near=L.filter(([x,y,s])=>{const[lx,ly,ls]=leaf;return x<=lx+ls+1e-9&&x+s>=lx-1e-9&&y<=ly+ls+1e-9&&y+s>=ly-1e-9});
+const pts=<g>{QPTS.map(([a,b],i)=><circle key={i} cx={X0+a*S} cy={Y0+b*S} r="2.6" fill={INK}/>)}</g>;
+const base=<g><rect x={X0} y={Y0} width={S} height={S} fill={BG} stroke={GREY}/>{pts}</g>;
+const lvl1=<g>{qsplit(0,0,1,0,QPTS).filter(l=>l[3]<=1).map((l,k)=>rect(l,k))}{[[0,0,.5],[.5,0,.5],[0,.5,.5],[.5,.5,.5]].map((l,k)=>rect([...l,1],"q"+k))}</g>;
+const all=<g>{L.map((l,k)=>rect(l,k))}</g>;
+const q=<g>{near.map((l,k)=>rect(l,"n"+k,BLUE,FBq))}{rect(leaf,"leaf",BLUE,ACCENT_LINE)}{pts}<circle cx={X0+Q[0]*S} cy={Y0+Q[1]*S} r="5" fill={RED}/></g>;
+const side=<g><Tq x={280} y={70} t={`${QPTS.length} restaurants, at most 4 per cell`}/><Tq x={280} y={92} t={`${L.length} cells after splitting`}/><Tq x={280} y={114} t="the smallest are 1/8 of the city's width"/><Tq x={280} y={150} t="busy areas get small cells, quiet ones big cells," c={BLUE}/><Tq x={280} y={166} t="so every cell holds about the same number" c={BLUE}/><Tq x={280} y={210} t="red dot: the customer; blue: cells read" c={RED}/></g>;
+return <svg viewBox="0 0 640 266" role="img" aria-labelledby={`pqt${uid}`}><title id={`pqt${uid}`}>An adaptive quadtree over 36 restaurants in a city. It starts as one square, and any square holding more than 4 restaurants is split into four, up to four levels. The busy centre ends up in small cells and the quiet outskirts in big ones, so every cell holds about the same number. To find restaurants near a customer, the search walks down to the customer's cell and reads it and its neighbours.</title>
+{base}{side}{still?<g>{all}{q}<Cap t={caps[3][0]}/></g>:<Stq caps={caps} only={[1,2]} g={[null,lvl1,all,<g>{all}{q}</g>]}/>}</svg>}
+
 export const FIGS={
+"prox-quadtree":{C:ProxQuadFig,ar:640/266,title:()=>"SMALL CELLS WHERE IT'S BUSY"},
 "ix-scan":{C:ScanFig,ar:640/238,title:()=>"EVERY PAGE, OR FOUR"},
 "ix-cost":{C:CostFig,ar:640/232,title:()=>"ONE INSERT, FOUR WRITES"},
 "ix-btree-find":{C:FindFig,ar:640/238,title:()=>"THREE PAGES TO ID 350"},

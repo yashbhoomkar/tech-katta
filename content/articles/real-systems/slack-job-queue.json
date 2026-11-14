@@ -125,7 +125,7 @@
         "Prefer the smallest change that removes the risk: keep the interfaces, change what's behind them.",
         "Move a consumer's offset only after the work is safely done, and set failing items aside instead of letting them block the queue.",
         "Roll out in shadow mode, count at every hop, and send canaries end to end.",
-        "Related: 'Jobs that run for minutes' and 'When writes outrun one database' in Concepts, 'Kafka in practice' and 'Redis' in Components, and 'Design a job scheduler' in Interview Questions."
+        "Related: 'Sharding' in Concepts, 'Kafka in practice' and 'Redis' in Components, and 'Design a job scheduler' in Interview Questions."
       ]
     },
     {

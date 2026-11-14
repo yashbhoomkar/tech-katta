@@ -148,7 +148,7 @@
         "A single counter row makes everyone wait in line. Rows per unit with SKIP LOCKED let buyers take different rows at once, and a cap on the rows keeps the search short.",
         "When throughput stalls with CPU to spare, look for a pool that has run out: connections, threads, locks. Tag the work so you can see who is holding what.",
         "Migrate with shadow writes: compare, switch the source of truth, keep a way back.",
-        "Related: 'Contention' in Concepts, and 'Design match ticket booking' in Interview Questions."
+        "Related: 'CAP theorem' in Concepts, and 'Design match ticket booking' in Interview Questions."
       ]
     },
     {

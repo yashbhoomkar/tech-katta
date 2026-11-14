@@ -91,7 +91,7 @@
       "t": "list",
       "items": [
         "Start here: these guides. 'How to answer a system design question' is the method every worked answer follows; read it before anything else.",
-        "Concepts: 21 articles on the ideas every design leans on (networking, API design, data modelling, caching, sharding, consistent hashing, CAP, indexing and the numbers to know), the patterns that keep coming back, and specialised data such as maps and time series.",
+        "Concepts: 9 articles on the ideas every design leans on: networking, API design, data modelling, caching, sharding, consistent hashing, CAP, indexing and the numbers to know.",
         "Components: 10 articles on the technologies interviewers expect you to know by name, from Redis and Kafka to PostgreSQL, Cassandra and DynamoDB.",
         "Interview Questions: worked answers. Open one in the workspace first: write your own requirements, numbers and API, build the design on the canvas, run its tests, and only then read ours.",
         "Challenges: scenarios where your design meets real traffic, failures and a monthly bill."

@@ -106,6 +106,126 @@
       "permanent": true
     },
     {
+      "source": "/dashboard/concepts/big-files",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/big-files/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/change-capture",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/change-capture/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/contention",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/contention/",
+      "destination": "/dashboard/concepts/cap-theorem/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/long-jobs",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/long-jobs/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/nearby-search",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/nearby-search/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/real-time-updates",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/real-time-updates/",
+      "destination": "/dashboard/concepts/networking-essentials/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/scaling-reads",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/scaling-reads/",
+      "destination": "/dashboard/concepts/caching/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/scaling-writes",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/scaling-writes/",
+      "destination": "/dashboard/concepts/sharding/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/sketches",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/sketches/",
+      "destination": "/dashboard/concepts/numbers-to-know/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/time-series",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/time-series/",
+      "destination": "/dashboard/concepts/data-modelling/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/vector-search",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/vector-search/",
+      "destination": "/dashboard/concepts/database-indexing/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/workflows",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/workflows/",
+      "destination": "/dashboard/concepts/api-design/",
+      "permanent": true
+    },
+    {
       "source": "/dashboard/concepts/api-types",
       "destination": "/dashboard/concepts/networking-essentials/",
       "permanent": true

@@ -1,5 +1,6 @@
 // Concepts › Caching: the figure ids this article's frontend module (frontend/src/figs/concepts/caching.jsx) draws.
 export const FIGS = [
+  'hot-key-merge',
   'ca-why',
   'ca-layers',
   'ca-external',
