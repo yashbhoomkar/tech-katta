@@ -176,6 +176,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "The toss is a spike you can see coming. The flash sale challenge is a smaller version: five times the usual traffic for 15 minutes. Practise surviving it.",
+      "to": "problems/challenge/flash-sale",
+      "go": "Try the flash sale challenge"
     }
   ],
   "practice": {

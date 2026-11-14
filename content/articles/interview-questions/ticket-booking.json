@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "ticket-booking",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 05",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "5 Nov 2026",
   "title": "Design match ticket booking",
@@ -218,6 +218,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "Ticket sales open with a wall of traffic. The flash sale challenge is the same shape: five times the usual load for 15 minutes, and the database has to survive it.",
+      "to": "problems/challenge/flash-sale",
+      "go": "Try the flash sale challenge"
     },
     {
       "t": "lab",

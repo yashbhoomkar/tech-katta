@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "photo-sharing",
-  "group": "medium",
+  "group": "easy",
   "no": "QUESTION // 06",
-  "tag": "MEDIUM",
+  "tag": "EASY",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design photo sharing",
@@ -203,6 +203,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "Photos are read far more often than they are posted. The read-heavy challenge teaches the same lesson: put a cache in front and keep the database calm.",
+      "to": "problems/challenge/read-heavy",
+      "go": "Try the read-heavy challenge"
     },
     {
       "t": "lab",

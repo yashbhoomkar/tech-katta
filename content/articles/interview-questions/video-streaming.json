@@ -195,6 +195,12 @@
     },
     {
       "t": "lab",
+      "x": "A CDN is a cache, and a cold cache sends every request to the origin. The cache restart challenge shows what that does to the database at peak time.",
+      "to": "problems/challenge/cache-restart",
+      "go": "Try the cache restart challenge"
+    },
+    {
+      "t": "lab",
       "x": "Video lives or dies by the CDN. The IND vs PAK problem is the live version of the same idea.",
       "to": "problems/ind-vs-pak",
       "go": "Try the IND vs PAK problem"

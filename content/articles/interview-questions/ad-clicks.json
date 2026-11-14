@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "ad-clicks",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 16",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design ad click counting",

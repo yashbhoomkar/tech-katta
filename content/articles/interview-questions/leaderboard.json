@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "leaderboard",
-  "group": "medium",
+  "group": "easy",
   "no": "QUESTION // 15",
-  "tag": "MEDIUM",
+  "tag": "EASY",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a live leaderboard",
@@ -180,6 +180,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "A live leaderboard usually sits in a cache. The cache restart challenge asks what happens when that cache comes back empty in the middle of the rush.",
+      "to": "problems/challenge/cache-restart",
+      "go": "Try the cache restart challenge"
     },
     {
       "t": "lab",

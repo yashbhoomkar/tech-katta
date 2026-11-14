@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "payments",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 12",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a payment system",
