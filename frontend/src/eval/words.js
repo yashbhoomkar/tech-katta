@@ -140,7 +140,11 @@ export function checkLabel(c, practice, cat = {}) {
   switch (c.kind) {
     case 'slo': {
       const a = c.availability ?? op?.slo?.availability, p = c.p99Ms ?? op?.slo?.p99Ms;
-      if (!op && c.availability === undefined && c.p99Ms === undefined) return `Every call meets its targets${win}`;
+      if (!op && c.availability === undefined && c.p99Ms === undefined) {
+        // name each call's own targets (context 36, step 3), so a pass or a fail can be read against the numbers
+        const each = ops.filter((o) => o.slo && (o.slo.availability !== undefined || o.slo.p99Ms !== undefined)).map((o) => `${o.name} ${[o.slo.availability !== undefined ? `${o.slo.availability}%` : null, o.slo.p99Ms !== undefined ? `${o.slo.p99Ms.toLocaleString('en-US')} ms` : null].filter(Boolean).join(' · ')}`);
+        return `Every call meets its targets${each.length ? `: ${each.join('; ')}` : ''}${win}`;
+      }
       return `${name}: ${[a !== undefined ? `at least ${a}% succeed` : null, p !== undefined ? `99% within ${p.toLocaleString('en-US')} ms` : null].filter(Boolean).join(' · ')}${win}`;
     }
     case 'completes': return `${op ? `${name}: work` : 'Work'} done after answering finishes${c.withinSec ? ` within ${c.withinSec} s` : ' in time'}`;

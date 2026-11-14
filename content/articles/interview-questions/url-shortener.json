@@ -221,7 +221,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "The tests send one region's share of the traffic: 20,000 requests a second in the afternoon, 35,000 at the evening peak, about 98 opens for every new link and one click count for every open. Popular links are opened far more often than the rest: about 5 crore links get almost all the opens.",
+    "brief": "The tests send one region's share of the traffic: 20,000 requests a second in the afternoon, 35,000 at the evening peak, about 98 opens for every new link. Counting a click is checked by its own request test; the load tests send opens and new links. Popular links are opened far more often than the rest: about 5 crore links get almost all the opens.",
     "entities": {
       "links": {
         "rows": 5000000000,
