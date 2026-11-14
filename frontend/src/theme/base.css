@@ -5,7 +5,12 @@
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-kerning:normal;font-synthesis-weight:none}
 h1,h2,h3,h4{text-wrap:balance}p,li,dd,blockquote{text-wrap:pretty}
 table,.tk-num,[data-num]{font-variant-numeric:tabular-nums}
+/* No italics anywhere (spec 32): emphasis is weight and colour. Icons drawn with <i> are unaffected. */
+em,i,cite,dfn,address,var{font-style:normal}
+:is(p,li,dd,blockquote,td)>em{font-weight:500;color:var(--ink)}
+/* Weights: 400, 500 and 600 for the sans (nothing heavier than bold) */
+b,strong{font-weight:600}
 /* Reduced motion: every transition that uses the motion tokens stops. */
-@media(prefers-reduced-motion:reduce){:root{--dur-fast:0s;--dur:0s}}
+@media(prefers-reduced-motion:reduce){:root{--dur-fast:0s;--dur:0s;--dur-move:0s;--dur-enter:0s;--dur-slow:0s}}
 /* CountUp.jsx: the final number for screen readers while the digits move (landing and dashboard) */
 .tk-count{font-variant-numeric:tabular-nums}.tk-count>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
