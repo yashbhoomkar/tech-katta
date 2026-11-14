@@ -45,7 +45,8 @@ export const downFor = (n) => (n.type === 'database' && n.standby ? n.comp.crash
 export function startFault(f, st, t) {
   const crashable = (n) => n.crashable;
   if (f.kind === 'crash') {
-    const id = busiest(st, f.type, crashable);
+    // a named part (Break it yourself, context 36 step 4), or the busiest of the type
+    const id = f.node && st.info[f.node] ? (crashable(st.info[f.node]) ? f.node : null) : busiest(st, f.type, crashable);
     // two schedulers: the other takes over (phase 6)
     if (id && st.info[id].type === 'scheduler' && (st.info[id].cfg.count || 1) >= 2) { st.events.push({ t, node: id, kind: 'failover', forced: true }); return; }
     // a cache with a replica in another zone: the replica takes over within a minute, with the data (phase 7)
@@ -77,6 +78,7 @@ export function startFault(f, st, t) {
     if (id) st.slow[id] = { factor: f.factor ?? 5, until: t + (f.minutes ?? 10) };
   } else if (f.kind === 'spike') {
     st.spikes.push({ factor: f.factor ?? 2, op: f.op || null, until: t + (f.minutes ?? 10) });
+    if (f.mark) st.events.push({ t, node: null, kind: 'spike', factor: f.factor ?? 2 });
   } else if (f.kind === 'externalDown') {
     // every external service of that kind (or of any kind) stops answering for a while
     for (const id of st.order) { const n = st.info[id]; if (n.type === 'external' && (!f.preset || n.cfg.preset === f.preset)) takeDown(st, id, t, t + (f.minutes ?? 10), 'crashed', true); }
