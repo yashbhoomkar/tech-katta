@@ -194,3 +194,38 @@
 .lab .lab-mini svg{width:180px;height:120px}
 @media(max-width:900px){.lab .lab-mini{display:none}}
 @media(prefers-reduced-motion:reduce){.lab-chk-list{animation:none}}
+
+/* Replay animations (spec 33): the glow and heartbeat follow the load (--rho, --g, --bp set per card), a crash cracks
+   the tile, and each kind adds its own state. Transform and opacity only; reduced motion keeps the final states. */
+.ln-rp::after{content:"";position:absolute;inset:-1px;border-radius:12px;pointer-events:none;box-shadow:0 0 22px -2px var(--glow,var(--tile));opacity:var(--g,.3);transition:opacity .4s}
+.ln-rp.warn{--glow:var(--warn-mid)}.ln-rp.over{--glow:var(--danger)}.ln-rp.over::after{animation:tk-alarm 1s ease-in-out 3}
+.ln-rp.down::after,.ln-rp.idle::after{opacity:0;transition:opacity .8s}.ln-rp.idle{opacity:.55}
+@keyframes tk-alarm{50%{opacity:1}}
+.ln-tile{position:relative}
+.ln-beat{position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 0 2px var(--bg)}
+.ln-beat::after{content:"";position:absolute;inset:0;border-radius:50%;background:inherit;animation:tk-beat var(--bp,2.4s) cubic-bezier(.22,1,.36,1) infinite}
+.ln-rp.warn .ln-beat,.ln-rp.over .ln-beat{background:var(--warn-mid)}.ln-rp.down .ln-beat{background:var(--danger)}.ln-rp.down .ln-beat::after{animation:none}
+@keyframes tk-beat{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(2.6);opacity:0}}
+.ln-crack{position:absolute;inset:0;width:100%;height:100%}.ln-rp.down .ln-tile .lab-ico{opacity:.25}
+.ln-crack path{fill:none;stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-dasharray:30;stroke-dashoffset:30;animation:tk-draw .4s .15s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes tk-draw{to{stroke-dashoffset:0}}
+.ln-rp .ln-bar{border-radius:2px;overflow:hidden}.ln-rp .ln-bar i{width:100%;transform-origin:0 50%;transform:scaleX(var(--rho,0));transition:transform .4s cubic-bezier(.22,1,.36,1),background .3s;background:var(--tile)}
+.ln-rp.warn .ln-bar i{background:var(--warn-mid)}.ln-rp.over .ln-bar i{background:var(--danger)}
+.ln-slots{display:flex;align-items:center;gap:3px;margin-top:7px}.ln-slots small{font:600 10px var(--mono);color:var(--muted)}
+.ln-slot{flex:1;max-width:20px;height:10px;border-radius:3px;background:var(--line);position:relative;overflow:hidden;animation:tk-slot-in .45s cubic-bezier(.22,1,.36,1);transition:opacity .3s,transform .45s cubic-bezier(.22,1,.36,1)}
+.ln-slot i{position:absolute;inset:0;background:var(--tile);transform-origin:0 100%;transform:scaleY(var(--rho,0));transition:transform .4s cubic-bezier(.22,1,.36,1)}
+.ln-slot.gone{opacity:0;transform:translateY(8px) rotate(14deg)}
+@keyframes tk-slot-in{from{opacity:0;transform:translateX(8px)}}
+.ln-discs{position:relative;height:16px;margin-top:7px}
+.ln-discs span{position:absolute;top:0;height:14px;padding:0 6px;border-radius:7px;font:600 9px/14px var(--mono);letter-spacing:.04em;transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s}
+.ln-discs .p{left:0;background:color-mix(in srgb,var(--tile) 18%,transparent);color:var(--tile)}.ln-discs .s{left:76px;background:var(--surface);color:var(--muted)}
+.ln-discs.fo .p{transform:translateY(10px);opacity:0}.ln-discs.fo .s{transform:translateX(-76px);background:color-mix(in srgb,var(--tile) 18%,transparent);color:var(--tile)}
+.ln-ring{position:absolute;inset:-6px;width:44px;height:44px;transform:rotate(-90deg)}.ln-ring circle{fill:none;stroke-width:2.5;stroke:var(--line)}
+.ln-ring .fg{stroke:var(--tile);stroke-dasharray:132;transition:stroke-dashoffset .8s cubic-bezier(.22,1,.36,1)}
+.ln-blocks{display:flex;gap:2px;margin-top:7px;height:9px}.ln-blocks i{width:8px;border-radius:2px;background:var(--tile);animation:tk-blk .3s cubic-bezier(.22,1,.36,1)}.ln-blocks i.over{background:var(--danger)}
+@keyframes tk-blk{from{opacity:0;transform:translateX(-6px)}}
+.lab-rdot{fill:var(--tile,var(--ink-3));pointer-events:none}.lab-rdot.fail{fill:var(--danger)}
+@keyframes tk-march{to{stroke-dashoffset:-22}}
+.lab-pill.err{border-color:var(--danger)}.lab-pill.err::before{background:var(--danger);animation:tk-alarm .8s ease-in-out 3}
+.lab-pill.dead{opacity:.75}.lab-pill.dead::before{background:var(--line-strong)}.lab-pill em{font-style:normal;font-weight:500;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.ln-rp::after,.ln-beat::after,.ln-crack path,.ln-slot,.ln-blocks i,.lab-pill.err::before{animation:none!important}.ln-crack path{stroke-dashoffset:0}.lab .react-flow__edge-path{animation:none!important}}
