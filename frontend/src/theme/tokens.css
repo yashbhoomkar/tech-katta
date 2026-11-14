@@ -7,11 +7,9 @@
    The colours ("Katta Paper", back by the owner's choice on 2026-11-13, spec 28): warm white paper, white cards that float on it,
    ink text, marigold for the main buttons and highlights, ochre (marigold in dark) for links, focus and figure lines; the layout is Stage (spec 26): the landing hero and the dashboard sidebar are dark in both themes
    (class .on-dark: the dark values below, scoped to that element). */
-/* Local faces measured against the web fonts (spec 30 §3.4): same average width and line box, so a page drawn in the
+/* Local faces measured against the web fonts (spec 32 §3; first spec 30 §3.4): same average width and line box, so a page drawn in the
    fallback and redrawn in the web font keeps its line breaks. */
-@font-face{font-family:"TK Sans Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101.6%;ascent-override:95%;descent-override:24.5%;line-gap-override:0%}
-@font-face{font-family:"TK Serif Fallback";src:local("Georgia");size-adjust:103%;ascent-override:101%;descent-override:33%;line-gap-override:0%}
-@font-face{font-family:"TK Serif Fallback 2";src:local("Times New Roman"),local("Liberation Serif");size-adjust:118%;ascent-override:88%;descent-override:29%;line-gap-override:0%}
+@font-face{font-family:"TK Sans Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:102.3%;ascent-override:98.7%;descent-override:29.3%;line-gap-override:0%}
 @font-face{font-family:"TK Mono Fallback";src:local("Courier New"),local("Liberation Mono");size-adjust:100%;ascent-override:101%;descent-override:30%;line-gap-override:0%}
 :root{
   color-scheme:light;
@@ -45,6 +43,10 @@
   --brand-tint:#fff3cf;   /* brand-tinted boxes, active sidebar row */
   --on-brand:#1d1b16;
   --mark:#ffd866;         /* the highlighter stroke under a headline word */
+  /* The hero heading's text gradient, left to right (spec 32: the one gradient on the site, text only) */
+  --hero-from:#000000;
+  --hero-to:#666666;
+  --edge-light:rgb(255 255 255 / .4); /* the lit top edge of a main button */
   /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
   --accent:#94600a;
@@ -89,31 +91,39 @@
   --scrim:rgb(var(--ink-rgb) / .36);
   --glass:rgb(var(--page-rgb) / .86);
   /* Type */
-  /* Type (spec 30): Instrument Sans for the interface and reading, Source Serif 4 for headlines, Geist Mono for figures,
-     code and numbers (theme/fonts.js). Each is followed by a local face sized to match it, so nothing jumps when the
-     font arrives. */
-  --font:"Instrument Sans Variable","TK Sans Fallback",Arial,sans-serif;
-  --font-display:"Source Serif 4 Variable","TK Serif Fallback","TK Serif Fallback 2",Georgia,serif;
+  /* Type (spec 32, from the design skills the owner chose): ONE typeface, Geist, for the interface, reading and
+     headlines; Geist Mono only where a monospace does a job (figures, code, numbers). No italics, nothing above
+     600. --font-display is the same face, kept as a name so headline rules stay readable. Each is followed by a
+     local face sized to match it, so nothing jumps when the font arrives. */
+  --font:"Geist Variable","TK Sans Fallback",Arial,sans-serif;
+  --font-display:var(--font);
   --mono:"Geist Mono Variable","TK Mono Fallback",ui-monospace,monospace;
-  /* Shape */
+  /* Shape: only Tailwind's radius steps (sm 2, 4, md 6, lg 8, xl 12, 2xl 16, 3xl 24, full). A shape inside another
+     with a gap under 32 px takes the outer radius minus the gap (when that is more than 2). */
   --radius:8px;
   --r-sm:6px;
-  --r-md:10px;
-  --r-lg:14px;
-  --r-xl:18px;
-  --r-full:999px;
-  --r-btn:999px;          /* buttons are pills (spec 25 §6, Brilliant-inspired) */
-  /* Motion: every transition uses these, and reduced motion sets them to 0 (theme/base.css) */
-  /* (spec 30 §4) one motion language: arrivals ease out fast and settle slowly (expo-out); hover and press use a
-     small spring; things moving between two places ease in and out. */
-  --dur-fast:.14s;        /* feedback: colour, underline */
-  --dur:.24s;             /* state: hover lift, open, close */
-  --dur-enter:.5s;        /* things arriving on the page (theme/motion.css) */
+  --r-md:12px;
+  --r-lg:16px;
+  --r-xl:24px;
+  --r-full:9999px;
+  --r-btn:8px;            /* buttons: rounded-lg, 8 px by 12 px padding (spec 32 §4) */
+  /* Spacing: only these steps (spec 32 §4) */
+  --s-25:2px;--s-50:4px;--s-75:8px;--s-100:12px;--s-200:16px;--s-300:24px;--s-400:32px;--s-500:40px;--s-600:48px;--s-700:64px;--s-800:80px;--s-900:96px;
+  /* Type scale (Tailwind steps) as named text styles: size and its paired line height. Use these, never a loose size. */
+  --t-xs:12px/16px;--t-sm:14px/20px;--t-base:16px/24px;--t-lg:18px/28px;--t-xl:20px/28px;--t-2xl:24px/32px;--t-3xl:30px/36px;--t-4xl:36px/40px;--t-5xl:48px/1;--t-6xl:60px/1;--t-7xl:72px/1;
+  /* Motion: every transition uses these, and reduced motion sets them to 0 (theme/base.css).
+     (spec 32 §5) one weighted curve that decelerates into place, cubic-bezier(.22,1,.36,1), for everything:
+     500 ms for movement, 300 ms for colour and opacity, never under 200 ms. The other names are kept so older
+     rules read the same curve. */
+  --dur-fast:.2s;         /* feedback: colour, underline (the floor) */
+  --dur:.3s;              /* state: colour and opacity on hover, open, close */
+  --dur-move:.5s;         /* movement: lift, slide, layout */
+  --dur-enter:.7s;        /* things arriving on the page: scroll reveals (theme/reveal.js) */
   --dur-slow:.8s;         /* the landing headline */
-  --ease:cubic-bezier(.16,1,.3,1);
-  --ease-in-out:cubic-bezier(.65,0,.35,1);
-  --ease-spring:cubic-bezier(.34,1.36,.64,1);
-  --rise:16px;            /* how far arriving things travel */
+  --ease:cubic-bezier(.22,1,.36,1);
+  --ease-in-out:var(--ease);
+  --ease-spring:var(--ease);
+  --rise:32px;            /* how far arriving things travel (Spacing-400) */
   --stagger:60ms;
   /* depth: cards rest on --card-shadow and lift onto --lift-shadow */
   --lift-shadow:0 1px 2px rgb(var(--ink-rgb) / .04),0 6px 12px -4px rgb(var(--ink-rgb) / .08),0 22px 40px -16px rgb(var(--ink-rgb) / .22);
@@ -122,11 +132,11 @@
 /* Dark: the same roles. Keep contrast: --ink on --bg and --muted on --surface both at least 4.5:1. */
 .on-dark,:root[data-theme=dark]{
   color-scheme:dark;
-  --page:#15140f;
-  --bg:#1e1c16;
-  --surface:#28261e;
-  --surface-2:#191812;
-  --hover:#2e2b22;
+  --page:#131209;
+  --bg:#1f1f1f;
+  --surface:#272727;
+  --surface-2:#181818;
+  --hover:#313131;
   --inverse:#f4f1e8;
   --on-inverse:#1d1b16;
   --ink:#f4f1e8;
@@ -139,7 +149,7 @@
   --line-strong:#5e594a;
   --line:#322f26;
   --line-soft:#3d3a2f;
-  --grid:#22201a;
+  --grid:#181818;
   --brand:#ffc233;
   --brand-strong:#ffd466;
   --brand-edge:#b88400;
@@ -148,6 +158,9 @@
   --brand-tint:#30260f;
   --on-brand:#1d1b16;
   --mark:#7d5c00;
+  --hero-from:#ffffff;
+  --hero-to:#9b9b9b;
+  --edge-light:rgb(255 255 255 / .3);
   --accent:#ffc233;
   --accent-strong:#ffd466;
   --accent-mid:#a87a10;
@@ -176,8 +189,8 @@
   --cat-teal:#22b8cf;
   --cat-pink:#f472b6;
   --ink-rgb:0 0 0;
-  --bg-rgb:30 28 22;
-  --page-rgb:21 20 15;
+  --bg-rgb:31 31 31;
+  --page-rgb:19 18 9;
   --accent-rgb:255 194 51;
   --shadow-1:0 1px 2px rgb(0 0 0 / .4);
   --shadow-2:0 2px 4px rgb(0 0 0 / .35),0 10px 24px rgb(0 0 0 / .35);

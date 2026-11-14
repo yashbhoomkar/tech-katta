@@ -21,55 +21,32 @@
   :root:not(#_) :is(a.card,a.h-card,a.has-thumb) :is(svg,img){transition:transform var(--dur-enter) var(--ease)}
   :root:not(#_) :is(a.card,a.h-card,a.has-thumb):hover :is(svg,img){transform:scale(1.02)}
 
-  /* 3. The landing headline comes into focus as it rises (blur to sharp); the italic word follows a beat later */
-  @keyframes tk-unmask{from{transform:translateY(.32em);opacity:0;filter:blur(8px)}}
-  :root:not(#_) .hero h1{animation:tk-unmask var(--dur-slow) var(--ease) .05s both}
-  :root:not(#_) .hero h1 .tk-mark{display:inline-block;animation:tk-unmask var(--dur-slow) var(--ease) .28s both}
-  :root:not(#_) .hero>div>:not(h1){animation-duration:var(--dur-enter)}
-  /* 4. Section headings and lists further down the landing and the dashboard arrive as they come into view
-     (scroll-driven; browsers without it just show them) */
-  @supports (animation-timeline:view()){
-    :root:not(#_) :is(.inside>h2,.inside-desc,.numbers,.lp-eyebrow,.d-group>h2,.d-group>p){animation:tk-rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
-    :root:not(#_) :is(.d-list,.cards) :is(li,.card):nth-child(n+9){animation:tk-rise linear both;animation-timeline:view();animation-range:entry 0% entry 50%}
-  }
   /* 5. Links in the header and footer grow an underline from the left */
   :root:not(#_) :is(.nav a,.foot nav a){background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size var(--dur) var(--ease),color var(--dur-fast) var(--ease)}
   :root:not(#_) :is(.nav a,.foot nav a):hover{background-size:100% 1px}
 }
 
-/* ---- Part C: the landing and the shell (spec 30 §5) ---- */
-/* The announcement chip is quiet: a small lit dot and accent text instead of a filled "New" block */
-:root:not(#_) .hero-chip{padding:6px 14px 6px 12px;gap:10px;font-size:13.5px;color:var(--ink-3)}
-:root:not(#_) .hero-chip b{position:relative;background:none;color:var(--accent);padding:0 0 0 15px;font-size:13px;font-weight:600;letter-spacing:.01em}
-:root:not(#_) .hero-chip b::before{content:"";position:absolute;left:1px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgb(255 194 51 / .28)}
-/* The headline is bigger and finer, the line under it calmer and longer */
-:root:not(#_) .stage .hero h1{font-weight:500;font-size:clamp(46px,7.6vw,104px);line-height:.98;letter-spacing:-.032em}
-:root:not(#_) .stage .hero p{color:var(--ink-3);font-size:clamp(17px,1.5vw,20.5px);line-height:1.55;max-width:600px}
-/* Hero buttons: taller, with weight */
-:root:not(#_) .stage .hero .btn{min-height:50px;padding:0 24px;font:600 15px var(--font);letter-spacing:-.005em}
-/* Section titles on the landing: the serif, finer and tighter */
-:root:not(#_) :is(.inside h2,.lp .ch-title){font-weight:500;letter-spacing:-.03em}
-/* The header: calmer links in the reading sans */
-:root:not(#_) .header .nav{font:500 14.5px var(--font);letter-spacing:-.005em}
+/* ---- Part C: the shell (spec 30 §5; the landing moved to landing.css in spec 32) ---- */
 /* Small interface labels (sidebar groups, table heads, kickers, meta): a tracked small sans instead of the
    terminal-style mono caps; figures, the canvas and code keep the mono */
 :root:not(#_) :is(.side-group,.r-rate,.qt-start small,.pb-meta small,.pb-sum,.d-panel>label,.d-rail nav>b,table th){font-family:var(--font);font-weight:600;letter-spacing:.07em}
-:root:not(#_) :is(.side-group,.d-panel>label,.d-rail nav>b,table th){font-size:11px}
+:root:not(#_) :is(.side-group,.d-panel>label,.d-rail nav>b,table th){font-size:12px}
 /* The figure header on the landing: the label in a lighter weight, so the figure leads */
 :root:not(#_) .frame .fig-head b{font-weight:500}
 
 /* ---- Part D: the reading view (spec 30 §3.3) ---- */
-/* Paragraphs keep a book's measure (37 em, about 66 characters; ch would measure the wide figure 0) at 17.5 px, so figures stand wider than the text */
-:root:not(#_) :is(.d-article>p,.d-article>ul,.d-article>ol,.a-type>p){font-size:17.5px;line-height:1.7;max-width:37em}
-:root:not(#_) .d-article h2{font:500 clamp(26px,2.4vw,31px)/1.18 var(--font-display);letter-spacing:-.018em}
-:root:not(#_) .d-article h3{font:600 21px/1.3 var(--font-display);letter-spacing:-.012em;margin-top:36px}
-/* Article and page titles: the serif at a finer weight */
-:root:not(#_) :is(.d-article h1,.d-panel>h1){font-weight:500;letter-spacing:-.025em}
+/* Paragraphs keep a book's measure (36 em, about 65 characters) at 18/28 (Body 7, spec 32), so figures stand wider than the text */
+:root:not(#_) :is(.d-article>p,.d-article>ul,.d-article>ol,.a-type>p){font-size:18px;line-height:28px;max-width:36em}
+:root:not(#_) .d-article h2{font:600 30px/36px var(--font-display);letter-spacing:-.022em}
+:root:not(#_) .d-article h3{font:600 20px/28px var(--font-display);letter-spacing:-.012em;margin-top:32px}
+/* Article and page titles: Geist semibold, set tight (spec 32) */
+:root:not(#_) :is(.d-article h1,.d-panel>h1){font-weight:600;letter-spacing:-.03em}
 /* Inline code reads in the mono at the text's size */
 :root:not(#_) .d-article :is(p,li) code{font-size:.88em;padding:.1em .35em;border-radius:var(--r-sm);background:var(--surface)}
 @media(max-width:680px){
-  :root:not(#_) :is(.d-article>p,.d-article>ul,.d-article>ol,.a-type>p){font-size:17px;max-width:none}
-  :root:not(#_) .d-article h3{font-size:19px}
+  :root:not(#_) :is(.d-article>p,.d-article>ul,.d-article>ol,.a-type>p){font-size:16px;line-height:24px;max-width:none}
+  :root:not(#_) .d-article h2{font-size:24px;line-height:32px}
+  :root:not(#_) .d-article h3{font-size:18px;line-height:28px}
 }
 
 /* ---- Part E (spec 30 "left for later") ---- */
@@ -84,14 +61,3 @@
   :root:not(#_) .side-mark{transition:transform .42s var(--ease),height .42s var(--ease),width .42s var(--ease)}
   ::view-transition-group(tk-side-mark){animation-duration:.42s;animation-timing-function:var(--ease)}
 }
-/* The header firms up as you scroll: no edge over the top of the page (it melts into the hero), a hairline and
-   shadow once content runs under it. It follows the reader's own scrolling (like the reading progress line), so it stays on under reduced motion. */
-@supports (animation-timeline:scroll()){
-  @keyframes tk-firm{from{border-bottom-color:transparent;box-shadow:none}}
-  :root:not(#_) .header{animation:tk-firm linear both;animation-timeline:scroll(root);animation-range:0 96px}
-}
-/* Numbered sections on the landing: a small "— 01 —" above each section's title, counted down the page */
-:root:not(#_) body{counter-reset:tk-sec}
-:root:not(#_) .inside>h2::before,:root:not(#_) .lp>.lp-eyebrow::before{counter-increment:tk-sec;content:counter(tk-sec,decimal-leading-zero)}
-:root:not(#_) .inside>h2::before{display:block;width:max-content;margin:0 auto 18px;padding:0 34px;font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--accent);background:linear-gradient(var(--line-strong),var(--line-strong)) left center/22px 1px no-repeat,linear-gradient(var(--line-strong),var(--line-strong)) right center/22px 1px no-repeat}
-:root:not(#_) .lp>.lp-eyebrow::before{margin-right:.7em;padding-right:.7em;border-right:1px solid var(--line-strong)}
