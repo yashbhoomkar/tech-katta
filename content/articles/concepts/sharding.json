@@ -345,8 +345,7 @@
     {
       "t": "code",
       "label": "Hash sharding over four shards",
-      "x": "shard = hash(customer_id) % 4\n\ncustomer 42   → hash(42)  % 4 = 2  → shard 2\ncustomer 99   → hash(99)  % 4 = 3  → shard 3\ncustomer 123  → hash(123) % 4 = 1  → shard 1",
-      "say": "The shard is the hash of the customer id modulo four. Customer 42 goes to shard 2, customer 99 to shard 3, and customer 123 to shard 1."
+      "x": "shard = hash(customer_id) % 4\n\ncustomer 42   → hash(42)  % 4 = 2  → shard 2\ncustomer 99   → hash(99)  % 4 = 3  → shard 3\ncustomer 123  → hash(123) % 4 = 1  → shard 1"
     },
     {
       "t": "list",
@@ -531,8 +530,7 @@
     {
       "t": "code",
       "label": "A transfer between shards, as a saga",
-      "x": "1. debit   wallet A  ₹500   (shard 1, local transaction)\n2. credit  wallet B  ₹500   (shard 2, local transaction)\n   if step 2 fails:\n2'. refund  wallet A  ₹500   (shard 1, compensating step)",
-      "say": "Step one debits wallet A by 500 rupees on shard 1. Step two credits wallet B on shard 2. If step two fails, a compensating step refunds wallet A on shard 1."
+      "x": "1. debit   wallet A  ₹500   (shard 1, local transaction)\n2. credit  wallet B  ₹500   (shard 2, local transaction)\n   if step 2 fails:\n2'. refund  wallet A  ₹500   (shard 1, compensating step)"
     },
     {
       "t": "p",

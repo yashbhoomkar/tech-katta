@@ -81,8 +81,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /photos   { \"restaurant\": \"r_88\", \"dish\": \"Ghee roast dosa\", \"caption\": \"…\" }\n→ 201 { \"photo\": \"p_7f\", \"upload_url\": \"<signed PUT, 10 min>\" }\n\nPUT <upload_url>            (the image goes straight to object storage)\n\nGET /users/u_12/photos?cursor=…        → 200 { \"photos\": [ { \"id\": \"p_7f\", \"thumb\": \"https://img.zot…/p_7f/320.webp\", … } ], \"cursor\": \"…\" }\nGET /restaurants/r_88/photos?cursor=…  → same shape\nPUT /photos/p_7f/like   DELETE /photos/p_7f/like\nDELETE /photos/p_7f",
-      "say": "Posting a photo creates its record and returns a signed upload URL; the app puts the image straight into object storage. A person's photos and a restaurant's photos are both listed newest first with a cursor, each with links to its sizes on the image CDN. Liking is a put or a delete on the photo's like, and the owner can delete a photo."
+      "x": "POST /photos   { \"restaurant\": \"r_88\", \"dish\": \"Ghee roast dosa\", \"caption\": \"…\" }\n→ 201 { \"photo\": \"p_7f\", \"upload_url\": \"<signed PUT, 10 min>\" }\n\nPUT <upload_url>            (the image goes straight to object storage)\n\nGET /users/u_12/photos?cursor=…        → 200 { \"photos\": [ { \"id\": \"p_7f\", \"thumb\": \"https://img.zot…/p_7f/320.webp\", … } ], \"cursor\": \"…\" }\nGET /restaurants/r_88/photos?cursor=…  → same shape\nPUT /photos/p_7f/like   DELETE /photos/p_7f/like\nDELETE /photos/p_7f"
     },
     {
       "t": "h2",

@@ -95,7 +95,7 @@ export function pagesOf(site, articles) {
       page.body = `<main><nav aria-label="Breadcrumb"><a href="${SITE}/">Tech Katta</a> / <a href="${esc(urlOf(a.section))}">${esc(label)}</a></nav>`
         + `<article><p>${esc(a.no || "")}${a.tag ? ` · ${esc(a.tag)}` : ""}</p><h1>${esc(a.title)}</h1><p>${esc(description)}</p>${a.date ? `<p><time datetime="${date || ""}">${esc(a.date)}</time></p>` : ""}`
         + previewHtml(a.body)
-        + `<div class="tk-locked"><p><b>Continue reading.</b> The rest of this article, its diagrams and read-aloud are free with a Google account: <a href="${esc(url)}">sign in to read it</a>.</p></div>`
+        + `<div class="tk-locked"><p><b>Continue reading.</b> The rest of this article and its diagrams are free with a Google account: <a href="${esc(url)}">sign in to read it</a>.</p></div>`
         + (heads.length ? `<h2>In this article</h2><ol>${heads.map((h) => `<li>${inl(h)}</li>`).join("")}</ol>` : "")
         + `</article>${sib.length ? `<nav aria-label="More in ${esc(label)}"><h2>More in ${esc(label)}</h2><ul>${sib.map((x) => `<li>${link(x)}</li>`).join("")}</ul></nav>` : ""}</main>${nav}`;
       page.ld = [{ "@context": "https://schema.org", "@graph": [ORG, WEBSITE,

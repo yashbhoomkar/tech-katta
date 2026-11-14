@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /submissions              { \"problem\": \"p_3\", \"language\": \"python\", \"code\": \"…\" }\n                               → 202 { \"id\": \"s_91\" }\nGET  /submissions/s_91         → 200 { \"status\": \"done\", \"verdict\": \"accepted\", \"cpu_ms\": 840 }\nGET  /leaderboard?from=0       → 200 { \"rows\": [ … ] }",
-      "say": "Send code and get an id back at once. Ask for its verdict, or get it pushed. Read the leaderboard a page at a time."
+      "x": "POST /submissions              { \"problem\": \"p_3\", \"language\": \"python\", \"code\": \"…\" }\n                               → 202 { \"id\": \"s_91\" }\nGET  /submissions/s_91         → 200 { \"status\": \"done\", \"verdict\": \"accepted\", \"cpu_ms\": 840 }\nGET  /leaderboard?from=0       → 200 { \"rows\": [ … ] }"
     },
     {
       "t": "p",

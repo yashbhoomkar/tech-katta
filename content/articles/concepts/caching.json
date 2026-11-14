@@ -369,8 +369,7 @@
     {
       "t": "code",
       "label": "Cache-aside, in a few lines",
-      "x": "def get_menu(restaurant_id):\n    key = f\"menu:{restaurant_id}\"\n    menu = redis.get(key)\n    if menu is not None:\n        return menu                       # hit\n    menu = db.load_menu(restaurant_id)    # miss: one database read\n    redis.set(key, menu, ex=600)          # keep it for 10 minutes\n    return menu\n\ndef update_dish(restaurant_id, dish):\n    db.save_dish(dish)                    # the database first\n    redis.delete(f\"menu:{restaurant_id}\")  # then drop the stale copy",
-      "say": "Get menu: build the key menu colon restaurant id and look it up in Redis. If it's there, return it. Otherwise load the menu from the database, store it in Redis for ten minutes, and return it. Update dish: save the dish in the database first, then delete the cached menu so the next read fetches the new one."
+      "x": "def get_menu(restaurant_id):\n    key = f\"menu:{restaurant_id}\"\n    menu = redis.get(key)\n    if menu is not None:\n        return menu                       # hit\n    menu = db.load_menu(restaurant_id)    # miss: one database read\n    redis.set(key, menu, ex=600)          # keep it for 10 minutes\n    return menu\n\ndef update_dish(restaurant_id, dish):\n    db.save_dish(dish)                    # the database first\n    redis.delete(f\"menu:{restaurant_id}\")  # then drop the stale copy"
     },
     {
       "t": "h3",

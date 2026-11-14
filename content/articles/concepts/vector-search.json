@@ -95,8 +95,7 @@
     {
       "t": "code",
       "label": "ZOTATO · VECTORS IN POSTGRESQL (PGVECTOR)",
-      "x": "CREATE EXTENSION vector;\nALTER TABLE dishes ADD COLUMN embedding vector(768);\nCREATE INDEX ON dishes USING hnsw (embedding vector_cosine_ops);\n\nSELECT id, name FROM dishes\nWHERE veg AND restaurant_open\nORDER BY embedding <=> $1          -- cosine distance to the query's vector\nLIMIT 10;",
-      "say": "Using the pgvector extension in PostgreSQL. Add a 768-number embedding column to dishes and an HNSW index using cosine distance. Then select veg dishes from open restaurants, ordered by cosine distance to the query's vector, ten results."
+      "x": "CREATE EXTENSION vector;\nALTER TABLE dishes ADD COLUMN embedding vector(768);\nCREATE INDEX ON dishes USING hnsw (embedding vector_cosine_ops);\n\nSELECT id, name FROM dishes\nWHERE veg AND restaurant_open\nORDER BY embedding <=> $1          -- cosine distance to the query's vector\nLIMIT 10;"
     },
     {
       "t": "h2",

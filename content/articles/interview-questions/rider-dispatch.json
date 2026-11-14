@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /riders/r_88/location   { \"lat\": 18.5204, \"lng\": 73.8567, \"at\": \"20:31:04\" }   → 204\n← (to the rider app)          { \"offer\": { \"order\": \"#91\", \"pickup\": \"Koregaon Park\", \"expires_in\": 20 } }\nPOST /offers/#91/accept       → 200 { \"assigned\": true }    or 409 { \"assigned\": false, \"reason\": \"expired\" }",
-      "say": "Riders send their location every few seconds. Offers are pushed to the rider app. Accepting succeeds only while the offer still stands."
+      "x": "POST /riders/r_88/location   { \"lat\": 18.5204, \"lng\": 73.8567, \"at\": \"20:31:04\" }   → 204\n← (to the rider app)          { \"offer\": { \"order\": \"#91\", \"pickup\": \"Koregaon Park\", \"expires_in\": 20 } }\nPOST /offers/#91/accept       → 200 { \"assigned\": true }    or 409 { \"assigned\": false, \"reason\": \"expired\" }"
     },
     {
       "t": "h2",

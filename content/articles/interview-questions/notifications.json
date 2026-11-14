@@ -81,8 +81,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /notify   { \"id\": \"ev_7\", \"user\": \"u_42\", \"template\": \"order_on_the_way\",\n                \"data\": { \"order\": \"#91\", \"rider\": \"Imran\" }, \"priority\": \"normal\", \"collapse_key\": \"order_91\" }\n               → 202 { \"id\": \"ev_7\" }\nGET  /notify/ev_7  → 200 { \"push\": \"delivered\", \"sms\": \"skipped (push delivered)\" }",
-      "say": "Send one event and get its id back at once; the service picks channels and sends. Ask later what happened to it."
+      "x": "POST /notify   { \"id\": \"ev_7\", \"user\": \"u_42\", \"template\": \"order_on_the_way\",\n                \"data\": { \"order\": \"#91\", \"rider\": \"Imran\" }, \"priority\": \"normal\", \"collapse_key\": \"order_91\" }\n               → 202 { \"id\": \"ev_7\" }\nGET  /notify/ev_7  → 200 { \"push\": \"delivered\", \"sms\": \"skipped (push delivered)\" }"
     },
     {
       "t": "h2",

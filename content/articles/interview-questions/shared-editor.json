@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "Over the open connection",
-      "x": "← { \"open\": { \"doc\": \"menu_214\", \"seq\": 40, \"text\": \"Tikka ₹220…\" } }\n→ { \"edit\": { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": { \"at\": 7, \"len\": 3, \"with\": \"240\" } } ] } }\n← { \"edit\": { \"seq\": 41, \"by\": \"Ananya\", \"ops\": [ { \"insert\": { \"at\": 0, \"text\": \"Paneer \" } } ] } }\n← { \"ack\": { \"id\": \"e_77\", \"seq\": 42 } }\n→ { \"cursor\": { \"at\": 21 } }",
-      "say": "Open a document and get its text and number. Send an edit with the version you made it on; get back its number. Receive others' edits in order. Share your cursor."
+      "x": "← { \"open\": { \"doc\": \"menu_214\", \"seq\": 40, \"text\": \"Tikka ₹220…\" } }\n→ { \"edit\": { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": { \"at\": 7, \"len\": 3, \"with\": \"240\" } } ] } }\n← { \"edit\": { \"seq\": 41, \"by\": \"Ananya\", \"ops\": [ { \"insert\": { \"at\": 0, \"text\": \"Paneer \" } } ] } }\n← { \"ack\": { \"id\": \"e_77\", \"seq\": 42 } }\n→ { \"cursor\": { \"at\": 21 } }"
     },
     {
       "t": "h2",

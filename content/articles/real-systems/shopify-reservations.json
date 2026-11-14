@@ -61,8 +61,7 @@
     {
       "t": "code",
       "label": "A RESERVATION, SIMPLIFIED (OUR SKETCH)",
-      "x": "-- one transaction, at READ COMMITTED\nSELECT id FROM reservation_units\n WHERE shop_id = ? AND inventory_item_id = ? AND inventory_group_id = ?\n LIMIT 3\n FOR UPDATE SKIP LOCKED;           -- rows others have locked are passed over\n\nDELETE FROM reservation_units WHERE id IN (...);    -- the units first\nINSERT INTO reserved_quantities (...) VALUES (...); -- then the hold\nCOMMIT;",
-      "say": "A simplified reservation in one transaction at read committed. Select three unit rows for this shop, item and inventory group, locking them and skipping rows that other transactions have locked. Delete those rows from the units table, then insert the hold into reserved quantities, and commit."
+      "x": "-- one transaction, at READ COMMITTED\nSELECT id FROM reservation_units\n WHERE shop_id = ? AND inventory_item_id = ? AND inventory_group_id = ?\n LIMIT 3\n FOR UPDATE SKIP LOCKED;           -- rows others have locked are passed over\n\nDELETE FROM reservation_units WHERE id IN (...);    -- the units first\nINSERT INTO reserved_quantities (...) VALUES (...); -- then the hold\nCOMMIT;"
     },
     {
       "t": "p",

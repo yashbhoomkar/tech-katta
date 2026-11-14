@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /matches/m_7/questions/q_12/answer   { \"choice\": \"B\" }   → 202\nGET  /matches/m_7/leaderboard?top=100     → 200 { \"rows\": [ { \"rank\": 1, \"name\": \"…\", \"points\": 460 }, … ] }\nGET  /matches/m_7/me                      → 200 { \"points\": 340, \"rank\": 80412, \"top\": \"2%\" }",
-      "say": "Send an answer (one per question; a resend changes nothing). Read the top 100. Read your own score and rank."
+      "x": "POST /matches/m_7/questions/q_12/answer   { \"choice\": \"B\" }   → 202\nGET  /matches/m_7/leaderboard?top=100     → 200 { \"rows\": [ { \"rank\": 1, \"name\": \"…\", \"points\": 460 }, … ] }\nGET  /matches/m_7/me                      → 200 { \"points\": 340, \"rank\": 80412, \"top\": \"2%\" }"
     },
     {
       "t": "h2",

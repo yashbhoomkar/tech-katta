@@ -77,8 +77,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /links        { \"url\": \"https://zotato.in/r/42/menu?offer=FIRST50\", \"alias\": \"biryani50\", \"expires\": \"2026-12-31\" }\n→ 201 { \"short\": \"https://zot.to/biryani50\" }\n\nGET /{code}\n→ 302 Location: https://zotato.in/r/42/menu?offer=FIRST50\n→ 404 if the code doesn't exist or has expired",
-      "say": "Two calls. POST to links with the long URL, and optionally a custom alias and an expiry, returns the short link. GET on the code answers with a 302 redirect to the long URL, or 404 if the code doesn't exist or has expired."
+      "x": "POST /links        { \"url\": \"https://zotato.in/r/42/menu?offer=FIRST50\", \"alias\": \"biryani50\", \"expires\": \"2026-12-31\" }\n→ 201 { \"short\": \"https://zot.to/biryani50\" }\n\nGET /{code}\n→ 302 Location: https://zotato.in/r/42/menu?offer=FIRST50\n→ 404 if the code doesn't exist or has expired"
     },
     {
       "t": "h2",

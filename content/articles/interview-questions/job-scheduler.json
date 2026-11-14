@@ -78,8 +78,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST   /jobs        { \"id\": \"rate_91\", \"kind\": \"rating_reminder\", \"run_at\": \"2026-11-06T21:42+05:30\", \"payload\": { \"order\": \"#91\" } }  → 201\nPOST   /jobs        { \"id\": \"payouts\", \"kind\": \"daily_payouts\", \"repeat\": \"every day 21:00 Asia/Kolkata\" }  → 201\nDELETE /jobs/rate_91  → 204\nGET    /jobs/payouts/runs?last=7  → 200 { \"runs\": [ … ] }",
-      "say": "Add a one-off or repeating job, with your own id so adding it twice changes nothing. Cancel one. See its last runs."
+      "x": "POST   /jobs        { \"id\": \"rate_91\", \"kind\": \"rating_reminder\", \"run_at\": \"2026-11-06T21:42+05:30\", \"payload\": { \"order\": \"#91\" } }  → 201\nPOST   /jobs        { \"id\": \"payouts\", \"kind\": \"daily_payouts\", \"repeat\": \"every day 21:00 Asia/Kolkata\" }  → 201\nDELETE /jobs/rate_91  → 204\nGET    /jobs/payouts/runs?last=7  → 200 { \"runs\": [ … ] }"
     },
     {
       "t": "h2",

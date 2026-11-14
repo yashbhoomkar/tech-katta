@@ -79,8 +79,7 @@
     {
       "t": "code",
       "label": "Internal API",
-      "x": "frontier.add(urls[])          # only URLs not in the seen filter are added\nfrontier.next(fetcher_id)     → { \"url\": \"https://chennai-eats.example/idli-guide\", \"host\": \"chennai-eats.example\" }\nfrontier.done(url, result)    # sets the host's not_before and the URL's next_fetch",
-      "say": "Add links (only new ones go in). Ask for the next URL that's polite to fetch now. Report the result, which decides when that site and that page come round again."
+      "x": "frontier.add(urls[])          # only URLs not in the seen filter are added\nfrontier.next(fetcher_id)     → { \"url\": \"https://chennai-eats.example/idli-guide\", \"host\": \"chennai-eats.example\" }\nfrontier.done(url, result)    # sets the host's not_before and the URL's next_fetch"
     },
     {
       "t": "h2",

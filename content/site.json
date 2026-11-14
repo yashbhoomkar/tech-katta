@@ -389,15 +389,10 @@
       {
         "target": ".d-tour",
         "title": "A tour on every page",
-        "text": "Open an article and press Tour again: it shows Listen, the contents list and the figures. In a problem, Tour shows how to use the canvas."
+        "text": "Open an article and press Tour again: it shows the cards, the contents list and the figures. In a problem, Tour shows how to use the canvas."
       }
     ],
     "article": [
-      {
-        "target": ".reader",
-        "title": "Listen instead",
-        "text": "Press Listen to hear the article in your device's voice; the sentence being read is highlighted. Pick a speed."
-      },
       {
         "target": ".a-fig",
         "title": "Figures that play",
@@ -437,7 +432,7 @@
       {
         "target": ".d-list > section:first-of-type li:nth-child(2)",
         "title": "Inside every article",
-        "text": "Each idea explained with figures that play it step by step, the numbers to quote, the traps interviewers look for and what to say in the interview. Press Listen to hear it instead."
+        "text": "Each idea explained with figures that play it step by step, the numbers to quote, the traps interviewers look for and what to say in the interview."
       },
       {
         "target": ".tabs .tab[href=\"#problems\"]",
@@ -871,7 +866,7 @@
     "previewLock": {
       "eyebrow": "FREE WITH A GOOGLE ACCOUNT",
       "title": "Continue reading",
-      "text": "The rest of this article, its diagrams and read-aloud are free once you sign in. One sign-in opens every article, problem and note, on every device."
+      "text": "The rest of this article and its diagrams are free once you sign in. One sign-in opens every article, problem and note, on every device."
     }
   },
   "privacy": {

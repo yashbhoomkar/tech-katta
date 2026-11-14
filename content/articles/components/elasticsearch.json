@@ -46,8 +46,7 @@
     {
       "t": "code",
       "label": "ZOTATO · \"PANER TIKKA\", OPEN, WITHIN 3 KM",
-      "x": "GET dishes/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\":   { \"match\": { \"name\": { \"query\": \"paner tikka\", \"fuzziness\": \"AUTO\" } } },\n      \"filter\": [\n        { \"term\": { \"open_now\": true } },\n        { \"geo_distance\": { \"distance\": \"3km\", \"location\": { \"lat\": 18.52, \"lon\": 73.85 } } }\n      ]\n    }\n  },\n  \"size\": 20\n}",
-      "say": "A search on the dishes index. It must match the words paner tikka in the name, allowing typos, so paner still finds paneer. Two filters that don't affect the score: the restaurant is open now, and it is within 3 kilometres of the customer. Return 20 results."
+      "x": "GET dishes/_search\n{\n  \"query\": {\n    \"bool\": {\n      \"must\":   { \"match\": { \"name\": { \"query\": \"paner tikka\", \"fuzziness\": \"AUTO\" } } },\n      \"filter\": [\n        { \"term\": { \"open_now\": true } },\n        { \"geo_distance\": { \"distance\": \"3km\", \"location\": { \"lat\": 18.52, \"lon\": 73.85 } } }\n      ]\n    }\n  },\n  \"size\": 20\n}"
     },
     {
       "t": "h2",

@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /videos                   { \"title\": \"Paneer tikka in 10 minutes\" }  → 201 { \"id\": \"v_31\", \"part_urls\": [ \"…signed…\", … ] }\nPUT  <part_urls[7]>             (the bytes of part 7)                       → 200\nPOST /videos/v_31/uploaded                                                 → 202 { \"status\": \"processing\" }\nGET  /videos/v_31               → 200 { \"status\": \"ready\", \"play\": \"https://cdn…/v_31/master.m3u8\" }",
-      "say": "Create a video and get a signed upload address for each part. Upload the parts (a dropped part is resent alone). Say it's done. Later, get the playlist address the player opens."
+      "x": "POST /videos                   { \"title\": \"Paneer tikka in 10 minutes\" }  → 201 { \"id\": \"v_31\", \"part_urls\": [ \"…signed…\", … ] }\nPUT  <part_urls[7]>             (the bytes of part 7)                       → 200\nPOST /videos/v_31/uploaded                                                 → 202 { \"status\": \"processing\" }\nGET  /videos/v_31               → 200 { \"status\": \"ready\", \"play\": \"https://cdn…/v_31/master.m3u8\" }"
     },
     {
       "t": "h2",

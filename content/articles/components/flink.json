@@ -33,8 +33,7 @@
     {
       "t": "code",
       "label": "FLINK SQL · CLICKS PER AD PER MINUTE",
-      "x": "CREATE TABLE ad_clicks (\n  ad_id BIGINT,\n  click_time TIMESTAMP(3),\n  WATERMARK FOR click_time AS click_time - INTERVAL '5' SECOND\n) WITH ('connector' = 'kafka', 'topic' = 'ad-clicks' /* plus broker and format settings */);\n\nSELECT ad_id, window_start, COUNT(*) AS clicks\nFROM TABLE(TUMBLE(TABLE ad_clicks, DESCRIPTOR(click_time), INTERVAL '1' MINUTE))\nGROUP BY ad_id, window_start, window_end;",
-      "say": "A Flink SQL table over the ad-clicks Kafka topic, with the click time as event time and a watermark 5 seconds behind the newest click seen. The query counts clicks per ad in one-minute tumbling windows by event time."
+      "x": "CREATE TABLE ad_clicks (\n  ad_id BIGINT,\n  click_time TIMESTAMP(3),\n  WATERMARK FOR click_time AS click_time - INTERVAL '5' SECOND\n) WITH ('connector' = 'kafka', 'topic' = 'ad-clicks' /* plus broker and format settings */);\n\nSELECT ad_id, window_start, COUNT(*) AS clicks\nFROM TABLE(TUMBLE(TABLE ad_clicks, DESCRIPTOR(click_time), INTERVAL '1' MINUTE))\nGROUP BY ad_id, window_start, window_end;"
     },
     {
       "t": "h2",

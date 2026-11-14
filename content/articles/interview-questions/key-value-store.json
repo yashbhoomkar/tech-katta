@@ -78,8 +78,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET    /kv/cart:u_42          → 200 { \"value\": \"…\", \"version\": 8 }\nPUT    /kv/cart:u_42          { \"value\": \"…\", \"if_version\": 8 }   → 200 { \"version\": 9 }\nDELETE /kv/cart:u_42          → 204",
-      "say": "Read a key and its version. Write it, optionally only if it's still at the version you read. Delete it."
+      "x": "GET    /kv/cart:u_42          → 200 { \"value\": \"…\", \"version\": 8 }\nPUT    /kv/cart:u_42          { \"value\": \"…\", \"if_version\": 8 }   → 200 { \"version\": 9 }\nDELETE /kv/cart:u_42          → 204"
     },
     {
       "t": "h2",

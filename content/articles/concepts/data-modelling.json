@@ -84,8 +84,7 @@
     {
       "t": "code",
       "label": "Zotato's core schema",
-      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
-      "say": "Zotato's core schema: users with a unique phone; restaurants owned by a user; dishes belonging to a restaurant with a positive price; orders linking a user and a restaurant with a status, total and time; order items keyed by order and dish with a positive quantity and the price paid; ratings keyed by order with one to five stars; and deliveries keyed by order with a rider and pickup and delivery times."
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at"
     },
     {
       "t": "p",
@@ -130,8 +129,7 @@
     {
       "t": "code",
       "label": "Three Zotato tables, a few rows each",
-      "x": "users        id │ name   │ phone       │ created_at\n             1  │ Priya  │ 98200 00001 │ 2026-11-01 09:00\n             2  │ Arjun  │ 98200 00002 │ 2026-11-01 09:05\n\norders       id   │ user_id → users │ restaurant_id │ status    │ created_at\n             9101 │ 1               │ 42            │ delivered │ 2026-11-08 12:10\n             9102 │ 1               │ 17            │ preparing │ 2026-11-08 19:40\n             9103 │ 2               │ 42            │ placed    │ 2026-11-08 19:45\n\norder_items  order_id → orders │ dish_id → dishes │ qty │ price_paise\n             9101              │ 9                │ 2   │ 24000\n             9101              │ 10               │ 1   │ 9000\n             9103              │ 9                │ 1   │ 24000",
-      "say": "Three tables with a few rows each. Users: Priya, id 1, and Arjun, id 2, with phone numbers and sign-up times. Orders: 9101 and 9102 belong to user 1, from restaurants 42 and 17; 9103 belongs to user 2, from restaurant 42; each has a status and a time. Order items: order 9101 has two of dish 9 and one of dish 10, and order 9103 has one of dish 9, each with the price paid. Every link is an id pointing at a row in another table."
+      "x": "users        id │ name   │ phone       │ created_at\n             1  │ Priya  │ 98200 00001 │ 2026-11-01 09:00\n             2  │ Arjun  │ 98200 00002 │ 2026-11-01 09:05\n\norders       id   │ user_id → users │ restaurant_id │ status    │ created_at\n             9101 │ 1               │ 42            │ delivered │ 2026-11-08 12:10\n             9102 │ 1               │ 17            │ preparing │ 2026-11-08 19:40\n             9103 │ 2               │ 42            │ placed    │ 2026-11-08 19:45\n\norder_items  order_id → orders │ dish_id → dishes │ qty │ price_paise\n             9101              │ 9                │ 2   │ 24000\n             9101              │ 10               │ 1   │ 9000\n             9103              │ 9                │ 1   │ 24000"
     },
     {
       "t": "list",
@@ -159,8 +157,7 @@
     {
       "t": "code",
       "label": "A restaurant as one document",
-      "x": "{\n  \"_id\": 42,\n  \"name\": \"Spice Route\",\n  \"city\": \"Mumbai\",\n  \"menu\": [\n    { \"dish_id\": 9,  \"name\": \"Chicken biryani\", \"price_paise\": 24000 },\n    { \"dish_id\": 10, \"name\": \"Raita\",           \"price_paise\": 9000 }\n  ],\n  \"created_at\": \"2026-01-15\"\n}",
-      "say": "Restaurant 42 as a single JSON document: its id, name and city, with its menu embedded as an array of dishes, each with an id, a name and a price, and a creation date. One read returns the restaurant and its whole menu; there is no separate dishes table to join."
+      "x": "{\n  \"_id\": 42,\n  \"name\": \"Spice Route\",\n  \"city\": \"Mumbai\",\n  \"menu\": [\n    { \"dish_id\": 9,  \"name\": \"Chicken biryani\", \"price_paise\": 24000 },\n    { \"dish_id\": 10, \"name\": \"Raita\",           \"price_paise\": 9000 }\n  ],\n  \"created_at\": \"2026-01-15\"\n}"
     },
     {
       "t": "list",
@@ -320,8 +317,7 @@
     {
       "t": "code",
       "label": "Zotato's schema",
-      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at",
-      "say": "Zotato's schema: users, restaurants, dishes, orders, order items, ratings and deliveries, with their keys, links and checks."
+      "x": "users        id PK · name · phone UNIQUE · created_at\nrestaurants  id PK · owner_id FK→users · name · city\ndishes       id PK · restaurant_id FK→restaurants · name · price_paise CHECK > 0\norders       id PK · user_id FK→users · restaurant_id FK→restaurants · status · total_paise · created_at\norder_items  (order_id FK→orders, dish_id FK→dishes) PK · qty CHECK > 0 · price_paise\nratings      order_id PK, FK→orders · stars CHECK 1–5 · comment\ndeliveries   order_id PK, FK→orders · rider_id FK→riders · picked_at · delivered_at"
     },
     {
       "t": "list",
