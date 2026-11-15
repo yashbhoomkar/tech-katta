@@ -51,10 +51,14 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #121110;          /* night at the katta: warm black, not grey */
+  /* Dark = "inverted blocks" (option D, chosen by the owner on 2026-11-15 after the /p/nb-dark/ comparison).
+     Colour is carried by lines, not paint: blocks are dark cards with a 3 px outline in the section colour and a
+     solid shadow in a darker shade of it (details.css), so bright area stays small, shadows are darker than what
+     casts them, and the marigold keys are the brightest fills. Cream outlines mark objects; structure is quiet grey. */
+  --page: #131211;
   --surface: #1C1B19;
-  --raised: #252421;
-  --sunken: #2C2A27;
+  --raised: #252321;
+  --sunken: #2B2927;
   --ink: #EDE6D6; --ink-2: #D6CEBD; --muted: #A9A193;
   --edge: #D9D1C0;          /* objects keep a cream outline (softened) */
   --rule: #3B3934;          /* …structure goes quiet: the first dark drew every line in cream and read as a wireframe */
@@ -69,7 +73,7 @@
   --band-strong: #F3C766; --on-band-strong: #1C1B1A;
   --selection: rgb(232 245 92 / .35);
 
-  /* section fills stay vivid with black text (never darkened); soft tints become a neutral raised grey */
+  /* section colours: the same calm hues as light; in dark they are the outline, title and bar colours of each block */
   --c-concepts: #8FCDF5;   --a-concepts: #8FCDF5;
   --c-components: #EFB78E; --a-components: #EFB78E;
   --c-interview: #CBB9F5;  --a-interview: #CBB9F5;
@@ -79,5 +83,5 @@
   --t-concepts: #252421; --t-components: #252421; --t-interview: #252421; --t-problems: #252421; --t-real: #252421; --t-notes: #252421;
   --on-c: #1C1B1A; --on-c-2: rgb(28 27 26 / .78);
   --track-on-c: rgb(28 27 26 / .22); --fill-on-c: #1C1B1A;
-  --preview: #1C1B19; --on-preview: #EDE6D6;
+  --preview: #131211; --on-preview: #EDE6D6;
 }

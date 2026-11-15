@@ -47,6 +47,6 @@ fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
 // Cloudflare: old prototype addresses keep working
 if (process.argv.includes("--cloudflare")) {
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
-  fs.writeFileSync(r, "/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n/p/dark-modes/ /p/full-site/ 301\n/p/dark-modes /p/full-site/ 301\n" + old);
+  fs.writeFileSync(r, "/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n/p/dark-modes/ /p/full-site/ 301\n/p/dark-modes /p/full-site/ 301\n/p/nb-dark/ /p/neo-brutalism/ 301\n/p/nb-dark /p/neo-brutalism/ 301\n" + old);
 }
 console.log(`prototype: ${pages.length} design prototype(s) written into dist`);

@@ -65,3 +65,19 @@ html { scrollbar-color: var(--ink) var(--sunken); }
 
 /* dark: the canvas grid steps back so the nodes lead */
 :root[data-theme="dark"] .canvas { background-image: radial-gradient(#3B3934 1px, transparent 1px); }
+
+
+/* ---------- dark: inverted blocks (final; was candidate D) ----------
+   Section blocks become dark cards: 3 px outline in the section colour, a solid shadow in a darker shade of it,
+   the title in the colour, body text cream. :is() carries the specificity of .sechead.block so these win over brutal.css. */
+:root[data-theme="dark"] :is(.block, .sechead.block, .stage.block) {
+  background: var(--surface); color: var(--ink); border: 3px solid var(--a);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--a) 36%, #000); }
+:root[data-theme="dark"] .block :is(h1, h2, h3) { color: var(--a); }
+:root[data-theme="dark"] .block :is(p, small) { color: var(--ink-2); }
+:root[data-theme="dark"] .block .mono { color: #1C1B1A; }
+:root[data-theme="dark"] .block .bar, :root[data-theme="dark"] .ecard .pb .bar { background: var(--sunken); border-color: var(--a); }
+:root[data-theme="dark"] .block .bar i, :root[data-theme="dark"] .ecard .pb .bar i { background: var(--a); }
+:root[data-theme="dark"] .thumb { color: var(--a); }
+:root[data-theme="dark"] .stage.block { padding-top: 40px; }
+:root[data-theme="dark"] :is(.sechead.block, .stage.block, .hub-card .hub-main) { background-image: none; }
