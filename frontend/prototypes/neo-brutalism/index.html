@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFF4DC">
+<meta name="prototype:type" content="Visual style">
+<meta name="prototype:summary" content="The whole site in a neo-brutalist style: flat bold colour, thick outlines, hard shadows, keys that press in. Same pages and navigation as full-site; a calm reader.">
+<title>Neo-brutalism</title>
+<script src="/p/full-site/scripts/boot-theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="/p/full-site/styles/tokens.css">
+<link rel="stylesheet" href="/p/full-site/styles/base.css">
+<link rel="stylesheet" href="/p/full-site/styles/components/controls.css">
+<link rel="stylesheet" href="/p/full-site/styles/components/cards.css">
+<link rel="stylesheet" href="/p/full-site/styles/components/overlays.css">
+<link rel="stylesheet" href="/p/full-site/styles/layout/shell.css">
+<link rel="stylesheet" href="/p/full-site/styles/pages/landing.css">
+<link rel="stylesheet" href="/p/full-site/styles/pages/app.css">
+<link rel="stylesheet" href="/p/full-site/styles/pages/lesson.css">
+<link rel="stylesheet" href="/p/full-site/styles/pages/workspace.css">
+<link rel="stylesheet" href="/p/full-site/styles/motion.css">
+<link rel="stylesheet" href="/p/full-site/styles/phone.css">
+<!-- the neo-brutalism layer -->
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/brutal.css">
+<link rel="stylesheet" href="styles/phone.css">
+<script type="module" src="/p/full-site/scripts/main.js"></script>
+</head>
+<body data-layout="landing">
+<a class="skip" href="#main" data-skip>Skip to content</a>
+
+<!-- app chrome: filled by scripts/components/*.js -->
+<aside class="side" id="side" aria-label="Sidebar"></aside>
+<div class="side-scrim" id="side-scrim" hidden></div>
+<header class="topbar" id="topbar"></header>
+<main id="main" tabindex="-1"><p class="boot">Loading…</p></main>
+<nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+
+<!-- overlays -->
+<div class="scrim" id="signin" role="dialog" aria-modal="true" aria-labelledby="si-t" hidden>
+  <div class="dialog"><button class="btn icon ghost x" type="button" data-close aria-label="Close">✕</button>
+    <h2 id="si-t">Sign in to Tech Katta</h2>
+    <p>Articles, problems and notes are free with a Google account. Sign in once and your designs, scores and stars follow you to every device.</p>
+    <label for="agree" id="agreel"><input type="checkbox" id="agree"> I agree to the <a href="#/me">Terms and conditions</a> and the <a href="#/me">Privacy policy</a>.</label>
+    <button class="gbtn" type="button" id="gbtn">G&nbsp;&nbsp;Continue with Google</button><span class="cmsg" id="cmsg" aria-live="polite"></span>
+    <small class="muted">Prototype: this dialog does not sign you in.</small>
+  </div>
+</div>
+<div class="scrim cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Search" hidden>
+  <div class="cbox"><div class="cin"><span aria-hidden="true">⌕</span><input id="cq" placeholder="Search lessons, problems and pages" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="cres"><kbd>Esc</kbd></div>
+    <div class="cres" id="cres" role="listbox"></div>
+    <div class="cfoot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>?</kbd> all shortcuts</span></div></div>
+</div>
+<div class="scrim" id="keys" role="dialog" aria-modal="true" aria-labelledby="keys-t" hidden>
+  <div class="dialog"><button class="btn icon ghost x" type="button" data-close aria-label="Close">✕</button><h2 id="keys-t">Keyboard shortcuts</h2><div id="keys-body"></div></div>
+</div>
+<div class="tourpop" id="tourpop" role="dialog" aria-live="polite" hidden><p class="mono" id="tstep"></p><b id="ttitle"></b><p id="ttext"></p><div class="tnav"><button class="btn sm" type="button" id="tskip">Skip</button><button class="btn primary sm" type="button" id="tnext">Next</button></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><i>✓</i><span id="toast-t"></span><span class="tm"><b></b></span></div>
+<div class="switcher" id="switcher"></div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+/* Neo-brutalism on phones. Full-site's phone.css already does the layout (swipe rows, problem cards,
+   Brief / Canvas, sheets); this only scales the brutal details so they don't crowd a narrow screen. */
+@media (max-width: 640px) {
+  :root { --sh-d: 3px; --bw-strong: 2px; }
+  .hero { padding-bottom: 32px; }
+  .hero h1 { font-size: clamp(40px, 12vw, 56px); }
+  .hero h1 em { transform: rotate(-1deg); box-shadow: var(--sh); }
+  /* the swipe row clips anything outside it: leave room for the shadows */
+  .rise { padding: 8px 20px 16px 16px; }
+  .rcard { box-shadow: var(--sh); }
+  .tab::before { width: 48px; margin-left: -24px; }
+  .hero .shape { display: none; }   /* outlined shapes crowd the sticker and logo on a narrow screen */
+  .stars { transform: none; }
+  .newchip { transform: rotate(-1deg); }
+  .tbl, .plist { padding-right: 4px; }
+  .explore { padding: 0 4px 4px 0; }
+}
