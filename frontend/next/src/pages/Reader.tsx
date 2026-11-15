@@ -12,9 +12,16 @@ import { Button, ButtonLink, Skeleton, StateMessage } from "@/components/ui";
 import { useToast } from "@/components/Toast";
 import { readJson, writeJson } from "@/lib/storage";
 import { later, reducedMotion } from "@/lib/motion";
-import { ArticleBody, cardsOf, outline, readMinutes } from "@/features/reader/ArticleBody";
+import { ArticleBody, outline, readMinutes } from "@/features/reader/ArticleBody";
 import { cx } from "@/lib/cx";
 import { useReadArticle } from "@/lib/analytics";
+import { useReader } from "@legacy/dashboard/reader.jsx";
+import { topicsOf } from "@legacy/dashboard/topics.jsx";
+import { ListenBar, Topics } from "@/features/reader/LegacyLesson";
+import { useLegacySite } from "@/features/legacy/site";
+import type { ArticleResponse } from "@/lib/api/types";
+
+const EMPTY = { slug: "", section: "", body: [], dek: "", title: "" } as unknown as ArticleResponse;
 import { previewCut } from "@legacy/preview.js";
 import { useGate } from "@/content/gate";
 import { PreviewLock } from "@/components/Locks";
@@ -33,13 +40,12 @@ export function ReaderPage() {
   const progress = useProgress();
   const navigate = useNavigate();
   const toast = useToast();
-  const touchX = useRef<number | null>(null);
   const [mode, setModeState] = useState<"full" | "cards">(() => readJson<"full" | "cards">("tk-reader-mode", "full", (v): v is "full" | "cards" => v === "full" || v === "cards"));
   const setMode = (m: "full" | "cards") => { setModeState(m); writeJson("tk-reader-mode", m); };
-  const [card, setCard] = useState({ i: 0, dir: 1 as 1 | -1 });
+  const [topic, setTopic] = useState<number | null>(null);
   const [bursting, setBursting] = useState(false);
   const completeBtn = useRef<HTMLDivElement>(null);
-  useEffect(() => setCard({ i: 0, dir: 1 }), [slug]);
+  useEffect(() => setTopic(null), [slug]);
 
   const view = useMemo(() => (isSectionId(section) ? sectionView(site, articles, section) : null), [site, articles, section]);
   const order = useMemo(() => view?.groups.flatMap((g) => g.articles) ?? [], [view]);
@@ -52,6 +58,11 @@ export function ReaderPage() {
   usePageMeta(summary?.title ?? "Lesson", view ? { to: paths.section(section), label: view.title } : undefined);
   useReadingProgress(slug, res.status === "success");
   useReadArticle(section, slug, res.status === "success");
+  // read aloud (the current app's reader): listening switches to the full text, where the block being read is marked
+  const loaded = res.status === "success" ? res.data : null;
+  const r = useReader(loaded ?? EMPTY);
+  useEffect(() => { if (r.cur != null) setModeState("full"); }, [r.cur]);
+  useLegacySite();
 
   if (!summary || !view) return <NotFoundPage />;
   const full = res.status === "success" ? res.data : null;
@@ -61,18 +72,10 @@ export function ReaderPage() {
   const toc = article ? outline(article.body) : [];
   const done = progress[slug]?.done ?? false;
 
-  const cards = article ? cardsOf(article.body) : [];
-  const go = (d: 1 | -1) => {
-    const i = Math.max(0, Math.min(cards.length - 1, card.i + d));
-    if (d > 0 && card.i === cards.length - 1) {
-      completeBtn.current?.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
-      return;
-    }
-    if (i !== card.i) {
-      setCard({ i, dir: d });
-      window.scrollTo({ top: 0, behavior: "auto" });
-    }
-  };
+  const ts = article && gate !== "preview" ? topicsOf(article) : [];
+  const showCards = mode === "cards" && ts.length > 1 && gate !== "preview";
+  const figNumbers: Record<number, number> = {};
+  article?.body.reduce((n, b, k) => (b.t === "fig" ? (figNumbers[k] = n + 1) : n), 0);
 
   // mark complete: a tick and a burst in the section colours, a toast, then on to the next lesson
   const complete = () => {
@@ -114,7 +117,7 @@ export function ReaderPage() {
           <header className={s.head}>
             <p className="mono">{summary.no}{summary.tag ? ` · ${summary.tag}` : ""}</p>
             <h1>{summary.title}</h1>
-            <p className={s.dek}>{summary.dek}</p>
+            <p className={s.dek} data-reading={r.cur === "head" ? "" : undefined}>{summary.dek}</p>
             <p className={s.meta}>
               {minutes ? <span>{minutes} min read</span> : <span>&nbsp;</span>}
               {done && <span className={s.doneChip}><Icon name="check" size={14} /> Completed</span>}
@@ -122,12 +125,13 @@ export function ReaderPage() {
             <div className={s.tools}>
               <div className={s.seg} role="radiogroup" aria-label="Read as">
                 {(["full", "cards"] as const).map((m) => (
-                  <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); setCard({ i: 0, dir: 1 }); }}>{m === "full" ? "Full text" : "Cards"}</button>
+                  <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); setTopic(null); }}>{m === "full" ? "Full text" : "Cards"}</button>
                 ))}
                 <i className={s.segPill} style={{ transform: mode === "cards" ? "translateX(100%)" : undefined }} aria-hidden="true" />
               </div>
               <button type="button" className={s.toolBtn} onClick={share}><Icon name="share" size={16} /> Share</button>
             </div>
+            {loaded && gate !== "preview" && <ListenBar r={r} />}
           </header>
 
           {toc.length > 0 && mode === "full" && <PhoneToc toc={toc} />}
@@ -143,24 +147,9 @@ export function ReaderPage() {
               {res.error.message}
             </StateMessage>
           )}
-          {article && (mode === "full" || gate === "preview") && <ArticleBody article={article} />}
+          {article && !showCards && <ArticleBody article={article} reading={r.cur} />}
           {article && gate === "preview" && <PreviewLock />}
-          {article && mode === "cards" && gate !== "preview" && (
-            <div
-              className={s.deckWrap}
-              onKeyDown={(e) => { if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); }}
-              onTouchStart={(e) => { touchX.current = e.touches[0]?.clientX ?? null; }}
-              onTouchEnd={(e) => { const x0 = touchX.current, x1 = e.changedTouches[0]?.clientX; touchX.current = null; if (x0 != null && x1 != null && Math.abs(x1 - x0) > 60) go(x1 < x0 ? 1 : -1); }}
-            >
-              <ArticleBody article={article} range={cards[card.i]} dir={card.dir} />
-              <div className={s.deck}>
-                <Button size="sm" onClick={() => go(-1)} disabled={card.i === 0} aria-label="Previous card">←</Button>
-                <span className="mono">{card.i + 1} / {cards.length}</span>
-                <div className={s.deckBar}><i style={{ transform: `scaleX(${(card.i + 1) / Math.max(1, cards.length)})` }} /></div>
-                <Button size="sm" variant="primary" onClick={() => go(1)}>{card.i === cards.length - 1 ? "Finish ✓" : "Next →"}</Button>
-              </div>
-            </div>
-          )}
+          {article && showCards && <Topics ts={ts} open={topic} setOpen={setTopic} still={reducedMotion()} fn={figNumbers} />}
 
           {article && gate !== "preview" && (
             <footer className={s.foot}>

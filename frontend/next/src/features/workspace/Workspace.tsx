@@ -1,9 +1,9 @@
-import { Component, Suspense, lazy, useEffect, useMemo, type ReactNode } from "react";
+import { Component, Suspense, lazy, useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { setSite } from "@legacy/dashboard/site.js";
 import { Block } from "@legacy/dashboard/blocks.jsx";
 import { Article, withFigs } from "@legacy/dashboard/article.jsx";
 import { useContent } from "@/content/ContentProvider";
+import { useLegacySite } from "@/features/legacy/site";
 import { paths } from "@/content/sections";
 import { Skeleton, StateMessage, Button } from "@/components/ui";
 import tokens from "@/features/reader/figureTokens.module.css";
@@ -18,15 +18,6 @@ import s from "./workspace.module.css";
 
 const Solve = lazy(() => import("@legacy/solve.jsx"));
 const Lab = lazy(() => import("@legacy/lab/Lab.jsx"));
-
-/** The current app's components read its site bindings; fill them from this app's content (a copy: it edits them). */
-function useLegacySite() {
-  const { site, articles } = useContent();
-  return useMemo(() => {
-    setSite(structuredClone(site), { articles: structuredClone(articles) });
-    return site as typeof site & { problems?: { solve?: unknown } };
-  }, [site, articles]);
-}
 
 /** "#problems/url-shortener" → /problems/url-shortener, "#problems/challenge/x" → /problems/challenge/x, "#concepts/caching" → the lesson. */
 function useHashRoutes() {
