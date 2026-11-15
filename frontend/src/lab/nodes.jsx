@@ -13,10 +13,10 @@ const SIDES=[["t",Position.Top],["r",Position.Right],["b",Position.Bottom],["l",
 const Handles=()=>SIDES.map(([id,p])=><Handle key={id} id={id} type="source" position={p}/>);
 function Head({kind,comp,data,extra}){const tint=TINT[kind]||"teal",name=displayName(comp,{name:data.name,config:data.config});
 return <div className="ln-head"><span className={"ln-tile t-"+tint}><Glyph kind={kind}/>{extra}</span><span className="ln-id"><b>{name}</b><small>{data.name?comp.name:comp.group}</small></span></div>}
-export function CompNode({id,data,selected}){const{cat,trace,replay,flagged}=useContext(Ctx);const comp=cat[data.kind];const flag=flagged?.get(id);
+export function CompNode({id,data,selected}){const{cat,trace,replay,flagged,present}=useContext(Ctx);const comp=cat[data.kind];const flag=flagged?.get(id);
 const rp=replay?.nodes?.[id];if(replay&&data.kind!=="client")return <ReplayCard id={id} data={data} comp={comp} rp={rp} selected={selected}/>;
 const sum=summary(comp,data.config);
-return <div className={"ln t-"+(TINT[data.kind]||"teal")+(selected?" sel":"")+(trace?.at===id?" ln-trace":"")}><Handles/>
+return <div className={"ln t-"+(TINT[data.kind]||"teal")+(selected?" sel":"")+(trace?.at===id?" ln-trace":"")+(present?(present===id?" ln-present":" ln-dim"):"")}><Handles/>{data.note&&<span className="ln-noted" title={data.note} aria-label="Has a note">✎</span>}
 <Head kind={data.kind} comp={comp} data={data}/>{flag&&<span className={"ln-flag "+flag.level} title={flag.message} role="img" aria-label={flag.message}>!</span>}
 {sum&&<span className="ln-sum">{sum}</span>}
 {data.kind==="database"&&data.config?.schema?.tables?.length>0&&<span className="ln-m ln-sch">{schemaSummary(engineOf(comp,data.config),data.config.schema)}</span>}</div>}

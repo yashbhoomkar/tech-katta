@@ -273,3 +273,14 @@
 .lab-keys-x{position:absolute;right:14px;top:14px;border:0;background:none;font-size:16px;color:var(--muted);cursor:pointer}
 .lab-keys-btn{min-width:36px}
 .lab-pill .lab-rate{font-style:normal;font-weight:600;opacity:.85}
+
+/* Notes and Present my design (context 36, step 8) */
+.lab-note-in{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px/1.45 var(--font);padding:6px 8px}
+.ln-noted{position:absolute;right:8px;bottom:6px;font-size:11px;color:var(--muted)}
+.ln.ln-dim{opacity:.35}.ln.ln-present{box-shadow:0 0 0 3px var(--accent),var(--shadow-2)}
+.lab-present{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:7;width:min(520px,calc(100% - 32px));padding:14px 16px;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-2)}
+.lab-present-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}.lab-present-top small{font:600 10px var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.lab-present .lab-keys-x{position:static}.lab-present>b{font-size:17px}.lab-present-kind{color:var(--muted)}
+.lab-present-io{margin:6px 0;font-size:13px;color:var(--ink-2)}
+.lab-present blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid var(--accent);background:var(--surface-2);font-size:14px;line-height:1.5}
+.lab-present-nav{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}

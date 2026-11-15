@@ -224,3 +224,9 @@
 .sv-bill li{display:grid;grid-template-columns:minmax(0,10em) 1fr auto;gap:8px;align-items:center;font-size:12.5px}.sv-bill li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sv-bill li i{display:block;height:6px;border-radius:3px;background:var(--accent);width:var(--w,0%)}.sv-bill li b{font:500 12px var(--mono)}
 .sv-results .sv-bill>summary{display:block;padding:0;font:600 13px var(--font)}
+
+/* Follow-up questions after a pass (context 36, step 8) */
+.sv-follow{margin:10px 16px 0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}
+.sv-follow h4{margin:0;font:600 13px var(--font)}.sv-follow h4 small{font-weight:400;color:var(--muted)}
+.sv-follow-q{margin:8px 0;font-size:15px;font-weight:600}.sv-follow-a{margin:6px 0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.sv-follow-next{margin-left:12px}

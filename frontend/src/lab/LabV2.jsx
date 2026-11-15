@@ -74,7 +74,7 @@ function StructuresBox({ cfg, set, title, suggest }) {
 }
 
 // The settings panel of one component in a v2 problem.
-export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName, locked }) {
+export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName, locked, setNote }) {
   const cat = evalCatalogue(lab), comp = cat[node.data.kind];
   if (!comp) return null;
   const raw = node.data.config || {}, cfg = configOf({ id: node.id, type: node.data.kind, config: raw }, lab), set = (patch) => update(node.id, { ...raw, ...patch });
@@ -87,6 +87,8 @@ export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, 
     <Field label="Name"><input type="text" maxLength={maxName} value={node.data.name || ''} placeholder={comp.name} onChange={(e) => rename(node.id, e.target.value.slice(0, maxName))} onBlur={(e) => { const v = e.target.value.replace(/\s+/g, ' ').trim(); if (v !== (node.data.name || '')) rename(node.id, v); }} /></Field>
     {comp.type === 'client' && <p className="lab-like"><b>SET BY THE TESTS</b>The tests send the traffic: how much, when, and which calls.</p>}
     {settings.map((s) => <Setting key={s.key} s={s} comp={comp} cfg={cfg} set={set} node={node} fieldHints={fieldHints} title={title} />)}
+    {/* Your note (context 36, step 8): why this part is here, in your words; Present my design reads it out. */}
+    {setNote && <Field label="Your note"><textarea className="lab-note-in" rows={3} maxLength={280} value={node.data.note || ''} placeholder="Why is it here? What would you say about it in the interview?" onChange={(e) => setNote(node.id, e.target.value)} /></Field>}
     {/* The settings come first (context 36, step 2); what the part is, and its everyday comparison, are one click away. */}
     <details className="lab-about"><summary>About this part</summary><p className="lab-desc">{comp.desc}</p>{comp.like && <p className="lab-like"><b>IN REAL LIFE</b>{comp.like}</p>}</details>
     {comp.managed && comp.type !== 'client' && <p className="lab-note lab-note-tight">Run for you by AWS: it doesn't crash, it refuses what is over its limit{comp.limitRps ? ` (${num(comp.limitRps)} a second)` : ''}.</p>}
