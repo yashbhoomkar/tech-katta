@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="prototype:type" content="Colour">
+<meta name="prototype:summary" content="Three dark-mode palettes for full-site, side by side with the current one: pastels on ink, tinted glass, midnight. Open any of them on the full site.">
+<title>Dark Modes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Source+Serif+4:ital,wght@1,400&family=Geist+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="compare.js"></script>
+</head>
+<body>
+<header class="top">
+  <p class="mono">Prototype · colour</p>
+  <h1>Dark mode, four ways</h1>
+  <p class="lead">The light theme stays as it is. These are the candidates for dark: the current one and three new directions. Each column is the same set of pieces from the site, coloured by that palette. Open any of them on the full site to judge it on every screen.</p>
+  <nav class="picker" role="tablist" aria-label="Palette">
+    <button role="tab" type="button" data-p="now">Now</button><button role="tab" type="button" data-p="a" aria-selected="true">A</button><button role="tab" type="button" data-p="b">B</button><button role="tab" type="button" data-p="c">C</button>
+  </nav>
+</header>
+<main class="cols" id="cols"></main>
+<section class="notes">
+  <h2>How to judge</h2>
+  <ul>
+    <li><b>Now</b>: the current dark. Warm brown-black, section blocks turned deep (brown, olive, maroon). What you didn't like.</li>
+    <li><b>A · Pastels on ink</b>: neutral black; the light theme's pastel blocks, dimmed about 12 %, with dark text. Closest to the light theme.</li>
+    <li><b>B · Tinted glass</b>: neutral charcoal; blocks are a faint wash of the colour with a bright edge and bright titles. Calmest.</li>
+    <li><b>C · Midnight</b>: deep navy; pastels nearly full strength with dark text; marigold glows against the blue. Most distinctive.</li>
+  </ul>
+  <p>Look at it at night on your phone too: that is where dark mode lives. Every text pair in A, B and C keeps at least 4.5 : 1 contrast.</p>
+</section>
+</body>
+</html>

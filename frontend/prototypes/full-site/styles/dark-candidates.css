@@ -1,0 +1,55 @@
+/* Dark-mode candidates, for /p/dark-modes/ (owner, 2026-11-15: liked the light theme, not the dark colours).
+   Picked with ?dark=a|b|c (or ?dark=now for the current dark) or from the Screens menu; remembered per viewer.
+   Without one, tokens.css's dark theme is used. Delete this file once a winner moves into tokens.css.
+   A  pastels on ink: neutral black, the light theme's pastel blocks (dimmed ~12 %) with dark text
+   B  tinted glass:   neutral charcoal, blocks are a faint wash of the hue, a bright edge and bright titles
+   C  midnight:       deep navy, pastels at nearly full strength with dark text; marigold glows on navy */
+
+:root[data-theme="dark"][data-dark="a"] {
+  --page: #111214; --surface: #1A1B1E; --raised: #232428; --sunken: #26272B;
+  --ink: #EDEEF0; --ink-2: #C2C4C9; --muted: #92959C; --line: #2C2D31; --line-strong: #3F4046;
+  --btn: #EDEEF0; --on-btn: #111214; --shadow: 0 0 0 1px #2C2D31; --band-strong: #1F2024; --on-band-strong: #EDEEF0;
+  --c-concepts: #93B6CC;   --a-concepts: #93B6CC;   --t-concepts: color-mix(in srgb, #93B6CC 12%, #1A1B1E);
+  --c-components: #D7924A; --a-components: #D7924A; --t-components: color-mix(in srgb, #D7924A 12%, #1A1B1E);
+  --c-interview: #B9A5DC;  --a-interview: #B9A5DC;  --t-interview: color-mix(in srgb, #B9A5DC 12%, #1A1B1E);
+  --c-problems: #8FC7AE;   --a-problems: #8FC7AE;   --t-problems: color-mix(in srgb, #8FC7AE 12%, #1A1B1E);
+  --c-real: #DCA694;       --a-real: #DCA694;       --t-real: color-mix(in srgb, #DCA694 12%, #1A1B1E);
+  --c-notes: #DCC97C;      --a-notes: #DCC97C;      --t-notes: color-mix(in srgb, #DCC97C 12%, #1A1B1E);
+  --on-c: #121214; --on-c-2: rgb(18 18 20 / .74); --track-on-c: rgb(0 0 0 / .16); --fill-on-c: #121214;
+  --preview: #16171A; --on-preview: #EDEEF0;
+}
+
+:root[data-theme="dark"][data-dark="b"] {
+  --page: #121316; --surface: #1A1B1F; --raised: #232429; --sunken: #26272C;
+  --ink: #ECEDEF; --ink-2: #C0C3C9; --muted: #91959D; --line: #2B2C31; --line-strong: #3E4047;
+  --btn: #ECEDEF; --on-btn: #121316; --shadow: 0 0 0 1px #2B2C31; --band-strong: #1A1B1F; --on-band-strong: #ECEDEF;
+  --a-concepts: #8EBBD8;   --c-concepts: color-mix(in srgb, #8EBBD8 16%, #1A1B1F);   --t-concepts: color-mix(in srgb, #8EBBD8 9%, #1A1B1F);
+  --a-components: #E9A050; --c-components: color-mix(in srgb, #E9A050 16%, #1A1B1F); --t-components: color-mix(in srgb, #E9A050 9%, #1A1B1F);
+  --a-interview: #BCA4EE;  --c-interview: color-mix(in srgb, #BCA4EE 16%, #1A1B1F);  --t-interview: color-mix(in srgb, #BCA4EE 9%, #1A1B1F);
+  --a-problems: #84D0B0;   --c-problems: color-mix(in srgb, #84D0B0 16%, #1A1B1F);   --t-problems: color-mix(in srgb, #84D0B0 9%, #1A1B1F);
+  --a-real: #EFA48C;       --c-real: color-mix(in srgb, #EFA48C 16%, #1A1B1F);       --t-real: color-mix(in srgb, #EFA48C 9%, #1A1B1F);
+  --a-notes: #EBD173;      --c-notes: color-mix(in srgb, #EBD173 16%, #1A1B1F);      --t-notes: color-mix(in srgb, #EBD173 9%, #1A1B1F);
+  --on-c: #ECEDEF; --on-c-2: rgb(236 237 239 / .74); --track-on-c: rgb(255 255 255 / .1); --fill-on-c: #ECEDEF;
+  --preview: #121316; --on-preview: #ECEDEF;
+}
+:root[data-theme="dark"][data-dark="b"] .block :is(h1, h2, h3) { color: var(--a); }
+
+:root[data-theme="dark"][data-dark="c"] {
+  --page: #0E1220; --surface: #151A2B; --raised: #1C2236; --sunken: #20273D;
+  --ink: #EDF0F7; --ink-2: #C3C9D9; --muted: #939CB5; --line: #262D45; --line-strong: #39415E;
+  --btn: #EDF0F7; --on-btn: #0E1220; --link: #A9BCFF; --focus: #A9BCFF; --shadow: 0 0 0 1px #262D45;
+  --band-strong: #1C2236; --on-band-strong: #EDF0F7;
+  --c-concepts: #9CC2DB;   --a-concepts: #9CC2DB;   --t-concepts: color-mix(in srgb, #9CC2DB 13%, #151A2B);
+  --c-components: #E39A52; --a-components: #E39A52; --t-components: color-mix(in srgb, #E39A52 13%, #151A2B);
+  --c-interview: #C3AEEB;  --a-interview: #C3AEEB;  --t-interview: color-mix(in srgb, #C3AEEB 13%, #151A2B);
+  --c-problems: #9AD3BA;   --a-problems: #9AD3BA;   --t-problems: color-mix(in srgb, #9AD3BA 13%, #151A2B);
+  --c-real: #E9AD99;       --a-real: #E9AD99;       --t-real: color-mix(in srgb, #E9AD99 13%, #151A2B);
+  --c-notes: #E8D07E;      --a-notes: #E8D07E;      --t-notes: color-mix(in srgb, #E8D07E 13%, #151A2B);
+  --on-c: #0E1220; --on-c-2: rgb(14 18 32 / .74); --track-on-c: rgb(0 0 0 / .16); --fill-on-c: #0E1220;
+  --preview: #0E1220; --on-preview: #EDF0F7;
+}
+
+/* the palette switch in the Screens menu */
+.sw-dark { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 0 4px 4px; }
+.sw-dark button { text-align: center !important; border: 1px solid var(--line) !important; font-weight: 600; }
+.sw-dark button[aria-pressed="true"] { background: var(--btn) !important; color: var(--on-btn); }
