@@ -2,13 +2,14 @@ import { createBrowserRouter, Outlet, ScrollRestoration } from "react-router-dom
 import { AppShell } from "@/components/layout/AppShell";
 import { PageMetaProvider } from "@/components/layout/PageMeta";
 import { ContentGate } from "@/content/ContentGate";
-import { ComingSoonPage } from "@/pages/ComingSoon";
 import { HomePage } from "@/pages/Home";
 import { LandingPage } from "@/pages/Landing";
 import { LearnPage } from "@/pages/Learn";
 import { MePage } from "@/pages/Me";
 import { NotFoundPage } from "@/pages/NotFound";
 import { ReaderPage } from "@/pages/Reader";
+import { ProblemsPage } from "@/pages/Problems";
+import { ChallengePage, ProblemWorkspacePage } from "@/pages/ProblemWorkspace";
 import { SectionPage } from "@/pages/Section";
 import { Providers } from "./Providers";
 
@@ -48,8 +49,9 @@ export const routes = [
           { path: "learn", element: gated(<LearnPage />) },
           { path: "learn/:section", element: gated(<SectionPage />) },
           { path: "learn/:section/:slug", element: gated(<ReaderPage />) },
-          { path: "problems", element: gated(<ComingSoonPage kind="problems" />) },
-          { path: "problems/:slug", element: gated(<ComingSoonPage kind="problem" />) },
+          { path: "problems", element: gated(<ProblemsPage />) },
+          { path: "problems/challenge/:id", element: gated(<ChallengePage />) },
+          { path: "problems/:slug", element: gated(<ProblemWorkspacePage />) },
           { path: "me", element: <MePage /> },
           { path: "*", element: <NotFoundPage /> },
         ],

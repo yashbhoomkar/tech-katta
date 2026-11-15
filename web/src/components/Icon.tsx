@@ -21,6 +21,7 @@ const PATHS = {
   expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
   play: <path d="M7 4.5v15l12-7.5z" fill="currentColor" />,
   pause: <path d="M7 4.5v15M17 4.5v15" strokeWidth={3.2} />,
+  share: <><path d="M12 15V4M8 8l4-4 4 4" /><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" /></>,
   toc: <path d="M4 6h16M4 12h10M4 18h13" />,
   lab: <><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3" /><path d="M7 15h10" /></>,
 } as const;

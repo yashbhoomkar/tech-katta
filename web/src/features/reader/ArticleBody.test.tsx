@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { lesson } from "@/test/fixtures";
 import { ArticleBody, outline, readMinutes } from "./ArticleBody";
 
@@ -9,7 +10,7 @@ beforeEach(() => {
 
 describe("ArticleBody", () => {
   it("draws every block kind", () => {
-    render(<ArticleBody article={lesson} />);
+    render(<MemoryRouter><ArticleBody article={lesson} /></MemoryRouter>);
     expect(screen.getByRole("complementary", { name: "Example system" }).textContent).toContain("Zotato");
     expect(screen.getByRole("heading", { level: 2, name: "Why cache" }).id).toBe("s-1");
     expect(screen.getByText("Redis").tagName).toBe("CODE");
@@ -19,7 +20,7 @@ describe("ArticleBody", () => {
     expect(screen.getByRole("region", { name: "Compare" }).querySelector("tbody th")?.textContent).toBe("Memory");
     expect(screen.getByLabelText("a request").textContent).toBe("GET /menu");
     expect(screen.getByText("Eviction").closest("details")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Add a cache/ }).getAttribute("href")).toBe("/dashboard/problems/challenge/read-heavy/");
+    expect(screen.getByRole("link", { name: /Add a cache/ }).getAttribute("href")).toBe("/problems/challenge/read-heavy");
   });
 
   it("outlines the h2s and estimates the read time", () => {

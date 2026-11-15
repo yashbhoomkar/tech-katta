@@ -1,5 +1,7 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { Link, type LinkProps } from "react-router-dom";
+import { countUp } from "@/lib/motion";
 import { Icon } from "@/components/Icon";
 import { setPref, useThemePref, type ThemePref } from "@/lib/theme";
 import s from "./ui.module.css";
@@ -34,7 +36,7 @@ export function ButtonAnchor({ variant, size, className, ...rest }: AnchorHTMLAt
   return <a className={btnClass(variant, size, className)} {...rest} />;
 }
 
-export function Chip({ children, level, className }: { children: ReactNode; level?: "easy" | "medium" | "hard"; className?: string | undefined }) {
+export function Chip({ children, level, className }: { children: ReactNode; level?: "easy" | "medium" | "hard" | undefined; className?: string | undefined }) {
   return <span className={[s.chip, level && s[level], className].filter(Boolean).join(" ")}>{children}</span>;
 }
 
@@ -48,8 +50,8 @@ export function ProgressBar({ value, label, className }: { value: number; label:
   );
 }
 
-export function Card({ children, className, style }: { children: ReactNode; className?: string | undefined; style?: CSSProperties }) {
-  return <div className={[s.card, className].filter(Boolean).join(" ")} style={style}>{children}</div>;
+export function Card({ children, className, style, tour }: { children: ReactNode; className?: string | undefined; style?: CSSProperties; tour?: string }) {
+  return <section className={[s.card, className].filter(Boolean).join(" ")} style={style} data-tour={tour}>{children}</section>;
 }
 
 export function Skeleton({ width = "100%", height = 14 }: { width?: number | string; height?: number }) {
@@ -83,4 +85,11 @@ export function StateMessage({ title, children, action }: { title: string; child
       {action}
     </div>
   );
+}
+
+/** A number that counts up from 0 when it first shows (the dashboard's tallies). */
+export function CountUp({ to, className }: { to: number; className?: string | undefined }) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => (ref.current ? countUp(ref.current, to, 900) : undefined), [to]);
+  return <b ref={ref} className={className}>{to}</b>;
 }

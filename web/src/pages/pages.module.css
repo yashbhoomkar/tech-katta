@@ -27,6 +27,8 @@
 .days span { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
 .days i { width: 30px; height: 30px; border-radius: 50%; background: var(--sunken); }
 .days .on i { background: var(--marigold); }
+.days .today.on i { animation: tk-today 640ms var(--spring) both 500ms; }
+.days .today b, .days .today { color: var(--ink); font-weight: 600; }
 
 /* section tiles (Home's Explore, Learn) */
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -124,3 +126,9 @@
   .hubFoot { grid-template-columns: 1fr; }
   .themes { gap: 8px; }
 }
+
+/* you: account */
+.profile { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.profile > div { flex: 1; min-width: 180px; display: flex; flex-direction: column; }
+.avatar { display: grid; place-items: center; width: 52px; height: 52px; flex: none; overflow: hidden; border-radius: 50%; background: var(--marigold); color: var(--on-marigold); font: 600 20px var(--sans); font-style: normal; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }

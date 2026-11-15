@@ -183,3 +183,29 @@
 @media (prefers-reduced-motion: reduce) {
   .head, .full { animation: none; }
 }
+
+/* ── read as: full text or cards; share ─────────────────── */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+.seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: var(--r-pill); background: var(--sunken); }
+.seg button { position: relative; z-index: 1; padding: 6px 14px; border: 0; border-radius: var(--r-pill); background: none; font-size: 13.5px; font-weight: 500; color: var(--muted); transition: color var(--fast) ease; }
+.seg button[aria-checked="true"] { color: var(--ink); }
+.seg button:active { transform: scale(.97); }
+.segPill { position: absolute; left: 3px; top: 3px; bottom: 3px; width: calc(50% - 3px); border-radius: var(--r-pill); background: var(--raised); box-shadow: var(--shadow); transition: transform 260ms var(--out); }
+.toolBtn { display: inline-flex; gap: 6px; align-items: center; padding: 7px 14px; border: 1px solid var(--line); border-radius: var(--r-pill); background: none; font-size: 13.5px; font-weight: 500; }
+.toolBtn:hover { border-color: var(--line-strong); }
+.toolBtn:active { transform: scale(.97); }
+.deckWrap { outline: none; }
+.cardIn { animation: tk-cardin 260ms var(--out) both; }
+.cardBack { animation: tk-cardback 260ms var(--out) both; }
+.prose[data-cards] { min-height: 40vh; }
+.prose[data-cards] h2:first-child { margin-top: 0; }
+.deck { position: sticky; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 4; display: flex; gap: 12px; align-items: center; margin-top: 32px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); background: color-mix(in srgb, var(--raised) 92%, transparent); backdrop-filter: blur(10px); box-shadow: var(--shadow-pop); }
+.deckBar { flex: 1; height: 4px; border-radius: 2px; background: var(--sunken); overflow: hidden; }
+.deckBar i { display: block; height: 100%; background: var(--a); transform-origin: left; transition: transform 300ms var(--out); }
+@media (max-width: 680px) { .deck { bottom: calc(var(--tabbar-h, 64px) + 12px + env(safe-area-inset-bottom)); } }
+
+/* ── mark complete burst ───────────────────────────────── */
+.completeWrap { position: relative; }
+.tick { animation: tk-star 420ms var(--spring) both; }
+.burstHost { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.burst { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 2px; animation: tk-burst 700ms var(--out) forwards; }

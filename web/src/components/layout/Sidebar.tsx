@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useContentState } from "@/content/ContentProvider";
 import { problemsOf, sectionTitle, tally } from "@/content/model";
 import { SECTIONS, paths } from "@/content/sections";
@@ -17,14 +17,23 @@ import s from "./layout.module.css";
 
 const RAIL_KEY = "tk-sidebar";
 
+/** The workspace and challenges need the width: there the sidebar folds to the rail (without changing the saved
+ *  choice) unless it is opened again on that page. */
+const FOCUS = /^\/problems\/.+/;
+
 function useRail(): [boolean, () => void] {
-  const [rail, setRail] = useState(() => readString(RAIL_KEY) === "rail");
+  const { pathname } = useLocation();
+  const focus = FOCUS.test(pathname);
+  const [saved, setSaved] = useState(() => readString(RAIL_KEY) === "rail");
+  const [openHere, setOpenHere] = useState(false);
+  useEffect(() => setOpenHere(false), [pathname]);
+  const rail = focus ? !openHere : saved;
   useEffect(() => {
     if (rail) document.documentElement.setAttribute("data-sidebar", "rail");
     else document.documentElement.removeAttribute("data-sidebar");
-    writeString(RAIL_KEY, rail ? "rail" : "full");
   }, [rail]);
-  const toggle = useCallback(() => setRail((r) => !r), []);
+  useEffect(() => writeString(RAIL_KEY, saved ? "rail" : "full"), [saved]);
+  const toggle = useCallback(() => (focus ? setOpenHere((o) => !o) : setSaved((r) => !r)), [focus]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement;

@@ -3,7 +3,16 @@ import { useContent } from "@/content/ContentProvider";
 import { greeting, nextInSection, problemOfTheDay, problemsOf, sectionView, tally } from "@/content/model";
 import { SECTIONS, paths, sectionMeta } from "@/content/sections";
 import { usePageMeta } from "@/components/layout/PageMeta";
-import { ButtonLink, Card, Chip, ProgressBar } from "@/components/ui";
+import { Button, ButtonLink, Card, Chip, CountUp, ProgressBar } from "@/components/ui";
+import { cx } from "@/lib/cx";
+import { problemRows, usePractice } from "@/content/practice";
+import { useTour, type TourStep } from "@/components/Tour";
+
+const TOUR: TourStep[] = [
+  { target: "cont", title: "Pick up where you stopped", text: "Your last lesson, and how far you got. Resume opens it again." },
+  { target: "prog", title: "Your progress", text: "Lessons read and problems solved, across the whole site." },
+  { target: "streak", title: "Keep the streak", text: "One lesson a day keeps it going. Today counts as soon as you finish one." },
+];
 import { lastInProgress, streakDays, useProgress } from "@/lib/progress";
 import type { ArticleSummary } from "@/lib/api/types";
 import s from "./pages.module.css";
@@ -27,23 +36,29 @@ export function HomePage() {
   const reading = articles.filter((a) => !a.tests);
   const problems = problemsOf(articles);
   const lessons = tally(reading, progress);
-  const solved = tally(problems, progress);
+  const practice = usePractice();
+  const rows = problemRows(problems, practice);
+  const solvedN = rows.filter((r) => r.status === "solved").length;
+  const solved = { done: solvedN, total: rows.length, pct: rows.length ? Math.round((solvedN / rows.length) * 100) : 0 };
+  const tour = useTour(TOUR);
   const today = problemOfTheDay(problems, progress);
   const streak = streakDays(progress);
   const weekday = (new Date().getDay() + 6) % 7; // Monday = 0
 
   return (
     <div className={s.page}>
+      {tour.ui}
       <div className={s.head}>
         <div>
           <h1>{greeting(site)}</h1>
           <p>{streak > 0 ? `You're ${streak} ${streak === 1 ? "day" : "days"} into a streak. One more lesson keeps it going.` : site.dashboard.home.sub}</p>
         </div>
+        <Button size="sm" onClick={tour.start}>Take the tour</Button>
       </div>
 
       <div className={s.grid2}>
         {next && (
-          <Card className={s.pad}>
+          <Card className={s.pad} tour="cont">
             <p className="mono">{resume ? "Continue where you left off" : "Start here"}</p>
             <div className={s.contIn} data-accent={nextAccent}>
               <div className={s.thumb} aria-hidden="true">{next.tag}</div>
@@ -65,14 +80,14 @@ export function HomePage() {
             </div>
           </Card>
         )}
-        <Card className={s.pad}>
+        <Card className={s.pad} tour="prog">
           <p className="mono">Your progress</p>
           <div data-accent="concepts">
-            <div className={s.stat}><span>Lessons read</span><b>{lessons.done} of {lessons.total}</b></div>
+            <div className={s.stat}><span>Lessons read</span><b><CountUp to={lessons.done} /> of {lessons.total}</b></div>
             <ProgressBar value={lessons.total ? lessons.done / lessons.total : 0} label="Lessons read" />
           </div>
           <div data-accent="problems">
-            <div className={s.stat}><span>Problems solved</span><b>{solved.done} of {solved.total}</b></div>
+            <div className={s.stat}><span>Problems solved</span><b><CountUp to={solved.done} /> of {solved.total}</b></div>
             <ProgressBar value={solved.total ? solved.done / solved.total : 0} label="Problems solved" />
           </div>
           <small className={s.muted}>Kept in this browser. Signing in will keep it on every device.</small>
@@ -90,11 +105,11 @@ export function HomePage() {
             <ButtonLink variant="primary" to={paths.problem(today.slug)}>Open the canvas</ButtonLink>
           </div>
         )}
-        <Card className={s.pad}>
+        <Card className={s.pad} tour="streak">
           <p className="mono">This week</p>
           <div className={s.days} aria-label={`Streak: ${streak} ${streak === 1 ? "day" : "days"}`}>
             {WEEK.map((d, i) => (
-              <span key={i} className={i > weekday - streak && i <= weekday ? s.on : undefined}>
+              <span key={i} className={cx(i > weekday - streak && i <= weekday && s.on, i === weekday && s.today)}>
                 <i />
                 {d}
               </span>

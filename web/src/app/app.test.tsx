@@ -11,6 +11,7 @@ function mockApi({ fail = false } = {}) {
     if (url.endsWith("/v1/site")) return Response.json(site);
     if (url.endsWith("/v1/articles")) return Response.json({ articles });
     if (url.endsWith("/v1/articles/caching")) return Response.json(lesson);
+    if (url.endsWith("/v1/lab")) return Response.json({ challenges: [{ id: "one-server", level: "beginner", title: "Too much for one server", brief: "", stars: [1, 2, 3] }] });
     return new Response("not found", { status: 404 });
   }));
 }
@@ -52,6 +53,39 @@ describe("app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Mark complete & next/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/learn/concepts/real-time-updates"));
     expect(JSON.parse(localStorage.getItem("tk-progress-v1") ?? "{}").caching.done).toBe(true);
+  });
+
+  it("Problems lists the problems, filters by difficulty and shows the challenges", async () => {
+    mockApi();
+    renderAt("/problems");
+    expect(await screen.findByRole("heading", { level: 1, name: "Design it. Run it. Get judged." })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Design a chat app" }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /^Easy/ }));
+    expect(screen.queryAllByRole("link", { name: "Design a chat app" })).toHaveLength(0);
+    expect(await screen.findByRole("heading", { name: "Too much for one server" })).toBeTruthy();
+  });
+
+  it("g then p goes to Problems; ? lists the shortcuts", async () => {
+    mockApi();
+    const router = renderAt("/home");
+    await screen.findByRole("heading", { level: 1 });
+    fireEvent.keyDown(window, { key: "g" });
+    fireEvent.keyDown(window, { key: "p" });
+    await waitFor(() => expect(router.state.location.pathname).toBe("/problems"));
+    fireEvent.keyDown(window, { key: "?" });
+    expect(await screen.findByRole("dialog", { name: "Keyboard shortcuts" })).toBeTruthy();
+  });
+
+  it("cards mode shows one section at a time", async () => {
+    mockApi();
+    renderAt("/learn/concepts/caching");
+    await screen.findByRole("heading", { level: 2, name: "Why cache" });
+    fireEvent.click(screen.getByRole("radio", { name: "Cards" }));
+    expect(screen.getByText("1 / 3")).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 2, name: "Kinds of cache" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Next →" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Why cache" })).toBeTruthy();
+    expect(screen.getByText("2 / 3")).toBeTruthy();
   });
 
   it("an unknown lesson is a not-found page", async () => {

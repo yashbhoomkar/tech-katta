@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { readTokens } from "@legacy/theme/palette.js";
 import type { ArticleResponse, Block } from "@/lib/api/types";
@@ -15,6 +16,13 @@ import s from "./reader.module.css";
 export function outline(body: Block[]): { id: string; text: string }[] {
   return body.flatMap((b, i) => (b.t === "h2" ? [{ id: anchor(i), text: b.x }] : []));
 }
+/** The lesson as cards: one card per h2 section (what comes before the first h2 is the first card). [start, end) block ranges. */
+export function cardsOf(body: Block[]): [number, number][] {
+  const starts = body.flatMap((b, i) => (b.t === "h2" && i > 0 ? [i] : []));
+  const edges = [0, ...starts, body.length];
+  return edges.slice(0, -1).map((a, k) => [a, edges[k + 1] ?? body.length] as [number, number]).filter(([a, b]) => b > a);
+}
+
 /** Minutes to read the main text at 220 words a minute ("Go deeper" and type details are extra). */
 export function readMinutes(article: ArticleResponse): number {
   const count = (x: string | undefined) => (x ? x.split(/\s+/).filter(Boolean).length : 0);
@@ -32,10 +40,10 @@ export function readMinutes(article: ArticleResponse): number {
 }
 const anchor = (i: number | string) => `s-${i}`;
 
-/** Lab links go to the current app's canvas until the workspace is rebuilt here. */
-const labHref = (to: string) => `/dashboard/${to.replace(/^\/+|\/+$/g, "")}/`;
+/** Lab links ("problems/challenge/read-heavy") open the challenge here. */
+const labHref = (to: string) => `/${to.replace(/^\/+|\/+$/g, "")}`;
 
-export function ArticleBody({ article }: { article: ArticleResponse }) {
+export function ArticleBody({ article, range, dir }: { article: ArticleResponse; range?: [number, number] | undefined; dir?: 1 | -1 }) {
   // the legacy colour names live on a hidden probe, so they never leak into the page's own styles
   const probe = useRef<HTMLSpanElement>(null);
   const theme = useDocTheme();
@@ -57,12 +65,18 @@ export function ArticleBody({ article }: { article: ArticleResponse }) {
   }, [article.body]);
 
   return (
-    <div className={s.prose}>
+    <div className={s.prose} data-cards={range ? "" : undefined}>
       <span ref={probe} className={tokens.tokens} hidden />
       <FigureTheme.Provider value={figTheme}>
-        {article.body.map((b, i) => (
-          <BlockView key={i} block={b} id={anchor(i)} article={article} numbers={numbers} />
-        ))}
+        {range ? (
+          <div key={range[0]} className={dir === -1 ? s.cardBack : s.cardIn}>
+            {article.body.slice(range[0], range[1]).map((b, j) => (
+              <BlockView key={range[0] + j} block={b} id={anchor(range[0] + j)} article={article} numbers={numbers} />
+            ))}
+          </div>
+        ) : (
+          article.body.map((b, i) => <BlockView key={i} block={b} id={anchor(i)} article={article} numbers={numbers} />)
+        )}
       </FigureTheme.Provider>
     </div>
   );
@@ -157,11 +171,11 @@ function BlockView({ block: b, id, article, numbers }: BlockProps) {
       );
     case "lab":
       return (
-        <a className={s.lab} href={labHref(b.to)}>
+        <Link className={s.lab} to={labHref(b.to)}>
           <Icon name="lab" size={22} />
           <span><span className="mono">Try it on the canvas</span><span><Inline text={b.x} /></span></span>
           <em>{b.go ?? "Open it"} →</em>
-        </a>
+        </Link>
       );
     default:
       return null;

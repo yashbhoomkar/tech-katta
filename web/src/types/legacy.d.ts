@@ -25,3 +25,55 @@ declare module "@legacy/theme/palette.js" {
   /** re-reads the figure colours from the page's CSS variables (call after the theme changes) */
   export function readTokens(el?: Element | null): void;
 }
+
+declare module "@legacy/account.js" {
+  export interface AccountUser { id?: string; name?: string; email?: string; picture?: string }
+  export interface AccountState {
+    ready: boolean;
+    enabled: boolean;
+    user: AccountUser | null;
+    clientId: string | null;
+    syncing: boolean;
+    error: string | null;
+  }
+  /** current state; a "tk-account" window event fires on every change */
+  export function account(): AccountState;
+  export function startAccount(): Promise<void>;
+  export function renderGoogleButton(el: HTMLElement, opts?: { text?: string }): Promise<void>;
+  export function setTermsChoice(v: boolean): void;
+  export function signOut(): Promise<void>;
+}
+
+declare module "@legacy/dashboard/site.js" {
+  /** fills the current app's live site bindings (copy, articles, example) that its components read */
+  export function setSite(site: unknown, list: { articles: unknown[] }): void;
+}
+declare module "@legacy/dashboard/blocks.jsx" {
+  import type { ComponentType } from "react";
+  export const Block: ComponentType<Record<string, unknown>>;
+}
+declare module "@legacy/dashboard/article.jsx" {
+  import type { ComponentType } from "react";
+  export const Article: ComponentType<Record<string, unknown>>;
+  export function withFigs<T>(a: T): Promise<T>;
+}
+declare module "@legacy/solve.jsx" {
+  import type { ComponentType } from "react";
+  const Solve: ComponentType<Record<string, unknown>>;
+  export default Solve;
+}
+declare module "@legacy/lab/Lab.jsx" {
+  import type { ComponentType } from "react";
+  const Lab: ComponentType<Record<string, unknown>>;
+  export default Lab;
+}
+
+declare module "@legacy/progress.js" {
+  export interface LegacyProgress { steps: Record<string, unknown>; stars: Record<string, number> }
+  /** this browser's practice progress; a "tk-progress" window event fires when it changes */
+  export function readProgress(): LegacyProgress;
+}
+declare module "@legacy/practice.js" {
+  export function bestScore(slug: string): number | null;
+  export function readSubs(slug: string): { score: number; copied?: boolean }[];
+}

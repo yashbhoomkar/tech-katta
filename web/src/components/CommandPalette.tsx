@@ -5,6 +5,10 @@ import { searchItems } from "@/content/model";
 import { sectionMeta } from "@/content/sections";
 import { buildIndex, search, stem, words, type SearchHit } from "@/lib/search";
 import { Icon } from "./Icon";
+import { readJson, writeJson } from "@/lib/storage";
+
+const RECENT = "tk-recent-search";
+const isIds = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
 import s from "./CommandPalette.module.css";
 
 // Search everything: ⌘K / Ctrl+K, "/", or any open() call (sidebar box, top bar, phone tab).
@@ -64,8 +68,10 @@ function Palette({ onClose }: { onClose: () => void }) {
   const index = useMemo(() => (content.status === "success" ? buildIndex(searchItems(content.data.site, content.data.articles)) : []), [content]);
   const hits: SearchHit[] = useMemo(() => {
     if (query.trim()) return search(index, query);
-    // empty query: the sections and pages, a quick way to jump anywhere
-    return index.filter(({ item }) => item.group === "Sections" || item.group === "Pages").map(({ item }) => ({ ...item, score: 0 }));
+    // empty query: what was opened lately, then the sections and pages, a quick way to jump anywhere
+    const recent = readJson<string[]>(RECENT, [], isIds).flatMap((id) => index.filter(({ item }) => item.id === id).map(({ item }) => ({ ...item, group: "Recent" as const, score: 0 })));
+    const seen = new Set(recent.map((r) => r.id));
+    return [...recent, ...index.filter(({ item }) => (item.group === "Sections" || item.group === "Pages") && !seen.has(item.id)).map(({ item }) => ({ ...item, score: 0 }))];
   }, [index, query]);
 
   useEffect(() => {
@@ -80,6 +86,7 @@ function Palette({ onClose }: { onClose: () => void }) {
 
   const go = (hit: SearchHit | undefined) => {
     if (!hit) return;
+    writeJson(RECENT, [hit.id, ...readJson<string[]>(RECENT, [], isIds).filter((x) => x !== hit.id)].slice(0, 5));
     onClose();
     navigate(hit.href);
   };

@@ -4,7 +4,7 @@
 
 export interface SearchItem {
   id: string;
-  group: "Lessons" | "Problems" | "Sections" | "Pages";
+  group: "Recent" | "Lessons" | "Problems" | "Sections" | "Pages";
   title: string;
   detail: string;
   href: string;

@@ -21,6 +21,8 @@ export function AppShell() {
     main.current?.focus({ preventScroll: true });
   }, [pathname]);
 
+  useBarsAway(/^\/learn\/[^/]+\/[^/]+/.test(pathname));
+
   return (
     <PageMetaProvider>
       <a className={s.skip} href="#main" onClick={(e) => { e.preventDefault(); main.current?.focus(); }}>
@@ -39,4 +41,33 @@ export function AppShell() {
       <ScrollRestoration />
     </PageMetaProvider>
   );
+}
+
+/** On reading pages (phones) the top bar and tabs slide away while you scroll down and come back when you scroll up. */
+function useBarsAway(reading: boolean) {
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!reading) {
+      root.removeAttribute("data-bars");
+      return;
+    }
+    let last = window.scrollY;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        if (y > 120 && y > last + 4) root.setAttribute("data-bars", "away");
+        else if (y < last - 4 || y < 120) root.removeAttribute("data-bars");
+        last = y;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+      root.removeAttribute("data-bars");
+    };
+  }, [reading]);
 }
