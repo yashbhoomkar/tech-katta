@@ -1,5 +1,5 @@
 // Problems: every Interview Question and challenge in one list, with what this visitor has done
-import{planOf,dailyOf,readMarks}from"./plan/plan.js";
+import{planOf,dailyOf,readMarks}from"./plan/plan.js";import{skillRecord,nextFor}from"./plan/skills.js";import{read as readKey,SUBS}from"./practice.js";
 // (a question practised against the clock or designed on the canvas, stars earned in a challenge).
 // Copy in site.json "problems"; progress from progress.js, kept up to date by its "tk-progress" event;
 // challenges from GET /v1/lab. The question list is a LeetCode-style table (QuestionTable), also used by
@@ -63,6 +63,7 @@ return <section className="d-panel pb" aria-labelledby="d-title"><label>{p.eyebr
 <div className="pb-filter" role="group" aria-label={p.filterLabel}>{[[false,p.all],[true,p.todo]].map(([v,t])=><button key={t} type="button" aria-pressed={!marked&&todo===v} className={!marked&&todo===v?"on":""} onClick={()=>{setTodo(v);setMarked(false)}}>{t}</button>)}<button type="button" aria-pressed={marked} className={marked?"on":""} onClick={()=>setMarked(m=>!m)}>★ Bookmarked{Object.keys(marks.bookmarks).length?` (${Object.keys(marks.bookmarks).length})`:""}</button>
 <button type="button" className="pb-pick" onClick={()=>{const left=qs.filter(a=>!prog.steps["solved:"+a.slug]),from=left.length?left:qs;const a=from[Math.floor(Math.random()*from.length)];if(a)location.hash=`#problems/${a.slug}`}}>⚄ Pick one</button></div></div>
 <Plan qs={qs} prog={prog}/>
+<Skills qs={qs} prog={prog}/>
 <section className="pb-group" aria-labelledby="pb-q"><h2 id="pb-q">{p.questions}</h2><p>{p.questionsDesc}</p>
 {marked&&!Object.keys(marks.bookmarks).length&&<p className="pb-none">No bookmarks yet: press ☆ in a problem's workspace to keep it here.</p>}<QuestionTable p={p} qs={qs} groups={groups} base="problems" data={data} todo={todo} only={marked?new Set(Object.keys(marks.bookmarks)):null}/></section>
 {/* The sandbox canvas (context 36, step 7): the canvas with no problem; paid. */}
@@ -78,3 +79,11 @@ const weeks=planOf(qs),all=weeks.flatMap(w=>w.slugs),done=all.filter(solved).len
 return <section className="pb-group pb-plan" aria-labelledby="pb-p"><h2 id="pb-p">Your plan</h2>
 <div className="pb-plan-top">{day&&<a className="pb-day" href={`#problems/${day.slug}`}><small>PROBLEM OF THE DAY</small><b>{day.title}</b></a>}{next&&<a className="pb-day" href={`#problems/${next}`}><small>NEXT IN YOUR PLAN · {done} OF {all.length} DONE</small><b>{qs.find(q=>q.slug===next)?.title}</b></a>}</div>
 <details open={done<all.length}><summary>The order to take them in</summary><ol className="pb-weeks">{weeks.map(w=>{const d=w.slugs.filter(solved).length;return <li key={w.name}><div><b>{w.name}</b> <small>{d} of {w.slugs.length} · {w.why}</small></div><ul>{w.slugs.map(s=><li key={s} className={solved(s)?"ok":""}><a href={`#problems/${s}`}>{solved(s)?"✓ ":""}{title[s]||s}</a></li>)}</ul></li>})}</ol></details></section>}
+
+// Your skills (context 36, step 20): what your own latest submission on each problem passed, by kind of test, and the
+// next problem for the weakest kind. Only from this browser; shown once there is a submission.
+function Skills({qs,prog}){const rec=skillRecord(readKey(SUBS));if(!rec.problems)return null;
+const solved=slug=>!!prog.steps["solved:"+slug],next=rec.weakest?nextFor(rec.weakest,planOf(qs).flatMap(w=>w.slugs),solved):null,title=s=>qs.find(q=>q.slug===s)?.title||s,weak=rec.skills.find(s=>s.id===rec.weakest);
+return <section className="pb-group pb-skills" aria-labelledby="pb-s"><h2 id="pb-s">Your skills</h2><p>From your latest submission on each of {rec.problems} problem{rec.problems===1?"":"s"} (copied solutions don't count).</p>
+<ul className="pb-skill">{rec.skills.filter(s=>s.total).map(s=>{const r=s.passed/s.total;return <li key={s.id} className={s.id===rec.weakest?"weak":""}><div><b>{s.label}</b><small>{s.about}</small></div><span className="pb-bar" aria-hidden="true"><i style={{"--w":`${Math.round(100*r)}%`}}/></span><span className="pb-n">{s.passed} of {s.total} test{s.total===1?"":"s"}</span></li>})}</ul>
+{weak&&<p className="pb-next">Weakest: <b>{weak.label}</b>.{next?<> Next, try <a href={`#problems/${next}`}>{title(next)}</a>: it leans on that.</>:" Redo a problem where it failed."}</p>}</section>}
