@@ -1,0 +1,51 @@
+/* Buttons, chips, progress bars, segmented controls, tabs, the theme switch. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: var(--r-pill); padding: 12px 22px; font-weight: 500; font-size: 15px;
+  border: 1px solid var(--line-strong); background: var(--surface); white-space: nowrap;
+  transition: transform var(--press) var(--out), background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.btn.primary { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.sm { padding: 8px 14px; font-size: 13.5px; }
+.btn.icon { padding: 0; width: 36px; height: 36px; font-size: 15px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.accent { color: var(--link); border-color: var(--link); }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-pill); padding: 4px 10px; font-size: 12.5px; font-weight: 500; background: var(--sunken); }
+.easy { background: var(--t-problems); color: var(--pass); }
+.medium { background: var(--t-components); color: var(--warn); }
+.hard { background: var(--t-real); color: var(--fail); }
+
+.bar { height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: var(--pass); }
+
+.stars { display: inline-flex; gap: 1px; color: var(--star); letter-spacing: 1px; }
+.stars i { font-style: normal; display: inline-block; }
+
+/* segmented control with a sliding pill (lesson: Cards / Full text) */
+.seg { position: relative; isolation: isolate; display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: var(--sunken); align-self: flex-start; }
+.seg button { position: relative; z-index: 1; border: 0; background: none; border-radius: var(--r-pill); padding: 6px 14px; font-size: 13px; font-weight: 500; transition: color 150ms ease; }
+.seg-i { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; border-radius: var(--r-pill); background: var(--raised); box-shadow: 0 1px 2px rgb(0 0 0 / .08), var(--hl); transition: transform var(--base) var(--out), width var(--base) var(--out); }
+
+/* theme switch: System / Light / Dark */
+.theme-sw { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--r-pill); background: var(--sunken); }
+.theme-sw button { display: grid; place-items: center; border: 0; background: none; border-radius: var(--r-pill); width: 34px; height: 28px; color: var(--muted); transition: background-color 150ms ease, color 150ms ease; }
+.theme-sw button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .1), var(--hl); }
+
+.theme-sw .ic { width: 16px; height: 16px; }
+.tlabel { display: inline-flex; gap: 8px; align-items: center; }
+.tlabel .ic { width: 16px; height: 16px; }
+
+/* tabs with a sliding underline (workspace) */
+.tabs { position: relative; flex: none; display: flex; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button { border: 0; background: none; padding: 10px 12px 12px; font-size: 14px; font-weight: 500; color: var(--muted); white-space: nowrap; transition: color 150ms ease; }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tab-ul { position: absolute; left: 0; bottom: -1px; height: 2px; width: 1px; background: var(--ink); transform-origin: left; transition: transform var(--base) var(--out); }
+
+.fbtn { border-radius: var(--r-pill); padding: 8px 14px; font-size: 13.5px; font-weight: 500; background: var(--surface); border: 1px solid var(--line); }
+.fbtn[aria-pressed="true"] { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
+
+.logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 19px; letter-spacing: -.03em; padding: 4px 14px 4px 4px; border: 1px solid var(--line-strong); border-radius: var(--r-pill); background: var(--surface); white-space: nowrap; }
+.logo b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-pill); background: var(--marigold); color: var(--on-marigold); font: 500 11px var(--mono); flex: none; }
+.btn .ic { flex: none; }

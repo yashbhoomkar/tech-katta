@@ -35,12 +35,18 @@ write("problems/stats", { problems: {} });
 
 // standalone HTML prototypes
 const protoDir = path.join(frontend, "prototypes"), out = path.join(dist, "p");
-const pages = fs.existsSync(protoDir) ? fs.readdirSync(protoDir).filter((f) => f.endsWith(".html")).sort() : [];
+// a prototype is either one file (prototypes/<name>.html) or a folder with an index.html (prototypes/<name>/),
+// which is copied as it is: a small structured frontend (styles/, scripts/ with ES modules) served at /p/<name>/
+const isDir = (f) => fs.statSync(path.join(protoDir, f)).isDirectory();
+const pages = fs.existsSync(protoDir) ? fs.readdirSync(protoDir).filter((f) => f.endsWith(".html") || (isDir(f) && fs.existsSync(path.join(protoDir, f, "index.html")))).sort() : [];
+const srcOf = (f) => (isDir(f) ? path.join(protoDir, f, "index.html") : path.join(protoDir, f));
 fs.mkdirSync(out, { recursive: true });
 // The site's Content-Security-Policy (routes.json) allows only script files from this site, not script written in
 // the page, so each prototype's inline <script> is moved into its own file next to it (p/<name>/page-N.js).
 for (const f of pages) {
-  const d = path.join(out, f.replace(/\.html$/, "")); fs.mkdirSync(d, { recursive: true });
+  const d = path.join(out, f.replace(/\.html$/, ""));
+  if (isDir(f)) { fs.cpSync(path.join(protoDir, f), d, { recursive: true, filter: (src) => !/README\.md$/.test(src) }); continue; }
+  fs.mkdirSync(d, { recursive: true });
   let k = 0;
   const html = fs.readFileSync(path.join(protoDir, f), "utf8").replace(/<script>([\s\S]*?)<\/script>/g, (_, js) => { const name = `page-${++k}.js`; fs.writeFileSync(path.join(d, name), js); return `<script src="${name}"></script>`; });
   fs.writeFileSync(path.join(d, "index.html"), html);
@@ -48,7 +54,7 @@ for (const f of pages) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // each prototype names itself: <title>, <meta name="prototype:type"> and <meta name="prototype:summary">
 const meta = (html, name) => (html.match(new RegExp(`<meta name="${name}" content="([^"]*)"`)) || [])[1] || "";
-const items = pages.map((f) => { const h = fs.readFileSync(path.join(protoDir, f), "utf8");
+const items = pages.map((f) => { const h = fs.readFileSync(srcOf(f), "utf8");
   return { slug: f.replace(/\.html$/, ""), title: (h.match(/<title>([^<]*)<\/title>/) || [])[1] || f, type: meta(h, "prototype:type") || "Other", summary: meta(h, "prototype:summary") }; });
 const types = [...new Set(items.map((i) => i.type))];
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Prototypes · Tech Katta</title>

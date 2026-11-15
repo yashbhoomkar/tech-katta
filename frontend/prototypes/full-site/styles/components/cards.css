@@ -1,0 +1,18 @@
+/* Cards and the section-coloured blocks. A coloured block uses --c-<section> as its fill and --on-c for text;
+   in dark mode the fill turns deep and an accent edge keeps the section's colour. */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--hl); }
+
+[data-sec] { --c: var(--c-concepts); --a: var(--a-concepts); --t: var(--t-concepts); }
+[data-sec="concepts"]   { --c: var(--c-concepts);   --a: var(--a-concepts);   --t: var(--t-concepts); }
+[data-sec="components"] { --c: var(--c-components); --a: var(--a-components); --t: var(--t-components); }
+[data-sec="interview"]  { --c: var(--c-interview);  --a: var(--a-interview);  --t: var(--t-interview); }
+[data-sec="problems"]   { --c: var(--c-problems);   --a: var(--a-problems);   --t: var(--t-problems); }
+[data-sec="notes"]      { --c: var(--c-notes);      --a: var(--a-notes);      --t: var(--t-notes); }
+[data-sec="real"]       { --c: var(--c-real);       --a: var(--a-real);       --t: var(--t-real); }
+
+.block { background: var(--c); color: var(--on-c); }
+:root[data-theme="dark"] .block { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a) 28%, transparent); }
+.dot { width: 10px; height: 10px; border-radius: 9px; flex: none; background: var(--a); }
+
+/* the small white "preview" panes that sit inside coloured cards */
+.pane { background: var(--preview); color: var(--on-preview); }

@@ -1,0 +1,89 @@
+/* Design tokens: every colour, type face, radius, shadow and timing the prototype uses.
+   Components read roles (--surface, --ink, --c-concepts), never hex codes, so light and dark are two sets
+   of values for the same names. Decisions: README.md, "Dark mode". */
+
+:root {
+  /* type */
+  --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* shape */
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 24px; --r-pill: 999px;
+  --side-w: 264px; --rail-w: 72px; --tabbar-h: 64px;
+
+  /* motion (see motion.css; rules after Emil Kowalski's review-animations, MIT) */
+  --out: cubic-bezier(.23, 1, .32, 1);
+  --spring: cubic-bezier(.34, 1.36, .64, 1);
+  --inout: cubic-bezier(.77, 0, .175, 1);
+  --drawer: cubic-bezier(.32, .72, 0, 1);
+  --fast: 140ms; --base: 240ms; --slow: 520ms; --press: 160ms;
+}
+
+/* ---------- light ---------- */
+:root {
+  color-scheme: light;
+  --page: #F6F5F1;        /* the paper */
+  --surface: #FFFFFF;     /* cards, sidebar, bars */
+  --raised: #FFFFFF;      /* dialogs, menus, popovers */
+  --sunken: #EEEDE8;      /* tracks, inputs, hover */
+  --ink: #17161A; --ink-2: #4A4844; --muted: #6B6963;
+  --line: #E4E2DC; --line-strong: #CFCCC4;
+  --btn: #17161A; --on-btn: #FFFFFF;
+  --marigold: #FFC233; --on-marigold: #17161A;
+  --link: #26449E; --focus: #26449E;
+  --pass: #17794A; --fail: #B3261E; --warn: #9C4A00; --star: #E8A308;
+  --video: #17161A; --on-video: #F6F5F1;
+  --scrim: rgb(20 19 17 / .45);
+  --shadow: 0 1px 2px rgb(23 22 26 / .05), 0 12px 32px -14px rgb(23 22 26 / .18);
+  --shadow-pop: 0 30px 60px -20px rgb(0 0 0 / .4);
+  --hl: inset 0 0 0 0 transparent;          /* top highlight on raised things (dark only) */
+  --band-strong: #17161A; --on-band-strong: #FFFFFF;
+  --selection: rgb(255 194 51 / .45);
+
+  /* sections: fill (big colour blocks), text on that fill, accent (dots, bars, borders), tint (soft backgrounds) */
+  --c-concepts: #A9CBE0;   --a-concepts: #A9CBE0;   --t-concepts: #E7F1F7;
+  --c-components: #E9A050; --a-components: #E9A050; --t-components: #FBEBD9;
+  --c-interview: #CDB8F0;  --a-interview: #CDB8F0;  --t-interview: #F1EBFB;
+  --c-problems: #A6DCC5;   --a-problems: #A6DCC5;   --t-problems: #E6F5EE;
+  --c-real: #F3B9A6;       --a-real: #F3B9A6;       --t-real: #FCECE6;
+  --c-notes: #F4DE8A;      --a-notes: #F4DE8A;      --t-notes: #FCF6DD;
+  --on-c: #17161A; --on-c-2: rgb(23 22 26 / .78);
+  --track-on-c: rgb(255 255 255 / .55); --fill-on-c: #17161A;
+  --preview: #FFFFFF; --on-preview: #17161A;   /* the small white panes inside coloured cards */
+}
+
+/* ---------- dark ----------
+   Warm near-black (it is the same paper at night, not a blue-grey app). Depth comes from lighter surfaces,
+   not shadows. Big colour blocks become deep versions of each hue with light text; the bright pastel moves
+   to the accent (dots, bars, a 1 px edge) so sections stay recognisable without glaring. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121110;
+  --surface: #1A1917;
+  --raised: #23211E;
+  --sunken: #262420;
+  --ink: #EEEBE4; --ink-2: #C4C0B6; --muted: #959187;
+  --line: #2C2A26; --line-strong: #403D37;
+  --btn: #EEEBE4; --on-btn: #121110;
+  --marigold: #FFC233; --on-marigold: #17161A;
+  --link: #A5B8F5; --focus: #A5B8F5;
+  --pass: #5CC98A; --fail: #F28B82; --warn: #F0A35E; --star: #F5B83D;
+  --video: #000000; --on-video: #EEEBE4;
+  --scrim: rgb(0 0 0 / .62);
+  --shadow: 0 0 0 1px #2C2A26;
+  --shadow-pop: 0 0 0 1px #34312C, 0 30px 60px -20px rgb(0 0 0 / .7);
+  --hl: inset 0 1px 0 rgb(255 255 255 / .04);
+  --band-strong: #241F12; --on-band-strong: #EEEBE4;
+  --selection: rgb(255 194 51 / .3);
+
+  --c-concepts: #1C2F3B;   --a-concepts: #8EBBD8;   --t-concepts: #18232B;
+  --c-components: #3A2614; --a-components: #E9A050; --t-components: #2A1F15;
+  --c-interview: #2A2140;  --a-interview: #BCA4EE;  --t-interview: #221D2E;
+  --c-problems: #15322A;   --a-problems: #84D0B0;   --t-problems: #16261F;
+  --c-real: #3A2019;       --a-real: #EFA48C;       --t-real: #2B1D18;
+  --c-notes: #352E14;      --a-notes: #EBD173;      --t-notes: #29251A;
+  --on-c: #EEEBE4; --on-c-2: rgb(238 235 228 / .78);
+  --track-on-c: rgb(255 255 255 / .12); --fill-on-c: #EEEBE4;
+  --preview: #121110; --on-preview: #EEEBE4;
+}

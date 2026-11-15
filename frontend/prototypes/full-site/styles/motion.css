@@ -1,0 +1,123 @@
+/* All movement in one file (the system from /p/motion/; rules after Emil Kowalski's review-animations, MIT):
+   press 0.97 · hover moves only with a mouse · ease-out for things arriving · no bounce except celebrations ·
+   page changes fade 160 ms · overlays: modal 260 ms from 0.96, drawer/sheet 400-500 ms on the drawer curve ·
+   reduced motion keeps fades and colour, drops movement and loops. */
+
+@keyframes m-fade { from { opacity: 0; } }
+@keyframes m-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes m-word { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+@keyframes m-card { from { opacity: 0; translate: 0 40px; } }
+@keyframes m-drift { to { translate: 0 -10px; } }
+@keyframes m-spin { to { transform: rotate(1turn); } }
+@keyframes m-pop { from { opacity: .2; transform: scale(.92); } }
+@keyframes m-pop2 { from { opacity: 0; transform: scale(.96); } }
+@keyframes m-star { from { opacity: 0; transform: scale(.6) rotate(-25deg); } }
+@keyframes m-bar { from { transform: scaleX(0); } }
+@keyframes m-mark { from { transform: scaleY(0); } }
+@keyframes m-today { from { background: var(--sunken); transform: scale(.7); } to { background: var(--marigold); } }
+@keyframes m-dlg { from { opacity: 0; transform: scale(.96); } }
+@keyframes m-sheet { from { transform: translateY(100%); } }
+@keyframes m-drawer { from { transform: translateX(100%); } }
+@keyframes m-nudge { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes m-burst { from { transform: translate(-50%, -50%) rotate(0) scale(1); opacity: 1; } to { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--rot)) scale(.6); opacity: 0; } }
+@keyframes m-flash { from { background: var(--t-problems); } }
+@keyframes m-shim { to { background-position: -150% 0; } }
+@keyframes m-pkt { from { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } to { offset-distance: 100%; opacity: 0; } }
+@keyframes m-blink { 50% { opacity: .25; } }
+@keyframes m-cardin { from { opacity: 0; transform: translateX(16px); } }
+@keyframes m-cardback { from { opacity: 0; transform: translateX(-16px); } }
+
+/* press: everything pressable gives a little */
+.btn:active, .gbtn:active, .fbtn:active, .seg button:active, .tabs button:active, .nav-i:active, .ecard:active, .lesson:active, .palette .p:active, .tab:active .ic, .mega-i:active, .theme-card:active, .pplay:active { transform: scale(.97); }
+.rcard:active { transform: rotate(var(--r, 0deg)) translateY(var(--y, 0px)) scale(.98); }
+/* hover moves only with a real mouse */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); } .btn:active { transform: scale(.97); }
+  .rcard:hover { transform: rotate(0deg) translateY(-8px); }
+  .ecard:hover { transform: translateY(-3px); }
+}
+
+/* page change: content settles in */
+main.enter > * { animation: m-fade 160ms ease-out; }
+
+/* landing arrivals */
+.hero h1 .w { display: inline-block; animation: m-word 700ms var(--out) both; animation-delay: var(--dl); }
+.m-in { animation: m-in 600ms var(--out) both; animation-delay: var(--dl); }
+.rcard { animation: m-card 760ms var(--out) both; animation-delay: var(--dl); }
+.hero .shape { animation: m-fade 900ms ease both 300ms, m-drift 9s ease-in-out infinite alternate; animation-delay: 300ms, calc(var(--n) * -1.7s); }
+.hero.off .shape { animation-play-state: running, paused; }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 700ms var(--out), transform 700ms var(--out); }
+.reveal.in { opacity: 1; transform: none; }
+.mega:not([hidden]) { animation: m-pop2 180ms var(--out); }
+.ts.run::before { animation: m-spin 600ms linear infinite; }
+.ts.done { animation: m-pop 320ms var(--out); }
+.stars.go i { animation: m-star 520ms var(--spring) both; }
+.stars.go i:nth-child(2) { animation-delay: 90ms; } .stars.go i:nth-child(3) { animation-delay: 200ms; }
+
+/* app */
+.nav-i[aria-current="page"]::before { animation: m-mark 320ms var(--out); }
+.bar i { transform-origin: left center; transition: width var(--slow) var(--out); }
+main.enter .bar i { animation: m-bar 900ms var(--out) both 120ms; }
+#today.pop i { animation: m-today 640ms var(--spring) both 500ms; }
+#today.on i { background: var(--marigold); }
+#ptable tr.in { animation: m-in 300ms var(--out) both; }
+#ptable tr.picked { animation: m-flash 1.4s ease; }
+
+/* lesson */
+.art.cards [data-card].cur { animation: m-cardin 260ms var(--out) both; }
+.art.cards.back [data-card].cur { animation-name: m-cardback; }
+.skel i { animation: m-shim 1.1s linear infinite; }
+.tick { animation: m-star 420ms var(--spring) both; }
+.burst { animation: m-burst 700ms var(--out) forwards; }
+.lrow.just { animation: m-flash 900ms ease; }
+
+/* workspace */
+.results > * { animation: m-in 360ms var(--out) both; }
+.results > *:nth-child(2) { animation-delay: 60ms; } .results > *:nth-child(3) { animation-delay: 140ms; } .results > *:nth-child(4) { animation-delay: 240ms; }
+#submit .sp { animation: m-spin 600ms linear infinite; }
+.pkt { offset-rotate: 0deg; animation: m-pkt 900ms var(--inout) both; }
+.newn rect { animation: m-pop 300ms var(--out); }
+.panel:not([hidden]) { animation: m-fade 160ms ease; }
+.sub, .lock.open, .msg { animation: m-in 300ms var(--out); }
+.timer .tdot { animation: m-blink 2s ease-in-out infinite; }
+.timer.paused .tdot { animation: none; }
+.typing i { animation: m-blink 1s ease-in-out infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+.ask:not([hidden]) { animation: m-drawer 500ms var(--drawer); }
+.ask.closing { animation: m-drawer 220ms ease-in reverse forwards; }
+
+/* overlays */
+.scrim:not([hidden]) { animation: m-fade 200ms ease; }
+.scrim:not([hidden]) .dialog { animation: m-dlg 260ms var(--out); }
+.scrim.closing { animation: m-fade 150ms ease reverse forwards; }
+.scrim.closing .dialog { animation: m-dlg 150ms ease-in reverse forwards; }
+.cmdk:not([hidden]) { animation: m-fade 120ms ease; }     /* opened from the keyboard: almost instant */
+.cmdk:not([hidden]) .cbox { animation: none; }
+.sheet-scrim:not([hidden]), .side-scrim:not([hidden]) { animation: m-fade 200ms ease; }
+.sheet-scrim:not([hidden]) .sheet { animation: m-sheet 500ms var(--drawer); }
+.sheet-scrim.closing, .side-scrim.closing { animation: m-fade 200ms ease reverse forwards; }
+.sheet-scrim.closing .sheet { animation: m-sheet 240ms ease-in reverse forwards; }
+.tourpop:not([hidden]) { animation: m-pop2 200ms var(--out); }
+.nudge { animation: m-nudge 400ms var(--out); }
+.toast.show .tm b { animation: m-bar 2.6s linear reverse both; }
+.sw-list:not([hidden]) { animation: m-pop2 160ms var(--out); transform-origin: bottom right; }
+@media (max-width: 640px) {
+  .scrim:not([hidden]):not(.cmdk) .dialog { animation: m-sheet 500ms var(--drawer); }
+  .scrim.closing:not(.cmdk) .dialog { animation: m-sheet 240ms ease-in reverse forwards; }
+  .ask:not([hidden]) { animation-name: m-sheet; } .ask.closing { animation-name: m-sheet; }
+}
+
+/* theme change: cross-fade (View Transitions, where the browser has them) */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; animation-timing-function: ease; }
+
+/* reduced motion: fewer, gentler; keep what explains a change (fades, colour), drop movement and loops */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 200ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; scroll-behavior: auto !important; }
+  .hero h1 .w, .m-in, .rcard, .results > *, .scrim .dialog, .ts.done, .stars.go i, .tick, .lrow.just, .art.cards [data-card].cur, .sheet, .ask, .tourpop, .mega, .sub, .lock.open, .msg, #ptable tr.in, .newn rect { animation-name: m-fade !important; }
+  .hero .shape, .burst, .pkt, .nudge, main.enter .bar i, .nav-i[aria-current="page"]::before, #today.pop i, .skel i, .ts.run::before, #submit .sp, .timer .tdot, .typing i { animation: none !important; }
+  .reveal { transform: none; transition: opacity 300ms ease; }
+  .side, .topbar, .tabbar, .btn, .rcard, .ecard, .tab-ul, .seg-i, .wire i, .hint, .toast { transition-property: opacity, background-color, color, border-color, visibility !important; }
+  .btn:hover, .btn:active, .ecard:hover, .ecard:active { transform: none; }
+  .rcard:hover, .rcard:active { transform: rotate(var(--r, 0deg)) translateY(var(--y, 0px)); }
+  .toast { transform: translate(-50%, 0); }
+}
