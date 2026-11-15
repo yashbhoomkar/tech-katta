@@ -35,6 +35,17 @@ a { color: inherit; }
 .pal-d { --c-concepts:#1C1C1A; --c-components:#1C1C1A; --c-interview:#1C1C1A; --c-problems:#1C1C1A; --c-real:#1C1C1A; --c-notes:#1C1C1A;
   --t-concepts:color-mix(in srgb,#78C2F2 11%,#1C1C1A); --t-components:color-mix(in srgb,#FFA24C 11%,#1C1C1A); --t-interview:color-mix(in srgb,#B892FF 11%,#1C1C1A); --t-problems:color-mix(in srgb,#5FD6A4 11%,#1C1C1A); --t-real:color-mix(in srgb,#FF8F73 11%,#1C1C1A); --t-notes:color-mix(in srgb,#FFD452 11%,#1C1C1A);
   --on-c:#F2F0EB; --on-c-2:#CAC7C0; --track:rgb(255 255 255/.1); --fill:#F2F0EB; }
+.pal-f2 { --page:#131312; --surface:#1C1C1A; --raised:#252523; --sunken:#2A2A27; --ink:#F2F0EB; --ink-2:#CAC7C0; --muted:#9B988F; --line:#2F2E2B; --line-strong:#45443F; --btn:#F2F0EB; --on-btn:#131312; --link:#9DB8FF; --pass:#75D079; --fail:#FF8478; --warn:#FFAA5C; --star:#FFC233; --band:#1C1C1A;
+  --c-concepts:#6ACAFF; --a-concepts:#6ACAFF; --c-components:#FAAA51; --a-components:#FAAA51; --c-interview:#CCABFE; --a-interview:#CCABFE; --c-problems:#3FD9AE; --a-problems:#3FD9AE; --c-real:#FFA384; --a-real:#FFA384; --c-notes:#EADB58; --a-notes:#EADB58;
+  --t-concepts:#232321; --t-components:#232321; --t-interview:#232321; --t-problems:#232321; --t-real:#232321; --t-notes:#232321;
+  --on-c:#141312; --on-c-2:rgb(20 19 18/.76); --track:rgb(0 0 0/.18); --fill:#141312; --preview:#131312; }
+.pal-f2 .fig { box-shadow: inset 3px 0 0 var(--a), inset 0 0 0 1px var(--line); }
+.pal-f2 .say { box-shadow: inset 3px 0 0 var(--a-notes), inset 0 0 0 1px var(--line); }
+.pal-f2 .say .mono { color: var(--a-notes); }
+.pal-f2 :is(.easy, .medium, .hard) { background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
+.pal-f2 .sechead.block { background: color-mix(in srgb, var(--c) 90%, #000); }
+.tk { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 99px; background: #FFC233; color: #17161A; font: 500 9px "Geist Mono", monospace; }
+.row .stars { margin-left: 0; }
 .pal-d .block { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--a) 34%, transparent), transparent 62%), var(--surface); box-shadow: inset 0 2px 0 var(--a), inset 0 0 0 1px color-mix(in srgb, var(--a) 22%, transparent); }
 .pal-d .block > b, .pal-d .tile > b { color: var(--a); }
 .pal-d .pb i { background: var(--a); }

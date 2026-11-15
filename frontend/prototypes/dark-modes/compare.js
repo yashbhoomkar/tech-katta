@@ -1,8 +1,8 @@
 // Builds one column per palette from the same pieces of the site. On phones one column shows at a time:
-// the A / B / C tabs or a sideways swipe change it.
+// the tabs or a sideways swipe change it.
 const P = [
-  ["a", "A · Pastels on ink", "Round 1's pick. Felt dull"],
-  ["f", "F · Vivid", "A's idea with saturated colours on warm graphite"],
+  ["f", "F · Vivid", "Round 2's pick"],
+  ["f2", "F2 · Vivid, balanced", "Even colour weights, lemon notes, teal problems, no muddy tints"],
   ["d", "D · Colour as light", "Dark cards; the colour glows and lights titles, edges, bars"],
   ["now", "Now", "The current dark, for reference"],
 ];
@@ -37,6 +37,7 @@ const column = ([id, name, sub]) => `
       <p class="ink2">Reading one profile from Postgres takes a few milliseconds. Do it 12,000 times a second and the database spends its day on the same question.</p>
       <div class="fig" data-sec="concepts"><span class="node hl">App servers</span><span class="wire"></span><span class="node">Redis</span><span class="wire"></span><span class="node">Postgres</span></div>
       <div class="say"><p class="mono">Say this in the interview</p>"Reads outnumber writes 100 to 1, so Redis goes in front."</div>
+      <div class="row"><span class="stars">★★★</span><span class="tk">TK</span><span class="ok">Passed ✓</span><span class="chip" data-sec="problems" style="background:var(--a);color:#141312">Problems</span><span class="chip" data-sec="notes" style="background:var(--a);color:#141312">Quick Notes</span></div>
       <p class="muted">Muted text · <a href="#">a link</a> · <span class="ok">Passed ✓</span> · <span class="bad">Failed</span></p>
     </div>
     <div class="final"><b>Start with Networking essentials.</b><span class="btn mari">Start learning, free</span></div>
@@ -48,7 +49,7 @@ cols.innerHTML = P.map(column).join("");
 const tabs = [...document.querySelectorAll(".picker [data-p]")];
 const show = (id) => { cols.dataset.show = id; tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.p === id))); };
 tabs.forEach((t) => t.addEventListener("click", () => show(t.dataset.p)));
-show("f");
+show("f2");
 // phone: swipe between palettes
 let x0 = null;
 cols.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
