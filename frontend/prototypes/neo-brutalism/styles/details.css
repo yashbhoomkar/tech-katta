@@ -1,0 +1,67 @@
+/* Neo-brutalism, round 2: the details (owner, 2026-11-15: "think more on the neo-brutalism, add more details,
+   add more animations; the dark theme especially is not up to the mark").
+   Two rules from the round-2 review:
+   1. Cream (dark) / black (light) outlines mark OBJECTS; structure uses --rule (tokens.css).
+   2. A hard shadow means "you can press this". Keys and link cards keep the full 4 px shadow; static cards get a
+      2 px shadow in light and none in dark, where a cream shadow reads as a second border, not depth. */
+
+/* ---------- 2. shadows mean "pressable" ---------- */
+:is(.cont, .prog, .streak, .jcard, .nums .card, .finish, .module, .tbl, .chals .card, .card.pad, .stage, .cprog, .step, .deck, .palette, .sub, .pod, .tryit, .lock.open) { box-shadow: var(--sh-sm); }
+.sechead.block { box-shadow: var(--sh-sm); }
+:root[data-theme="dark"] :is(.cont, .prog, .streak, .jcard, .nums .card, .finish, .module, .tbl, .chals .card, .card.pad, .stage, .cprog, .step, .deck, .palette, .sub, .sechead.block) { box-shadow: none; }
+:root[data-theme="dark"] .pod { box-shadow: inset 6px 0 0 var(--a) !important; }
+:root[data-theme="dark"] .tryit, :root[data-theme="dark"] .lock.open { box-shadow: inset 6px 0 0 var(--a, var(--a-problems)) !important; }
+/* in dark, outlines on static panels are a step quieter than on the things you press */
+:root[data-theme="dark"] :is(.cont, .prog, .streak, .jcard, .nums .card, .module, .tbl, .chals .card, .card.pad, .cprog, .deck, .palette, .sub, .finish, .pod, .tryit, .step) { border-color: #6B665C; }
+
+/* ---------- colour on coloured blocks stays readable in dark: tracks and outlines inside a block are black ---------- */
+.block .bar, .ecard .pb .bar, :root[data-theme="dark"] .ecard .pb .bar { background: rgb(255 255 255 / .55); border-color: #111111; }
+.ecard .pb .bar i, .block .bar i { background: #111111; }
+.block .chip { border-color: #111111; }
+
+/* ---------- sticker labels: the small mono labels on cards become colour stickers ---------- */
+:is(.cont, .prog, .streak) > .mono, .pod .mono, .tryit > .mono, .say > .mono, .sechead .mono, .hub-main .mono {
+  display: inline-block; align-self: flex-start; width: fit-content; padding: 3px 8px; border: var(--bw) solid #111111; border-radius: 4px;
+  color: #111111 !important; background: var(--marigold); transform: rotate(-1.5deg); transform-origin: left center; letter-spacing: .06em; white-space: nowrap; }
+.tryit > .mono { font-size: 10px; letter-spacing: .03em; }
+.streak > .mono { background: var(--c-real); }
+.pod .mono, .tryit > .mono { background: var(--c-problems); }
+.say > .mono { background: var(--c-notes); }
+.sechead .mono, .hub-main .mono { background: #FFFFFF; transform: rotate(-2deg); }
+
+/* ---------- halftone on the big colour blocks (a print texture, not a gradient of colour) ---------- */
+.sechead.block, .stage.block, .hub-card .hub-main {
+  background-image: radial-gradient(rgb(17 17 17 / .13) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+.final { background-image: radial-gradient(rgb(255 244 220 / .09) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+:root[data-theme="dark"] .final { background-image: radial-gradient(rgb(17 17 17 / .14) 1.2px, transparent 1.7px); }
+
+/* ---------- the landing ticker: a running strip under the hero ---------- */
+.hero { padding-bottom: 92px; }
+.hero::after {
+  content: "22 DESIGN PROBLEMS  ✦  A REAL JUDGE  ✦  66 VISUAL NOTES  ✦  CACHING  ✦  KAFKA  ✦  SHARDING  ✦  IND VS PAK AT 3 CRORE VIEWERS  ✦  FREE WITH SIGN-IN  ✦  22 DESIGN PROBLEMS  ✦  A REAL JUDGE  ✦  66 VISUAL NOTES  ✦  CACHING  ✦  KAFKA  ✦  SHARDING  ✦  IND VS PAK AT 3 CRORE VIEWERS  ✦  FREE WITH SIGN-IN  ✦  ";
+  position: absolute; left: 0; bottom: 0; white-space: pre; padding: 10px 0; width: max-content;
+  font: 700 13px/1 var(--mono); letter-spacing: .08em; color: var(--marigold); background: #111111;
+  border-top: var(--bw) solid var(--rule); }
+:root[data-theme="dark"] .hero::after { background: var(--marigold); color: #111111; border-top-color: var(--marigold); }
+.hero::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 35px; background: #111111; }
+:root[data-theme="dark"] .hero::before { background: var(--marigold); }
+
+/* ---------- small details ---------- */
+html { scrollbar-color: var(--ink) var(--sunken); }
+.lesson .n { display: inline-grid; place-items: center; min-width: 28px; height: 22px; padding: 0 4px; border: var(--bw) solid var(--rule); border-radius: 4px; font-weight: 700; color: var(--ink-2); }
+.lesson.now .n { border-color: #111111; color: #111111; background: #FFFFFF; }
+#ptable tr td:first-child { box-shadow: inset 0 0 0 transparent; transition: box-shadow 120ms ease; }
+@media (hover: hover) and (pointer: fine) { #ptable tr:hover td:first-child { box-shadow: inset 5px 0 0 var(--marigold); } }
+.nums .card b { -webkit-text-stroke: 0; text-shadow: 3px 3px 0 var(--a-concepts); }
+.nums .card:nth-child(2) b { text-shadow: 3px 3px 0 var(--a-problems); }
+.nums .card:nth-child(3) b { text-shadow: 3px 3px 0 var(--a-components); }
+.nums .card:nth-child(4) b { text-shadow: 3px 3px 0 var(--a-interview); }
+.topline h1, .art h1 { text-shadow: 3px 3px 0 var(--marigold); }
+:root[data-theme="dark"] .topline h1, :root[data-theme="dark"] .art h1 { text-shadow: none; }   /* a dark marigold shadow turns brown: none in dark */
+.days .on i { box-shadow: var(--sh-sm); }
+.toast { rotate: -1deg; }
+#complete.ok::after { content: "DONE"; position: absolute; right: -14px; top: -14px; padding: 2px 6px; border: var(--bw) solid #111111; border-radius: 4px;
+  background: var(--c-notes); color: #111111; font: 700 10px var(--mono); letter-spacing: .08em; transform: rotate(8deg); }
+
+/* dark: the canvas grid steps back so the nodes lead */
+:root[data-theme="dark"] .canvas { background-image: radial-gradient(#3B3934 1px, transparent 1px); }

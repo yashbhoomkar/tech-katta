@@ -22,7 +22,8 @@
   --raised: #FFFFFF;
   --sunken: #FBE9C4;
   --ink: #111111; --ink-2: #333333; --muted: #5C5C5C;
-  --edge: #111111;
+  --edge: #111111;          /* outlines of objects: cards, keys, blocks */
+  --rule: #111111;          /* structure: dividers, bars, panel edges */
   --line: #111111; --line-strong: #111111;
   --btn: #111111; --on-btn: #FFFFFF;
   --marigold: #FFC233; --on-marigold: #111111;
@@ -47,13 +48,14 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #121212;
-  --surface: #1C1C1C;
-  --raised: #242424;
-  --sunken: #2A2A2A;
+  --page: #121110;          /* night at the katta: warm black, not grey */
+  --surface: #1C1B19;
+  --raised: #252421;
+  --sunken: #2C2A27;
   --ink: #FFF4DC; --ink-2: #E5DCC8; --muted: #B3AA98;
-  --edge: #FFF4DC;
-  --line: #FFF4DC; --line-strong: #FFF4DC;
+  --edge: #FFF4DC;          /* objects keep a cream outline… */
+  --rule: #3B3934;          /* …structure goes quiet: the first dark drew every line in cream and read as a wireframe */
+  --line: #3B3934; --line-strong: #4A4740;
   --btn: #FFF4DC; --on-btn: #111111;
   --marigold: #FFC233; --on-marigold: #111111;
   --link: #8FB0FF; --focus: #E8F55C;
@@ -71,8 +73,8 @@
   --c-problems: #19D3A2;   --a-problems: #19D3A2;
   --c-real: #FF6B6B;       --a-real: #FF6B6B;
   --c-notes: #E8F55C;      --a-notes: #E8F55C;
-  --t-concepts: #242424; --t-components: #242424; --t-interview: #242424; --t-problems: #242424; --t-real: #242424; --t-notes: #242424;
+  --t-concepts: #252421; --t-components: #252421; --t-interview: #252421; --t-problems: #252421; --t-real: #252421; --t-notes: #252421;
   --on-c: #111111; --on-c-2: rgb(17 17 17 / .78);
   --track-on-c: rgb(17 17 17 / .22); --fill-on-c: #111111;
-  --preview: #1C1C1C; --on-preview: #FFF4DC;
+  --preview: #1C1B19; --on-preview: #FFF4DC;
 }

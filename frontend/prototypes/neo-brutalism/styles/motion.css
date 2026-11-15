@@ -1,0 +1,53 @@
+/* Neo-brutalism, round 2: motion with a print-shop character, inside full-site's rules (Emil Kowalski):
+   press feedback ~100 ms; hover movement only with a mouse; no bounce except small celebrations (stickers);
+   constant motion only where it is the point (the ticker); reduced motion keeps fades only. */
+
+/* the highlighter wipes in behind "explained." once the words have arrived */
+.hero h1 em { background: linear-gradient(var(--c-notes), var(--c-notes)) no-repeat left / 100% 100%; }
+.hero h1 em.w { animation: m-word 700ms cubic-bezier(.23,1,.32,1) both, nb-wipe 520ms cubic-bezier(.77,0,.175,1) both; animation-delay: var(--dl), 620ms; }
+@keyframes nb-wipe { from { background-size: 0% 100%; box-shadow: 0 0 0 var(--edge); border-color: transparent; } 60% { border-color: var(--edge); } }
+
+/* stickers slap on: a little overshoot (a celebration-sized moment, once) */
+.newchip.m-in { animation: nb-slap 460ms cubic-bezier(.34,1.56,.64,1) both; animation-delay: 120ms; }
+@keyframes nb-slap { from { opacity: 0; transform: rotate(-14deg) scale(1.35); box-shadow: 0 0 0 var(--edge); } }
+
+/* the ticker runs; hovering stops it so it can be read */
+.hero::after { animation: nb-ticker 38s linear infinite; }
+@media (hover: hover) and (pointer: fine) { .hero:hover::after { animation-play-state: paused; } }
+@keyframes nb-ticker { to { transform: translateX(-50%); } }
+
+/* progress fills in chunky steps, like a print bar */
+main.enter .bar i { animation: m-bar 640ms steps(8, end) both 120ms; }
+
+/* the chosen sidebar item stamps down onto its shadow */
+.nav-i[aria-current="page"] { animation: nb-stamp-in 260ms cubic-bezier(.23,1,.32,1); }
+@keyframes nb-stamp-in { from { transform: translate(-3px, -3px); box-shadow: 5px 5px 0 var(--edge); } }
+
+/* a key that turns into "done" stamps */
+#complete.ok { animation: nb-stamp-key 320ms cubic-bezier(.34,1.56,.64,1); }
+#complete.ok::after { animation: nb-slap 420ms cubic-bezier(.34,1.56,.64,1) both 120ms; }
+@keyframes nb-stamp-key { from { transform: translate(4px, 4px) scale(.96); box-shadow: 0 0 0 var(--edge); } }
+
+/* hero shapes turn a quarter when the mouse touches them */
+.hero .shape { transition: rotate 320ms cubic-bezier(.23,1,.32,1); }
+@media (hover: hover) and (pointer: fine) { .hero .shape:hover { rotate: 90deg; } }
+
+/* tabs and filters: the chosen one drops onto its shadow */
+.fbtn[aria-pressed="true"], .theme-sw button[aria-pressed="true"] { animation: nb-stamp-in 220ms cubic-bezier(.23,1,.32,1); }
+
+/* sticker labels arrive with their card */
+main.enter :is(.cont, .prog, .streak) > .mono, main.enter .pod .mono { animation: nb-slap 420ms cubic-bezier(.34,1.56,.64,1) both 160ms; }
+
+/* theme change: a shutter wipes down instead of a cross-fade */
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: nb-shutter 460ms cubic-bezier(.77,0,.175,1); }
+@keyframes nb-shutter { from { clip-path: inset(0 0 100% 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::after { animation: none; transform: none; }
+  .hero h1 em.w, .newchip.m-in, .nav-i[aria-current="page"], #complete.ok, #complete.ok::after, .fbtn[aria-pressed="true"], .theme-sw button[aria-pressed="true"],
+  main.enter :is(.cont, .prog, .streak) > .mono, main.enter .pod .mono { animation: m-fade 200ms ease both !important; }
+  main.enter .bar i { animation: none !important; }
+  .hero .shape { transition: none; }
+  ::view-transition-new(root) { animation: none; }
+}
