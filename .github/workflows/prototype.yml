@@ -1,6 +1,6 @@
 name: Prototype
 
-# prototype.katta.cc: the current app, the design prototypes (/p/) and the new frontend (web/, at /next/),
+# prototype.katta.cc: the current app, the design prototypes (/p/) and the new frontend (frontend/next/, at /p/next/),
 # deployed to a Cloudflare Worker on every push to the `prototype` branch, after the tests pass.
 # Needs two repository secrets: CLOUDFLARE_PROTOTYPE_TOKEN (Edit Cloudflare Workers) and CLOUDFLARE_ACCOUNT_ID.
 on:
@@ -30,13 +30,12 @@ jobs:
           cache: npm
           cache-dependency-path: |
             frontend/package-lock.json
-            web/package-lock.json
+            frontend/next/package-lock.json
       - run: npm ci
       - run: npm test
-      # the new frontend (web/, served at /next/): typecheck, lint, tests, build; prototype.mjs copies it in
-      - name: New frontend (web/)
-        working-directory: web
-        run: npm ci && npm run check && npm run build
+      # the new frontend (frontend/next/, served at /p/next/): typecheck, lint, tests; build:prototype:cloudflare builds it
+      - name: New frontend (next/)
+        run: npm run check:next
       - run: npm run build:prototype:cloudflare
       - name: Deploy
         env:

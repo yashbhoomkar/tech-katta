@@ -1,12 +1,18 @@
-# web/ — the new Tech Katta frontend
+# frontend/next/ — the new Tech Katta frontend
 
-React 18 + TypeScript + Vite + React Router. It is the full-site prototype (`frontend/prototypes/full-site/`), rebuilt as
-production code, reading the live content API. It is served at **prototype.katta.cc/next/** while it grows. Tech Katta
-switches to it once it covers every page.
+React 18 + TypeScript + Vite + React Router, reading the live content API. It is part of the site build: `frontend`'s
+`npm run build` builds it and copies it to `dist/next/` (`hosting/next.mjs`), so it is served at **tech.katta.cc/next/**
+as a beta beside the current app (marked `noindex` until it replaces it). The current app links to it from its sidebar
+("Try the new design").
+
+It reuses the current app's code where that code is the product: the 232 lesson figures, the workspace (canvas, judge,
+tests, hints, interviewer), the challenges, sign-in and account sync, practice progress and analytics, all imported from
+`../src` through the `@legacy` alias, with their packages resolved from `frontend/node_modules`.
 
 ## Run
 
 ```bash
+npm ci --prefix ..   # the current app's packages (the workspace's canvas, analytics), which @legacy imports use
 npm ci
 npm run dev        # http://localhost:5174/next/
 npm run check      # typecheck + lint + unit tests (CI runs this)
@@ -15,6 +21,7 @@ npm run build      # dist/, plus one index.html per known route and 404.html (sc
 
 - `VITE_API_BASE` points it at another API (default `https://tech-api.katta.cc`).
 - `BASE_PATH` changes the base (default `/next/`; `/` once it replaces the old app).
+- `node scripts/legacy-scope.mjs` regenerates the workspace's scoped tokens after `../src/theme/tokens.css` changes.
 
 ## Structure
 
@@ -57,6 +64,6 @@ src/
 1. **Done:** foundation, app shell and navigation (sidebar and rail, phone top bar and tabs, search), theme, landing, Home, Learn, section pages, You, not found.
 2. **Done:** the lesson reader: real articles, every block kind, and the existing figures (`frontend/src/figs`, imported as they are through `@legacy`).
 3. **Done:** Problems, the design workspace and challenges (the existing canvas and judge, imported), full-site landing and motion, sign-in dialog, shortcuts, tour.
-4. Sign-in and account sync, then the switch.
-
-Pages not built yet say so and link to the same page in the current app.
+4. **Beta (this release):** served at `/next/` in production, with page-view and reading analytics (sections `next:<page>`).
+5. **The switch:** serve it at `/`, 301 the old `/dashboard/...` URLs to `/learn/...` and `/problems/...`, rebuild the SEO
+   article pages for the new URLs, drop `noindex`, and retire the old landing and dashboard shells.

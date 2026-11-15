@@ -40,18 +40,14 @@ const items = pages.map((f) => { const h = fs.readFileSync(srcOf(f), "utf8");
 const types = [...new Set(items.map((i) => i.type))];
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Prototypes · Tech Katta</title>
 <style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#F6F5F1;color:#17161A}main{max-width:760px;margin:0 auto;padding:48px 20px}h1{letter-spacing:-.02em}h2{margin-top:32px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B6963}a.card{display:block;background:#fff;border:1px solid #E4E2DC;border-radius:16px;padding:16px 18px;margin:10px 0;color:inherit;text-decoration:none}a.card:hover{border-color:#17161A}a.card b{font-size:18px}a.card span{display:block;color:#4A4844;font-size:14.5px;margin-top:4px}code{background:#EEEDE8;border-radius:4px;padding:1px 5px}</style></head>
-<body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch, reading live content from tech-api.katta.cc, signed out: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. Below, design ideas before they are built into the app.</p>
+<body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch, reading live content from tech-api.katta.cc, signed out: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. The new frontend (the production beta's code): <a href="/p/next/">/p/next/</a>. Below, design ideas before they are built into the app.</p>
 ${types.map((t) => `<h2>${esc(t)}</h2>` + items.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
 </main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
-// The new frontend (web/, React + TypeScript), built separately (cd web && npm run build) with base /next/.
-// Copied in last so `vite build` here can't wipe it. Missing build: say so and carry on.
-const next = path.join(frontend, "..", "web", "dist");
-if (fs.existsSync(path.join(next, "index.html"))) fs.cpSync(next, path.join(dist, "next"), { recursive: true });
-else console.warn("prototype: web/dist not built, so /next/ is not included (run: cd web && npm ci && npm run build)");
+// The new frontend is copied to dist/p/next by prototype-next.mjs (run before this script).
 // Cloudflare: old prototype addresses keep working
 if (process.argv.includes("--cloudflare")) {
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
-  fs.writeFileSync(r, "/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n/p/dark-modes/ /p/full-site/ 301\n/p/dark-modes /p/full-site/ 301\n/p/nb-dark/ /p/neo-brutalism/ 301\n/p/nb-dark /p/neo-brutalism/ 301\n" + old);
+  fs.writeFileSync(r, "/next /p/next/ 301\n/next/* /p/next/:splat 301\n/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n/p/dark-modes/ /p/full-site/ 301\n/p/dark-modes /p/full-site/ 301\n/p/nb-dark/ /p/neo-brutalism/ 301\n/p/nb-dark /p/neo-brutalism/ 301\n" + old);
 }
 console.log(`prototype: ${pages.length} design prototype(s) written into dist`);

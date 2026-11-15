@@ -77,3 +77,17 @@ declare module "@legacy/practice.js" {
   export function bestScore(slug: string): number | null;
   export function readSubs(slug: string): { score: number; copied?: boolean }[];
 }
+
+declare module "@legacy/analytics.js" {
+  /** queues a usage event for our API (/v1/events); nothing is sent when the browser asks not to be tracked */
+  export function track(name: string, props?: Record<string, string | number | boolean>): void;
+  /** the referring site's hostname, or "" */
+  export function referrer(): string;
+  /** measures reading of one article (time, depth, finished); returns the stop function */
+  export function readArticle(section: string, slug: string): () => void;
+}
+declare module "@legacy/hostanalytics.jsx" {
+  import type { ComponentType } from "react";
+  /** the host's anonymous page counts (Vercel Web Analytics), gated like our own events */
+  export const HostAnalytics: ComponentType<Record<string, unknown>>;
+}

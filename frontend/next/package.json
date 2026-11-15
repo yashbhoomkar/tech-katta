@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "The new Tech Katta frontend (React + TypeScript), built from the full-site prototype. Served at prototype.katta.cc/next/ while it grows.",
+  "description": "The new Tech Katta frontend (React + TypeScript). Built into the site at /next/ by frontend's npm run build (beta beside the current app).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/postbuild.mjs",

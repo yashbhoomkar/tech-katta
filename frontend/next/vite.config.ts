@@ -2,9 +2,9 @@ import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 // The current app's figure manifest plugin: which module draws which figure ("virtual:fig-manifest").
-import figManifest from "../frontend/figs-manifest.js";
+import figManifest from "../figs-manifest.js";
 
-const legacy = fileURLToPath(new URL("../frontend/src", import.meta.url));
+const legacy = fileURLToPath(new URL("../src", import.meta.url));
 
 // The article figures (232) are the current app's, imported as they are from frontend/src/figs (@legacy).
 // Served under /next/ on prototype.katta.cc while the new frontend grows (BASE_PATH overrides it,
@@ -19,6 +19,7 @@ export default defineConfig({
     // the current app's figures import "react" from frontend/: make them share this app's single copy
     dedupe: ["react", "react-dom"],
   },
-  build: { target: "es2022", sourcemap: true, assetsInlineLimit: 0 },
+  // no public source maps, like the current app; es2020 keeps older phones (Safari 14+) working
+  build: { target: "es2020", sourcemap: false, assetsInlineLimit: 0 },
   server: { port: 5174 },
 });

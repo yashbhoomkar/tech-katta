@@ -14,6 +14,7 @@ import { readJson, writeJson } from "@/lib/storage";
 import { later, reducedMotion } from "@/lib/motion";
 import { ArticleBody, cardsOf, outline, readMinutes } from "@/features/reader/ArticleBody";
 import { cx } from "@/lib/cx";
+import { useReadArticle } from "@/lib/analytics";
 import s from "@/features/reader/reader.module.css";
 import { NotFoundPage } from "./NotFound";
 
@@ -46,6 +47,7 @@ export function ReaderPage() {
 
   usePageMeta(summary?.title ?? "Lesson", view ? { to: paths.section(section), label: view.title } : undefined);
   useReadingProgress(slug, res.status === "success");
+  useReadArticle(section, slug, res.status === "success");
 
   if (!summary || !view) return <NotFoundPage />;
   const article = res.status === "success" ? res.data : null;

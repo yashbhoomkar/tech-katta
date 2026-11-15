@@ -19,6 +19,14 @@
     {
       "source": "/analytics",
       "destination": "/analytics/index.html"
+    },
+    {
+      "source": "/next",
+      "destination": "/next/index.html"
+    },
+    {
+      "source": "/next/(.*)",
+      "destination": "/next/index.html"
     }
   ],
   "headers": [
@@ -52,6 +60,24 @@
         {
           "key": "Cross-Origin-Opener-Policy",
           "value": "same-origin-allow-popups"
+        }
+      ]
+    },
+    {
+      "source": "/next/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/next/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     },

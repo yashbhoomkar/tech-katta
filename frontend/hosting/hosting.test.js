@@ -30,7 +30,8 @@ test("Cloudflare: redirects keep Vercel's codes, a folder rewrite becomes its 40
   // "/health → /health.html" and the like are how Cloudflare serves pages anyway; a rule would loop
   // never a "/dashboard/* … 200" rule: Cloudflare would apply it over the article pages the build writes
   assert.ok(!/\*\s+\S+\s+200/.test(c.redirects));
-  assert.deepEqual(c.copies, [["dashboard/index.html", "dashboard/404.html"]]);
+  // each SPA folder serves its own app for paths with no file: the dashboard and the new frontend at /next/
+  assert.deepEqual(c.copies, [["dashboard/index.html", "dashboard/404.html"], ["next/index.html", "next/404.html"]]);
   assert.equal(c.manual.length, 1);
   assert.match(c.manual[0], /analytics\.katta\.cc/);
   const csp = routes.headers[0].headers["Content-Security-Policy"];

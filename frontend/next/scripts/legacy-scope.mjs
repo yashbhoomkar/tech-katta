@@ -4,7 +4,7 @@
 // below). Run after tokens.css changes: node scripts/legacy-scope.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 
-const src = readFileSync(new URL("../../frontend/src/theme/tokens.css", import.meta.url), "utf8");
+const src = readFileSync(new URL("../../src/theme/tokens.css", import.meta.url), "utf8");
 const body = src.slice(src.indexOf(":root{"))
   .replace(/^:root\{/m, ".tk-legacy{")
   .replace(/\.on-dark,:root\[data-theme=dark\]\{/, ":root[data-theme=dark] .tk-legacy{");

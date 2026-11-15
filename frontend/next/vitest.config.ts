@@ -1,9 +1,9 @@
 import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import { figManifest } from "../frontend/figs-manifest.js";
+import { figManifest } from "../figs-manifest.js";
 
-const legacy = fileURLToPath(new URL("../frontend/src", import.meta.url));
+const legacy = fileURLToPath(new URL("../src", import.meta.url));
 
 // the figure manifest, without the build plugin's directory watching (which vitest reads as imports)
 const manifest = {
@@ -15,5 +15,8 @@ const manifest = {
 export default defineConfig({
   plugins: [react(), manifest],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy }, dedupe: ["react", "react-dom"] },
-  test: { environment: "jsdom", setupFiles: ["./src/test/setup.ts"], css: false, restoreMocks: true },
+  test: {
+    // the current app's packages (frontend/node_modules) are bundled so they share this app's single React
+    server: { deps: { inline: [/@vercel\/analytics/, /@xyflow/] } },
+    environment: "jsdom", setupFiles: ["./src/test/setup.ts"], css: false, restoreMocks: true },
 });

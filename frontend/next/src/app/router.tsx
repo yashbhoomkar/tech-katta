@@ -12,14 +12,18 @@ import { ProblemsPage } from "@/pages/Problems";
 import { ChallengePage, ProblemWorkspacePage } from "@/pages/ProblemWorkspace";
 import { SectionPage } from "@/pages/Section";
 import { Providers } from "./Providers";
+import { HostAnalytics } from "@legacy/hostanalytics.jsx";
+import { usePageViews } from "@/lib/analytics";
 
 // Routes. The landing page has its own chrome; every other page sits in the app shell. Paths mirror the
 // full-site prototype (/learn/<section>/<slug>, /problems/<slug>, /me) without its hash.
 
 function Root() {
+  usePageViews();
   return (
     <Providers>
       <Outlet />
+      <HostAnalytics />
     </Providers>
   );
 }
