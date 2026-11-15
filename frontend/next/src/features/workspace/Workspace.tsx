@@ -18,6 +18,7 @@ import s from "./workspace.module.css";
 
 const Solve = lazy(() => import("@legacy/solve.jsx"));
 const Lab = lazy(() => import("@legacy/lab/Lab.jsx"));
+const SandboxCanvas = lazy(() => import("@legacy/sandbox/Sandbox.jsx"));
 
 /** "#problems/url-shortener" → /problems/url-shortener, "#problems/challenge/x" → /problems/challenge/x, "#concepts/caching" → the lesson. */
 function useHashRoutes() {
@@ -86,4 +87,14 @@ class LegacyBoundary extends Component<{ children: ReactNode }, { failed: boolea
       </div>
     ) : this.props.children;
   }
+}
+
+/** The free canvas (the current app's sandbox): any parts, any traffic, no tests. */
+export function Sandbox() {
+  useLegacySite();
+  return (
+    <Frame>
+      <SandboxCanvas Lab={Lab} />
+    </Frame>
+  );
 }

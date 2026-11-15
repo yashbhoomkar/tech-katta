@@ -10,7 +10,7 @@ import { NotFoundPage } from "@/pages/NotFound";
 import { ReaderPage } from "@/pages/Reader";
 import { PolicyPage } from "@/pages/Policy";
 import { ProblemsPage } from "@/pages/Problems";
-import { ChallengePage, ProblemWorkspacePage } from "@/pages/ProblemWorkspace";
+import { ChallengePage, ProblemWorkspacePage, SandboxPage } from "@/pages/ProblemWorkspace";
 import { SectionPage } from "@/pages/Section";
 import { Providers } from "./Providers";
 import { HostAnalytics } from "@legacy/hostanalytics.jsx";
@@ -56,6 +56,7 @@ export const routes = [
           { path: "learn/:section/:slug", element: gated(<ReaderPage />) },
           { path: "problems", element: gated(<ProblemsPage />) },
           { path: "problems/challenge/:id", element: gated(<ChallengePage />) },
+          { path: "problems/sandbox", element: gated(<SandboxPage />) },
           { path: "problems/:slug", element: gated(<ProblemWorkspacePage />) },
           { path: "me", element: <MePage /> },
           { path: "privacy", element: gated(<PolicyPage which="privacy" />) },

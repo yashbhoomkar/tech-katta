@@ -39,7 +39,16 @@ export interface SiteResponse {
     chip: string;
     chipText: string;
     judge: { title: string; rows: [string, string][]; stars: number; label: string };
+    /** the hero figure's head ("FIG. 01 — KAFKA: …") and status line */
+    figure?: string;
+    status?: string;
+    caption?: string;
+    /** [value or "{count}", label] */
+    stats?: [string, string][];
   };
+  inside?: { eyebrow: string; title: string; desc: string; items: { kind: string; title: string; text: string; link: string; visual?: string; href: string; tests?: [string, string][] }[] };
+  landingLab?: { eyebrow: string; title: string; desc: string; note: string; loading: string; problem: string; lock?: { title: string; text: string } } & Record<string, unknown>;
+  footer?: { label: string; updated: string; links: string[] };
   topics: {
     eyebrow: string;
     title: string;
@@ -52,6 +61,7 @@ export interface SiteResponse {
     groups: Partial<Record<SectionId, GroupTuple[]>>;
   };
   counts: { questions: number; concepts: number; components: number; challenges: number };
+  example?: { name: string; kind: string; text: string; parts: [string, string][] };
   /** Privacy policy and Terms: a title, a date line and [heading, text] sections */
   privacy?: Policy;
   terms?: Policy;

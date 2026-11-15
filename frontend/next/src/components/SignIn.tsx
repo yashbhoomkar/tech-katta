@@ -32,6 +32,8 @@ export function useSignIn() {
 
 export function SignInProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  // ask who is signed in as soon as the app starts (locks, the account menu and the current app's parts wait on it)
+  useAccount();
   const show = useCallback(() => setOpen(true), []);
   const value = useMemo(() => ({ open: show, signOut }), [show]);
   return (

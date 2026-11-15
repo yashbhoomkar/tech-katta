@@ -12,6 +12,7 @@ import { PageLock } from "@/components/Locks";
 // /problems/<slug> (the workspace) and /problems/challenge/<id>. The workspace code is large (canvas, judge), so
 // it loads only here.
 const Workspace = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Workspace })));
+const SandboxView = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Sandbox })));
 const Challenge = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Challenge })));
 
 const Wait = () => <div style={{ padding: 40, display: "grid", gap: 14 }}><Skeleton height={28} width="40%" /><Skeleton height={360} /></div>;
@@ -35,4 +36,12 @@ export function ChallengePage() {
   if (gate === "wait") return <Wait />;
   if (gate === "locked") return <PageLock title="Challenge" />;
   return <Suspense fallback={<Wait />}><Challenge id={id} /></Suspense>;
+}
+
+export function SandboxPage() {
+  usePageMeta("Sandbox", { to: paths.problems, label: "Problems" });
+  const gate = useGate("workspace");
+  if (gate === "wait") return <Wait />;
+  if (gate === "locked") return <PageLock title="Sandbox" />;
+  return <Suspense fallback={<Wait />}><SandboxView /></Suspense>;
 }

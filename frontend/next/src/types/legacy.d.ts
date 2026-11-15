@@ -118,3 +118,36 @@ declare module "@legacy/dashboard/topics.jsx" {
   export const TopicCards: ComponentType<{ ts: unknown[]; still: boolean; onOpen: (k: number, via?: string) => void }>;
   export const TopicSheet: ComponentType<{ ts: unknown[]; n: number; setN: (n: number) => void; onClose: () => void; still: boolean; fn: Record<number, number> }>;
 }
+
+declare module "@legacy/plan/plan.js" {
+  /** the suggested order: weeks of problem slugs, then the rest */
+  export function planOf(qs: { slug: string }[]): { name: string; why: string; slugs: string[] }[];
+  /** the problem of the day: the same for everyone on a date, among the unsolved ones */
+  export function dailyOf<T extends { slug: string }>(qs: T[], solved: (slug: string) => boolean, date?: Date): T | null;
+  /** bookmarks and notes, kept in this browser ("tk-marks" event on change) */
+  export function readMarks(): { bookmarks: Record<string, number>; notes: Record<string, string> };
+  export function toggleBookmark(slug: string): boolean;
+}
+declare module "@legacy/sandbox/Sandbox.jsx" {
+  import type { ComponentType } from "react";
+  /** the free canvas: any design, any traffic */
+  const Sandbox: ComponentType<{ Lab: unknown }>;
+  export default Sandbox;
+}
+
+declare module "@legacy/library.jsx" {
+  import type { ComponentType } from "react";
+  /** a small library diagram ("steps", "cap", …) used as a tile picture */
+  export const Mini: ComponentType<{ type: string }>;
+}
+declare module "@legacy/landingproblem.jsx" {
+  import type { ComponentType } from "react";
+  /** IND vs PAK on the landing: the real canvas (phones: three controls) with Run for the example tests */
+  const LandingProblem: ComponentType<{ l: unknown; account: unknown; narrow: boolean }>;
+  export default LandingProblem;
+}
+declare module "@legacy/accountui.jsx" {
+  import type { ComponentType, ReactNode } from "react";
+  /** blurs its children behind "Sign in to play" while signed out (where sign-in is on) */
+  export const LabLock: ComponentType<{ t: unknown; lock: unknown; lite?: boolean; children?: ReactNode }>;
+}

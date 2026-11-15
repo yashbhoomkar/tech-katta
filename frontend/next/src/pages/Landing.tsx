@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useContent } from "@/content/ContentProvider";
-import { fill } from "@/content/model";
 import { SECTIONS, paths, sectionMeta } from "@/content/sections";
 import { Icon } from "@/components/Icon";
 import { Logo } from "@/components/layout/Logo";
@@ -11,7 +10,11 @@ import { useInView } from "@/lib/useInView";
 import { countUp, later, useOnce } from "@/lib/motion";
 import { useSignIn } from "@/components/SignIn";
 import { cx } from "@/lib/cx";
+import { HeroFigure, Inside, LandingLab, Stats } from "./LandingExtras";
 import s from "./Landing.module.css";
+
+/** the build date, shown in the footer as tech.katta.cc does */
+const BUILT = new Date(__BUILD_DATE__).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 // The public landing page. All words come from the API (site.hero, site.topics, site.numbers, counts), so
 // content edits reach it without a frontend release.
@@ -81,12 +84,19 @@ export function LandingPage() {
           <p className={s.lead}>{site.hero.description}</p>
           <div className={s.ctas}>
             <ButtonLink variant="primary" to={paths.home}>{site.hero.primary}, free</ButtonLink>
-            <ButtonLink to={paths.problem("ind-vs-pak")}>{site.hero.secondary}</ButtonLink>
+            <a className={s.ghostBtn} href="#ind-vs-pak" onClick={(e) => { e.preventDefault(); scrollToId("ind-vs-pak"); }}>{site.hero.secondary}</a>
           </div>
           <p className={s.note}>No card. Sign in with Google and everything opens.</p>
           <HeroCards cards={cards} />
         </div>
         <div className={s.arc} aria-hidden="true" />
+      </section>
+
+      <section className={s.figBand} aria-label="A figure from the lessons">
+        <div className={s.wrap}>
+          <HeroFigure />
+          <Stats />
+        </div>
       </section>
 
       <Reveal className={cx(s.band, s.plain)} id="how">
@@ -104,7 +114,7 @@ export function LandingPage() {
       <Reveal className={cx(s.band, s.alt, s.inside)}>
         <div className={s.wrap}>
           <h2>Take a look inside</h2>
-          <Inside />
+          <LookInside />
         </div>
       </Reveal>
 
@@ -144,18 +154,11 @@ export function LandingPage() {
         </div>
       </Reveal>
 
-      <Reveal className={s.band}>
-        <div className={`${s.wrap} ${s.counts}`}>
-          {[
-            [String(articles.length), "visual notes"],
-            [String(site.counts.questions), "problems with tests"],
-            [String(site.counts.challenges), `challenges, ${site.counts.challenges * 3} stars`],
-            ["₹0", "free with sign-in"],
-          ].map(([n, label]) => (
-            <div key={label} className={s.count}><CountUp value={n ?? ""} /><span>{fill(label ?? "", site, articles)}</span></div>
-          ))}
-        </div>
+      <Reveal className={cx(s.band, s.alt)}>
+        <Inside />
       </Reveal>
+
+      <LandingLab />
 
       <section className={s.final}>
         <div className={s.wrap}>
@@ -169,7 +172,7 @@ export function LandingPage() {
           {SECTIONS.filter((m) => articles.some((a) => a.section === m.id)).map((m) => <Link key={m.id} to={paths.section(m.id)}>{m.label}</Link>)}
           <Link to={paths.problems}>Problems</Link>
         </nav>
-        <div className={s.footRight}><ThemeSwitch /><span>{site.brand.footerNote}</span></div>
+        <div className={s.footRight}><ThemeSwitch /><span>{site.brand.footer} {site.brand.footerNote}</span>{site.footer && <small>{site.footer.updated}: {BUILT}</small>}</div>
       </footer>
     </div>
   );
@@ -242,7 +245,7 @@ function Preview({ id }: { id: string }) {
 }
 
 /** A window onto the app: a section's lesson list beside an open lesson. */
-function Inside() {
+function LookInside() {
   const { articles } = useContent();
   const core = articles.filter((a) => a.section === "concepts").slice(0, 7);
   const cur = Math.min(3, core.length - 1);
@@ -296,13 +299,6 @@ function JudgeCard() {
   );
 }
 
-/** A big number that counts up when it comes into view ("66"); text such as "₹0" is shown as it is. */
-function CountUp({ value }: { value: string }) {
-  const ref = useRef<HTMLElement>(null);
-  const to = /^\d+$/.test(value) ? Number(value) : null;
-  useOnce(ref, (el) => (to === null ? undefined : countUp(el as HTMLElement, to, 1000)), 0.6);
-  return <b ref={ref}>{value}</b>;
-}
 
 /** "Learn" in the landing nav: a menu of the sections. Opens on hover with a mouse (80 ms in, 200 ms out), click or Enter otherwise. */
 function LearnMenu() {

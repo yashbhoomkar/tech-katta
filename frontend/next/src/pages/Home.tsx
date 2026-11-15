@@ -6,7 +6,7 @@ import { usePageMeta } from "@/components/layout/PageMeta";
 import { ButtonLink, Card, Chip, CountUp, ProgressBar } from "@/components/ui";
 import { cx } from "@/lib/cx";
 import { FigureThumb } from "@/features/reader/FigureThumb";
-import { problemRows, usePractice } from "@/content/practice";
+import { problemRows, useLab, usePractice } from "@/content/practice";
 
 import { lastInProgress, streakDays, useProgress } from "@/lib/progress";
 import type { ArticleSummary } from "@/lib/api/types";
@@ -32,6 +32,10 @@ export function HomePage() {
   const problems = problemsOf(articles);
   const lessons = tally(reading, progress);
   const practice = usePractice();
+  const lab = useLab();
+  const chals = lab.status === "success" ? lab.data.challenges : [];
+  const starsHave = chals.reduce((n, c) => n + Math.min(practice.stars[c.id] ?? 0, c.stars.length), 0);
+  const starsMax = chals.reduce((n, c) => n + c.stars.length, 0);
   const rows = problemRows(problems, practice);
   const solvedN = rows.filter((r) => r.status === "solved").length;
   const solved = { done: solvedN, total: rows.length, pct: rows.length ? Math.round((solvedN / rows.length) * 100) : 0 };
@@ -82,7 +86,13 @@ export function HomePage() {
             <div className={s.stat}><span>Problems solved</span><b><CountUp to={solved.done} /> of {solved.total}</b></div>
             <ProgressBar value={solved.total ? solved.done / solved.total : 0} label="Problems solved" />
           </div>
-          <small className={s.muted}>Kept in this browser. Signing in will keep it on every device.</small>
+          {lab.status === "success" && (
+            <div data-accent="problems">
+              <div className={s.stat}><span>Challenge stars</span><b><CountUp to={starsHave} /> of {starsMax}</b></div>
+              <ProgressBar value={starsMax ? starsHave / starsMax : 0} label="Challenge stars" />
+            </div>
+          )}
+          <small className={s.muted}>Kept in this browser, and in your account when you sign in.</small>
         </Card>
       </div>
 

@@ -13,6 +13,8 @@ const manifest = {
 };
 
 export default defineConfig({
+  // the footer's "Last updated", as on tech.katta.cc
+  define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   plugins: [react(), manifest],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy }, dedupe: ["react", "react-dom"] },
   test: {
