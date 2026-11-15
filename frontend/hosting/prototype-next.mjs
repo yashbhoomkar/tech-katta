@@ -1,7 +1,8 @@
 // prototype.katta.cc: the new frontend (next/, the code of the production beta) is served at /p/next/, beside the
 // other prototypes. Build it with BASE_PATH=/p/next/ first (npm run build:prototype does). This copies next/dist to
 // dist/p/next and leaves at dist/next/ a small page that sends the old /next/ address on (prototype.mjs also adds
-// a 301 for every /next/ path on Cloudflare). Run before emit.mjs, which gives /next/ its 404 page from it.
+// a 301 for /next and /next/; deeper /next/... paths get this page as their 404 page from emit.mjs, since
+// Cloudflare allows only 100 wildcard redirects). Run before emit.mjs.
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 
 const src = new URL("../next/dist/", import.meta.url);
