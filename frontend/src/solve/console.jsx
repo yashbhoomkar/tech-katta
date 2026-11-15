@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{defendQuestions}from"../eval/defend.js";import{track}from"../analytics.js";
+import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{defendQuestions}from"../eval/defend.js";import{tradeoffs}from"../eval/tradeoffs.js";import{track}from"../analytics.js";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
@@ -61,12 +61,14 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 
 // Probes (context 36, step 16): two questions no test asks, run on the design as it is now, on demand.
 const times=m=>`${m.toLocaleString("en-US",{maximumFractionDigits:1})}×`;
-function Probes({P,probe,accepted}){const[h,setH]=useState(null),[w,setW]=useState(null),[how,setHow]=useState(false);
+function Probes({P,probe,accepted}){const[h,setH]=useState(null),[w,setW]=useState(null),[how,setHow]=useState(false),[t,setT]=useState(null);
 const run=(set,f)=>{set("busy");setTimeout(()=>{try{set(f(probe.design(),probe.lab,P)||"none")}catch{set("none")}},30)};
 const tone=h&&h!=="busy"&&h!=="none"?(h.m<1?"no":h.m<1.2?"edge":"ok"):"";
 return <details className="sv-probes" open><summary>Beyond the tests</summary>
 <div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={h==="busy"} onClick={()=>{run(setH,headroom);track("probe",{kind:"headroom"})}}>How much more can it take?</button>
 {h==="busy"?<p className="sv-help">Turning the traffic up…</p>:h==="none"?<p className="sv-help">This problem has no load test to turn up.</p>:h?<p className={"sv-probe-out "+tone}>{h.m<1?<>It does not hold <b>{h.base.name}</b> itself: it manages <b>{times(h.m)}</b> of it.</>:h.capped?<>It held <b>{times(h.m)}</b> {h.base.name}, the most this check tries.</>:<>It holds <b>{times(h.m)}</b> {h.base.name} ({fmt(h.base.rps*h.m)} a second){h.m<1.2?", close to the line":""}.</>}{h.first&&<small> The first thing to give: {h.first}</small>}</p>:null}</div>
+<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={t==="busy"} onClick={()=>{run(setT,tradeoffs);track("probe",{kind:"tradeoffs"})}}>What did each choice buy you?</button>
+{t==="busy"?<p className="sv-help">Running every test with each setting turned the other way…</p>:t==="none"?<p className="sv-help">Nothing to compare here.</p>:t?<TradeOffs t={t}/>:null}</div>
 {accepted&&<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={w==="busy"} onClick={()=>{run(setW,waste);track("probe",{kind:"waste"})}}>What would still pass, for less?</button>
 {w==="busy"?<p className="sv-help">Trying it one step smaller at a time…</p>:w==="none"?<p className="sv-help">Nothing to try here.</p>:w?(w.saving<Math.max(1,w.before*0.02)?<p className="sv-probe-out ok">Nothing smaller still passes every test: this design is already lean.</p>:<p className="sv-probe-out">It would still pass every test at <b>${fmt(w.after)}</b> a month, <b>${fmt(w.saving)}</b> less.{w.partial?" (It stopped trying after a while; there may be more.)":""} <button type="button" className="sv-linkbtn" onClick={()=>setHow(v=>!v)} aria-expanded={how}>{how?"Hide how":"Show how"}</button></p>):null}
 {w&&w.changes&&how&&<ul className="sv-probe-how">{w.changes.map(c=><li key={c.part+c.field}><b>{c.name}</b>: {c.label||c.field} {String(c.from)} → {String(c.to)}</li>)}</ul>}</div>}</details>}
@@ -86,3 +88,13 @@ return <div className="sv-defend" aria-live="polite"><b>Defend your design <smal
 <p className="sv-defend-q">{q.q}</p><ul className="sv-defend-c">{q.choices.map((c,k)=><li key={k}><button type="button" disabled={pick!==undefined} className={pick===undefined?"":k===q.right?"right":k===pick?"wrong":""} onClick={()=>choose(k)}>{c}</button></li>)}</ul>
 {pick!==undefined&&<p className="sv-defend-say"><b>{pick===q.right?"Right.":"Not quite."}</b> {q.say}</p>}
 {pick!==undefined&&(i<qs.length-1?<button type="button" className="sv-linkbtn" onClick={()=>setI(i+1)}>Next →</button>:<p className="sv-defend-end">{right} of {qs.length} right. {right===qs.length?"You know how your design behaves.":"The run above is what an interviewer would expect you to know: try Break it yourself in a replay to see it."}</p>)}</div>}
+
+// Trade-offs (context 36, step 18): each setting turned the other way, run against every test.
+const dollars=d=>`$${fmt(Math.abs(d))} a month ${d>0?"more":"less"}`;
+function TradeOffs({t}){if(!t.cards.length)return <p className="sv-help">Your design has no settings with another side to compare.</p>;
+const felt=t.cards.filter(c=>c.newFails.length||c.fixes.length),cost=t.cards.filter(c=>!c.newFails.length&&!c.fixes.length&&Math.abs(c.other.monthly-t.yours.monthly)>=1),same=t.cards.filter(c=>!felt.includes(c)&&!cost.includes(c));
+const card=c=>{const d=c.other.monthly-t.yours.monthly;return <li key={c.part+c.key}><b>{c.name} · {c.label}</b>: yours is <em>{c.fromWords}</em>. As <em>{c.toWords}</em>: {Math.abs(d)>=1?dollars(d):"the same bill"}{c.newFails.length?<>, but it fails {c.newFails.map((f,i)=><React.Fragment key={f.id}>{i?", ":""}<span className="sv-to-fail">{f.name}</span></React.Fragment>)}.{c.newFails[0].why&&<small>{c.newFails[0].why}</small>}</>:c.fixes.length?<>, and it would pass {c.fixes.map(f=>f.name).join(", ")}.</>:<>; the same tests pass.</>}</li>};
+return <div className="sv-to"><p className="sv-help">Your design: {t.yours.passed} of {t.yours.total} tests, ${fmt(t.yours.monthly)} a month. Each line turns one setting the other way and runs every test again.</p>
+{felt.length>0&&<><h4>Choices the tests depend on</h4><ul>{felt.map(card)}</ul></>}
+{cost.length>0&&<><h4>Choices that only change the bill</h4><ul>{cost.map(card)}</ul></>}
+{same.length>0&&<p className="sv-help">No difference in these tests: {same.map(c=>`${c.name} · ${c.label}`).join("; ")}. What separates those is something the tests don't measure, so be ready to explain it in words.</p>}</div>}

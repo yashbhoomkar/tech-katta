@@ -286,3 +286,7 @@
 .sv-defend-c{list-style:none;margin:0;padding:0;display:grid;gap:6px}.sv-defend-c button{width:100%;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font:400 13.5px var(--font);cursor:pointer}
 .sv-defend-c button:disabled{cursor:default}.sv-defend-c button.right{border-color:var(--success);color:var(--success);font-weight:600}.sv-defend-c button.wrong{border-color:var(--danger);color:var(--danger)}
 .sv-defend-say,.sv-defend-end{margin:8px 0 4px;font-size:13.5px}
+
+/* Trade-offs (context 36, step 18) */
+.sv-to h4{margin:10px 0 4px;font-size:12.5px;color:var(--muted);font-weight:600}.sv-to ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}
+.sv-to small{display:block;color:var(--ink-2);margin-top:2px}.sv-to-fail{color:var(--danger);font-weight:600}
