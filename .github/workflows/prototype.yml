@@ -1,0 +1,41 @@
+name: Prototype
+
+# prototype.katta.cc: the frontend with content bundled and no backend (frontend/hosting/prototype.mjs),
+# deployed to a Cloudflare Worker on every push to the `prototype` branch, after the tests pass.
+# Needs two repository secrets: CLOUDFLARE_PROTOTYPE_TOKEN (Edit Cloudflare Workers) and CLOUDFLARE_ACCOUNT_ID.
+on:
+  push:
+    branches: [prototype]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prototype
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy prototype.katta.cc
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:prototype:cloudflare
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROTOTYPE_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo 'Add the secrets CLOUDFLARE_PROTOTYPE_TOKEN and CLOUDFLARE_ACCOUNT_ID (see the workflow header).'; exit 1; }
+          npx --yes wrangler@4 deploy --config hosting/wrangler.prototype.jsonc

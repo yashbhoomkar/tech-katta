@@ -43,4 +43,9 @@ fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><
 <body><main><h1>Prototypes</h1><p>The frontend on this site is the app itself, built from the <code>prototype</code> branch with content bundled in and sign-in off: <a href="/">landing</a>, <a href="/dashboard/">dashboard</a>.</p>
 <h2>Design ideas</h2><ul>${pages.map((f) => { const n = f.replace(/\.html$/, ""); return `<li><a href="/p/${esc(n)}/">${esc(n)}</a></li>`; }).join("") || "<li>None yet.</li>"}</ul></main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
+// Cloudflare: the same /proto-api rewrite as vercel.json, as a 200 (served in place) rule at the top of _redirects
+if (process.argv.includes("--cloudflare")) {
+  const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
+  fs.writeFileSync(r, "/proto-api/* /proto-api/:splat.json 200\n" + old);
+}
 console.log(`prototype: ${n} articles, ${pages.length} design prototype(s) written into dist`);
