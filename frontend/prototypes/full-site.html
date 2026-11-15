@@ -40,8 +40,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--link);outline-offset:3px}
 .mono{font-family:var(--mono);font-weight:500;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 22px;font-weight:500;font-size:15px;border:1px solid var(--line-strong);background:var(--surface);white-space:nowrap;transition:transform .15s ease,background .15s ease}
-.btn:hover{transform:translateY(-1px)}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 22px;font-weight:500;font-size:15px;border:1px solid var(--line-strong);background:var(--surface);white-space:nowrap;transition:transform var(--press) var(--out),background-color 150ms ease,border-color 150ms ease,color 150ms ease}
 .btn.primary{background:var(--btn);color:var(--on-btn);border-color:var(--btn)}
 .btn.sm{padding:8px 14px;font-size:13.5px}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:500;background:var(--sunken)}
@@ -49,7 +48,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bar{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden}.bar i{display:block;height:100%;border-radius:3px;background:var(--pass)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px}
 .view[hidden]{display:none!important}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---------- landing ---------- */
 .lnav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
@@ -67,8 +65,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .newchip{display:inline-flex;gap:8px;align-items:center;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2)}
 .newchip i{width:8px;height:8px;border-radius:9px;background:var(--marigold)}
 .rise{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:64px;padding-bottom:0;height:330px}
-.rcard{border-radius:22px;padding:22px 22px 0;text-align:left;color:var(--on-color);transition:transform .25s ease;display:flex;flex-direction:column;gap:6px;height:340px}
-.rcard:hover{transform:translateY(-10px) rotate(0deg)!important}
+.rcard{border-radius:22px;padding:22px 22px 0;text-align:left;color:var(--on-color);transform:rotate(var(--r,0deg)) translateY(var(--y,0px));transition:transform var(--base) var(--out);display:flex;flex-direction:column;gap:6px;height:340px}
 .rcard h3{font-size:22px}.rcard p{font-size:14px;opacity:.82;line-height:1.45}
 .rcard .pv{margin-top:auto;background:#fff;border-radius:14px 14px 0 0;padding:14px;height:150px;display:flex;flex-direction:column;gap:8px;color:#17161A;font-size:12px}
 .pv .row{display:flex;justify-content:space-between;gap:8px}.pv .ok{color:#17794A;font-weight:600}.pv .wn{color:#9C4A00;font-weight:600}.pv .bd{color:#B3261E;font-weight:600}
@@ -141,8 +138,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .streak{padding:22px;display:flex;flex-direction:column;gap:10px}
 .days{display:flex;gap:8px}.days span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted)}.days i{width:30px;height:30px;border-radius:50%;background:var(--sunken)}.days .on i{background:var(--marigold)}
 .explore{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.ecard{border-radius:18px;padding:22px;min-height:168px;display:flex;flex-direction:column;gap:6px;color:var(--on-color);transition:transform .2s ease}
-.ecard:hover{transform:translateY(-3px)}
+.ecard{border-radius:18px;padding:22px;min-height:168px;display:flex;flex-direction:column;gap:6px;color:var(--on-color);transition:transform var(--base) var(--out)}
 .ecard h3{font-size:20px}.ecard p{font-size:14px;opacity:.8}
 .ecard .pb{margin-top:auto;display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500}.ecard .pb .bar{flex:1;background:rgb(255 255 255/.55)}.ecard .pb .bar i{background:#17161A}
 
@@ -193,9 +189,9 @@ td.tt{font-weight:500}
 .art .by{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:14px;flex-wrap:wrap}
 .art .by i{width:28px;height:28px;border-radius:50%;background:var(--c-components)}
 .art .body{font-size:18px;line-height:1.7;color:var(--ink-2);max-width:38em}
-.seg{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--sunken);align-self:flex-start}
+.seg{position:relative;isolation:isolate;display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--sunken);align-self:flex-start}
 .seg button{border:0;background:none;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500}
-.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0/.08)}
+.seg button{position:relative;z-index:1;transition:color 150ms ease}
 .fig{border-radius:18px;background:var(--t-concepts);padding:24px;display:flex;flex-direction:column;gap:14px}
 .fig .flow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .node{background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:10px 14px}
@@ -220,9 +216,9 @@ td.tt{font-weight:500}
 .wtop .r{display:flex;gap:8px;flex-wrap:wrap}
 .wbody{display:grid;grid-template-columns:420px minmax(0,1fr);min-height:0}
 .wleft{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);overflow-x:auto}
-.tabs button{border:0;background:none;padding:10px 12px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink)}
+.tabs{position:relative;display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 12px 12px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;transition:color 150ms ease}
+.tabs button[aria-selected="true"]{color:var(--ink)}
 .wdesc{padding:22px;overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:15px;color:var(--ink-2)}
 .wdesc h2{font-size:26px;color:var(--ink)}
 .wdesc .how{border-radius:14px;background:var(--t-problems);padding:16px;color:var(--ink)}
@@ -241,10 +237,10 @@ td.tt{font-weight:500}
 .scrim{position:fixed;inset:0;background:rgb(20 19 17/.45);display:grid;place-items:center;padding:16px;z-index:40}
 .dialog{background:var(--surface);border-radius:24px;padding:32px;width:min(440px,100%);display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -20px rgb(0 0 0/.4)}
 .dialog h2{font-size:28px}.dialog p{color:var(--ink-2)}
-.dialog label{display:flex;gap:10px;font-size:13.5px;color:var(--ink-2);align-items:flex-start}
+.dialog label{display:block;padding-left:28px;text-indent:-28px;font-size:13.5px;color:var(--ink-2)}.dialog label input{margin:0 10px 0 0;vertical-align:-2px}
 .dialog label a{color:var(--link);text-decoration:underline}
 .gbtn{display:flex;justify-content:center;gap:10px;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:12px;font-weight:500;background:var(--surface)}
-.gbtn[disabled]{opacity:.45;cursor:not-allowed}
+.gbtn{transition:transform var(--press) var(--out),opacity 200ms ease}.gbtn.wait{opacity:.55}
 .x{align-self:flex-end;border:0;background:var(--sunken);width:32px;height:32px;border-radius:50%}
 .switcher{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;align-items:center;gap:4px;padding:6px;border-radius:999px;background:var(--btn);color:var(--on-btn);box-shadow:0 10px 30px -10px rgb(0 0 0/.5);max-width:calc(100vw - 28px);overflow-x:auto}
 .switcher span{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:0 10px;opacity:.7;white-space:nowrap}
@@ -255,7 +251,7 @@ td.tt{font-weight:500}
 @media (max-width:980px){
   .lnav nav{display:none}
   .rise{grid-template-columns:repeat(2,minmax(0,1fr));height:auto;padding-bottom:40px}
-  .rcard{height:300px;transform:none!important}
+  .rcard{height:300px;--r:0deg!important;--y:0px!important}
   .arc{display:none}
   .steps,.nums,.chals,.explore{grid-template-columns:repeat(2,minmax(0,1fr))}
   .judge,.teacher{grid-template-columns:1fr}
@@ -295,6 +291,127 @@ td.tt{font-weight:500}
   .hero .shape:nth-of-type(2){right:4%!important;top:20px!important}
   .lesson{padding:12px 16px}.lesson .m{display:none}
 }
+
+/* ================= motion (from /p/motion/; rules after Emil Kowalski's review-animations, MIT) ================= */
+:root{--out:cubic-bezier(.23,1,.32,1);--spring:cubic-bezier(.34,1.36,.64,1);--inout:cubic-bezier(.77,0,.175,1);--drawer:cubic-bezier(.32,.72,0,1);
+  --fast:140ms;--base:240ms;--slow:520ms;--press:160ms}
+/* press: every pressable thing gives under the finger */
+.btn:active,.gbtn:active,.fbtn:active,.seg button:active,.tabs button:active,.nav-i:active,.ecard:active,.rcard:active,.lesson:active{transform:scale(.97)}
+.rcard:active{transform:rotate(var(--r,0deg)) translateY(var(--y,0px)) scale(.98)}
+/* hover moves only with a real mouse */
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{transform:translateY(-1px)} .btn:active{transform:scale(.97)}
+  .rcard:hover{transform:rotate(0deg) translateY(-8px)}
+  .ecard:hover{transform:translateY(-3px)}
+}
+/* landing: arrive once */
+@keyframes m-word{from{opacity:0;transform:translateY(14px);filter:blur(6px)}}
+@keyframes m-in{from{opacity:0;transform:translateY(10px)}}
+@keyframes m-card{from{opacity:0;translate:0 40px}}
+@keyframes m-fade{from{opacity:0}}
+.hero h1 .w{display:inline-block;animation:m-word 700ms var(--out) both;animation-delay:var(--dl)}
+.m-in{animation:m-in 600ms var(--out) both;animation-delay:var(--dl)}
+.rcard{animation:m-card 760ms var(--out) both;animation-delay:var(--dl)}
+.hero .shape{animation:m-fade 900ms ease both 300ms,m-drift 9s ease-in-out infinite alternate;animation-delay:300ms,calc(var(--n)*-1.7s)}
+@keyframes m-drift{to{translate:0 -10px}}
+.hero.off .shape{animation-play-state:running,paused}
+/* sections reveal as they come in */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 700ms var(--out),transform 700ms var(--out)}
+.reveal.in{opacity:1;transform:none}
+.no-js .reveal{opacity:1;transform:none}
+/* judge card: tests run when it is seen */
+.ts{display:inline-flex;align-items:center;gap:6px;transition:color 200ms ease}
+.ts.run{color:var(--muted);font-weight:500}
+.ts.run::before{content:"";width:11px;height:11px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--ink);animation:m-spin 600ms linear infinite}
+.ts.done{animation:m-pop 320ms var(--out)}
+@keyframes m-spin{to{transform:rotate(1turn)}}
+@keyframes m-pop{from{opacity:.2;transform:scale(.92)}}
+.stars{display:inline-flex;gap:1px;color:var(--star)}
+.stars i{font-style:normal;display:inline-block}
+.stars.go i{animation:m-star 520ms var(--spring) both}
+.stars.go i:nth-child(2){animation-delay:90ms}.stars.go i:nth-child(3){animation-delay:200ms}
+@keyframes m-star{from{opacity:0;transform:scale(.6) rotate(-25deg)}}
+/* app: content settles in on each page change (fade only, short) */
+.view.enter .main,.view.enter .art,.view.enter .wbody{animation:m-fade 160ms ease-out}
+.nav-i{position:relative;transition:background-color 150ms ease}
+.nav-i[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--ink);transform-origin:center;animation:m-mark 320ms var(--out)}
+@keyframes m-mark{from{transform:scaleY(0)}}
+.bar i{transform-origin:left center;transition:width var(--slow) var(--out)}
+.view.enter .bar i{animation:m-bar 900ms var(--out) both 120ms}
+@keyframes m-bar{from{transform:scaleX(0)}}
+#today.pop i{animation:m-today 640ms var(--spring) both 500ms}
+@keyframes m-today{from{background:var(--sunken);transform:scale(.7)}to{background:var(--marigold)}}
+#today.pop.on i,#today.on i{background:var(--marigold)}
+/* lesson */
+.seg-i{position:absolute;z-index:0;top:4px;bottom:4px;left:0;border-radius:999px;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0/.08);transition:transform var(--base) var(--out),width var(--base) var(--out)}
+.seg.ready .seg-i{transition:transform var(--base) var(--out),width var(--base) var(--out)}
+.wire{flex:0 0 34px;height:2px;background:var(--line-strong);border-radius:2px;overflow:hidden;position:relative}
+.wire i{position:absolute;inset:0;background:var(--link);transform:scaleX(0);transform-origin:left;transition:transform 420ms var(--inout)}
+.wire.on i{transform:scaleX(1)}
+.fig .node{transition:border-color 200ms ease,box-shadow 200ms ease,opacity 200ms ease}
+.fig .cap .ct{transition:opacity 160ms ease,transform 160ms ease}
+.fig .cap .ct.swap{opacity:0;transform:translateY(4px)}
+.fctl{display:inline-flex;gap:6px;align-items:center}
+.fctl .btn.sm{padding:4px 10px}
+.dots{display:inline-flex;gap:5px;margin-right:6px}.dots i{width:6px;height:6px;border-radius:6px;background:var(--line-strong);transition:width var(--base) var(--out),background-color 200ms ease}.dots i.on{width:16px;background:var(--ink)}
+.skel{display:none;flex-direction:column;gap:14px}
+.skel i{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--sunken) 30%,var(--line) 50%,var(--sunken) 70%) 0 0/300% 100%;animation:m-shim 1.1s linear infinite}
+@keyframes m-shim{to{background-position:-150% 0}}
+.art.loading>.skel{display:flex}.art.loading>:not(.skel){display:none}
+#complete{position:relative}
+#complete.ok{background:var(--pass);border-color:var(--pass);color:#fff}
+.tick{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#fff;color:var(--pass);font-size:12px;animation:m-star 420ms var(--spring) both}
+.burst{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:2px;pointer-events:none;animation:m-burst 700ms var(--out) forwards}
+@keyframes m-burst{from{transform:translate(-50%,-50%) rotate(0) scale(1);opacity:1}to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--rot)) scale(.6);opacity:0}}
+.lrow.just{animation:m-flash 900ms ease}
+@keyframes m-flash{from{background:var(--t-problems)}}
+/* workspace */
+.tab-ul{position:absolute;left:0;bottom:-1px;height:2px;width:1px;background:var(--ink);transform-origin:left;transition:transform var(--base) var(--out)}
+.results>*{animation:m-in 360ms var(--out) both}
+.results>*:nth-child(2){animation-delay:60ms}.results>*:nth-child(3){animation-delay:140ms}.results>*:nth-child(4){animation-delay:240ms}
+#submit .sp{display:none;width:12px;height:12px;border-radius:50%;border:2px solid rgb(255 255 255/.35);border-top-color:currentColor;animation:m-spin 600ms linear infinite}
+#submit.busy .sp{display:inline-block}#submit.busy{pointer-events:none}
+.pkt{offset-rotate:0deg;animation:m-pkt 900ms var(--inout) both}
+@keyframes m-pkt{from{offset-distance:0%;opacity:0}12%{opacity:1}88%{opacity:1}to{offset-distance:100%;opacity:0}}
+#srvA{transition:stroke 200ms ease}
+.hot{stroke:var(--pass)!important;stroke-width:2}
+/* sign-in dialog: modal from centre, sheet from below on a phone */
+.scrim:not([hidden]){animation:m-fade 200ms ease}
+.scrim:not([hidden]) .dialog{animation:m-dlg 260ms var(--out)}
+@keyframes m-dlg{from{opacity:0;transform:scale(.96)}}
+.scrim.closing{animation:m-fade 150ms ease reverse forwards}
+.scrim.closing .dialog{animation:m-dlg 150ms ease-in reverse forwards}
+.cmsg{min-height:1.2em;font-size:13px;color:var(--fail);text-align:center}
+.nudge{animation:m-nudge 400ms var(--out)}
+@keyframes m-nudge{20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+/* toast: transition, so a second toast retargets instead of restarting */
+.toast{position:fixed;left:50%;bottom:96px;z-index:60;display:flex;gap:10px;align-items:center;padding:10px 16px 10px 12px;border-radius:999px;background:var(--btn);color:var(--on-btn);font-size:14px;font-weight:500;box-shadow:0 12px 32px -10px rgb(0 0 0/.4);
+  transform:translate(-50%,calc(100% + 100px));opacity:0;transition:transform 400ms ease,opacity 400ms ease;pointer-events:none;overflow:hidden}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast>i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--pass);color:#fff;font-size:12px}
+.toast .tm{position:absolute;left:0;right:0;bottom:0;height:2px}.toast .tm b{display:block;height:100%;background:var(--marigold);transform-origin:left}
+.toast.show .tm b{animation:m-bar 2.6s linear reverse both}
+/* theme change cross-fades (View Transitions where the browser has them) */
+::view-transition-old(root),::view-transition-new(root){animation-duration:280ms;animation-timing-function:ease}
+@media (max-width:640px){
+  .scrim{align-items:end;padding:0}
+  .scrim .dialog{border-radius:24px 24px 0 0;width:100%;padding-bottom:max(32px,env(safe-area-inset-bottom,0px))}
+  .scrim:not([hidden]) .dialog{animation:m-sheet 500ms var(--drawer)}
+  .scrim.closing .dialog{animation:m-sheet 240ms ease-in reverse forwards}
+  @keyframes m-sheet{from{transform:translateY(100%)}}
+}
+/* reduced motion: keep the fades and colour changes that explain what happened; drop movement and loops */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:200ms!important;animation-iteration-count:1!important;animation-delay:0ms!important}
+  .hero h1 .w,.m-in,.rcard,.results>*,.scrim:not([hidden]) .dialog,.ts.done,.stars.go i,.tick,.lrow.just,.view.enter .main,.view.enter .art,.view.enter .wbody{animation-name:m-fade!important}
+  .hero .shape,.burst,.pkt,.nudge,.view.enter .bar i,.nav-i[aria-current="page"]::before,#today.pop i,.skel i{animation:none!important}
+  .ts.run::before{animation:none!important;border-color:var(--ink)}
+  .reveal{transform:none;transition:opacity 300ms ease}
+  .btn,.rcard,.ecard,.gbtn,.tab-ul,.seg-i,.wire i,.toast{transition-property:opacity,background-color,color,border-color!important}
+  .btn:active,.btn:hover,.rcard:hover,.rcard:active,.ecard:hover,.ecard:active{transform:none}
+  .rcard:hover,.rcard:active{transform:rotate(var(--r,0deg)) translateY(var(--y,0px))}
+  .toast{transform:translate(-50%,0)}
+}
 </style></head><body>
 
 <!-- ============ LANDING ============ -->
@@ -305,31 +422,31 @@ td.tt{font-weight:500}
     <div class="r"><button class="login" data-signin style="border:0;background:none">Log in</button><button class="btn primary sm" data-signin>Start free</button></div>
   </div>
   <div class="hero">
-    <i class="shape" style="left:9%;top:90px;width:64px;height:64px;background:var(--c-components);transform:rotate(18deg)" aria-hidden="true"></i>
-    <i class="shape" style="right:12%;top:60px;width:70px;height:70px;background:var(--c-interview);border-radius:30%;transform:rotate(14deg)" aria-hidden="true"></i>
-    <i class="shape" style="right:7%;top:300px;width:58px;height:58px;background:var(--c-concepts);border-radius:50%" aria-hidden="true"></i>
-    <i class="shape" style="left:15%;top:380px;width:58px;height:58px;background:var(--c-concepts);border-radius:30%;transform:rotate(8deg)" aria-hidden="true"></i>
-    <i class="shape" style="right:22%;top:420px;width:44px;height:44px;background:var(--c-real);transform:rotate(-24deg)" aria-hidden="true"></i>
+    <i class="shape" data-s="0" style="--n:0;left:9%;top:90px;width:64px;height:64px;background:var(--c-components);transform:rotate(18deg)" aria-hidden="true"></i>
+    <i class="shape" data-s="1" style="--n:1;right:12%;top:60px;width:70px;height:70px;background:var(--c-interview);border-radius:30%;transform:rotate(14deg)" aria-hidden="true"></i>
+    <i class="shape" data-s="2" style="--n:2;right:7%;top:300px;width:58px;height:58px;background:var(--c-concepts);border-radius:50%" aria-hidden="true"></i>
+    <i class="shape" data-s="3" style="--n:3;left:15%;top:380px;width:58px;height:58px;background:var(--c-concepts);border-radius:30%;transform:rotate(8deg)" aria-hidden="true"></i>
+    <i class="shape" data-s="4" style="--n:4;right:22%;top:420px;width:44px;height:44px;background:var(--c-real);transform:rotate(-24deg)" aria-hidden="true"></i>
     <div class="wrap">
-      <span class="newchip"><i></i>New · 22 design problems with a real judge</span>
-      <h1>System design, <em>explained.</em></h1>
-      <p class="lead">Learn how apps like food delivery and live cricket streams serve crores of people at once. Then design one yourself, and let real traffic judge it.</p>
-      <div class="ctas"><a class="btn primary" href="#dashboard">Start learning — it's free</a><a class="btn" href="#workspace">Try IND vs PAK</a></div>
-      <p class="note">No card. Sign in with Google and everything opens.</p>
+      <span class="newchip m-in" style="--dl:0ms"><i></i>New · 22 design problems with a real judge</span>
+      <h1><span class="w" style="--dl:0ms">System</span> <span class="w" style="--dl:110ms">design,</span> <em class="w" style="--dl:190ms">explained.</em></h1>
+      <p class="lead m-in" style="--dl:320ms">Learn how apps like food delivery and live cricket streams serve crores of people at once. Then design one yourself, and let real traffic judge it.</p>
+      <div class="ctas m-in" style="--dl:400ms"><a class="btn primary" href="#dashboard">Start learning — it's free</a><a class="btn" href="#workspace">Try IND vs PAK</a></div>
+      <p class="note m-in" style="--dl:440ms">No card. Sign in with Google and everything opens.</p>
       <div class="rise">
-        <a class="rcard" href="#concepts" style="background:var(--c-concepts);transform:rotate(-4deg) translateY(16px)"><h3>Concepts ▸</h3><p>Caching, sharding, queues: the ideas every design rests on.</p>
+        <a class="rcard" href="#concepts" style="background:var(--c-concepts);--r:-4deg;--y:16px;--dl:560ms"><h3>Concepts ▸</h3><p>Caching, sharding, queues: the ideas every design rests on.</p>
           <div class="pv"><div class="flow"><span>Client</span>→<span class="hl">Cache</span>→<span>DB</span></div><div class="row">Reads answered from memory<b class="ok">95%</b></div><div class="row">Load on the database<b class="ok">−80%</b></div></div></a>
-        <a class="rcard" href="#dashboard" style="background:var(--c-components);transform:rotate(-1.5deg)"><h3>Components ▸</h3><p>Redis, Kafka, Postgres: what each tool is good at, and where it breaks.</p>
+        <a class="rcard" href="#dashboard" style="background:var(--c-components);--r:-1.5deg;--y:0px;--dl:500ms"><h3>Components ▸</h3><p>Redis, Kafka, Postgres: what each tool is good at, and where it breaks.</p>
           <div class="pv"><div class="tags"><span>Redis</span><span>Kafka</span><span>Postgres</span><span>Cassandra</span><span>DynamoDB</span><span>Flink</span></div></div></a>
-        <a class="rcard" href="#lesson" style="background:var(--c-interview);transform:rotate(1.5deg)"><h3>Interview Questions ▸</h3><p>22 real questions, answered from requirements to deep dives.</p>
+        <a class="rcard" href="#lesson" style="background:var(--c-interview);--r:1.5deg;--y:0px;--dl:540ms"><h3>Interview Questions ▸</h3><p>22 real questions, answered from requirements to deep dives.</p>
           <div class="pv"><div class="row">Design a URL shortener<b class="ok">Easy</b></div><div class="row">Design a chat app<b class="wn">Medium</b></div><div class="row">Design payments<b class="bd">Hard</b></div></div></a>
-        <a class="rcard" href="#problems" style="background:var(--c-problems);transform:rotate(4deg) translateY(16px)"><h3>Problems ▸</h3><p>Build it on a canvas. Peaks, crashes and a budget decide your score.</p>
+        <a class="rcard" href="#problems" style="background:var(--c-problems);--r:4deg;--y:16px;--dl:610ms"><h3>Problems ▸</h3><p>Build it on a canvas. Peaks, crashes and a budget decide your score.</p>
           <div class="pv"><div class="row">Evening peak<b class="ok">Passed ✓</b></div><div class="row">A server dies<b class="ok">Passed ✓</b></div><div class="row">Inside budget<b class="wn">2 issues</b></div></div></a>
       </div>
     </div>
     <div class="arc" aria-hidden="true"></div>
   </div>
-  <section class="band plain" id="what"><div class="wrap">
+  <section class="band plain reveal" id="what"><div class="wrap">
     <p class="mono">In plain words</p>
     <p class="big">Big apps run on hundreds of computers working together. Planning how they share the work, and what happens when one fails, is called system design.</p>
     <div class="steps">
@@ -338,7 +455,7 @@ td.tt{font-weight:500}
       <div class="step" style="background:var(--t-problems)"><h3>Get judged</h3><p>Draw your design. A judge sends traffic through it and shows what broke.</p></div>
     </div>
   </div></section>
-  <section class="band alt inside"><div class="wrap">
+  <section class="band alt inside reveal"><div class="wrap">
     <h2>Take a look inside</h2>
     <div class="stage"><div class="win">
       <div class="cur"><b style="font-size:17px">Core concepts</b><div class="bar" style="margin:8px 0 4px"><i style="width:33%"></i></div><small style="color:var(--muted)">3 of 9 done (33%)</small>
@@ -348,22 +465,22 @@ td.tt{font-weight:500}
         <p style="color:var(--ink-2)">Reading one user's profile from Postgres takes a few milliseconds. Do it 12,000 times a second and the database is the bottleneck. A cache in front answers most reads from memory.</p></div>
     </div></div>
   </div></section>
-  <section class="band"><div class="wrap judge">
+  <section class="band reveal"><div class="wrap judge">
     <div><p class="mono">The judge</p><h2 style="margin-top:14px">Your design, tested by an evening of real traffic.</h2>
       <p>Run the example tests, then submit. Peaks, a crashed server and a monthly budget decide your score out of 100. Nothing is compared with a model answer.</p>
       <a class="btn primary" href="#workspace" style="margin-top:24px">Solve your first problem</a></div>
-    <div class="card jcard"><div class="jrow" style="border:0"><span style="font-weight:600">URL shortener · Submit</span><span style="color:var(--star)">★★★</span></div>
-      <div class="jrow"><span>A quiet afternoon</span><b>Passed ✓</b></div><div class="jrow"><span>Evening peak, 30,000 taps a second</span><b>Passed ✓</b></div>
-      <div class="jrow"><span>A server dies at peak</span><b>Passed ✓</b></div><div class="jrow"><span>Inside ₹1 lakh a month</span><b>₹84,200</b></div>
-      <div class="jscore"><span style="font-weight:500">Score</span><b>92 / 100</b></div></div>
+    <div class="card jcard" id="ljudge"><div class="jrow" style="border:0"><span style="font-weight:600">URL shortener · Submit</span><span class="stars" aria-label="3 of 3 stars"><i>★</i><i>★</i><i>★</i></span></div>
+      <div class="jrow"><span>A quiet afternoon</span><b class="ts" data-ok="Passed ✓">Passed ✓</b></div><div class="jrow"><span>Evening peak, 30,000 taps a second</span><b class="ts" data-ok="Passed ✓">Passed ✓</b></div>
+      <div class="jrow"><span>A server dies at peak</span><b class="ts" data-ok="Passed ✓">Passed ✓</b></div><div class="jrow"><span>Inside ₹1 lakh a month</span><b class="ts" data-ok="₹84,200 ✓">₹84,200 ✓</b></div>
+      <div class="jscore"><span style="font-weight:500">Score</span><b id="ljscore">92 / 100</b></div></div>
   </div></section>
-  <section class="band alt"><div class="wrap teacher">
+  <section class="band alt reveal"><div class="wrap teacher">
     <div class="face">Your photo here</div>
     <div><p class="mono">Taught by</p><p class="q">Hi, I'm Yash. I build backend systems for a living, and I write these notes the way I wish someone had explained them to me.</p>
       <p>Every article uses one made-up app, Zotato, so the examples connect. Videos of me walking through each design are on the way.</p></div>
   </div></section>
-  <section class="band" style="padding-block:64px"><div class="wrap nums">
-    <div class="card"><b>66</b><span>visual notes</span></div><div class="card"><b>22</b><span>problems with tests</span></div><div class="card"><b>8</b><span>challenges, 24 stars</span></div><div class="card"><b>₹0</b><span>free with sign-in</span></div>
+  <section class="band reveal" style="padding-block:64px"><div class="wrap nums">
+    <div class="card"><b data-to="66">66</b><span>visual notes</span></div><div class="card"><b data-to="22">22</b><span>problems with tests</span></div><div class="card"><b data-to="8">8</b><span>challenges, 24 stars</span></div><div class="card"><b>₹0</b><span>free with sign-in</span></div>
   </div></section>
   <section class="final"><div class="wrap"><h2>Start with Networking essentials. It takes 12 minutes.</h2><a class="btn" href="#lesson">Start learning — it's free</a></div></section>
   <footer class="wrap foot"><a class="logo" href="#home"><b>TK</b>Tech Katta</a><span>Privacy · Terms · Status · Written by one engineer. Corrections welcome.</span></footer>
@@ -392,19 +509,19 @@ td.tt{font-weight:500}
   <div class="slot-side"></div>
   <div><div class="slot-mob"></div>
   <main class="content">
-    <div class="topline"><div><h1>Good evening, Riya</h1><p>You're 4 days into a streak. One more lesson keeps it going.</p></div><div class="tools"><button class="btn sm">Tour</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
+    <div class="topline"><div><h1>Good evening, Riya</h1><p>You're <span id="sdays">4</span> days into a streak. One more lesson keeps it going.</p></div><div class="tools"><button class="btn sm" id="tourbtn">Tour</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
     <div class="grid-2">
       <div class="card cont"><p class="mono">Continue where you left off</p><div class="in"><div class="thumb">Client → Cache → DB</div>
         <div class="txt"><span class="chip" style="background:var(--t-concepts);align-self:flex-start">Concepts · Core concepts</span><h3>Caching: when to add a cache, and how to explain it</h3><div class="bar"><i style="width:40%;background:var(--c-concepts)"></i></div><small style="color:var(--muted)">40% read · 13 min left</small></div>
         <a class="btn primary" href="#lesson">Resume →</a></div></div>
       <div class="card prog"><p class="mono">Your progress</p>
-        <div><div class="l"><span>Lessons</span><b>12 of 66</b></div><div class="bar" style="margin-top:6px"><i style="width:18%;background:var(--c-concepts)"></i></div></div>
-        <div><div class="l"><span>Problems solved</span><b>3 of 22</b></div><div class="bar" style="margin-top:6px"><i style="width:14%;background:var(--c-problems)"></i></div></div>
-        <div><div class="l"><span>Challenge stars</span><b>5 of 24</b></div><div class="bar" style="margin-top:6px"><i style="width:21%;background:var(--star)"></i></div></div></div>
+        <div><div class="l"><span>Lessons</span><b><span data-to="12">12</span> of 66</b></div><div class="bar" style="margin-top:6px"><i style="width:18%;background:var(--c-concepts)"></i></div></div>
+        <div><div class="l"><span>Problems solved</span><b><span data-to="3">3</span> of 22</b></div><div class="bar" style="margin-top:6px"><i style="width:14%;background:var(--c-problems)"></i></div></div>
+        <div><div class="l"><span>Challenge stars</span><b><span data-to="5">5</span> of 24</b></div><div class="bar" style="margin-top:6px"><i style="width:21%;background:var(--star)"></i></div></div></div>
     </div>
     <div class="grid-2">
       <div class="pod"><div><p class="mono">Problem of the day</p><h3>Design a notification service</h3><div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span class="chip easy">Easy</span><small style="color:var(--muted)">~35 min · 6 tests</small></div></div><a class="btn primary" href="#workspace">Open the canvas</a></div>
-      <div class="card streak"><p class="mono">Streak</p><div class="days"><span class="on"><i></i>M</span><span class="on"><i></i>T</span><span class="on"><i></i>W</span><span class="on"><i></i>T</span><span><i></i>F</span><span><i></i>S</span><span><i></i>S</span></div></div>
+      <div class="card streak"><p class="mono">Streak</p><div class="days"><span class="on"><i></i>M</span><span class="on"><i></i>T</span><span class="on"><i></i>W</span><span class="on"><i></i>T</span><span id="today"><i></i>F</span><span><i></i>S</span><span><i></i>S</span></div></div>
     </div>
     <h2 style="font-size:26px">Explore</h2>
     <div class="explore">
@@ -465,16 +582,16 @@ td.tt{font-weight:500}
       <div class="more" style="margin-top:10px"><span>Recurring patterns ▸</span><small style="color:var(--muted)">0 of 8</small></div>
       <div class="more"><span>Specialised data ▸</span><small style="color:var(--muted)">0 of 4</small></div>
     </aside>
-    <article class="art">
+    <article class="art"><div class="skel" id="skel" aria-hidden="true"><i style="width:30%"></i><i style="width:90%;height:30px"></i><i style="width:60%"></i><i style="width:100%;height:160px"></i><i style="width:95%"></i><i style="width:80%"></i></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip" style="background:var(--t-concepts)">Concept 04</span><span class="chip medium">Medium</span></div>
       <h1>Caching: when to add a cache, and how to explain it</h1>
       <div class="by"><i></i>Yash Bhoomkar · Updated 9 Nov 2026 · 22 min read</div>
-      <div class="seg" role="group" aria-label="How to read this lesson"><button aria-pressed="false">Cards</button><button aria-pressed="true">Full text</button></div>
+      <div class="seg" role="group" aria-label="How to read this lesson"><span class="seg-i" aria-hidden="true"></span><button aria-pressed="false">Cards</button><button aria-pressed="true">Full text</button></div>
       <div class="video" style="aspect-ratio:16/8"><span>▶ Watch Yash explain it · 6 min</span></div>
       <h2>Caching in an interview</h2>
       <p class="body">Reading one user's profile from Postgres takes a few milliseconds. Do it 12,000 times a second and the database spends its day answering the same question. A cache in front keeps the answers in memory, so most reads never reach the database.</p>
-      <div class="fig"><div class="flow"><div class="node"><b>App servers</b><span>12,000 reads/s</span></div><span class="arrow">→</span><div class="node hl"><b>Redis</b><span>95% hits · 0.2 ms</span></div><span class="arrow" style="color:var(--muted)">→</span><div class="node"><b>Postgres</b><span>600 reads/s</span></div></div>
-        <div class="cap"><span>Fig. 1 With a cache, the database sees one read in twenty.</span><span class="mono">◀ ▶ Step 2 of 4</span></div></div>
+      <div class="fig" id="fig1"><div class="flow"><div class="node hl"><b>App servers</b><span>12,000 reads/s</span></div><span class="wire"><i></i></span><div class="node"><b>Redis</b><span>95% hits · 0.2 ms</span></div><span class="wire"><i></i></span><div class="node"><b>Postgres</b><span>600 reads/s</span></div></div>
+        <div class="cap"><span class="ct">Fig. 1 · Step 1. 12,000 reads a second arrive at the app servers.</span><span class="fctl"><span class="dots"><i class="on"></i><i></i><i></i></span><button class="btn sm" data-fs="-1" aria-label="Previous step">◀</button><button class="btn sm" data-fs="1" aria-label="Next step">▶</button></span></div></div>
       <div class="say"><p class="mono">Say this in the interview</p><p>"Reads outnumber writes about 100 to 1, so I'll put Redis in front with cache-aside and a 10-minute TTL."</p></div>
       <h2>Where to cache</h2>
       <p class="body">On the device, at the edge, in a shared cache like Redis, or inside the server process. Each one is closer to the reader and harder to keep fresh than the one before.</p>
@@ -488,9 +605,9 @@ td.tt{font-weight:500}
 <!-- ============ WORKSPACE ============ -->
 <section class="view ws" id="v-workspace" data-view="workspace" hidden>
   <div class="wtop"><div class="l"><a class="btn sm" href="#problems">← Problems</a><span class="t">Design a URL shortener</span><span class="chip easy">Easy</span></div>
-    <div class="r"><button class="btn sm">⏱ 24:10</button><button class="btn sm" id="run">▶ Run</button><button class="btn primary sm" id="submit">Submit</button><button class="btn sm" style="color:var(--link);border-color:var(--link)">Ask the interviewer</button></div></div>
+    <div class="r"><button class="btn sm">⏱ 24:10</button><button class="btn sm" id="run">▶ Run</button><button class="btn primary sm" id="submit"><span class="sp" aria-hidden="true"></span><span class="lb">Submit</span></button><button class="btn sm" style="color:var(--link);border-color:var(--link)">Ask the interviewer</button></div></div>
   <div class="wbody">
-    <div class="wleft"><div class="tabs" role="tablist"><button role="tab" aria-selected="true">Description</button><button role="tab" aria-selected="false">Your answer</button><button role="tab" aria-selected="false">Hints (7)</button><button role="tab" aria-selected="false">Solution</button><button role="tab" aria-selected="false">Submissions</button></div>
+    <div class="wleft"><div class="tabs" role="tablist"><span class="tab-ul" aria-hidden="true"></span><button role="tab" aria-selected="true">Description</button><button role="tab" aria-selected="false">Your answer</button><button role="tab" aria-selected="false">Hints (7)</button><button role="tab" aria-selected="false">Solution</button><button role="tab" aria-selected="false">Submissions</button></div>
       <div class="wdesc"><p class="mono">Problem 01 · Easy</p><h2>Design a URL shortener</h2>
         <p>Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.</p>
         <div class="how">Add parts from the left and join them with arrows. Give each database its engine and tables. Run checks your design against the example tests; Submit runs every test.</div>
@@ -502,15 +619,15 @@ td.tt{font-weight:500}
         <p class="mono" style="padding:4px 2px">Data</p><div class="p"><i style="background:var(--c-problems)"></i>Database</div><div class="p"><i style="background:var(--c-problems)"></i>Cache</div><div class="p"><i style="background:var(--c-interview)"></i>Queue</div></div>
       <div class="cv"><svg viewBox="0 0 760 420" role="img" aria-label="A design: Clients to load balancer to two servers, each reading a Redis cache and a Postgres database">
         <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--link)"/></marker></defs>
-        <g fill="none" stroke="var(--link)" stroke-width="1.6" marker-end="url(#ah)"><path d="M150 210 H236"/><path d="M366 196 L446 132"/><path d="M366 224 L446 288"/><path d="M576 120 L640 100"/><path d="M576 140 L640 300"/><path d="M576 280 L640 120"/><path d="M576 300 L640 318"/></g>
+        <g fill="none" stroke="var(--link)" stroke-width="1.6" marker-end="url(#ah)" id="edges"><path d="M150 210 H236"/><path d="M366 196 L446 132"/><path d="M366 224 L446 288"/><path d="M576 120 L640 100"/><path d="M576 140 L640 300"/><path d="M576 280 L640 120"/><path d="M576 300 L640 318"/></g>
         <g font-family="Instrument Sans, sans-serif" font-size="14" font-weight="600" fill="var(--ink)">
           <rect x="30" y="180" width="120" height="60" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/><text x="48" y="207">Clients</text><text x="48" y="226" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">30k req/s</text>
           <rect x="240" y="180" width="126" height="60" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/><text x="256" y="207">Load balancer</text><text x="256" y="226" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">2 zones</text>
-          <rect x="450" y="100" width="126" height="60" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/><text x="466" y="127">Server ×4</text><text x="466" y="146" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">c6g.large</text>
+          <rect id="srvA" x="450" y="100" width="126" height="60" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/><text x="466" y="127">Server ×4</text><text x="466" y="146" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">c6g.large</text>
           <rect x="450" y="260" width="126" height="60" rx="12" fill="var(--surface)" stroke="var(--line-strong)"/><text x="466" y="287">Server ×4</text><text x="466" y="306" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">c6g.large</text>
           <rect x="644" y="70" width="104" height="60" rx="12" fill="var(--t-problems)" stroke="var(--line-strong)"/><text x="660" y="97">Redis</text><text x="660" y="116" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">95% hits</text>
           <rect x="644" y="290" width="104" height="60" rx="12" fill="var(--t-problems)" stroke="var(--line-strong)"/><text x="660" y="317">Postgres</text><text x="660" y="336" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="var(--muted)">links table</text>
-        </g></svg></div></div>
+        </g><g id="pkts"></g></svg></div></div>
   </div>
   <div class="results" id="results" aria-live="polite"><b>Results</b><span style="color:var(--muted)">Press Run to check your design against the example tests.</span></div>
 </section>
@@ -520,12 +637,13 @@ td.tt{font-weight:500}
   <div class="dialog"><button class="x" data-close aria-label="Close">✕</button>
     <h2 id="si-t">Sign in to Tech Katta</h2>
     <p>Articles, problems and notes are free with a Google account. Sign in once and your designs, scores and stars follow you to every device.</p>
-    <label for="agree"><input type="checkbox" id="agree"> I agree to the <a href="#home">Terms and conditions</a> and the <a href="#home">Privacy policy</a>.</label>
-    <button class="gbtn" id="gbtn" disabled>G&nbsp;&nbsp;Continue with Google</button>
+    <label for="agree" id="agreel"><input type="checkbox" id="agree"> I agree to the <a href="#home">Terms and conditions</a> and the <a href="#home">Privacy policy</a>.</label>
+    <button class="gbtn" id="gbtn">G&nbsp;&nbsp;Continue with Google</button><span class="cmsg" id="cmsg" aria-live="polite"></span>
     <small style="color:var(--muted)">Prototype: this dialog does not sign you in.</small>
   </div>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite"><i>✓</i><span id="toastt">Saved</span><span class="tm"><b></b></span></div>
 <nav class="switcher" aria-label="Prototype screens"><span>Prototype</span>
   <a href="#home" data-sw="home">Landing</a><a href="#dashboard" data-sw="dashboard">Dashboard</a><a href="#concepts" data-sw="concepts">Section</a><a href="#lesson" data-sw="lesson">Lesson</a><a href="#problems" data-sw="problems">Problems</a><a href="#workspace" data-sw="workspace">Workspace</a><a href="#home" data-sw="signin" data-signin>Sign-in</a>
 </nav>
@@ -551,21 +669,20 @@ td.tt{font-weight:500}
   const L=[['Networking essentials',1],['API design',1],['Data modelling',1],['Caching',2],['Sharding',0],['Consistent hashing',0],['CAP theorem',0],['Database indexing',0],['Numbers to know',0]];
   const drawCur=()=>{$('#curlist').innerHTML=L.map(([t,s])=>`<a class="lrow ${s===1?'done':s===2?'cur-l':''}" href="#lesson"><i class="st"></i>${t}</a>`).join('');const d=L.filter(x=>x[1]===1).length,p=Math.round(d/9*100);$('#curbar').style.width=p+'%';$('#curtxt').textContent=`${d} of 9 done (${p}%)`;$('#curtoggle').firstChild.textContent=`Core concepts · ${d} of 9 done `;};
   drawCur();
-  $('#complete').addEventListener('click',e=>{const i=L.findIndex(x=>x[1]===2);if(i<0)return;L[i][1]=1;if(L[i+1])L[i+1][1]=2;drawCur();e.target.textContent='Done ✓ Next lesson is ready';});
+  
   $('#curtoggle').addEventListener('click',e=>{const o=$('#pcur').classList.toggle('open');e.currentTarget.setAttribute('aria-expanded',o);});
   $$('.seg button').forEach(b=>b.addEventListener('click',()=>$$('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b))));
   addEventListener('scroll',()=>{if(location.hash!=='#lesson')return;const h=document.documentElement.scrollHeight-innerHeight;$('#readbar').style.width=(h>0?Math.max(8,Math.min(100,scrollY/h*100)):40)+'%';},{passive:true});
   // workspace run / submit
-  $('#run').addEventListener('click',()=>{$('#results').innerHTML='<b>Example tests</b><span class="r">A quiet afternoon <span class="ok">Passed ✓</span></span><span class="r">Evening peak <span class="ok">Passed ✓</span></span><span class="r">GET /2Bi <span class="ok">302 in 4 ms ✓</span></span>';});
-  $('#submit').addEventListener('click',()=>{$('#results').innerHTML='<b>Submitted · 92 / 100</b><span class="r">8 of 8 tests <span class="ok">Passed ✓</span></span><span class="r">Bill <span class="ok">₹84,200 / month</span></span><span class="r" style="color:var(--star)">★★★</span>';});
+  $('#run').addEventListener('click',()=>{return;$('#results').innerHTML='<b>Example tests</b><span class="r">A quiet afternoon <span class="ok">Passed ✓</span></span><span class="r">Evening peak <span class="ok">Passed ✓</span></span><span class="r">GET /2Bi <span class="ok">302 in 4 ms ✓</span></span>';});
+  $('#submit').addEventListener('click',()=>{return;$('#results').innerHTML='<b>Submitted · 92 / 100</b><span class="r">8 of 8 tests <span class="ok">Passed ✓</span></span><span class="r">Bill <span class="ok">₹84,200 / month</span></span><span class="r" style="color:var(--star)">★★★</span>';});
   $$('.tabs button').forEach(b=>b.addEventListener('click',()=>$$('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b))));
   // sign-in dialog
   const dlg=$('#signin');
   $$('[data-signin]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();dlg.hidden=false;$('#agree').focus();}));
   dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.closest('[data-close]'))dlg.hidden=true;});
   addEventListener('keydown',e=>{if(e.key==='Escape')dlg.hidden=true;});
-  $('#agree').addEventListener('change',e=>{$('#gbtn').disabled=!e.target.checked;});
-  // theme toggle (per viewer)
+    // theme toggle (per viewer)
   const root=document.documentElement;
   try{const t=localStorage.getItem('tk-proto-theme');if(t)root.setAttribute('data-theme',t);}catch(e){}
   $$('[data-theme-toggle]').forEach(b=>b.addEventListener('click',()=>{const dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);const n=dark?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('tk-proto-theme',n);}catch(e){}}));
@@ -577,6 +694,73 @@ td.tt{font-weight:500}
     $$('.nav-i').forEach(a=>{a.removeAttribute('aria-current');if(a.dataset.nav===v)a.setAttribute('aria-current','page');});
     if(VIEWS.includes(h)||!h) scrollTo(0,0);};
   addEventListener('hashchange',route);route();
+
+  // ================= motion =================
+  const RM=matchMedia('(prefers-reduced-motion: reduce)');
+  const later=(f,ms)=>setTimeout(f,RM.matches?Math.min(ms,60):ms);
+  const once=(el,fn,th=.15)=>{if(!el)return;const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.disconnect();fn(e.target);}}),{threshold:th});io.observe(el);};
+  const countUp=(el,to,ms=900,fmt=v=>v)=>{if(RM.matches){el.textContent=fmt(to);return;}const t0=performance.now();const step=t=>{const k=Math.min(1,(t-t0)/ms),v=Math.round(to*(1-Math.pow(1-k,3)));el.textContent=fmt(v);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);};
+  // landing: sections rise in; shapes pause off-screen
+  $$('.reveal').forEach(el=>once(el,t=>t.classList.add('in')));
+  const hero=$('.hero');new IntersectionObserver(es=>es.forEach(e=>hero.classList.toggle('off',!e.isIntersecting))).observe(hero);
+  // judge card runs its tests when seen
+  once($('#ljudge'),card=>{const ts=$$('.ts',card),st=$('.stars',card),sc=$('#ljscore');
+    st.style.visibility='hidden';sc.textContent='— / 100';ts.forEach(t=>{t.classList.add('run');t.textContent='Running';});
+    ts.forEach((t,i)=>later(()=>{t.classList.remove('run');t.classList.add('done');t.textContent=t.dataset.ok;},500+i*380+(i===2?160:0)));
+    later(()=>{countUp(sc,92,800,v=>v+' / 100');later(()=>{st.style.visibility='';st.classList.add('go');},700);},500+4*380+200);},.5);
+  $$('.nums [data-to]').forEach(el=>once(el,t=>countUp(t,+t.dataset.to,1000),.6));
+  // toast
+  const toast=$('#toast');let tt;
+  const say=msg=>{$('#toastt').textContent=msg;toast.classList.remove('show');void toast.offsetWidth;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('show'),2600);};
+  // seg control: the light pill slides under the chosen button
+  $$('.seg').forEach(g=>{const ind=$('.seg-i',g);const place=()=>{const b=$('button[aria-pressed="true"]',g);if(!b||!b.offsetWidth)return;ind.style.width=b.offsetWidth+'px';ind.style.transform=`translateX(${b.offsetLeft}px)`;};
+    $$('button',g).forEach(b=>b.addEventListener('click',()=>requestAnimationFrame(place)));g._place=place;});
+  // tabs: underline slides to the chosen tab
+  $$('.tabs').forEach(g=>{const ul=$('.tab-ul',g);const place=()=>{const b=$('button[aria-selected="true"]',g);if(!b||!b.offsetWidth)return;ul.style.transform=`translateX(${b.offsetLeft}px) scaleX(${b.offsetWidth})`;};
+    $$('button',g).forEach(b=>b.addEventListener('click',()=>requestAnimationFrame(place)));g._place=place;});
+  // figure stepper
+  const FS=['Fig. 1 · Step 1. 12,000 reads a second arrive at the app servers.','Fig. 1 · Step 2. The cache answers 95 of every 100 reads, in 0.2 ms.','Fig. 1 · Step 3. Only the misses reach Postgres: 600 reads a second, one in twenty.'];
+  let fs=0;const fig=$('#fig1'),nodes=$$('.node',fig),wires=$$('.wire',fig),dots=$$('.dots i',fig),ct=$('.ct',fig);
+  const setStep=n=>{fs=Math.max(0,Math.min(2,n));nodes.forEach((x,i)=>{x.classList.toggle('hl',i===fs);x.style.opacity=i>fs?.45:1;});wires.forEach((w,i)=>w.classList.toggle('on',i<fs));dots.forEach((d,i)=>d.classList.toggle('on',i===fs));
+    ct.classList.add('swap');later(()=>{ct.textContent=FS[fs];ct.classList.remove('swap');},160);$('[data-fs="-1"]',fig).disabled=fs===0;$('[data-fs="1"]',fig).disabled=fs===2;};
+  $$('[data-fs]',fig).forEach(b=>b.addEventListener('click',()=>setStep(fs+ +b.dataset.fs)));setStep(0);
+  // mark complete: tick, burst in the section colours, then the list moves on
+  const done=$('#complete');
+  done.addEventListener('click',()=>{if(done.classList.contains('ok'))return;done.classList.add('ok');{const i=L.findIndex(x=>x[1]===2);if(i>=0){L[i][1]=1;if(L[i+1])L[i+1][1]=2;drawCur();}}done.innerHTML='<span class="tick">✓</span> Done · next lesson is ready';
+    if(!RM.matches)['--c-concepts','--c-components','--c-interview','--c-problems','--c-real','--c-notes','--marigold','--c-concepts','--c-problems','--c-interview'].forEach((c,i)=>{const b=document.createElement('i');b.className='burst';const a=i/10*Math.PI*2,d=46+(i%3)*14;
+      b.style.cssText=`background:var(${c});--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d}px;--rot:${(i%2?1:-1)*(90+i*20)}deg;animation-delay:${(i%4)*20}ms`;done.appendChild(b);setTimeout(()=>b.remove(),900);});
+    later(()=>{const r=$('#curlist .lrow.done:last-of-type')||$$('#curlist .lrow.done').pop();if(r)r.classList.add('just');},40);say('Lesson marked complete');},true);
+  // run: a request travels the drawn edges, then results arrive one by one
+  const pk=$('#pkts');
+  const sendPackets=()=>{if(RM.matches)return;$$('#edges path').forEach((p,i)=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r','5');c.setAttribute('fill','var(--pass)');c.setAttribute('class','pkt');
+    c.style.offsetPath=`path("${p.getAttribute('d')}")`;c.style.animationDelay=(i<1?0:i<3?380:760)+'ms';c.setAttribute('cx',0);c.setAttribute('cy',0);pk.appendChild(c);setTimeout(()=>c.remove(),1800);});
+    later(()=>$('#srvA').classList.add('hot'),500);later(()=>$('#srvA').classList.remove('hot'),1400);};
+  $('#run').addEventListener('click',()=>{sendPackets();$('#results').innerHTML='<b>Example tests</b><span class="r">A quiet afternoon <span class="ts run">Running</span></span><span class="r">Evening peak <span class="ts run">Running</span></span><span class="r">GET /2Bi <span class="ts run">Running</span></span>';
+    const ok=['Passed ✓','Passed ✓','302 in 4 ms ✓'];$$('#results .ts').forEach((t,i)=>later(()=>{t.className='ok ts done';t.textContent=ok[i];},700+i*300));},true);
+  const sub=$('#submit');
+  sub.addEventListener('click',e=>{e.stopImmediatePropagation();if(sub.classList.contains('busy'))return;sub.classList.add('busy');$('.lb',sub).textContent='Judging';sendPackets();
+    later(()=>{sub.classList.remove('busy');$('.lb',sub).textContent='Submit';
+      $('#results').innerHTML='<b>Submitted · <span id="wsc">0</span> / 100</b><span class="r">8 of 8 tests <span class="ok">Passed ✓</span></span><span class="r">Bill <span class="ok">₹84,200 / month</span></span><span class="r"><span class="stars"><i>★</i><i>★</i><i>★</i></span></span>';
+      countUp($('#wsc'),92,800);later(()=>$('#results .stars').classList.add('go'),600);later(()=>say('Design saved · 92 / 100'),900);},1500);},true);
+  // sign-in: closing plays out; the Google button explains instead of sitting greyed out
+  const closeDlg=()=>{if(dlg.hidden||dlg.classList.contains('closing'))return;dlg.classList.add('closing');setTimeout(()=>{dlg.hidden=true;dlg.classList.remove('closing');},RM.matches?60:240);};
+  dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.closest('[data-close]')){e.stopImmediatePropagation();closeDlg();}},true);
+  addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopImmediatePropagation();closeDlg();}},true);
+  const gb=$('#gbtn');gb.classList.add('wait');
+  $('#agree').addEventListener('change',e=>{gb.classList.toggle('wait',!e.target.checked);if(e.target.checked)$('#cmsg').textContent='';});
+  gb.addEventListener('click',()=>{if(!$('#agree').checked){const l=$('#agreel');l.classList.remove('nudge');void l.offsetWidth;l.classList.add('nudge');$('#cmsg').textContent='Tick the box first to agree to the terms.';return;}$('#cmsg').textContent='';say('Prototype: sign-in is off here');});
+  // theme: cross-fade where the browser can
+  $$('[data-theme-toggle]').forEach(b=>b.addEventListener('click',e=>{if(!document.startViewTransition||RM.matches||e.isTrusted===false)return;e.stopImmediatePropagation();
+    document.startViewTransition(()=>{const dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);const n=dark?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('tk-proto-theme',n);}catch(_){}});},true));
+  // page change: content fades in, bars fill, numbers count, today's streak dot fills once
+  let streakDone=false;
+  const enter=()=>{const v=$('.view:not([hidden])');if(!v)return;v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter');
+    requestAnimationFrame(()=>{$$('.seg',v).forEach(g=>g._place&&g._place());$$('.tabs',v).forEach(g=>g._place&&g._place());});
+    $$('[data-to]',v).forEach(el=>{if(!el.closest('.nums'))countUp(el,+el.dataset.to,800);});
+    if(v.dataset.view==='dashboard'&&!streakDone){streakDone=true;const t=$('#today');t.classList.add('pop','on');later(()=>{countUp($('#sdays'),5,300);},900);}
+    if(v.dataset.view==='lesson'){const a=$('.art',v);a.classList.add('loading');later(()=>a.classList.remove('loading'),RM.matches?0:380);requestAnimationFrame(()=>requestAnimationFrame(()=>$$('.seg',v).forEach(g=>g._place&&g._place())));}};
+  addEventListener('hashchange',enter);enter();
+  addEventListener('resize',()=>{$$('.seg').forEach(g=>g._place&&g._place());$$('.tabs').forEach(g=>g._place&&g._place());});
 })();
 </script>
 </body></html>
