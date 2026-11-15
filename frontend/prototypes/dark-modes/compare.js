@@ -1,10 +1,10 @@
 // Builds one column per palette from the same pieces of the site. On phones one column shows at a time:
 // the A / B / C tabs or a sideways swipe change it.
 const P = [
-  ["now", "Now", "The current dark"],
-  ["a", "A · Pastels on ink", "Neutral black, pastel blocks, dark text on colour"],
-  ["b", "B · Tinted glass", "Charcoal, a wash of colour, bright edges and titles"],
-  ["c", "C · Midnight", "Deep navy, near-full pastels, marigold glows"],
+  ["a", "A · Pastels on ink", "Round 1's pick. Felt dull"],
+  ["f", "F · Vivid", "A's idea with saturated colours on warm graphite"],
+  ["d", "D · Colour as light", "Dark cards; the colour glows and lights titles, edges, bars"],
+  ["now", "Now", "The current dark, for reference"],
 ];
 const SEC = [["concepts", "Concepts", "21 lessons", 14], ["components", "Components", "10 lessons", 10], ["interview", "Interview Questions", "8 lessons", 13], ["problems", "Problems", "22 problems", 14], ["notes", "Quick Notes", "4 lessons", 0], ["real", "Real Systems", "6 lessons", 0]];
 
@@ -48,7 +48,7 @@ cols.innerHTML = P.map(column).join("");
 const tabs = [...document.querySelectorAll(".picker [data-p]")];
 const show = (id) => { cols.dataset.show = id; tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.p === id))); };
 tabs.forEach((t) => t.addEventListener("click", () => show(t.dataset.p)));
-show("a");
+show("f");
 // phone: swipe between palettes
 let x0 = null;
 cols.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });

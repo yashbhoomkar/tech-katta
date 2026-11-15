@@ -27,16 +27,17 @@ a { color: inherit; }
   --c-interview:#B9A5DC; --a-interview:#B9A5DC; --t-interview:color-mix(in srgb,#B9A5DC 12%,#1A1B1E); --c-problems:#8FC7AE; --a-problems:#8FC7AE; --t-problems:color-mix(in srgb,#8FC7AE 12%,#1A1B1E);
   --c-real:#DCA694; --a-real:#DCA694; --t-real:color-mix(in srgb,#DCA694 12%,#1A1B1E); --c-notes:#DCC97C; --a-notes:#DCC97C; --t-notes:color-mix(in srgb,#DCC97C 12%,#1A1B1E);
   --on-c:#121214; --on-c-2:rgb(18 18 20/.74); --track:rgb(0 0 0/.16); --fill:#121214; --preview:#16171A; }
-.pal-b { --page:#121316; --surface:#1A1B1F; --raised:#232429; --sunken:#26272C; --ink:#ECEDEF; --ink-2:#C0C3C9; --muted:#91959D; --line:#2B2C31; --line-strong:#3E4047; --btn:#ECEDEF; --on-btn:#121316; --link:#A5B8F5; --pass:#5CC98A; --fail:#F28B82; --warn:#F0A35E; --star:#F5B83D; --band:#1A1B1F;
-  --a-concepts:#8EBBD8; --c-concepts:color-mix(in srgb,#8EBBD8 16%,#1A1B1F); --t-concepts:color-mix(in srgb,#8EBBD8 9%,#1A1B1F); --a-components:#E9A050; --c-components:color-mix(in srgb,#E9A050 16%,#1A1B1F); --t-components:color-mix(in srgb,#E9A050 9%,#1A1B1F);
-  --a-interview:#BCA4EE; --c-interview:color-mix(in srgb,#BCA4EE 16%,#1A1B1F); --t-interview:color-mix(in srgb,#BCA4EE 9%,#1A1B1F); --a-problems:#84D0B0; --c-problems:color-mix(in srgb,#84D0B0 16%,#1A1B1F); --t-problems:color-mix(in srgb,#84D0B0 9%,#1A1B1F);
-  --a-real:#EFA48C; --c-real:color-mix(in srgb,#EFA48C 16%,#1A1B1F); --t-real:color-mix(in srgb,#EFA48C 9%,#1A1B1F); --a-notes:#EBD173; --c-notes:color-mix(in srgb,#EBD173 16%,#1A1B1F); --t-notes:color-mix(in srgb,#EBD173 9%,#1A1B1F);
-  --on-c:#ECEDEF; --on-c-2:rgb(236 237 239/.74); --track:rgb(255 255 255/.1); --fill:#ECEDEF; --preview:#121316; --edge:1; --brighttitle:1; }
-.pal-c { --page:#0E1220; --surface:#151A2B; --raised:#1C2236; --sunken:#20273D; --ink:#EDF0F7; --ink-2:#C3C9D9; --muted:#939CB5; --line:#262D45; --line-strong:#39415E; --btn:#EDF0F7; --on-btn:#0E1220; --link:#A9BCFF; --pass:#5CC98A; --fail:#F28B82; --warn:#F0A35E; --star:#F5B83D; --band:#1C2236;
-  --c-concepts:#9CC2DB; --a-concepts:#9CC2DB; --t-concepts:color-mix(in srgb,#9CC2DB 13%,#151A2B); --c-components:#E39A52; --a-components:#E39A52; --t-components:color-mix(in srgb,#E39A52 13%,#151A2B);
-  --c-interview:#C3AEEB; --a-interview:#C3AEEB; --t-interview:color-mix(in srgb,#C3AEEB 13%,#151A2B); --c-problems:#9AD3BA; --a-problems:#9AD3BA; --t-problems:color-mix(in srgb,#9AD3BA 13%,#151A2B);
-  --c-real:#E9AD99; --a-real:#E9AD99; --t-real:color-mix(in srgb,#E9AD99 13%,#151A2B); --c-notes:#E8D07E; --a-notes:#E8D07E; --t-notes:color-mix(in srgb,#E8D07E 13%,#151A2B);
-  --on-c:#0E1220; --on-c-2:rgb(14 18 32/.74); --track:rgb(0 0 0/.16); --fill:#0E1220; --preview:#0E1220; }
+.pal-d, .pal-f { --page:#131312; --surface:#1C1C1A; --raised:#252523; --sunken:#2A2A27; --ink:#F2F0EB; --ink-2:#CAC7C0; --muted:#9B988F; --line:#2F2E2B; --line-strong:#45443F; --btn:#F2F0EB; --on-btn:#131312; --link:#9DB8FF; --pass:#4FD78F; --fail:#FF8478; --warn:#FFAA5C; --star:#FFC233; --band:#1C1C1A;
+  --a-concepts:#78C2F2; --a-components:#FFA24C; --a-interview:#B892FF; --a-problems:#5FD6A4; --a-real:#FF8F73; --a-notes:#FFD452; --preview:#131312; }
+.pal-f { --c-concepts:#78C2F2; --c-components:#FFA24C; --c-interview:#B892FF; --c-problems:#5FD6A4; --c-real:#FF8F73; --c-notes:#FFD452;
+  --t-concepts:color-mix(in srgb,#78C2F2 13%,#1C1C1A); --t-components:color-mix(in srgb,#FFA24C 13%,#1C1C1A); --t-interview:color-mix(in srgb,#B892FF 13%,#1C1C1A); --t-problems:color-mix(in srgb,#5FD6A4 13%,#1C1C1A); --t-real:color-mix(in srgb,#FF8F73 13%,#1C1C1A); --t-notes:color-mix(in srgb,#FFD452 13%,#1C1C1A);
+  --on-c:#141312; --on-c-2:rgb(20 19 18/.76); --track:rgb(0 0 0/.18); --fill:#141312; }
+.pal-d { --c-concepts:#1C1C1A; --c-components:#1C1C1A; --c-interview:#1C1C1A; --c-problems:#1C1C1A; --c-real:#1C1C1A; --c-notes:#1C1C1A;
+  --t-concepts:color-mix(in srgb,#78C2F2 11%,#1C1C1A); --t-components:color-mix(in srgb,#FFA24C 11%,#1C1C1A); --t-interview:color-mix(in srgb,#B892FF 11%,#1C1C1A); --t-problems:color-mix(in srgb,#5FD6A4 11%,#1C1C1A); --t-real:color-mix(in srgb,#FF8F73 11%,#1C1C1A); --t-notes:color-mix(in srgb,#FFD452 11%,#1C1C1A);
+  --on-c:#F2F0EB; --on-c-2:#CAC7C0; --track:rgb(255 255 255/.1); --fill:#F2F0EB; }
+.pal-d .block { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--a) 34%, transparent), transparent 62%), var(--surface); box-shadow: inset 0 2px 0 var(--a), inset 0 0 0 1px color-mix(in srgb, var(--a) 22%, transparent); }
+.pal-d .block > b, .pal-d .tile > b { color: var(--a); }
+.pal-d .pb i { background: var(--a); }
 [data-sec="concepts"] { --c: var(--c-concepts); --a: var(--a-concepts); --t: var(--t-concepts); }
 [data-sec="components"] { --c: var(--c-components); --a: var(--a-components); --t: var(--t-components); }
 [data-sec="interview"] { --c: var(--c-interview); --a: var(--a-interview); --t: var(--t-interview); }
@@ -63,14 +64,12 @@ a { color: inherit; }
 .hero em { font-family: "Source Serif 4", Georgia, serif; font-weight: 400; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .block { background: var(--c); color: var(--on-c); }
-.pal-now .block, .pal-b .block { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a) 28%, transparent); }
-.pal-b .block > b, .pal-b .block > .mono { color: var(--a); }
+.pal-now .block { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a) 28%, transparent); }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tile { border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 2px; min-height: 76px; }
 .tile small, .rcard small { color: var(--on-c-2); }
 .pb { margin-top: auto; height: 4px; border-radius: 3px; background: var(--track); overflow: hidden; }
 .pb i { display: block; height: 100%; background: var(--fill); }
-.pal-b .pb i { background: var(--a); }
 .rcard { border-radius: 16px; padding: 14px 14px 0; display: flex; flex-direction: column; gap: 4px; }
 .pane { background: var(--preview); color: var(--ink); }
 .rcard .pane { margin-top: 8px; border-radius: 10px 10px 0 0; padding: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }

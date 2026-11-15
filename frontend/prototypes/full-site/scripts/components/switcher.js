@@ -10,7 +10,7 @@ export function initSwitcher() {
   el.innerHTML = `<button class="sw-btn" type="button" aria-expanded="false" aria-controls="sw-list">Screens</button>
     <div class="sw-list" id="sw-list" hidden><p class="mono">Prototype screens</p>${SCREENS.map(([h, n]) => `<a href="#/${h}" data-sw="${h}">${n}</a>`).join("")}
       <button type="button" data-signin>Sign-in dialog</button><button type="button" data-keys>Keyboard shortcuts</button>
-      <p class="mono" style="margin-top:8px">Dark palette</p><div class="sw-dark">${[["now", "Now"], ["a", "A"], ["b", "B"], ["c", "C"]].map(([v, n]) => `<button type="button" data-dark-set="${v}" title="${n === "Now" ? "Current dark" : "Candidate " + n}">${n}</button>`).join("")}</div></div>`;
+      <p class="mono" style="margin-top:8px">Dark palette</p><div class="sw-dark">${[["now", "Now"], ["a", "A"], ["f", "F"], ["d", "D"]].map(([v, n]) => `<button type="button" data-dark-set="${v}" title="${n === "Now" ? "Current dark" : "Candidate " + n}">${n}</button>`).join("")}</div></div>`;
   const cur = () => document.documentElement.getAttribute("data-dark") || "now";
   const syncDark = () => $$("[data-dark-set]", el).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.darkSet === cur())));
   el.addEventListener("click", (e) => {
