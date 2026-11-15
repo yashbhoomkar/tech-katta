@@ -260,3 +260,6 @@
 .sv-wrong ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.sv-wrong li{border-top:1px solid var(--line);padding-top:6px}
 .sv-wrong summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:14px}.sv-wrong-fails{font:500 12px var(--mono);color:var(--danger)}
 .sv-wrong details p{margin:6px 0;font-size:14px}.sv-wrong-fig{margin:8px 0}.sv-wrong ul{grid-template-columns:minmax(0,1fr)}.sv-wrong{min-width:0;overflow:hidden}
+
+/* A hint's link to the article that teaches it (context 36, step 14) */
+.sv-learn{margin:4px 0 0;font-size:12.5px;color:var(--muted)}.sv-learn a{color:var(--accent)}

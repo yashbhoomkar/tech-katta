@@ -12,6 +12,10 @@ const label=d.sections.find(s=>s[0]===a.section)[1];const still=useStill();const
 // Interview Questions (not the method page) open their problem workspace: design it on the canvas, Run, Submit.
 const pr=a.section==="interview-questions"&&a.group!=="start";
 useEffect(()=>{if(r.cur!=null&&view==="cards")setViewState("text")},[r.cur]);// eslint-disable-line
+// A link from a hint (context 36, step 14) names a section in ?at=, kept by the shell as tk-goto: open that topic card,
+// or in the full text scroll to its heading.
+useEffect(()=>{if(lock)return;let at=null;try{at=sessionStorage.getItem("tk-goto")}catch{}if(!at)return;try{sessionStorage.removeItem("tk-goto")}catch{}
+const k=ts.findIndex(t=>t.title===at);if(cards&&k>=0){openTopic(k,"hint");return}const i=a.body.findIndex(b=>b.t==="h2"&&b.x===at);if(i<0)return;setTimeout(()=>document.getElementById(`s-${i}`)?.scrollIntoView({block:"start"}),120)},[a.slug]);// eslint-disable-line
 useEffect(()=>{if(r.cur==null)return;const el=document.querySelector(".d-article .reading");el?.scrollIntoView({block:"nearest",behavior:still?"auto":"smooth"})},[r.cur]);
 const fn={};a.body.reduce((n,b,i)=>b.t==="fig"?(fn[i]=n+1):n,0);
 const main=Math.max(1,Math.round(words(full)/220)),all=Math.max(main,Math.round((words(full)+extraWords(full))/220));

@@ -9,6 +9,8 @@ const fromHash=()=>{const[sec,slug,more]=fromLab(routeKey(location),articles.fil
 if(sec==="privacy"&&c.privacy)return{sec:"privacy"};if(sec==="practice")return{sec:"practice",practice:slug||""};if(sec==="terms"&&c.terms)return{sec:"terms"};if(!ids.includes(sec))return{sec:null};/* no section chosen (or an unknown one): the dashboard starts empty */if(sec==="problems"&&slug==="challenge")return{sec,challenge:more||undefined};if(sec==="problems"&&slug==="sandbox")return{sec,sandbox:true};if(sec==="problems"&&slug==="shared")return{sec,shared:more||""};
 return{sec,art:articles.find(a=>a.section===sec&&a.slug===slug),sub:sec==="problems"&&c.problems?.solve?slug:undefined}};
 // The design canvas (React Flow + simulation) loads only when a problem or a challenge opens it.
+// ?at=<heading> (a link from a hint, context 36, step 14): kept for the article to open at; the address drops the query.
+try{const at=new URLSearchParams(location.search).get("at");if(at)sessionStorage.setItem("tk-goto",at.slice(0,200))}catch{}
 const Lab=lazy(()=>import("../lab/Lab.jsx"));const Solve=lazy(()=>import("../solve.jsx"));
 // Practice, LeetCode style (tech-katta-context 21): /dashboard/practice/ and /dashboard/practice/<slug>/. Not in the tabs
 // until the owner says so (its section 16, step 9); open without signing in (Run works signed out, Submit asks).

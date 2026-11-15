@@ -1,9 +1,9 @@
 // The Hints and Submissions tabs.
-import React from"react";import{STEPS,when}from"./format.js";
+import React from"react";import{STEPS,when}from"./format.js";import{learnLinks}from"./learn.js";import{track}from"../analytics.js";
 export function Hints({P,used,open}){
 if(!P)return <p className="d-desc">No hints for this problem yet.</p>;
 return <div className="sv-hints"><p className="sv-brief">Each hint you open takes 3 points off your score (at most 15). They go from a nudge to nearly the answer.</p>
-<ol>{P.hints.map((h,i)=><li key={i} className={i<used?"open":""}><small>{STEPS[h.step]||h.step}</small>{i<used?<p>{h.x}</p>:i===used?<button type="button" onClick={open}>Show hint {i+1}</button>:<p className="sv-locked">Hint {i+1}</p>}</li>)}</ol></div>}
+<ol>{P.hints.map((h,i)=><li key={i} className={i<used?"open":""}><small>{STEPS[h.step]||h.step}</small>{i<used?<><p>{h.x}</p>{learnLinks(h).length>0&&<p className="sv-learn">Learn it: {learnLinks(h).map((l,j)=><React.Fragment key={l.slug}>{j?" · ":""}<a href={l.href} target="_blank" rel="noopener" onClick={()=>track("hint_learn",{to:l.slug})}>{l.name} → {l.at}</a></React.Fragment>)}</p>}</>:i===used?<button type="button" onClick={open}>Show hint {i+1}</button>:<p className="sv-locked">Hint {i+1}</p>}</li>)}</ol></div>}
 
 export function Subs({subs}){
 if(!subs.length)return <p className="sv-brief">No submissions yet. Build your design, then press Submit.</p>;
