@@ -48,15 +48,18 @@ if(t.kind==="example"){const parts=(example?.parts||[]).slice(0,3).map(p=>p[0]);
 const n=2+(t.at>0?t.at%3:1);return <span className={cls} aria-hidden="true">{Array.from({length:n},(_,k)=><i key={k} style={{"--k":k}}/>)}<b className="tm-dot" style={{"--n":n}}/></span>}
 
 // ----- the cards -----
-export function TopicCards({ts,still,onOpen}){const list=useRef(null);
+export function TopicCards({ts,locked=[],lockText,onLocked,still,onOpen}){const list=useRef(null);
 // pictures move only while their card is on screen
 useEffect(()=>{const el=list.current;if(!el||typeof IntersectionObserver!=="function")return;const io=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle("in",e.isIntersecting)),{rootMargin:"60px"});el.querySelectorAll(".tc").forEach(x=>io.observe(x));return()=>io.disconnect()},[ts]);
 return <ol className="tc-grid" ref={list}>{ts.map((t,k)=><li key={t.at}><button type="button" className={"tc"+(typeof IntersectionObserver!=="function"?" in":"")} onClick={()=>onOpen(k,"card")} aria-haspopup="dialog">
 <span className="tc-pic">{t.fig?<CardFig id={t.fig.b.id} still={still}/>:<Motif t={t}/>}</span>
-<span className="tc-t"><small>{String(k+1).padStart(2,"0")}</small><b>{t.title}</b>{t.hook&&<span className="tc-hook">{inline(t.hook)}</span>}<em>Open</em></span></button></li>)}</ol>}
+<span className="tc-t"><small>{String(k+1).padStart(2,"0")}</small><b>{t.title}</b>{t.hook&&<span className="tc-hook">{inline(t.hook)}</span>}<em>Open</em></span></button></li>)}
+{locked.map((t,k)=><li key={t.at}><button type="button" className="tc tc-locked in" onClick={onLocked} aria-label={`${t.title}: ${lockText||"Sign in to read"}`}>
+<span className="tc-pic"><Motif t={{...t,kind:"flow"}}/><span className="tc-lock" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="2"/></svg></span></span>
+<span className="tc-t"><small>{String(ts.length+k+1).padStart(2,"0")}</small><b>{t.title}</b><em>{lockText||"Sign in to read"}</em></span></button></li>)}</ol>}
 
 // ----- the sheet -----
-export function TopicSheet({ts,n,setN,onClose,still,fn}){const t=ts[n];const root=useRef(null),grab=useRef(null),text=useRef(null),scroll=useRef(null),close=useRef(null);const[full,setFull]=useState(false);
+export function TopicSheet({ts,n,setN,onClose,still,fn,cut=-1,cutText,onLocked}){const t=ts[n];const root=useRef(null),grab=useRef(null),text=useRef(null),scroll=useRef(null),close=useRef(null);const[full,setFull]=useState(false);
 const go=(k,via)=>{if(k<0||k>=ts.length)return;setN(k);track("topic_open",{n:k+1,via})};
 useEffect(()=>{setFull(false);if(scroll.current)scroll.current.scrollTop=0},[n]);
 useEffect(()=>{const page=document.getElementById("root"),prev=document.activeElement;document.body.style.overflow="hidden";if(page)page.inert=true;close.current?.focus();
@@ -74,6 +77,6 @@ return createPortal(<><div className="ts-scrim" onClick={onClose}/><div classNam
 <div className="ts-text" ref={text}>{t.points.length>0&&<ul className="ts-points">{t.points.map((p,k)=><li key={k} style={{"--k":k}}>{inline(p)}</li>)}</ul>}
 {labs.map(({b,i})=><a key={i} className="ts-lab" href={`#${b.to}`} onClick={onClose}>{b.go||"Try it on the canvas"} →</a>)}
 {rest.length>0&&<button type="button" className="ts-more" aria-expanded={full} onClick={()=>setFull(v=>!v)}>{full?"Show less":"Read the full section"}</button>}
-{full&&<div className="ts-full">{rest.map(({b,i})=><Block key={i} b={b} i={i} still={still} fn={fn}/>)}</div>}</div></div>
+{full&&<div className="ts-full">{rest.map(({b,i})=><Block key={i} b={b} i={i} still={still} fn={fn}/>)}</div>}{n===cut&&<p className="ts-cut">{cutText||"The rest of this topic is free once you sign in."} <button type="button" onClick={onLocked}>Sign in →</button></p>}</div></div>
 <div className="ts-foot"><button type="button" className="ts-prev" disabled={n<=0} onClick={()=>go(n-1,"button")}><small>Previous</small><span>{ts[n-1]?.title||""}</span></button><button type="button" className="ts-next" disabled={n>=ts.length-1} onClick={()=>go(n+1,"button")}><small>Next</small><span>{ts[n+1]?.title||""}</span></button></div>
 </div></>,document.body)}

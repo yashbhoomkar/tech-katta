@@ -43,6 +43,18 @@
         [
           "Design 10-minute grocery delivery",
           "Never selling the last packet twice, inside a time budget"
+        ],
+        [
+          "Design photo sharing",
+          "Images served fast, and a like count for a viral dish"
+        ],
+        [
+          "Design a notification service",
+          "An OTP never stuck behind a promotion, never sent twice"
+        ],
+        [
+          "Design a live leaderboard",
+          "Keeping lakhs of players sorted, and your own rank cheaply"
         ]
       ],
       "label": "Easy questions"
@@ -58,14 +70,6 @@
         "What it trains"
       ],
       "rows": [
-        [
-          "Design match ticket booking",
-          "A crowd 50 times larger than the seats, and no seat sold twice"
-        ],
-        [
-          "Design photo sharing",
-          "Images served fast, and a like count for a viral dish"
-        ],
         [
           "Design a news feed",
           "Push or pull, and the follower with 50 lakh followers"
@@ -83,24 +87,42 @@
           "Messages to the phone in order, with nothing lost"
         ],
         [
-          "Design a notification service",
-          "An OTP never stuck behind a promotion, never sent twice"
+          "Design a job scheduler",
+          "Finding what is due, and surviving 9 pm"
+        ],
+        [
+          "Design video streaming",
+          "Getting videos ready fast and playing them smoothly"
+        ],
+        [
+          "Design menu search",
+          "Words, Hinglish, typos and ranking"
+        ]
+      ],
+      "label": "Medium questions"
+    },
+    {
+      "t": "h2",
+      "x": "Hard"
+    },
+    {
+      "t": "table",
+      "head": [
+        "Question",
+        "What it trains"
+      ],
+      "rows": [
+        [
+          "Design match ticket booking",
+          "A crowd 50 times larger than the seats, and no seat sold twice"
         ],
         [
           "Design a payment system",
           "Charging exactly once, and \"unknown\" is not \"failed\""
         ],
         [
-          "Design a job scheduler",
-          "Finding what is due, and surviving 9 pm"
-        ],
-        [
           "Design a web crawler",
           "Being polite, never fetching twice, avoiding traps"
-        ],
-        [
-          "Design a live leaderboard",
-          "Keeping lakhs of players sorted, and your own rank cheaply"
         ],
         [
           "Design ad click counting",
@@ -119,15 +141,11 @@
           "Live locations, and one order per rider"
         ],
         [
-          "Design video streaming",
-          "Getting videos ready fast and playing them smoothly"
-        ],
-        [
-          "Design menu search",
-          "Words, Hinglish, typos and ranking"
+          "Design live streaming for IND vs PAK",
+          "3.5 crore people at once, and a crowd that arrives with the toss"
         ]
       ],
-      "label": "Medium questions"
+      "label": "Hard questions"
     },
     {
       "t": "h2",
@@ -136,9 +154,9 @@
     {
       "t": "list",
       "items": [
-        "Week 1: the four easy questions, in the order listed. They teach the method with one main problem each.",
-        "Week 2: match ticket booking, the news feed and the chat app: contention, scaling reads, and real-time updates.",
-        "Week 3: the payment system, the job scheduler and ad click counting: processes with many steps, long jobs and scaling writes.",
+        "Week 1: the seven easy questions, in the order listed. They teach the method with one main problem each.",
+        "Week 2: the news feed, the chat app and the job scheduler: scaling reads, real-time updates and long jobs.",
+        "Week 3: match ticket booking, the payment system and ad click counting: contention, processes with many steps and scaling writes.",
         "Then the rest, in any order. Redo your weakest question a week later."
       ]
     }

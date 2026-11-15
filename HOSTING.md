@@ -45,10 +45,8 @@ now steers new static sites to Workers with static assets rather than Pages; `ho
 4. In Cloudflare, add `tech.katta.cc` and `analytics.katta.cc` as custom domains of the Worker; keep the Vercel
    project for a week so going back is a DNS change.
 5. Change the privacy page's sentence about Vercel Web Analytics (`content/site.json`, `privacy`).
-6. Test read-aloud in Safari (iPhone and Mac). Cloudflare answers byte-range requests with the whole file
-   (status 200, not 206), and Safari may refuse to play audio that way. If it does, play each recording from a
-   downloaded copy (`frontend/src/dashboard/reader.jsx`, `new Audio(…)`) and add `blob:` to `media-src` in
-   `routes.json`.
+6. When the teaching videos arrive, test them in Safari (iPhone and Mac). Cloudflare answers byte-range requests
+   with the whole file (status 200, not 206), and Safari may refuse to play media that way.
 
 Differences from Vercel, measured with `wrangler dev` against production:
 - `/dashboard`, `/analytics` and `/health/` take one extra hop to `/dashboard/`, `/analytics/` and `/health`.

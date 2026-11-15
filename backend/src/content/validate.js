@@ -27,7 +27,7 @@ function checkBlocks(blocks, where, problems, targets = { challenges: new Set(),
       if (b.like !== undefined && !isText(b.like)) problems.push(`${at}: like must be text`);
       if (b.more !== undefined && !(Array.isArray(b.more) && b.more.length && b.more.every(isText))) problems.push(`${at}: more must be a list of paragraphs`);
     }
-    if (b.t === 'code') for (const key of ['label', 'x', 'say']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
+    if (b.t === 'code') for (const key of ['label', 'x']) if (!isText(b[key])) problems.push(`${at}: needs ${key}`);
     if (b.t === 'table') {
       if (!(Array.isArray(b.head) && b.head.length && b.head.every(isText))) problems.push(`${at}: head must be a list of column names`);
       if (!(Array.isArray(b.rows) && b.rows.length && b.rows.every((r) => Array.isArray(r) && r.length === list(b.head).length))) problems.push(`${at}: every row needs ${list(b.head).length} cells`);

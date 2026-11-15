@@ -20,8 +20,7 @@
     {
       "t": "code",
       "label": "THE MESSAGES TABLE, SIMPLIFIED (OUR SKETCH)",
-      "x": "CREATE TABLE messages (\n  channel_id bigint,\n  bucket     int,      -- a fixed window of time\n  message_id bigint,   -- a Snowflake: sorts by time\n  author_id  bigint,\n  content    text,\n  PRIMARY KEY ((channel_id, bucket), message_id)\n);",
-      "say": "A simplified messages table. The partition key is the channel ID and a time bucket together. Inside a partition, rows are sorted by message ID, which sorts by time. Each message also has its author and its text."
+      "x": "CREATE TABLE messages (\n  channel_id bigint,\n  bucket     int,      -- a fixed window of time\n  message_id bigint,   -- a Snowflake: sorts by time\n  author_id  bigint,\n  content    text,\n  PRIMARY KEY ((channel_id, bucket), message_id)\n);"
     },
     {
       "t": "h2",

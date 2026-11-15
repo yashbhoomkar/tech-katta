@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET /restaurants/nearby?lat=12.9352&lng=77.6245&sort=distance&veg=true&cursor=…\n→ 200 { \"restaurants\": [ { \"id\": \"r_88\", \"name\": \"Thindi Mane\", \"km\": 1.4, \"rating\": 4.4, \"eta_min\": 28 }, … ],\n        \"cursor\": \"c_3f…\" }\n\nPUT /restaurants/r_88/status   { \"state\": \"busy\", \"until\": \"21:30\" }   (restaurant app)\n→ 204",
-      "say": "Two calls. The customer app asks for nearby restaurants with its latitude and longitude, a sort order, filters and a cursor, and gets a page of restaurants with distance, rating and delivery time, plus a cursor for the next page. The restaurant app sets its status to open, busy or closed, optionally until a time."
+      "x": "GET /restaurants/nearby?lat=12.9352&lng=77.6245&sort=distance&veg=true&cursor=…\n→ 200 { \"restaurants\": [ { \"id\": \"r_88\", \"name\": \"Thindi Mane\", \"km\": 1.4, \"rating\": 4.4, \"eta_min\": 28 }, … ],\n        \"cursor\": \"c_3f…\" }\n\nPUT /restaurants/r_88/status   { \"state\": \"busy\", \"until\": \"21:30\" }   (restaurant app)\n→ 204"
     },
     {
       "t": "h2",

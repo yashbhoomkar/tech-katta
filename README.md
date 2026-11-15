@@ -23,7 +23,7 @@ tab: the canvas opens inside a problem, a challenge or the landing page's IND vs
 | `backend/` | Node 22 HTTP server with no dependencies (`src/server.js`); settings in `.env.example`, a container image in `Dockerfile`. Loads and validates all content at start (`src/content/`), serves it read-only with ETags and short caching, reloads on `SIGHUP`. Sign-in and accounts are in `src/auth/`; a problem's Submit is judged again on worker threads (`src/auth/judge-pool.js`), with a time limit, so a slow design never stalls the API. A request that throws is answered with a 500 (a malformed address with a 400) and never stops the process. |
 | `content/` | Every piece of copy, every article and the Lab catalogue, as JSON. The frontend hardcodes none of it. Format: [`content/README.md`](content/README.md). |
 | `status-page/` | Separate Vercel project for `status.katta.cc`: live checks of the site and the API. |
-| `tools/` | Narration tooling (`tools/tts`, Kokoro); `tools/og/shot.js` makes the link preview image (use a new file name after a redesign); `tools/indexnow/submit.mjs` tells Bing and the other IndexNow engines which pages changed (run by `.github/workflows/indexnow.yml` after each deploy). |
+| `tools/` | `tools/og/shot.js` makes the link preview image (use a new file name after a redesign); `tools/indexnow/submit.mjs` tells Bing and the other IndexNow engines which pages changed (run by `.github/workflows/indexnow.yml` after each deploy). |
 
 ## Run locally
 

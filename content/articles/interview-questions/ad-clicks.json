@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "ad-clicks",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 16",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design ad click counting",
@@ -79,8 +79,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /events  { \"events\": [ { \"id\": \"e_8f\", \"type\": \"click\", \"ad\": \"ad_214\", \"at\": \"2026-11-06T20:41:07+05:30\" }, … ] }  → 202\nGET  /ads/ad_214/stats?from=20:00&to=21:00&by=minute  → 200 { \"rows\": [ { \"minute\": \"20:41\", \"views\": 1840, \"clicks\": 37 }, … ] }",
-      "say": "The app sends events in small batches. Advertisers read their numbers by minute, hour or day."
+      "x": "POST /events  { \"events\": [ { \"id\": \"e_8f\", \"type\": \"click\", \"ad\": \"ad_214\", \"at\": \"2026-11-06T20:41:07+05:30\" }, … ] }  → 202\nGET  /ads/ad_214/stats?from=20:00&to=21:00&by=minute  → 200 { \"rows\": [ { \"minute\": \"20:41\", \"views\": 1840, \"clicks\": 37 }, … ] }"
     },
     {
       "t": "h2",

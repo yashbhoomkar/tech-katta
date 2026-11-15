@@ -252,8 +252,7 @@
     {
       "t": "code",
       "label": "KONG · DECLARATIVE CONFIG FOR /orders",
-      "x": "_format_version: \"3.0\"\nservices:\n  - name: orders\n    url: http://orders-v1.internal:8080\n    routes:\n      - name: orders\n        paths: [/orders]\n    plugins:\n      - name: jwt                    # reject requests without a valid token\n      - name: rate-limiting\n        config: { minute: 600, policy: local }   # per node; 'redis' shares one count",
-      "say": "A Kong configuration file, kept in version control. One service, orders, at an internal address, reached through the path /orders. Two plugins: JWT checks the token, and rate limiting allows 600 requests a minute, counted on each gateway node; the redis policy would share one count across nodes."
+      "x": "_format_version: \"3.0\"\nservices:\n  - name: orders\n    url: http://orders-v1.internal:8080\n    routes:\n      - name: orders\n        paths: [/orders]\n    plugins:\n      - name: jwt                    # reject requests without a valid token\n      - name: rate-limiting\n        config: { minute: 600, policy: local }   # per node; 'redis' shares one count"
     },
     {
       "t": "h2",

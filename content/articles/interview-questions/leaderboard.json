@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "leaderboard",
-  "group": "medium",
+  "group": "easy",
   "no": "QUESTION // 15",
-  "tag": "MEDIUM",
+  "tag": "EASY",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a live leaderboard",
@@ -80,8 +80,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /matches/m_7/questions/q_12/answer   { \"choice\": \"B\" }   → 202\nGET  /matches/m_7/leaderboard?top=100     → 200 { \"rows\": [ { \"rank\": 1, \"name\": \"…\", \"points\": 460 }, … ] }\nGET  /matches/m_7/me                      → 200 { \"points\": 340, \"rank\": 80412, \"top\": \"2%\" }",
-      "say": "Send an answer (one per question; a resend changes nothing). Read the top 100. Read your own score and rank."
+      "x": "POST /matches/m_7/questions/q_12/answer   { \"choice\": \"B\" }   → 202\nGET  /matches/m_7/leaderboard?top=100     → 200 { \"rows\": [ { \"rank\": 1, \"name\": \"…\", \"points\": 460 }, … ] }\nGET  /matches/m_7/me                      → 200 { \"points\": 340, \"rank\": 80412, \"top\": \"2%\" }"
     },
     {
       "t": "h2",
@@ -181,6 +180,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "A live leaderboard usually sits in a cache. The cache restart challenge asks what happens when that cache comes back empty in the middle of the rush.",
+      "to": "problems/challenge/cache-restart",
+      "go": "Try the cache restart challenge"
     },
     {
       "t": "lab",

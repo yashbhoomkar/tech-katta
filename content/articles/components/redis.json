@@ -34,8 +34,7 @@
     {
       "t": "code",
       "label": "ZOTATO · THREE JOBS IN REDIS",
-      "x": "# today's top restaurants in Pune\nZINCRBY top:pune:2026-11-08 1 r42\nZREVRANGE top:pune:2026-11-08 0 9 WITHSCORES\n\n# at most 5 OTPs per phone per hour\nINCR otp:9800000001                 # returns the count so far\nEXPIRE otp:9800000001 3600 NX       # start the hour on the first request only\n\n# restaurants within 3 km, nearest first\nGEOADD rest:pune 73.8567 18.5204 r42\nGEOSEARCH rest:pune FROMLONLAT 73.85 18.52 BYRADIUS 3 km ASC COUNT 20",
-      "say": "Three jobs. A daily sorted set per city: add one to a restaurant's score per order and read the top ten with their scores. An OTP counter per phone: increment it, and set a one-hour expiry only on the first request; refuse when the count passes five. A geo set of restaurants: add each by longitude and latitude, and search within 3 kilometres of the customer, nearest first, 20 results."
+      "x": "# today's top restaurants in Pune\nZINCRBY top:pune:2026-11-08 1 r42\nZREVRANGE top:pune:2026-11-08 0 9 WITHSCORES\n\n# at most 5 OTPs per phone per hour\nINCR otp:9800000001                 # returns the count so far\nEXPIRE otp:9800000001 3600 NX       # start the hour on the first request only\n\n# restaurants within 3 km, nearest first\nGEOADD rest:pune 73.8567 18.5204 r42\nGEOSEARCH rest:pune FROMLONLAT 73.85 18.52 BYRADIUS 3 km ASC COUNT 20"
     },
     {
       "t": "h2",

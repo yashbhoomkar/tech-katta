@@ -1,9 +1,9 @@
 {
   "section": "interview-questions",
   "slug": "payments",
-  "group": "medium",
+  "group": "hard",
   "no": "QUESTION // 12",
-  "tag": "MEDIUM",
+  "tag": "HARD",
   "access": "paid",
   "date": "6 Nov 2026",
   "title": "Design a payment system",
@@ -81,8 +81,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "POST /payments        Idempotency-Key: order_91\n                      { \"order\": \"#91\", \"method\": \"upi\" }        → 201 { \"id\": \"pay_3\", \"status\": \"pending\", \"redirect\": \"upi://…\" }\nGET  /payments/pay_3  → 200 { \"status\": \"unknown\", \"say\": \"Checking with your bank. Don't pay again.\" }\nPOST /payments/pay_3/refunds  Idempotency-Key: rf_91_1   { \"amount\": 12000 }   → 202",
-      "say": "Create a payment for an order (the same key returns the same payment). Ask its status. Ask for a refund, also with a key."
+      "x": "POST /payments        Idempotency-Key: order_91\n                      { \"order\": \"#91\", \"method\": \"upi\" }        → 201 { \"id\": \"pay_3\", \"status\": \"pending\", \"redirect\": \"upi://…\" }\nGET  /payments/pay_3  → 200 { \"status\": \"unknown\", \"say\": \"Checking with your bank. Don't pay again.\" }\nPOST /payments/pay_3/refunds  Idempotency-Key: rf_91_1   { \"amount\": 12000 }   → 202"
     },
     {
       "t": "p",

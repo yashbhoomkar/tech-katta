@@ -45,8 +45,7 @@
     {
       "t": "code",
       "label": "ZOTATO · A GEOHASH SEARCH IN SQL",
-      "x": "-- restaurants carry geohash6, indexed; the customer is in tek92e\nSELECT id, name, lat, lng FROM restaurants\nWHERE geohash6 IN ('tek92k','tek92s','tek92u',\n                   'tek927','tek92e','tek92g',\n                   'tek926','tek92d','tek92f')   -- the cell and its 8 neighbours\n  AND open_now;\n-- then compute the real distance for these few rows and keep those within 3 km",
-      "say": "A query for restaurants whose six-character geohash is the customer's cell, tek92e, or one of its eight neighbours, and that are open now. The application then computes the real distance for these few rows and keeps those within 3 kilometres."
+      "x": "-- restaurants carry geohash6, indexed; the customer is in tek92e\nSELECT id, name, lat, lng FROM restaurants\nWHERE geohash6 IN ('tek92k','tek92s','tek92u',\n                   'tek927','tek92e','tek92g',\n                   'tek926','tek92d','tek92f')   -- the cell and its 8 neighbours\n  AND open_now;\n-- then compute the real distance for these few rows and keep those within 3 km"
     },
     {
       "t": "h2",

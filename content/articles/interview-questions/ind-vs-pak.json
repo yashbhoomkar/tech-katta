@@ -79,8 +79,7 @@
     {
       "t": "code",
       "label": "API",
-      "x": "GET /live/ind-vs-pak/master.m3u8          → the qualities on offer\nGET /live/ind-vs-pak/720p/playlist.m3u8   → the newest segments in 720p (asked for every 4 s)\nGET /live/ind-vs-pak/720p/1834.ts         → segment 1834: 4 seconds of the match\nGET /live/ind-vs-pak/viewers              → { \"watching\": 35000000 }",
-      "say": "A master playlist lists the qualities. Each quality's playlist lists its newest segments, and the player asks for it every 4 seconds. The player then fetches segments by number. One more call returns how many people are watching."
+      "x": "GET /live/ind-vs-pak/master.m3u8          → the qualities on offer\nGET /live/ind-vs-pak/720p/playlist.m3u8   → the newest segments in 720p (asked for every 4 s)\nGET /live/ind-vs-pak/720p/1834.ts         → segment 1834: 4 seconds of the match\nGET /live/ind-vs-pak/viewers              → { \"watching\": 35000000 }"
     },
     {
       "t": "h2",
@@ -177,6 +176,12 @@
           ]
         }
       ]
+    },
+    {
+      "t": "lab",
+      "x": "The toss is a spike you can see coming. The flash sale challenge is a smaller version: five times the usual traffic for 15 minutes. Practise surviving it.",
+      "to": "problems/challenge/flash-sale",
+      "go": "Try the flash sale challenge"
     }
   ],
   "practice": {

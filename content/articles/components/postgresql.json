@@ -93,8 +93,7 @@
     {
       "t": "code",
       "label": "ZOTATO · THREE THINGS POSTGRESQL DOES WELL",
-      "x": "-- the kitchen's live orders: a partial index holds only these\nCREATE INDEX CONCURRENTLY orders_live ON orders (restaurant_id, placed_at)\n  WHERE status IN ('new', 'preparing');\n\n-- take the next delivery job; two workers never get the same one\nSELECT id FROM delivery_jobs WHERE state = 'queued'\nORDER BY created_at LIMIT 1\nFOR UPDATE SKIP LOCKED;\n\n-- restaurants within 3 km (PostGIS)\nSELECT id, name FROM restaurants\nWHERE ST_DWithin(location, ST_MakePoint(73.85, 18.52)::geography, 3000);",
-      "say": "Three examples. A partial index on orders that holds only new and preparing orders, built without blocking writes. Taking the next queued delivery job with FOR UPDATE SKIP LOCKED, so two workers never take the same one. And a PostGIS query for restaurants within 3,000 metres of a point."
+      "x": "-- the kitchen's live orders: a partial index holds only these\nCREATE INDEX CONCURRENTLY orders_live ON orders (restaurant_id, placed_at)\n  WHERE status IN ('new', 'preparing');\n\n-- take the next delivery job; two workers never get the same one\nSELECT id FROM delivery_jobs WHERE state = 'queued'\nORDER BY created_at LIMIT 1\nFOR UPDATE SKIP LOCKED;\n\n-- restaurants within 3 km (PostGIS)\nSELECT id, name FROM restaurants\nWHERE ST_DWithin(location, ST_MakePoint(73.85, 18.52)::geography, 3000);"
     },
     {
       "t": "h2",

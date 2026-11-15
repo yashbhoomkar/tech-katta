@@ -123,8 +123,7 @@
     {
       "t": "code",
       "label": "Modulo hashing over three databases",
-      "x": "database = hash(match_id) % 3\n\nmatch 1234 → hash(1234) % 3 = 1 → database 1\nmatch 5678 → hash(5678) % 3 = 0 → database 0\nmatch 9012 → hash(9012) % 3 = 2 → database 2",
-      "say": "The database is the hash of the match id modulo three. Match 1234 goes to database 1, match 5678 to database 0, and match 9012 to database 2."
+      "x": "database = hash(match_id) % 3\n\nmatch 1234 → hash(1234) % 3 = 1 → database 1\nmatch 5678 → hash(5678) % 3 = 0 → database 0\nmatch 9012 → hash(9012) % 3 = 2 → database 2"
     },
     {
       "t": "fig",

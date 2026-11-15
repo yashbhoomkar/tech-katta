@@ -157,8 +157,7 @@
     {
       "t": "code",
       "label": "Two indexes you didn't ask for",
-      "x": "CREATE TABLE users (\n  id     BIGSERIAL PRIMARY KEY,\n  phone  VARCHAR(15) UNIQUE\n);\n-- PostgreSQL creates two B-tree indexes:\n--   users_pkey       on (id)\n--   users_phone_key  on (phone)",
-      "say": "Create a users table with an id that is the primary key and a phone number that must be unique. PostgreSQL creates two B-tree indexes automatically: one for the primary key on id, and one for the unique constraint on phone."
+      "x": "CREATE TABLE users (\n  id     BIGSERIAL PRIMARY KEY,\n  phone  VARCHAR(15) UNIQUE\n);\n-- PostgreSQL creates two B-tree indexes:\n--   users_pkey       on (id)\n--   users_phone_key  on (phone)"
     },
     {
       "t": "p",
@@ -433,8 +432,7 @@
     {
       "t": "code",
       "label": "A covering index for 'my orders'",
-      "x": "CREATE INDEX orders_by_customer\n  ON orders (customer_id, placed_at DESC)\n  INCLUDE (id, status, total_paise);\n\n-- answered from the index alone:\nSELECT id, placed_at, status, total_paise\nFROM orders\nWHERE customer_id = 77\nORDER BY placed_at DESC\nLIMIT 20;",
-      "say": "Create an index on orders by customer id and placed-at time, newest first, and include the id, status and total. The query for customer 77's latest twenty orders, reading id, time, status and total, is answered from the index alone, without reading the table."
+      "x": "CREATE INDEX orders_by_customer\n  ON orders (customer_id, placed_at DESC)\n  INCLUDE (id, status, total_paise);\n\n-- answered from the index alone:\nSELECT id, placed_at, status, total_paise\nFROM orders\nWHERE customer_id = 77\nORDER BY placed_at DESC\nLIMIT 20;"
     },
     {
       "t": "list",

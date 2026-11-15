@@ -48,14 +48,14 @@ library, no more and no less, in our own words, figures and examples (don't name
 locked and nothing shows it). Free: only How to answer, until the owner picks more. Everything else is paid, and an article with
 `practice` (a problem) must be paid (the validator checks it). The challenges and videos are paid too.
 
-An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `audio: true` once narration is recorded with `tools/tts`; optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
+An article is `{section, slug, no, tag, access, date, title, dek, body: [...]}` (optional `group`, see Subsections). Body blocks; text may use `` `code` ``:
 
 - `example` the example-system box · `h2 {x}` · `p {x}` · `list {items}`
 - `fig {id, cap}`: `id` must be a figure the frontend can draw. Figures are organised by sub-tab (the `group` of `dashboard.groups` in `site.json`): each sub-tab with figures has `frontend/src/figs/<tab>/<sub-tab>.jsx`, exporting `FIGS` (id → component), and `backend/src/content/figs/<tab>/<sub-tab>.js`, listing the same ids, e.g. `figs/concepts/caching.jsx` and `content/figs/concepts/caching.js`. Shared drawing parts are in `frontend/src/figs/parts.jsx`. A figure lives in the sub-tab it was made for; any article may still use it by id. A new figure goes in its sub-tab's two files; a new sub-tab adds both files and a line in each `figs/index.js`. A backend test checks the two folders, both indexes and every pair of id lists match.
 - `type {name, kind, what, use, avoid, ex, more: [p…]}` one card per type; `more` is collapsed
-- `code {label, x, say}` preformatted; `say` is read aloud instead of the code
+- `code {label, x}` preformatted
 - `table {head, rows, label?}` (`label` names it for screen readers) ·
-- `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section (not read aloud)
+- `lab {x, to, go?}` "Try it on the canvas" card: `to` is a dashboard route, `problems/<problem slug>` (an article with `practice`) or `problems/challenge/<challenge id>` (one of `lab.json`'s challenges); both are checked; `go` the link text · `more {label, body: [blocks]}` collapsed "Go deeper" section
 
 ## Problems: tests for an Interview Question (`practice`)
 

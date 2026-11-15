@@ -97,8 +97,7 @@
     {
       "t": "code",
       "label": "Zotato's API in an interview",
-      "x": "I'll use REST, with JSON.\n\nGET    /restaurants?near=pune&cursor=…     list nearby restaurants\nGET    /restaurants/{id}/menu             a restaurant's menu\nPOST   /orders            {items, address}   place an order -> 201 + order\nGET    /orders/{id}                       order and its status\nPOST   /orders/{id}/cancellation          cancel\n\nEvery call carries the user's token. Placing an order takes an\nIdempotency-Key header so a retry can't create a second order.",
-      "say": "An example of the API step: REST with JSON; list nearby restaurants with a cursor, read a menu, place an order with POST returning 201, read an order, cancel it; every call carries a token, and placing an order takes an idempotency key."
+      "x": "I'll use REST, with JSON.\n\nGET    /restaurants?near=pune&cursor=…     list nearby restaurants\nGET    /restaurants/{id}/menu             a restaurant's menu\nPOST   /orders            {items, address}   place an order -> 201 + order\nGET    /orders/{id}                       order and its status\nPOST   /orders/{id}/cancellation          cancel\n\nEvery call carries the user's token. Placing an order takes an\nIdempotency-Key header so a retry can't create a second order."
     },
     {
       "t": "p",
@@ -143,8 +142,7 @@
     {
       "t": "code",
       "label": "Zotato's resources",
-      "x": "GET    /restaurants                    restaurants (filtered, paginated)\nGET    /restaurants/{id}               one restaurant\nGET    /restaurants/{id}/menu          its menu\nPOST   /orders                         place an order\nGET    /orders/{id}                    one order\nGET    /users/{id}/orders              a user's orders\nPOST   /orders/{id}/payments           pay for an order",
-      "say": "Zotato's REST resources: restaurants, one restaurant, its menu, placing an order, reading an order, a user's orders, and paying for an order."
+      "x": "GET    /restaurants                    restaurants (filtered, paginated)\nGET    /restaurants/{id}               one restaurant\nGET    /restaurants/{id}/menu          its menu\nPOST   /orders                         place an order\nGET    /orders/{id}                    one order\nGET    /users/{id}/orders              a user's orders\nPOST   /orders/{id}/payments           pay for an order"
     },
     {
       "t": "list",
@@ -268,8 +266,7 @@
     {
       "t": "code",
       "label": "Placing an order",
-      "x": "POST /orders?notify=sms\nAuthorization: Bearer eyJ…\nIdempotency-Key: 7f3c-…\n\n{\n  \"restaurant_id\": 42,\n  \"items\": [{\"dish_id\": 9, \"qty\": 2}, {\"dish_id\": 14, \"qty\": 1}],\n  \"address_id\": 3,\n  \"payment\": \"upi\"\n}",
-      "say": "Placing an order: a POST to /orders with a query flag asking for an SMS update, a token and an idempotency key in the headers, and a JSON body with the restaurant, the dishes and quantities, the address and the payment method."
+      "x": "POST /orders?notify=sms\nAuthorization: Bearer eyJ…\nIdempotency-Key: 7f3c-…\n\n{\n  \"restaurant_id\": 42,\n  \"items\": [{\"dish_id\": 9, \"qty\": 2}, {\"dish_id\": 14, \"qty\": 1}],\n  \"address_id\": 3,\n  \"payment\": \"upi\"\n}"
     },
     {
       "t": "h3",
@@ -379,8 +376,7 @@
     {
       "t": "code",
       "label": "The customer app's order screen",
-      "x": "query OrderScreen($id: ID!) {\n  order(id: $id) {\n    status\n    eta\n    rider { name phone }\n    items { name qty }\n  }\n}",
-      "say": "A GraphQL query for the customer's order screen: the order's status and ETA, the rider's name and phone, and each item's name and quantity."
+      "x": "query OrderScreen($id: ID!) {\n  order(id: $id) {\n    status\n    eta\n    rider { name phone }\n    items { name qty }\n  }\n}"
     },
     {
       "t": "fig",
@@ -402,8 +398,7 @@
     {
       "t": "code",
       "label": "Part of Zotato's schema",
-      "x": "type Order {\n  id: ID!\n  status: OrderStatus!\n  eta: DateTime\n  restaurant: Restaurant!\n  rider: Rider\n  items: [OrderItem!]!\n}\n\ntype Restaurant {\n  id: ID!\n  name: String!\n  menu: [Dish!]!\n}\n\ntype Query {\n  order(id: ID!): Order\n  restaurants(near: String!, first: Int, after: String): RestaurantPage!\n}",
-      "say": "Part of a GraphQL schema: an Order type with an id, status, ETA, restaurant, optional rider and a list of items; a Restaurant type with a name and menu; and a Query type with entry points for one order and for a page of nearby restaurants."
+      "x": "type Order {\n  id: ID!\n  status: OrderStatus!\n  eta: DateTime\n  restaurant: Restaurant!\n  rider: Rider\n  items: [OrderItem!]!\n}\n\ntype Restaurant {\n  id: ID!\n  name: String!\n  menu: [Dish!]!\n}\n\ntype Query {\n  order(id: ID!): Order\n  restaurants(near: String!, first: Int, after: String): RestaurantPage!\n}"
     },
     {
       "t": "list",
@@ -482,8 +477,7 @@
     {
       "t": "code",
       "label": "The same work as calls, with the REST it replaces",
-      "x": "menu   = Menu.GetMenu(restaurant_id: 42)            # instead of GET  /restaurants/42/menu\ncharge = Payments.ChargeOrder(order_id: 9101,        # instead of POST /orders/9101/payments\n                              amount_paise: 34900)\nrider  = Dispatch.AssignRider(order_id: 9101)        # instead of POST /orders/9101/rider-assignment\nok     = Offers.CheckCoupon(code: \"FEAST50\",        # instead of GET  /coupons/FEAST50?user=77\n                            user_id: 77)",
-      "say": "Internal calls written as functions, each next to the REST endpoint it replaces: get a menu instead of GET on the menu resource, charge an order instead of POSTing a payment, assign a rider instead of POSTing a rider assignment, check a coupon instead of reading a coupon resource."
+      "x": "menu   = Menu.GetMenu(restaurant_id: 42)            # instead of GET  /restaurants/42/menu\ncharge = Payments.ChargeOrder(order_id: 9101,        # instead of POST /orders/9101/payments\n                              amount_paise: 34900)\nrider  = Dispatch.AssignRider(order_id: 9101)        # instead of POST /orders/9101/rider-assignment\nok     = Offers.CheckCoupon(code: \"FEAST50\",        # instead of GET  /coupons/FEAST50?user=77\n                            user_id: 77)"
     },
     {
       "t": "p",
@@ -509,8 +503,7 @@
     {
       "t": "code",
       "label": "payments.proto",
-      "x": "syntax = \"proto3\";\n\nservice Payments {\n  rpc ChargeOrder(ChargeRequest) returns (Charge);\n  rpc RefundCharge(RefundRequest) returns (Charge);\n  rpc WatchCharge(ChargeId) returns (stream ChargeEvent);\n}\n\nmessage ChargeRequest {\n  int64 order_id = 1;\n  int64 amount_paise = 2;\n  string method = 3;          // \"upi\", \"card\"\n  string idempotency_key = 4;\n}",
-      "say": "A protobuf file for the Payments service: calls to charge an order, refund a charge and watch a charge's events as a stream, and the ChargeRequest message with an order id, an amount in paise, a payment method and an idempotency key, each field numbered."
+      "x": "syntax = \"proto3\";\n\nservice Payments {\n  rpc ChargeOrder(ChargeRequest) returns (Charge);\n  rpc RefundCharge(RefundRequest) returns (Charge);\n  rpc WatchCharge(ChargeId) returns (stream ChargeEvent);\n}\n\nmessage ChargeRequest {\n  int64 order_id = 1;\n  int64 amount_paise = 2;\n  string method = 3;          // \"upi\", \"card\"\n  string idempotency_key = 4;\n}"
     },
     {
       "t": "list",
@@ -726,8 +719,7 @@
     {
       "t": "code",
       "label": "A cursor-paged response",
-      "x": "GET /restaurants/42/orders?limit=20\n\n{\n  \"orders\": [ {\"id\": 9120, …}, …, {\"id\": 9101, …} ],\n  \"next_cursor\": \"b3JkZXI6OTEwMQ\"\n}\n\nGET /restaurants/42/orders?limit=20&cursor=b3JkZXI6OTEwMQ",
-      "say": "A cursor-paged list: the first request returns twenty orders and a next cursor that encodes the last order's id; the next request passes that cursor to continue."
+      "x": "GET /restaurants/42/orders?limit=20\n\n{\n  \"orders\": [ {\"id\": 9120, …}, …, {\"id\": 9101, …} ],\n  \"next_cursor\": \"b3JkZXI6OTEwMQ\"\n}\n\nGET /restaurants/42/orders?limit=20&cursor=b3JkZXI6OTEwMQ"
     },
     {
       "t": "p",
@@ -783,8 +775,7 @@
     {
       "t": "code",
       "label": "One error shape for every endpoint",
-      "x": "HTTP/1.1 409 Conflict\n\n{\n  \"error\": {\n    \"code\": \"RESTAURANT_CLOSED\",\n    \"message\": \"Shree Misal stopped taking orders at 10:30 pm.\",\n    \"retryable\": false\n  }\n}",
-      "say": "An error response: status 409 Conflict and a JSON error with a stable code, RESTAURANT_CLOSED, a message for people, and whether retrying makes sense."
+      "x": "HTTP/1.1 409 Conflict\n\n{\n  \"error\": {\n    \"code\": \"RESTAURANT_CLOSED\",\n    \"message\": \"Shree Misal stopped taking orders at 10:30 pm.\",\n    \"retryable\": false\n  }\n}"
     },
     {
       "t": "fig",
@@ -855,8 +846,7 @@
     {
       "t": "code",
       "label": "A partner calling with an API key",
-      "x": "GET /partners/v1/orders?status=ready\nAuthorization: Bearer zk_live_4f9a…",
-      "say": "A partner's system listing ready orders, authenticated with an API key in the Authorization header."
+      "x": "GET /partners/v1/orders?status=ready\nAuthorization: Bearer zk_live_4f9a…"
     },
     {
       "t": "h3",
@@ -869,8 +859,7 @@
     {
       "t": "code",
       "label": "What a token carries",
-      "x": "{\n  \"sub\": \"user_77\",\n  \"role\": \"customer\",\n  \"city\": \"pune\",\n  \"exp\": 1794134400\n}",
-      "say": "The claims inside a signed token: the user id, the role customer, the city, and an expiry time."
+      "x": "{\n  \"sub\": \"user_77\",\n  \"role\": \"customer\",\n  \"city\": \"pune\",\n  \"exp\": 1794134400\n}"
     },
     {
       "t": "fig",
@@ -934,8 +923,7 @@
     {
       "t": "code",
       "label": "Roles given to users",
-      "x": "user_77   Priya       customer\nuser_901  Anil        restaurant_owner (restaurant 42)\nuser_3301 Ravi        rider\nuser_12   Meera       support_agent",
-      "say": "Four users and their roles: Priya is a customer, Anil owns restaurant 42, Ravi is a rider, and Meera is a support agent."
+      "x": "user_77   Priya       customer\nuser_901  Anil        restaurant_owner (restaurant 42)\nuser_3301 Ravi        rider\nuser_12   Meera       support_agent"
     },
     {
       "t": "p",

@@ -75,8 +75,7 @@
     {
       "t": "code",
       "label": "TWO WAYS TO ASK FOR ORDERS PER MINUTE",
-      "x": "# PromQL (Prometheus): orders a second, per city, over 5-minute windows\nsum by (city) (rate(orders_placed_total[5m]))\n\n-- TimescaleDB (PostgreSQL): average rider speed per 5 minutes, last hour\nSELECT time_bucket('5 minutes', at) AS t, avg(kmph)\nFROM rider_speed\nWHERE at > now() - interval '1 hour'\nGROUP BY t ORDER BY t;",
-      "say": "Two queries. In Prometheus, the rate of the orders placed counter over 5-minute windows, summed per city. In TimescaleDB, average rider speed in 5-minute buckets over the last hour."
+      "x": "# PromQL (Prometheus): orders a second, per city, over 5-minute windows\nsum by (city) (rate(orders_placed_total[5m]))\n\n-- TimescaleDB (PostgreSQL): average rider speed per 5 minutes, last hour\nSELECT time_bucket('5 minutes', at) AS t, avg(kmph)\nFROM rider_speed\nWHERE at > now() - interval '1 hour'\nGROUP BY t ORDER BY t;"
     },
     {
       "t": "h2",
