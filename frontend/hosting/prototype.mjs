@@ -37,7 +37,14 @@ write("problems/stats", { problems: {} });
 const protoDir = path.join(frontend, "prototypes"), out = path.join(dist, "p");
 const pages = fs.existsSync(protoDir) ? fs.readdirSync(protoDir).filter((f) => f.endsWith(".html")).sort() : [];
 fs.mkdirSync(out, { recursive: true });
-for (const f of pages) { const d = path.join(out, f.replace(/\.html$/, "")); fs.mkdirSync(d, { recursive: true }); fs.copyFileSync(path.join(protoDir, f), path.join(d, "index.html")); }
+// The site's Content-Security-Policy (routes.json) allows only script files from this site, not script written in
+// the page, so each prototype's inline <script> is moved into its own file next to it (p/<name>/page-N.js).
+for (const f of pages) {
+  const d = path.join(out, f.replace(/\.html$/, "")); fs.mkdirSync(d, { recursive: true });
+  let k = 0;
+  const html = fs.readFileSync(path.join(protoDir, f), "utf8").replace(/<script>([\s\S]*?)<\/script>/g, (_, js) => { const name = `page-${++k}.js`; fs.writeFileSync(path.join(d, name), js); return `<script src="${name}"></script>`; });
+  fs.writeFileSync(path.join(d, "index.html"), html);
+}
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // each prototype names itself: <title>, <meta name="prototype:type"> and <meta name="prototype:summary">
 const meta = (html, name) => (html.match(new RegExp(`<meta name="${name}" content="([^"]*)"`)) || [])[1] || "";
