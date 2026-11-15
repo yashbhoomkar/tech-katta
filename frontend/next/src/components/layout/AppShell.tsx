@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { TopBar } from "./TopBar";
 import { PageMetaProvider } from "./PageMeta";
+import { PageTour } from "@/components/PageTour";
 import s from "./layout.module.css";
 
 // The app chrome: sidebar on desktop (full or a narrow rail), top bar and bottom tabs on phones.
@@ -33,6 +34,7 @@ export function AppShell() {
         <div className={s.column}>
           <TopBar />
           <main id="main" ref={main} tabIndex={-1} className={s.main} key={pathname}>
+            <PageTour />
             <Outlet />
           </main>
         </div>

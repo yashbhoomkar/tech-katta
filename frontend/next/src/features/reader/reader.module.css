@@ -43,15 +43,15 @@
 .figBody { margin-top: 10px; border-radius: var(--r-md); overflow: hidden; }
 .figBody > svg, .fullFig > svg { display: block; width: 100%; height: auto; }
 /* the figures' text classes (as in the current app's figure.css), in the figure palette set by .tokens */
-.figBody, .fullFig { color: var(--ink); }
-.figBody :global(.fk), .fullFig :global(.fk) { font: 600 10px var(--mono); letter-spacing: .06em; fill: var(--accent); }
-.figBody :global(.fsub), .fullFig :global(.fsub) { font: 12px var(--sans); fill: var(--muted); }
-.figBody :global(.fb), .fullFig :global(.fb) { font: 600 12px var(--sans); fill: var(--ink); }
-.figBody :global(.fl), .fullFig :global(.fl) { font: 500 10px var(--mono); fill: var(--muted); }
-.figBody :global(.fq), .fullFig :global(.fq) { font: 500 12px var(--sans); fill: var(--ink); }
-.figBody :global(.fh), .fullFig :global(.fh) { font: 600 10.5px var(--sans); fill: var(--ink); }
-.figBody :global(.fx), .fullFig :global(.fx) { font: 700 14px var(--sans); fill: var(--ink); }
-.figBody :global(.halo), .fullFig :global(.halo) { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.figBody, .fullFig, .thumb { color: var(--ink); }
+.figBody :global(.fk), .fullFig :global(.fk), .thumb :global(.fk) { font: 600 10px var(--mono); letter-spacing: .06em; fill: var(--accent); }
+.figBody :global(.fsub), .fullFig :global(.fsub), .thumb :global(.fsub) { font: 12px var(--sans); fill: var(--muted); }
+.figBody :global(.fb), .fullFig :global(.fb), .thumb :global(.fb) { font: 600 12px var(--sans); fill: var(--ink); }
+.figBody :global(.fl), .fullFig :global(.fl), .thumb :global(.fl) { font: 500 10px var(--mono); fill: var(--muted); }
+.figBody :global(.fq), .fullFig :global(.fq), .thumb :global(.fq) { font: 500 12px var(--sans); fill: var(--ink); }
+.figBody :global(.fh), .fullFig :global(.fh), .thumb :global(.fh) { font: 600 10.5px var(--sans); fill: var(--ink); }
+.figBody :global(.fx), .fullFig :global(.fx), .thumb :global(.fx) { font: 700 14px var(--sans); fill: var(--ink); }
+.figBody :global(.halo), .fullFig :global(.halo), .thumb :global(.halo) { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 /* the step line above the figure shows the step text, so the figure's own copy is hidden */
 .figure[data-steps] .figBody :global(.tk-caps) { display: none; }
 .figure[data-steps] .figBody > svg:has(:global(.tk-caps)) { margin-top: -26px; }
@@ -209,3 +209,8 @@
 .tick { animation: tk-star 420ms var(--spring) both; }
 .burstHost { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
 .burst { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 2px; animation: tk-burst 700ms var(--out) forwards; }
+
+/* a still figure as a card picture */
+.thumb { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
+.thumb > svg { display: block; width: 100%; height: auto; max-height: 100%; }
+.thumb :global(.tk-caps), .thumb :global(.tk-cap) { display: none; }

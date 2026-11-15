@@ -15,6 +15,9 @@ import { later, reducedMotion } from "@/lib/motion";
 import { ArticleBody, cardsOf, outline, readMinutes } from "@/features/reader/ArticleBody";
 import { cx } from "@/lib/cx";
 import { useReadArticle } from "@/lib/analytics";
+import { previewCut } from "@legacy/preview.js";
+import { useGate } from "@/content/gate";
+import { PreviewLock } from "@/components/Locks";
 import s from "@/features/reader/reader.module.css";
 import { NotFoundPage } from "./NotFound";
 
@@ -45,12 +48,15 @@ export function ReaderPage() {
   const next = at >= 0 ? order[at + 1] : undefined;
   const group = view?.groups.find((g) => g.articles.some((a) => a.slug === slug));
 
+  const gate = useGate("article");
   usePageMeta(summary?.title ?? "Lesson", view ? { to: paths.section(section), label: view.title } : undefined);
   useReadingProgress(slug, res.status === "success");
   useReadArticle(section, slug, res.status === "success");
 
   if (!summary || !view) return <NotFoundPage />;
-  const article = res.status === "success" ? res.data : null;
+  const full = res.status === "success" ? res.data : null;
+  // signed out (where sign-in is on): the opening of the lesson, then a sign-in card, as on tech.katta.cc
+  const article = full && gate === "preview" ? { ...full, body: full.body.slice(0, previewCut(full.body)) } : full;
   const minutes = article ? readMinutes(article) : null;
   const toc = article ? outline(article.body) : [];
   const done = progress[slug]?.done ?? false;
@@ -137,8 +143,9 @@ export function ReaderPage() {
               {res.error.message}
             </StateMessage>
           )}
-          {article && mode === "full" && <ArticleBody article={article} />}
-          {article && mode === "cards" && (
+          {article && (mode === "full" || gate === "preview") && <ArticleBody article={article} />}
+          {article && gate === "preview" && <PreviewLock />}
+          {article && mode === "cards" && gate !== "preview" && (
             <div
               className={s.deckWrap}
               onKeyDown={(e) => { if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); }}
@@ -155,7 +162,7 @@ export function ReaderPage() {
             </div>
           )}
 
-          {article && (
+          {article && gate !== "preview" && (
             <footer className={s.foot}>
               <div ref={completeBtn} className={s.completeWrap}>
                 <Button variant="primary" onClick={complete}>
@@ -307,7 +314,7 @@ function Toc({ toc }: { toc: { id: string; text: string }[] }) {
   const ids = useMemo(() => toc.map((t) => t.id), [toc]);
   const active = useActiveHeading(ids);
   return (
-    <nav className={s.toc} aria-label="On this page">
+    <nav className={s.toc} aria-label="On this page" data-tour="toc">
       <p className="mono">On this page</p>
       <ul>
         {toc.map((t) => (

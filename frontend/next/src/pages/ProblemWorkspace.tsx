@@ -6,6 +6,8 @@ import { paths } from "@/content/sections";
 import { usePageMeta } from "@/components/layout/PageMeta";
 import { Skeleton } from "@/components/ui";
 import { NotFoundPage } from "./NotFound";
+import { useGate } from "@/content/gate";
+import { PageLock } from "@/components/Locks";
 
 // /problems/<slug> (the workspace) and /problems/challenge/<id>. The workspace code is large (canvas, judge), so
 // it loads only here.
@@ -19,12 +21,18 @@ export function ProblemWorkspacePage() {
   const { articles } = useContent();
   const problem = problemsOf(articles).find((a) => a.slug === slug);
   usePageMeta(problem?.title ?? "Problem", { to: paths.problems, label: "Problems" });
+  const gate = useGate("workspace");
   if (!problem) return <NotFoundPage />;
+  if (gate === "wait") return <Wait />;
+  if (gate === "locked") return <PageLock title={problem.title} />;
   return <Suspense fallback={<Wait />}><Workspace slug={slug} /></Suspense>;
 }
 
 export function ChallengePage() {
   const { id = "" } = useParams();
   usePageMeta("Challenge", { to: paths.problems, label: "Problems" });
+  const gate = useGate("workspace");
+  if (gate === "wait") return <Wait />;
+  if (gate === "locked") return <PageLock title="Challenge" />;
   return <Suspense fallback={<Wait />}><Challenge id={id} /></Suspense>;
 }

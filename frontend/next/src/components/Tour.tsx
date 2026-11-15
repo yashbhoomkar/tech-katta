@@ -8,13 +8,21 @@ import s from "./Overlays.module.css";
 // A short guided tour of Home: one card at a time is lifted above a dimmed page, with a popover beside it that
 // grows from the card it points at.
 
+/** target: a CSS selector (a bare word means [data-tour="word"]) */
 export interface TourStep { target: string; title: string; text: string }
 
+const sel = (t: string) => (/^[\w-]+$/.test(t) ? `[data-tour="${t}"]` : t);
+const find = (t: string): HTMLElement | null => {
+  try { return [...document.querySelectorAll<HTMLElement>(sel(t))].find((e) => e.offsetParent !== null) ?? null; } catch { return null; }
+};
+
 export function useTour(steps: TourStep[]) {
-  const [i, setI] = useState<number | null>(null);
-  const start = useCallback(() => setI(0), []);
-  const ui = i === null ? null : <TourPop steps={steps.filter((st) => document.querySelector(`[data-tour="${st.target}"]`))} i={i} setI={setI} />;
-  return { start, ui };
+  const [shown, setShown] = useState<{ steps: TourStep[]; i: number } | null>(null);
+  // only the steps whose element is on the page now
+  const start = useCallback(() => setShown({ steps: steps.filter((st) => find(st.target)), i: 0 }), [steps]);
+  const setI = useCallback((i: number | null) => setShown((o) => (o && i !== null ? { ...o, i } : null)), []);
+  const ui = shown && shown.steps.length ? <TourPop steps={shown.steps} i={shown.i} setI={setI} /> : null;
+  return { start, ui, count: steps.length };
 }
 
 function TourPop({ steps, i, setI }: { steps: TourStep[]; i: number; setI: (i: number | null) => void }) {
@@ -29,7 +37,7 @@ function TourPop({ steps, i, setI }: { steps: TourStep[]; i: number; setI: (i: n
 
   useLayoutEffect(() => {
     if (!step) return;
-    const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`);
+    const el = find(step.target);
     if (!el) return;
     el.classList.add(s.spot ?? "");
     el.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
