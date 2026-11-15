@@ -44,6 +44,11 @@ fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><
 ${types.map((t) => `<h2>${esc(t)}</h2>` + items.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
 </main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
+// The new frontend (web/, React + TypeScript), built separately (cd web && npm run build) with base /next/.
+// Copied in last so `vite build` here can't wipe it. Missing build: say so and carry on.
+const next = path.join(frontend, "..", "web", "dist");
+if (fs.existsSync(path.join(next, "index.html"))) fs.cpSync(next, path.join(dist, "next"), { recursive: true });
+else console.warn("prototype: web/dist not built, so /next/ is not included (run: cd web && npm ci && npm run build)");
 // Cloudflare: old prototype addresses keep working
 if (process.argv.includes("--cloudflare")) {
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
