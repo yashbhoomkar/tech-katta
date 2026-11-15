@@ -104,3 +104,14 @@ button.me { width: 100%; border: 0; text-align: left; }
 .sideMark { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-md, 12px); background: var(--sunken); pointer-events: none; }
 .nav:has(> .sideMark) .navActive { background: transparent; }
 @media (prefers-reduced-motion: no-preference) { .sideMark { transition: transform 420ms var(--out), height 420ms var(--out), width 420ms var(--out); } }
+
+/* section marks (spec 24 G4): drawn from the figure parts, in the section's colour; the request dot turns marigold
+   on the section you are in */
+.markWrap { display: grid; place-items: center; width: 20px; flex: none; color: color-mix(in srgb, var(--a, var(--ink)) 55%, var(--ink)); }
+.markWrap svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.markWrap :global(.ico-dot) { fill: var(--a, var(--ink)); stroke: none; transition: fill 200ms ease; }
+.navActive .markWrap :global(.ico-dot) { fill: var(--marigold); stroke: var(--ink); stroke-width: .8; }
+/* spec 24 §4.3: below 680 px the bars are solid (a blur behind a fixed bar is redrawn on every scroll frame) */
+@media (max-width: 680px) {
+  .topbar, .tabbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--surface); }
+}

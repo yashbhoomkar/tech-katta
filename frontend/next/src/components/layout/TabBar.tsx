@@ -17,7 +17,7 @@ export function TabBar() {
   return (
     <nav className={s.tabbar} aria-label="Tab bar">
       {TABS.map(([icon, label, to]) => (
-        <NavLink key={to} to={to} className={cls}>
+        <NavLink viewTransition key={to} to={to} className={cls}>
           <Icon name={icon} />
           <span>{label}</span>
         </NavLink>
@@ -26,7 +26,7 @@ export function TabBar() {
         <Icon name="search" />
         <span>Search</span>
       </button>
-      <NavLink to={paths.me} className={cls}>
+      <NavLink viewTransition to={paths.me} className={cls}>
         <Icon name="me" />
         <span>You</span>
       </NavLink>

@@ -36,8 +36,11 @@ export function setPref(pref: ThemePref): void {
   writeString(KEY, pref);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // cross-fade only when the colours actually change
-  if (resolveTheme(pref) !== before && "startViewTransition" in document && !reduced) document.startViewTransition(apply);
-  else apply();
+  if (resolveTheme(pref) !== before && "startViewTransition" in document && !reduced) {
+    // marked so the page-change transition (a rise) is not used for the theme's plain cross-fade
+    document.documentElement.dataset.vt = "theme";
+    document.startViewTransition(apply).finished.finally(() => delete document.documentElement.dataset.vt);
+  } else apply();
 }
 
 let started = false;

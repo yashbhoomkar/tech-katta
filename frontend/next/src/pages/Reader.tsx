@@ -123,7 +123,7 @@ export function ReaderPage() {
           </nav>
           <header className={s.head}>
             <p className="mono">{summary.no}{summary.tag ? ` · ${summary.tag}` : ""}</p>
-            <h1>{summary.title}</h1>
+            <h1 style={{ viewTransitionName: "tk-title" }}>{summary.title}</h1>
             <p className={s.dek} data-reading={r.cur === "head" ? "" : undefined}>{summary.dek}</p>
             <p className={s.meta}>
               {minutes ? <span>{showCards ? `${ts.length} topics · ` : ""}{minutes} min read{withDetails && withDetails > minutes ? ` · ${withDetails} with details` : ""}</span> : <span>&nbsp;</span>}
@@ -153,7 +153,7 @@ export function ReaderPage() {
             </div>
           )}
           {res.status === "error" && (
-            <StateMessage title="This lesson didn't load" action={res.error instanceof Error && "retryable" in res.error && !res.error.retryable ? undefined : <Button onClick={res.retry}>Try again</Button>}>
+            <StateMessage scene="offline" title="This lesson didn't load" action={res.error instanceof Error && "retryable" in res.error && !res.error.retryable ? undefined : <Button onClick={res.retry}>Try again</Button>}>
               {res.error.message}
             </StateMessage>
           )}
@@ -178,10 +178,10 @@ export function ReaderPage() {
               </div>
               <div className={s.pager}>
                 {prev ? (
-                  <Link to={paths.article(section, prev.slug)} className={s.pageLink}><small>Previous</small><span>{prev.title}</span></Link>
+                  <Link viewTransition to={paths.article(section, prev.slug)} className={s.pageLink}><small>Previous</small><span>{prev.title}</span></Link>
                 ) : <span />}
                 {next ? (
-                  <Link to={paths.article(section, next.slug)} className={cx(s.pageLink, s.pageNext)}><small>Next</small><span>{next.title}</span></Link>
+                  <Link viewTransition to={paths.article(section, next.slug)} className={cx(s.pageLink, s.pageNext)}><small>Next</small><span>{next.title}</span></Link>
                 ) : (
                   <ButtonLink to={paths.section(section)}>Back to {view.title}</ButtonLink>
                 )}
@@ -211,7 +211,7 @@ export function ReaderPage() {
               <ol>
                 {group.articles.map((a) => (
                   <li key={a.slug}>
-                    <Link to={paths.article(section, a.slug)} aria-current={a.slug === slug ? "page" : undefined} data-done={progress[a.slug]?.done ? "" : undefined}>
+                    <Link viewTransition to={paths.article(section, a.slug)} aria-current={a.slug === slug ? "page" : undefined} data-done={progress[a.slug]?.done ? "" : undefined}>
                       <i aria-hidden="true">{progress[a.slug]?.done ? <Icon name="check" size={12} /> : null}</i>
                       {a.title}
                     </Link>

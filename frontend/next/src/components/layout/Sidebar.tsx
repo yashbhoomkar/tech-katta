@@ -10,6 +10,7 @@ import { readString, writeString } from "@/lib/storage";
 import { useCommandPalette } from "@/components/CommandPalette";
 import { Icon } from "@/components/Icon";
 import { Logo } from "./Logo";
+import { Icon as SectionMark } from "@legacy/dashboard/icons.jsx";
 import { ThemeSwitch } from "@/components/ui";
 import s from "./layout.module.css";
 
@@ -65,7 +66,7 @@ function SectionLessons({ sectionId, accent }: { sectionId: string; accent: stri
           {g.articles.map((a) => {
             const to = paths.article(sectionId, a.slug);
             return (
-              <Link key={a.slug} to={to} className={s.subItem} aria-current={pathname.startsWith(to) ? "page" : undefined} data-done={progress[a.slug]?.done ? "" : undefined}>
+              <Link viewTransition key={a.slug} to={to} className={s.subItem} aria-current={pathname.startsWith(to) ? "page" : undefined} data-done={progress[a.slug]?.done ? "" : undefined}>
                 <i aria-hidden="true" />{a.title.split(":")[0]}
               </Link>
             );
@@ -115,7 +116,7 @@ export function Sidebar() {
       </button>
       <nav aria-label="Main" className={s.nav} ref={navRef}>
         {mark && <i className={s.sideMark} style={{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: mark.w, height: mark.h }} aria-hidden="true" />}
-        <NavLink to={paths.home} className={navClass} title="Home">
+        <NavLink viewTransition to={paths.home} className={navClass} title="Home">
           <Icon name="home" />
           <span className={s.label}>Home</span>
         </NavLink>
@@ -128,8 +129,8 @@ export function Sidebar() {
           const notes = sec.id === "quick-notes" ? (data?.site.notes?.items.length ?? 0) : 0;
           return (
             <div key={sec.id}>
-              <NavLink to={paths.section(sec.id)} className={navClass} data-accent={sec.accent} title={title} data-tour={here ? "side-nav" : undefined}>
-                <span className={s.dotWrap}><i className={s.dot} /></span>
+              <NavLink viewTransition to={paths.section(sec.id)} className={navClass} data-accent={sec.accent} title={title} data-tour={here ? "side-nav" : undefined}>
+                <span className={s.markWrap}><SectionMark name={sec.id} /></span>
                 <span className={s.label}>{title}</span>
                 {data && <small className={s.label}>{t.total ? `${t.done}/${t.total}` : notes ? String(notes) : "soon"}</small>}
               </NavLink>
@@ -138,8 +139,8 @@ export function Sidebar() {
           );
         })}
         <p className={`${s.navHead} ${s.label}`}>Practise</p>
-        <NavLink to={paths.problems} className={navClass} data-accent="problems" title="Problems">
-          <Icon name="problems" />
+        <NavLink viewTransition to={paths.problems} className={navClass} data-accent="problems" title="Problems">
+          <span className={s.markWrap}><SectionMark name="problems" /></span>
           <span className={s.label}>Problems</span>
           {data && <small className={s.label}>{tally(problemsOf(data.articles), progress).done}/{problemsOf(data.articles).length}</small>}
         </NavLink>

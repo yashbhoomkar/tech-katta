@@ -57,7 +57,16 @@ img, svg { display: block; }
 /* page change: the new page's content settles in */
 .tk-enter { animation: tk-fade 160ms ease-out; }
 
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; animation-timing-function: ease; }
+/* view transitions (spec 24 A2, A10): a page change cross-fades and the new page rises 8 px; a lesson opened from a
+   card morphs that card's title into the lesson title (view-transition-name tk-title); a theme change is a plain
+   cross-fade. Browsers without view transitions change at once. */
+@keyframes tk-vt-in { from { opacity: 0; transform: translateY(8px); } }
+::view-transition-old(root) { animation-duration: 140ms; animation-timing-function: var(--out); }
+::view-transition-new(root) { animation: tk-vt-in 340ms var(--out) both; }
+::view-transition-group(tk-title) { animation-duration: 240ms; animation-timing-function: var(--out); }
+:root[data-vt="theme"]::view-transition-old(root), :root[data-vt="theme"]::view-transition-new(root) { animation: none; animation-duration: 280ms; }
+:root[data-vt="theme"]::view-transition-new(root) { animation: tk-fade 280ms ease both; }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
