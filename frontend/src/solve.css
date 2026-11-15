@@ -230,3 +230,12 @@
 .sv-follow h4{margin:0;font:600 13px var(--font)}.sv-follow h4 small{font-weight:400;color:var(--muted)}
 .sv-follow-q{margin:8px 0;font-size:15px;font-weight:600}.sv-follow-a{margin:6px 0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
 .sv-follow-next{margin-left:12px}
+
+/* Mock interview (context 36, step 9) */
+.sv-mock-btn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);font:500 13px var(--font);cursor:pointer;margin-right:6px}
+.sv-mock{display:flex;align-items:center;gap:8px;margin-right:6px;padding:3px 4px 3px 12px;border:1px solid var(--accent);border-radius:999px;font-size:12.5px;background:var(--surface-2)}
+.sv-mock b{font:600 14px var(--mono)}.sv-mock small{color:var(--muted)}
+.sv-mock button{height:26px;padding:0 10px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:500 12px var(--font);cursor:pointer}
+.sv-mock-locked{padding:28px 4px}.sv-mock-locked h2{margin:0 0 8px;font-size:18px}.sv-mock-locked p{color:var(--ink-2);font-size:14px}
+.sv-mock-sum h3{margin:16px 0 6px;font-size:14px}.sv-mock-plan{margin:0;padding-left:20px;font-size:13.5px;display:grid;gap:4px}.sv-mock-plan li{color:var(--muted)}.sv-mock-plan li.on{color:var(--ink)}.sv-mock-plan small{margin-left:8px;color:var(--muted)}
+@media(max-width:900px){.sv-mock span{display:none}}

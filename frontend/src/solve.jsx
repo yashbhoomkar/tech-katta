@@ -31,7 +31,7 @@ const[st,set]=useState({}),[hide,setHide]=useState(false),[w,setW]=useState(save
 const[view,setView]=useState(tab==="a"?"solution":"description");
 const[narrow,setNarrow]=useState(()=>typeof matchMedia!=="undefined"&&matchMedia(narrowQ).matches);const pane=useRef(null);
 const[lab,setLab]=useState(null),design=useRef(null),[res,setRes]=useState(null),[busy,setBusy]=useState(false),[flow,setFlow]=useState(0);const credits=useCredits(res?.kind==="review"?res:null);
-const[gen,setGen]=useState(0),[pending,setPending]=useState(null),[sol,setSol]=useState(null),[undo,setUndo]=useState(null),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0);
+const[gen,setGen]=useState(0),[pending,setPending]=useState(null),[sol,setSol]=useState(null),[undo,setUndo]=useState(null),[clock,setClock]=useState({on:false,acc:0,at:0}),[,tick]=useState(0),[mock,setMock]=useState(null);
 const[ans,setAns]=useState(()=>read(ANSWERS)[slug]||{}),[graded,setGraded]=useState(null),[hints,setHints]=useState(()=>usedHints(slug)),[subs,setSubs]=useState(()=>readSubs(slug));
 useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(narrowQ),f=()=>setNarrow(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);
 useEffect(()=>{const f=()=>setW(v=>Math.min(v,maxW()));f();addEventListener("resize",f);return()=>removeEventListener("resize",f)},[]);
@@ -53,12 +53,18 @@ useEffect(()=>{try{localStorage.setItem(W_KEY,String(w))}catch{}},[w]);
 const put=d=>{design.current=null;setRes(null);setWatch(null);setPending({nodes:structuredClone(d.nodes),edges:structuredClone(d.edges)});setGen(g=>g+1)};
 // A stopwatch, like an interview's clock: start, pause, carry on.
 useEffect(()=>{if(!clock.on)return;const t=setInterval(()=>tick(x=>x+1),1000);return()=>clearInterval(t)},[clock.on]);
-useEffect(()=>{setClock({on:false,acc:0,at:0})},[slug]);
+useEffect(()=>{setClock({on:false,acc:0,at:0});setMock(null)},[slug]);
+// Mock interview (context 36, step 9): 45 minutes on the clock, the steps of "How to answer" with their times and the one
+// you should be on now, hints and the solution locked, and a summary at the end. Runs in this tab; nothing is saved.
+useEffect(()=>{if(!mock||mock.end)return;const t=setInterval(()=>{tick(x=>x+1);if(Date.now()-mock.at>=MOCK_MIN*60000)endMock()},1000);return()=>clearInterval(t)},[mock]);// eslint-disable-line
+const startMock=()=>{if(typeof confirm==="function"&&!confirm("Start a 45-minute mock interview? Hints and the solution are locked until you end it."))return;setMock({at:Date.now()});setView("description");setCanvas(false);track("mock_start",{problem:slug})};
+const endMock=()=>setMock(m=>m&&!m.end?{...m,end:Date.now()}:m);
 const saveAns=v=>{setAns(v);const all=read(ANSWERS);all[slug]={...v,updated:Date.now()};write(ANSWERS,all)};
 const openHint=()=>{const n=hints+1;setHints(n);const all=read(HINTS);all[slug]=n;write(HINTS,all)};
 const qs=articles.filter(x=>x.section==="interview-questions"&&x.group!=="start"),i=qs.findIndex(x=>x.slug===slug),next=qs[i+1],prev=i>0?qs[i-1]:null;
 const secs=Math.floor((clock.acc+(clock.on?Date.now()-clock.at:0))/1000),mmss=`${String(Math.floor(secs/60)).padStart(2,"0")}:${String(secs%60).padStart(2,"0")}`;
 const toggleClock=()=>setClock(c=>c.on?{on:false,acc:c.acc+Date.now()-c.at,at:0}:{...c,on:true,at:Date.now()});
+const mockSecs=mock?Math.floor(((mock.end||Date.now())-mock.at)/1000):0,mockStep=mock?stepAt(mockSecs/60):null,mockLeft=Math.max(0,MOCK_MIN*60-mockSecs);
 const reset=()=>{if(typeof confirm==="function"&&!confirm("Put the canvas back to the starting design? Your current design is replaced."))return;setUndo(null);put(P.start)};
 const mine=()=>{const d=pending||design.current||savedDesign()||P.start;return{nodes:d.nodes,edges:d.edges}};
 // Copy the whole solution: the design onto the canvas and the model answer (requirements, numbers, estimates, API,
@@ -103,10 +109,10 @@ catch(e){out={kind,crash:String(e?.message||e)}}setRes(out);setBusy(false);
 if(out.j?.verdict==="accepted"){const n=Date.now();setFlow(n);setTimeout(()=>setFlow(f=>f===n?0:f),2400)}},30)};
 const tabs=[["description","Description",`#problems/${slug}`],["answer","Your answer"],["hints",`Hints${P?` (${P.hints.length})`:""}`],["solution",s.tabA,`#interview-questions/${slug}`],["subs",`Submissions${subs.length?` (${subs.length})`:""}`]];
 return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-canvas":"")} style={{"--qw":w+"px"}}>
-<div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{t}</button>)}
+<div className="sv-tabs" role="tablist" aria-label={a.title}>{tabs.map(([id,t,href])=>href?<a key={id} role="tab" href={href} aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{mock&&!mock.end&&LOCKED.has(id)?"🔒 ":""}{t}</a>:<button key={id} type="button" role="tab" aria-selected={!canvas&&view===id} className={!canvas&&view===id?"on":""} onClick={()=>{setCanvas(false);setView(id)}}>{mock&&!mock.end&&LOCKED.has(id)?"🔒 ":""}{t}</button>)}
 {narrow&&<button type="button" role="tab" aria-selected={canvas} className={canvas?"on":""} onClick={()=>setCanvas(true)}>{s.tabCanvas}</button>}</div>
 <section ref={pane} className="sv-q" aria-label={tabs.find(t=>t[0]===view)?.[1]} hidden={(hide&&!narrow)||(narrow&&canvas)}>
-{view==="solution"?<>{P&&<SolutionDesign sol={sol?.slug===slug?sol:null} note={P.referenceNote} lab={lab} copy={copySolution} copied={!!undo} undo={undo?undoCopy:null} busy={busy}/>}<Article a={a} pane/></>
+{mock&&!mock.end&&LOCKED.has(view)?<div className="sv-mock-locked"><h2>Locked during the mock interview</h2><p>In the room there are no hints and no answer to look at. End the interview (the button by the clock) to open them.</p></div>:view==="solution"?<>{P&&<SolutionDesign sol={sol?.slug===slug?sol:null} note={P.referenceNote} lab={lab} copy={copySolution} copied={!!undo} undo={undo?undoCopy:null} busy={busy}/>}<Article a={a} pane/></>
 :view==="answer"?<Answer P={P} ans={ans} save={saveAns} g={graded}/>
 :view==="hints"?<Hints P={P} used={hints} open={openHint}/>
 :view==="subs"?<Subs subs={subs}/>
@@ -126,8 +132,22 @@ return <div className={"solve"+(hide&&!narrow?" hide":"")+(narrow&&canvas?" v-ca
 <div className="sv-lab">
 <div className="sv-bar">{!narrow&&<button type="button" className="sv-toggle" aria-expanded={!hide} onClick={()=>setHide(h=>!h)}>{hide?s.show:s.hide}</button>}
 <span className="sv-nav">{prev?<a href={`#problems/${prev.slug}`} title={`Previous: ${prev.title}`} aria-label={`Previous problem: ${prev.title}`}>‹</a>:<span aria-hidden="true">‹</span>}{next?<a href={`#problems/${next.slug}`} title={`Next: ${next.title}`} aria-label={`Next problem: ${next.title}`}>›</a>:<span aria-hidden="true">›</span>}</span>
-<span className="sv-gap"/><button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button><AskButton className="sv-ask" busy={res?.kind==="review"&&!!res.busy} disabled={!lab||busy} onClick={ask} credits={credits}/></>}</div>
+<span className="sv-gap"/>{P&&(mock&&!mock.end?<span className="sv-mock" role="timer" aria-live="off"><b>{fmtClock(mockLeft)}</b><span>Now: {mockStep.name} <small>(until {mockStep.until} min)</small></span><button type="button" onClick={endMock}>End interview</button></span>:<button type="button" className="sv-mock-btn" onClick={startMock} title="45 minutes, the steps timed, hints and solution locked">🎤 Mock interview</button>)}<button type="button" className={"sv-clock"+(clock.on?" on":"")} onClick={toggleClock} aria-label={clock.on?"Pause the timer":"Start the timer"} title={clock.on?"Pause":"Start a timer"}>⏱ {secs||clock.on?mmss:"Timer"}</button>{P&&<button type="button" className="sv-reset" onClick={reset}>Reset</button>}{P&&<><button type="button" className="sv-run" disabled={!lab||busy} onClick={()=>go("run")}>▶ Run</button><button type="button" className="sv-submit" disabled={!lab||busy} onClick={()=>go("submit")}>Submit</button><AskButton className="sv-ask" busy={res?.kind==="review"&&!!res.busy} disabled={!lab||busy} onClick={ask} credits={credits}/></>}</div>
 {showLab&&<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={slug+":"+gen} problem={{id:slug,name:a.title,start:P?.start,fields:P?.v===2?fieldsOf(P):P?.data?.fields,v:P?.v,locked:P?.v===2?P.locked:undefined,ops:P?.v===2?P.operations.map(o=>({id:o.id,name:o.name})):undefined,practice:P?.v===2?P:undefined,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d}} trace={watch?watch.hops[watch.i]:null} replay={rep?replayAt(rep,P):null} flow={watch||rep?0:flow}/></Suspense>}
-{watch?<Player w={watch} set={setWatch}/>:rep?<ReplayBar rep={rep} set={setRep} P={P} parts={breakParts()} onBreak={breakIt} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}}/>:(busy||res)&&<Console P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}} busy={busy} res={res} close={()=>setRes(null)} replay={(r,at=0)=>{if(narrow)setCanvas(true);setRep({r,i:at,play:false,from:res?.credit?.before?.[r.id]})}} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} credits={credits} followUps={followUpsOf(a)} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
+{mock?.end&&<MockSummary mock={mock} subs={subs} close={()=>setMock(null)}/>}{watch?<Player w={watch} set={setWatch}/>:rep?<ReplayBar rep={rep} set={setRep} P={P} parts={breakParts()} onBreak={breakIt} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}}/>:(busy||res)&&<Console P={P} nameOf={id=>{const d=pending||design.current||P?.start;const n=d?.nodes?.find(x=>x.id===id);return n?.name||lab?.components?.find(c=>c.type===n?.type)?.name||id}} busy={busy} res={res} close={()=>setRes(null)} replay={(r,at=0)=>{if(narrow)setCanvas(true);setRep({r,i:at,play:false,from:res?.credit?.before?.[r.id]})}} watch={r=>{if(narrow)setCanvas(true);setWatch({r,hops:r.trace,i:0,play:true})}} credits={credits} followUps={followUpsOf(a)} hint={()=>{setCanvas(false);setHide(false);setView("hints")}} answer={()=>{setCanvas(false);setHide(false);setView("answer")}}/>}
 </div>
 </div>}
+
+// ---- Mock interview (context 36, step 9) ----
+const MOCK_MIN=45;
+// "How to answer" with a slot for the numbers: minutes each, adding up to 45
+const MOCK_STEPS=[["Requirements",5],["The numbers that matter",3],["Entities and API",7],["High-level design",15],["Deep dives",10],["Wrap-up and your questions",5]];
+const LOCKED=new Set(["hints","solution"]);
+function stepAt(min){let t=0;for(const[name,m]of MOCK_STEPS){t+=m;if(min<t)return{name,until:t}}return{name:"Time is up",until:MOCK_MIN}}
+const fmtClock=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+function MockSummary({mock,subs,close}){const used=Math.round((mock.end-mock.at)/1000),mine=subs.filter(x=>x.at>=mock.at&&x.at<=mock.end+1000),last=mine[0];
+let t=0;return <div className="lab-keys-back" onPointerDown={e=>{if(e.target===e.currentTarget)close()}}><div className="lab-keys sv-mock-sum" role="dialog" aria-modal="true" aria-label="Mock interview summary"><button type="button" className="lab-keys-x" onClick={close} aria-label="Close">✕</button>
+<h2>Mock interview: {used>=MOCK_MIN*60?"time":"ended"}</h2><p className="lab-note">{fmtClock(used)} of {MOCK_MIN}:00 used · {mine.length} submission{mine.length===1?"":"s"}{last?` · last: ${last.verdict==="accepted"?"Accepted":"not accepted"}, ${last.score}/100, ${last.passed}/${last.total} tests`:""}.</p>
+{!last&&<p className="lab-note">Nothing was submitted: in a real interview, a complete simple design beats an unfinished clever one. Next time, aim to Submit before the deep dives.</p>}
+<h3>Where the time should have gone</h3><ol className="sv-mock-plan">{MOCK_STEPS.map(([n,m])=>{const from=t;t+=m;const reached=used/60>=from;return <li key={n} className={reached?"on":""}><span>{n}</span><small>{from}–{t} min</small></li>})}</ol>
+<p className="lab-note">Hints and the solution are open again. Compare your answer with the worked one, then redo this question in a few days.</p></div></div>}
