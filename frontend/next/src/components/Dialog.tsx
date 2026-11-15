@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 import { reducedMotion } from "@/lib/motion";
+import { useSheetDrag } from "@/lib/gestures";
 import s from "./Overlays.module.css";
 
 // A modal dialog: centred on wide screens (fades in from 0.96), a bottom sheet on phones. Focus moves in and
@@ -18,6 +19,8 @@ export function Dialog({ title, onClose, children, wide }: { title: string; onCl
     setClosing(true);
     window.setTimeout(() => close.current(), reducedMotion() ? 40 : 160);
   };
+  // phones: the dialog is a bottom sheet you can swipe down to close
+  useSheetDrag(box, () => close.current());
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     const app = document.getElementById("root");

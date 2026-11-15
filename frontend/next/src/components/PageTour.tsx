@@ -71,7 +71,7 @@ export function PageTour() {
   const { pathname } = useLocation();
   if (!t.available) return null;
   // the workspace, challenges and sandbox fill the screen with their own toolbar: the button floats at the bottom
-  const floating = /^\/problems\/.+/.test(pathname);
+  const floating = /^\/(problems\/.+|practice)/.test(pathname);
   return (
     <>
       <button type="button" className={`${s.tourBtn} ${floating ? s.tourFloat : ""}`} onClick={t.start} data-tour="tour">{t.label}</button>

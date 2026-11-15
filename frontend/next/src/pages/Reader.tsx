@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/lib/api/client";
 import { useResource } from "@/lib/resource";
@@ -15,6 +15,7 @@ import { later, reducedMotion } from "@/lib/motion";
 import { ArticleBody, outline, readMinutes } from "@/features/reader/ArticleBody";
 import { cx } from "@/lib/cx";
 import { useReadArticle } from "@/lib/analytics";
+import { extraWords, words } from "@legacy/dashboard/text.jsx";
 import { useReader } from "@legacy/dashboard/reader.jsx";
 import { topicsOf } from "@legacy/dashboard/topics.jsx";
 import { ListenBar, Topics } from "@/features/reader/LegacyLesson";
@@ -68,7 +69,13 @@ export function ReaderPage() {
   const full = res.status === "success" ? res.data : null;
   // signed out (where sign-in is on): the opening of the lesson, then a sign-in card, as on tech.katta.cc
   const article = full && gate === "preview" ? { ...full, body: full.body.slice(0, previewCut(full.body)) } : full;
-  const minutes = article ? readMinutes(article) : null;
+  // read time as tech.katta.cc counts it: the main text, and with the "Go deeper" parts and details
+  const minutes = full ? Math.max(1, Math.round(words(full) / 220)) : article ? readMinutes(article) : null;
+  const withDetails = full && minutes ? Math.max(minutes, Math.round((words(full) + extraWords(full)) / 220)) : null;
+  const isProblem = section === "interview-questions" && summary.group !== "start";
+  const iq = isProblem ? articles.filter((a) => a.section === section && a.group !== "start") : [];
+  const nextProblem = iq[iq.findIndex((a) => a.slug === slug) + 1];
+  const labTo = full?.body.find((b): b is Extract<typeof b, { t: "lab" }> => b.t === "lab")?.to;
   const toc = article ? outline(article.body) : [];
   const done = progress[slug]?.done ?? false;
 
@@ -119,7 +126,7 @@ export function ReaderPage() {
             <h1>{summary.title}</h1>
             <p className={s.dek} data-reading={r.cur === "head" ? "" : undefined}>{summary.dek}</p>
             <p className={s.meta}>
-              {minutes ? <span>{minutes} min read</span> : <span>&nbsp;</span>}
+              {minutes ? <span>{showCards ? `${ts.length} topics · ` : ""}{minutes} min read{withDetails && withDetails > minutes ? ` · ${withDetails} with details` : ""}</span> : <span>&nbsp;</span>}
               {done && <span className={s.doneChip}><Icon name="check" size={14} /> Completed</span>}
             </p>
             <div className={s.tools}>
@@ -132,6 +139,9 @@ export function ReaderPage() {
               <button type="button" className={s.toolBtn} onClick={share}><Icon name="share" size={16} /> Share</button>
             </div>
             {loaded && gate !== "preview" && <ListenBar r={r} />}
+            {isProblem && gate !== "preview" && (
+              <ButtonLink variant="primary" to={paths.problem(slug)} className={s.solveBtn}>{site.problems?.solve?.button ?? "Solve it on the canvas"} →</ButtonLink>
+            )}
           </header>
 
           {toc.length > 0 && mode === "full" && <PhoneToc toc={toc} />}
@@ -149,6 +159,12 @@ export function ReaderPage() {
           )}
           {article && !showCards && <ArticleBody article={article} reading={r.cur} />}
           {article && gate === "preview" && <PreviewLock />}
+          {article && showCards && article.body.some((b) => b.t === "example") && (
+            <details className={s.exMini}>
+              <summary>Examples use <b>{article.example.name}</b>, a made-up {article.example.kind.toLowerCase()}</summary>
+              <ArticleBody article={{ ...article, body: [{ t: "example" }] }} />
+            </details>
+          )}
           {article && showCards && <Topics ts={ts} open={topic} setOpen={setTopic} still={reducedMotion()} fn={figNumbers} />}
 
           {article && gate !== "preview" && (
@@ -170,12 +186,25 @@ export function ReaderPage() {
                   <ButtonLink to={paths.section(section)}>Back to {view.title}</ButtonLink>
                 )}
               </div>
+              {isProblem && (
+                <nav className={s.nextProblem} aria-label={site.problems?.next ?? "Next problem"}>
+                  {nextProblem && <Link to={paths.article(section, nextProblem.slug)}><small>{site.problems?.next ?? "Next problem"}</small><b>{nextProblem.title} →</b></Link>}
+                  <Link to={paths.problems} className={s.allProblems}>{site.problems?.allProblems ?? "All problems →"}</Link>
+                </nav>
+              )}
+              <Link to={paths.section(section)} className={s.backLink}>← All {view.title.toLowerCase()}</Link>
             </footer>
           )}
         </article>
 
         <aside className={s.side} aria-label="Lesson navigation">
-          {toc.length > 0 && <Toc toc={toc} />}
+          {toc.length > 0 && !showCards && <Toc toc={toc} />}
+          {(isProblem || labTo) && (
+            <Link to={isProblem ? paths.problem(slug) : `/${labTo?.replace(/^\/+|\/+$/g, "")}`} className={s.railCta}>
+              <small className="mono">{isProblem ? "Practise" : "Try it"}</small>
+              <b>{isProblem ? (site.problems?.solve?.button ?? "Solve it on the canvas") : "Open the challenge"} →</b>
+            </Link>
+          )}
           {group && (
             <nav className={s.group} aria-label={`Lessons in ${group.title}`}>
               <p className="mono">{group.id === "more" ? view.title : group.title}</p>
@@ -302,10 +331,18 @@ function jump(id: string) {
 function Toc({ toc }: { toc: { id: string; text: string }[] }) {
   const ids = useMemo(() => toc.map((t) => t.id), [toc]);
   const active = useActiveHeading(ids);
+  // the marker beside the current heading slides to the next one instead of jumping
+  const list = useRef<HTMLUListElement>(null);
+  const [mark, setMark] = useState<{ y: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const a = list.current?.querySelector<HTMLElement>("a[aria-current]");
+    setMark(a ? { y: a.offsetTop, h: a.offsetHeight } : null);
+  }, [active]);
   return (
     <nav className={s.toc} aria-label="On this page" data-tour="toc">
       <p className="mono">On this page</p>
-      <ul>
+      <ul ref={list}>
+        {mark && <i className={s.tocMark} style={{ transform: `translateY(${mark.y}px)`, height: mark.h }} aria-hidden="true" />}
         {toc.map((t) => (
           <li key={t.id}>
             <a href={`#${t.id}`} aria-current={t.id === active ? "location" : undefined} onClick={(e) => { e.preventDefault(); jump(t.id); }}>{t.text}</a>

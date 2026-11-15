@@ -7,10 +7,12 @@ import { Logo } from "@/components/layout/Logo";
 import { usePageMeta } from "@/components/layout/PageMeta";
 import { Button, ButtonLink, ThemeSwitch } from "@/components/ui";
 import { useInView } from "@/lib/useInView";
+import { useSheetDrag } from "@/lib/gestures";
 import { countUp, later, useOnce } from "@/lib/motion";
 import { useSignIn } from "@/components/SignIn";
 import { cx } from "@/lib/cx";
 import { HeroFigure, Inside, LandingLab, Stats } from "./LandingExtras";
+import { SectionPicture } from "@/components/SectionPicture";
 import s from "./Landing.module.css";
 
 /** the build date, shown in the footer as tech.katta.cc does */
@@ -221,7 +223,7 @@ function HeroCards({ cards }: { cards: HeroCard[] }) {
               <span className="mono">{c.no}</span>
               <h3>{c.title} ▸</h3>
               <p>{c.desc}</p>
-              <Preview id={c.id} />
+              {c.id === "problems" ? <Preview id={c.id} /> : <SectionPicture sectionId={c.id} className={s.pvPic} />}
             </Link>
           );
         })}
@@ -341,6 +343,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
   const { site, articles } = useContent();
   const signIn = useSignIn();
   const closeBtn = useRef<HTMLButtonElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
+  useSheetDrag(sheet, onClose);
   useEffect(() => {
     closeBtn.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -353,7 +357,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
   }, [onClose]);
   return (
     <div className={s.sheetScrim} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={s.sheet} role="dialog" aria-modal="true" aria-label="Menu">
+      <div ref={sheet} className={s.sheet} role="dialog" aria-modal="true" aria-label="Menu">
         <div className={s.sheetHead}>
           <span className="mono">Learn</span>
           <button ref={closeBtn} type="button" className={s.menuBtn} aria-label="Close menu" onClick={onClose}><Icon name="close" /></button>

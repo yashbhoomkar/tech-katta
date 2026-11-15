@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useContent } from "@/content/ContentProvider";
 import { AccountMenu } from "@/components/AccountMenu";
@@ -21,7 +21,7 @@ const RAIL_KEY = "tk-sidebar";
 
 /** The workspace and challenges need the width: there the sidebar folds to the rail (without changing the saved
  *  choice) unless it is opened again on that page. */
-const FOCUS = /^\/problems\/.+/;
+const FOCUS = /^\/(problems\/.+|practice\/.+)/;
 
 function useRail(): [boolean, () => void] {
   const { pathname } = useLocation();
@@ -81,8 +81,24 @@ export function Sidebar() {
   const [rail, toggleRail] = useRail();
   const { open } = useCommandPalette();
   const content = useContentState();
+  // the active row's fill is one shape that slides between rows (tech.katta.cc's side marker)
+  const navRef = useRef<HTMLElement>(null);
+  const [mark, setMark] = useState<{ y: number; h: number; w: number; x: number } | null>(null);
   const progress = useProgress();
   const data = content.status === "success" ? content.data : null;
+  useLayoutEffect(() => {
+    const place = () => {
+      // measured against the nav itself (section rows sit inside a wrapper with their lesson list)
+      const nav = navRef.current;
+      const a = nav?.querySelector<HTMLElement>(`.${s.navActive}`);
+      if (!nav || !a) return setMark(null);
+      const n = nav.getBoundingClientRect(), r = a.getBoundingClientRect();
+      setMark({ y: r.top - n.top + nav.scrollTop, h: r.height, w: r.width, x: r.left - n.left });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [pathname, rail, data]);
 
   return (
     <aside className={s.sidebar} aria-label="Sidebar">
@@ -97,7 +113,8 @@ export function Sidebar() {
         <span className={s.label}>Search</span>
         <kbd className={s.label}>⌘K</kbd>
       </button>
-      <nav aria-label="Main" className={s.nav}>
+      <nav aria-label="Main" className={s.nav} ref={navRef}>
+        {mark && <i className={s.sideMark} style={{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: mark.w, height: mark.h }} aria-hidden="true" />}
         <NavLink to={paths.home} className={navClass} title="Home">
           <Icon name="home" />
           <span className={s.label}>Home</span>

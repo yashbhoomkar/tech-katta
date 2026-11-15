@@ -97,3 +97,10 @@ button.me { width: 100%; border: 0; text-align: left; }
 .acctStatus { padding: 6px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font-size: 12.5px; color: var(--muted); }
 .danger { color: var(--fail); }
 .policyLinks + .sideFoot { margin-top: 10px; }
+
+/* the sliding side marker: one fill that moves to the active row; the rows sit above it */
+.nav { position: relative; }
+.nav > a, .nav > div { position: relative; z-index: 1; }
+.sideMark { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-md, 12px); background: var(--sunken); pointer-events: none; }
+.nav:has(> .sideMark) .navActive { background: transparent; }
+@media (prefers-reduced-motion: no-preference) { .sideMark { transition: transform 420ms var(--out), height 420ms var(--out), width 420ms var(--out); } }

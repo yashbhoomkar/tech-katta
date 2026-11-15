@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./ui";
 import { useToast } from "./Toast";
 import { reducedMotion } from "@/lib/motion";
+import { useSwipeX } from "@/lib/gestures";
 import s from "./Overlays.module.css";
 
 // A short guided tour of Home: one card at a time is lifted above a dimmed page, with a popover beside it that
@@ -69,11 +70,17 @@ function TourPop({ steps, i, setI }: { steps: TourStep[]; i: number; setI: (i: n
 
   if (!step) return null;
   const last = i === steps.length - 1;
+  return <TourCard pop={pop} pos={pos} i={i} n={steps.length} step={step} last={last} setI={setI} end={end} />;
+}
+
+/** The popover: Skip, Next/Done; on phones it also swipes (left for next, right for back), as on tech.katta.cc. */
+function TourCard({ pop, pos, i, n, step, last, setI, end }: { pop: RefObject<HTMLDivElement>; pos: { left: number; top: number; to: string } | null; i: number; n: number; step: TourStep; last: boolean; setI: (i: number | null) => void; end: (done: boolean) => void }) {
+  useSwipeX(pop, { onNext: () => (last ? end(true) : setI(i + 1)), onBack: () => setI(i - 1), canNext: true, canBack: i > 0 });
   return createPortal(
     <>
       <div className={s.tourScrim} onClick={() => end(false)} />
-      <div ref={pop} key={i} className={s.tourPop} role="dialog" aria-label="Tour" style={pos ? { left: pos.left, top: pos.top, ["--to" as string]: pos.to } : { visibility: "hidden" }}>
-        <span className="mono">{i + 1} of {steps.length}</span>
+      <div ref={pop} className={s.tourPop} role="dialog" aria-label="Tour" style={pos ? { left: pos.left, top: pos.top, ["--to" as string]: pos.to } : { visibility: "hidden" }}>
+        <span className="mono">{i + 1} of {n}</span>
         <h3>{step.title}</h3>
         <p>{step.text}</p>
         <div className={s.tourFoot}>

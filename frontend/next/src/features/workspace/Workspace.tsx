@@ -18,6 +18,7 @@ import s from "./workspace.module.css";
 
 const Solve = lazy(() => import("@legacy/solve.jsx"));
 const Lab = lazy(() => import("@legacy/lab/Lab.jsx"));
+const PracticeApp = lazy(() => import("@legacy/practice/index.jsx"));
 const SandboxCanvas = lazy(() => import("@legacy/sandbox/Sandbox.jsx"));
 
 /** "#problems/url-shortener" → /problems/url-shortener, "#problems/challenge/x" → /problems/challenge/x, "#concepts/caching" → the lesson. */
@@ -29,7 +30,8 @@ function useHashRoutes() {
       if (!h) return;
       const [head, ...rest] = h.split("/");
       let to: string | null = null;
-      if (head === "problems") to = rest.length ? `/problems/${rest.join("/")}` : paths.problems;
+      if (head === "practice") to = rest.length ? `/practice/${rest.join("/")}` : "/practice";
+      else if (head === "problems") to = rest.length ? `/problems/${rest.join("/")}` : paths.problems;
       else if (head && rest[0] && ["concepts", "components", "interview-questions", "real-systems", "quick-notes"].includes(head)) to = paths.article(head, rest[0]);
       if (to) navigate(to, { replace: false });
     };
@@ -95,6 +97,16 @@ export function Sandbox() {
   return (
     <Frame>
       <SandboxCanvas Lab={Lab} />
+    </Frame>
+  );
+}
+
+/** Practice, LeetCode style (the current app's): the list, or one problem's page with its own judge. */
+export function Practice({ slug }: { slug: string }) {
+  const site = useLegacySite();
+  return (
+    <Frame>
+      <PracticeApp key={slug} slug={slug} t={site.account} />
     </Frame>
   );
 }

@@ -6,6 +6,7 @@ import { usePageMeta } from "@/components/layout/PageMeta";
 import { ButtonLink, Card, Chip, CountUp, ProgressBar } from "@/components/ui";
 import { cx } from "@/lib/cx";
 import { FigureThumb } from "@/features/reader/FigureThumb";
+import { SectionPicture } from "@/components/SectionPicture";
 import { problemRows, useLab, usePractice } from "@/content/practice";
 
 import { lastInProgress, streakDays, useProgress } from "@/lib/progress";
@@ -131,6 +132,7 @@ export function HomePage() {
           const title = site.dashboard.sections.find(([id]) => id === meta.id)?.[1] ?? meta.label;
           return (
             <Link key={meta.id} to={paths.section(meta.id)} className={`${s.tile} ${t.total || meta.id === "quick-notes" ? "" : s.soon}`} data-accent={meta.accent}>
+              <SectionPicture sectionId={meta.id} className={s.tilePic} />
               <h3>{title} ▸</h3>
               <p>{t.total ? `${t.total} lessons` : meta.id === "quick-notes" && site.notes ? `${site.notes.items.length} notes · numbers worth knowing` : "Coming soon"}</p>
               <div className={s.tileFoot}>
@@ -141,6 +143,7 @@ export function HomePage() {
           );
         })}
         <Link to={paths.problems} className={s.tile} data-accent="problems">
+          <SectionPicture sectionId="problems" className={s.tilePic} />
           <h3>Problems ▸</h3>
           <p>{problems.length} problems with tests</p>
           <div className={s.tileFoot}>

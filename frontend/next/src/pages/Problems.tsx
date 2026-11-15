@@ -28,6 +28,10 @@ export function ProblemsPage() {
   const [level, setLevel] = useState<Level>("all");
   const [todo, setTodo] = useState(false);
   const [marked, setMarked] = useState(false);
+  // a problem solved for the first time in this visit (the workspace notes it): its tick is highlighted once
+  const [fresh] = useState(() => {
+    try { const v = sessionStorage.getItem("tk-just-solved"); sessionStorage.removeItem("tk-just-solved"); return v; } catch { return null; }
+  });
   const marks = useBookmarks();
   const stats = useProblemStats();
   const accepted = (slug: string) => {
@@ -126,7 +130,7 @@ export function ProblemsPage() {
             <thead><tr><th><span className="sr-only">Status</span></th><th>#</th><th>Problem</th><th>Difficulty</th><th>Tests</th><th>Accepted</th><th>Best</th><th><span className="sr-only">Bookmark</span></th></tr></thead>
             <tbody>
               {shown.map((r, i) => (
-                <Row key={r.a.slug} r={r} i={i} picked={picked?.slug === r.a.slug ? picked.n : 0} onOpen={() => navigate(paths.problem(r.a.slug))} accepted={accepted(r.a.slug)} marked={!!marks[r.a.slug]} />
+                <Row key={r.a.slug} r={r} i={i} picked={picked?.slug === r.a.slug ? picked.n : 0} onOpen={() => navigate(paths.problem(r.a.slug))} accepted={accepted(r.a.slug)} marked={!!marks[r.a.slug]} fresh={fresh === r.a.slug} />
               ))}
             </tbody>
           </table>
@@ -173,10 +177,10 @@ export function ProblemsPage() {
   );
 }
 
-function Row({ r, i, picked, onOpen, accepted, marked }: { r: ProblemRow; i: number; picked: number; onOpen: () => void; accepted: string; marked: boolean }) {
+function Row({ r, i, picked, onOpen, accepted, marked, fresh }: { r: ProblemRow; i: number; picked: number; onOpen: () => void; accepted: string; marked: boolean; fresh: boolean }) {
   return (
     <tr key={picked} data-slug={r.a.slug} className={cx(s.row, picked > 0 && s.picked)} data-status={r.status} style={{ animationDelay: `${Math.min(i, 10) * (i < 4 ? 25 : 18)}ms` }} onClick={(e) => { if (!(e.target as HTMLElement).closest("a")) onOpen(); }}>
-      <td className={s.st} aria-label={r.status === "new" ? "not started" : r.status}>{r.status === "solved" ? "✓" : r.status === "started" ? "◐" : ""}</td>
+      <td className={s.st} aria-label={r.status === "new" ? "not started" : r.status}><span className={cx(fresh && r.status === "solved" && s.fresh)}>{r.status === "solved" ? "✓" : r.status === "started" ? "◐" : ""}</span></td>
       <td className="mono">{r.a.no.replace(/^\D+\/\/\s*/, "")}</td>
       <td className={s.tt}><Link to={paths.problem(r.a.slug)}>{r.a.title}</Link></td>
       <td><Chip level={asLevel(r.a.group)}>{r.a.tag}</Chip></td>

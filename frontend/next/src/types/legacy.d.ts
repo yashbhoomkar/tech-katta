@@ -151,3 +151,32 @@ declare module "@legacy/accountui.jsx" {
   /** blurs its children behind "Sign in to play" while signed out (where sign-in is on) */
   export const LabLock: ComponentType<{ t: unknown; lock: unknown; lite?: boolean; children?: ReactNode }>;
 }
+
+declare module "@legacy/dashboard/figure.jsx" {
+  import type { ComponentType } from "react";
+  /** a lesson figure with the current app's frame and gestures: steps (swipe the step line on phones), full screen
+   *  (turned sideways in portrait, swipe down to close), a portrait version on phones, sideways panning */
+  export const Fig: ComponentType<{ id: string; n: number; cap?: string | undefined; still: boolean; rd: string }>;
+}
+declare module "@legacy/dashboard/text.jsx" {
+  /** words in the main text, and in the "Go deeper" parts and type details */
+  export function words(a: unknown): number;
+  export function extraWords(a: unknown): number;
+}
+declare module "@legacy/theme/gesture.js" {
+  import type { RefObject } from "react";
+  export interface DragOptions {
+    axis: "x" | "y"; on?: boolean; size?: () => number; min?: number; max?: number; ignore?: string;
+    onMove: (d: number) => void; onEnd: (go: -1 | 0 | 1, d: number) => void;
+  }
+  /** a touch drag along one axis with the current app's thresholds (flick or past half) */
+  export function useDrag(ref: RefObject<HTMLElement | null>, o: DragOptions): void;
+  /** how long the settle animation takes for the distance left */
+  export function settleMs(left: number, size: number): number;
+}
+declare module "@legacy/practice/index.jsx" {
+  import type { ComponentType } from "react";
+  /** Practice, LeetCode style: the list (no slug) or one problem page */
+  const Practice: ComponentType<{ slug: string; t: unknown }>;
+  export default Practice;
+}

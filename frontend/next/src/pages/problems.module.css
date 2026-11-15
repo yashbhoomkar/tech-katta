@@ -77,3 +77,9 @@
 .star:active { transform: scale(.85); }
 .sandbox { background: var(--t); border-style: dashed; }
 @media (max-width: 980px) { .planCards, .weeks { grid-template-columns: 1fr; } }
+/* back on Problems after a first solve: the highlighter is drawn under that problem's tick, once (motion.css) */
+.fresh { background-image: linear-gradient(var(--marigold), var(--marigold)); background-repeat: no-repeat; background-size: 100% 100%; border-radius: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes markIn { from { background-size: 0 100%; } }
+  .fresh { animation: markIn 450ms var(--out) 350ms backwards; }
+}

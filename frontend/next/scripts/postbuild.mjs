@@ -46,6 +46,13 @@ try {
 } catch (err) {
   console.warn(`postbuild: lesson and problem routes skipped (${err.message})`);
 }
+routes.set("practice", ["Practice", "Design problems, LeetCode style: write the design, run the tests, submit."]);
+try {
+  const { problems } = await get("/v1/practice/problems");
+  for (const p of problems) routes.set(`practice/${p.slug}`, [p.title, "Practice: write the design, run the tests, submit."]);
+} catch (err) {
+  console.warn(`postbuild: practice routes skipped (${err.message})`);
+}
 try {
   const { challenges } = await get("/v1/lab");
   for (const c of challenges) routes.set(`problems/challenge/${c.id}`, [c.title, c.brief]);

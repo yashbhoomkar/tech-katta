@@ -5,6 +5,7 @@ import { SECTIONS, paths } from "@/content/sections";
 import { usePageMeta } from "@/components/layout/PageMeta";
 import { ButtonLink, ProgressBar } from "@/components/ui";
 import { useProgress } from "@/lib/progress";
+import { SectionPicture } from "@/components/SectionPicture";
 import s from "./pages.module.css";
 
 export function LearnPage() {
@@ -30,6 +31,7 @@ export function LearnPage() {
           return (
             <article key={meta.id} className={s.hubCard} data-accent={meta.accent}>
               <Link to={paths.section(meta.id)} className={s.hubMain}>
+                <SectionPicture sectionId={meta.id} className={s.hubPic} />
                 <span className="mono">{view.total ? `${view.total} lessons` : view.id === "quick-notes" && site.notes ? `${site.notes.items.length} notes` : "Coming soon"}</span>
                 <h2>{view.title || meta.label}</h2>
                 <p>{cardText.get(meta.id) ?? meta.blurb}</p>
