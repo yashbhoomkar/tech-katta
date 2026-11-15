@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { readProgress, type LegacyProgress } from "@legacy/progress.js";
 import { bestScore, readSubs } from "@legacy/practice.js";
+import { readMarks } from "@legacy/plan/plan.js";
 import { getJson } from "@/lib/api/client";
 import { useResource } from "@/lib/resource";
 import type { ArticleSummary } from "@/lib/api/types";
@@ -41,3 +42,20 @@ export function problemRows(problems: ArticleSummary[], prog: LegacyProgress): P
 const fetchLab = (signal: AbortSignal) => getJson<LabResponse>("/v1/lab", signal);
 export const useLab = () => useResource("lab", fetchLab);
 
+
+/** Bookmarked problems (the current app's marks), kept current. */
+export function useBookmarks(): Record<string, number> {
+  const [m, setM] = useState(() => readMarks().bookmarks);
+  useEffect(() => {
+    const on = () => setM(readMarks().bookmarks);
+    window.addEventListener("tk-marks", on);
+    window.addEventListener("storage", on);
+    return () => { window.removeEventListener("tk-marks", on); window.removeEventListener("storage", on); };
+  }, []);
+  return m;
+}
+
+/** Per-problem acceptance (all visitors): /v1/problems/stats. */
+export interface ProblemStats { problems: Record<string, { submissions: number; accepted: number }> }
+const fetchStats = (signal: AbortSignal) => getJson<ProblemStats>("/v1/problems/stats", signal);
+export const useProblemStats = () => useResource("problem-stats", fetchStats);

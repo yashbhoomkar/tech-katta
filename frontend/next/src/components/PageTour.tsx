@@ -45,7 +45,7 @@ export function tourKind(pathname: string): string | null {
   if (a === "home") return "dashboard";
   if (a === "learn" && b && c) return "article";
   if (a === "learn" && b) return b;
-  if (a === "problems" && b === "challenge") return "lab";
+  if (a === "problems" && (b === "challenge" || b === "sandbox")) return "lab";
   if (a === "problems" && b) return "problem";
   if (a === "problems") return "problems";
   return null;
@@ -68,10 +68,13 @@ export function usePageTour() {
 /** The Tour button (top right on wide screens) and the tour itself. */
 export function PageTour() {
   const t = usePageTour();
+  const { pathname } = useLocation();
   if (!t.available) return null;
+  // the workspace, challenges and sandbox fill the screen with their own toolbar: the button floats at the bottom
+  const floating = /^\/problems\/.+/.test(pathname);
   return (
     <>
-      <button type="button" className={s.tourBtn} onClick={t.start} data-tour="tour">{t.label}</button>
+      <button type="button" className={`${s.tourBtn} ${floating ? s.tourFloat : ""}`} onClick={t.start} data-tour="tour">{t.label}</button>
       {t.ui}
     </>
   );

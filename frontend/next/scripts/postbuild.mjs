@@ -25,6 +25,9 @@ const routes = new Map([
   ["home", ["Home"]],
   ["learn", ["Learn"]],
   ["problems", ["Problems", "Design problems with a test suite: traffic peaks, crashes and a budget decide your score."]],
+  ["problems/sandbox", ["Sandbox", "A free canvas: any parts, any traffic."]],
+  ["privacy", ["Privacy"]],
+  ["terms", ["Terms and conditions"]],
   ["me", ["You"]],
   ...Object.entries(SECTIONS).map(([id, name]) => [`learn/${id}`, [name]]),
 ]);

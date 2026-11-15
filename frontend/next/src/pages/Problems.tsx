@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useContent } from "@/content/ContentProvider";
 import { problemsOf } from "@/content/model";
 import { paths } from "@/content/sections";
-import { problemRows, useLab, usePractice, type ProblemRow } from "@/content/practice";
+import { problemRows, useBookmarks, useLab, usePractice, useProblemStats, type ProblemRow } from "@/content/practice";
+import { dailyOf, planOf, toggleBookmark } from "@legacy/plan/plan.js";
 import { usePageMeta } from "@/components/layout/PageMeta";
 import { Button, Card, Chip, CountUp, Skeleton } from "@/components/ui";
 import { useToast } from "@/components/Toast";
@@ -26,11 +27,24 @@ export function ProblemsPage() {
   const navigate = useNavigate();
   const [level, setLevel] = useState<Level>("all");
   const [todo, setTodo] = useState(false);
+  const [marked, setMarked] = useState(false);
+  const marks = useBookmarks();
+  const stats = useProblemStats();
+  const accepted = (slug: string) => {
+    const st = stats.status === "success" ? stats.data.problems[slug] : undefined;
+    return st?.submissions ? `${Math.round((100 * st.accepted) / st.submissions)}%` : "—";
+  };
   const [picked, setPicked] = useState<{ slug: string; n: number } | null>(null);
   const list = useRef<HTMLDivElement>(null);
 
   const rows = useMemo(() => problemRows(problemsOf(articles), prog), [articles, prog]);
-  const shown = rows.filter((r) => (level === "all" || r.a.group === level) && (!todo || r.status !== "solved"));
+  const shown = rows.filter((r) => (level === "all" || r.a.group === level) && (!todo || r.status !== "solved") && (!marked || marks[r.a.slug]));
+  // your plan (the current app's order and problem of the day, so both sites agree)
+  const isSolved = (slug: string) => rows.find((r) => r.a.slug === slug)?.status === "solved";
+  const daily = dailyOf(rows.map((r) => r.a), isSolved);
+  const weeks = planOf(rows.map((r) => r.a));
+  const nextInPlan = weeks.flatMap((w) => w.slugs).find((slug) => !isSolved(slug));
+  const titleOf = (slug: string) => rows.find((r) => r.a.slug === slug)?.a.title ?? slug;
   const count = (l: Level) => rows.filter((r) => l === "all" || r.a.group === l).length;
   const solved = rows.filter((r) => r.status === "solved").length;
   const chals = lab.status === "success" ? lab.data.challenges : [];
@@ -60,6 +74,39 @@ export function ProblemsPage() {
         </div>
       </header>
 
+      <section className={s.plan} aria-labelledby="plan-h" data-tour="plan">
+        <h2 id="plan-h" className={s.h2}>Your plan</h2>
+        <div className={s.planCards}>
+          {daily && (
+            <Link to={paths.problem(daily.slug)} className={s.planCard}>
+              <span className="mono">Problem of the day</span>
+              <b>{daily.title}</b>
+            </Link>
+          )}
+          {nextInPlan && (
+            <Link to={paths.problem(nextInPlan)} className={s.planCard}>
+              <span className="mono">Next in your plan · {solved} of {rows.length} done</span>
+              <b>{titleOf(nextInPlan)}</b>
+            </Link>
+          )}
+        </div>
+        <details className={s.order}>
+          <summary>The order to take them in</summary>
+          <div className={s.weeks}>
+            {weeks.map((w) => (
+              <div key={w.name}>
+                <p><b>{w.name}</b> <span>{w.slugs.filter(isSolved).length} of {w.slugs.length} · {w.why}</span></p>
+                <div className={s.chips}>
+                  {w.slugs.map((slug) => (
+                    <Link key={slug} to={paths.problem(slug)} data-done={isSolved(slug) ? "" : undefined}>{titleOf(slug).replace(/^Design (a |an )?/, "")}</Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      </section>
+
       <div className={s.filters}>
         <div className={s.f} role="group" aria-label="Filter by difficulty" data-tour="levels">
           {(["all", "easy", "medium", "hard"] as const).map((l) => (
@@ -68,6 +115,7 @@ export function ProblemsPage() {
             </button>
           ))}
           <button type="button" aria-pressed={todo} onClick={() => setTodo((t) => !t)}>Not done yet</button>
+          <button type="button" aria-pressed={marked} onClick={() => setMarked((m) => !m)}>★ Bookmarked <span>{Object.keys(marks).length}</span></button>
         </div>
         <span data-tour="pick"><Button size="sm" onClick={pick}>⚄ Pick one for me</Button></span>
       </div>
@@ -75,10 +123,10 @@ export function ProblemsPage() {
       <div ref={list} key={`${level}${todo}`}>
         <Card className={s.tbl} tour="table">
           <table>
-            <thead><tr><th><span className="sr-only">Status</span></th><th>#</th><th>Problem</th><th>Difficulty</th><th>Tests</th><th>Best</th></tr></thead>
+            <thead><tr><th><span className="sr-only">Status</span></th><th>#</th><th>Problem</th><th>Difficulty</th><th>Tests</th><th>Accepted</th><th>Best</th><th><span className="sr-only">Bookmark</span></th></tr></thead>
             <tbody>
               {shown.map((r, i) => (
-                <Row key={r.a.slug} r={r} i={i} picked={picked?.slug === r.a.slug ? picked.n : 0} onOpen={() => navigate(paths.problem(r.a.slug))} />
+                <Row key={r.a.slug} r={r} i={i} picked={picked?.slug === r.a.slug ? picked.n : 0} onOpen={() => navigate(paths.problem(r.a.slug))} accepted={accepted(r.a.slug)} marked={!!marks[r.a.slug]} />
               ))}
             </tbody>
           </table>
@@ -104,6 +152,11 @@ export function ProblemsPage() {
         {lab.status === "loading" && <div className={s.chals}>{[0, 1, 2, 3].map((k) => <Skeleton key={k} height={120} />)}</div>}
         {lab.status === "error" && <p className={s.none}>The challenges couldn't load. <button type="button" className={s.link} onClick={lab.retry}>Try again</button></p>}
         <div className={s.chals}>
+          <Link to="/problems/sandbox" className={`${s.chal} ${s.sandbox}`}>
+            <p className="mono">Sandbox</p>
+            <h3>Design anything</h3>
+            <span className={s.sub}>A free canvas: any parts, any traffic. No tests, no score.</span>
+          </Link>
           {chals.map((c, i) => {
             const n = Math.min(prog.stars[c.id] ?? 0, c.stars.length);
             return (
@@ -120,7 +173,7 @@ export function ProblemsPage() {
   );
 }
 
-function Row({ r, i, picked, onOpen }: { r: ProblemRow; i: number; picked: number; onOpen: () => void }) {
+function Row({ r, i, picked, onOpen, accepted, marked }: { r: ProblemRow; i: number; picked: number; onOpen: () => void; accepted: string; marked: boolean }) {
   return (
     <tr key={picked} data-slug={r.a.slug} className={cx(s.row, picked > 0 && s.picked)} data-status={r.status} style={{ animationDelay: `${Math.min(i, 10) * (i < 4 ? 25 : 18)}ms` }} onClick={(e) => { if (!(e.target as HTMLElement).closest("a")) onOpen(); }}>
       <td className={s.st} aria-label={r.status === "new" ? "not started" : r.status}>{r.status === "solved" ? "✓" : r.status === "started" ? "◐" : ""}</td>
@@ -128,7 +181,9 @@ function Row({ r, i, picked, onOpen }: { r: ProblemRow; i: number; picked: numbe
       <td className={s.tt}><Link to={paths.problem(r.a.slug)}>{r.a.title}</Link></td>
       <td><Chip level={asLevel(r.a.group)}>{r.a.tag}</Chip></td>
       <td>{r.tests || "—"}</td>
+      <td className={s.muted}>{accepted}</td>
       <td className={r.best != null ? s.best : s.muted}>{r.best ?? "—"}</td>
+      <td><button type="button" className={s.star} aria-pressed={marked} aria-label={marked ? `Remove the bookmark on ${r.a.title}` : `Bookmark ${r.a.title}`} onClick={(e) => { e.stopPropagation(); toggleBookmark(r.a.slug); }}>{marked ? "★" : "☆"}</button></td>
     </tr>
   );
 }

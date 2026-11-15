@@ -13,6 +13,8 @@ const base = process.env.BASE_PATH ?? "/next/";
 
 export default defineConfig({
   base,
+  // the footer's "Last updated", as on tech.katta.cc
+  define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   plugins: [react(), figManifest(`${legacy}/figs`)],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy },
