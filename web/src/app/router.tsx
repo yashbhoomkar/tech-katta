@@ -8,6 +8,7 @@ import { LandingPage } from "@/pages/Landing";
 import { LearnPage } from "@/pages/Learn";
 import { MePage } from "@/pages/Me";
 import { NotFoundPage } from "@/pages/NotFound";
+import { ReaderPage } from "@/pages/Reader";
 import { SectionPage } from "@/pages/Section";
 import { Providers } from "./Providers";
 
@@ -46,7 +47,7 @@ export const routes = [
           { path: "home", element: gated(<HomePage />) },
           { path: "learn", element: gated(<LearnPage />) },
           { path: "learn/:section", element: gated(<SectionPage />) },
-          { path: "learn/:section/:slug", element: gated(<ComingSoonPage kind="article" />) },
+          { path: "learn/:section/:slug", element: gated(<ReaderPage />) },
           { path: "problems", element: gated(<ComingSoonPage kind="problems" />) },
           { path: "problems/:slug", element: gated(<ComingSoonPage kind="problem" />) },
           { path: "me", element: <MePage /> },

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetResources } from "@/lib/resource";
-import { articles, site } from "@/test/fixtures";
+import { articles, lesson, site } from "@/test/fixtures";
 import { routes } from "./router";
 
 function mockApi({ fail = false } = {}) {
@@ -10,6 +10,7 @@ function mockApi({ fail = false } = {}) {
     if (fail) return new Response("nope", { status: 503 });
     if (url.endsWith("/v1/site")) return Response.json(site);
     if (url.endsWith("/v1/articles")) return Response.json({ articles });
+    if (url.endsWith("/v1/articles/caching")) return Response.json(lesson);
     return new Response("not found", { status: 404 });
   }));
 }
@@ -39,6 +40,24 @@ describe("app", () => {
     expect(screen.getByRole("heading", { name: "Networking essentials" })).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /Concepts/ }).length).toBeGreaterThan(0);
     expect(document.title).toBe("Home · Tech Katta");
+  });
+
+  it("the reader shows the lesson, its outline and the way on", async () => {
+    mockApi();
+    const router = renderAt("/learn/concepts/caching");
+    expect(await screen.findByRole("heading", { level: 1, name: "Caching: when to add a cache" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 2, name: "Why cache" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Previous Networking essentials/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Mark complete & next/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/learn/concepts/real-time-updates"));
+    expect(JSON.parse(localStorage.getItem("tk-progress-v1") ?? "{}").caching.done).toBe(true);
+  });
+
+  it("an unknown lesson is a not-found page", async () => {
+    mockApi();
+    renderAt("/learn/concepts/nope");
+    expect(await screen.findByRole("heading", { level: 1, name: /not found|isn't here|nothing here/i })).toBeTruthy();
   });
 
   it("a section page lists its groups and lessons", async () => {

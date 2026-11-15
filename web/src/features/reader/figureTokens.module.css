@@ -1,0 +1,33 @@
+/* The lesson figures (frontend/src/figs) take their colours from the legacy token names. This scope maps those
+   names onto this design, light and dark, without leaking into the app (where --accent means the section colour).
+   readTokens(el) reads them from the element that carries .tokens. */
+.tokens {
+  --page: #f6f5f1; --bg: #ffffff; --surface: #efede7; --surface-2: #fbfaf7; --hover: #e9e6de;
+  --inverse: #17161a; --on-inverse: #f6f5f1;
+  --ink: #17161a; --ink-2: #33312d; --ink-3: #4a4844; --muted: #6b6963; --muted-2: #75726b; --faint: #8a877f;
+  --disabled: #cfccc4; --line-strong: #b4b0a6; --line: #e3e0d8; --line-soft: #d9d5cc; --grid: #eeebe4;
+  --brand: #ffc233; --brand-strong: #f2ac00; --brand-edge: #d79a00; --brand-ink: #6e4a00; --brand-line: #f0d388;
+  --brand-tint: #fff3cf; --on-brand: #17161a; --mark: #ffd866;
+  --accent: #26449e; --accent-strong: #1b3278; --accent-mid: #6b86d6; --accent-line: #c3d0f5; --accent-soft: #dbe4fc;
+  --accent-tint-2: #e6ecfd; --accent-tint: #f0f4fe; --on-accent: #ffffff;
+  --danger: #b3261e; --red: #d23b30; --danger-line: #f3c6c1; --danger-soft: #fce1de; --danger-tint: #fff4f2;
+  --success: #17794a; --success-line: #b5e0c6; --success-tint: #ecf8f0;
+  --warn: #9c4a00; --warn-strong: #7a3900; --warn-mid: #e8700c; --warn-line: #f5cfa9; --warn-tint: #fff3e6;
+  --star: #e8a308;
+  --cat-green: #1f8a5b; --cat-amber: #b7791f; --cat-violet: #7c3aed; --cat-teal: #0e7490; --cat-pink: #be185d;
+}
+:global([data-theme="dark"]) .tokens {
+  --page: #131312; --bg: #1b1b1a; --surface: #222220; --surface-2: #1e1e1d; --hover: #2a2a28;
+  --inverse: #f2f0eb; --on-inverse: #131312;
+  --ink: #f2f0eb; --ink-2: #dedbd4; --ink-3: #cac7c0; --muted: #9b988f; --muted-2: #8f8c84; --faint: #7d7a73;
+  --disabled: #4a4844; --line-strong: #5a5853; --line: #33322f; --line-soft: #3b3a37; --grid: #252523;
+  --brand: #ffc233; --brand-strong: #ffcf5c; --brand-edge: #d79a00; --brand-ink: #ffdf8f; --brand-line: #6e5418;
+  --brand-tint: #2e2612; --on-brand: #17161a; --mark: #ffd866;
+  --accent: #9db8ff; --accent-strong: #c2d3ff; --accent-mid: #6f8fe0; --accent-line: #3a4c7d; --accent-soft: #2c3a63;
+  --accent-tint-2: #232d4a; --accent-tint: #1d2438; --on-accent: #131312;
+  --danger: #ff8a80; --red: #ff6b5e; --danger-line: #6b2b26; --danger-soft: #4a201c; --danger-tint: #2c1816;
+  --success: #6fd49c; --success-line: #22553a; --success-tint: #16281e;
+  --warn: #ffb066; --warn-strong: #ffc690; --warn-mid: #f08a2e; --warn-line: #5e3a17; --warn-tint: #2b1e12;
+  --star: #f5b82e;
+  --cat-green: #5cc791; --cat-amber: #e0a54a; --cat-violet: #b394f7; --cat-teal: #4fb8d0; --cat-pink: #f07aaa;
+}

@@ -53,3 +53,22 @@ export interface SiteResponse {
   };
   counts: { questions: number; concepts: number; components: number; challenges: number };
 }
+
+/** One block of a lesson body. `t` picks the kind; inline `code` in strings is marked with backticks. */
+export type Block =
+  | { t: "h2" | "h3" | "p"; x: string }
+  | { t: "list"; items: string[] }
+  | { t: "fig"; id: string; cap?: string }
+  | { t: "table"; label?: string; head: string[]; rows: string[][] }
+  | { t: "code"; label?: string; x: string; say?: string }
+  | { t: "more"; label: string; body: Block[] }
+  | { t: "type"; name: string; kind: string; what: string; use: string; avoid: string; ex: string; like?: string; more?: string[] }
+  | { t: "example" }
+  | { t: "lab"; x: string; to: string; go?: string }
+  | { t: "analogy"; x: string };
+
+export interface ArticleResponse extends ArticleSummary {
+  body: Block[];
+  /** the made-up system the lesson explains its ideas through */
+  example: { name: string; kind: string; text: string; parts: [string, string][] };
+}

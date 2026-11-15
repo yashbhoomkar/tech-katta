@@ -1,4 +1,4 @@
-import type { ArticlesResponse, SiteResponse } from "./types";
+import type { ArticleResponse, ArticlesResponse, SiteResponse } from "./types";
 
 /** Base URL of the content API. Defaults to production; VITE_API_BASE points a local build elsewhere. */
 export const API_BASE = (import.meta.env.VITE_API_BASE ?? "https://tech-api.katta.cc").replace(/\/$/, "");
@@ -47,4 +47,5 @@ export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T>
 export const api = {
   site: (signal?: AbortSignal) => getJson<SiteResponse>("/v1/site", signal),
   articles: (signal?: AbortSignal) => getJson<ArticlesResponse>("/v1/articles", signal),
+  article: (slug: string, signal?: AbortSignal) => getJson<ArticleResponse>(`/v1/articles/${encodeURIComponent(slug)}`, signal),
 };

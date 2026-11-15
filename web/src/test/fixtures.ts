@@ -1,4 +1,4 @@
-import type { ArticleSummary, SiteResponse } from "@/lib/api/types";
+import type { ArticleSummary, SiteResponse, ArticleResponse } from "@/lib/api/types";
 
 // Small, realistic fixtures in the API's shape (trimmed copies of tech-api.katta.cc/v1 answers).
 
@@ -38,4 +38,23 @@ export const site: SiteResponse = {
     },
   },
   counts: { questions: 22, concepts: 21, components: 10, challenges: 8 },
+};
+
+/** A lesson body with one block of every kind (figure ids are real: the figures are the current app's). */
+export const lesson: ArticleResponse = {
+  ...(articles[1] as ArticleSummary),
+  example: { name: "Zotato", kind: "FOOD DELIVERY APP", text: "One made-up system.", parts: [["Apps", "Customer app"]] },
+  body: [
+    { t: "example" },
+    { t: "h2", x: "Why cache" },
+    { t: "p", x: "Reads hit `Redis` first." },
+    { t: "list", items: ["one", "two"] },
+    { t: "analogy", x: "Like a fridge." },
+    { t: "h2", x: "Kinds of cache" },
+    { t: "type", name: "Cache-aside", kind: "THE USUAL CHOICE", what: "App reads the cache.", use: "Most reads.", avoid: "Writes.", ex: "Menus.", more: ["It costs a miss."] },
+    { t: "table", label: "Compare", head: ["Kind", "Speed"], rows: [["Memory", "fast"]] },
+    { t: "code", label: "GET", x: "GET /menu", say: "a request" },
+    { t: "more", label: "Eviction", body: [{ t: "p", x: "LRU drops the oldest." }] },
+    { t: "lab", x: "Add a cache.", to: "problems/challenge/read-heavy", go: "Open the lab" },
+  ],
 };
