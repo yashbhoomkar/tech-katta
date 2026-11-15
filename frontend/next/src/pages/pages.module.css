@@ -184,3 +184,59 @@
   .tilePic svg, .hubPic svg { transition: transform 500ms var(--out); }
   .tile:hover .tilePic svg, .hubCard:hover .hubPic svg { transform: scale(1.03); }
 }
+
+/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ----------
+   light: flat section blocks, black outline, hard shadow; dark (option D): dark cards with a 3 px outline in the
+   section colour, a solid shadow in a darker shade of it, coloured titles and bars */
+:global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard, .sechead) { border: var(--bw) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard) { transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard):active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+@media (hover: hover) and (pointer: fine) {
+  :global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard):hover { transform: translate(-2px, -2px); box-shadow: var(--sh-lg); filter: none; }
+  :global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard):active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+}
+:global(:root[data-style="neo-brutalism"]) :is(.tilePic, .hubPic) { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .tileFoot > div { border-color: #1C1B1A; background: rgb(255 255 255 / .6); }
+:global(:root[data-style="neo-brutalism"]) .hubFoot, :global(:root[data-style="neo-brutalism"]) .cprog { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .sechead { background: var(--c); }
+:global(:root[data-style="neo-brutalism"]) .sechead h1 { font-size: clamp(32px, 4.4vw, 52px); }
+:global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(30px, 4vw, 46px); }
+/* dark D */
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.tile, .hubCard, .sechead) { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.tile, .hubCard, .sechead) :is(h1, h2, h3) { color: var(--a); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.tile p, .hubMain p, .sechead p, .sechead :global(.mono)) { color: var(--ink-2); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .tileFoot > div { border-color: var(--a); background: transparent; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .tileFoot > div > i { background: var(--a); }
+@media (hover: hover) and (pointer: fine) {
+  :global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.tile, .hubCard):hover { box-shadow: calc(var(--sh-d) + 2px) calc(var(--sh-d) + 2px) 0 var(--edge-c); }
+}
+/* the rest of the page */
+:global(:root[data-style="neo-brutalism"]) .thumb { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .pod { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); background: var(--c); color: #1C1B1A; box-shadow: var(--sh); }
+:global(:root[data-style="neo-brutalism"]) .pod :global(.mono) { color: rgb(28 27 26 / .78); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .pod { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .pod h3 { color: var(--a); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .pod :global(.mono) { color: var(--ink-2); }
+:global(:root[data-style="neo-brutalism"]) .days i { border: var(--bw) solid var(--edge); border-radius: 6px; background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .days .on i { background: var(--marigold); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .jump a { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; box-shadow: var(--sh-sm); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) .jump a:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .group { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .group { box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .lesson { border-top: var(--bw) solid var(--rule); }
+/* boxed lesson numbers, and a square tick */
+:global(:root[data-style="neo-brutalism"]) .no { display: grid; place-items: center; width: 30px; height: 26px; border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); color: var(--ink); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .st { border: var(--bw) solid var(--edge); border-radius: 4px; }
+:global(:root[data-style="neo-brutalism"]) .done .st { background: var(--pass); border-color: var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .now { background: var(--t); box-shadow: inset 6px 0 0 var(--a); }
+:global(:root[data-style="neo-brutalism"]) .lessonThumb { border: var(--bw) solid var(--edge); border-radius: 4px; }
+:global(:root[data-style="neo-brutalism"]) .levels button { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; color: var(--ink); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .levels button[aria-pressed="true"] { background: var(--marigold); color: #1C1B1A; border-color: var(--edge); transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .notes li { border: var(--bw) solid var(--edge); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .notes em { border: var(--bw) solid var(--edge); border-radius: 4px; color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .numbersWrap { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .themeCard { border: var(--bw) solid var(--edge); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .themeCard[aria-checked="true"] { background: var(--marigold); color: #1C1B1A; box-shadow: none; transform: translate(2px, 2px); }
+:global(:root[data-style="neo-brutalism"]) .preview { border: var(--bw) solid #1C1B1A; border-radius: 6px; }
+:global(:root[data-style="neo-brutalism"]) .avatar { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .keys div { border-top-width: var(--bw); }

@@ -60,3 +60,25 @@
   .dHead { touch-action: none; }
   .dialog::before { content: ""; position: absolute; left: 50%; top: 8px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
 }
+
+/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+:global(:root[data-style="neo-brutalism"]) .dialog { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
+@media (max-width: 640px) { :global(:root[data-style="neo-brutalism"]) .dialog { border-bottom: 0; box-shadow: none; border-radius: var(--r-xl) var(--r-xl) 0 0; } :global(:root[data-style="neo-brutalism"]) .dialog::before { background: var(--edge); } }
+:global(:root[data-style="neo-brutalism"]) .x { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .x:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .dNote { border: var(--bw) solid var(--edge); background: var(--t-notes); color: var(--ink); }
+/* the toast is a marigold sticker */
+:global(:root[data-style="neo-brutalism"]) .toast { border: var(--bw) solid #1C1B1A; border-radius: var(--r-md); background: var(--marigold); color: #1C1B1A; font-weight: 700; box-shadow: 4px 4px 0 #1C1B1A; --rot: -1deg; animation: nb-slap 320ms var(--out) both; }
+:global(:root[data-style="neo-brutalism"]) .toast i { background: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .keys div { border-bottom: var(--bw) solid var(--rule); }
+/* the tour: a lime sticker card */
+:global(:root[data-style="neo-brutalism"]) .tourPop { background: var(--c-notes); color: #1C1B1A; border: var(--bw-strong) solid #1C1B1A; border-radius: var(--r-xl); box-shadow: 6px 6px 0 #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .tourPop p, :global(:root[data-style="neo-brutalism"]) .tourPop :global(.mono) { color: rgb(28 27 26 / .8); }
+:global(:root[data-style="neo-brutalism"]) .spot { box-shadow: 0 0 0 4px var(--marigold), 0 0 0 7px #1C1B1A !important; }
+:global(:root[data-style="neo-brutalism"]) .lockCard { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
+:global(:root[data-style="neo-brutalism"]) .lockIcon { border: var(--bw) solid var(--edge); border-radius: var(--r-md); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .tourBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; background: var(--surface); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .tourBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .tourFloat { box-shadow: var(--sh); }
+/* phones: the tour button sits on the corner of the page's first block, so it is a tilted sticker, not a stray key */
+@media (max-width: 980px) { :global(:root[data-style="neo-brutalism"]) .tourBtn:not(.tourFloat) { background: var(--marigold); color: #1C1B1A; transform: rotate(3deg); } }

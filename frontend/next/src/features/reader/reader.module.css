@@ -242,3 +242,39 @@
 @media (prefers-reduced-motion: reduce) { .tocMark { transition: none; } }
 /* spec 24 §4.3: long lessons lay out the part below the first screens only as it nears (less work on first paint) */
 .prose > .blockWrap:nth-child(n+14) > :not(h2, h3) { content-visibility: auto; contain-intrinsic-size: auto 240px; }
+
+/* ---------- neo-brutalism (styles/themes/neo-brutalism.css): a calm reader. Outlines and keys, no loud blocks in
+   the text, because long reading tires under brutalism (the owner's open question; calm is the prototype's default) ---------- */
+:global(:root[data-style="neo-brutalism"]) .head { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(32px, 4.6vw, 52px); }
+:global(:root[data-style="neo-brutalism"]) .head :global(.mono) { color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .dek { font: 400 19px/1.5 var(--sans); }
+:global(:root[data-style="neo-brutalism"]) .doneChip { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--c-problems); color: #1C1B1A; font-family: var(--mono); font-weight: 700; text-transform: uppercase; --rot: -3deg; transform: rotate(var(--rot)); animation: nb-slap 360ms var(--out) both; }
+:global(:root[data-style="neo-brutalism"]) .seg { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .segPill { border-radius: 4px; background: var(--marigold); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .seg button { border-radius: 4px; font-weight: 700; color: var(--ink-2); }
+:global(:root[data-style="neo-brutalism"]) .seg button[aria-checked="true"] { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .toolBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; box-shadow: var(--sh-sm); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) .toolBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .stepBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-sm); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .stepBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) :is(.figure, .table, .more) { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); }
+:global(:root[data-style="neo-brutalism"]) .table thead th { background: #1C1B1A; color: #F8F2E5; font-family: var(--mono); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .table thead th { background: var(--edge); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :is(.table th, .table td) { border-bottom-color: var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .code { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .more > summary small { border: var(--bw) solid var(--edge); border-radius: 4px; color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .example { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .analogy { border-left: 6px solid var(--a, var(--edge)); border-radius: 4px; }
+:global(:root[data-style="neo-brutalism"]) .analogy p { font: 500 18px/1.6 var(--sans); }
+/* things you press: keys with a hard shadow */
+:global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .nextProblem, .railCta) { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .railCta):active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+@media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .railCta):hover { transform: translate(-2px, -2px); box-shadow: var(--sh-lg); border-color: var(--edge); } }
+:global(:root[data-style="neo-brutalism"]) .lab { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lab { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lab :global(.mono) { color: var(--a); }
+:global(:root[data-style="neo-brutalism"]) .pageLink span, :global(:root[data-style="neo-brutalism"]) .nextProblem b { font-family: var(--display); font-weight: 400; }
+:global(:root[data-style="neo-brutalism"]) .toc a { border-left-width: 3px; }
+:global(:root[data-style="neo-brutalism"]) .tocMark { width: 3px; border-radius: 0; background: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .toc a[aria-current] { font-weight: 700; }

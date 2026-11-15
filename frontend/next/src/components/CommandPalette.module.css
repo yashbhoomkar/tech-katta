@@ -18,3 +18,14 @@
   .detail { display: none; }
   .foot { display: none; }
 }
+
+/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+:global(:root[data-style="neo-brutalism"]) .box { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
+:global(:root[data-style="neo-brutalism"]) .inputRow { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .foot { border-top: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .option { border: var(--bw) solid transparent; border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .option[aria-selected="true"] { background: var(--marigold); color: #1C1B1A; border-color: var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .option[aria-selected="true"] :is(.detail, mark) { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .option mark { text-decoration: underline; text-decoration-thickness: 2px; }
+:global(:root[data-style="neo-brutalism"]) .dot { border: var(--bw) solid var(--edge); border-radius: 2px; width: 12px; height: 12px; }
+:global(:root[data-style="neo-brutalism"]) .kbd { box-shadow: none; }

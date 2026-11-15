@@ -83,3 +83,34 @@
   @keyframes markIn { from { background-size: 0 100%; } }
   .fresh { animation: markIn 450ms var(--out) 350ms backwards; }
 }
+
+/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+:global(:root[data-style="neo-brutalism"]) .head { border: var(--bw) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh); background: var(--c); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(32px, 4.4vw, 52px); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .head { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .head h1 { color: var(--a); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .head :is(p, :global(.mono)) { color: var(--ink-2) !important; }
+:global(:root[data-style="neo-brutalism"]) .stats div { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .stats b { font-family: var(--display); font-weight: 400; }
+/* filters are keys that stay pressed */
+:global(:root[data-style="neo-brutalism"]) .f button { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; color: var(--ink); background: var(--surface); box-shadow: var(--sh-sm); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out), background-color var(--key) ease; }
+:global(:root[data-style="neo-brutalism"]) .f button[aria-pressed="true"] { background: var(--marigold); color: #1C1B1A; border-color: var(--edge); transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .f button:active { transform: translate(2px, 2px); box-shadow: none; }
+/* the table: an ink header row, hard rules */
+:global(:root[data-style="neo-brutalism"]) .tbl th { background: #1C1B1A; color: #F8F2E5; font-family: var(--mono); font-weight: 700; border-bottom: 0; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .tbl th { background: var(--edge); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .tbl td { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .tt a, :global(:root[data-style="neo-brutalism"]) .best { font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) :is(.pcard, .chal, .planCard) { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) :is(.pcard, .chal, .planCard):active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+@media (hover: hover) and (pointer: fine) {
+  :global(:root[data-style="neo-brutalism"]) :is(.chal, .planCard):hover { transform: translate(-2px, -2px); box-shadow: var(--sh-lg); border-color: var(--edge); }
+}
+:global(:root[data-style="neo-brutalism"]) .chal { border-top: 10px solid var(--a, var(--edge)); }
+:global(:root[data-style="neo-brutalism"]) .planCard :global(.mono) { color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .sandbox { border-style: dashed; background: var(--t); }
+:global(:root[data-style="neo-brutalism"]) .chips a { border: var(--bw) solid var(--edge); font-weight: 600; }
+:global(:root[data-style="neo-brutalism"]) .chips a[data-done] { background: var(--c-problems); color: #1C1B1A; border-color: var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .stars i { color: var(--line-strong); }
+:global(:root[data-style="neo-brutalism"]) .stars i[data-on] { color: var(--star); }
+:global(:root[data-style="neo-brutalism"]) .fresh { background-image: linear-gradient(var(--c-notes), var(--c-notes)); border-radius: 0; }
