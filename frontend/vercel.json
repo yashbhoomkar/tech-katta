@@ -19,10 +19,6 @@
     {
       "source": "/analytics",
       "destination": "/analytics/index.html"
-    },
-    {
-      "source": "/proto-api/(.*)",
-      "destination": "/proto-api/$1.json"
     }
   ],
   "headers": [

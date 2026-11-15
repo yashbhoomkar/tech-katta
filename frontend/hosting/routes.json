@@ -13,8 +13,7 @@
     { "from": "/health/", "to": "/health.html" },
     { "from": "/dashboard", "to": "/dashboard/index.html" },
     { "from": "/dashboard/*", "to": "/dashboard/index.html" },
-    { "from": "/analytics", "to": "/analytics/index.html" },
-    { "from": "/proto-api/*", "to": "/proto-api/:splat.json", "only": "vercel" }
+    { "from": "/analytics", "to": "/analytics/index.html" }
   ],
   "headers": [
     {
