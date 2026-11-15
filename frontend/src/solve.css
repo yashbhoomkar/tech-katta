@@ -279,3 +279,10 @@
 .sv-probes{margin:10px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-probes>summary{cursor:pointer;font:600 13px var(--font)}
 .sv-probe{margin:8px 0}.sv-probe-out{margin:4px 0 0;font-size:13.5px}.sv-probe-out small{display:block;color:var(--ink-2);margin-top:2px}.sv-probe-out.no b{color:var(--danger)}.sv-probe-out.ok b{color:var(--success)}
 .sv-probe-how{margin:4px 0 0;padding-left:18px;font-size:13px}
+
+/* Defend your design (context 36, step 17) */
+.sv-defend{margin:10px 0;padding:10px 12px;border:1px solid var(--accent);border-radius:8px;background:var(--bg)}.sv-defend>b{font-size:14px}.sv-defend>b small{font-weight:400;color:var(--muted)}
+.sv-defend .sv-run{height:32px;padding:0 14px;margin-top:4px}.sv-defend-q{margin:8px 0;font-size:14px;font-weight:600}
+.sv-defend-c{list-style:none;margin:0;padding:0;display:grid;gap:6px}.sv-defend-c button{width:100%;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font:400 13.5px var(--font);cursor:pointer}
+.sv-defend-c button:disabled{cursor:default}.sv-defend-c button.right{border-color:var(--success);color:var(--success);font-weight:600}.sv-defend-c button.wrong{border-color:var(--danger);color:var(--danger)}
+.sv-defend-say,.sv-defend-end{margin:8px 0 4px;font-size:13.5px}

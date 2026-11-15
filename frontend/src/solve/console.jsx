@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{track}from"../analytics.js";
+import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{defendQuestions}from"../eval/defend.js";import{track}from"../analytics.js";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
@@ -44,6 +44,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.cmp&&<Compare c={res.cmp} diff={res.diff}/>}
+{kind==="submit"&&acc&&!res.copied&&P?.v===2&&probe&&<Defend key={"d"+(res.at||j.total)} P={P} probe={probe}/>}
 {!err&&P?.v===2&&probe&&<Probes key={res.at||j.passed+":"+j.total} P={P} probe={probe} accepted={kind==="submit"&&acc&&!res.copied}/>}
 {kind==="submit"&&acc&&!res.copied&&followUps?.length>0&&<FollowUps qs={followUps}/>}
 {res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
@@ -69,3 +70,19 @@ return <details className="sv-probes" open><summary>Beyond the tests</summary>
 {accepted&&<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={w==="busy"} onClick={()=>{run(setW,waste);track("probe",{kind:"waste"})}}>What would still pass, for less?</button>
 {w==="busy"?<p className="sv-help">Trying it one step smaller at a time…</p>:w==="none"?<p className="sv-help">Nothing to try here.</p>:w?(w.saving<Math.max(1,w.before*0.02)?<p className="sv-probe-out ok">Nothing smaller still passes every test: this design is already lean.</p>:<p className="sv-probe-out">It would still pass every test at <b>${fmt(w.after)}</b> a month, <b>${fmt(w.saving)}</b> less.{w.partial?" (It stopped trying after a while; there may be more.)":""} <button type="button" className="sv-linkbtn" onClick={()=>setHow(v=>!v)} aria-expanded={how}>{how?"Hide how":"Show how"}</button></p>):null}
 {w&&w.changes&&how&&<ul className="sv-probe-how">{w.changes.map(c=><li key={c.part+c.field}><b>{c.name}</b>: {c.label||c.field} {String(c.from)} → {String(c.to)}</li>)}</ul>}</div>}</details>}
+
+// Defend your design (context 36, step 17): three questions about this design, answered by running it. Kept in this
+// browser (tk-defend-v1: the last result per problem); not part of the score.
+const DEFEND_KEY="tk-defend-v1";
+function Defend({P,probe}){const[st,setSt]=useState(null),[i,setI]=useState(0),[picks,setPicks]=useState([]);
+const start=()=>{setSt("busy");setTimeout(()=>{let qs=[];try{qs=defendQuestions(probe.design(),probe.lab,P)}catch{}setSt(qs.length?{qs}:"none");setI(0);setPicks([]);track("defend_start",{n:qs.length})},30)};
+if(!st)return <div className="sv-defend"><b>Defend your design</b><p className="sv-help">An interviewer asks about your own design: what if this part fails, what gives first. Three questions, answered by running it.</p><button type="button" className="sv-run" onClick={start}>Start</button></div>;
+if(st==="busy")return <div className="sv-defend"><b>Defend your design</b><p className="sv-help">Running your design to find the questions…</p></div>;
+if(st==="none")return <div className="sv-defend"><b>Defend your design</b><p className="sv-help">No questions could be built for this design.</p></div>;
+const{qs}=st,q=qs[i],pick=picks[i],done=picks.length===qs.length&&pick!==undefined&&i===qs.length-1,right=picks.filter((p,k)=>p===qs[k].right).length;
+const choose=c=>{if(pick!==undefined)return;const np=[...picks];np[i]=c;setPicks(np);track("defend_answer",{kind:q.kind,right:c===q.right});
+if(np.filter(x=>x!==undefined).length===qs.length){try{const all=JSON.parse(localStorage.getItem(DEFEND_KEY)||"{}");all[probe.slug||"p"]={at:Date.now(),right:np.filter((p,k)=>p===qs[k].right).length,n:qs.length};localStorage.setItem(DEFEND_KEY,JSON.stringify(all))}catch{}}};
+return <div className="sv-defend" aria-live="polite"><b>Defend your design <small>· question {i+1} of {qs.length}</small></b>
+<p className="sv-defend-q">{q.q}</p><ul className="sv-defend-c">{q.choices.map((c,k)=><li key={k}><button type="button" disabled={pick!==undefined} className={pick===undefined?"":k===q.right?"right":k===pick?"wrong":""} onClick={()=>choose(k)}>{c}</button></li>)}</ul>
+{pick!==undefined&&<p className="sv-defend-say"><b>{pick===q.right?"Right.":"Not quite."}</b> {q.say}</p>}
+{pick!==undefined&&(i<qs.length-1?<button type="button" className="sv-linkbtn" onClick={()=>setI(i+1)}>Next →</button>:<p className="sv-defend-end">{right} of {qs.length} right. {right===qs.length?"You know how your design behaves.":"The run above is what an interviewer would expect you to know: try Break it yourself in a replay to see it."}</p>)}</div>}

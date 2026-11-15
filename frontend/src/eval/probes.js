@@ -34,7 +34,7 @@ export function headroom(design, lab, practice) {
     for (const m of DOWN) { const r = run(m); if (r.ok) { lo = m; break; } hi = m; why = r.why; }
   }
   if (hi !== null && lo > 0) for (let i = 0; i < BISECT; i++) { const mid = (lo + hi) / 2, r = run(mid); if (r.ok) lo = mid; else { hi = mid; why = r.why; } }
-  return { m: Math.floor(lo * 10) / 10, capped: hi === null, base: { id: base.id, name: base.name, rps: base.traffic.rps }, first: hi === null ? '' : why, runs };
+  return { m: Math.floor(lo * 10) / 10, exact: lo, capped: hi === null, base: { id: base.id, name: base.name, rps: base.traffic.rps }, first: hi === null ? '' : why, runs };
 }
 
 // Each one-step-smaller change of a part: a smaller size, or one fewer of any setting with a minimum (instances,
