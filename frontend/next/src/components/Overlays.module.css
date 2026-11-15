@@ -54,3 +54,9 @@
 .tourFloat { position: fixed; top: auto; bottom: 18px; right: 18px; z-index: 30; box-shadow: var(--shadow-pop); }
 @media (max-width: 980px) { .tourBtn { top: 10px; right: 12px; padding: 5px 12px; font-size: 13px; } }
 @media (max-width: 980px) { .tourFloat { top: auto; bottom: calc(var(--tabbar-h, 64px) + 14px + env(safe-area-inset-bottom)); } }
+/* phones: the dialog's head is the sheet's grab area (swipe down to close) */
+@media (max-width: 640px) {
+  .dialog { position: relative; padding-top: 26px; }
+  .dHead { touch-action: none; }
+  .dialog::before { content: ""; position: absolute; left: 50%; top: 8px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
+}

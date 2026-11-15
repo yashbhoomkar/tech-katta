@@ -180,3 +180,15 @@ declare module "@legacy/practice/index.jsx" {
   const Practice: ComponentType<{ slug: string; t: unknown }>;
   export default Practice;
 }
+
+declare module "@legacy/theme/Scene.jsx" {
+  import type { ComponentType } from "react";
+  /** a small drawing for an empty or error state, made from the figure parts (spec 24 G3) */
+  const Scene: ComponentType<{ kind: "offline" | "missing" | "empty" | "busy" | "broken" }>;
+  export default Scene;
+}
+declare module "@legacy/dashboard/icons.jsx" {
+  import type { ComponentType } from "react";
+  /** line icons and the section marks (spec 24 G4): concepts, components, interview-questions, quick-notes, real-systems, problems */
+  export const Icon: ComponentType<{ name: string }>;
+}

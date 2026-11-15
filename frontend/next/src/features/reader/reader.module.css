@@ -240,3 +240,5 @@
 .more[open] > .moreBody > * { animation: tk-rise 180ms var(--out) backwards; }
 .typeMore[open] > p { animation: tk-rise 180ms var(--out) backwards; }
 @media (prefers-reduced-motion: reduce) { .tocMark { transition: none; } }
+/* spec 24 §4.3: long lessons lay out the part below the first screens only as it nears (less work on first paint) */
+.prose > .blockWrap:nth-child(n+14) > :not(h2, h3) { content-visibility: auto; contain-intrinsic-size: auto 240px; }

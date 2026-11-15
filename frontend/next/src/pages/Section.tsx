@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { FigureThumb } from "@/features/reader/FigureThumb";
+import { TransitionLink } from "@/components/TransitionLink";
 import { QuickNotes } from "./QuickNotes";
 import { useContent } from "@/content/ContentProvider";
 import { nextInSection, sectionView, tally } from "@/content/model";
@@ -56,7 +57,7 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
         )}
       </header>
 
-      {view.total === 0 && <StateMessage title="Coming soon">Nothing in this section yet. The first notes are being written.</StateMessage>}
+      {view.total === 0 && <StateMessage scene="empty" title="Coming soon">Nothing in this section yet. The first notes are being written.</StateMessage>}
 
       {levels.length > 0 && (
         <div className={s.levels} role="group" aria-label="Filter by difficulty" data-tour="levels">
@@ -91,13 +92,13 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
               const p = progress[a.slug];
               const state = p?.done ? s.done : p ? s.now : "";
               return (
-                <Link key={a.slug} to={paths.article(id, a.slug)} className={`${s.lesson} ${state}`} data-tour={gi === 0 && i === 0 ? "first" : undefined}>
+                <TransitionLink morph key={a.slug} to={paths.article(id, a.slug)} className={`${s.lesson} ${state}`} data-tour={gi === 0 && i === 0 ? "first" : undefined}>
                   <span className={s.st} aria-label={p?.done ? "Done" : p ? "In progress" : "Not started"}>{p?.done && <Icon name="check" size={12} />}</span>
                   <span className={s.no}>{String(i + 1).padStart(2, "0")}</span>
-                  <span className={s.lessonTitle}>{a.title}</span>
+                  <span className={s.lessonTitle} data-morph="">{a.title}</span>
                   <span className={s.lessonTag}>{a.tag}</span>
                   {a.fig && <FigureThumb id={a.fig} className={s.lessonThumb} />}
-                </Link>
+                </TransitionLink>
               );
             })}
           </section>

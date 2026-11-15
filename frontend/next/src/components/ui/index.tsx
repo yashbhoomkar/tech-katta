@@ -2,6 +2,7 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes, CSSProperties, ReactNo
 import { useEffect, useRef } from "react";
 import { Link, type LinkProps } from "react-router-dom";
 import { countUp } from "@/lib/motion";
+import { StateScene, type SceneKind } from "@/components/StateScene";
 import { Icon } from "@/components/Icon";
 import { setPref, useThemePref, type ThemePref } from "@/lib/theme";
 import s from "./ui.module.css";
@@ -77,9 +78,10 @@ export function ThemeSwitch({ label = "Theme" }: { label?: string }) {
   );
 }
 
-export function StateMessage({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+export function StateMessage({ title, children, action, scene }: { title: string; children?: ReactNode; action?: ReactNode; scene?: SceneKind }) {
   return (
     <div className={s.state} role="status">
+      {scene && <StateScene kind={scene} />}
       <h2>{title}</h2>
       {children && <p>{children}</p>}
       {action}

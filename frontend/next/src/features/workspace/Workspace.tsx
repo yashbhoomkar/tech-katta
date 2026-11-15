@@ -85,7 +85,7 @@ class LegacyBoundary extends Component<{ children: ReactNode }, { failed: boolea
   override render() {
     return this.state.failed ? (
       <div className={s.loading}>
-        <StateMessage title="The workspace couldn't open" action={<Button onClick={() => window.location.reload()}>Reload</Button>}>Something went wrong while drawing the canvas. Your designs are kept in this browser.</StateMessage>
+        <StateMessage scene="broken" title="The workspace couldn't open" action={<Button onClick={() => window.location.reload()}>Reload</Button>}>Something went wrong while drawing the canvas. Your designs are kept in this browser.</StateMessage>
       </div>
     ) : this.props.children;
   }

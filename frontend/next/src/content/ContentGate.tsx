@@ -11,7 +11,7 @@ export function ContentGate({ children }: { children: ReactNode }) {
   if (state.status === "error") {
     return (
       <div className={s.wrap}>
-        <StateMessage title="We couldn't load Tech Katta's content" action={<Button variant="primary" onClick={state.retry}>Try again</Button>}>
+        <StateMessage scene="offline" title="We couldn't load Tech Katta's content" action={<Button variant="primary" onClick={state.retry}>Try again</Button>}>
           {state.error.message} Check your connection, then try again.
         </StateMessage>
       </div>
