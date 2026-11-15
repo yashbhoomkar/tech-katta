@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{defendQuestions}from"../eval/defend.js";import{tradeoffs}from"../eval/tradeoffs.js";import{track}from"../analytics.js";
+import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{defendQuestions}from"../eval/defend.js";import{tradeoffs}from"../eval/tradeoffs.js";import{repairs}from"../eval/repairs.js";import{track}from"../analytics.js";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
@@ -45,7 +45,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.cmp&&<Compare c={res.cmp} diff={res.diff}/>}
 {kind==="submit"&&acc&&!res.copied&&P?.v===2&&probe&&<Defend key={"d"+(res.at||j.total)} P={P} probe={probe}/>}
-{!err&&P?.v===2&&probe&&<Probes key={res.at||j.passed+":"+j.total} P={P} probe={probe} accepted={kind==="submit"&&acc&&!res.copied}/>}
+{!err&&P?.v===2&&probe&&<Probes key={res.at||j.passed+":"+j.total} P={P} probe={probe} accepted={kind==="submit"&&acc&&!res.copied} failed={!acc}/>}
 {kind==="submit"&&acc&&!res.copied&&followUps?.length>0&&<FollowUps qs={followUps}/>}
 {res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
@@ -61,10 +61,12 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 
 // Probes (context 36, step 16): two questions no test asks, run on the design as it is now, on demand.
 const times=m=>`${m.toLocaleString("en-US",{maximumFractionDigits:1})}×`;
-function Probes({P,probe,accepted}){const[h,setH]=useState(null),[w,setW]=useState(null),[how,setHow]=useState(false),[t,setT]=useState(null);
+function Probes({P,probe,accepted,failed}){const[h,setH]=useState(null),[w,setW]=useState(null),[how,setHow]=useState(false),[t,setT]=useState(null),[fx,setFx]=useState(null);
 const run=(set,f)=>{set("busy");setTimeout(()=>{try{set(f(probe.design(),probe.lab,P)||"none")}catch{set("none")}},30)};
 const tone=h&&h!=="busy"&&h!=="none"?(h.m<1?"no":h.m<1.2?"edge":"ok"):"";
 return <details className="sv-probes" open><summary>Beyond the tests</summary>
+{failed&&<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={fx==="busy"} onClick={()=>{run(setFx,repairs);track("probe",{kind:"repair"})}}>What would fix it?</button>
+{fx==="busy"?<p className="sv-help">Trying one change at a time on the parts you have…</p>:fx&&fx!=="none"?<Repairs fx={fx}/>:fx==="none"?<p className="sv-help">Nothing to try here.</p>:null}</div>}
 <div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={h==="busy"} onClick={()=>{run(setH,headroom);track("probe",{kind:"headroom"})}}>How much more can it take?</button>
 {h==="busy"?<p className="sv-help">Turning the traffic up…</p>:h==="none"?<p className="sv-help">This problem has no load test to turn up.</p>:h?<p className={"sv-probe-out "+tone}>{h.m<1?<>It does not hold <b>{h.base.name}</b> itself: it manages <b>{times(h.m)}</b> of it.</>:h.capped?<>It held <b>{times(h.m)}</b> {h.base.name}, the most this check tries.</>:<>It holds <b>{times(h.m)}</b> {h.base.name} ({fmt(h.base.rps*h.m)} a second){h.m<1.2?", close to the line":""}.</>}{h.first&&<small> The first thing to give: {h.first}</small>}</p>:null}</div>
 <div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={t==="busy"} onClick={()=>{run(setT,tradeoffs);track("probe",{kind:"tradeoffs"})}}>What did each choice buy you?</button>
@@ -98,3 +100,12 @@ return <div className="sv-to"><p className="sv-help">Your design: {t.yours.passe
 {felt.length>0&&<><h4>Choices the tests depend on</h4><ul>{felt.map(card)}</ul></>}
 {cost.length>0&&<><h4>Choices that only change the bill</h4><ul>{cost.map(card)}</ul></>}
 {same.length>0&&<p className="sv-help">No difference in these tests: {same.map(c=>`${c.name} · ${c.label}`).join("; ")}. What separates those is something the tests don't measure, so be ready to explain it in words.</p>}</div>}
+
+// Checked repairs (context 36, step 22): one change on a part you already have, tried and confirmed by the simulator.
+const money2=d=>Math.abs(d)<1?"about the same bill":`$${fmt(Math.abs(d))} a month ${d>0?"more":"less"}`;
+const asWords=(x)=>x===true?"on":x===false?"off":String(x);
+function Repairs({fx}){if(fx.reason==="wiring")return <p className="sv-probe-out">The first failure{fx.test?<>, <b>{fx.test.name}</b>,</>:""} is about how calls flow, not capacity: no setting fixes it. Read its reason above; the hints and the drawing of How your design was read help.</p>;
+if(fx.reason==="cost")return <p className="sv-probe-out">The first failure is the bill. Make the largest parts smaller: the bill, part by part, above shows which cost most. After it passes, What would still pass, for less? finds more.</p>;
+if(fx.reason)return <p className="sv-help">Nothing to repair here.</p>;
+if(!fx.repairs.length)return <p className="sv-probe-out">No single change to a part you have makes <b>{fx.test.name}</b> pass{fx.tried?" without breaking a test that passes":""}. It needs a different shape: a part it doesn't have yet, or calls going another way.</p>;
+return <div className="sv-probe-out"><p>Checked by running it: each of these alone makes <b>{fx.test.name}</b> pass, and every test that passed still passes.</p><ul className="sv-probe-how">{fx.repairs.map(r=><li key={r.part+r.field+r.to}><b>{r.name}</b>: {r.label} {asWords(r.from)} → {asWords(r.to)} <small>({money2(r.extra)} in that test; {r.passedAfter} of {r.total} tests pass)</small></li>)}</ul></div>}
