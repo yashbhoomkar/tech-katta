@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { readTokens } from "@legacy/theme/palette.js";
 import type { ArticleResponse, Block } from "@/lib/api/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -16,13 +16,6 @@ import s from "./reader.module.css";
 export function outline(body: Block[]): { id: string; text: string }[] {
   return body.flatMap((b, i) => (b.t === "h2" ? [{ id: anchor(i), text: b.x }] : []));
 }
-/** The lesson as cards: one card per h2 section (what comes before the first h2 is the first card). [start, end) block ranges. */
-export function cardsOf(body: Block[]): [number, number][] {
-  const starts = body.flatMap((b, i) => (b.t === "h2" && i > 0 ? [i] : []));
-  const edges = [0, ...starts, body.length];
-  return edges.slice(0, -1).map((a, k) => [a, edges[k + 1] ?? body.length] as [number, number]).filter(([a, b]) => b > a);
-}
-
 /** Minutes to read the main text at 220 words a minute ("Go deeper" and type details are extra). */
 export function readMinutes(article: ArticleResponse): number {
   const count = (x: string | undefined) => (x ? x.split(/\s+/).filter(Boolean).length : 0);
@@ -43,7 +36,8 @@ const anchor = (i: number | string) => `s-${i}`;
 /** Lab links ("problems/challenge/read-heavy") open the challenge here. */
 const labHref = (to: string) => `/${to.replace(/^\/+|\/+$/g, "")}`;
 
-export function ArticleBody({ article, range, dir }: { article: ArticleResponse; range?: [number, number] | undefined; dir?: 1 | -1 }) {
+/** reading: the block being read aloud (its index, from the current app's reader), marked and kept in view */
+export function ArticleBody({ article, reading = null }: { article: ArticleResponse; reading?: number | string | null }) {
   // the legacy colour names live on a hidden probe, so they never leak into the page's own styles
   const probe = useRef<HTMLSpanElement>(null);
   const theme = useDocTheme();
@@ -54,6 +48,10 @@ export function ArticleBody({ article, range, dir }: { article: ArticleResponse;
     readTokens(probe.current);
     setReadFor(theme);
   }, [theme]);
+  useEffect(() => {
+    if (reading == null) return;
+    document.querySelector(`.${s.prose} [data-reading]`)?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, [reading]);
   const figTheme = useMemo(() => (readFor ? { theme: readFor, still, example: article.example.name } : null), [readFor, still, article.example.name]);
 
   // figure numbers, in reading order (figures inside "Go deeper" count too)
@@ -65,18 +63,14 @@ export function ArticleBody({ article, range, dir }: { article: ArticleResponse;
   }, [article.body]);
 
   return (
-    <div className={s.prose} data-cards={range ? "" : undefined}>
+    <div className={s.prose}>
       <span ref={probe} className={tokens.tokens} hidden />
       <FigureTheme.Provider value={figTheme}>
-        {range ? (
-          <div key={range[0]} className={dir === -1 ? s.cardBack : s.cardIn}>
-            {article.body.slice(range[0], range[1]).map((b, j) => (
-              <BlockView key={range[0] + j} block={b} id={anchor(range[0] + j)} article={article} numbers={numbers} />
-            ))}
+        {article.body.map((b, i) => (
+          <div key={i} className={s.blockWrap} data-reading={reading === i ? "" : undefined}>
+            <BlockView block={b} id={anchor(i)} article={article} numbers={numbers} />
           </div>
-        ) : (
-          article.body.map((b, i) => <BlockView key={i} block={b} id={anchor(i)} article={article} numbers={numbers} />)
-        )}
+        ))}
       </FigureTheme.Provider>
     </div>
   );

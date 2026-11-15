@@ -104,3 +104,17 @@ declare module "@legacy/numbers.jsx" {
   const Numbers: ComponentType<{ n: unknown }>;
   export default Numbers;
 }
+
+declare module "@legacy/dashboard/reader.jsx" {
+  import type { ComponentType } from "react";
+  /** read aloud: recorded voice where there is one, else the device's; cur is the block being read ("head" = the dek) */
+  export interface ReaderState { cur: number | "head" | null }
+  export function useReader(article: unknown): ReaderState;
+  export const Reader: ComponentType<{ r: ReaderState }>;
+}
+declare module "@legacy/dashboard/topics.jsx" {
+  import type { ComponentType } from "react";
+  export function topicsOf(article: unknown): unknown[];
+  export const TopicCards: ComponentType<{ ts: unknown[]; still: boolean; onOpen: (k: number, via?: string) => void }>;
+  export const TopicSheet: ComponentType<{ ts: unknown[]; n: number; setN: (n: number) => void; onClose: () => void; still: boolean; fn: Record<number, number> }>;
+}

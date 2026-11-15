@@ -76,16 +76,15 @@ describe("app", () => {
     expect(await screen.findByRole("dialog", { name: "Keyboard shortcuts" })).toBeTruthy();
   });
 
-  it("cards mode shows one section at a time", async () => {
+  it("cards mode shows the lesson as topic cards", async () => {
     mockApi();
     renderAt("/learn/concepts/caching");
     await screen.findByRole("heading", { level: 2, name: "Why cache" });
     fireEvent.click(screen.getByRole("radio", { name: "Cards" }));
-    expect(screen.getByText("1 / 3")).toBeTruthy();
-    expect(screen.queryByRole("heading", { level: 2, name: "Kinds of cache" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Next →" }));
+    expect(screen.queryByRole("heading", { level: 2, name: "Why cache" })).toBeNull();
+    expect(document.querySelector(".a-cards")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Full text" }));
     expect(screen.getByRole("heading", { level: 2, name: "Why cache" })).toBeTruthy();
-    expect(screen.getByText("2 / 3")).toBeTruthy();
   });
 
   it("an unknown lesson is a not-found page", async () => {

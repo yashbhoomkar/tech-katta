@@ -24,7 +24,7 @@
 
 /* ── body text ─────────────────────────────────────────── */
 .prose { font-size: 17.5px; line-height: 1.7; color: var(--ink); }
-.prose > * + *, .moreBody > * + * { margin-top: 18px; }
+.moreBody > * + * { margin-top: 18px; }
 .prose h2 { margin-top: 52px; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; scroll-margin-top: 80px; }
 .prose h3 { margin-top: 34px; font-size: 21px; line-height: 1.3; letter-spacing: -.01em; scroll-margin-top: 80px; }
 .prose h2 + *, .prose h3 + * { margin-top: 12px; }
@@ -194,15 +194,11 @@
 .toolBtn { display: inline-flex; gap: 6px; align-items: center; padding: 7px 14px; border: 1px solid var(--line); border-radius: var(--r-pill); background: none; font-size: 13.5px; font-weight: 500; }
 .toolBtn:hover { border-color: var(--line-strong); }
 .toolBtn:active { transform: scale(.97); }
-.deckWrap { outline: none; }
-.cardIn { animation: tk-cardin 260ms var(--out) both; }
-.cardBack { animation: tk-cardback 260ms var(--out) both; }
-.prose[data-cards] { min-height: 40vh; }
-.prose[data-cards] h2:first-child { margin-top: 0; }
-.deck { position: sticky; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 4; display: flex; gap: 12px; align-items: center; margin-top: 32px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); background: color-mix(in srgb, var(--raised) 92%, transparent); backdrop-filter: blur(10px); box-shadow: var(--shadow-pop); }
-.deckBar { flex: 1; height: 4px; border-radius: 2px; background: var(--sunken); overflow: hidden; }
-.deckBar i { display: block; height: 100%; background: var(--a); transform-origin: left; transition: transform 300ms var(--out); }
-@media (max-width: 680px) { .deck { bottom: calc(var(--tabbar-h, 64px) + 12px + env(safe-area-inset-bottom)); } }
+/* the block being read aloud */
+.blockWrap { display: contents; }
+.prose > :where(.blockWrap + .blockWrap) > :first-child { margin-top: 18px; }
+.prose > :where(.blockWrap:has(> h2, > h3) + .blockWrap) > :first-child { margin-top: 12px; }
+.prose [data-reading] > *, .dek[data-reading] { background: color-mix(in srgb, var(--marigold) 26%, transparent); box-shadow: -10px 0 0 color-mix(in srgb, var(--marigold) 26%, transparent), -12px 0 0 var(--marigold); border-radius: 2px; transition: background-color 200ms ease; }
 
 /* ── mark complete burst ───────────────────────────────── */
 .completeWrap { position: relative; }

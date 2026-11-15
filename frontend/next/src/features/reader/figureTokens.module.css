@@ -1,8 +1,9 @@
 /* The lesson figures (frontend/src/figs) take their colours from the legacy token names. This scope maps those
    names onto this design, light and dark, without leaking into the app (where --accent means the section colour).
    readTokens(el) reads them from the element that carries .tokens. The doubled class outranks the current
-   app's own scoped tokens (.tk-legacy) where both sit on the workspace. */
-.tokens.tokens {
+   app's own scoped tokens (.tk-legacy) where both sit on the workspace; the second selectors recolour the
+   overlays the current app draws straight into <body> (topic sheet, full-screen figure, zoom). */
+.tokens.tokens, :global(html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
   --page: #f6f5f1; --bg: #ffffff; --surface: #efede7; --surface-2: #fbfaf7; --hover: #e9e6de;
   --inverse: #17161a; --on-inverse: #f6f5f1;
   --ink: #17161a; --ink-2: #33312d; --ink-3: #4a4844; --muted: #6b6963; --muted-2: #75726b; --faint: #8a877f;
@@ -17,7 +18,7 @@
   --star: #e8a308;
   --cat-green: #1f8a5b; --cat-amber: #b7791f; --cat-violet: #7c3aed; --cat-teal: #0e7490; --cat-pink: #be185d;
 }
-:global(:root[data-theme="dark"]) .tokens.tokens {
+:global(:root[data-theme="dark"]) .tokens.tokens, :global(:root[data-theme="dark"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
   --page: #131312; --bg: #1b1b1a; --surface: #222220; --surface-2: #1e1e1d; --hover: #2a2a28;
   --inverse: #f2f0eb; --on-inverse: #131312;
   --ink: #f2f0eb; --ink-2: #dedbd4; --ink-3: #cac7c0; --muted: #9b988f; --muted-2: #8f8c84; --faint: #7d7a73;
