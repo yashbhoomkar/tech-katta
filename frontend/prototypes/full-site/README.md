@@ -60,16 +60,24 @@ The real app uses paths (`/dashboard/concepts/caching/`); a hash keeps this prot
 
 ## Dark mode decisions
 
-1. **Three settings: System (default), Light, Dark.** System follows the device and changes live when the device changes. The choice is remembered per viewer. The switch is in the sidebar, on the You page (with previews) and in the landing footer.
-2. **No white flash.** `boot-theme.js` runs in `<head>` before the first paint. `theme-color` follows the page colour, so the phone's browser bar matches.
-3. **Warm near-black, not blue-grey.** Page `#121110`, surface `#1A1917`, raised `#23211E`: the same paper at night.
-4. **Depth from lighter surfaces, not shadows.** Shadows disappear on black, so dialogs and menus sit on `--raised` with a 1 px top highlight and a hairline edge.
-5. **Section colours keep their identity without glaring.** Big colour blocks (the cards on the landing, Explore, section headers) become deep versions of each hue with light text. The bright pastel moves to the accent (dots, progress bars, a thin edge), so Concepts is still blue and Problems still green.
-6. **Text is never pure white.** Ink `#EEEBE4`; secondary and muted text keep at least 5:1 contrast. Every text pair passes WCAG AA, the lowest being muted text on raised surfaces at 5.1:1.
-7. **Status colours are lifted for dark**: pass `#5CC98A`, fail `#F28B82`, warn `#F0A35E`, link `#A5B8F5`. The focus ring follows the link colour.
-8. **Inverted buttons.** Primary buttons become light pills with dark text. The black call-to-action band on the landing becomes a deep marigold band, so it still stands out on a dark page.
-9. **No hard-coded colours outside `tokens.css`**, except the small theme previews on the You page, which have to show both themes at once.
-10. **Switching cross-fades** (View Transitions, 280 ms) where the browser supports it, and only when the colours actually change.
+Chosen by the owner on 2026-11-15 after three rounds of side-by-side comparison ("F2 it is"); the rounds and why
+each lost are in tech-katta-context/ui-prototypes/TRIED.md.
+
+1. **System (default), Light, Dark**; System follows the device live. Set before first paint (`boot-theme.js`), so
+   there is no white flash; `theme-color` follows the page.
+2. **Warm graphite**: page `#131312`, surface `#1C1C1A`, raised `#252523`, sunken `#2A2A27`. Neither brown (the
+   first dark) nor cold grey. Depth from lighter layers, not shadows.
+3. **Vivid, balanced section colours**: the light theme's hues, saturated, at one perceived lightness (OKLCH L .80,
+   chroma up to .14) so no section outshines another: concepts `#6ACAFF`, components `#FAAA51`, interview
+   `#CCABFE`, problems `#3FD9AE`, real systems `#FFA384`, quick notes `#EADB58` (lemon: a yellow must be a little
+   brighter to read as yellow, and it stays clear of the marigold brand). Dark text on every colour block (≈10:1).
+4. **Colour is a fill or a line, never a dark wash**: a dark orange is brown and a dark yellow is olive, which made
+   the first dark muddy. Figures, "Say this", Problem of the day, the canvas challenge, hints: neutral with a 3 px
+   edge in the section's colour. Difficulty chips are outlined.
+5. **Status colours kept apart from sections**: Passed is leaf green `#75D079`, Problems is teal.
+6. **Calm at night**: section headers sit 10 % darker than tiles; hover brightens a coloured card instead of lifting it.
+7. **Text never pure white** (`#F2F0EB`); every text pair at least 4.5:1.
+8. **Switching cross-fades** (View Transitions, 280 ms) where the browser supports it.
 
 ## Motion
 

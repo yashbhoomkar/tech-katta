@@ -53,37 +53,42 @@
   --preview: #FFFFFF; --on-preview: #17161A;   /* the small white panes inside coloured cards */
 }
 
-/* ---------- dark ----------
-   Warm near-black (it is the same paper at night, not a blue-grey app). Depth comes from lighter surfaces,
-   not shadows. Big colour blocks become deep versions of each hue with light text; the bright pastel moves
-   to the accent (dots, bars, a 1 px edge) so sections stay recognisable without glaring. */
+/* ---------- dark: "vivid, balanced" (F2, chosen by the owner on 2026-11-15 after three rounds at /p/dark-modes/) ----------
+   - warm graphite, neither brown nor cold grey; depth from four lightness steps, not shadows
+   - the six section colours keep the light theme's hues, saturated, at one perceived lightness (OKLCH L .80,
+     chroma up to .14) so no section outshines another; Quick Notes is lemon (a yellow needs to be a little
+     brighter to read as yellow) and sits away from the marigold brand; Problems leans teal, "Passed" leans leaf
+   - colour appears as full-strength fills with dark text, or as lines and text; never as a dark wash (a dark
+     orange is brown, a dark yellow olive: what made the first dark muddy). Soft areas are neutral with a
+     coloured edge (cards.css, "dark") */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #121110;
-  --surface: #1A1917;
-  --raised: #23211E;
-  --sunken: #262420;
-  --ink: #EEEBE4; --ink-2: #C4C0B6; --muted: #959187;
-  --line: #2C2A26; --line-strong: #403D37;
-  --btn: #EEEBE4; --on-btn: #121110;
+  --page: #131312;
+  --surface: #1C1C1A;
+  --raised: #252523;
+  --sunken: #2A2A27;
+  --ink: #F2F0EB; --ink-2: #CAC7C0; --muted: #9B988F;
+  --line: #2F2E2B; --line-strong: #45443F;
+  --btn: #F2F0EB; --on-btn: #131312;
   --marigold: #FFC233; --on-marigold: #17161A;
-  --link: #A5B8F5; --focus: #A5B8F5;
-  --pass: #5CC98A; --fail: #F28B82; --warn: #F0A35E; --star: #F5B83D;
-  --video: #000000; --on-video: #EEEBE4;
+  --link: #9DB8FF; --focus: #9DB8FF;
+  --pass: #75D079; --fail: #FF8478; --warn: #FFAA5C; --star: #FFC233;
+  --video: #000000; --on-video: #F2F0EB;
   --scrim: rgb(0 0 0 / .62);
-  --shadow: 0 0 0 1px #2C2A26;
-  --shadow-pop: 0 0 0 1px #34312C, 0 30px 60px -20px rgb(0 0 0 / .7);
+  --shadow: 0 0 0 1px #2F2E2B;
+  --shadow-pop: 0 0 0 1px #383733, 0 30px 60px -20px rgb(0 0 0 / .7);
   --hl: inset 0 1px 0 rgb(255 255 255 / .04);
-  --band-strong: #241F12; --on-band-strong: #EEEBE4;
-  --selection: rgb(255 194 51 / .3);
+  --band-strong: #1C1C1A; --on-band-strong: #F2F0EB;
+  --selection: rgb(106 202 255 / .35);
 
-  --c-concepts: #1C2F3B;   --a-concepts: #8EBBD8;   --t-concepts: #18232B;
-  --c-components: #3A2614; --a-components: #E9A050; --t-components: #2A1F15;
-  --c-interview: #2A2140;  --a-interview: #BCA4EE;  --t-interview: #221D2E;
-  --c-problems: #15322A;   --a-problems: #84D0B0;   --t-problems: #16261F;
-  --c-real: #3A2019;       --a-real: #EFA48C;       --t-real: #2B1D18;
-  --c-notes: #352E14;      --a-notes: #EBD173;      --t-notes: #29251A;
-  --on-c: #EEEBE4; --on-c-2: rgb(238 235 228 / .78);
-  --track-on-c: rgb(255 255 255 / .12); --fill-on-c: #EEEBE4;
-  --preview: #121110; --on-preview: #EEEBE4;
+  --c-concepts: #6ACAFF;   --a-concepts: #6ACAFF;
+  --c-components: #FAAA51; --a-components: #FAAA51;
+  --c-interview: #CCABFE;  --a-interview: #CCABFE;
+  --c-problems: #3FD9AE;   --a-problems: #3FD9AE;
+  --c-real: #FFA384;       --a-real: #FFA384;
+  --c-notes: #EADB58;      --a-notes: #EADB58;
+  --t-concepts: #232321; --t-components: #232321; --t-interview: #232321; --t-problems: #232321; --t-real: #232321; --t-notes: #232321;
+  --on-c: #141312; --on-c-2: rgb(20 19 18 / .76);
+  --track-on-c: rgb(0 0 0 / .18); --fill-on-c: #141312;
+  --preview: #131312; --on-preview: #F2F0EB;
 }
