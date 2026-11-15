@@ -290,3 +290,8 @@
 /* Trade-offs (context 36, step 18) */
 .sv-to h4{margin:10px 0 4px;font-size:12.5px;color:var(--muted);font-weight:600}.sv-to ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}
 .sv-to small{display:block;color:var(--ink-2);margin-top:2px}.sv-to-fail{color:var(--danger);font-weight:600}
+
+/* Why did this part crash? (context 36, step 19) */
+.sv-why-parts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:12.5px}.sv-why-l{color:var(--muted)}
+.sv-why-chip{height:26px;padding:0 10px;border:1px solid var(--danger);border-radius:999px;background:var(--bg);color:var(--danger);font:500 12px var(--font);cursor:pointer}.sv-why-chip.on{background:var(--danger);color:var(--bg)}
+.sv-why-card{flex-basis:100%;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-why-card p{margin:4px 0;font-size:13px}.sv-why-fed{color:var(--ink-2)}.sv-why-fix{font-weight:600}
