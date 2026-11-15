@@ -243,3 +243,8 @@
 /* Bookmark and private notes (context 36, step 10) */
 .sv-mark{width:32px;height:32px;margin-right:6px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--muted);font-size:16px;line-height:1;cursor:pointer}.sv-mark.on{color:var(--accent);border-color:var(--accent)}
 .sv-pnote{display:grid;gap:6px;margin:20px 0 0;font:600 13px var(--font)}.sv-pnote textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13.5px/1.5 var(--font);padding:8px 10px;resize:vertical}
+
+/* A shared design (context 36, step 11) */
+.sh-fig{margin:16px 0;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:auto}.sh-fig svg{display:block;width:100%;height:auto;min-width:560px}
+.sh-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.sh-acts .sv-run{height:38px;padding:0 16px}
+.sh h2{margin:24px 0 8px;font-size:16px}.sh-parts{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}.sh-parts p{margin:2px 0 0;color:var(--ink-2)}

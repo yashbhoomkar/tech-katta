@@ -284,3 +284,6 @@
 .lab-present-io{margin:6px 0;font-size:13px;color:var(--ink-2)}
 .lab-present blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid var(--accent);background:var(--surface-2);font-size:14px;line-height:1.5}
 .lab-present-nav{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* Sharing (context 36, step 11) */
+.lab-import{display:block;padding:7px 10px;cursor:pointer;font:500 13px var(--font);color:var(--ink)}.lab-import:hover{background:var(--surface-2)}.lab-import input{display:none}

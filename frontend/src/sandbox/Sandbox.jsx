@@ -21,7 +21,7 @@ const set=patch=>setS(x=>cleanSettings({...x,...patch}));
 const P=useMemo(()=>sandboxPractice(s),[s]);
 const design=useRef(null);const[nodes,setNodes]=useState([]);const[gen,setGen]=useState(0),[pending,setPending]=useState(null);
 const[res,setRes]=useState(null),[rep,setRep]=useState(null),[busy,setBusy]=useState(false);
-useEffect(()=>{track("sandbox_open",{})},[]);
+useEffect(()=>{track("sandbox_open",{});try{const raw=sessionStorage.getItem("tk-sandbox-import");if(raw){sessionStorage.removeItem("tk-sandbox-import");const d=JSON.parse(raw);if(Array.isArray(d.nodes)){setPending({nodes:d.nodes,edges:d.edges||[]});setGen(g=>g+1)}}}catch{}},[]);
 if(err)return <LoadError what="the canvas" retry={load}/>;if(!lab)return <Loading label="Loading the canvas"/>;
 const cat=evalCatalogue(lab),comp=t=>cat[t]||lab.components?.find(c=>c.type===t);
 const nameOf=id=>{const n=(design.current||P.start).nodes?.find(x=>x.id===id);return n?.name||comp(n?.type)?.name||id};
