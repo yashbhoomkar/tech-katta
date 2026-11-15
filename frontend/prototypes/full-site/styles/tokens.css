@@ -41,13 +41,16 @@
   --band-strong: #17161A; --on-band-strong: #FFFFFF;
   --selection: rgb(255 194 51 / .45);
 
-  /* sections: fill (big colour blocks), text on that fill, accent (dots, bars, borders), tint (soft backgrounds) */
-  --c-concepts: #A9CBE0;   --a-concepts: #A9CBE0;   --t-concepts: #E7F1F7;
-  --c-components: #E9A050; --a-components: #E9A050; --t-components: #FBEBD9;
-  --c-interview: #CDB8F0;  --a-interview: #CDB8F0;  --t-interview: #F1EBFB;
-  --c-problems: #A6DCC5;   --a-problems: #A6DCC5;   --t-problems: #E6F5EE;
-  --c-real: #F3B9A6;       --a-real: #F3B9A6;       --t-real: #FCECE6;
-  --c-notes: #F4DE8A;      --a-notes: #F4DE8A;      --t-notes: #FCF6DD;
+  /* sections: fill (big colour blocks), accent (dots, bars, borders), tint (soft backgrounds).
+     Same hues as the dark theme and one perceived lightness (OKLCH L .85, quick notes .90; chroma up to .105),
+     so the two themes are one family. The first light pastels ran from chroma .047 (concepts, nearly grey) to
+     .129 (components) and looked faded next to the vivid dark (owner, 2026-11-15: "the colours becoming dull"). */
+  --c-concepts: #95D8FF;   --a-concepts: #95D8FF;   --t-concepts: #E2F7FF;
+  --c-components: #FDC082; --a-components: #FDC082; --t-components: #FFF0E0;
+  --c-interview: #D8C0FF;  --a-interview: #D8C0FF;  --t-interview: #F7EFFF;
+  --c-problems: #82E4C3;   --a-problems: #82E4C3;   --t-problems: #E2FAF0;
+  --c-real: #FEBCA6;       --a-real: #FEBCA6;       --t-real: #FFEEE6;
+  --c-notes: #EBE18E;      --a-notes: #EBE18E;      --t-notes: #F7F5DF;
   --on-c: #17161A; --on-c-2: rgb(23 22 26 / .78);
   --track-on-c: rgb(255 255 255 / .55); --fill-on-c: #17161A;
   --preview: #FFFFFF; --on-preview: #17161A;   /* the small white panes inside coloured cards */
