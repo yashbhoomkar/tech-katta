@@ -302,3 +302,6 @@ main.enter .ecard:nth-child(6) { animation-delay: 160ms; }
 
 /* the "Challenge stars" bar reads --star, which is black here (stars sit on marigold stickers): give it marigold */
 .bar i[style*="--star"] { background: var(--marigold) !important; }
+
+/* stickers keep their own width inside column cards (Challenges) */
+.chals .stars, .card > .stars { align-self: flex-start; }
