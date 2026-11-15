@@ -20,6 +20,8 @@ const protoDir = path.join(frontend, "prototypes"), out = path.join(dist, "p");
 // which is copied as it is: a small structured frontend (styles/, scripts/ with ES modules) served at /p/<name>/
 const isDir = (f) => fs.statSync(path.join(protoDir, f)).isDirectory();
 const pages = fs.existsSync(protoDir) ? fs.readdirSync(protoDir).filter((f) => f.endsWith(".html") || (isDir(f) && fs.existsSync(path.join(protoDir, f, "index.html")))).sort() : [];
+// /p/next/ and /p/neo-brutalism/ are the app (prototype-next.mjs): no design prototype may take those names
+if (pages.some((f) => ["next", "neo-brutalism"].includes(f.replace(/\.html$/, "")))) throw new Error("prototype: a design prototype would overwrite the app at /p/next/ or /p/neo-brutalism/");
 const srcOf = (f) => (isDir(f) ? path.join(protoDir, f, "index.html") : path.join(protoDir, f));
 fs.mkdirSync(out, { recursive: true });
 // The site's Content-Security-Policy (routes.json) allows only script files from this site, not script written in
@@ -40,11 +42,12 @@ const items = pages.map((f) => { const h = fs.readFileSync(srcOf(f), "utf8");
 const types = [...new Set(items.map((i) => i.type))];
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Prototypes · Tech Katta</title>
 <style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#F6F5F1;color:#17161A}main{max-width:760px;margin:0 auto;padding:48px 20px}h1{letter-spacing:-.02em}h2{margin-top:32px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B6963}a.card{display:block;background:#fff;border:1px solid #E4E2DC;border-radius:16px;padding:16px 18px;margin:10px 0;color:inherit;text-decoration:none}a.card:hover{border-color:#17161A}a.card b{font-size:18px}a.card span{display:block;color:#4A4844;font-size:14.5px;margin-top:4px}code{background:#EEEDE8;border-radius:4px;padding:1px 5px}</style></head>
-<body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch, reading live content from tech-api.katta.cc, signed out: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. The new frontend (the production beta's code): <a href="/p/next/">/p/next/</a>. Below, design ideas before they are built into the app.</p>
+<body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch, reading live content from tech-api.katta.cc, signed out: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. The new frontend (the production beta's code): <a href="/p/next/">/p/next/</a>, and the same app in the neo-brutalism look: <a href="/p/neo-brutalism/">/p/neo-brutalism/</a>. Below, design ideas before they are built into the app.</p>
 ${types.map((t) => `<h2>${esc(t)}</h2>` + items.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
 </main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
-// The new frontend is copied to dist/p/next by prototype-next.mjs (run before this script).
+// The new frontend is copied to dist/p/next and dist/p/neo-brutalism by prototype-next.mjs (run before this script);
+// the neo-brutalism design mock-up it was built from lives on at /p/neo-brutalism-mockup/.
 // Cloudflare: old prototype addresses keep working
 if (process.argv.includes("--cloudflare")) {
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";

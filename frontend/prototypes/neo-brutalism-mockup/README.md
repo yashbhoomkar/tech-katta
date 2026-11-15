@@ -1,4 +1,4 @@
-# Neo-brutalism prototype (prototype.katta.cc/p/neo-brutalism/)
+# Neo-brutalism design mock-up (prototype.katta.cc/p/neo-brutalism-mockup/; the app itself in this look is /p/neo-brutalism/)
 
 The whole of /p/full-site/ in a neo-brutalist style: flat bold colour, 2 px black outlines, hard 4 px shadows,
 Archivo Black headlines, Space Mono labels, sticker chips, and keys that press into their own shadow. Cream
