@@ -501,6 +501,19 @@ test('GET /v1/articles/:slug/solution serves the solution design only: never the
   }
 });
 
+test('GET /v1/articles/:slug/wrong serves the common wrong designs: name, why, the test each fails, the design', async () => {
+  const response = await get('/v1/articles/url-shortener/wrong');
+  assert.equal(response.status, 200);
+  const w = await response.json();
+  const src = JSON.parse((await import('node:fs')).readFileSync(new URL('../../content/articles/interview-questions/url-shortener.json', import.meta.url)));
+  assert.equal(w.slug, 'url-shortener');
+  assert.deepEqual(w.designs, src.practice.wrong.map((x) => ({ name: x.name, why: x.why, fails: x.fails, nodes: x.nodes, edges: x.edges })));
+  for (const path of ['/v1/articles/how-to-answer/wrong', '/v1/articles/nope/wrong', '/v1/articles/url-shortener/wrong/x', '/v1/articles/wrong']) {
+    const r = await get(path);
+    assert.equal(r.status, 404, path);
+  }
+});
+
 test('a design in content may give its database an engine and a schema, which must be valid for it', async () => {
   const { validateDesign } = await import('../src/content/validate.js');
   const lab = JSON.parse((await import('node:fs')).readFileSync(new URL('../../content/lab.json', import.meta.url)));

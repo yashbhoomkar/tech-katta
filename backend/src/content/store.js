@@ -57,9 +57,11 @@ export function buildBodies({ site, examples, articles, lab }) {
   const lists = new Map();
   // A problem's reference and wrong designs calibrate its tests (frontend judge.test.js). They aren't in
   // the article: the reference design is served on its own (GET /v1/articles/<slug>/solution), only when
-  // someone opens the Solution tab; the wrong designs are never served.
+  // someone opens the Solution tab; the wrong designs only on their own (GET /v1/articles/<slug>/wrong), for the gallery.
   const served = (a) => (a.practice ? { ...a, practice: (({ reference, wrong, mutantsAllowed, mutantsAllowedWhy, ...rest }) => rest)(a.practice) } : a);
   const full = new Map(articles.map((a) => [a.slug, { ...served(a), example }]));
+  // A problem's wrong designs, for the gallery in the Solution tab (context 36, step 13): GET /v1/articles/<slug>/wrong.
+  const wrongs = new Map(articles.filter((a) => a.practice?.wrong?.length).map((a) => [a.slug, { slug: a.slug, designs: a.practice.wrong.map((w) => ({ name: w.name, why: w.why, fails: w.fails, nodes: w.nodes, edges: w.edges })) }]));
   const solutions = new Map(articles.filter((a) => a.practice?.reference).map((a) => [a.slug, { slug: a.slug, nodes: a.practice.reference.nodes, edges: a.practice.reference.edges }]));
   return {
     // How much there is, for the landing page ("10 Interview Questions"): counted from the release, never typed by hand.
@@ -76,5 +78,6 @@ export function buildBodies({ site, examples, articles, lab }) {
     },
     article: (slug) => full.get(slug) || null,
     solution: (slug) => solutions.get(slug) || null,
+    wrong: (slug) => wrongs.get(slug) || null,
   };
 }

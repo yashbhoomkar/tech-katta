@@ -254,3 +254,9 @@
 .sv-calc-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-2)}
 .sv-calc-row input,.sv-calc-row select{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13px var(--font);padding:0 8px;width:110px}.sv-calc-row .sv-calc-s{width:52px}.sv-calc-row select{width:auto}
 .sv-calc-row output{flex-basis:100%;color:var(--ink)}
+
+/* Common wrong designs (context 36, step 13) */
+.sv-wrong{margin:20px 0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}.sv-wrong h2{margin:0 0 4px;font-size:16px}
+.sv-wrong ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.sv-wrong li{border-top:1px solid var(--line);padding-top:6px}
+.sv-wrong summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:14px}.sv-wrong-fails{font:500 12px var(--mono);color:var(--danger)}
+.sv-wrong details p{margin:6px 0;font-size:14px}.sv-wrong-fig{margin:8px 0}.sv-wrong ul{grid-template-columns:minmax(0,1fr)}.sv-wrong{min-width:0;overflow:hidden}
