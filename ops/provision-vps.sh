@@ -137,7 +137,7 @@ UNIT
 # the same settings the deploy writes, so the API runs correctly before the first deploy
 install -d /etc/systemd/system/tech-katta-api.service.d /etc/tech-katta
 [ -f /etc/systemd/system/tech-katta-api.service.d/production.conf ] || printf '%s\n' '[Service]' 'Environment=NODE_ENV=production' \
-  'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc' \
+  'Environment=HOST=127.0.0.1' 'Environment=PORT=5000' 'Environment=FRONTEND_ORIGIN=https://tech.katta.cc,https://prototype.katta.cc' \
   "Environment=CONTENT_DIR=$BASE/current" 'EnvironmentFile=-/etc/tech-katta/api.env' > /etc/systemd/system/tech-katta-api.service.d/production.conf
 systemctl daemon-reload
 systemctl enable --now tech-katta-api >/dev/null

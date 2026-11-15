@@ -1,4 +1,4 @@
-// Sign-in and account endpoints. Only the site itself (FRONTEND_ORIGIN) may call them with
+// Sign-in and account endpoints. Only the site itself (FRONTEND_ORIGIN, one or more origins) may call them with
 // credentials; every request that changes something must come from that origin (CSRF guard on top
 // of the SameSite cookie).
 //   GET    /v1/auth/config    {enabled, clientId}         — whether to show "Sign in with Google"
@@ -20,6 +20,7 @@
 //   GET    /v1/problems/stats per problem: submissions, accepted, solvers (public, cached a minute)
 //   GET    /v1/me/lab         Lab data (designs, deletions, progress)
 //   POST   /v1/me/lab         Lab data in → merged Lab data out (merge.js rules)
+import { originCheck } from '../origins.js';
 import { canvasEvidence, canvasProblem } from '../../../frontend/src/v3/adapters/eval.js';
 import { runReview } from '../ai/jobs/review.js';
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
@@ -91,7 +92,8 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
   const judging = new Set(); // accounts with a design being judged now
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
   // the site, and (for reading only) the owner's analytics dashboard
-  const readers = new Set([allowedOrigin, analyticsOrigin].filter(Boolean));
+  const isSite = originCheck(allowedOrigin);
+  const readers = new Set([...(typeof allowedOrigin === 'string' ? [allowedOrigin] : allowedOrigin || []), analyticsOrigin].filter(Boolean));
   const cors = (request) => (readers.has(request.headers.origin)
     ? { 'Access-Control-Allow-Origin': request.headers.origin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : {});
   const send = (request, response, status, body, extra = {}) => {
@@ -141,7 +143,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
       catch (error) { log.error('Problem stats failed:', errorKind(error)); return send(request, response, 200, { problems: {} }); }
     }
     if (!enabled) return send(request, response, 503, { error: 'sign_in_not_configured' });
-    if (method !== 'GET' && method !== 'HEAD' && request.headers.origin !== allowedOrigin) return send(request, response, 403, { error: 'bad_origin' });
+    if (method !== 'GET' && method !== 'HEAD' && !isSite(request.headers.origin)) return send(request, response, 403, { error: 'bad_origin' });
     try {
       if (pathname === '/v1/auth/google' && method === 'POST') {
         if (limited(request, 'signin', 30, 10 * 60_000)) return send(request, response, 429, { error: 'too_many_requests' });
