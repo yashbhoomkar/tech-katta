@@ -6,6 +6,7 @@ import { problemBySlug, levelName, HINTS, INTERVIEWER } from "../data/problems.j
 import { toast } from "../components/toast.js";
 import { ICONS } from "../components/icons.js";
 import * as notFound from "./not-found.js";
+import { dragToClose } from "../components/swipe.js";
 
 const p = (ctx) => problemBySlug(ctx.params[0]);
 export const title = (ctx) => p(ctx)?.title || "Page not found";
@@ -24,7 +25,8 @@ export const render = (ctx) => {
     <div class="l"><button class="btn icon ghost" type="button" data-drawer-open aria-label="Open menu" title="Menu  [">${ICONS.menu}</button><a class="btn sm" href="#/problems">← Problems</a><span class="t">${esc(pr.title)}</span><span class="chip ${pr.level}">${levelName(pr.level)}</span></div>
     <div class="r"><button class="btn sm timer" type="button" id="timer" aria-label="Time left; press to pause"><span class="tdot"></span><span id="tleft">24:10</span></button><button class="btn sm" type="button" id="run">▶ Run</button><button class="btn primary sm" type="button" id="submit"><span class="sp" aria-hidden="true"></span><span class="lb">Submit</span></button><button class="btn sm accent" type="button" id="askbtn" aria-expanded="false" aria-controls="ask">Ask<span class="long"> the interviewer</span></button></div>
   </div>
-  <div class="wbody">
+  <div class="panes" role="tablist" aria-label="Show" data-on="brief"><button type="button" role="tab" aria-selected="true" data-pane="brief">Brief</button><button type="button" role="tab" aria-selected="false" data-pane="canvas">Canvas</button></div>
+  <div class="wbody" data-pane="brief">
     <div class="wleft"><div class="tabs" role="tablist"><span class="tab-ul" aria-hidden="true"></span>${["Description", "Your answer", "Hints (7)", "Solution", "Submissions"].map((t, i) => `<button role="tab" type="button" aria-selected="${i === 0}" id="tab${i}">${t}</button>`).join("")}</div>
       <div class="wdesc panel" data-panel="0" role="tabpanel" aria-labelledby="tab0"><p class="mono">Problem ${pr.n} · ${levelName(pr.level)}</p><h2>${esc(pr.title)}</h2>
         ${full ? `<p>Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.</p>` : `<p>The full brief for this problem is in the real site. The prototype keeps the URL shortener's canvas so you can try the tools.</p>`}
@@ -63,6 +65,12 @@ export function mount(root, ctx, sc) {
   const pick = (i) => { tbs.forEach((b, j) => { b.setAttribute("aria-selected", String(i === j)); b.tabIndex = i === j ? 0 : -1; }); $$(".panel", root).forEach((pn) => (pn.hidden = +pn.dataset.panel !== i)); requestAnimationFrame(place); };
   tbs.forEach((b, i) => { b.addEventListener("click", () => pick(i)); b.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const n = (i + (e.key === "ArrowRight" ? 1 : -1) + tbs.length) % tbs.length; pick(n); tbs[n].focus(); } }); });
   pick(0); document.fonts?.ready.then(place); sc.listen(window, "resize", place);
+
+  // phone: brief and canvas take turns on the full screen; Run and Submit jump to the canvas so the requests can be seen
+  const body = $(".wbody", root), panes = $(".panes", root);
+  const showPane = (p) => { body.dataset.pane = p; $$("[data-pane]", panes).forEach((b) => b.setAttribute("aria-selected", String(b.dataset.pane === p))); panes.dataset.on = p; };
+  $$("button[data-pane]", panes).forEach((b) => b.addEventListener("click", () => showPane(b.dataset.pane)));
+  ["#run", "#submit"].forEach((id) => $(id, root).addEventListener("click", () => showPane("canvas"), true));
 
   // notes
   const notes = $("#notes", root); let nt;
@@ -139,7 +147,8 @@ export function mount(root, ctx, sc) {
   // the interviewer drawer
   const ask = $("#ask", root), alog = $("#alog", root), ab = $("#askbtn", root);
   const openAsk = () => { ask.hidden = false; ab.setAttribute("aria-expanded", "true"); $("#aq", root).focus({ preventScroll: true }); };
-  const closeAsk = () => { ab.setAttribute("aria-expanded", "false"); closeWithExit(ask, 220); };
+  const closeAsk = (now) => { ab.setAttribute("aria-expanded", "false"); if (now === true) ask.hidden = true; else closeWithExit(ask, 220); };
+  if (matchMedia("(max-width: 640px)").matches) sc.add(dragToClose(ask, closeAsk));
   ab.addEventListener("click", () => (ask.hidden ? openAsk() : closeAsk()));
   $("[data-aclose]", ask).addEventListener("click", closeAsk);
   sc.listen(window, "keydown", (e) => { if (e.key === "Escape" && !ask.hidden) closeAsk(); });

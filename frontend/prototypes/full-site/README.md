@@ -83,3 +83,16 @@ The real app uses paths (`/dashboard/concepts/caching/`); a hash keeps this prot
 - Modals open in 260 ms from 0.96; drawers and sheets take 400–500 ms on the drawer curve.
 - Search opens almost at once, because it is opened from the keyboard.
 - With reduced motion, fades and colour changes stay; movement and loops go.
+
+## Phones
+
+`styles/phone.css` (loaded last) and `scripts/components/swipe.js` hold the phone pass (owner, 2026-11-15: good on desktop, "not upto the mark for the mobile view"):
+
+- **Landing**: the four section cards are a swipe row with a peek of the next card and dots, not a tall stack. The hero is tighter, and the two buttons share the width. Numbers are two-up and the portrait is small.
+- **Home**: the continue card drops its picture, and Explore is a grid of two-up tiles.
+- **Problems**: cards instead of the wide table, so difficulty, acceptance, best score and stars are visible without sideways scrolling. Filters are one swipeable row.
+- **Workspace**: a Brief / Canvas switch gives each the whole screen. Run and Submit jump to the canvas so you see the requests travel. Results are one swipeable row.
+- **Lesson**: in Cards mode, swipe left or right; the card controls sit above the tab bar, in thumb reach.
+- **Gestures**: the menu sheet, the sign-in sheet and the interviewer sheet follow your finger and close on a flick down or past 30 %.
+- **Tab bar**: a soft pill behind the current tab, and tabs press in. Nothing behind an open sheet scrolls.
+- **Motion**: no blur and no looping shapes, shorter travel, section cards slide in from the side, and press feedback works on iOS.

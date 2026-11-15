@@ -6,6 +6,7 @@ import { later, RM, replay, placeIndicator } from "../core/motion.js";
 import { findLesson, completeLesson, progressOf } from "../data/sections.js";
 import { toast } from "../components/toast.js";
 import * as notFound from "./not-found.js";
+import { swipeX } from "../components/swipe.js";
 
 const f = (ctx) => findLesson(ctx.params[0], ctx.params[1]);
 const href = (sec, l) => `learn/${sec.id}/${l.slug}`;
@@ -104,6 +105,7 @@ export function mount(root, ctx, sc) {
     show(ci + d, d);
   }));
   sc.listen(window, "keydown", (e) => { if (!art.classList.contains("cards") || /input|textarea/i.test(document.activeElement.tagName)) return; if (e.key === "ArrowRight") show(ci + 1, 1); if (e.key === "ArrowLeft") show(ci - 1, -1); });
+  swipeX(art, () => { if (art.classList.contains("cards")) show(ci + 1, 1); }, () => { if (art.classList.contains("cards")) show(ci - 1, -1); });
   requestAnimationFrame(() => requestAnimationFrame(place)); document.fonts?.ready.then(place); sc.timer(setTimeout(place, 400)); sc.listen(window, "resize", place);
 
   // video (prototype: captions only)

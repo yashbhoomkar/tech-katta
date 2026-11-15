@@ -21,6 +21,9 @@ import * as notFound from "./pages/not-found.js";
 // "Skip to content" must not change the hash (the hash is the route)
 document.addEventListener("click", (e) => { if (e.target.closest("[data-skip]")) { e.preventDefault(); document.getElementById("main").focus(); } });
 
+// lets :active press feedback show on iOS taps
+document.addEventListener("touchstart", () => {}, { passive: true });
+
 initTheme();
 const chrome = initShell();
 initCommandPalette();

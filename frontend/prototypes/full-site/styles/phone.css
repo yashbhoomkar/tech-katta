@@ -1,0 +1,137 @@
+/* The phone pass. Loaded last, so it reads as one list of decisions for small screens.
+   Principles: one thing per screen width (swipe rows instead of tall stacks); everything important visible
+   without sideways scrolling; controls in thumb reach; gestures where people expect them (swipe sheets down,
+   swipe lesson cards); lighter motion (no blur, no loops, shorter distances) because phones are slower and
+   motion on a small screen feels bigger. Decisions: README.md "Phones". */
+
+* { -webkit-tap-highlight-color: transparent; }
+/* nothing behind an open sheet or dialog scrolls */
+body:has(.scrim:not([hidden]), .sheet-scrim:not([hidden]), .side.open) { overflow: hidden; }
+.rise-dots, .plist, .panes { display: none; }
+
+/* ---------- tab bar: a soft pill behind the current tab's icon ---------- */
+.tab { position: relative; }
+.tab .ic { position: relative; z-index: 1; }
+.tab::before { content: ""; position: absolute; top: 4px; left: 50%; width: 56px; height: 30px; margin-left: -28px; border-radius: 999px; background: var(--sunken); transform: scaleX(.4); opacity: 0; transition: transform 240ms var(--out), opacity 160ms ease; }
+.tab[aria-current="page"]::before { transform: none; opacity: 1; }
+.tab:active .ic { transform: scale(.9); }
+
+@media (max-width: 980px) {
+  /* problems: cards instead of a wide table */
+  .tbl { display: none; }
+  .plist { display: flex; flex-direction: column; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .pcard { display: grid; grid-template-columns: 26px minmax(0, 1fr) 20px; gap: 4px 10px; align-items: center; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--hl); transition: transform var(--press) var(--out); }
+  .pcard:active { transform: scale(.98); }
+  .pcard .pn { font-size: 11px; }
+  .pcard .pt { font-weight: 600; line-height: 1.3; }
+  .pcard .pm { grid-column: 2 / 4; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; }
+  .pcard .pm .stars { margin-left: auto; }
+  .pcard .ps { grid-row: 1; grid-column: 3; text-align: right; color: var(--pass); font-weight: 600; }
+  .pcard.started .ps { color: var(--warn); }
+  .pcard.picked { box-shadow: 0 0 0 2px var(--pass); animation: m-flash 1.4s ease; }
+  .plist li.in { animation: m-in 280ms var(--out) both; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters .f { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .filters .f::-webkit-scrollbar { display: none; }
+  .fbtn { flex: none; }
+  #pick { align-self: flex-start; }
+
+  /* workspace: brief and canvas take turns on the whole screen */
+  .ws { grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); }
+  .wtop .chip { display: none; }
+  .wtop .r .btn { min-width: 0; }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 8px 16px; padding: 4px; border-radius: 999px; background: var(--sunken); position: relative; }
+  .panes button { position: relative; z-index: 1; border: 0; background: none; border-radius: 999px; padding: 8px; font-size: 14px; font-weight: 600; color: var(--muted); transition: color 150ms ease; }
+  .panes button[aria-selected="true"] { color: var(--ink); }
+  .panes::before { content: ""; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 6px); border-radius: 999px; background: var(--raised); box-shadow: 0 1px 2px rgb(0 0 0 / .1), var(--hl); transition: transform 240ms var(--out); }
+  .panes[data-on="canvas"]::before { transform: translateX(calc(100% + 4px)); }
+  .wbody { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+  .wbody[data-pane="brief"] .canvas, .wbody[data-pane="canvas"] .wleft { display: none; }
+  .wbody .wleft { max-height: none; border-bottom: 0; }
+  .wbody .canvas { min-height: 0; }
+  .wbody[data-pane="canvas"] .canvas { animation: m-fade 160ms ease; }
+  .results { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .results::-webkit-scrollbar { display: none; }
+  .results > * { flex: none; }
+
+  /* lesson: the card controls come right after the card */
+  .art .by { flex-wrap: nowrap; font-size: 13px; }
+  .art .by i { flex: none; }
+}
+
+@media (max-width: 640px) {
+  /* landing hero: tighter, buttons share the width */
+  .hero { padding-top: 28px; }
+  .hero h1 { margin-top: 18px; }
+  .hero .lead { font-size: 17px; margin-top: 16px; }
+  .hero .ctas { margin-top: 22px; }
+  .hero .ctas .btn { flex: 1; padding-inline: 12px; }
+  /* the four section cards become a swipe row with a peek of the next card, and dots */
+  .rise { display: flex; height: auto; gap: 12px; margin: 36px -16px 0; padding: 6px 16px 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .rise::-webkit-scrollbar { display: none; }
+  .rcard { flex: 0 0 82%; height: 300px !important; scroll-snap-align: center; --r: 0deg !important; --y: 0px !important; }
+  .rcard .pv { height: auto; margin-top: auto; border-radius: 14px 14px 0 0; margin-bottom: 0; }
+  .rise-dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 28px; }
+  .rise-dots i { width: 6px; height: 6px; border-radius: 6px; background: var(--line-strong); transition: width 240ms var(--out), background-color 200ms ease; }
+  .rise-dots i.on { width: 18px; background: var(--ink); }
+  /* sections: shorter bands, two-up numbers, a small portrait */
+  .band { padding-block: 56px; }
+  .plain .big { font-size: 22px; }
+  .steps { gap: 10px; margin-top: 28px; }
+  .step { padding: 20px; }
+  .step h3 { font-size: 20px; }
+  .stage { margin-top: 28px; padding: 14px 14px 0; border-radius: 22px; }
+  .win-main { padding: 18px; }
+  .video { aspect-ratio: 16 / 9; }
+  .judge { gap: 28px; }
+  .judge p { font-size: 16px; }
+  .teacher { grid-template-columns: 76px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .face { width: 76px; height: 76px; padding: 8px; font-size: 9px; }
+  .teacher .q { font-size: 20px; margin-top: 6px; }
+  .nums { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .nums .card { padding: 18px; }
+  .nums b { font-size: 40px; }
+  .final { padding-block: 64px; }
+
+  /* home: compact continue card, explore as two-up tiles */
+  .thumb { display: none !important; }
+  .cont, .prog { padding: 20px; }
+  .cont h3 { font-size: 19px; }
+  .cont .btn { align-self: stretch; }
+  .explore { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  .ecard { min-height: 124px; padding: 16px; border-radius: 16px; gap: 2px; }
+  .ecard h3 { font-size: 16px; letter-spacing: -.02em; }
+  .ecard p { font-size: 12.5px; }
+  .days { justify-content: space-between; }
+  .days i { width: 28px; height: 28px; }
+  .topline h1 { font-size: 28px; }
+  .pod { padding: 20px; }
+  .pod .btn { flex: 1; }
+  /* learn and sections */
+  .hub-main { padding: 22px 20px 18px; }
+  .hub-main h2 { font-size: 26px; }
+  .sechead { padding: 22px; border-radius: 20px; }
+  .mhead { padding: 18px 16px; }
+  .pstats div { padding: 10px 6px; }
+  .pstats b { font-size: 20px; }
+
+  /* gestures: sheets and dialogs follow the finger from their top edge */
+  .sheet, .scrim:not(.cmdk) .dialog { touch-action: none; }
+  .sheet .sheet-list { touch-action: pan-y; }
+  .ask .ahead { touch-action: none; }
+  .ask .ahead::before { content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--line-strong); }
+  .ask .ahead { position: relative; padding-top: 22px; }
+  .scrim:not(.cmdk) .dialog::before { content: ""; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--line-strong); }
+
+  /* lighter motion on phones: no blur, shorter travel, no loops, cards slide in from the side */
+  .hero h1 .w { animation-name: m-in; animation-duration: 520ms; }
+  .hero .shape { animation: m-fade 600ms ease both 200ms; }
+  .rcard { animation: m-side 560ms var(--out) both; animation-delay: calc(var(--dl) - 300ms); }
+  .reveal { transform: translateY(14px); transition-duration: 500ms; }
+  @keyframes m-side { from { opacity: 0; translate: 24px 0; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rcard { animation-name: m-fade !important; }
+  .tab::before, .panes::before { transition: opacity 160ms ease; }
+}

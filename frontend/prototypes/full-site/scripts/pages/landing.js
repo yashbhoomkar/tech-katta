@@ -5,6 +5,7 @@ import { once, countUp, later, closeWithExit } from "../core/motion.js";
 import { SECTIONS } from "../data/sections.js";
 import { switchHTML } from "../core/theme.js";
 import { ICONS } from "../components/icons.js";
+import { dragToClose } from "../components/swipe.js";
 
 const NUMS = [["66", "visual notes"], ["22", "problems with tests"], ["8", "challenges, 24 stars"]];
 
@@ -56,6 +57,7 @@ export const render = () => `
       <a class="rcard block" data-sec="problems" href="#/problems" style="--r:4deg;--y:16px;--dl:610ms"><h3>Problems ▸</h3><p>Build it on a canvas. Peaks, crashes and a budget decide your score.</p>
         <div class="pv pane"><div class="row">Evening peak<b class="ok">Passed ✓</b></div><div class="row">A server dies<b class="ok">Passed ✓</b></div><div class="row">Inside budget<b class="wn">2 issues</b></div></div></a>
     </div>
+    <div class="rise-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
   </div>
   <div class="arc" aria-hidden="true"></div>
 </div>
@@ -129,13 +131,18 @@ export function mount(root, ctx, sc) {
 
   // phone menu sheet
   const sheet = $("#lmenu", root), mb = $("#lmenu-btn", root);
-  const closeSheet = () => { mb.setAttribute("aria-expanded", "false"); closeWithExit(sheet, 240); };
+  const closeSheet = (now) => { mb.setAttribute("aria-expanded", "false"); if (now === true) sheet.hidden = true; else closeWithExit(sheet, 240); };
+  sc.add(dragToClose($(".sheet", sheet), closeSheet));
   mb.addEventListener("click", () => { sheet.hidden = false; mb.setAttribute("aria-expanded", "true"); $("[data-sheet-close]", sheet).focus(); });
   sheet.addEventListener("click", (e) => { if (e.target === sheet || e.target.closest("[data-sheet-close], a, [data-signin]")) closeSheet(); });
   sc.listen(window, "keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) closeSheet(); });
 
   // in-page links scroll instead of changing the route
   root.addEventListener("click", (e) => { const b = e.target.closest("[data-scroll]"); if (b) $("#" + b.dataset.scroll, root)?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+
+  // phone: the four section cards are a swipeable row; dots follow the scroll
+  const rise = $(".rise", root), dots = $$(".rise-dots i", root);
+  rise.addEventListener("scroll", () => { const i = Math.round(rise.scrollLeft / (rise.scrollWidth / 4)); dots.forEach((d, j) => d.classList.toggle("on", i === j)); }, { passive: true });
 
   // arrivals
   $$(".reveal", root).forEach((el) => sc.add(once(el, (x) => x.classList.add("in"))));

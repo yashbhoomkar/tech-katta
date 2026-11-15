@@ -3,12 +3,14 @@
 import { $ } from "../core/dom.js";
 import { replay as replayAnim, closeWithExit } from "../core/motion.js";
 import { toast } from "./toast.js";
+import { dragToClose } from "./swipe.js";
 
 export function initSignin() {
   const dlg = $("#signin"), agree = $("#agree"), gb = $("#gbtn"), msg = $("#cmsg");
   let opener = null;
   const open = () => { opener = document.activeElement; dlg.hidden = false; agree.focus(); };
-  const close = () => closeWithExit(dlg, 240).then(() => opener?.focus?.({ preventScroll: true }));
+  const close = (now) => (now === true ? Promise.resolve((dlg.hidden = true)) : closeWithExit(dlg, 240)).then(() => opener?.focus?.({ preventScroll: true }));
+  if (matchMedia("(max-width: 640px)").matches) dragToClose($(".dialog", dlg), close);
   document.addEventListener("click", (e) => { if (e.target.closest("[data-signin]")) { e.preventDefault(); open(); } });
   dlg.addEventListener("click", (e) => { if (e.target === dlg || e.target.closest("[data-close]")) close(); });
   addEventListener("keydown", (e) => { if (e.key === "Escape" && !dlg.hidden) close(); });
