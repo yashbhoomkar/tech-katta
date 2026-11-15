@@ -1,0 +1,41 @@
+/* Dialogs, the sign-in dialog and toasts. */
+.scrim { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: var(--scrim); animation: tk-fade 200ms ease; }
+.dialog { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: var(--r-xl); background: var(--raised); box-shadow: var(--shadow-pop); animation: tk-pop 260ms var(--out); }
+.wide { width: min(640px, 100%); }
+.closing { animation: tk-fade 150ms ease reverse forwards; }
+.closing .dialog { animation: tk-pop 150ms ease-in reverse forwards; }
+.dHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dHead h2 { font-size: 22px; }
+.x { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 0; border-radius: var(--r-pill); background: var(--sunken); }
+.dText { color: var(--ink-2); }
+.dMuted { color: var(--muted); font-size: 14px; }
+.dNote { padding: 12px 14px; border-radius: var(--r-md); background: var(--sunken); color: var(--ink-2); font-size: 14px; }
+.terms { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.terms input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--ink); }
+.gslot { min-height: 44px; }
+@media (max-width: 640px) {
+  .scrim { place-items: end stretch; padding: 0; }
+  .dialog { width: 100%; border-radius: 22px 22px 0 0; padding-bottom: max(22px, env(safe-area-inset-bottom)); animation: tk-sheet 500ms var(--drawer); }
+  .closing .dialog { animation: tk-sheet 240ms ease-in reverse forwards; }
+}
+
+.toastHost { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 80; transform: translateX(-50%); pointer-events: none; }
+.toast { position: relative; overflow: hidden; padding: 12px 18px; border-radius: var(--r-pill); background: var(--ink); color: var(--page); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-pop); animation: tk-rise 260ms var(--out); }
+.toast i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--marigold); transform-origin: left; animation: tk-bar 2.6s linear reverse both; }
+@media (max-width: 680px) { .toastHost { bottom: calc(var(--tabbar-h, 64px) + 16px + env(safe-area-inset-bottom)); } }
+
+.keys { display: grid; gap: 2px; margin: 0; }
+.keys div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.keys div:last-child { border-bottom: 0; }
+.keys dt { display: flex; gap: 4px; flex: none; }
+.keys dd { margin: 0; color: var(--ink-2); font-size: 14px; text-align: right; }
+.keys kbd { min-width: 24px; padding: 2px 7px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--surface); font: 500 12px var(--mono); text-align: center; }
+
+/* the tour: one highlighted card and a popover beside it */
+.spot { position: relative; z-index: 41; box-shadow: 0 0 0 4px var(--focus), var(--shadow-pop) !important; border-radius: var(--r-lg); transition: box-shadow 200ms ease; }
+.tourScrim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--scrim) 60%, transparent); animation: tk-fade 200ms ease; }
+.tourPop { position: absolute; z-index: 42; width: min(320px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: var(--r-lg); background: var(--raised); box-shadow: var(--shadow-pop); transform-origin: var(--to, top left); animation: tk-pop 200ms var(--out); }
+.tourPop h3 { font-size: 17px; }
+.tourPop p { color: var(--ink-2); font-size: 14.5px; }
+.tourFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.tourFoot > div { display: flex; gap: 8px; }

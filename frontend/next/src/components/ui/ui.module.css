@@ -1,0 +1,36 @@
+/* Shared controls: buttons, chips, progress bars, cards, skeletons, the theme switch. */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: var(--r-pill); padding: 12px 22px; font-weight: 500; font-size: 15px; white-space: nowrap;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  transition: transform var(--press) var(--out), background-color 150ms ease, border-color 150ms ease;
+}
+.btn:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .btn:hover { transform: translateY(-1px); } .btn:active { transform: scale(.97); } }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+.primary { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
+.ghost { background: transparent; border-color: transparent; }
+@media (hover: hover) and (pointer: fine) { .ghost:hover { background: var(--sunken); transform: none; } }
+.sm { padding: 8px 14px; font-size: 13.5px; }
+.icon { padding: 0; width: 38px; height: 38px; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-pill); padding: 4px 10px; font-size: 12.5px; font-weight: 500; background: var(--t, var(--sunken)); color: var(--ink); }
+.easy { background: var(--t-problems); color: var(--pass); }
+.medium { background: var(--t-components); color: var(--warn); }
+.hard { background: var(--t-real); color: var(--fail); }
+
+.bar { height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 3px; background: var(--a, var(--pass)); transform-origin: left center; animation: tk-bar 900ms var(--out) both 120ms; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--hl); }
+
+.skeleton { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--sunken) 30%, var(--line) 50%, var(--sunken) 70%) 0 0 / 300% 100%; animation: tk-shimmer 1.1s linear infinite; }
+
+.themeSwitch { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--r-pill); background: var(--sunken); }
+.themeSwitch button { display: grid; place-items: center; width: 34px; height: 28px; border: 0; border-radius: var(--r-pill); background: none; color: var(--muted); transition: background-color 150ms ease, color 150ms ease; }
+.themeSwitch button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .1), var(--hl); }
+
+.state { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 56px 0; max-width: 36em; }
+.state h2 { font-size: 26px; }
+.state p { color: var(--ink-2); }

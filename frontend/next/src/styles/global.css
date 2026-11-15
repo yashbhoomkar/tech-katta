@@ -1,0 +1,67 @@
+/* Reset, type, accents and app-wide motion. Component styles live next to their components (*.module.css). */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -.03em; text-wrap: balance; line-height: 1.08; }
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+img, svg { display: block; }
+[hidden] { display: none !important; }
+::selection { background: var(--selection); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+
+/* one section's colours, picked by data-accent on any element */
+[data-accent="concepts"]   { --c: var(--c-concepts);   --a: var(--a-concepts);   --t: var(--t-concepts); }
+[data-accent="components"] { --c: var(--c-components); --a: var(--a-components); --t: var(--t-components); }
+[data-accent="interview"]  { --c: var(--c-interview);  --a: var(--a-interview);  --t: var(--t-interview); }
+[data-accent="problems"]   { --c: var(--c-problems);   --a: var(--a-problems);   --t: var(--t-problems); }
+[data-accent="real"]       { --c: var(--c-real);       --a: var(--a-real);       --t: var(--t-real); }
+[data-accent="notes"]      { --c: var(--c-notes);      --a: var(--a-notes);      --t: var(--t-notes); }
+
+.mono { font-family: var(--mono); font-weight: 500; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.visually-hidden, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- motion (Emil Kowalski's review-animations rules, MIT) ----------
+   press 0.97 · hover movement only with a real mouse · ease-out arrivals · page change 160 ms fade ·
+   reduced motion keeps fades and colour, drops movement and loops */
+@keyframes tk-fade { from { opacity: 0; } }
+@keyframes tk-rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes tk-word { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+@keyframes tk-bar { from { transform: scaleX(0); } }
+@keyframes tk-pop { from { opacity: 0; transform: scale(.96); } }
+@keyframes tk-sheet { from { transform: translateY(100%); } }
+@keyframes tk-shimmer { to { background-position: -150% 0; } }
+
+@keyframes tk-card { from { opacity: 0; translate: 0 40px; } }
+@keyframes tk-drift { to { translate: 0 -10px; } }
+@keyframes tk-spin { to { transform: rotate(1turn); } }
+@keyframes tk-done { from { opacity: .2; transform: scale(.92); } }
+@keyframes tk-star { from { opacity: 0; transform: scale(.6) rotate(-25deg); } }
+@keyframes tk-mark { from { transform: scaleY(0); } }
+@keyframes tk-today { from { background: var(--sunken); transform: scale(.7); } to { background: var(--marigold); } }
+@keyframes tk-drawer { from { transform: translateX(100%); } }
+@keyframes tk-nudge { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes tk-burst { from { transform: translate(-50%, -50%) rotate(0) scale(1); opacity: 1; } to { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--rot)) scale(.6); opacity: 0; } }
+@keyframes tk-flash { from { background: var(--t-problems); } }
+@keyframes tk-pkt { from { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } to { offset-distance: 100%; opacity: 0; } }
+@keyframes tk-blink { 50% { opacity: .25; } }
+@keyframes tk-cardin { from { opacity: 0; transform: translateX(16px); } }
+@keyframes tk-cardback { from { opacity: 0; transform: translateX(-16px); } }
+
+/* page change: the new page's content settles in */
+.tk-enter { animation: tk-fade 160ms ease-out; }
+
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; animation-timing-function: ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 200ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important;
+    scroll-behavior: auto !important; transition-property: opacity, color, background-color, border-color !important;
+  }
+}
