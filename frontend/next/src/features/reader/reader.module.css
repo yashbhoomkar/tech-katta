@@ -210,3 +210,33 @@
 .thumb { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
 .thumb > svg { display: block; width: 100%; height: auto; max-height: 100%; }
 .thumb :global(.tk-caps), .thumb :global(.tk-cap) { display: none; }
+
+/* the current app's figure frame, in this design's colours (legacy-scope + figureTokens on the wrapper) */
+.legacyFig { margin: 34px 0; font-family: var(--font); color: var(--ink); }
+.legacyFig :global(.a-fig) { margin: 0; border-radius: var(--r-lg); overflow: hidden; background: var(--bg); }
+.legacyFig :global(.a-fig-head) { border-radius: 0; }
+@media (max-width: 680px) { .legacyFig { margin: 26px -8px; } }
+
+/* ── tech.katta.cc lesson parity ── */
+.solveBtn { margin-top: 14px; }
+.exMini { margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.exMini > summary { padding: 12px 16px; cursor: pointer; font-size: 15px; color: var(--ink-2); }
+.exMini > summary b { color: var(--ink); }
+.exMini[open] > :not(summary) { padding: 0 16px 16px; animation: tk-rise 180ms var(--out) backwards; }
+.nextProblem { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; width: 100%; padding: 18px 20px; border-radius: var(--r-lg); background: var(--t); }
+.nextProblem a:first-child { display: flex; flex-direction: column; gap: 2px; }
+.nextProblem small { color: var(--muted); font-size: 12.5px; }
+.nextProblem b { font-size: 17px; }
+.allProblems { font-weight: 600; color: var(--link); }
+.backLink { color: var(--ink-2); font-weight: 500; }
+.backLink:hover { color: var(--ink); }
+.railCta { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--t); transition: transform var(--base) var(--out), border-color var(--fast) ease; }
+.railCta b { font-size: 14px; }
+@media (hover: hover) and (pointer: fine) { .railCta:hover { transform: translateY(-2px); border-color: var(--a); } }
+.toc ul { position: relative; }
+.toc a[aria-current] { border-color: transparent; }
+.tocMark { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--a); transition: transform 420ms var(--out), height 420ms var(--out); }
+/* "Go deeper" opens with its content rising in */
+.more[open] > .moreBody > * { animation: tk-rise 180ms var(--out) backwards; }
+.typeMore[open] > p { animation: tk-rise 180ms var(--out) backwards; }
+@media (prefers-reduced-motion: reduce) { .tocMark { transition: none; } }

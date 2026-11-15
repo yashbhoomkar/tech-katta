@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { readTokens } from "@legacy/theme/palette.js";
 import type { ArticleResponse, Block } from "@/lib/api/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { Icon } from "@/components/Icon";
-import { Figure, FigureTheme } from "./Figure";
+import { FigureTheme } from "./figureTheme";
+import { LegacyFigure } from "./LegacyFigure";
+import "@/features/workspace/legacy-scope.css";
 import { Inline } from "./Inline";
 import { useDocTheme } from "./useDocTheme";
 import tokens from "./figureTokens.module.css";
@@ -94,7 +96,7 @@ function BlockView({ block: b, id, article, numbers }: BlockProps) {
     case "list":
       return <ul>{b.items.map((x, j) => <li key={j}><Inline text={x} /></li>)}</ul>;
     case "fig":
-      return <Figure id={b.id} n={numbers.get(b) ?? 1} cap={b.cap} />;
+      return <FigureSlot id={b.id} n={numbers.get(b) ?? 1} cap={b.cap} />;
     case "table":
       return (
         <div className={s.table} role="region" aria-label={b.label ?? "Comparison table"} tabIndex={0}>
@@ -174,4 +176,11 @@ function BlockView({ block: b, id, article, numbers }: BlockProps) {
     default:
       return null;
   }
+}
+
+/** A figure, drawn once the figure colours are read for the current theme (keyed by it, so a theme change redraws). */
+function FigureSlot({ id, n, cap }: { id: string; n: number; cap: string | undefined }) {
+  const ctx = useContext(FigureTheme);
+  if (!ctx) return <div className={s.figLoading} aria-label="Loading figure" />;
+  return <LegacyFigure key={`${id}:${ctx.theme}`} id={id} n={n} cap={cap} still={ctx.still} />;
 }

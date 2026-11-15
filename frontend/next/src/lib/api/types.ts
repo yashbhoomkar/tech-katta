@@ -52,7 +52,7 @@ export interface SiteResponse {
   topics: {
     eyebrow: string;
     title: string;
-    cards: { id: string; no: string; kind: string; title: string; desc: string; link: string }[];
+    cards: { id: string; no: string; kind: string; title: string; desc: string; link: string; visual?: string }[];
   };
   numbers: { eyebrow: string; title: string; desc: string; items: [string, string, number, string][] };
   dashboard: {
@@ -70,6 +70,8 @@ export interface SiteResponse {
   /** Tour copy per page kind ("section", "article", "problems", …): target (the current app's selector), title, text */
   tour?: { button: string; next: string; back: string; skip: string; done: string } & Record<string, unknown>;
   account?: AccountCopy;
+  /** Problems copy: the workspace's "Solve it on the canvas" button, "Next problem", "All problems" */
+  problems?: { solve?: { button?: string }; next?: string; allProblems?: string; label?: string };
 }
 
 export interface Policy { eyebrow: string; title: string; updated: string; sections: [string, string][] }

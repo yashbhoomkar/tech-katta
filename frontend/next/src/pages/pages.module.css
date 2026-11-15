@@ -157,3 +157,30 @@
   .notes li { grid-template-columns: 32px 1fr; }
   .notes small, .notes em { grid-column: 2; justify-self: start; }
 }
+
+/* ── motion parity with tech.katta.cc (theme/motion.css, premium.css) ── */
+/* lesson rows arrive one after another (the first eight); rows further down rise as they scroll in */
+@media (prefers-reduced-motion: no-preference) {
+  .lesson:nth-of-type(-n+8) { animation: tk-rise 380ms var(--out) backwards; }
+  .lesson:nth-of-type(2) { animation-delay: 40ms; } .lesson:nth-of-type(3) { animation-delay: 80ms; } .lesson:nth-of-type(4) { animation-delay: 120ms; }
+  .lesson:nth-of-type(5) { animation-delay: 160ms; } .lesson:nth-of-type(6) { animation-delay: 200ms; } .lesson:nth-of-type(7) { animation-delay: 240ms; } .lesson:nth-of-type(8) { animation-delay: 280ms; }
+  @supports (animation-timeline: view()) {
+    .lesson:nth-of-type(n+9), .groupHead { animation: tk-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 50%; }
+  }
+  /* cards lift onto a deeper shadow under the pointer, and their picture drifts up a touch */
+  .tile, .hubCard, .lesson { transition: transform var(--base) var(--out), box-shadow var(--base) var(--out), background-color 150ms ease; }
+  .lessonThumb { transition: transform 500ms var(--out); }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hubCard:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
+  .lesson:hover .lessonThumb { transform: scale(1.04); }
+}
+/* card pictures (tech.katta.cc puts a diagram on every card) */
+.tilePic { height: 96px; margin: -4px -4px 8px; border-radius: 12px; }
+.tilePic svg { max-height: 84px; margin: 0 auto; }
+.hubPic { height: 132px; margin-bottom: 10px; border-radius: 14px; }
+.hubPic svg { max-height: 120px; margin: 0 auto; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tilePic svg, .hubPic svg { transition: transform 500ms var(--out); }
+  .tile:hover .tilePic svg, .hubCard:hover .hubPic svg { transform: scale(1.03); }
+}

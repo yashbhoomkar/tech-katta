@@ -12,6 +12,7 @@ import { PageLock } from "@/components/Locks";
 // /problems/<slug> (the workspace) and /problems/challenge/<id>. The workspace code is large (canvas, judge), so
 // it loads only here.
 const Workspace = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Workspace })));
+const PracticeView = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Practice })));
 const SandboxView = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Sandbox })));
 const Challenge = lazy(() => import("@/features/workspace/Workspace").then((m) => ({ default: m.Challenge })));
 
@@ -44,4 +45,11 @@ export function SandboxPage() {
   if (gate === "wait") return <Wait />;
   if (gate === "locked") return <PageLock title="Sandbox" />;
   return <Suspense fallback={<Wait />}><SandboxView /></Suspense>;
+}
+
+/** /practice and /practice/<slug>: the current app's practice pages (open to everyone, as on tech.katta.cc). */
+export function PracticePage() {
+  const { slug = "" } = useParams();
+  usePageMeta("Practice", slug ? { to: "/practice", label: "Practice" } : { to: paths.problems, label: "Problems" });
+  return <Suspense fallback={<Wait />}><PracticeView slug={slug} /></Suspense>;
 }
