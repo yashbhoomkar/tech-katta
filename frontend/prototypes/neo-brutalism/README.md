@@ -51,6 +51,10 @@ Why the first dark failed: every line was cream (cards, dividers, table rows, ba
 
 Same hues, about half the saturation, even lightness (OKLCH L .82, chroma ~.085; lemon and marigold L .86). Concepts `#8FCDF5`, components `#EFB78E`, interview `#CBB9F5`, problems `#8CD6BA`, real `#F7AFAB`, notes `#DCE29E`, keys `#F3C766`. Softer cream page `#F8F2E5`, warm-white surfaces `#FFFDF8`, ink `#1C1B1A`; in dark, softer cream outlines `#D9D1C0` and text `#EDE6D6`. Outlines, shadows, stickers and motion are unchanged. Text on every colour block is at least 9.7:1; the lowest pair on the site is 5.3:1 ("Passed" green on white).
 
+## Round 4: dark candidates (owner, 2026-11-15: "Start implementing it", from neo-brutalism-dark-thinking.md)
+
+`styles/dark-candidates.css` and `scripts/nbdark.js` add three dark palettes beside the current one, chosen with `?nbdark=b|d|e` (or `now`) or the small "Dark" switch at the bottom right in dark mode: **B chalkboard**, **D inverted blocks**, **E dim paper**. Side by side at `/p/nb-dark/`. Once the owner picks, the winner moves into `tokens.css` and these two files go.
+
 ## Notes
 
 None.
