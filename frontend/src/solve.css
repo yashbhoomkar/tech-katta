@@ -248,3 +248,9 @@
 .sh-fig{margin:16px 0;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:auto}.sh-fig svg{display:block;width:100%;height:auto;min-width:560px}
 .sh-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.sh-acts .sv-run{height:38px;padding:0 16px}
 .sh h2{margin:24px 0 8px;font-size:16px}.sh-parts{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}.sh-parts p{margin:2px 0 0;color:var(--ink-2)}
+
+/* Estimate helper (context 36, step 12) */
+.sv-calc{margin:4px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px 12px}.sv-calc>summary{cursor:pointer;font:600 13px var(--font)}
+.sv-calc-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-2)}
+.sv-calc-row input,.sv-calc-row select{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13px var(--font);padding:0 8px;width:110px}.sv-calc-row .sv-calc-s{width:52px}.sv-calc-row select{width:auto}
+.sv-calc-row output{flex-basis:100%;color:var(--ink)}

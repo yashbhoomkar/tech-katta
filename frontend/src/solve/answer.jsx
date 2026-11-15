@@ -1,5 +1,5 @@
 // Your answer: the written steps of an interview, graded on Submit.
-import React from"react";import{fmt}from"./format.js";
+import React,{useState}from"react";import{parseAmount,rate,storage,fmtCount,fmtBytes,PER}from"./estimate.js";import{fmt}from"./format.js";
 // ---- Your answer: the written steps of an interview, graded on Submit ----
 export const NFR=[["availability","Availability target","%","99.9"],["p99","p99 latency target","ms","200"],["readsPerWrite","Reads for every write","×","100"]];
 export function Answer({P,ans,save,g}){
@@ -18,7 +18,7 @@ return <div className="sv-ans">
 {NFR.filter(([id])=>r.nfr?.[id]!==undefined).map(([id,label,unit,ph])=><label key={id} className="sv-field"><span>{label}</span><span className="sv-in"><input inputMode="decimal" value={ans.nfr?.[id]??""} onChange={e=>setIn("nfr",id,e.target.value)} placeholder={ph}/><em>{unit}</em>{nf(id)&&mark(nf(id).ok)}</span>{g&&nf(id)&&!nf(id).ok&&<small>Aim for {fmt(r.nfr[id][0])}–{fmt(r.nfr[id][1])} {unit}</small>}</label>)}
 {r.nfr?.consistency&&<label className="sv-field"><span>Consistency for reads</span><span className="sv-in"><select value={ans.nfr?.consistency||""} onChange={e=>setIn("nfr","consistency",e.target.value)}><option value="">Choose…</option><option value="strong">Strong: always the latest</option><option value="eventual">Eventual: a little stale is fine</option></select>{nf("consistency")&&mark(nf("consistency").ok)}</span>{g&&nf("consistency")&&!nf("consistency").ok&&<small>Think about what a reader can live with here.</small>}</label>}
 </div></section>
-<section><h2>3. Estimates</h2><p className="sv-help">Rough numbers are fine: within about 3× counts.</p><div className="sv-grid">
+<section><h2>3. Estimates</h2><p className="sv-help">Rough numbers are fine: within about 3× counts.</p><EstimateHelper/><div className="sv-grid">
 {r.est.map(x=>{const e=g?.est.find(y=>y.id===x.id);return <label key={x.id} className="sv-field"><span>{x.label}</span><span className="sv-in"><input inputMode="decimal" value={ans.est?.[x.id]??""} onChange={e2=>setIn("est",x.id,e2.target.value)} placeholder="0"/><em>{x.unit}</em>{e&&mark(e.ok)}</span>{e&&!e.ok&&<small>About {fmt(x.answer)} {x.unit}{x.how?`: ${x.how}`:""}</small>}</label>})}
 </div></section>
 <section><h2>4. API</h2><p className="sv-help">The calls clients make: method and path.</p>
@@ -31,3 +31,14 @@ return <div className="sv-ans">
 {d&&<p className="sv-why">{d.ok?"Right: ":"The better choice: "+x.options[x.answer]+". "}{x.why}</p>}</fieldset>})}</section>}
 <section><h2>{r.decisions?.length?6:5}. Design</h2><p className="sv-help">Build it on the canvas, then Run the example tests. Submit runs every test.{P.v===2?" Give each database the tables the calls need, in its schema.":" Give each part its job under \"What it does\" in its settings."}</p></section>
 </div>}
+
+// The estimate helper (context 36, step 12): two small sums beside the estimates. Nothing here is graded or saved.
+export function EstimateHelper(){const[r,setR]=useState({n:"5 crore",per:"day",peak:"2"}),[s,setS]=useState({n:"10 lakh",size:"1",unit:"KB",years:"5",copies:"3"});
+const n=parseAmount(r.n),rt=Number.isFinite(n)?rate(n,r.per,+r.peak||1):null;
+const c=parseAmount(s.n),st=Number.isFinite(c)&&+s.size>0?storage(c,+s.size,s.unit,+s.years||1,+s.copies||1):null;
+return <details className="sv-calc"><summary>Estimate helper</summary>
+<p className="sv-help">Type amounts as 5 crore, 2.5 lakh, 10k or 3M. Not graded; it just does the sums.</p>
+<div className="sv-calc-row"><input aria-label="How many" value={r.n} onChange={e=>setR({...r,n:e.target.value})}/><span>per</span><select aria-label="Per" value={r.per} onChange={e=>setR({...r,per:e.target.value})}>{Object.keys(PER).filter(k=>k!=="second").map(k=><option key={k}>{k}</option>)}</select><span>peak ×</span><input aria-label="Peak multiple" className="sv-calc-s" inputMode="decimal" value={r.peak} onChange={e=>setR({...r,peak:e.target.value})}/>
+<output>{rt?<>= <b>{fmtCount(rt.perSecond)}</b> a second on average, <b>{fmtCount(rt.peak)}</b> at peak</>:"Type an amount"}</output></div>
+<div className="sv-calc-row"><input aria-label="Items a day" value={s.n} onChange={e=>setS({...s,n:e.target.value})}/><span>a day ×</span><input aria-label="Size of each" className="sv-calc-s" inputMode="decimal" value={s.size} onChange={e=>setS({...s,size:e.target.value})}/><select aria-label="Size unit" value={s.unit} onChange={e=>setS({...s,unit:e.target.value})}>{["B","KB","MB","GB"].map(u=><option key={u}>{u}</option>)}</select><span>for</span><input aria-label="Years" className="sv-calc-s" inputMode="decimal" value={s.years} onChange={e=>setS({...s,years:e.target.value})}/><span>years ×</span><input aria-label="Copies" className="sv-calc-s" inputMode="decimal" value={s.copies} onChange={e=>setS({...s,copies:e.target.value})}/><span>copies</span>
+<output>{st?<>= <b>{fmtBytes(st.perDay)}</b> a day, <b>{fmtBytes(st.total)}</b> in all</>:"Type an amount"}</output></div></details>}
