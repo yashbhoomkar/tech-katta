@@ -274,3 +274,8 @@
 @media (max-width:900px){.sv-guide-cover{top:0;bottom:56px}.sv-guide-btn{display:none}}
 .sv-bar>button,.sv-bar .sv-mock-btn,.sv-bar .sv-ask{white-space:nowrap;flex-shrink:0}
 @media (max-width:1560px){.sv-bl{display:none}}
+
+/* Beyond the tests: headroom and waste (context 36, step 16) */
+.sv-probes{margin:10px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-probes>summary{cursor:pointer;font:600 13px var(--font)}
+.sv-probe{margin:8px 0}.sv-probe-out{margin:4px 0 0;font-size:13.5px}.sv-probe-out small{display:block;color:var(--ink-2);margin-top:2px}.sv-probe-out.no b{color:var(--danger)}.sv-probe-out.ok b{color:var(--success)}
+.sv-probe-how{margin:4px 0 0;padding-left:18px;font-size:13px}

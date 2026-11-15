@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from"react";
+import React,{useEffect,useState}from"react";import{headroom,waste}from"../eval/probes.js";import{track}from"../analytics.js";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";
 // The score runs up from 0 to the result over 0.8 s (easing out); with reduced motion it shows at once.
 function CountUp({n}){const[v,setV]=useState(()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches?n:0);
@@ -28,7 +28,7 @@ return <section className="sv-follow" aria-label="Follow-up questions"><h4>An in
 {k<qs.length-1&&<button type="button" className="sv-linkbtn sv-follow-next" onClick={()=>{setK(k+1);setOpen(false)}}>Next question →</button>}</section>}
 export const followUpsOf=article=>{const blk=(article?.body||[]).find(b=>b.t==="more"&&/^follow-ups/i.test(b.label||""));const items=(blk?.body||[]).flatMap(b=>b.t==="list"?b.items:[]);
 return items.map(x=>{const m=String(x).match(/^\s*["“](.+?)["”]\s*(.*)$/s);return m?{q:m[1],a:m[2]}:null}).filter(Boolean)};
-export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,credits,followUps}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
+export function Console({busy,res,close,hint,answer,watch,replay,P,nameOf,credits,followUps,probe}){const[min,setMin]=useState(false);useEffect(()=>setMin(false),[res?.j]);
 if(busy)return <section className="sv-console" aria-live="polite"><p className="sv-running">Running the tests…</p></section>;
 if(res.kind==="review")return <section className="sv-console" aria-live="polite" aria-label="The interviewer's review"><header className="sv-v"><div><b>The interviewer</b><small>{res.busy?"Reading your design and every test…":"On the design that is on the canvas now"}</small></div><span className="sv-vbtns"><button type="button" onClick={close} aria-label="Close the review">✕</button></span></header><CreditMeter to={CREDIT} topped label="The interviewer reads your design and every test; your AWS credit is back to the full amount for your next run"/><div className="sv-review"><ReviewPanel review={res} credits={credits}/></div></section>;
 const{kind,j,g,sc,crash}=res;
@@ -44,6 +44,7 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 <li>API <span>{Math.round(sc.parts.api)}/{WEIGHTS.api}</span></li><li>Key decisions <span>{Math.round(sc.parts.dec||0)}/{WEIGHTS.dec}</span></li><li>Design tests <span>{Math.round(sc.parts.design)}/{WEIGHTS.design}</span></li>{sc.penalty>0&&<li>Hints <span>−{sc.penalty}</span></li>}</ul>
 {g&&(g.parts.fr<1||g.parts.est<1||g.parts.api<1||g.parts.nfr<1||g.parts.dec<1)&&<button type="button" className="sv-linkbtn" onClick={answer}>See what your answer missed →</button>}</div>}
 {res.cmp&&<Compare c={res.cmp} diff={res.diff}/>}
+{!err&&P?.v===2&&probe&&<Probes key={res.at||j.passed+":"+j.total} P={P} probe={probe} accepted={kind==="submit"&&acc&&!res.copied}/>}
 {kind==="submit"&&acc&&!res.copied&&followUps?.length>0&&<FollowUps qs={followUps}/>}
 {res.copied&&<p className="sv-copied">This is the solution's design, copied unchanged, so it isn't counted as solved and doesn't set a best score. Change it, or build your own, and submit again.</p>}
 {res.server&&<p className="sv-server">{res.server==="pending"?"Checking on our server…":res.server==="off"?"Sign in to have your submission checked and compared with everyone else's.":<>✓ Checked on our server{res.server.verdict!==j.verdict?` (it says: ${res.server.verdict})`:""} · {res.server.accepted} of {res.server.submissions} submissions accepted ({Math.round(100*res.server.accepted/Math.max(1,res.server.submissions))}%){res.server.cheaperThan!=null&&res.server.verdict==="accepted"?<> · <b>cheaper than {res.server.cheaperThan}% of accepted designs</b></>:""}</>}</p>}
@@ -56,3 +57,15 @@ return <section className={"sv-console"+(min?" min":"")} aria-live="polite" aria
 {!err&&j.findings?.length>0&&<Findings f={j.findings} more={j.allFindings}/>}{!err&&j.plans&&Object.keys(j.plans).length>0&&<HowRead plans={j.plans} P={P} nameOf={nameOf}/>}
 {!acc&&!err&&<p className="sv-nudge">Stuck? <button type="button" className="sv-linkbtn" onClick={hint}>Open a hint</button> (3 points each).</p>}</>}
 </section>}
+
+// Probes (context 36, step 16): two questions no test asks, run on the design as it is now, on demand.
+const times=m=>`${m.toLocaleString("en-US",{maximumFractionDigits:1})}×`;
+function Probes({P,probe,accepted}){const[h,setH]=useState(null),[w,setW]=useState(null),[how,setHow]=useState(false);
+const run=(set,f)=>{set("busy");setTimeout(()=>{try{set(f(probe.design(),probe.lab,P)||"none")}catch{set("none")}},30)};
+const tone=h&&h!=="busy"&&h!=="none"?(h.m<1?"no":h.m<1.2?"edge":"ok"):"";
+return <details className="sv-probes" open><summary>Beyond the tests</summary>
+<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={h==="busy"} onClick={()=>{run(setH,headroom);track("probe",{kind:"headroom"})}}>How much more can it take?</button>
+{h==="busy"?<p className="sv-help">Turning the traffic up…</p>:h==="none"?<p className="sv-help">This problem has no load test to turn up.</p>:h?<p className={"sv-probe-out "+tone}>{h.m<1?<>It does not hold <b>{h.base.name}</b> itself: it manages <b>{times(h.m)}</b> of it.</>:h.capped?<>It held <b>{times(h.m)}</b> {h.base.name}, the most this check tries.</>:<>It holds <b>{times(h.m)}</b> {h.base.name} ({fmt(h.base.rps*h.m)} a second){h.m<1.2?", close to the line":""}.</>}{h.first&&<small> The first thing to give: {h.first}</small>}</p>:null}</div>
+{accepted&&<div className="sv-probe"><button type="button" className="sv-linkbtn" disabled={w==="busy"} onClick={()=>{run(setW,waste);track("probe",{kind:"waste"})}}>What would still pass, for less?</button>
+{w==="busy"?<p className="sv-help">Trying it one step smaller at a time…</p>:w==="none"?<p className="sv-help">Nothing to try here.</p>:w?(w.saving<Math.max(1,w.before*0.02)?<p className="sv-probe-out ok">Nothing smaller still passes every test: this design is already lean.</p>:<p className="sv-probe-out">It would still pass every test at <b>${fmt(w.after)}</b> a month, <b>${fmt(w.saving)}</b> less.{w.partial?" (It stopped trying after a while; there may be more.)":""} <button type="button" className="sv-linkbtn" onClick={()=>setHow(v=>!v)} aria-expanded={how}>{how?"Hide how":"Show how"}</button></p>):null}
+{w&&w.changes&&how&&<ul className="sv-probe-how">{w.changes.map(c=><li key={c.part+c.field}><b>{c.name}</b>: {c.label||c.field} {String(c.from)} → {String(c.to)}</li>)}</ul>}</div>}</details>}
