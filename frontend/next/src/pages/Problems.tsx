@@ -54,14 +54,14 @@ export function ProblemsPage() {
           <h1>Design it. Run it. Get judged.</h1>
           <p>Every problem has a test suite: traffic peaks, spikes, crashes and a budget. Your design passes when every test does.</p>
         </div>
-        <div className={s.stats}>
+        <div className={s.stats} data-tour="stats">
           <div><b><CountUp to={solved} />/{rows.length}</b><small>solved</small></div>
           <div><b><CountUp to={starsHave} />/{starsMax || "—"}</b><small>stars</small></div>
         </div>
       </header>
 
       <div className={s.filters}>
-        <div className={s.f} role="group" aria-label="Filter by difficulty">
+        <div className={s.f} role="group" aria-label="Filter by difficulty" data-tour="levels">
           {(["all", "easy", "medium", "hard"] as const).map((l) => (
             <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)}>
               {l === "all" ? "All" : l[0]?.toUpperCase() + l.slice(1)} <span>{count(l)}</span>
@@ -69,11 +69,11 @@ export function ProblemsPage() {
           ))}
           <button type="button" aria-pressed={todo} onClick={() => setTodo((t) => !t)}>Not done yet</button>
         </div>
-        <Button size="sm" onClick={pick}>⚄ Pick one for me</Button>
+        <span data-tour="pick"><Button size="sm" onClick={pick}>⚄ Pick one for me</Button></span>
       </div>
 
       <div ref={list} key={`${level}${todo}`}>
-        <Card className={s.tbl}>
+        <Card className={s.tbl} tour="table">
           <table>
             <thead><tr><th><span className="sr-only">Status</span></th><th>#</th><th>Problem</th><th>Difficulty</th><th>Tests</th><th>Best</th></tr></thead>
             <tbody>

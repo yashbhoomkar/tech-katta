@@ -52,6 +52,23 @@ export interface SiteResponse {
     groups: Partial<Record<SectionId, GroupTuple[]>>;
   };
   counts: { questions: number; concepts: number; components: number; challenges: number };
+  /** Privacy policy and Terms: a title, a date line and [heading, text] sections */
+  privacy?: Policy;
+  terms?: Policy;
+  /** Quick Notes: the notes list ([no, title, topic, status]) */
+  notes?: { eyebrow: string; title: string; desc: string; items: [string, string, string, string][] };
+  /** Tour copy per page kind ("section", "article", "problems", …): target (the current app's selector), title, text */
+  tour?: { button: string; next: string; back: string; skip: string; done: string } & Record<string, unknown>;
+  account?: AccountCopy;
+}
+
+export interface Policy { eyebrow: string; title: string; updated: string; sections: [string, string][] }
+export interface TourStepCopy { target: string; title: string; text: string }
+export interface AccountCopy {
+  signedIn: string; saved: string; syncing: string; syncFailed: string; signOut: string; signOutAll: string; signOutAllConfirm: string;
+  delete: string; deleteConfirm: string; privacy: string; menu: string; keepStars: string; termsLink: string; privacyLink: string; signIn: string;
+  pageLock?: { title: string; text: string };
+  previewLock?: { eyebrow: string; title: string; text: string };
 }
 
 /** One block of a lesson body. `t` picks the kind; inline `code` in strings is marked with backticks. */

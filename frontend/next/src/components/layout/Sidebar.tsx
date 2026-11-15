@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
+import { useContent } from "@/content/ContentProvider";
+import { AccountMenu } from "@/components/AccountMenu";
 import { useContentState } from "@/content/ContentProvider";
-import { problemsOf, sectionTitle, tally } from "@/content/model";
-import { SECTIONS, paths } from "@/content/sections";
+import { problemsOf, sectionTitle, sectionView, tally } from "@/content/model";
+import { SECTIONS, isSectionId, paths } from "@/content/sections";
 import { useProgress } from "@/lib/progress";
 import { readString, writeString } from "@/lib/storage";
 import { useCommandPalette } from "@/components/CommandPalette";
@@ -48,7 +50,34 @@ function useRail(): [boolean, () => void] {
 
 const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? `${s.navItem} ${s.navActive}` : s.navItem);
 
+/** The open section's lessons, in reading order and grouped, under its row (the current site's side list). */
+function SectionLessons({ sectionId, accent }: { sectionId: string; accent: string }) {
+  const { site, articles } = useContent();
+  const progress = useProgress();
+  const { pathname } = useLocation();
+  if (!isSectionId(sectionId)) return null;
+  const view = sectionView(site, articles, sectionId);
+  return (
+    <div className={`${s.sub} ${s.label}`} data-accent={accent} data-tour="side-sub">
+      {view.groups.map((g) => (
+        <div key={g.id}>
+          {view.groups.length > 1 && <p className={s.subHead}>{g.title}</p>}
+          {g.articles.map((a) => {
+            const to = paths.article(sectionId, a.slug);
+            return (
+              <Link key={a.slug} to={to} className={s.subItem} aria-current={pathname.startsWith(to) ? "page" : undefined} data-done={progress[a.slug]?.done ? "" : undefined}>
+                <i aria-hidden="true" />{a.title.split(":")[0]}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Sidebar() {
+  const { pathname } = useLocation();
   const [rail, toggleRail] = useRail();
   const { open } = useCommandPalette();
   const content = useContentState();
@@ -78,12 +107,17 @@ export function Sidebar() {
           const own = data?.articles.filter((a) => a.section === sec.id) ?? [];
           const t = tally(own, progress);
           const title = data ? sectionTitle(data.site, sec.id) : sec.label;
+          const here = pathname.startsWith(paths.section(sec.id));
+          const notes = sec.id === "quick-notes" ? (data?.site.notes?.items.length ?? 0) : 0;
           return (
-            <NavLink key={sec.id} to={paths.section(sec.id)} className={navClass} data-accent={sec.accent} title={title}>
-              <span className={s.dotWrap}><i className={s.dot} /></span>
-              <span className={s.label}>{title}</span>
-              {data && <small className={s.label}>{t.total ? `${t.done}/${t.total}` : "soon"}</small>}
-            </NavLink>
+            <div key={sec.id}>
+              <NavLink to={paths.section(sec.id)} className={navClass} data-accent={sec.accent} title={title} data-tour={here ? "side-nav" : undefined}>
+                <span className={s.dotWrap}><i className={s.dot} /></span>
+                <span className={s.label}>{title}</span>
+                {data && <small className={s.label}>{t.total ? `${t.done}/${t.total}` : notes ? String(notes) : "soon"}</small>}
+              </NavLink>
+              {here && own.length > 0 && data && <SectionLessons sectionId={sec.id} accent={sec.accent} />}
+            </div>
           );
         })}
         <p className={`${s.navHead} ${s.label}`}>Practise</p>
@@ -93,18 +127,16 @@ export function Sidebar() {
           {data && <small className={s.label}>{tally(problemsOf(data.articles), progress).done}/{problemsOf(data.articles).length}</small>}
         </NavLink>
       </nav>
+      <nav className={`${s.policyLinks} ${s.label}`} aria-label="Policies">
+        <Link to="/privacy">{data?.site.account?.privacy ?? "Privacy"}</Link>
+        <Link to="/terms">{data?.site.account?.termsLink ?? "Terms and conditions"}</Link>
+      </nav>
       <div className={s.sideFoot}>
-        <div className={`${s.themeRow} ${s.label}`}>
+        <div className={`${s.themeRow} ${s.label}`} data-tour="theme">
           <span>Theme</span>
           <ThemeSwitch />
         </div>
-        <Link to={paths.me} className={s.me} title="You and settings">
-          <span className={s.avatar} aria-hidden="true"><Icon name="me" size={18} /></span>
-          <span className={s.label}>
-            You
-            <small>Settings and theme</small>
-          </span>
-        </Link>
+        <AccountMenu />
       </div>
     </aside>
   );

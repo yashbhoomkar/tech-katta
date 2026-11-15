@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { FigureThumb } from "@/features/reader/FigureThumb";
+import { QuickNotes } from "./QuickNotes";
 import { useContent } from "@/content/ContentProvider";
 import { nextInSection, sectionView, tally } from "@/content/model";
 import { isSectionId, paths, sectionMeta } from "@/content/sections";
@@ -11,6 +14,7 @@ import s from "./pages.module.css";
 
 export function SectionPage() {
   const { section } = useParams();
+  if (section === "quick-notes") return <QuickNotes />;
   return isSectionId(section) ? <Section id={section} /> : <NotFoundPage />;
 }
 
@@ -25,10 +29,14 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
   const all = view.groups.flatMap((g) => g.articles);
   const t = tally(all, progress);
   const next = nextInSection(view, progress);
+  // Interview Questions: filter by difficulty (the guides group, "start", always shows)
+  const [level, setLevel] = useState<"all" | "easy" | "medium" | "hard">("all");
+  const levels = id === "interview-questions" ? (["easy", "medium", "hard"] as const).filter((l) => view.groups.some((g) => g.id === l)) : [];
+  const groups = view.groups.filter((g) => level === "all" || g.id === level || !(levels as readonly string[]).includes(g.id));
 
   return (
     <div className={s.page} data-accent={meta?.accent}>
-      <header className={s.sechead}>
+      <header className={s.sechead} data-tour="desc">
         <div>
           <p className="mono">{card?.kind ?? view.title}</p>
           <h1>{view.title}</h1>
@@ -50,7 +58,15 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
 
       {view.total === 0 && <StateMessage title="Coming soon">Nothing in this section yet. The first notes are being written.</StateMessage>}
 
-      {view.groups.length > 1 && (
+      {levels.length > 0 && (
+        <div className={s.levels} role="group" aria-label="Filter by difficulty" data-tour="levels">
+          {(["all", ...levels] as const).map((l) => (
+            <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)}>{l === "all" ? "All" : l[0]?.toUpperCase() + l.slice(1)}</button>
+          ))}
+        </div>
+      )}
+
+      {levels.length === 0 && view.groups.length > 1 && (
         <nav className={s.jump} aria-label={`Groups in ${view.title}`}>
           {view.groups.map((g) => (
             <a key={g.id} href={`#g-${g.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(`g-${g.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
@@ -60,10 +76,10 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
         </nav>
       )}
 
-      {view.groups.map((g) => {
+      {groups.map((g, gi) => {
         const gt = tally(g.articles, progress);
         return (
-          <section key={g.id} id={`g-${g.id}`} className={s.group} aria-labelledby={`gh-${g.id}`}>
+          <section key={g.id} data-tour={gi === 0 ? "list" : undefined} id={`g-${g.id}`} className={s.group} aria-labelledby={`gh-${g.id}`}>
             <div className={s.groupHead}>
               <div>
                 <h2 id={`gh-${g.id}`}>{g.title}</h2>
@@ -75,11 +91,12 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
               const p = progress[a.slug];
               const state = p?.done ? s.done : p ? s.now : "";
               return (
-                <Link key={a.slug} to={paths.article(id, a.slug)} className={`${s.lesson} ${state}`}>
+                <Link key={a.slug} to={paths.article(id, a.slug)} className={`${s.lesson} ${state}`} data-tour={gi === 0 && i === 0 ? "first" : undefined}>
                   <span className={s.st} aria-label={p?.done ? "Done" : p ? "In progress" : "Not started"}>{p?.done && <Icon name="check" size={12} />}</span>
                   <span className={s.no}>{String(i + 1).padStart(2, "0")}</span>
                   <span className={s.lessonTitle}>{a.title}</span>
                   <span className={s.lessonTag}>{a.tag}</span>
+                  {a.fig && <FigureThumb id={a.fig} className={s.lessonThumb} />}
                 </Link>
               );
             })}

@@ -30,7 +30,7 @@ export function LearnPage() {
           return (
             <article key={meta.id} className={s.hubCard} data-accent={meta.accent}>
               <Link to={paths.section(meta.id)} className={s.hubMain}>
-                <span className="mono">{view.total ? `${view.total} lessons` : "Coming soon"}</span>
+                <span className="mono">{view.total ? `${view.total} lessons` : view.id === "quick-notes" && site.notes ? `${site.notes.items.length} notes` : "Coming soon"}</span>
                 <h2>{view.title || meta.label}</h2>
                 <p>{cardText.get(meta.id) ?? meta.blurb}</p>
               </Link>

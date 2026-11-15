@@ -8,6 +8,7 @@ import { LearnPage } from "@/pages/Learn";
 import { MePage } from "@/pages/Me";
 import { NotFoundPage } from "@/pages/NotFound";
 import { ReaderPage } from "@/pages/Reader";
+import { PolicyPage } from "@/pages/Policy";
 import { ProblemsPage } from "@/pages/Problems";
 import { ChallengePage, ProblemWorkspacePage } from "@/pages/ProblemWorkspace";
 import { SectionPage } from "@/pages/Section";
@@ -57,6 +58,8 @@ export const routes = [
           { path: "problems/challenge/:id", element: gated(<ChallengePage />) },
           { path: "problems/:slug", element: gated(<ProblemWorkspacePage />) },
           { path: "me", element: <MePage /> },
+          { path: "privacy", element: gated(<PolicyPage which="privacy" />) },
+          { path: "terms", element: gated(<PolicyPage which="terms" />) },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

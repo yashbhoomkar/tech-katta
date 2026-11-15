@@ -3,16 +3,11 @@ import { useContent } from "@/content/ContentProvider";
 import { greeting, nextInSection, problemOfTheDay, problemsOf, sectionView, tally } from "@/content/model";
 import { SECTIONS, paths, sectionMeta } from "@/content/sections";
 import { usePageMeta } from "@/components/layout/PageMeta";
-import { Button, ButtonLink, Card, Chip, CountUp, ProgressBar } from "@/components/ui";
+import { ButtonLink, Card, Chip, CountUp, ProgressBar } from "@/components/ui";
 import { cx } from "@/lib/cx";
+import { FigureThumb } from "@/features/reader/FigureThumb";
 import { problemRows, usePractice } from "@/content/practice";
-import { useTour, type TourStep } from "@/components/Tour";
 
-const TOUR: TourStep[] = [
-  { target: "cont", title: "Pick up where you stopped", text: "Your last lesson, and how far you got. Resume opens it again." },
-  { target: "prog", title: "Your progress", text: "Lessons read and problems solved, across the whole site." },
-  { target: "streak", title: "Keep the streak", text: "One lesson a day keeps it going. Today counts as soon as you finish one." },
-];
 import { lastInProgress, streakDays, useProgress } from "@/lib/progress";
 import type { ArticleSummary } from "@/lib/api/types";
 import s from "./pages.module.css";
@@ -40,20 +35,17 @@ export function HomePage() {
   const rows = problemRows(problems, practice);
   const solvedN = rows.filter((r) => r.status === "solved").length;
   const solved = { done: solvedN, total: rows.length, pct: rows.length ? Math.round((solvedN / rows.length) * 100) : 0 };
-  const tour = useTour(TOUR);
   const today = problemOfTheDay(problems, progress);
   const streak = streakDays(progress);
   const weekday = (new Date().getDay() + 6) % 7; // Monday = 0
 
   return (
     <div className={s.page}>
-      {tour.ui}
       <div className={s.head}>
         <div>
           <h1>{greeting(site)}</h1>
           <p>{streak > 0 ? `You're ${streak} ${streak === 1 ? "day" : "days"} into a streak. One more lesson keeps it going.` : site.dashboard.home.sub}</p>
         </div>
-        <Button size="sm" onClick={tour.start}>Take the tour</Button>
       </div>
 
       <div className={s.grid2}>
@@ -61,7 +53,7 @@ export function HomePage() {
           <Card className={s.pad} tour="cont">
             <p className="mono">{resume ? "Continue where you left off" : "Start here"}</p>
             <div className={s.contIn} data-accent={nextAccent}>
-              <div className={s.thumb} aria-hidden="true">{next.tag}</div>
+              {next.fig ? <FigureThumb id={next.fig} className={s.thumb} /> : <div className={s.thumb} aria-hidden="true">{next.tag}</div>}
               <div className={s.contText}>
                 <Chip>{site.dashboard.sections.find(([id]) => id === next.section)?.[1]}</Chip>
                 <h3>{next.title}</h3>
@@ -122,15 +114,15 @@ export function HomePage() {
         <h2 className={s.h2}>{site.dashboard.home.explore}</h2>
         <Link className={s.link} to={paths.learn}>All sections →</Link>
       </div>
-      <div className={s.tiles}>
+      <div className={s.tiles} data-tour="explore">
         {SECTIONS.map((meta) => {
           const own = articles.filter((a) => a.section === meta.id);
           const t = tally(own, progress);
           const title = site.dashboard.sections.find(([id]) => id === meta.id)?.[1] ?? meta.label;
           return (
-            <Link key={meta.id} to={paths.section(meta.id)} className={`${s.tile} ${t.total ? "" : s.soon}`} data-accent={meta.accent}>
+            <Link key={meta.id} to={paths.section(meta.id)} className={`${s.tile} ${t.total || meta.id === "quick-notes" ? "" : s.soon}`} data-accent={meta.accent}>
               <h3>{title} ▸</h3>
-              <p>{t.total ? `${t.total} lessons` : "Coming soon"}</p>
+              <p>{t.total ? `${t.total} lessons` : meta.id === "quick-notes" && site.notes ? `${site.notes.items.length} notes · numbers worth knowing` : "Coming soon"}</p>
               <div className={s.tileFoot}>
                 <ProgressBar value={t.total ? t.done / t.total : 0} label={`${title} progress`} />
                 {t.pct}%

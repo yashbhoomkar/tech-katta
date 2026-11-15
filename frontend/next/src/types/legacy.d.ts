@@ -42,6 +42,8 @@ declare module "@legacy/account.js" {
   export function renderGoogleButton(el: HTMLElement, opts?: { text?: string }): Promise<void>;
   export function setTermsChoice(v: boolean): void;
   export function signOut(): Promise<void>;
+  export function signOutAll(): Promise<void>;
+  export function deleteAccount(): Promise<void>;
 }
 
 declare module "@legacy/dashboard/site.js" {
@@ -90,4 +92,15 @@ declare module "@legacy/hostanalytics.jsx" {
   import type { ComponentType } from "react";
   /** the host's anonymous page counts (Vercel Web Analytics), gated like our own events */
   export const HostAnalytics: ComponentType<Record<string, unknown>>;
+}
+
+declare module "@legacy/preview.js" {
+  /** how many blocks of a body signed-out readers see (the same cut the SEO pages use) */
+  export function previewCut(body: unknown[]): number;
+}
+declare module "@legacy/numbers.jsx" {
+  import type { ComponentType } from "react";
+  /** Numbers worth knowing: the log-scale latency chart and estimation shortcuts (site.numbers) */
+  const Numbers: ComponentType<{ n: unknown }>;
+  export default Numbers;
 }
