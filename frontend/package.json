@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "build:prototype": "VITE_API_BASE=/proto-api vite build && node hosting/prototype.mjs",
     "build:cloudflare": "VITE_HOST_ANALYTICS=none vite build && node hosting/emit.mjs cloudflare dist",
     "hosting:vercel": "node hosting/emit.mjs vercel",
     "preview": "vite preview --host 0.0.0.0",
