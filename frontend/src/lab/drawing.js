@@ -80,3 +80,21 @@ for(const p of plan){const c=cubic(p.a,p.b,p.sp,p.tp,off[p.e.id+"|s"],off[p.e.id
   if(n<fewest){fewest=n;pick=r}if(!n)break}
  placed.push(pick);out[p.e.id]={path:pathOf(c),lx:pick.x+w/2,ly:pick.y+PILL_H/2}}
 return out}
+
+// Tidy up (context 36, step 2): a layered layout, no dependency. Each card's column is its longest path of arrows from a
+// card nothing points at (the Clients first), so calls run left to right; inside a column, cards are ordered by where the
+// cards that point at them sit (one barycentre pass), and each column is centred on the tallest. Arrows that close a loop
+// are ignored for the columns. Returns id → {x, y} in canvas units; w and h are a card's size and the gaps between them.
+export function tidy(cards,arrows,{w=200,h=96,gapX=110,gapY=56}={}){const ids=Object.keys(cards);if(!ids.length)return{};
+ const out={};const inn=Object.fromEntries(ids.map(i=>[i,[]])),outs=Object.fromEntries(ids.map(i=>[i,[]]));
+ for(const e of arrows)if(cards[e.from]&&cards[e.to]&&e.from!==e.to){outs[e.from].push(e.to);inn[e.to].push(e.from)}
+ // depth-first order to find the arrows that close loops
+ const state={},back=new Set(),order=[];const visit=v=>{state[v]=1;for(const t of outs[v]){if(state[t]===1)back.add(v+">"+t);else if(!state[t])visit(t)}state[v]=2;order.push(v)};
+ const roots=ids.filter(i=>!inn[i].length).sort((a,b)=>(cards[a].kind==="client"?-1:0)-(cards[b].kind==="client"?-1:0)||cards[a].y-cards[b].y);
+ for(const r of roots)if(!state[r])visit(r);for(const i of ids)if(!state[i])visit(i);
+ const rank={};for(const v of order.reverse()){rank[v]=Math.max(0,...inn[v].filter(s=>!back.has(s+">"+v)).map(s=>(rank[s]??-1)+1))}
+ const cols=[];for(const i of ids)(cols[rank[i]]||(cols[rank[i]]=[])).push(i);
+ const pos={};cols.forEach((col,c)=>{if(!col)return;col.sort((a,b)=>{const m=v=>{const p=inn[v].filter(s=>pos[s]!=null);return p.length?p.reduce((t,s)=>t+pos[s],0)/p.length:cards[v].y/1000};return m(a)-m(b)});col.forEach((v,k)=>{pos[v]=k})});
+ const tallest=Math.max(...cols.filter(Boolean).map(c=>c.length));
+ cols.forEach((col,c)=>{if(!col)return;const top=(tallest-col.length)*(h+gapY)/2;col.forEach((v,k)=>{out[v]={x:Math.round(c*(w+gapX)/20)*20,y:Math.round((top+k*(h+gapY))/20)*20}})});
+ return out}

@@ -123,3 +123,10 @@ test("v2 designs keep v2 settings; old v1 designs are unchanged",()=>{
   // a v1 design is cleaned exactly as before
   const old={name:"o",nodes:[{id:"c",type:"client",x:0,y:0,config:{rps:500}}],edges:[]};assert.deepEqual(cleanDesign(old,lab2,"o").nodes,cleanDesign(old,{...lab2,eval:undefined},"o").nodes);
 });
+
+// Notes on parts (context 36, step 8): kept with the design in v1 and v2, cleaned and capped; empty ones dropped.
+test("a part's note survives saving, cleaned and capped at 280 characters",()=>{
+  const ex=lab.example,nodes=ex.nodes.map((n,k)=>k===0?{...n,note:"  Why\u0000 here?  "}:k===1?{...n,note:"x".repeat(400)}:k===2?{...n,note:"   "}:n);
+  for(const v of [undefined,2]){const c=cleanDesign({id:"d",name:"n",updated:1,nodes,edges:ex.edges,...(v?{v}:{})},lab,"d");
+    assert.equal(c.nodes[0].note,"Why  here?");assert.equal(c.nodes[1].note.length,280);assert.equal("note" in c.nodes[2],false)}
+});

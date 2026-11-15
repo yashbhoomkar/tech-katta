@@ -51,6 +51,8 @@ export const S = {
   previewWhy: "A practice interviewer built into the site, standing in until the AI interviewer is switched on. Every number comes from the judge.",
   whyReport: { off: "The interviewer is off right now. This review is built from the judge's report.", not_allowed: "The interviewer is being tested with a few people first. This review is built from the judge's report.", no_credits: "You have used this month's (or today's) reviews. This one is built from the judge's report and costs nothing.", busy: "The interviewer is very busy right now. This review is built from the judge's report; try again later.", failed: "The interviewer couldn't answer this time. This review is built from the judge's report; nothing was used." },
   reviewKind: { problem: "Problem", risk: "Risk", strength: "Strength", note: "Note" }, askLabel: "An interviewer would ask:", nextStep: "Next:",
-  reviewFailed: "Couldn't reach the interviewer. Try again.",
+  reviewFailed: "The interviewer had a problem with this request. Try again in a minute; your tests and score are unaffected.",
+  interviewerOff: "The interviewer isn't available on this server right now. Your tests and score are unaffected.",
+  reviewOffline: "Couldn't reach the interviewer: check your connection and try again.",
 };
 export const DIFF = { easy: "Easy", medium: "Medium", hard: "Hard" };

@@ -20,8 +20,8 @@ export const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}cat
 export const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}try{dispatchEvent(new Event("tk-lab-saved"))}catch{}};// a signed-in user's account syncs after saves (account.js)
 // Add a new design to what is stored now (and make it the one the full Lab opens, unless current is null).
 export const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
-export const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:(n.x??0)*SX,y:(n.y??0)*SY},data:{kind:n.type,config:n.config||{},...(n.name?{name:n.name}:{})}})),edges:d.edges.map(e=>edge(e.from,e.to,e.carries,e))});
-export const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x/SX),y:Math.round(n.position.y/SY),...(n.data.name?{name:n.data.name}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target,...(e.data?.carries?{carries:e.data.carries}:{}),...cleanArrowLook(e.data)}))});
+export const toFlow=d=>({nodes:d.nodes.map(n=>({id:n.id,type:"comp",position:{x:(n.x??0)*SX,y:(n.y??0)*SY},data:{kind:n.type,config:n.config||{},...(n.name?{name:n.name}:{}),...(n.note?{note:n.note}:{})}})),edges:d.edges.map(e=>edge(e.from,e.to,e.carries,e))});
+export const fromFlow=(nodes,edges)=>({nodes:nodes.map(n=>({id:n.id,type:n.data.kind,x:Math.round(n.position.x/SX),y:Math.round(n.position.y/SY),...(n.data.name?{name:n.data.name}:{}),...(n.data.note?{note:n.data.note}:{}),config:n.data.config})),edges:edges.map(e=>({from:e.source,to:e.target,...(e.data?.carries?{carries:e.data.carries}:{}),...cleanArrowLook(e.data)}))});
 // An arrow: what it carries (the judge reads it) and how it is drawn, its protocol and label (protocols.js).
 export const edge=(source,target,carries,look)=>{const data={...(carries?{carries}:{}),...cleanArrowLook(look)};return{id:"e:"+JSON.stringify([source,target]),source,target,type:"arrow",markerEnd:{type:MarkerType.ArrowClosed,width:14,height:14,color:INK},...(Object.keys(data).length?{data}:{})}};
 

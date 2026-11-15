@@ -27,6 +27,8 @@ export function cleanDesign(d,lab,id){
   // an arrow's protocol and label (protocols.js) are drawing only; looked up by the arrow's ends, so they survive
   // the v2 cleaning below, which keeps only what the judge reads
   const look=new Map();for(const e of Array.isArray(d.edges)?d.edges:[])if(obj(e)&&!look.has(e.from+"→"+e.to))look.set(e.from+"→"+e.to,cleanArrowLook(e));
+  // a part's note (context 36, step 8): the learner's own words, for presenting the design; drawing only, like the look
+  const notes=new Map();for(const n of Array.isArray(d.nodes)?d.nodes:[]){const t=obj(n)&&text(n.id)?cleanNote(n.note):"";if(t&&!notes.has(n.id))notes.set(n.id,t)}
   if(v2){const ids=(Array.isArray(d.edges)?d.edges:[]).flatMap(e=>obj(e)&&Array.isArray(e.carries)?e.carries:[]);const c=cleanDesign2(d,lab,ids);d={...d,nodes:c.nodes,edges:c.edges}}
   const cat=Object.fromEntries((lab.components||[]).map(c=>[c.type,c]));
   const nodes=[],seen=new Set();
@@ -45,6 +47,7 @@ export function cleanDesign(d,lab,id){
     seen.add(n.id);const name=cleanName(n.name);nodes.push({id:n.id,type:n.type,x:fin(n.x)&&Math.abs(n.x)<1e6?n.x:0,y:fin(n.y)&&Math.abs(n.y)<1e6?n.y:0,...(name?{name}:{}),config});
   }
   if(v2){nodes.length=0;nodes.push(...d.nodes.slice(0,MAX_NODES))}
+  for(let k=0;k<nodes.length;k++)if(notes.has(nodes[k].id))nodes[k]={...nodes[k],note:notes.get(nodes[k].id)};
   const kind=Object.fromEntries(nodes.map(n=>[n.id,n.type])),edges=[],links=new Set();
   for(const e of Array.isArray(d.edges)?d.edges:[]){
     if(!obj(e)||!has(kind,e.from)||!has(kind,e.to)||e.from===e.to)continue;
@@ -57,6 +60,10 @@ export function cleanDesign(d,lab,id){
   const problem=typeof d.problem==="string"&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.problem)?{problem:d.problem}:{};
   return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{})};
 }
+
+// A note: plain text, at most 280 characters, control characters turned into spaces.
+export const NOTE_MAX=280;
+export function cleanNote(v){return typeof v==="string"?v.replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]/g," ").trim().slice(0,NOTE_MAX):""}
 
 // Parse and repair the whole store. `raw` is the string from localStorage (or null).
 export function readStore(raw,lab){

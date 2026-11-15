@@ -207,3 +207,99 @@
 @keyframes tk-spent{0%,40%{opacity:.9}100%{opacity:0}}
 .sv-credit small{font-size:12.5px;color:var(--muted);line-height:1.45}
 @media(prefers-reduced-motion:reduce){.sv-credit-bar i{transition:none}.sv-credit-bar em{animation:none}}
+/* Break it yourself (context 36, step 4) */
+.sv-break{margin:8px 16px 0;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface-2)}
+.sv-break>summary{cursor:pointer;font:600 13px var(--font)}
+.sv-break-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.sv-break-row select{flex:1 1 220px;min-width:0;height:34px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:13px var(--font);padding:0 8px}
+.sv-break-done{margin:6px 0 0;font-size:13px;color:var(--ink-2)}
+.sv-replays{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Since the last submission; the bill part by part (context 36, step 5) */
+.sv-compare,.sv-bill{margin:10px 16px 0;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface-2)}
+.sv-compare>summary,.sv-bill>summary{cursor:pointer;font:600 13px var(--font)}.sv-compare>summary small{font-weight:400;color:var(--muted)}
+.sv-compare p{margin:8px 0 0;font-size:13px}.sv-compare b.up{color:var(--success,var(--accent))}.sv-compare b.down{color:var(--danger)}
+.sv-turned,.sv-diff{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.sv-turned .ok::marker,.sv-diff .add::marker{color:var(--success,var(--accent))}.sv-turned .no::marker,.sv-diff .remove::marker{color:var(--danger)}
+.sv-bill{margin:8px 0 0}.sv-bill ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.sv-bill li{display:grid;grid-template-columns:minmax(0,10em) 1fr auto;gap:8px;align-items:center;font-size:12.5px}.sv-bill li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-bill li i{display:block;height:6px;border-radius:3px;background:var(--accent);width:var(--w,0%)}.sv-bill li b{font:500 12px var(--mono)}
+.sv-results .sv-bill>summary{display:block;padding:0;font:600 13px var(--font)}
+
+/* Follow-up questions after a pass (context 36, step 8) */
+.sv-follow{margin:10px 16px 0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2)}
+.sv-follow h4{margin:0;font:600 13px var(--font)}.sv-follow h4 small{font-weight:400;color:var(--muted)}
+.sv-follow-q{margin:8px 0;font-size:15px;font-weight:600}.sv-follow-a{margin:6px 0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.sv-follow-next{margin-left:12px}
+
+/* Mock interview (context 36, step 9) */
+.sv-mock-btn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);font:500 13px var(--font);cursor:pointer;margin-right:6px}
+.sv-mock{display:flex;align-items:center;gap:8px;margin-right:6px;padding:3px 4px 3px 12px;border:1px solid var(--accent);border-radius:999px;font-size:12.5px;background:var(--surface-2)}
+.sv-mock b{font:600 14px var(--mono)}.sv-mock small{color:var(--muted)}
+.sv-mock button{height:26px;padding:0 10px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:500 12px var(--font);cursor:pointer}
+.sv-mock-locked{padding:28px 4px}.sv-mock-locked h2{margin:0 0 8px;font-size:18px}.sv-mock-locked p{color:var(--ink-2);font-size:14px}
+.sv-mock-sum h3{margin:16px 0 6px;font-size:14px}.sv-mock-plan{margin:0;padding-left:20px;font-size:13.5px;display:grid;gap:4px}.sv-mock-plan li{color:var(--muted)}.sv-mock-plan li.on{color:var(--ink)}.sv-mock-plan small{margin-left:8px;color:var(--muted)}
+@media(max-width:900px){.sv-mock span{display:none}}
+
+/* Bookmark and private notes (context 36, step 10) */
+.sv-mark{width:32px;height:32px;margin-right:6px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--muted);font-size:16px;line-height:1;cursor:pointer}.sv-mark.on{color:var(--accent);border-color:var(--accent)}
+.sv-pnote{display:grid;gap:6px;margin:20px 0 0;font:600 13px var(--font)}.sv-pnote textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13.5px/1.5 var(--font);padding:8px 10px;resize:vertical}
+
+/* A shared design (context 36, step 11) */
+.sh-fig{margin:16px 0;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:auto}.sh-fig svg{display:block;width:100%;height:auto;min-width:560px}
+.sh-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.sh-acts .sv-run{height:38px;padding:0 16px}
+.sh h2{margin:24px 0 8px;font-size:16px}.sh-parts{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}.sh-parts p{margin:2px 0 0;color:var(--ink-2)}
+
+/* Estimate helper (context 36, step 12) */
+.sv-calc{margin:4px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px 12px}.sv-calc>summary{cursor:pointer;font:600 13px var(--font)}
+.sv-calc-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-2)}
+.sv-calc-row input,.sv-calc-row select{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13px var(--font);padding:0 8px;width:110px}.sv-calc-row .sv-calc-s{width:52px}.sv-calc-row select{width:auto}
+.sv-calc-row output{flex-basis:100%;color:var(--ink)}
+
+/* Common wrong designs (context 36, step 13) */
+.sv-wrong{margin:20px 0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}.sv-wrong h2{margin:0 0 4px;font-size:16px}
+.sv-wrong ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.sv-wrong li{border-top:1px solid var(--line);padding-top:6px}
+.sv-wrong summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:14px}.sv-wrong-fails{font:500 12px var(--mono);color:var(--danger)}
+.sv-wrong details p{margin:6px 0;font-size:14px}.sv-wrong-fig{margin:8px 0}.sv-wrong ul{grid-template-columns:minmax(0,1fr)}.sv-wrong{min-width:0;overflow:hidden}
+
+/* A hint's link to the article that teaches it (context 36, step 14) */
+.sv-learn{margin:4px 0 0;font-size:12.5px;color:var(--muted)}.sv-learn a{color:var(--accent)}
+
+/* The guided path (context 36, step 15) */
+.sv-guide-btn{height:30px;padding:0 10px;margin-right:6px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink-2);font:500 12.5px var(--font);cursor:pointer;white-space:nowrap}.sv-guide-btn.on{border-color:var(--accent);color:var(--accent)}
+.sv-guide{list-style:none;margin:0 0 16px;padding:10px 12px;display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.sv-guide li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted)}.sv-guide li b{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font:600 11px var(--mono);background:var(--bg)}
+.sv-guide li span{display:grid;gap:2px}.sv-guide li small{font-size:12px;color:var(--ink-2)}.sv-guide li.ok{color:var(--ink-2)}.sv-guide li.ok b{border-color:var(--success);color:var(--success)}.sv-guide li.now{color:var(--ink);font-weight:600}.sv-guide li.now b{border-color:var(--accent);color:var(--accent)}
+.sv-lab{position:relative}.sv-guide-cover{position:absolute;left:0;right:0;top:41px;bottom:0;z-index:15;display:grid;place-items:center;padding:24px;background:var(--surface);overflow:auto}
+.sv-guide-cover>div{max-width:440px}.sv-guide-cover label{font:600 11px var(--mono);letter-spacing:.08em;color:var(--accent)}.sv-guide-cover h2{margin:6px 0 8px;font-size:22px}
+@media (max-width:900px){.sv-guide-cover{top:0;bottom:56px}.sv-guide-btn{display:none}}
+.sv-bar>button,.sv-bar .sv-mock-btn,.sv-bar .sv-ask{white-space:nowrap;flex-shrink:0}
+@media (max-width:1560px){.sv-bl{display:none}}
+
+/* Beyond the tests: headroom and waste (context 36, step 16) */
+.sv-probes{margin:10px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-probes>summary{cursor:pointer;font:600 13px var(--font)}
+.sv-probe{margin:8px 0}.sv-probe-out{margin:4px 0 0;font-size:13.5px}.sv-probe-out small{display:block;color:var(--ink-2);margin-top:2px}.sv-probe-out.no b{color:var(--danger)}.sv-probe-out.ok b{color:var(--success)}
+.sv-probe-how{margin:4px 0 0;padding-left:18px;font-size:13px}
+
+/* Defend your design (context 36, step 17) */
+.sv-defend{margin:10px 0;padding:10px 12px;border:1px solid var(--accent);border-radius:8px;background:var(--bg)}.sv-defend>b{font-size:14px}.sv-defend>b small{font-weight:400;color:var(--muted)}
+.sv-defend .sv-run{height:32px;padding:0 14px;margin-top:4px}.sv-defend-q{margin:8px 0;font-size:14px;font-weight:600}
+.sv-defend-c{list-style:none;margin:0;padding:0;display:grid;gap:6px}.sv-defend-c button{width:100%;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font:400 13.5px var(--font);cursor:pointer}
+.sv-defend-c button:disabled{cursor:default}.sv-defend-c button.right{border-color:var(--success);color:var(--success);font-weight:600}.sv-defend-c button.wrong{border-color:var(--danger);color:var(--danger)}
+.sv-defend-say,.sv-defend-end{margin:8px 0 4px;font-size:13.5px}
+
+/* Trade-offs (context 36, step 18) */
+.sv-to h4{margin:10px 0 4px;font-size:12.5px;color:var(--muted);font-weight:600}.sv-to ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}
+.sv-to small{display:block;color:var(--ink-2);margin-top:2px}.sv-to-fail{color:var(--danger);font-weight:600}
+
+/* Why did this part crash? (context 36, step 19) */
+.sv-why-parts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:12.5px}.sv-why-l{color:var(--muted)}
+.sv-why-chip{height:26px;padding:0 10px;border:1px solid var(--danger);border-radius:999px;background:var(--bg);color:var(--danger);font:500 12px var(--font);cursor:pointer}.sv-why-chip.on{background:var(--danger);color:var(--bg)}
+.sv-why-card{flex-basis:100%;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-why-card p{margin:4px 0;font-size:13px}.sv-why-fed{color:var(--ink-2)}.sv-why-fix{font-weight:600}
+
+/* Say it out loud (context 36, step 21) */
+.sv-speak{margin:28px 0 8px;padding-top:18px;border-top:1px solid var(--line)}.sv-speak h2{margin:0 0 4px;font-size:17px}
+.sv-speak-outline{margin:10px 0;padding-left:20px;display:grid;gap:4px;font-size:13.5px}.sv-speak-outline small{display:inline-block;min-width:38px;font:500 11px var(--mono);color:var(--accent)}
+.sv-speak .sv-run{height:34px;padding:0 14px}.sv-speak-rec{display:flex;align-items:center;gap:10px;font:500 13px var(--mono)}
+.sv-speak-dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:sv-pulse 1s ease-in-out infinite}@keyframes sv-pulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.sv-speak-dot{animation:none}}
+.sv-speak-take{display:grid;gap:4px;margin-top:8px}.sv-speak-take audio{width:100%}.sv-speak-take small{color:var(--muted)}.sv-speak-err{color:var(--danger);font-size:13px}

@@ -38,7 +38,7 @@ export function AskButton({ className, busy, disabled, onClick, credits }) {
     {busy ? S.reviewing : on ? S.askInterviewer : S.askReport}</button>;
 }
 // An error text for a failed review request.
-export const reviewError = (e) => e?.status === 401 ? S.signInToAsk : e?.status === 429 ? (e.message || S.tooMany) : S.reviewFailed;
+export const reviewError = (e) => e?.status === 401 ? S.signInToAsk : e?.status === 429 ? (e.message || S.tooMany) : e?.status === 503 || e?.status === 404 ? S.interviewerOff : e?.status ? S.reviewFailed : S.reviewOffline;
 export function ReviewPanel({ review, credits }) {
   if (!review) return null;
   const left = credits?.month?.left;
