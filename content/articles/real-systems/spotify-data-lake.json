@@ -150,7 +150,7 @@
         "Narrow the search first (partition by key, Bloom filters), then make the final read exact with an index.",
         "Not everything needs a key-value store. For cold or rarely read data, an index over cheap object storage can serve reads by key for far less.",
         "Lay data out for the read you care about: sorted by key, grouped per key, fields together.",
-        "Related: 'Database indexing' in Concepts, and 'DynamoDB' in Components."
+        "Related: 'Database indexing', 'Big files' and 'Counting the uncountable' (for Bloom filters) in Concepts, and 'DynamoDB' in Components."
       ]
     },
     {

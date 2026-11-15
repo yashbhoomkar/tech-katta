@@ -1,0 +1,172 @@
+{
+  "section": "concepts",
+  "slug": "vector-search",
+  "group": "specialised",
+  "no": "CONCEPT // 18",
+  "tag": "VECTOR SEARCH",
+  "access": "paid",
+  "date": "8 Nov 2026",
+  "title": "Searching by meaning: embeddings and vector indexes",
+  "dek": "A customer types \"something spicy with cottage cheese\" and expects chilli paneer, though not one word matches. Embeddings turn text and images into points where similar meanings sit close together, and vector indexes find the nearest points among crores in milliseconds, at the price of sometimes missing one.",
+  "body": [
+    {
+      "t": "example"
+    },
+    {
+      "t": "h2",
+      "x": "From words to points"
+    },
+    {
+      "t": "fig",
+      "id": "vec-embed",
+      "cap": "Keyword search needs shared words; embeddings need shared meaning. That is why 'cottage cheese' finds 'paneer' here."
+    },
+    {
+      "t": "list",
+      "items": [
+        "Embed every dish once, from its name and description, and store the vector beside the dish.",
+        "At search time, embed the query with the same model and look for the nearest vectors.",
+        "Closeness is measured by cosine similarity (the angle between vectors), the dot product, or straight-line distance; use the one the model was trained for.",
+        "The same idea finds similar images, duplicate listings, related restaurants and the passages to give an AI model as context."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Finding the nearest, fast"
+    },
+    {
+      "t": "fig",
+      "id": "vec-hnsw",
+      "cap": "An approximate index trades a little accuracy for a huge saving: it checks a few hundred vectors instead of crores."
+    },
+    {
+      "t": "table",
+      "label": "Ways to search vectors",
+      "head": [
+        "Method",
+        "How it works",
+        "Good for",
+        "Watch out for"
+      ],
+      "rows": [
+        [
+          "Exact (brute force)",
+          "Compare the query with every vector",
+          "Up to a few lakh vectors, or as a check on recall",
+          "Grows with the data"
+        ],
+        [
+          "HNSW",
+          "Layers of graphs; hop greedily towards the query",
+          "High recall at low latency; the common default",
+          "Memory: vectors plus links all in RAM; slower to build"
+        ],
+        [
+          "IVF",
+          "Cluster the vectors; search only the few nearest clusters",
+          "Large collections; cheaper to build",
+          "Recall drops if the query sits between clusters"
+        ],
+        [
+          "Product quantisation",
+          "Compress each vector to a few dozen bytes",
+          "Fitting crores of vectors in memory",
+          "Lower accuracy; often reranked with full vectors"
+        ]
+      ]
+    },
+    {
+      "t": "p",
+      "x": "Recall is the measure: of the true 10 nearest, how many did the index return? Indexes have knobs (how many neighbours to explore) that trade recall against speed; 95 to 99% is typical."
+    },
+    {
+      "t": "h2",
+      "x": "Filters, keywords and freshness"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Filters: 'nearest dishes that are veg and from open restaurants'. Filtering after the vector search can leave too few results; filtering before can break the index's shortcuts. Good engines filter during the search.",
+        "Keywords still matter: a search for 'Chicken 65' wants that exact dish. Hybrid search runs a keyword search and a vector search and merges the two rankings.",
+        "A new model means new vectors for everything: re-embed in the background into a new index, then switch, as with any search reindex.",
+        "Embedding costs time and money per item; embed on write, not on every read."
+      ]
+    },
+    {
+      "t": "code",
+      "label": "ZOTATO · VECTORS IN POSTGRESQL (PGVECTOR)",
+      "x": "CREATE EXTENSION vector;\nALTER TABLE dishes ADD COLUMN embedding vector(768);\nCREATE INDEX ON dishes USING hnsw (embedding vector_cosine_ops);\n\nSELECT id, name FROM dishes\nWHERE veg AND restaurant_open\nORDER BY embedding <=> $1          -- cosine distance to the query's vector\nLIMIT 10;",
+      "say": "Using the pgvector extension in PostgreSQL. Add a 768-number embedding column to dishes and an HNSW index using cosine distance. Then select veg dishes from open restaurants, ordered by cosine distance to the query's vector, ten results."
+    },
+    {
+      "t": "h2",
+      "x": "Where vectors live"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Inside the database you already have: pgvector for PostgreSQL, vector fields in Elasticsearch and OpenSearch. Simplest when the collection is up to a few crore vectors.",
+        "A dedicated vector database (Milvus, Qdrant, Weaviate, or a managed service) when vectors are the main workload, very large, or need their own scaling.",
+        "Either way, the dish table stays the source of truth and the vectors are derived, so they can be rebuilt."
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "Numbers worth remembering"
+    },
+    {
+      "t": "table",
+      "label": "Rough figures; check the current documentation",
+      "head": [
+        "What",
+        "Roughly"
+      ],
+      "rows": [
+        [
+          "Dimensions per vector",
+          "about 384 to 3,072, by model"
+        ],
+        [
+          "Memory for 1 crore × 768 floats",
+          "about 31 GB, before index links"
+        ],
+        [
+          "Typical recall of an approximate index",
+          "95 to 99%"
+        ],
+        [
+          "Query latency",
+          "a few milliseconds to tens of milliseconds"
+        ],
+        [
+          "Exact search is fine up to",
+          "a few lakh vectors"
+        ]
+      ]
+    },
+    {
+      "t": "h2",
+      "x": "In an interview"
+    },
+    {
+      "t": "list",
+      "items": [
+        "Use vectors when the question is about meaning or similarity: 'dishes like this', search that tolerates different words, recommendations, finding duplicates.",
+        "Describe the pipeline: embed on write, store the vector, embed the query, approximate nearest neighbours, then filters and reranking.",
+        "Say the trade: approximate search can miss a true neighbour; give a recall figure.",
+        "Mention hybrid search with keywords, and re-embedding when the model changes.",
+        "Where it appears here: the Menu search problem handles Hinglish and synonyms with rules; embeddings are the other way to catch 'cottage cheese' meaning paneer."
+      ]
+    },
+    {
+      "t": "more",
+      "label": "Go deeper: why cosine similarity",
+      "body": [
+        {
+          "t": "p",
+          "x": "Cosine similarity compares the direction of two vectors and ignores their length. For many text models, direction carries the meaning and length carries little, so 'paneer tikka' and a long description of paneer tikka point the same way. If vectors are normalised to length 1, cosine similarity and the dot product give the same order, and Euclidean distance does too, which is why many systems normalise once at write time and then use whichever is fastest."
+        }
+      ]
+    }
+  ]
+}

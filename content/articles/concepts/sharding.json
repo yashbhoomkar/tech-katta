@@ -536,7 +536,7 @@
     },
     {
       "t": "p",
-      "x": "Most applications can be designed with no cross-shard transactions at all. If you keep needing them, the shard key or the boundaries between shards are probably wrong."
+      "x": "Most applications can be designed with no cross-shard transactions at all. If you keep needing them, the shard key or the boundaries between shards are probably wrong. The concept 'Processes with many steps' covers sagas and the outbox."
     },
     {
       "t": "h3",

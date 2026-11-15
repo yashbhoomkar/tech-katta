@@ -104,7 +104,7 @@
         "OT for long shared text; CRDT ideas when values are replaced whole. Mention offline editing and how a client catches up.",
         "Let clients make IDs (a client ID plus a counter) so creating things never waits for the server.",
         "For lists many people reorder, store fractional positions rather than array indexes.",
-        "Related: 'Networking essentials' in Concepts, and 'Design a shared document editor' in Interview Questions."
+        "Related: 'Real-time updates' in Concepts, and 'Design a shared document editor' in Interview Questions."
       ]
     },
     {
