@@ -1,4 +1,7 @@
-/* Neo-brutalism tokens. Loaded after all of full-site's stylesheets, so these values win.
+/* Neo-brutalism tokens. Round 3 (owner: "calmer colours … on both light and dark"): the same hues with about half the
+   saturation and even lightness (OKLCH L .82, chroma ~.085; lemon and marigold L .86), a softer cream and ink, and a softer
+   cream for dark outlines. Text on every colour block stays near-black at 9.7:1 or better.
+   Neo-brutalism tokens. Loaded after all of full-site's stylesheets, so these values win.
    Same token names as full-site (components read roles, not hex codes) plus a few of our own:
    --display, --bw, --bw-strong, --sh-d, --sh, --sh-sm, --sh-lg, --edge. */
 
@@ -17,33 +20,33 @@
   --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 12px; --r-pill: 8px;
 
   color-scheme: light;
-  --page: #FFF4DC;           /* chai-stall cream */
-  --surface: #FFFFFF;
-  --raised: #FFFFFF;
-  --sunken: #FBE9C4;
-  --ink: #111111; --ink-2: #333333; --muted: #5C5C5C;
-  --edge: #111111;          /* outlines of objects: cards, keys, blocks */
-  --rule: #111111;          /* structure: dividers, bars, panel edges */
-  --line: #111111; --line-strong: #111111;
-  --btn: #111111; --on-btn: #FFFFFF;
-  --marigold: #FFC233; --on-marigold: #111111;
-  --link: #1E40D8; --focus: #1E40D8;
-  --pass: #0B7A3E; --fail: #C21F1F; --warn: #9A4A00; --star: #111111;
-  --video: #111111; --on-video: #FFF4DC;
-  --scrim: rgb(17 17 17 / .55);
+  --page: #F8F2E5;           /* chai-stall cream, softened */
+  --surface: #FFFDF8;
+  --raised: #FFFDF8;
+  --sunken: #F1E8D4;
+  --ink: #1C1B1A; --ink-2: #3A3835; --muted: #5E5B55;
+  --edge: #1C1B1A;          /* outlines of objects: cards, keys, blocks */
+  --rule: #1C1B1A;          /* structure: dividers, bars, panel edges */
+  --line: #1C1B1A; --line-strong: #1C1B1A;
+  --btn: #1C1B1A; --on-btn: #FFFFFF;
+  --marigold: #F3C766; --on-marigold: #1C1B1A;
+  --link: #2F4FBF; --focus: #2F4FBF;
+  --pass: #0B7A3E; --fail: #C21F1F; --warn: #9A4A00; --star: #1C1B1A;
+  --video: #1C1B1A; --on-video: #F8F2E5;
+  --scrim: rgb(28 27 26 / .55);
   --shadow: var(--sh); --shadow-pop: var(--sh-lg); --hl: 0 0 0 0 transparent;
-  --band-strong: #111111; --on-band-strong: #FFF4DC;
-  --selection: #E8F55C;
+  --band-strong: #1C1B1A; --on-band-strong: #F8F2E5;
+  --selection: #E6EAB8;
 
-  --c-concepts: #5EC2FF;   --a-concepts: #5EC2FF;   --t-concepts: #DDF2FF;
-  --c-components: #FF9330; --a-components: #FF9330; --t-components: #FFE6CC;
-  --c-interview: #B48CFF;  --a-interview: #B48CFF;  --t-interview: #EFE5FF;
-  --c-problems: #19D3A2;   --a-problems: #19D3A2;   --t-problems: #D6F7EC;
-  --c-real: #FF6B6B;       --a-real: #FF6B6B;       --t-real: #FFE0E0;
-  --c-notes: #E8F55C;      --a-notes: #E8F55C;      --t-notes: #F7FCD6;
-  --on-c: #111111; --on-c-2: rgb(17 17 17 / .78);
-  --track-on-c: rgb(17 17 17 / .18); --fill-on-c: #111111;
-  --preview: #FFFFFF; --on-preview: #111111;
+  --c-concepts: #8FCDF5;   --a-concepts: #8FCDF5;   --t-concepts: #E0F1FE;
+  --c-components: #EFB78E; --a-components: #EFB78E; --t-components: #FCEBDF;
+  --c-interview: #CBB9F5;  --a-interview: #CBB9F5;  --t-interview: #F0EBFE;
+  --c-problems: #8CD6BA;   --a-problems: #8CD6BA;   --t-problems: #DFF4EB;
+  --c-real: #F7AFAB;       --a-real: #F7AFAB;       --t-real: #FFE8E7;
+  --c-notes: #DCE29E;      --a-notes: #DCE29E;      --t-notes: #EEF1DE;
+  --on-c: #1C1B1A; --on-c-2: rgb(28 27 26 / .78);
+  --track-on-c: rgb(28 27 26 / .18); --fill-on-c: #1C1B1A;
+  --preview: #FFFFFF; --on-preview: #1C1B1A;
 }
 
 :root[data-theme="dark"] {
@@ -52,29 +55,29 @@
   --surface: #1C1B19;
   --raised: #252421;
   --sunken: #2C2A27;
-  --ink: #FFF4DC; --ink-2: #E5DCC8; --muted: #B3AA98;
-  --edge: #FFF4DC;          /* objects keep a cream outline… */
+  --ink: #EDE6D6; --ink-2: #D6CEBD; --muted: #A9A193;
+  --edge: #D9D1C0;          /* objects keep a cream outline (softened) */
   --rule: #3B3934;          /* …structure goes quiet: the first dark drew every line in cream and read as a wireframe */
   --line: #3B3934; --line-strong: #4A4740;
-  --btn: #FFF4DC; --on-btn: #111111;
-  --marigold: #FFC233; --on-marigold: #111111;
-  --link: #8FB0FF; --focus: #E8F55C;
-  --pass: #6EE7A0; --fail: #FF8A80; --warn: #FFB26B; --star: #111111;
-  --video: #000000; --on-video: #FFF4DC;
+  --btn: #EDE6D6; --on-btn: #1C1B1A;
+  --marigold: #F3C766; --on-marigold: #1C1B1A;
+  --link: #8FB0FF; --focus: #DCE29E;
+  --pass: #6EE7A0; --fail: #FF8A80; --warn: #FFB26B; --star: #1C1B1A;
+  --video: #000000; --on-video: #EDE6D6;
   --scrim: rgb(0 0 0 / .7);
   --shadow: var(--sh); --shadow-pop: var(--sh-lg); --hl: 0 0 0 0 transparent;
-  --band-strong: #FFC233; --on-band-strong: #111111;
+  --band-strong: #F3C766; --on-band-strong: #1C1B1A;
   --selection: rgb(232 245 92 / .35);
 
   /* section fills stay vivid with black text (never darkened); soft tints become a neutral raised grey */
-  --c-concepts: #5EC2FF;   --a-concepts: #5EC2FF;
-  --c-components: #FF9330; --a-components: #FF9330;
-  --c-interview: #B48CFF;  --a-interview: #B48CFF;
-  --c-problems: #19D3A2;   --a-problems: #19D3A2;
-  --c-real: #FF6B6B;       --a-real: #FF6B6B;
-  --c-notes: #E8F55C;      --a-notes: #E8F55C;
+  --c-concepts: #8FCDF5;   --a-concepts: #8FCDF5;
+  --c-components: #EFB78E; --a-components: #EFB78E;
+  --c-interview: #CBB9F5;  --a-interview: #CBB9F5;
+  --c-problems: #8CD6BA;   --a-problems: #8CD6BA;
+  --c-real: #F7AFAB;       --a-real: #F7AFAB;
+  --c-notes: #DCE29E;      --a-notes: #DCE29E;
   --t-concepts: #252421; --t-components: #252421; --t-interview: #252421; --t-problems: #252421; --t-real: #252421; --t-notes: #252421;
-  --on-c: #111111; --on-c-2: rgb(17 17 17 / .78);
-  --track-on-c: rgb(17 17 17 / .22); --fill-on-c: #111111;
-  --preview: #1C1B19; --on-preview: #FFF4DC;
+  --on-c: #1C1B1A; --on-c-2: rgb(28 27 26 / .78);
+  --track-on-c: rgb(28 27 26 / .22); --fill-on-c: #1C1B1A;
+  --preview: #1C1B19; --on-preview: #EDE6D6;
 }

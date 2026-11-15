@@ -47,6 +47,10 @@ Why the first dark failed: every line was cream (cards, dividers, table rows, ba
 - Details: colour sticker labels on cards ("Continue where you left off", "Streak", "Problem of the day", "Say this in the interview"), halftone texture on big colour blocks, a running ticker under the landing hero, boxed lesson numbers, coloured offset shadows on the big numbers and page titles (light only), a "DONE" stamp on a completed lesson, and a marigold edge on hovered problem rows.
 - Motion: the highlighter wipes in behind "explained.", stickers slap on, the ticker runs (pauses on hover), progress bars fill in 8 chunky steps, the chosen sidebar item and filter stamp down, the hero shapes turn a quarter under the mouse, and the theme change wipes down like a shutter. Reduced motion keeps fades only.
 
+## Round 3: calmer colours (owner, 2026-11-15: "Calmer colours for neo-brutalism please on both light and dark")
+
+Same hues, about half the saturation, even lightness (OKLCH L .82, chroma ~.085; lemon and marigold L .86). Concepts `#8FCDF5`, components `#EFB78E`, interview `#CBB9F5`, problems `#8CD6BA`, real `#F7AFAB`, notes `#DCE29E`, keys `#F3C766`. Softer cream page `#F8F2E5`, warm-white surfaces `#FFFDF8`, ink `#1C1B1A`; in dark, softer cream outlines `#D9D1C0` and text `#EDE6D6`. Outlines, shadows, stickers and motion are unchanged. Text on every colour block is at least 9.7:1; the lowest pair on the site is 5.3:1 ("Passed" green on white).
+
 ## Notes
 
 None.
