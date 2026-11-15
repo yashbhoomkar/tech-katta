@@ -4,8 +4,9 @@
    Dark mode: the same names with dark values, below. It follows the device's setting unless the visitor picked
    one with the theme button (<html data-theme="light|dark">, set before the page draws by public/theme-boot.js; theme/mode.js keeps it up to date).
    Rules for colour names: name the role, not the hue (--brand, not --yellow), so a new brand colour still reads right.
-   The colours ("Katta Paper", back by the owner's choice on 2026-11-13, spec 28): warm white paper, white cards that float on it,
-   ink text, marigold for the main buttons and highlights, ochre (marigold in dark) for links, focus and figure lines; the layout is Stage (spec 26): the landing hero and the dashboard sidebar are dark in both themes
+   The colours: light is "Marigold & Navy" (2026-11-15, tech-katta-context 33): a near-neutral white page, white cards that
+   float on it, ink text, marigold for the main buttons, logo and highlights, navy for links, focus and figure lines; dark is
+   Katta Paper's (spec 28): warm near-black, marigold for buttons and links; the layout is Stage (spec 26): the landing hero and the dashboard sidebar are dark in both themes
    (class .on-dark: the dark values below, scoped to that element). */
 /* Local faces measured against the web fonts (spec 30 §3.4): same average width and line box, so a page drawn in the
    fallback and redrawn in the web font keeps its line breaks. */
@@ -16,26 +17,26 @@
 :root{
   color-scheme:light;
   /* Surfaces */
-  --page:#faf7f0;         /* the page background (paper) */
+  --page:#fafaf9;         /* the page background (paper) */
   --bg:#fff;              /* cards, inputs, figure boxes */
-  --surface:#f3efe5;      /* wells, quiet panels, inline code */
-  --surface-2:#fcfaf5;    /* sidebar, table heads, very faint panels */
-  --hover:#efeadd;        /* hover on rows and quiet buttons */
-  --inverse:#1d1b16;      /* the one dark card per page (practise call-out), selected chips */
-  --on-inverse:#faf7f0;
+  --surface:#f3f3f1;      /* wells, quiet panels, inline code */
+  --surface-2:#fbfbfa;    /* sidebar, table heads, very faint panels */
+  --hover:#ededea;        /* hover on rows and quiet buttons */
+  --inverse:#1c1b19;      /* the one dark card per page (practise call-out), selected chips */
+  --on-inverse:#fafaf9;
   /* Text */
-  --ink:#1d1b16;
-  --ink-2:#3a372f;
-  --ink-3:#4d493f;
-  --muted:#625c4f;
-  --muted-2:#6b6557;
-  --faint:#736d5d;
-  --disabled:#cdc7b6;
+  --ink:#1c1b19;
+  --ink-2:#34322e;
+  --ink-3:#46443f;
+  --muted:#5b5953;
+  --muted-2:#64625c;
+  --faint:#6b6963;
+  --disabled:#d2d1cc;
   /* Lines */
-  --line-strong:#b9b2a0;
-  --line:#e6e0d1;
-  --line-soft:#ddd6c4;
-  --grid:#f0ebde;
+  --line-strong:#b4b2ab;
+  --line:#e6e5e1;
+  --line-soft:#dddcd7;
+  --grid:#f0f0ed;
   /* Brand (marigold): main button, highlighter, active marker. Text on it is always --on-brand. */
   --brand:#ffc233;
   --brand-strong:#f2ac00; /* hover on the main button, active marker lines */
@@ -45,15 +46,15 @@
   --brand-tint:#fff3cf;   /* brand-tinted boxes, active sidebar row */
   --on-brand:#1d1b16;
   --mark:#ffd866;         /* the highlighter stroke under a headline word */
-  /* Accent (ochre; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
+  /* Accent (navy; marigold in dark): links, focus rings, hover outlines, lines and labels in figures, canvas handles.
      Use it for lines and text only. A filled shape is --brand with --on-brand text. */
-  --accent:#94600a;
-  --accent-strong:#754a00;
-  --accent-mid:#e9b949;
-  --accent-line:#f0d388;
-  --accent-soft:#ffe08a;
-  --accent-tint-2:#ffedb8;
-  --accent-tint:#fff6dc;
+  --accent:#26449e;
+  --accent-strong:#1b3278;
+  --accent-mid:#8ea3dc;
+  --accent-line:#ccd5f0;
+  --accent-soft:#dbe2f6;
+  --accent-tint-2:#e8ecf8;
+  --accent-tint:#f3f5fb;
   --on-accent:#fff;
   /* Status */
   --danger:#b3261e;
@@ -77,10 +78,10 @@
   --cat-teal:#0e7490;
   --cat-pink:#be185d;
   /* The same colours as r g b triples, for see-through shadows and backdrops */
-  --ink-rgb:29 27 22;
+  --ink-rgb:28 27 25;
   --bg-rgb:255 255 255;
-  --page-rgb:250 247 240;
-  --accent-rgb:148 96 10;
+  --page-rgb:250 250 249;
+  --accent-rgb:38 68 158;
   /* Shadows and backdrops */
   --shadow-1:0 1px 2px rgb(var(--ink-rgb) / .06);
   --shadow-2:0 2px 4px rgb(var(--ink-rgb) / .05),0 10px 24px rgb(var(--ink-rgb) / .09);
