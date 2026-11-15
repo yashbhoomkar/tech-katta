@@ -332,9 +332,9 @@ td.tt{font-weight:500}
 .stars.go i:nth-child(2){animation-delay:90ms}.stars.go i:nth-child(3){animation-delay:200ms}
 @keyframes m-star{from{opacity:0;transform:scale(.6) rotate(-25deg)}}
 /* app: content settles in on each page change (fade only, short) */
-.view.enter .main,.view.enter .art,.view.enter .wbody{animation:m-fade 160ms ease-out}
+.view.enter .content,.view.enter .art,.view.enter .wbody{animation:m-fade 160ms ease-out}
 .nav-i{position:relative;transition:background-color 150ms ease}
-.nav-i[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--ink);transform-origin:center;animation:m-mark 320ms var(--out)}
+.nav-i[aria-current="page"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--ink);transform-origin:center;animation:m-mark 320ms var(--out)}
 @keyframes m-mark{from{transform:scaleY(0)}}
 .bar i{transform-origin:left center;transition:width var(--slow) var(--out)}
 .view.enter .bar i{animation:m-bar 900ms var(--out) both 120ms}
@@ -400,10 +400,115 @@ td.tt{font-weight:500}
   .scrim.closing .dialog{animation:m-sheet 240ms ease-in reverse forwards}
   @keyframes m-sheet{from{transform:translateY(100%)}}
 }
+
+/* ================= round 2: everything clickable does something ================= */
+.tabs{flex:none}
+.palette .p{width:100%;text-align:left;font:inherit;font-weight:500;color:inherit;cursor:pointer;transition:border-color 150ms ease,transform var(--press) var(--out)}
+@media (hover:hover) and (pointer:fine){.palette .p:hover{border-color:var(--ink)}}
+.palette .p:active{transform:scale(.97)}
+.side .search{cursor:pointer;transition:border-color 150ms ease}.side .search:hover{border-color:var(--line-strong)}
+/* command palette: opened from the keyboard, so it appears almost at once (no scale) */
+.cmdk{place-items:start center;padding-top:12vh}
+.cmdk:not([hidden]){animation:m-fade 120ms ease}
+.cmdk:not([hidden]) .cbox{animation:none}
+.cbox{width:min(620px,100%);background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 60px -20px rgb(0 0 0/.45);overflow:hidden}
+.cin{display:flex;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);font-size:18px;color:var(--muted)}
+.cin input{flex:1;border:0;outline:0;background:none;font:inherit;font-size:17px;color:var(--ink);min-width:0}
+kbd{font:500 11px var(--mono);border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:6px;padding:2px 6px;color:var(--muted);background:var(--page)}
+.cres{max-height:min(420px,56vh);overflow:auto;padding:8px}
+.cres h4{margin:10px 10px 4px;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cres a{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;font-size:15px}
+.cres a i{width:10px;height:10px;border-radius:3px;flex:none}
+.cres a small{margin-left:auto;color:var(--muted);font-size:12.5px}
+.cres a[aria-selected="true"]{background:var(--sunken)}
+.cres mark{background:none;color:var(--link);font-weight:600}
+.cres .none{padding:22px 12px;color:var(--muted)}
+.cfoot{display:flex;gap:18px;padding:10px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}.cfoot kbd{margin-right:3px}
+/* tour: popover grows from the thing it points at */
+.tourpop{position:absolute;z-index:55;width:300px;background:var(--btn);color:var(--on-btn);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 40px -14px rgb(0 0 0/.5);transform-origin:var(--to,top left);transition:top 300ms var(--out),left 300ms var(--out)}
+.tourpop:not([hidden]){animation:m-pop2 200ms var(--out)}
+@keyframes m-pop2{from{opacity:0;transform:scale(.96)}}
+.tourpop .mono{color:inherit;opacity:.6}.tourpop p{font-size:14px;opacity:.85}
+.tourpop .tnav{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.tourpop .btn{background:transparent;color:inherit;border-color:rgb(255 255 255/.3)}.tourpop .btn.primary{background:var(--on-btn);color:var(--btn);border-color:var(--on-btn)}
+:root[data-theme="dark"] .tourpop .btn{border-color:rgb(0 0 0/.3)}
+.spot{position:relative;z-index:50;box-shadow:0 0 0 4px var(--marigold),0 0 0 9999px rgb(20 19 17/.35);transition:box-shadow 300ms var(--out)}
+/* video player */
+.player{position:relative;overflow:hidden}
+.pplay{border:0;background:none;padding:0;transition:transform var(--press) var(--out),opacity 200ms ease}
+.pplay:active{transform:scale(.97)}
+.player .pcap,.player .pbar{opacity:0;transition:opacity 300ms ease}
+.player.on .pplay{opacity:0;pointer-events:none;position:absolute}
+.player.on .pcap,.player.on .pbar{opacity:1}
+.pcap{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);max-width:80%;text-align:center;background:rgb(0 0 0/.6);color:#fff;border-radius:8px;padding:6px 12px;font-size:15px}
+.pcap:empty{display:none}
+.pbar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:12px;align-items:center;font:500 11.5px var(--mono);color:#fff}
+.ptog{border:0;background:rgb(255 255 255/.15);color:#fff;border-radius:8px;width:34px;height:30px;font-size:12px}
+.ptrack{flex:1;height:4px;border-radius:2px;background:rgb(255 255 255/.25);overflow:hidden}.ptrack i{display:block;height:100%;background:var(--marigold);transform-origin:left;transform:scaleX(0)}
+/* cards mode: one idea at a time */
+.deck{display:none;align-items:center;gap:12px;justify-content:space-between;padding:12px 14px;border-radius:14px;background:var(--sunken)}
+.art.cards .deck{display:flex}
+.deck .dbar{flex:1;height:4px;border-radius:2px;background:var(--line);overflow:hidden}.deck .dbar i{display:block;height:100%;background:var(--ink);transform-origin:left;transition:transform var(--base) var(--out)}
+.art.cards [data-card]:not(.cur){display:none}
+.art.cards [data-card].cur{animation:m-cardin 260ms var(--out) both}
+.art.cards.back [data-card].cur{animation-name:m-cardback}
+@keyframes m-cardin{from{opacity:0;transform:translateX(16px)}}
+@keyframes m-cardback{from{opacity:0;transform:translateX(-16px)}}
+/* problems */
+#ptable tr{cursor:pointer;transition:background-color 150ms ease}
+@media (hover:hover) and (pointer:fine){#ptable tr:hover{background:var(--page)}}
+#ptable tr.in{animation:m-in 300ms var(--out) both}
+#ptable tr.picked{animation:m-flash 1.4s ease}#ptable tr.picked td{box-shadow:inset 0 2px 0 var(--pass),inset 0 -2px 0 var(--pass)}
+/* workspace panels */
+.panel{flex:1;min-height:0}
+.panel:not([hidden]){animation:m-fade 160ms ease}
+textarea#notes{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px;font:15px/1.6 var(--sans);background:var(--page);color:var(--ink);resize:vertical}
+textarea#notes:focus{outline:2px solid var(--link);outline-offset:1px}
+.nmeta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.saved{transition:opacity 300ms ease}.saved.dim{opacity:0}
+.hint{display:grid;grid-template-rows:0fr;transition:grid-template-rows 320ms var(--out)}
+.hint.open{grid-template-rows:1fr}
+.hint>div{overflow:hidden}
+.hint>div>p{margin-bottom:10px;padding:12px 14px;border-radius:12px;background:var(--t-notes);color:var(--ink)}
+.hint b{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;color:var(--muted);margin-bottom:2px}
+.lock{border:1px dashed var(--line-strong);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.lock.open{border-style:solid;background:var(--t-problems);animation:m-in 360ms var(--out)}
+.sub{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--page);margin-bottom:8px;animation:m-in 360ms var(--out)}
+.sub small{color:var(--muted)}.empty{color:var(--muted)}
+.timer .tdot{width:7px;height:7px;border-radius:50%;background:var(--pass);animation:m-blink 2s ease-in-out infinite}
+.timer.paused .tdot{background:var(--muted);animation:none}
+.timer.low{color:var(--warn);border-color:var(--warn)}
+@keyframes m-blink{50%{opacity:.25}}
+.newn{cursor:grab;touch-action:none}
+.newn rect{animation:m-pop 300ms var(--out)}
+.newn.drag{cursor:grabbing}.newn.drag rect{stroke:var(--ink)}
+/* interviewer drawer */
+.ask{position:fixed;top:0;right:0;bottom:0;z-index:45;width:min(400px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-30px 0 60px -30px rgb(0 0 0/.35);display:flex;flex-direction:column}
+.ask:not([hidden]){animation:m-drawer 500ms var(--drawer)}
+.ask.closing{animation:m-drawer 220ms ease-in reverse forwards}
+@keyframes m-drawer{from{transform:translateX(100%)}}
+.ahead{display:flex;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid var(--line)}.ahead small{display:block;color:var(--muted);font-size:13px}.ahead .x{align-self:flex-start}
+.alog{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:10px 14px;border-radius:16px;font-size:14.5px;animation:m-in 260ms var(--out)}
+.msg.them{background:var(--sunken);border-bottom-left-radius:4px;align-self:flex-start}
+.msg.me{background:var(--btn);color:var(--on-btn);border-bottom-right-radius:4px;align-self:flex-end}
+.typing{display:inline-flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:m-blink 1s ease-in-out infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.asugg{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px 10px}.asugg button{border:1px solid var(--line);background:var(--page);border-radius:999px;padding:6px 12px;font-size:13px}
+.ain{display:flex;gap:8px;padding:12px 18px max(12px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.ain input{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:999px;padding:9px 14px;font:inherit;font-size:14.5px;background:var(--page);color:var(--ink)}
+@media (max-width:980px){.topline .tools [data-theme-toggle]{display:none}.wleft{max-height:52vh}}
+@media (max-width:640px){.ask{width:100%;top:auto;height:82vh;border-radius:22px 22px 0 0;border-left:0}.ask:not([hidden]){animation-name:m-sheet}.ask.closing{animation-name:m-sheet}
+  .cmdk{padding:10px;place-items:start stretch}.tourpop{width:min(300px,calc(100vw - 32px))}.pcap{bottom:52px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){
+  .ask:not([hidden]),.ask.closing{animation-name:m-fade!important}
+  .tourpop:not([hidden]),.art.cards [data-card].cur,.msg,.sub,.lock.open,#ptable tr.in{animation-name:m-fade!important}
+  .timer .tdot,.typing i,.newn rect{animation:none!important}
+  .hint{transition:none}
+}
 /* reduced motion: keep the fades and colour changes that explain what happened; drop movement and loops */
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:200ms!important;animation-iteration-count:1!important;animation-delay:0ms!important}
-  .hero h1 .w,.m-in,.rcard,.results>*,.scrim:not([hidden]) .dialog,.ts.done,.stars.go i,.tick,.lrow.just,.view.enter .main,.view.enter .art,.view.enter .wbody{animation-name:m-fade!important}
+  .hero h1 .w,.m-in,.rcard,.results>*,.scrim:not([hidden]) .dialog,.ts.done,.stars.go i,.tick,.lrow.just,.view.enter .content,.view.enter .art,.view.enter .wbody{animation-name:m-fade!important}
   .hero .shape,.burst,.pkt,.nudge,.view.enter .bar i,.nav-i[aria-current="page"]::before,#today.pop i,.skel i{animation:none!important}
   .ts.run::before{animation:none!important;border-color:var(--ink)}
   .reveal{transform:none;transition:opacity 300ms ease}
@@ -490,7 +595,7 @@ td.tt{font-weight:500}
 <template id="sidebar-tpl">
   <aside class="side" aria-label="Sections">
     <a class="logo" href="#home" title="Tech Katta home" style="align-self:flex-start"><b>TK</b>Tech Katta</a>
-    <div class="search"><span>Search</span><span class="mono" style="font-size:10.5px">⌘K</span></div>
+    <div class="search" role="button" tabindex="0" data-cmdk aria-label="Search lessons and problems"><span>Search</span><span class="mono" style="font-size:10.5px">⌘K</span></div>
     <a class="nav-i" data-nav="dashboard" href="#dashboard"><i style="background:transparent"></i>Home</a>
     <a class="nav-i" data-nav="concepts" href="#concepts"><i style="background:var(--c-concepts)"></i>Concepts</a>
     <a class="nav-i" href="#dashboard"><i style="background:var(--c-components)"></i>Components</a>
@@ -509,7 +614,7 @@ td.tt{font-weight:500}
   <div class="slot-side"></div>
   <div><div class="slot-mob"></div>
   <main class="content">
-    <div class="topline"><div><h1>Good evening, Riya</h1><p>You're <span id="sdays">4</span> days into a streak. One more lesson keeps it going.</p></div><div class="tools"><button class="btn sm" id="tourbtn">Tour</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
+    <div class="topline"><div><h1>Good evening, Riya</h1><p>You're <span id="sdays">4</span> days into a streak. One more lesson keeps it going.</p></div><div class="tools"><button class="btn sm" id="tourbtn" data-tour>Tour</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
     <div class="grid-2">
       <div class="card cont"><p class="mono">Continue where you left off</p><div class="in"><div class="thumb">Client → Cache → DB</div>
         <div class="txt"><span class="chip" style="background:var(--t-concepts);align-self:flex-start">Concepts · Core concepts</span><h3>Caching: when to add a cache, and how to explain it</h3><div class="bar"><i style="width:40%;background:var(--c-concepts)"></i></div><small style="color:var(--muted)">40% read · 13 min left</small></div>
@@ -558,7 +663,7 @@ td.tt{font-weight:500}
     </div>
     <div class="filters"><div class="f" role="group" aria-label="Filter by difficulty">
       <button class="fbtn" data-f="all" aria-pressed="true">All 22</button><button class="fbtn" data-f="easy" aria-pressed="false">Easy 7</button><button class="fbtn" data-f="medium" aria-pressed="false">Medium 7</button><button class="fbtn" data-f="hard" aria-pressed="false">Hard 8</button></div>
-      <a class="btn sm" href="#workspace">⚄ Pick one for me</a></div>
+      <button class="btn sm" id="pick">⚄ Pick one for me</button></div>
     <div class="card tbl"><table><thead><tr><th></th><th>#</th><th>Problem</th><th>Difficulty</th><th>Accepted</th><th>Best</th><th>Challenge</th></tr></thead><tbody id="ptable"></tbody></table></div>
     <h2 style="font-size:26px">Challenges</h2>
     <div class="chals">
@@ -572,7 +677,7 @@ td.tt{font-weight:500}
 <!-- ============ LESSON PLAYER ============ -->
 <section class="view" id="v-lesson" data-view="lesson" hidden>
   <div class="ptop"><div class="l"><a class="logo" href="#dashboard" title="Tech Katta home"><b>TK</b>Tech Katta</a><span class="crumb">Concepts / Core concepts / Caching</span></div>
-    <div class="tools"><button class="btn sm">Tour</button><button class="btn sm">↗ Share</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
+    <div class="tools"><button class="btn sm" data-tour>Tour</button><button class="btn sm" data-share>↗ Share</button><button class="btn sm" data-theme-toggle aria-label="Switch light or dark">☾</button></div></div>
   <div class="rprog"><i id="readbar"></i></div>
   <button class="curtoggle" id="curtoggle" aria-expanded="false" aria-controls="pcur">Core concepts · 3 of 9 done <span>▾</span></button>
   <div class="player">
@@ -587,7 +692,7 @@ td.tt{font-weight:500}
       <h1>Caching: when to add a cache, and how to explain it</h1>
       <div class="by"><i></i>Yash Bhoomkar · Updated 9 Nov 2026 · 22 min read</div>
       <div class="seg" role="group" aria-label="How to read this lesson"><span class="seg-i" aria-hidden="true"></span><button aria-pressed="false">Cards</button><button aria-pressed="true">Full text</button></div>
-      <div class="video" style="aspect-ratio:16/8"><span>▶ Watch Yash explain it · 6 min</span></div>
+      <div class="video player" style="aspect-ratio:16/8" id="player"><button class="pplay" aria-label="Play the video"><span>▶ Watch Yash explain it · 6 min</span></button><div class="pcap" aria-live="polite"></div><div class="pbar"><button class="ptog" aria-label="Pause">❚❚</button><span class="pt">0:00</span><div class="ptrack"><i></i></div><span class="pt">6:00</span></div></div>
       <h2>Caching in an interview</h2>
       <p class="body">Reading one user's profile from Postgres takes a few milliseconds. Do it 12,000 times a second and the database spends its day answering the same question. A cache in front keeps the answers in memory, so most reads never reach the database.</p>
       <div class="fig" id="fig1"><div class="flow"><div class="node hl"><b>App servers</b><span>12,000 reads/s</span></div><span class="wire"><i></i></span><div class="node"><b>Redis</b><span>95% hits · 0.2 ms</span></div><span class="wire"><i></i></span><div class="node"><b>Postgres</b><span>600 reads/s</span></div></div>
@@ -605,18 +710,23 @@ td.tt{font-weight:500}
 <!-- ============ WORKSPACE ============ -->
 <section class="view ws" id="v-workspace" data-view="workspace" hidden>
   <div class="wtop"><div class="l"><a class="btn sm" href="#problems">← Problems</a><span class="t">Design a URL shortener</span><span class="chip easy">Easy</span></div>
-    <div class="r"><button class="btn sm">⏱ 24:10</button><button class="btn sm" id="run">▶ Run</button><button class="btn primary sm" id="submit"><span class="sp" aria-hidden="true"></span><span class="lb">Submit</span></button><button class="btn sm" style="color:var(--link);border-color:var(--link)">Ask the interviewer</button></div></div>
+    <div class="r"><button class="btn sm timer" id="timer" aria-label="Time left; press to pause"><span class="tdot"></span><span id="tleft">24:10</span></button><button class="btn sm" id="run">▶ Run</button><button class="btn primary sm" id="submit"><span class="sp" aria-hidden="true"></span><span class="lb">Submit</span></button><button class="btn sm" id="askbtn" style="color:var(--link);border-color:var(--link)">Ask the interviewer</button></div></div>
   <div class="wbody">
     <div class="wleft"><div class="tabs" role="tablist"><span class="tab-ul" aria-hidden="true"></span><button role="tab" aria-selected="true">Description</button><button role="tab" aria-selected="false">Your answer</button><button role="tab" aria-selected="false">Hints (7)</button><button role="tab" aria-selected="false">Solution</button><button role="tab" aria-selected="false">Submissions</button></div>
-      <div class="wdesc"><p class="mono">Problem 01 · Easy</p><h2>Design a URL shortener</h2>
+      <div class="wdesc panel" data-panel="0"><p class="mono">Problem 01 · Easy</p><h2>Design a URL shortener</h2>
         <p>Zotato sends crores of promo SMS, and every link in them is a short one like zot.to/2Bi. Turn long URLs into short codes, send people to the right page in milliseconds, and never hand out the same code twice.</p>
         <div class="how">Add parts from the left and join them with arrows. Give each database its engine and tables. Run checks your design against the example tests; Submit runs every test.</div>
         <h3 style="font-size:18px;color:var(--ink)">Requirements</h3>
-        <ul><li>A marketing tool turns a long URL into a short one, with an optional custom name and an expiry date.</li><li>Anyone who opens the short link is sent to the long URL.</li><li>Out of scope: accounts, a dashboard, analytics beyond counting clicks.</li></ul></div></div>
+        <ul><li>A marketing tool turns a long URL into a short one, with an optional custom name and an expiry date.</li><li>Anyone who opens the short link is sent to the long URL.</li><li>Out of scope: accounts, a dashboard, analytics beyond counting clicks.</li></ul></div>
+      <div class="wdesc panel" data-panel="1" hidden><p class="mono">Your answer</p><h2>Notes for the interviewer</h2><p>Write what you'd say out loud: the numbers, the trade-offs, what you'd do next. The judge doesn't read this; a mock interviewer does.</p>
+        <textarea id="notes" rows="9" placeholder="Reads outnumber writes about 100 to 1, so…"></textarea><div class="nmeta"><span id="nwords">0 words</span><span id="nsaved" class="saved">Saved</span></div></div>
+      <div class="wdesc panel" data-panel="2" hidden><p class="mono">Hints · 0 of 7 shown</p><h2>Stuck? One hint at a time.</h2><p>Each hint gives away a little more. Open as few as you need.</p><div id="hints"></div><button class="btn sm" id="nexthint" style="align-self:flex-start">Show hint 1</button></div>
+      <div class="wdesc panel" data-panel="3" hidden><p class="mono">Solution</p><div class="lock" id="sol"><b>🔒 Opens after your first submit</b><p>Submit once so the judge can score your own design first. Then compare it with ours, part by part.</p></div></div>
+      <div class="wdesc panel" data-panel="4" hidden><p class="mono">Submissions</p><h2>Your attempts</h2><div id="subs"><p class="empty">Nothing submitted yet. Press Submit to run every test.</p></div></div></div>
     <div class="canvas"><div class="palette" aria-label="Components">
-        <p class="mono" style="padding:4px 2px">Edge</p><div class="p"><i style="background:var(--c-concepts)"></i>Clients</div><div class="p"><i style="background:var(--c-concepts)"></i>CDN</div><div class="p"><i style="background:var(--c-concepts)"></i>Load balancer</div>
-        <p class="mono" style="padding:4px 2px">Compute</p><div class="p"><i style="background:var(--c-components)"></i>Server</div><div class="p"><i style="background:var(--c-components)"></i>Scheduler</div>
-        <p class="mono" style="padding:4px 2px">Data</p><div class="p"><i style="background:var(--c-problems)"></i>Database</div><div class="p"><i style="background:var(--c-problems)"></i>Cache</div><div class="p"><i style="background:var(--c-interview)"></i>Queue</div></div>
+        <p class="mono" style="padding:4px 2px">Edge</p><button class="p" data-add="Clients|web + app"><i style="background:var(--c-concepts)"></i>Clients</button><button class="p" data-add="CDN|edge cache"><i style="background:var(--c-concepts)"></i>CDN</button><button class="p" data-add="Load balancer|L7"><i style="background:var(--c-concepts)"></i>Load balancer</button>
+        <p class="mono" style="padding:4px 2px">Compute</p><button class="p" data-add="Server|c6g.large"><i style="background:var(--c-components)"></i>Server</button><button class="p" data-add="Scheduler|cron"><i style="background:var(--c-components)"></i>Scheduler</button>
+        <p class="mono" style="padding:4px 2px">Data</p><button class="p" data-add="Database|Postgres"><i style="background:var(--c-problems)"></i>Database</button><button class="p" data-add="Cache|Redis"><i style="background:var(--c-problems)"></i>Cache</button><button class="p" data-add="Queue|Kafka"><i style="background:var(--c-interview)"></i>Queue</button></div>
       <div class="cv"><svg viewBox="0 0 760 420" role="img" aria-label="A design: Clients to load balancer to two servers, each reading a Redis cache and a Postgres database">
         <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--link)"/></marker></defs>
         <g fill="none" stroke="var(--link)" stroke-width="1.6" marker-end="url(#ah)" id="edges"><path d="M150 210 H236"/><path d="M366 196 L446 132"/><path d="M366 224 L446 288"/><path d="M576 120 L640 100"/><path d="M576 140 L640 300"/><path d="M576 280 L640 120"/><path d="M576 300 L640 318"/></g>
@@ -643,6 +753,9 @@ td.tt{font-weight:500}
   </div>
 </div>
 
+<div class="scrim cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="Search" hidden><div class="cbox"><div class="cin"><span aria-hidden="true">⌕</span><input id="cq" placeholder="Search lessons, problems and pages" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="cres"><kbd>Esc</kbd></div><div class="cres" id="cres" role="listbox"></div><div class="cfoot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></div></div></div>
+<div class="tourpop" id="tourpop" role="dialog" aria-live="polite" hidden><p class="mono" id="tstep">1 of 3</p><b id="ttitle"></b><p id="ttext"></p><div class="tnav"><button class="btn sm" id="tskip">Skip</button><button class="btn primary sm" id="tnext">Next</button></div></div>
+<aside class="ask" id="ask" aria-label="Ask the interviewer" hidden><div class="ahead"><div><b>Mock interviewer</b><small>Answers like an interviewer would: short, and only what you ask.</small></div><button class="x" data-aclose aria-label="Close">✕</button></div><div class="alog" id="alog" aria-live="polite"><div class="msg them">Hi Riya. You have 24 minutes. What would you like to know about the URL shortener?</div></div><div class="asugg" id="asugg"><button>How many links a day?</button><button>Read to write ratio?</button><button>Do links expire?</button><button>Is this design OK?</button></div><form class="ain" id="aform"><input id="aq" placeholder="Ask a question" autocomplete="off"><button class="btn primary sm">Send</button></form></aside>
 <div class="toast" id="toast" role="status" aria-live="polite"><i>✓</i><span id="toastt">Saved</span><span class="tm"><b></b></span></div>
 <nav class="switcher" aria-label="Prototype screens"><span>Prototype</span>
   <a href="#home" data-sw="home">Landing</a><a href="#dashboard" data-sw="dashboard">Dashboard</a><a href="#concepts" data-sw="concepts">Section</a><a href="#lesson" data-sw="lesson">Lesson</a><a href="#problems" data-sw="problems">Problems</a><a href="#workspace" data-sw="workspace">Workspace</a><a href="#home" data-sw="signin" data-signin>Sign-in</a>
@@ -741,7 +854,7 @@ td.tt{font-weight:500}
   sub.addEventListener('click',e=>{e.stopImmediatePropagation();if(sub.classList.contains('busy'))return;sub.classList.add('busy');$('.lb',sub).textContent='Judging';sendPackets();
     later(()=>{sub.classList.remove('busy');$('.lb',sub).textContent='Submit';
       $('#results').innerHTML='<b>Submitted · <span id="wsc">0</span> / 100</b><span class="r">8 of 8 tests <span class="ok">Passed ✓</span></span><span class="r">Bill <span class="ok">₹84,200 / month</span></span><span class="r"><span class="stars"><i>★</i><i>★</i><i>★</i></span></span>';
-      countUp($('#wsc'),92,800);later(()=>$('#results .stars').classList.add('go'),600);later(()=>say('Design saved · 92 / 100'),900);},1500);},true);
+      countUp($('#wsc'),92,800);later(()=>$('#results .stars').classList.add('go'),600);later(()=>say('Design saved · 92 / 100'),900);sub.dispatchEvent(new Event('judged'));},1500);},true);
   // sign-in: closing plays out; the Google button explains instead of sitting greyed out
   const closeDlg=()=>{if(dlg.hidden||dlg.classList.contains('closing'))return;dlg.classList.add('closing');setTimeout(()=>{dlg.hidden=true;dlg.classList.remove('closing');},RM.matches?60:240);};
   dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.closest('[data-close]')){e.stopImmediatePropagation();closeDlg();}},true);
@@ -760,6 +873,109 @@ td.tt{font-weight:500}
     if(v.dataset.view==='dashboard'&&!streakDone){streakDone=true;const t=$('#today');t.classList.add('pop','on');later(()=>{countUp($('#sdays'),5,300);},900);}
     if(v.dataset.view==='lesson'){const a=$('.art',v);a.classList.add('loading');later(()=>a.classList.remove('loading'),RM.matches?0:380);requestAnimationFrame(()=>requestAnimationFrame(()=>$$('.seg',v).forEach(g=>g._place&&g._place())));}};
   addEventListener('hashchange',enter);enter();
+
+  // ================= round 2 =================
+  const go=h=>{location.hash=h;};
+  // ---- command palette (⌘K, Ctrl+K, / or the sidebar box) ----
+  const cmd=$('#cmdk'),cq=$('#cq'),cres=$('#cres');
+  const IDX=[...L.map(([t],i)=>({g:'Lessons',t,s:'Core concepts · '+(i+1),h:'#lesson',c:'--c-concepts'})),
+    ...['Real-time updates','Contention','Processes with many steps','When reads outnumber writes','When writes outrun one database','Big files','Jobs that run for minutes','Finding what’s nearby'].map(t=>({g:'Lessons',t,s:'Recurring patterns',h:'#concepts',c:'--c-concepts'})),
+    ...P.map(p=>({g:'Problems',t:p[1],s:p[2][0].toUpperCase()+p[2].slice(1)+(p[3]==='✓'?' · solved':''),h:'#workspace',c:'--c-problems'})),
+    ...[['Dashboard','#dashboard'],['Concepts','#concepts'],['Problems','#problems'],['Landing page','#home']].map(([t,h])=>({g:'Pages',t,s:'',h,c:'--line-strong'}))];
+  let sel=0,hits=[];
+  const escH=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+  const mark=(t,q)=>{const i=t.toLowerCase().indexOf(q);return i<0||!q?escH(t):escH(t.slice(0,i))+'<mark>'+escH(t.slice(i,i+q.length))+'</mark>'+escH(t.slice(i+q.length));};
+  const drawCmd=()=>{const q=cq.value.trim().toLowerCase();hits=(q?IDX.filter(x=>x.t.toLowerCase().includes(q)||x.s.toLowerCase().includes(q)):IDX.filter((x,i)=>x.g==='Pages'||i===3||x.t==='Design a news feed')).slice(0,12);sel=Math.min(sel,Math.max(0,hits.length-1));
+    if(!hits.length){cres.innerHTML=`<p class="none">Nothing called “${escH(cq.value)}”. Try “cache” or “chat”.</p>`;return;}
+    let g='';cres.innerHTML=hits.map((x,i)=>(x.g!==g?`<h4>${(g=x.g)}</h4>`:'')+`<a href="${x.h}" role="option" id="co${i}" aria-selected="${i===sel}"><i style="background:var(${x.c})"></i><span>${mark(x.t,q)}</span><small>${escH(x.s)}</small></a>`).join('');
+    cq.setAttribute('aria-activedescendant','co'+sel);const el=$('#co'+sel);el&&el.scrollIntoView({block:'nearest'});};
+  const openCmd=()=>{cmd.hidden=false;cq.value='';sel=0;drawCmd();cq.focus();};
+  const closeCmd=()=>{cmd.hidden=true;};
+  $$('[data-cmdk]').forEach(b=>{b.addEventListener('click',openCmd);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCmd();}});});
+  addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+    if((e.metaKey||e.ctrlKey)&&k==='k'){e.preventDefault();cmd.hidden?openCmd():closeCmd();return;}
+    if(k==='/'&&cmd.hidden&&!/input|textarea/i.test(document.activeElement.tagName)){e.preventDefault();openCmd();}});
+  cq.addEventListener('input',()=>{sel=0;drawCmd();});
+  cq.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sel=(sel+(e.key==='ArrowDown'?1:-1)+hits.length)%Math.max(1,hits.length);drawCmd();}
+    else if(e.key==='Enter'&&hits[sel]){closeCmd();go(hits[sel].h);}else if(e.key==='Escape'){e.stopPropagation();closeCmd();}});
+  cmd.addEventListener('click',e=>{if(e.target===cmd)closeCmd();if(e.target.closest('.cres a'))closeCmd();});
+  cmd.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopImmediatePropagation();closeCmd();}},true);
+  // ---- share ----
+  $$('[data-share]').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);say('Link copied');}catch(_){say('Copy the address bar to share');}}));
+  // ---- tour (dashboard) ----
+  const TP=$('#tourpop');let ti=0,tAnchor=null;
+  const TS=[['.cont','Pick up where you stopped','Your last lesson, and how far you got. Resume opens it at the same spot.'],['.prog','Your progress','Lessons read, problems solved and challenge stars, across the whole site.'],['.streak','Keep the streak','One lesson a day keeps it going. Today counts as soon as you finish one.']];
+  const endTour=()=>{TP.hidden=true;tAnchor&&tAnchor.classList.remove('spot');tAnchor=null;};
+  const showTour=()=>{const v=$('.view:not([hidden])');const[sq,t,x]=TS[ti];const a=$(sq,v);if(!a)return endTour();tAnchor&&tAnchor.classList.remove('spot');tAnchor=a;a.classList.add('spot');
+    a.scrollIntoView({block:'center',behavior:RM.matches?'auto':'smooth'});$('#tstep').textContent=`${ti+1} of ${TS.length}`;$('#ttitle').textContent=t;$('#ttext').textContent=x;$('#tnext').textContent=ti===TS.length-1?'Done':'Next';
+    const place=()=>{const r=a.getBoundingClientRect(),w=TP.offsetWidth||300;let left=r.left+scrollX,top=r.bottom+scrollY+12;if(left+w>innerWidth-16)left=innerWidth-16-w;TP.style.setProperty('--to','top left');
+      if(r.bottom+180>innerHeight&&r.top>200){top=r.top+scrollY-12-TP.offsetHeight;TP.style.setProperty('--to','bottom left');}TP.style.left=Math.max(16,left)+'px';TP.style.top=top+'px';};
+    TP.hidden=false;place();setTimeout(place,RM.matches?0:420);$('#tnext').focus({preventScroll:true});};
+  $$('[data-tour]').forEach(b=>b.addEventListener('click',()=>{if(location.hash!=='#dashboard'){go('#dashboard');setTimeout(()=>{ti=0;showTour();},250);}else{ti=0;showTour();}}));
+  $('#tnext').addEventListener('click',()=>{if(++ti>=TS.length){endTour();say('Tour done. Search any time with ⌘K');}else showTour();});
+  $('#tskip').addEventListener('click',endTour);
+  addEventListener('hashchange',endTour);addEventListener('keydown',e=>{if(e.key==='Escape')endTour();});
+  // ---- video player (prototype: captions only) ----
+  const pl=$('#player');let pt=0,pTimer=null;const CAPS=[[0,'Here is the problem: one database, 12,000 reads a second.'],[9,'Most of those reads ask for the same few profiles.'],[18,'So we keep the answers in memory, in front of the database.'],[27,'That is a cache. Redis is the usual choice.'],[36,'Now the database sees one read in twenty.']];
+  const fmt=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
+  const tick=()=>{pt+=.5;if(pt>=360)pt=0;$('.ptrack i',pl).style.transform=`scaleX(${pt/360})`;$('.pt',pl).textContent=fmt(pt);const c=CAPS.filter(c=>c[0]<=pt%45).pop();$('.pcap',pl).textContent=c?c[1]:'';};
+  const playV=on=>{clearInterval(pTimer);pTimer=on?setInterval(tick,500):null;$('.ptog',pl).textContent=on?'❚❚':'▶';$('.ptog',pl).setAttribute('aria-label',on?'Pause':'Play');};
+  $('.pplay',pl).addEventListener('click',()=>{pl.classList.add('on');tick();playV(true);$('.ptog',pl).focus();});
+  $('.ptog',pl).addEventListener('click',()=>playV(!pTimer));
+  addEventListener('hashchange',()=>playV(false));
+  // ---- cards mode: one idea per card ----
+  const art=$('#v-lesson .art'),seg=$('#v-lesson .seg');
+  const groups=[[$('#player')],[...$$('#v-lesson .art > h2').slice(0,1),$('#v-lesson .art > h2 + p.body')],[$('#fig1')],[$('#v-lesson .say')],[$$('#v-lesson .art > h2')[1],$$('#v-lesson .art > p.body')[1]]];
+  groups.forEach((g,i)=>g.forEach(n=>n&&(n.dataset.card=i)));
+  const deck=document.createElement('div');deck.className='deck';deck.innerHTML='<button class="btn sm" data-dk="-1" aria-label="Previous card">←</button><span class="mono" id="dkn">1 / 5</span><div class="dbar"><i></i></div><button class="btn primary sm" data-dk="1">Next →</button>';
+  $('#v-lesson .finish').before(deck);let ci=0;
+  const showCard=(n,dir)=>{ci=Math.max(0,Math.min(groups.length-1,n));art.classList.toggle('back',dir<0);$$('[data-card]',art).forEach(x=>{x.classList.remove('cur');});void art.offsetWidth;$$(`[data-card="${ci}"]`,art).forEach(x=>x.classList.add('cur'));
+    $('#dkn').textContent=`${ci+1} / ${groups.length}`;$('.dbar i',deck).style.transform=`scaleX(${(ci+1)/groups.length})`;$('[data-dk="-1"]',deck).disabled=ci===0;$('[data-dk="1"]',deck).textContent=ci===groups.length-1?'Finish ✓':'Next →';};
+  $$('[data-dk]',deck).forEach(b=>b.addEventListener('click',()=>{const d=+b.dataset.dk;if(d>0&&ci===groups.length-1){$('#complete').scrollIntoView({block:'center',behavior:RM.matches?'auto':'smooth'});return;}showCard(ci+d,d);}));
+  $$('button',seg).forEach((b,i)=>b.addEventListener('click',()=>{const on=i===0;art.classList.toggle('cards',on);if(on)showCard(0,1);}));
+  addEventListener('keydown',e=>{if(!art.classList.contains('cards')||location.hash!=='#lesson'||/input|textarea/i.test(document.activeElement.tagName))return;if(e.key==='ArrowRight')showCard(ci+1,1);if(e.key==='ArrowLeft')showCard(ci-1,-1);});
+  // ---- problems: whole row opens; filters re-enter; pick one ----
+  const tb=$('#ptable');
+  tb.addEventListener('click',e=>{const tr=e.target.closest('tr');if(tr&&!e.target.closest('a'))go('#workspace');});
+  const stagger=()=>$$('tr',tb).forEach((tr,i)=>{tr.classList.add('in');tr.style.animationDelay=Math.min(i,10)*(i<4?25:18)+'ms';});
+  $$('.fbtn').forEach(b=>b.addEventListener('click',()=>requestAnimationFrame(stagger)));
+  $('#pick').addEventListener('click',()=>{const rows=$$('tr:not(.solved)',tb);if(!rows.length)return;$$('tr.picked',tb).forEach(x=>x.classList.remove('picked'));const tr=rows[Math.floor(Math.random()*rows.length)];
+    void tr.offsetWidth;tr.classList.add('picked');tr.scrollIntoView({block:'center',behavior:RM.matches?'auto':'smooth'});say('Try this one: '+$('.tt',tr).textContent);});
+  // ---- workspace: tab panels ----
+  $$('.wleft .tabs button').forEach((b,i)=>b.addEventListener('click',()=>$$('.wleft .panel').forEach(p=>p.hidden=+p.dataset.panel!==i)));
+  const notes=$('#notes');let nt;
+  notes.addEventListener('input',()=>{const w=notes.value.trim()?notes.value.trim().split(/\s+/).length:0;$('#nwords').textContent=w+(w===1?' word':' words');$('#nsaved').textContent='Saving…';clearTimeout(nt);nt=setTimeout(()=>{$('#nsaved').textContent='Saved';},700);});
+  const HINTS=['How many new links a day, and how many opens? Write both numbers down first.','Opens outnumber new links about 100 to 1. Which part of your design sees that load?','A short code is just a key. What is the fastest way to look a key up?','Put a cache in front of the database for opens. Most opens are for a few popular links.','Two servers must never hand out the same code. Where could codes come from so they never clash?','Hand each server a block of 1,000 numbers at a time, and turn each number into a code.','The load balancer should sit in two zones, so one zone going down keeps links working.'];
+  let hn=0;$('#nexthint').addEventListener('click',e=>{if(hn>=HINTS.length)return;const d=document.createElement('div');d.className='hint';d.innerHTML=`<div><p><b>Hint ${hn+1}</b>${HINTS[hn]}</p></div>`;$('#hints').appendChild(d);requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('open')));hn++;
+    $('[data-panel="2"] .mono').textContent=`Hints · ${hn} of 7 shown`;e.target.textContent=hn<HINTS.length?`Show hint ${hn+1}`:'All hints shown';e.target.disabled=hn>=HINTS.length;});
+  // submissions + solution unlock after Submit (hook the existing submit flow)
+  let subN=0;sub.addEventListener('judged',()=>{(()=>{subN++;const list=$('#subs');if(subN===1)list.innerHTML='';const d=document.createElement('div');d.className='sub';d.innerHTML=`<div><b>Attempt ${subN} · 92 / 100</b><br><small>8 of 8 tests passed · ₹84,200 a month · just now</small></div><span class="stars" style="color:var(--star)">★★★</span>`;list.prepend(d);
+    const sol=$('#sol');if(!sol.classList.contains('open')){sol.classList.add('open');sol.innerHTML='<b>Solution unlocked</b><p>Ours uses the same shape as yours: a load balancer in two zones, servers that take blocks of IDs, Redis for opens and Postgres for links. Where yours differs: we put a CDN in front for the 50 most-opened links.</p><a class="btn sm" href="#lesson" style="align-self:flex-start">Read the full write-up →</a>';
+      const t=$$('.wleft .tabs button')[3];t.textContent='Solution ✓';}})();});
+  // timer counts down; press to pause
+  let left=24*60+10,run=true;const tl=$('#tleft'),tm=$('#timer');
+  setInterval(()=>{if(!run||location.hash!=='#workspace'||left<=0)return;left--;tl.textContent=fmt(left);tm.classList.toggle('low',left<300);},1000);
+  tm.addEventListener('click',()=>{run=!run;tm.classList.toggle('paused',!run);tm.setAttribute('aria-label',run?'Time left; press to pause':'Paused; press to resume');say(run?'Timer running':'Timer paused');});
+  // palette: click a part to drop it on the canvas, then drag it
+  const svg=$('.cv svg'),NS='http://www.w3.org/2000/svg';let added=0;
+  $$('.palette [data-add]').forEach(b=>b.addEventListener('click',()=>{const[name,subt]=b.dataset.add.split('|');const g=document.createElementNS(NS,'g');g.setAttribute('class','newn');const x=60+(added%4)*150,y=20+Math.floor(added/4)%2*330;added++;
+    g.setAttribute('transform',`translate(${x} ${y})`);g.innerHTML=`<rect width="120" height="56" rx="12" fill="var(--surface)" stroke="var(--line-strong)" style="transform-origin:60px 28px"/><text x="16" y="25" font-weight="600" font-size="14" fill="var(--ink)">${name}</text><text x="16" y="43" font-family="Geist Mono, monospace" font-size="10" fill="var(--muted)">${subt}</text>`;
+    svg.appendChild(g);say(name+' added. Drag it into place');}));
+  let dg=null;svg.addEventListener('pointerdown',e=>{const g=e.target.closest('.newn');if(!g)return;const m=svg.getScreenCTM().inverse(),pt=new DOMPoint(e.clientX,e.clientY).matrixTransform(m);const[,tx,ty]=g.getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/).map(Number);
+    dg={g,dx:pt.x-tx,dy:pt.y-ty,m};g.classList.add('drag');g.setPointerCapture(e.pointerId);});
+  svg.addEventListener('pointermove',e=>{if(!dg)return;const pt=new DOMPoint(e.clientX,e.clientY).matrixTransform(dg.m);dg.g.setAttribute('transform',`translate(${Math.max(0,Math.min(640,pt.x-dg.dx))} ${Math.max(0,Math.min(364,pt.y-dg.dy))})`);});
+  svg.addEventListener('pointerup',()=>{if(dg){dg.g.classList.remove('drag');dg=null;}});
+  // ask the interviewer: drawer from the right (sheet on phone)
+  const ask=$('#ask'),alog=$('#alog');
+  const ANS={'how many links a day?':'About 2 crore new links a day, and around 200 crore opens.','read to write ratio?':'Roughly 100 opens for every new link.','do links expire?':'Yes, if the marketer sets an expiry. Most don’t: assume links live for 5 years.','is this design ok?':'I can’t judge it for you; Run and Submit can. But tell me: what happens when one zone goes down?'};
+  const openAsk=()=>{ask.hidden=false;$('#aq').focus({preventScroll:true});};
+  const closeAsk=()=>{if(ask.hidden)return;ask.classList.add('closing');setTimeout(()=>{ask.hidden=true;ask.classList.remove('closing');},RM.matches?60:220);};
+  $('#askbtn').addEventListener('click',()=>ask.hidden?openAsk():closeAsk());$('[data-aclose]',ask).addEventListener('click',closeAsk);
+  addEventListener('keydown',e=>{if(e.key==='Escape')closeAsk();});addEventListener('hashchange',closeAsk);
+  const askQ=q=>{if(!q.trim())return;const m=document.createElement('div');m.className='msg me';m.textContent=q;alog.appendChild(m);const t=document.createElement('div');t.className='msg them';t.innerHTML='<span class="typing" aria-label="typing"><i></i><i></i><i></i></span>';alog.appendChild(t);alog.scrollTop=alog.scrollHeight;
+    later(()=>{t.textContent=ANS[q.trim().toLowerCase()]||'Good question. In a real interview I’d answer briefly; here, try one of the suggested questions.';alog.scrollTop=alog.scrollHeight;},900);};
+  $$('#asugg button').forEach(b=>b.addEventListener('click',()=>{askQ(b.textContent);b.remove();}));
+  $('#aform').addEventListener('submit',e=>{e.preventDefault();askQ($('#aq').value);$('#aq').value='';});
   addEventListener('resize',()=>{$$('.seg').forEach(g=>g._place&&g._place());$$('.tabs').forEach(g=>g._place&&g._place());});
 })();
 </script>
