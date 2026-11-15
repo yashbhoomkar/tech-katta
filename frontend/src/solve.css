@@ -239,3 +239,7 @@
 .sv-mock-locked{padding:28px 4px}.sv-mock-locked h2{margin:0 0 8px;font-size:18px}.sv-mock-locked p{color:var(--ink-2);font-size:14px}
 .sv-mock-sum h3{margin:16px 0 6px;font-size:14px}.sv-mock-plan{margin:0;padding-left:20px;font-size:13.5px;display:grid;gap:4px}.sv-mock-plan li{color:var(--muted)}.sv-mock-plan li.on{color:var(--ink)}.sv-mock-plan small{margin-left:8px;color:var(--muted)}
 @media(max-width:900px){.sv-mock span{display:none}}
+
+/* Bookmark and private notes (context 36, step 10) */
+.sv-mark{width:32px;height:32px;margin-right:6px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--muted);font-size:16px;line-height:1;cursor:pointer}.sv-mark.on{color:var(--accent);border-color:var(--accent)}
+.sv-pnote{display:grid;gap:6px;margin:20px 0 0;font:600 13px var(--font)}.sv-pnote textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:400 13.5px/1.5 var(--font);padding:8px 10px;resize:vertical}
