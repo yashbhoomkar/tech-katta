@@ -295,3 +295,11 @@
 .sv-why-parts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;font-size:12.5px}.sv-why-l{color:var(--muted)}
 .sv-why-chip{height:26px;padding:0 10px;border:1px solid var(--danger);border-radius:999px;background:var(--bg);color:var(--danger);font:500 12px var(--font);cursor:pointer}.sv-why-chip.on{background:var(--danger);color:var(--bg)}
 .sv-why-card{flex-basis:100%;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.sv-why-card p{margin:4px 0;font-size:13px}.sv-why-fed{color:var(--ink-2)}.sv-why-fix{font-weight:600}
+
+/* Say it out loud (context 36, step 21) */
+.sv-speak{margin:28px 0 8px;padding-top:18px;border-top:1px solid var(--line)}.sv-speak h2{margin:0 0 4px;font-size:17px}
+.sv-speak-outline{margin:10px 0;padding-left:20px;display:grid;gap:4px;font-size:13.5px}.sv-speak-outline small{display:inline-block;min-width:38px;font:500 11px var(--mono);color:var(--accent)}
+.sv-speak .sv-run{height:34px;padding:0 14px}.sv-speak-rec{display:flex;align-items:center;gap:10px;font:500 13px var(--mono)}
+.sv-speak-dot{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:sv-pulse 1s ease-in-out infinite}@keyframes sv-pulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.sv-speak-dot{animation:none}}
+.sv-speak-take{display:grid;gap:4px;margin-top:8px}.sv-speak-take audio{width:100%}.sv-speak-take small{color:var(--muted)}.sv-speak-err{color:var(--danger);font-size:13px}
