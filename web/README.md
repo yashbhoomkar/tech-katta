@@ -56,7 +56,7 @@ src/
 
 1. **Done:** foundation, app shell and navigation (sidebar and rail, phone top bar and tabs, search), theme, landing, Home, Learn, section pages, You, not found.
 2. **Done:** the lesson reader: real articles, every block kind, and the existing figures (`frontend/src/figs`, imported as they are through `@legacy`).
-3. Problems and the design workspace: the existing canvas and judge, imported.
+3. **Done:** Problems, the design workspace and challenges (the existing canvas and judge, imported), full-site landing and motion, sign-in dialog, shortcuts, tour.
 4. Sign-in and account sync, then the switch.
 
 Pages not built yet say so and link to the same page in the current app.
