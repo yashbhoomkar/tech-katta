@@ -4,7 +4,7 @@
     "node hosting/emit.mjs vercel      writes frontend/vercel.json from this file (a test checks the two match).",
     "node hosting/emit.mjs cloudflare  writes _redirects, _headers and 404 fallbacks into a build (npm run build:cloudflare).",
     "Paths: '*' matches the rest of a path; ':splat' in 'to' puts that part back.",
-    "rewrites: serve 'to' when no file exists at 'from' (the address bar keeps 'from').",
+    "rewrites: serve 'to' when no file exists at 'from' (the address bar keeps 'from'); 'only': \"vercel\" leaves a rule out of the Cloudflare files.",
     "redirects: send the browser to 'to'; permanent is 308, otherwise 307; 'host' limits a rule to one domain.",
     "headers: added to every response whose path matches."
   ],
@@ -14,7 +14,7 @@
     { "from": "/dashboard", "to": "/dashboard/index.html" },
     { "from": "/dashboard/*", "to": "/dashboard/index.html" },
     { "from": "/analytics", "to": "/analytics/index.html" },
-    { "from": "/proto-api/*", "to": "/proto-api/:splat.json" }
+    { "from": "/proto-api/*", "to": "/proto-api/:splat.json", "only": "vercel" }
   ],
   "headers": [
     {

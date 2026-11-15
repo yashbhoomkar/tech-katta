@@ -49,6 +49,8 @@ export function cloudflareFiles(routes) {
     else redirects.push(`${r.from} ${r.to} ${code}`);
   }
   for (const r of routes.rewrites) {
+    // a rule only one host needs (prototype.katta.cc runs on Vercel only) is left out here
+    if (r.only === "vercel") continue;
     if (star(r.from)) {
       const dir = r.from.slice(0, -1);
       if (r.to !== dir + "index.html") throw new Error(`hosting: Cloudflare can only fall back to the folder's own index.html: ${r.from} → ${r.to}`);
