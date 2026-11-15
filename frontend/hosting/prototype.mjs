@@ -38,17 +38,23 @@ const protoDir = path.join(frontend, "prototypes"), out = path.join(dist, "p");
 const pages = fs.existsSync(protoDir) ? fs.readdirSync(protoDir).filter((f) => f.endsWith(".html")).sort() : [];
 fs.mkdirSync(out, { recursive: true });
 for (const f of pages) { const d = path.join(out, f.replace(/\.html$/, "")); fs.mkdirSync(d, { recursive: true }); fs.copyFileSync(path.join(protoDir, f), path.join(d, "index.html")); }
-const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// each prototype names itself: <title>, <meta name="prototype:type"> and <meta name="prototype:summary">
+const meta = (html, name) => (html.match(new RegExp(`<meta name="${name}" content="([^"]*)"`)) || [])[1] || "";
+const items = pages.map((f) => { const h = fs.readFileSync(path.join(protoDir, f), "utf8");
+  return { slug: f.replace(/\.html$/, ""), title: (h.match(/<title>([^<]*)<\/title>/) || [])[1] || f, type: meta(h, "prototype:type") || "Other", summary: meta(h, "prototype:summary") }; });
+const types = [...new Set(items.map((i) => i.type))];
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Prototypes · Tech Katta</title>
-<style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#F6F5F1;color:#17161A}main{max-width:720px;margin:0 auto;padding:48px 20px}h1{letter-spacing:-.02em}a{color:#26449E}li{margin:8px 0}</style></head>
-<body><main><h1>Prototypes</h1><p>The frontend on this site is the app itself, built from the <code>prototype</code> branch with content bundled in and sign-in off: <a href="/">landing</a>, <a href="/dashboard/">dashboard</a>.</p>
-<h2>Design ideas</h2><ul>${pages.map((f) => { const n = f.replace(/\.html$/, ""); return `<li><a href="/p/${esc(n)}/">${esc(n)}</a></li>`; }).join("") || "<li>None yet.</li>"}</ul></main></body></html>`);
+<style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#F6F5F1;color:#17161A}main{max-width:760px;margin:0 auto;padding:48px 20px}h1{letter-spacing:-.02em}h2{margin-top:32px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B6963}a.card{display:block;background:#fff;border:1px solid #E4E2DC;border-radius:16px;padding:16px 18px;margin:10px 0;color:inherit;text-decoration:none}a.card:hover{border-color:#17161A}a.card b{font-size:18px}a.card span{display:block;color:#4A4844;font-size:14.5px;margin-top:4px}code{background:#EEEDE8;border-radius:4px;padding:1px 5px}</style></head>
+<body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch with content bundled in and sign-in off: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. Below, design ideas before they are built into the app.</p>
+${types.map((t) => `<h2>${esc(t)}</h2>` + items.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
+</main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
 // Cloudflare: the same /proto-api rewrite as vercel.json, one exact 200 (served in place) rule per file at the top of
 // _redirects. A single "/proto-api/*" rule would be a dynamic rule, and the site's own file already uses all 100 the
 // free plan allows; exact rules have a limit of 2,000.
 if (process.argv.includes("--cloudflare")) {
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
-  fs.writeFileSync(r, written.map((w) => `/proto-api/v1/${w} /proto-api/v1/${w}.json 200`).join("\n") + "\n" + old);
+  fs.writeFileSync(r, "/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n" + written.map((w) => `/proto-api/v1/${w} /proto-api/v1/${w}.json 200`).join("\n") + "\n" + old);
 }
 console.log(`prototype: ${n} articles, ${pages.length} design prototype(s) written into dist`);
