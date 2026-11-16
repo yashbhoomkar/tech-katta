@@ -111,3 +111,11 @@
 :global(:root[data-style="neo-brutalism"]) .miniStep { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 2px 2px 0 var(--edge); }
 :global(:root[data-style="neo-brutalism"]) .miniNow { background: var(--c); color: #1C1B1A; }
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .miniNow { background: var(--surface); color: var(--a); border-color: var(--a); box-shadow: 2px 2px 0 var(--edge-c); }
+
+/* polish (2026-11-16 refinement pass) */
+/* a chip never wraps or shrinks: "0 of 10 done" stays on one line beside a long heading */
+.chip { white-space: nowrap; flex: none; }
+/* an empty or error state with a scene (404, offline, broken): the scene large, everything centred in the page */
+.stateScene { align-items: center; justify-content: center; min-height: min(70vh, 640px); margin: 0 auto; text-align: center; }
+.stateScene > :global(.tk-legacy) { padding: 18px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); }
+:global(:root[data-style="neo-brutalism"]) .stateScene > :global(.tk-legacy) { border: var(--bw) solid var(--edge); box-shadow: var(--sh); transform: rotate(-1deg); }

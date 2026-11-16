@@ -11,7 +11,7 @@ export type SceneKind = "offline" | "missing" | "empty" | "busy" | "broken";
 export function StateScene({ kind }: { kind: SceneKind }) {
   const theme = useDocTheme();
   return (
-    <span className={`tk-legacy ${tokens.tokens}`} aria-hidden="true" style={{ display: "block", maxWidth: 280, margin: "0 auto 8px" }}>
+    <span className={`tk-legacy ${tokens.tokens}`} aria-hidden="true" style={{ display: "block", width: "min(420px, 100%)", margin: "0 auto 12px" }}>
       <Scene key={theme} kind={kind} />
     </span>
   );
