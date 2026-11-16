@@ -28,7 +28,7 @@ export default defineConfig({
   define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   plugins: [react(), lookPlugin, figManifest(`${legacy}/figs`)],
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy },
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy, "@look": fileURLToPath(new URL(`./src/styles/looks/${style || "default"}`, import.meta.url)) },
     // the current app's figures import "react" from frontend/: make them share this app's single copy
     dedupe: ["react", "react-dom"],
   },

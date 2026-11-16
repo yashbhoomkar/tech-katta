@@ -33,3 +33,89 @@
   --star: #f5b82e;
   --cat-green: #5cc791; --cat-amber: #e0a54a; --cat-violet: #b394f7; --cat-teal: #4fb8d0; --cat-pink: #f07aaa;
 }
+
+/* ---------- neo-brutalism figures (owner, 2026-11-16: "redesign the animation tailored to neo brutalism … for every
+   figure/animation") ----------
+   The same figures, drawn in the look's own grammar:
+   - paper and ink: cream paper, near-black ink outlines on every part, 2 px lines, square corners, hard offset shadows
+     on boxes (no blur);
+   - colour as flat stickers: the path that works is cobalt ink on a sky fill, the request and highlights are
+     marigold, trouble is coral with red ink, good is mint;
+   - type: Archivo for names, Space Mono for labels;
+   - dark (option D): dark parts with cream outlines; colour is carried by lines, and marigold stays the brightest
+     fill.
+   Motion (parts.jsx, when <html data-style="neo-brutalism">): packets are outlined square chips that ratchet along,
+   working lines carry a marching conveyor dash, highlights stamp on as an outline with a marigold offset, and steps
+   cut in with a key-press jolt instead of fading. */
+:global(:root[data-style="neo-brutalism"]) .tokens.tokens, :global(:root[data-style="neo-brutalism"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
+  --font: "Archivo", ui-sans-serif, system-ui, sans-serif; --mono: "Space Mono", ui-monospace, Menlo, monospace;
+  --r-lg: 10px; --r-btn: 8px; --shadow-1: 4px 4px 0 #1C1B1A;
+  --page: #F8F2E5; --bg: #FFFDF8; --surface: #F1E8D4; --surface-2: #FBF6EA; --hover: #EFE4CC;
+  --inverse: #1C1B1A; --on-inverse: #F8F2E5;
+  --ink: #1C1B1A; --ink-2: #2A2826; --ink-3: #3A3835; --muted: #4F4C46; --muted-2: #5E5B55; --faint: #6E6A62;
+  --disabled: #BDB39E; --line-strong: #1C1B1A; --line: #1C1B1A; --line-soft: #CFC4AE; --grid: #EDE3CC;
+  --brand: #F3C766; --brand-strong: #E9B23C; --brand-edge: #1C1B1A; --brand-ink: #5C3F00; --brand-line: #1C1B1A;
+  --brand-tint: #FBEBC4; --on-brand: #1C1B1A; --mark: #DCE29E;
+  --accent: #2F4FBF; --accent-strong: #213A93; --accent-mid: #F3C766; --accent-line: #1C1B1A; --accent-soft: #F3C766;
+  --accent-tint-2: #BFE0F8; --accent-tint: #B3DBF7; --on-accent: #FFFFFF;
+  --danger: #C21F1F; --red: #C21F1F; --danger-line: #1C1B1A; --danger-soft: #F7AFAB; --danger-tint: #F9C3C0;
+  --success: #0B7A3E; --success-line: #1C1B1A; --success-tint: #A9E2CB;
+  --warn: #9A4A00; --warn-strong: #7A3900; --warn-mid: #D9661A; --warn-line: #1C1B1A; --warn-tint: #F3C9A8;
+  --star: #1C1B1A;
+  --cat-green: #0B7A3E; --cat-amber: #9A5B00; --cat-violet: #5B3CC4; --cat-teal: #0A6A80; --cat-pink: #B0185A;
+  --nb-edge: #1C1B1A;
+}
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .tokens.tokens, :global(:root[data-style="neo-brutalism"][data-theme="dark"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
+  --shadow-1: 4px 4px 0 #000;
+  --page: #131211; --bg: #1C1B19; --surface: #252321; --surface-2: #181715; --hover: #2B2927;
+  --inverse: #EDE6D6; --on-inverse: #131211;
+  --ink: #EDE6D6; --ink-2: #E2DACA; --ink-3: #D6CEBD; --muted: #B9B0A1; --muted-2: #A9A193; --faint: #958D80;
+  --disabled: #4A4740; --line-strong: #D9D1C0; --line: #D9D1C0; --line-soft: #3B3934; --grid: #211F1D;
+  --brand: #F3C766; --brand-strong: #F7D488; --brand-edge: #000; --brand-ink: #F7D488; --brand-line: #D9D1C0;
+  --brand-tint: #3A2F17; --on-brand: #1C1B1A; --mark: #DCE29E;
+  --accent: #8FCDF5; --accent-strong: #BFE3FA; --accent-mid: #F3C766; --accent-line: #8FCDF5; --accent-soft: #F3C766;
+  --accent-tint-2: #1F3240; --accent-tint: #1B2A35; --on-accent: #131211;
+  --danger: #FF8A80; --red: #FF8A80; --danger-line: #FF8A80; --danger-soft: #4A2523; --danger-tint: #33201F;
+  --success: #6EE7A0; --success-line: #6EE7A0; --success-tint: #17301F;
+  --warn: #FFB26B; --warn-strong: #FFC690; --warn-mid: #F08A2E; --warn-line: #FFB26B; --warn-tint: #33251A;
+  --star: #F3C766;
+  --cat-green: #6EE7A0; --cat-amber: #F3C766; --cat-violet: #CBB9F5; --cat-teal: #8FCDF5; --cat-pink: #F7AFAB;
+  --nb-edge: #000;
+}
+/* shapes: 2 px ink lines, square-ish corners, hard shadows under boxes; text in the look's faces */
+:global(:root[data-style="neo-brutalism"]) .tokens svg :is(rect, circle, ellipse, polygon, path, line):not([stroke-width]) { stroke-width: 2px; }
+:global(:root[data-style="neo-brutalism"]) .tokens svg line { stroke-linecap: square; }
+:global(:root[data-style="neo-brutalism"]) .tokens svg rect[stroke]:not([stroke="none"]) { rx: 3px; }
+:global(:root[data-style="neo-brutalism"]) .tokens svg rect[stroke]:not([stroke="none"]):not([fill="none"]):not([opacity]) { filter: url(#nb-hard); }
+:global(:root[data-style="neo-brutalism"]) .tokens svg :is(.fb, .fx, .fh) { font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .tokens svg :is(.fl, .fk) { font-weight: 700; letter-spacing: 0; }
+:global(:root[data-style="neo-brutalism"]) .tokens svg .halo { stroke-linejoin: miter; }
+/* the figure's frame: an outlined card with a hard shadow, an ink title bar, keys for the controls */
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig) { border: 2px solid var(--line-strong); box-shadow: var(--shadow-1); border-radius: 10px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-head) { border-bottom: 2px solid var(--line-strong); background: var(--brand); color: #1C1B1A; font-weight: 700; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .tokens :global(.a-fig-head) { background: var(--surface); color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig figcaption) { border-top: 2px solid var(--line-strong); color: var(--ink-3); }
+:global(:root[data-style="neo-brutalism"]) :is(.tokens :global(.fs-btn), :global(body > .fs .r-btn)) { border: 2px solid var(--line-strong); border-radius: 8px; box-shadow: 2px 2px 0 var(--line-strong); font-weight: 700; color: var(--ink); background: var(--bg); }
+:global(:root[data-style="neo-brutalism"]) :global(body > .fs .fs-head) { border-bottom: 2px solid var(--line-strong); background: var(--brand); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global(body > .fs .fs-head) { background: var(--surface); color: var(--ink); }
+/* the step controls: keys that press in, square step marks that fill as the figure moves on */
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-ctl) { border-bottom: 2px solid var(--line-strong); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-b) { border: 2px solid var(--line-strong); border-radius: 6px; background: var(--bg); box-shadow: 2px 2px 0 var(--line-strong); transition: transform 100ms cubic-bezier(.23,1,.32,1), box-shadow 100ms cubic-bezier(.23,1,.32,1); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-b:active) { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-dots i) { width: 9px; height: 9px; border-radius: 1px; border: 2px solid var(--line-strong); background: var(--bg); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-dots i.on) { background: var(--brand); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-dots i.cur) { transform: translateY(-2px); box-shadow: 0 2px 0 var(--line-strong); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-n) { color: var(--ink); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.a-fig-step) { color: var(--ink); font-weight: 700; }
+/* the empty and error scenes (theme/Scene.jsx): outlined boxes with a hard shadow, a marigold request chip, a square-cut cross */
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.scene .sc-box) { stroke: var(--line-strong); stroke-width: 2px; filter: url(#nb-hard); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.scene .sc-line) { stroke-width: 2px; stroke-linecap: square; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.scene .sc-dot) { fill: var(--brand); stroke: var(--line-strong); stroke-width: 2px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.scene .sc-x path) { stroke-linecap: square; stroke-width: 3px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.scene .sc-t) { font-weight: 700; fill: var(--ink-3); }
+/* the library's mini diagrams on cards (library.jsx): outlined boxes with a hard shadow, a marigold packet chip */
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg .mb) { stroke: var(--line-strong); stroke-width: 1.6px; rx: 2px; filter: url(#nb-hard); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg .me) { stroke: var(--line-strong); stroke-width: 1.6px; stroke-linecap: square; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg .pkt) { fill: var(--brand); stroke: var(--line-strong); stroke-width: 1.5px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg :is(.mt, .mq, .ml)) { font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.mini) { border: 2px solid var(--line-strong); border-radius: 6px; }

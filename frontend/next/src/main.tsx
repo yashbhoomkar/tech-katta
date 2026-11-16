@@ -12,14 +12,18 @@ import "@fontsource/archivo-black/400.css";
 import "@fontsource/space-mono/400.css";
 import "@fontsource/space-mono/700.css";
 import "./styles/themes/neo-brutalism.css";
+// the look's own motion (vite.config.ts points @look at styles/looks/<look>/): loaded after global.css, so its keyframes win
+import "@look/motion.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { createRouter } from "./app/router";
 import { initTheme } from "./lib/theme";
+import { installLookDefs } from "./lib/look";
 
 initTheme();
+installLookDefs();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html is missing #root");
