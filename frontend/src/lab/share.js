@@ -26,7 +26,11 @@ export async function decodeShare(s) {
     return { name: typeof p.name === 'string' ? p.name.slice(0, 120) : 'Shared design', problem: typeof p.problem === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(p.problem) ? p.problem : null, design: p.design };
   } catch { return null; }
 }
-export const shareUrl = (data, origin = location.origin) => `${origin}/dashboard/problems/shared/#problems/shared/${data}`;
+// Where share links point. The current app's default; the new frontend (frontend/next) sets its own base, so links made
+// there open there (setShareBase), and its /dashboard route still maps this default form.
+let SHARE_BASE = "/dashboard/problems/shared/#problems/shared/";
+export function setShareBase(base) { SHARE_BASE = base; }
+export const shareUrl = (data, origin = location.origin) => `${origin}${SHARE_BASE}${data}`;
 
 // An SVG string as a PNG file, drawn at `scale`.
 export function svgToPng(svg, scale = 2) {

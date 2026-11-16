@@ -1,0 +1,31 @@
+.scrim { position: fixed; inset: 0; z-index: 60; display: grid; place-items: start center; padding: 12vh 16px 16px; background: var(--scrim); animation: tk-fade 120ms ease; }
+.box { width: min(620px, 100%); background: var(--raised); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-pop), var(--hl); overflow: hidden; }
+.inputRow { display: flex; gap: 12px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.inputRow input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 17px; color: var(--ink); }
+.kbd { font: 500 11px var(--mono); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 6px; padding: 2px 6px; color: var(--muted); background: var(--page); }
+.results { max-height: min(420px, 56vh); overflow: auto; padding: 8px; }
+.group { margin: 10px 10px 4px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.option { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: var(--r-sm); font-size: 15px; cursor: pointer; }
+.option[aria-selected="true"] { background: var(--sunken); }
+.option mark { background: none; color: var(--link); font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex: none; background: var(--a, var(--line-strong)); }
+.title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail { margin-left: auto; padding-left: 12px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.empty { padding: 22px 12px; color: var(--muted); }
+.foot { display: flex; gap: 18px; padding: 10px 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+@media (max-width: 640px) {
+  .scrim { padding: 10px; place-items: start stretch; }
+  .detail { display: none; }
+  .foot { display: none; }
+}
+
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css) ---------- */
+:global(:root[data-style="neo-brutalism"]) .box { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
+:global(:root[data-style="neo-brutalism"]) .inputRow { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .foot { border-top: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .option { border: var(--bw) solid transparent; border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .option[aria-selected="true"] { background: var(--marigold); color: #1C1B1A; border-color: var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .option[aria-selected="true"] :is(.detail, mark) { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .option mark { text-decoration: underline; text-decoration-thickness: 2px; }
+:global(:root[data-style="neo-brutalism"]) .dot { border: var(--bw) solid var(--edge); border-radius: 2px; width: 12px; height: 12px; }
+:global(:root[data-style="neo-brutalism"]) .kbd { box-shadow: none; }
