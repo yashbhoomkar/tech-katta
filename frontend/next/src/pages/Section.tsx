@@ -92,7 +92,7 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
               const state = p?.done ? s.done : p ? s.now : "";
               return (
                 <TransitionLink morph key={a.slug} to={paths.article(id, a.slug)} className={`${s.lesson} ${state}`} data-tour={gi === 0 && i === 0 ? "first" : undefined}>
-                  <span className={s.st} aria-label={p?.done ? "Done" : p ? "In progress" : "Not started"}>{p?.done && <Icon name="check" size={12} />}</span>
+                  <span className={s.st} role="img" aria-label={p?.done ? "Done" : p ? "In progress" : "Not started"}>{p?.done && <Icon name="check" size={12} />}</span>
                   <span className={s.no}>{String(i + 1).padStart(2, "0")}</span>
                   <span className={s.lessonTitle} data-morph="">{a.title}</span>
                   <span className={s.lessonTag}>{a.tag}</span>

@@ -197,3 +197,5 @@
 .tokens :global(.tc-grid) { grid-template-columns: minmax(0, 1fr); }
 .tokens :global(.tc-pic) { aspect-ratio: auto; padding: 18px 14px; }
 .tokens :global(.tc-fig svg) { height: auto; }
+/* the phone hint under a figure ("swipe sideways") reads at 4.5:1 */
+.tokens :global(.a-fig-hint) { color: var(--ink-3); }

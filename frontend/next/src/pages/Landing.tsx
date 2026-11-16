@@ -292,8 +292,8 @@ function JudgeCard() {
     return () => { stops.forEach((f) => f()); end(); stopCount(); };
   }, 0.5);
   return (
-    <div ref={ref} className={s.jcard} aria-label={j.label}>
-      <div className={s.jrow}><b>{j.title}</b><span className={cx(s.stars, stars && s.starsGo)} style={{ visibility: stars ? undefined : "hidden" }} aria-label={`${j.stars} of 3 stars`}>{Array.from({ length: j.stars }, (_, i) => <i key={i}>★</i>)}</span></div>
+    <div ref={ref} className={s.jcard} role="group" aria-label={j.label}>
+      <div className={s.jrow}><b>{j.title}</b><span className={cx(s.stars, stars && s.starsGo)} style={{ visibility: stars ? undefined : "hidden" }} role="img" aria-label={`${j.stars} of 3 stars`}>{Array.from({ length: j.stars }, (_, i) => <i key={i}>★</i>)}</span></div>
       {j.rows.map(([test, result], i) => (
         <div key={test} className={s.jrow}><span>{test}</span><b className={cx(s.ts, i > done ? s.run : i === done && s.tsDone)}>{i > done ? "Running" : `${result} ✓`}</b></div>
       ))}

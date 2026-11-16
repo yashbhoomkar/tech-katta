@@ -110,7 +110,7 @@ export function HomePage() {
         )}
         <Card className={s.pad} tour="streak">
           <p className="mono">This week</p>
-          <div className={s.days} aria-label={`Streak: ${streak} ${streak === 1 ? "day" : "days"}`}>
+          <div className={s.days} role="group" aria-label={`Streak: ${streak} ${streak === 1 ? "day" : "days"}`}>
             {WEEK.map((d, i) => (
               <span key={i} className={cx(i > weekday - streak && i <= weekday && s.on, i === weekday && s.today)}>
                 <i />
