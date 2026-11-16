@@ -312,3 +312,20 @@
 :global(:root[data-style="neo-brutalism"]) .foot { border-top: var(--bw) solid var(--rule); }
 :global(:root[data-style="neo-brutalism"]) .sheet { border: var(--bw-strong) solid var(--edge); border-bottom: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; }
 :global(:root[data-style="neo-brutalism"]) .sheetHead::before { background: var(--edge); }
+/* the highlighter wipes in behind the slanted word as it slaps on */
+:global(:root[data-style="neo-brutalism"]) .hero h1 em { background: linear-gradient(var(--c-notes), var(--c-notes)) no-repeat left / 100% 100%; animation: nb-slap 520ms var(--out) both, nb-wipe 760ms cubic-bezier(.77, 0, .175, 1) both; }
+/* the hero shapes turn a quarter when the mouse touches them */
+:global(:root[data-style="neo-brutalism"]) .shape { transition: rotate 320ms var(--out); }
+@media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) .shape:hover { rotate: 90deg; } }
+/* the ticker: a running ink strip under the hero (marigold in dark); hovering stops it so it can be read */
+.ticker { overflow: hidden; border-block: var(--bw, 2px) solid var(--edge, var(--ink)); background: #1C1B1A; color: var(--marigold); }
+:global(:root[data-theme="dark"]) .ticker { background: var(--marigold); color: #1C1B1A; }
+.tickerRun { display: flex; width: max-content; padding: 11px 0; font: 700 13px/1 var(--mono); letter-spacing: .08em; white-space: nowrap; animation: nb-ticker 38s linear infinite; }
+.tickerRun > span { display: flex; }
+.tickerRun i { padding: 0 18px; font-style: normal; }
+@media (hover: hover) and (pointer: fine) { .ticker:hover .tickerRun { animation-play-state: paused; } }
+/* halftone on the big ink band */
+:global(:root[data-style="neo-brutalism"]) .final { background-image: radial-gradient(rgb(255 244 220 / .09) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .final { background-image: radial-gradient(rgb(28 27 26 / .14) 1.2px, transparent 1.7px); }
+:global(:root[data-style="neo-brutalism"]) .stage { background-image: radial-gradient(rgb(28 27 26 / .13) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+@media (prefers-reduced-motion: reduce) { .tickerRun { animation: none !important; } }

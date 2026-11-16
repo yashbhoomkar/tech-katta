@@ -114,3 +114,7 @@
 :global(:root[data-style="neo-brutalism"]) .stars i { color: var(--line-strong); }
 :global(:root[data-style="neo-brutalism"]) .stars i[data-on] { color: var(--star); }
 :global(:root[data-style="neo-brutalism"]) .fresh { background-image: linear-gradient(var(--c-notes), var(--c-notes)); border-radius: 0; }
+:global(:root[data-style="neo-brutalism"]) .f button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
+:global(:root[data-style="neo-brutalism"]) .head { background-image: radial-gradient(rgb(28 27 26 / .13) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .head { background-image: radial-gradient(rgb(237 230 214 / .06) 1.2px, transparent 1.7px); }
+:global(:root[data-style="neo-brutalism"]) .chips a[data-done]::after { content: " ✓"; font-weight: 700; }

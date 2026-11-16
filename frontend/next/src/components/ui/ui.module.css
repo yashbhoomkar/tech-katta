@@ -70,3 +70,18 @@
 :global(:root[data-style="neo-brutalism"]) .state h2 { font-size: 30px; }
 /* neo-brutalism loading: an outlined hatched block; its stripes march (looks/neo-brutalism/motion.css, tk-shimmer) */
 :global(:root[data-style="neo-brutalism"]) .skeleton { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }
+:global(:root[data-style="neo-brutalism"]) .themeSwitch button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
+
+/* the neo-brutalism card picture (MarkSticker): a white sticker with a halftone in the section colour, the section's
+   mark drawn large in ink, its request dot in marigold */
+.sticker { position: relative; display: grid; place-items: center; align-content: center; gap: 8px; overflow: hidden; min-height: 96px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: var(--r-md);
+  background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 70%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }
+.stickerMark { display: grid; place-items: center; width: 64px; height: 64px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: 8px; background: var(--c, var(--marigold)); box-shadow: 3px 3px 0 var(--edge, var(--ink)); transform: rotate(-3deg); }
+.stickerMark svg { width: 44px; height: 44px; fill: none; stroke: #1C1B1A; stroke-width: 1.7; stroke-linecap: square; stroke-linejoin: miter; }
+.stickerMark :global(.ico-dot) { fill: var(--marigold); stroke: #1C1B1A; stroke-width: 1; }
+.stickerLabel { padding: 2px 7px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: 4px; background: var(--surface); color: var(--ink); font: 700 10.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .stickerMark { transition: transform 160ms var(--out); }
+  :global(a:hover) .stickerMark { transform: rotate(3deg) scale(1.06); }
+}
+:global(:root[data-theme="dark"]) .sticker { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 28%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }

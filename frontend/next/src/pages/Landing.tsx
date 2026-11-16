@@ -11,7 +11,7 @@ import { useSheetDrag } from "@/lib/gestures";
 import { countUp, later, useOnce } from "@/lib/motion";
 import { useSignIn } from "@/components/SignIn";
 import { cx } from "@/lib/cx";
-import { HeroFigure, Inside, LandingLab, Stats } from "./LandingExtras";
+import { HeroFigure, Inside, LandingLab, Stats, Ticker } from "./LandingExtras";
 import { SectionPicture } from "@/components/SectionPicture";
 import s from "./Landing.module.css";
 
@@ -93,6 +93,7 @@ export function LandingPage() {
         </div>
         <div className={s.arc} aria-hidden="true" />
       </section>
+      <Ticker />
 
       <section className={s.figBand} aria-label="A figure from the lessons">
         <div className={s.wrap}>

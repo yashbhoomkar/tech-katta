@@ -119,3 +119,56 @@
 :global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg .pkt) { fill: var(--brand); stroke: var(--line-strong); stroke-width: 1.5px; }
 :global(:root[data-style="neo-brutalism"]) .tokens :global(.msvg :is(.mt, .mq, .ml)) { font-weight: 700; }
 :global(:root[data-style="neo-brutalism"]) .tokens :global(.mini) { border: 2px solid var(--line-strong); border-radius: 6px; }
+
+/* the figures take the cards' colours (owner, 2026-11-16: "colour scheme of the figures should match the colour
+   scheme of the cards"). A figure's "path that works" is filled with its section's card colour, exactly as on the
+   section's card, and drawn in a deep ink of the same hue; outside a section, Concepts' sky. Trouble stays the Real
+   systems coral, good the Problems mint, highlights and requests the marigold keys. Dark (option D): the section
+   colour becomes the line, the fill a dark tint of it. */
+:global(:root[data-style="neo-brutalism"]) .tokens.tokens { --accent: #1D5F8A; --accent-strong: #1D5F8A; --accent-tint: #8FCDF5; --accent-tint-2: #BCE1F9;
+  --danger-tint: #F7AFAB; --danger-soft: #F7AFAB; --success-tint: #8CD6BA; --warn-tint: #EFB78E; --cat-violet: #4B33A0; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="concepts"]) .tokens.tokens { --accent: #1D5F8A; --accent-strong: #1D5F8A; --accent-tint: #8FCDF5; --accent-tint-2: #BCE1F9; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="components"]) .tokens.tokens { --accent: #8A4513; --accent-strong: #8A4513; --accent-tint: #EFB78E; --accent-tint-2: #F5D4BB; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="interview"]) .tokens.tokens { --accent: #4B33A0; --accent-strong: #4B33A0; --accent-tint: #CBB9F5; --accent-tint-2: #E0D5F9; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="problems"]) .tokens.tokens { --accent: #0E6B47; --accent-strong: #0E6B47; --accent-tint: #8CD6BA; --accent-tint-2: #BAE6D6; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="real"]) .tokens.tokens { --accent: #9B2C26; --accent-strong: #9B2C26; --accent-tint: #F7AFAB; --accent-tint-2: #FACFCD; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :global([data-accent="notes"]) .tokens.tokens { --accent: #5C6312; --accent-strong: #5C6312; --accent-tint: #DCE29E; --accent-tint-2: #EAEEC5; --accent-line: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="concepts"]) .tokens.tokens { --accent: #8FCDF5; --accent-strong: #8FCDF5; --accent-line: #8FCDF5; --accent-tint: #354249; --accent-tint-2: #3E505B; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="components"]) .tokens.tokens { --accent: #EFB78E; --accent-strong: #EFB78E; --accent-line: #EFB78E; --accent-tint: #4A3D33; --accent-tint-2: #5B4A3C; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="interview"]) .tokens.tokens { --accent: #CBB9F5; --accent-strong: #CBB9F5; --accent-line: #CBB9F5; --accent-tint: #423E49; --accent-tint-2: #504A5B; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="problems"]) .tokens.tokens { --accent: #8CD6BA; --accent-strong: #8CD6BA; --accent-line: #8CD6BA; --accent-tint: #35443C; --accent-tint-2: #3E5349; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="real"]) .tokens.tokens { --accent: #F7AFAB; --accent-strong: #F7AFAB; --accent-line: #F7AFAB; --accent-tint: #4C3C39; --accent-tint-2: #5E4745; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :global([data-accent="notes"]) .tokens.tokens { --accent: #DCE29E; --accent-strong: #DCE29E; --accent-line: #DCE29E; --accent-tint: #464736; --accent-tint-2: #565741; }
+
+/* Cards mode in neo-brutalism: one wide card per row, so each topic's figure is drawn at a size that can be read
+   (owner, 2026-11-16: zoomed-out figures do not look good); the cards are outlined keys with a hard shadow */
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.tc-grid) { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.tc) { border: 2px solid var(--line-strong); border-radius: 10px; box-shadow: 4px 4px 0 var(--line-strong); transition: transform 100ms cubic-bezier(.23,1,.32,1), box-shadow 100ms cubic-bezier(.23,1,.32,1); }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.tc:active) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--line-strong); }
+@media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) .tokens :global(.tc:hover) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line-strong); } }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.tc-pic) { aspect-ratio: auto; border-bottom: 2px solid var(--line-strong); background: var(--bg); padding: 18px 14px; }
+:global(:root[data-style="neo-brutalism"]) .tokens :global(.tc-fig svg) { height: auto; }
+
+/* the topic sheet: an outlined card with a hard shadow; its points are outlined blocks with square marigold bullets;
+   the figure inside keeps the figure grammar (square step marks, keys) */
+:global(:root[data-style="neo-brutalism"] body > .ts) { border: 3px solid var(--line-strong); box-shadow: 6px 6px 0 var(--nb-edge); border-radius: 12px; }
+@media (max-width: 680px) { :global(:root[data-style="neo-brutalism"] body > .ts) { border-bottom: 0; box-shadow: none; border-radius: 12px 12px 0 0; } }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-n) { color: var(--ink); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-x) { border: 2px solid var(--line-strong); border-radius: 8px; background: var(--bg); box-shadow: 2px 2px 0 var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-grab) { background: var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-pic) { border: 2px solid var(--line-strong); box-shadow: none; border-radius: 8px; background: var(--bg); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-points li) { border: 2px solid var(--line-strong); border-radius: 6px; background: var(--bg); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-points li::before) { border-radius: 2px; background: var(--brand); box-shadow: 0 0 0 2px var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-lab) { border: 2px solid var(--line-strong); background: var(--brand); color: #1C1B1A; box-shadow: 3px 3px 0 var(--line-strong); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"] body > .ts :is(.ts-more, .ts-foot small)) { color: var(--ink); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-full) { border-top: 2px solid var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-foot) { border-top: 2px solid var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-foot button) { border: 2px solid var(--line-strong); border-radius: 8px; background: var(--bg); box-shadow: 3px 3px 0 var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-foot button:disabled) { box-shadow: none; opacity: .5; }
+:global(:root[data-style="neo-brutalism"] body > .ts .ts-foot button:active:not(:disabled)) { transform: translate(3px, 3px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) :global(.a-fig-b) { border: 2px solid var(--line-strong); border-radius: 6px; background: var(--bg); box-shadow: 2px 2px 0 var(--line-strong); }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) :global(.a-fig-dots i) { width: 9px; height: 9px; border-radius: 1px; border: 2px solid var(--line-strong); background: var(--bg); }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) :global(.a-fig-dots i.on) { background: var(--brand); }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) :global(.a-fig-n) { color: var(--ink); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) svg :is(rect, circle, ellipse, polygon, path, line):not([stroke-width]) { stroke-width: 2px; }
+:global(:root[data-style="neo-brutalism"] body > :is(.ts, .fs)) svg rect[stroke]:not([stroke="none"]):not([fill="none"]):not([opacity]) { rx: 3px; filter: url(#nb-hard); }

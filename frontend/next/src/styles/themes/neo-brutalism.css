@@ -102,7 +102,10 @@
 /* ---------- motion: the key press, stepped bars, the sticker slap ---------- */
 @keyframes nb-slap { 0% { opacity: 0; transform: scale(1.25) rotate(-6deg); } 70% { opacity: 1; transform: scale(.96) rotate(var(--rot, -2deg)); } 100% { transform: rotate(var(--rot, -2deg)); } }
 @keyframes nb-step { from { transform: scaleX(0); } }
-@keyframes nb-wipe { from { background-size: 0 100%; } }
+@keyframes nb-wipe { 0%, 35% { background-size: 0% 100%; } 100% { background-size: 100% 100%; } }
+/* a chosen key drops onto its shadow (nav, filters, the theme switch) */
+@keyframes nb-stamp-in { from { transform: translate(-3px, -3px); box-shadow: 5px 5px 0 var(--edge); } }
+@keyframes nb-ticker { to { transform: translateX(-50%); } }
 /* reduced motion: global.css already drops movement; the key press below is movement, so it goes too */
 
 /* the shared SVG definitions (lib/look.ts): the hard shadow under figure boxes, ink in light and black in dark */
