@@ -285,13 +285,13 @@ p{margin:0}button{font:inherit;color:inherit;cursor:pointer}
   <article class="demo"><div class="stage" style="place-items:stretch"><div class="scroll4" id="d-scroll"><p class="hint">Scroll inside this box ↓</p><div class="blk"><b>In plain words</b><br><small>Big apps run on hundreds of computers…</small></div><div class="blk"><b>Take a look inside</b><br><small>The lesson player</small></div><div class="blk"><b>The judge</b><br><small>Tests, a score, stars</small></div><div class="blk"><b>Taught by Yash</b><br><small>Who writes this</small></div><div class="blk"><b>Start learning</b><br><small>The last call</small></div></div></div>
     <div class="info"><div class="row"><h3><span class="n">04</span>Sections arrive on scroll</h3><span class="mono">scroll</span></div><p class="why">Each section rises 20 px and fades in once as it enters. It starts at 15% visible, so nothing is ever blank in a screenshot or on a slow phone.</p><div class="spec"><span>slow</span><span>ease-out</span><span>once</span></div><p class="where">Where: landing sections, section pages</p></div></article>
   <article class="demo" data-demo="skel"><div class="stage"><div class="skel" id="d-skel"><div class="s" style="width:30%"></div><div class="s" style="width:85%;height:18px"></div><div class="s" style="width:95%"></div><div class="s" style="width:70%"></div>
-      <div class="real"><span class="chip">Concepts</span><b>Caching: when to add a cache</b><small style="color:var(--ink-2)">Reading one user's profile from Postgres takes a few milliseconds…</small></div></div></div>
+      <div class="real"><span class="chip" data-live="section">Concepts</span><b data-live="title">Caching: when to add a cache</b><small style="color:var(--ink-2)" data-live="p0">Reading one user's profile from Postgres takes a few milliseconds…</small></div></div></div>
     <div class="info"><div class="row"><h3><span class="n">05</span>Loading, then content</h3><button class="replay">↻ Replay</button></div><p class="why">While an article loads, grey bars in its real shape shimmer; the text then fades in over them at the same place, so nothing jumps. Shown only if loading takes longer than 300 ms.</p><div class="spec"><span>shimmer 1.2 s</span><span>fade base</span><span>after 300 ms</span></div><p class="where">Where: articles, section lists, Problems</p></div></article>
 </div></section>
 
 <section class="group" id="respond"><header><div><h2>Responding</h2><p>The site answers every touch within a frame, so it feels quick even when the work behind it is slow.</p></div></header>
 <div class="grid">
-  <article class="demo"><div class="stage"><div class="hover5"><div class="hcard">Caching<em>Open</em></div><div class="hcard" style="background:var(--c-problems)">URL shortener<em>Solve</em></div></div></div>
+  <article class="demo"><div class="stage"><div class="hover5"><div class="hcard"><span data-live="short">Caching</span><em>Open</em></div><div class="hcard" style="background:var(--c-problems)"><span data-live="problem">URL shortener</span><em>Solve</em></div></div></div>
     <div class="info"><div class="row"><h3><span class="n">06</span>Hover and press</h3><span class="mono">hover me</span></div><p class="why">Hover happens tens of times a visit, so it is kept small: a 2 px lift and a 3 px arrow nudge, only with a mouse. Pressing squeezes to 97% everywhere, so taps on phones feel answered.</p><div class="spec"><span>press 160 ms</span><span>ease-out</span><span>hover mouse only</span></div><p class="where">Where: every card, button and row</p></div></article>
   <article class="demo" data-demo="load"><div class="stage"><button class="btn primary load" id="d-load"><span class="sp"></span><span class="lb">Submit</span></button></div>
     <div class="info"><div class="row"><h3><span class="n">07</span>A button that is working</h3><button class="replay">↻ Reset</button></div><p class="why">Press Submit: the label becomes a spinner straight away, the button keeps its size so the row does not shift, and it turns green with a tick when the server answers.</p><div class="spec"><span>instant</span><span>fixed width</span><span>green base</span></div><p class="where">Where: Submit, Ask the interviewer, Sign in</p></div></article>
@@ -339,7 +339,7 @@ p{margin:0}button{font:inherit;color:inherit;cursor:pointer}
     <div class="info"><div class="row"><h3><span class="n">20</span>Tabs</h3><span class="mono">click a tab</span></div><p class="why">The underline slides and stretches to the tab you picked instead of jumping, so you see where you came from.</p><div class="spec"><span>180 ms</span><span>ease-out</span><span>transform only</span></div><p class="where">Where: problem workspace, Cards / Full text</p></div></article>
   <article class="demo"><div class="stage"><div class="side" id="d-side"><span class="mk"></span><a data-c="var(--t-concepts)"><i style="background:var(--c-concepts)"></i>Concepts</a><a data-c="var(--t-real)"><i style="background:var(--c-components)"></i>Components</a><a data-c="var(--t-notes)"><i style="background:var(--c-interview)"></i>Interview Questions</a><a data-c="var(--t-problems)"><i style="background:var(--c-problems)"></i>Problems</a></div></div>
     <div class="info"><div class="row"><h3><span class="n">21</span>Sidebar marker</h3><span class="mono">click a section</span></div><p class="why">The highlight slides to the section you open and takes on its colour, so the sidebar shows both where you are and how you got there.</p><div class="spec"><span>base</span><span>ease-out</span><span>colour cross-fade</span></div><p class="where">Where: dashboard sidebar</p></div></article>
-  <article class="demo" data-demo="sheet"><div class="stage"><div class="sheet11" id="d-sheet"><div style="padding:16px"><b>Caching</b><p style="color:var(--muted);font-size:13px;margin-top:6px">Tap a topic card…</p></div><div class="scrim"></div><div class="sh"><div class="grab"></div><b>Where to cache</b><p style="color:var(--ink-2);font-size:13.5px;margin-top:6px">Device, edge, shared cache or in the process. Each is closer to the reader and harder to keep fresh.</p></div></div></div>
+  <article class="demo" data-demo="sheet"><div class="stage"><div class="sheet11" id="d-sheet"><div style="padding:16px"><b data-live="short">Caching</b><p style="color:var(--muted);font-size:13px;margin-top:6px">Tap a topic card…</p></div><div class="scrim"></div><div class="sh"><div class="grab"></div><b data-live="h3">Where to cache</b><p style="color:var(--ink-2);font-size:13.5px;margin-top:6px">Device, edge, shared cache or in the process. Each is closer to the reader and harder to keep fresh.</p></div></div></div>
     <div class="info"><div class="row"><h3><span class="n">22</span>Sheets and dialogs</h3><button class="replay">↻ Open / close</button></div><p class="why">On phones a topic slides up on the iOS drawer curve (no bounce) and the page dims behind it; a quick flick down closes it. On laptops dialogs scale up from 96% instead.</p><div class="spec"><span>500 ms</span><span>drawer curve</span><span>no bounce</span></div><p class="where">Where: topic cards, sign-in, full-screen figures</p></div></article>
 </div></section>
 
@@ -461,6 +461,31 @@ p{margin:0}button{font:inherit;color:inherit;cursor:pointer}
   requestAnimationFrame(()=>{placeUl($('[role=tab][aria-selected=true]',tabs));placeMk($('a',side));tour();
     $$('#d-drop .edge').forEach(e=>e.style.setProperty('--len',e.getTotalLength()))});
   if(reduced()){$$('.hero1 .w,.hero1 .sub,.hero1 .cta').forEach(e=>{e.style.opacity=1;e.style.transform='none';e.style.filter='none'});$$('.blk').forEach(b=>b.classList.add('in'))}
+})();
+</script>
+<script>
+// Live content (owner, 2026-11-16: every prototype calls tech-api.katta.cc): the demos that show a lesson card, a
+// topic sheet and a problem card fill in from the real Caching lesson and URL shortener problem. The sample text
+// stays if the API cannot be reached.
+(async () => {
+  try {
+    const api = 'https://tech-api.katta.cc';
+    const [a, list] = await Promise.all([fetch(api + '/v1/articles/caching').then(r => r.json()), fetch(api + '/v1/articles').then(r => r.json())]);
+    const short = t => String(t).split(/\s*[:\u2014\u2013]\s*/)[0];
+    const firstP = (a.body || []).find(b => b.t === 'p');
+    const firstH3 = (a.body || []).find(b => b.t === 'h3');
+    const problem = (list.articles || []).find(x => x.slug === 'url-shortener');
+    const val = {
+      section: 'Concepts',
+      title: a.title,
+      short: short(a.title),
+      p0: firstP ? firstP.x.slice(0, 90) + '\u2026' : null,
+      h3: firstH3 ? firstH3.x : null,
+      problem: problem ? short(problem.title).replace(/^Design an? /, '') : null,
+    };
+    document.querySelectorAll('[data-live]').forEach(el => { const v = val[el.dataset.live]; if (v) el.textContent = v; });
+    document.documentElement.dataset.live = 'yes';
+  } catch (e) { console.warn('motion: the content API could not be reached; showing the sample', e); }
 })();
 </script>
 </body></html>

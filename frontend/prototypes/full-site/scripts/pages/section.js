@@ -18,7 +18,7 @@ export const render = (ctx) => {
   <div class="sechead block" data-sec="${s.id}">
     <div><p class="mono">${esc(s.name)}</p><h1>${esc(s.title)}</h1><p>${esc(s.blurb)}</p></div>
     <div class="cprog pane"><b style="font-size:18px">${p.done} of ${p.total} done</b><div class="bar"><i style="width:${p.pct}%"></i></div>
-      ${next ? `<small>Next up: ${esc(next.title)} · ${next.min} min</small><a class="btn primary" href="#/learn/${s.id}/${next.slug}" style="align-self:flex-start">${next.state === "now" ? "Continue" : "Start"} →</a>` : "<small>All done.</small>"}</div>
+      ${next ? `<small>Next up: ${esc(next.title)}${next.min ? ` · ${next.min} min` : ""}</small><a class="btn primary" href="#/learn/${s.id}/${next.slug}" style="align-self:flex-start">${next.state === "now" ? "Continue" : "Start"} →</a>` : "<small>All done.</small>"}</div>
   </div>
   ${s.groups.length > 1 ? `<nav class="jump" aria-label="Groups in ${esc(s.name)}">${s.groups.map((g) => `<a href="#/learn/${s.id}" data-jump="g-${g.id}">${esc(g.title)}</a>`).join("")}</nav>` : ""}
   ${s.groups.map((g) => { const done = g.lessons.filter((l) => l[3] === "done").length; return `

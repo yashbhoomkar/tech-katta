@@ -1,5 +1,6 @@
 // Entry point: theme, app chrome, overlays, then the router renders the first page.
 import { initTheme } from "./core/theme.js";
+import { loadLive } from "./data/live.js";
 import { startRouter } from "./core/router.js";
 import { initShell } from "./components/shell.js";
 import { initCommandPalette } from "./components/command-palette.js";
@@ -25,6 +26,8 @@ document.addEventListener("click", (e) => { if (e.target.closest("[data-skip]"))
 document.addEventListener("touchstart", () => {}, { passive: true });
 
 initTheme();
+// the real content (tech-api.katta.cc) replaces the sample before anything renders; the sample stays if it fails
+await loadLive();
 const chrome = initShell();
 initCommandPalette();
 initSignin();

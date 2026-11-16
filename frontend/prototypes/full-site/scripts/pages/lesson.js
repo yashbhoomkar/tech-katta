@@ -4,6 +4,7 @@
 import { $, $$, esc } from "../core/dom.js";
 import { later, RM, replay, placeIndicator } from "../core/motion.js";
 import { findLesson, completeLesson, progressOf } from "../data/sections.js";
+import { LIVE, FULL, articleBody, renderBlocks, markDone } from "../data/live.js";
 import { toast } from "../components/toast.js";
 import * as notFound from "./not-found.js";
 import { swipeX } from "../components/swipe.js";
@@ -36,7 +37,7 @@ const GENERIC = (l) => `
 export const render = (ctx) => {
   const x = f(ctx);
   if (!x) return notFound.render(ctx);
-  const { sec, lesson, prev, next } = x, g = lesson.group, p = progressOf(sec), isCaching = lesson.slug === "caching";
+  const { sec, lesson, prev, next } = x, g = lesson.group, p = progressOf(sec), isCaching = !LIVE && lesson.slug === "caching", full = FULL.get(lesson.slug);
   const gDone = g.lessons.filter((l) => l[3] === "done").length;
   return `
 <div class="reader" data-sec="${sec.id}">
@@ -50,15 +51,15 @@ export const render = (ctx) => {
   <article class="art" id="art">
     <div class="skel" aria-hidden="true"><i style="width:30%"></i><i style="width:90%;height:30px"></i><i style="width:60%"></i><i style="width:100%;height:160px"></i><i style="width:95%"></i></div>
     <div class="row-gap"><span class="chip" style="background:var(--t)">${esc(sec.name)} · ${String(x.index + 1).padStart(2, "0")}</span>${isCaching ? '<span class="chip medium">Medium</span>' : ""}</div>
-    <h1>${esc(lesson.title)}${isCaching ? ": when to add a cache, and how to explain it" : ""}</h1>
-    <div class="by"><i></i>Yash Bhoomkar · Updated 9 Nov 2026 · ${lesson.min} min read</div>
+    <h1>${esc(full?.title ?? lesson.title)}${isCaching ? ": when to add a cache, and how to explain it" : ""}</h1>${full?.dek ? `<p class="body" style="font-size:1.1em">${esc(full.dek)}</p>` : ""}
+    <div class="by"><i></i>Yash Bhoomkar · Updated ${esc(full?.date ?? "9 Nov 2026")}<span id="rt">${lesson.min ? ` · ${lesson.min} min read` : ""}</span></div>
     <div class="seg" role="group" aria-label="How to read this lesson"><span class="seg-i" aria-hidden="true"></span><button type="button" aria-pressed="false">Cards</button><button type="button" aria-pressed="true">Full text</button></div>
-    ${isCaching ? CACHING : GENERIC(lesson)}
+    <div id="live-body">${isCaching ? CACHING : LIVE ? '<div class="skel" aria-hidden="true"><i style="width:90%"></i><i style="width:70%"></i><i style="width:100%;height:120px"></i></div>' : GENERIC(lesson)}</div>
     <div class="deck"><button class="btn sm" type="button" data-dk="-1" aria-label="Previous card">←</button><span class="mono" id="dkn"></span><div class="dbar"><i></i></div><button class="btn primary sm" type="button" data-dk="1">Next →</button></div>
-    <div class="card finish"><div><b>Finished this lesson?</b><small>${next ? `Next: ${esc(next.title)} · ${next.min} min` : `That's the last lesson in ${esc(sec.name)}.`}</small></div>
+    <div class="card finish"><div><b>Finished this lesson?</b><small>${next ? `Next: ${esc(next.title)}${next.min ? ` · ${next.min} min` : ""}` : `That's the last lesson in ${esc(sec.name)}.`}</small></div>
       <div class="tools wrap-row">${prev ? `<a class="btn sm" href="#/learn/${sec.id}/${prev.slug}">← ${esc(prev.title)}</a>` : ""}<button class="btn primary sm" type="button" id="complete">${lesson.state === "done" ? "Done ✓" : `Mark complete${next ? " &amp; next →" : ""}`}</button></div></div>
   </article>
-  <aside class="prail" aria-label="On this page"><p class="mono">On this page</p><a class="on" href="#/${ctx.path}" data-to="s1">${isCaching ? "Caching in an interview" : "What this lesson covers"}</a><a href="#/${ctx.path}" data-to="s2">${isCaching ? "Where to cache" : "Where it goes wrong"}</a>
+  <aside class="prail" id="prail" aria-label="On this page"><p class="mono">On this page</p><a class="on" href="#/${ctx.path}" data-to="s1">${isCaching ? "Caching in an interview" : "What this lesson covers"}</a><a href="#/${ctx.path}" data-to="s2">${isCaching ? "Where to cache" : "Where it goes wrong"}</a>
     <div class="tryit" data-sec="problems"><p class="mono">Try it on the canvas</p><b>The cache restarts at dinner: keep the database standing.</b><a href="#/problems/url-shortener">Open challenge →</a></div></aside>
 </div>`;
 };
@@ -82,7 +83,7 @@ export function mount(root, ctx, sc) {
   // Cards / Full text
   const seg = $(".seg", root), ind = $(".seg-i", seg);
   const place = () => placeIndicator(seg, ind, 'button[aria-pressed="true"]');
-  const cards = [...new Set($$("[data-card]", art).map((n) => n.dataset.card))];
+  let cards = [...new Set($$("[data-card]", art).map((n) => n.dataset.card))];
   const deck = $(".deck", art); let ci = 0;
   const show = (n, dir) => {
     ci = Math.max(0, Math.min(cards.length - 1, n));
@@ -107,6 +108,28 @@ export function mount(root, ctx, sc) {
   sc.listen(window, "keydown", (e) => { if (!art.classList.contains("cards") || /input|textarea/i.test(document.activeElement.tagName)) return; if (e.key === "ArrowRight") show(ci + 1, 1); if (e.key === "ArrowLeft") show(ci - 1, -1); });
   swipeX(art, () => { if (art.classList.contains("cards")) show(ci + 1, 1); }, () => { if (art.classList.contains("cards")) show(ci - 1, -1); });
   requestAnimationFrame(() => requestAnimationFrame(place)); document.fonts?.ready.then(place); sc.timer(setTimeout(place, 400)); sc.listen(window, "resize", place);
+
+  // the real lesson (tech-api.katta.cc): text, read time, "On this page"; quick notes have no article yet
+  if (LIVE) {
+    const body = $("#live-body", art);
+    if (x.lesson.slug.startsWith("note-")) {
+      const meta = x.lesson.group.lessons.find((l) => l[0] === x.lesson.slug)?.[4];
+      body.innerHTML = `<p class="body" data-card="0">A short note on one system: what it does, the numbers, and the one idea that makes it work.${meta ? ` Topic: ${esc(meta.topic)}. Status: ${esc(String(meta.status).toLowerCase())}.` : ""}</p>`;
+    } else articleBody(x.lesson.slug).then((a) => {
+      if (!body.isConnected) return;
+      if (!a) { body.innerHTML = '<p class="body">This lesson could not be loaded. Try again in a moment.</p>'; return; }
+      const r = renderBlocks(a);
+      body.innerHTML = r.html;
+      $("#rt", root).textContent = ` · ${Math.max(1, Math.round(r.words / 220))} min read`;
+      const rail = $("#prail", root);
+      if (rail) {
+        $$("[data-to]", rail).forEach((n) => n.parentNode.removeChild(n));
+        $(".mono", rail).insertAdjacentHTML("afterend", r.heads.map(([id, t], i) => `<a class="${i ? "" : "on"}" href="#/${ctx.path}" data-to="${id}">${esc(t)}</a>`).join(""));
+      }
+      $$("h2[id]", art).forEach((hh) => io.observe(hh));
+      cards = [...new Set($$("[data-card]", art).map((n) => n.dataset.card))];
+    });
+  }
 
   // video (prototype: captions only)
   const pl = $("#player", root);
@@ -141,6 +164,7 @@ export function mount(root, ctx, sc) {
   done.addEventListener("click", () => {
     if (done.classList.contains("ok") || x.lesson.state === "done") { if (x.next) ctx.go(`learn/${x.sec.id}/${x.next.slug}`); return; }
     const next = completeLesson(x.sec.id, x.lesson.slug);
+    markDone(x.lesson.slug);
     done.classList.add("ok"); done.innerHTML = '<span class="tick">✓</span> Done';
     if (!RM.matches) ["--a-concepts", "--a-components", "--a-interview", "--a-problems", "--a-real", "--a-notes", "--marigold", "--a-concepts", "--a-problems", "--a-interview"].forEach((c, i) => {
       const b = document.createElement("i"); b.className = "burst"; const a = (i / 10) * Math.PI * 2, d = 46 + (i % 3) * 14;
