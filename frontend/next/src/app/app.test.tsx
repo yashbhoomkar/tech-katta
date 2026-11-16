@@ -40,7 +40,8 @@ describe("app", () => {
     expect(screen.getByText("Start here")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Networking essentials" })).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /Concepts/ }).length).toBeGreaterThan(0);
-    expect(document.title).toBe("Home · Tech Katta");
+    // PageMeta sets the title in an effect, which can land after the heading on a slow machine
+    await waitFor(() => expect(document.title).toBe("Home · Tech Katta"));
   });
 
   it("the reader shows the lesson, its outline and the way on", async () => {
