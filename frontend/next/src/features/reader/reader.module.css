@@ -278,3 +278,6 @@
 :global(:root[data-style="neo-brutalism"]) .toc a { border-left-width: 3px; }
 :global(:root[data-style="neo-brutalism"]) .tocMark { width: 3px; border-radius: 0; background: var(--ink); }
 :global(:root[data-style="neo-brutalism"]) .toc a[aria-current] { font-weight: 700; }
+/* neo-brutalism: the burst throws square, outlined confetti */
+:global(:root[data-style="neo-brutalism"]) .burst { width: 11px; height: 11px; border-radius: 0; border: 2px solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .figLoading { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }

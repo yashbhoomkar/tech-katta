@@ -104,3 +104,8 @@
 @keyframes nb-step { from { transform: scaleX(0); } }
 @keyframes nb-wipe { from { background-size: 0 100%; } }
 /* reduced motion: global.css already drops movement; the key press below is movement, so it goes too */
+
+/* the shared SVG definitions (lib/look.ts): the hard shadow under figure boxes, ink in light and black in dark */
+.tk-look-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+:root[data-style="neo-brutalism"] #nb-hard feDropShadow { flood-color: #1C1B1A; }
+:root[data-style="neo-brutalism"][data-theme="dark"] #nb-hard feDropShadow { flood-color: #000; }

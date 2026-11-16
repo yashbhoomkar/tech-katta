@@ -1,0 +1,76 @@
+/* Neo-brutalism motion (owner, 2026-11-16: "redesign the animation tailored to neo brutalism … for every
+   figure/animation"). Only the neo-brutalism build loads this file (vite.config.ts points @look here), after
+   global.css, so these keyframes replace the default look's of the same name everywhere they are used.
+
+   The grammar: things are physical objects on a desk, not light.
+   - Arrivals drop and land: they come from up-left onto their shadow, with a hard stop, never a blur or a float.
+   - Stickers slap on: oversized and tilted, then a squash, then they settle at their tilt.
+   - Stamps (done, stars, today) hit and leave a mark.
+   - Fills and bars advance in steps, like a counter.
+   - Page and theme changes are a shutter: a hard edge wipes down in steps, never a cross-fade.
+   - Loading is a hatched block whose stripes march, not a soft shimmer.
+   Reduced motion: global.css already cuts every animation to a short, single run; the view transitions are off. */
+
+/* arrivals: drop from up-left onto the shadow, land with a small squash */
+@keyframes tk-rise {
+  0% { opacity: 0; transform: translate(-6px, -14px); }
+  60% { opacity: 1; transform: translate(1px, 2px); }
+  80% { transform: translate(0, -1px); }
+  100% { transform: none; }
+}
+@keyframes tk-pop {
+  0% { opacity: 0; transform: translate(-8px, -8px); }
+  70% { opacity: 1; transform: translate(1px, 1px); }
+  100% { transform: none; }
+}
+@keyframes tk-card {
+  0% { opacity: 0; translate: -10px -60px; }
+  65% { opacity: 1; translate: 0 6px; }
+  85% { translate: 0 -2px; }
+  100% { translate: 0 0; }
+}
+@keyframes tk-cardin { 0% { opacity: 0; transform: translateX(28px) rotate(2deg); } 70% { opacity: 1; transform: translateX(-3px) rotate(-.5deg); } 100% { transform: none; } }
+@keyframes tk-cardback { 0% { opacity: 0; transform: translateX(-28px) rotate(-2deg); } 70% { opacity: 1; transform: translateX(3px) rotate(.5deg); } 100% { transform: none; } }
+
+/* the hero's words slap down one after another, no blur */
+@keyframes tk-word {
+  0% { opacity: 0; transform: translateY(-50%) rotate(-5deg) scale(1.1); }
+  55% { opacity: 1; transform: translateY(6%) rotate(1deg) scale(.98); }
+  100% { transform: none; }
+}
+
+/* stamps: hit hard, leave a mark */
+@keyframes tk-done { 0% { opacity: 0; transform: scale(1.6) rotate(-10deg); } 55% { opacity: 1; transform: scale(.92) rotate(2deg); } 100% { transform: none; } }
+@keyframes tk-star { 0% { opacity: 0; transform: scale(1.8) rotate(-20deg); } 55% { opacity: 1; transform: scale(.9) rotate(4deg); } 100% { transform: none; } }
+@keyframes tk-today { 0% { background: var(--surface); transform: scale(1.4) rotate(-8deg); } 55% { background: var(--marigold); transform: scale(.92); } 100% { background: var(--marigold); transform: none; } }
+@keyframes tk-flash { 0%, 40% { background: var(--marigold); } 41%, 70% { background: transparent; } 71%, 90% { background: var(--marigold); } }
+
+/* counters: bars and marks advance in steps */
+@keyframes tk-bar { 0% { transform: scaleX(0); animation-timing-function: steps(8, end); } 100% { transform: scaleX(1); } }
+@keyframes tk-mark { 0% { transform: scaleY(0); animation-timing-function: steps(4, end); } 100% { transform: scaleY(1); } }
+
+/* the landing's shapes: a mechanical tick, not a float */
+@keyframes tk-drift { 0% { translate: 0 0; rotate: 0deg; animation-timing-function: steps(4, end); } 100% { translate: 0 -12px; rotate: 6deg; } }
+/* the judge's spinner: a quarter-turn ratchet */
+@keyframes tk-spin { 0% { transform: rotate(0); animation-timing-function: steps(4, end); } 100% { transform: rotate(1turn); } }
+@keyframes tk-blink { 50% { opacity: 0; } }
+
+/* loading: a hatched block whose stripes march (ui.module.css draws the stripes) */
+@keyframes tk-shimmer { to { background-position: 28px 0; } }
+
+/* the burst on Mark complete: square confetti thrown out, spinning in quarter turns, then dropping */
+@keyframes tk-burst {
+  0% { transform: translate(-50%, -50%) rotate(0) scale(1); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 30px)) rotate(var(--rot)) scale(.9); opacity: 0; }
+}
+
+/* page change: a shutter. The new page is revealed by a hard edge travelling down in steps */
+@keyframes tk-vt-in { 0% { clip-path: inset(0 0 100% 0); animation-timing-function: steps(6, end); } 100% { clip-path: inset(0 0 0 0); } }
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: tk-vt-in 300ms both; }
+/* theme change: the same shutter, the other way (a darker page rolls up from the bottom) */
+@keyframes nb-shutter-up { 0% { clip-path: inset(100% 0 0 0); animation-timing-function: steps(6, end); } 100% { clip-path: inset(0 0 0 0); } }
+:root[data-vt="theme"]::view-transition-new(root) { animation: nb-shutter-up 360ms both; }
+/* the card title that morphs into the lesson title moves on a hard ease, no float */
+::view-transition-group(tk-title) { animation-duration: 220ms; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
