@@ -1,0 +1,121 @@
+// The AI evaluator's ground truth and bake-off (ai-evals/): the truth file matches the problems and the judge, the
+// scorer marks right and wrong reviews as a person would, and the bake-off runs end to end through a stand-in for
+// OpenRouter (no network, no money).
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { createServer } from 'node:http';
+import { readFileSync, rmSync, readdirSync } from 'node:fs';
+import { buildGroundTruth, readGroundTruth } from '../ai-evals/ground-truth.mjs';
+import { scoreReview, gateFailures } from '../ai-evals/score.mjs';
+
+test('ground-truth.json is up to date with the problems and the judge (else: node ai-evals/ground-truth.mjs)', () => {
+  assert.deepEqual(readGroundTruth().cases, buildGroundTruth().cases);
+});
+
+test('every case has a fault to lead with, and every authored wrong design has the author\'s words', () => {
+  const { cases } = readGroundTruth();
+  assert.ok(cases.length >= 70);
+  for (const c of cases) {
+    assert.ok(c.must_lead_with.length, c.id);
+    assert.equal(c.verdict_fails, c.verdict.word !== 'Accepted', c.id);
+    if (c.kind === 'wrong') { assert.ok(c.fault, c.id); assert.ok(c.verdict_fails, c.id); }
+    if (c.kind === 'reference') assert.equal(c.verdict.word, 'Accepted', c.id);
+    for (const id of c.must_lead_with) assert.ok(!c.never_a_problem.includes(id) || !c.verdict_fails, `${c.id}: ${id} is good`);
+  }
+});
+
+const truth = { id: 'p/x', verdict_fails: true, must_lead_with: ['finding:overloaded:GET:api'], never_a_problem: ['test:t01'] };
+const item = (kind, facts) => ({ kind, facts, text: 'words', ask: null });
+const ok = (raw, dropped = []) => ({ ok: true, dropped, review: { items: raw.items } });
+
+test('scoring: a review that leads with the fault is correct', () => {
+  const raw = { items: [item('problem', ['finding:overloaded:GET:api']), item('risk', ['load:db'])] };
+  assert.equal(scoreReview(truth, raw, ok(raw)).correct, true);
+  const second = { items: [item('risk', ['load:db']), item('problem', ['finding:overloaded:GET:api'])] };
+  assert.equal(scoreReview(truth, second, ok(second)).lead_rank, 2);
+  assert.equal(scoreReview(truth, second, ok(second)).correct, true);
+});
+
+test('scoring: the fault only at item 3, or not at all, is wrong', () => {
+  const raw = { items: [item('risk', ['load:db']), item('risk', ['load:lb']), item('problem', ['finding:overloaded:GET:api'])] };
+  const s = scoreReview(truth, raw, ok(raw));
+  assert.equal(s.correct, false);
+  assert.match(s.why, /item 3/);
+  const none = { items: [item('risk', ['load:db']), item('risk', ['load:lb'])] };
+  assert.match(scoreReview(truth, none, ok(none)).why, /not cited/);
+});
+
+test('scoring: an item the verifier dropped does not count as finding the fault', () => {
+  const raw = { items: [item('problem', ['finding:overloaded:GET:api']), item('risk', ['load:db'])] };
+  assert.equal(scoreReview(truth, raw, ok(raw, [{ item: 0, rule: 'R4 digit' }])).found_fault, false);
+});
+
+test('scoring: calling a good fact a problem, or leading a failing design with praise, is wrong', () => {
+  const good = { items: [item('problem', ['finding:overloaded:GET:api']), item('problem', ['test:t01'])] };
+  assert.equal(scoreReview(truth, good, ok(good)).called_good_a_problem, true);
+  assert.equal(scoreReview(truth, good, ok(good)).correct, false);
+  const praise = { items: [item('strength', ['test:t01']), item('problem', ['finding:overloaded:GET:api'])] };
+  assert.equal(scoreReview(truth, praise, ok(praise)).praised_failing, true);
+  assert.equal(scoreReview(truth, praise, ok(praise)).correct, false);
+});
+
+test('scoring: no answer, or one the verifier rejects, is wrong', () => {
+  assert.equal(scoreReview(truth, null, null).correct, false);
+  assert.match(scoreReview(truth, { items: [] }, { ok: false, why: 'R1 shape' }).why, /R1 shape/);
+});
+
+test('gates: a model passes only when every line holds', () => {
+  const pass = { correct_pct: 95, fallback_pct: 1, error_pct: 0, called_good_a_problem: 0, praised_failing: 0, ms_p95: 4000 };
+  assert.deepEqual(gateFailures(pass), []);
+  assert.equal(gateFailures({ ...pass, correct_pct: 89 }).length, 1);
+  assert.equal(gateFailures({ ...pass, fallback_pct: 2, error_pct: 1 }).length, 1);
+  assert.equal(gateFailures({ ...pass, praised_failing: 1, ms_p95: 12000 }).length, 2);
+});
+
+test('the bake-off runs end to end through a stand-in for OpenRouter, with the terms production should use', async () => {
+  const bodies = [];
+  const server = createServer(async (req, res) => {
+    if (req.url.endsWith('/models')) {
+      res.setHeader('content-type', 'application/json');
+      return res.end(JSON.stringify({ data: [{ id: 'fake/model', pricing: { prompt: '0.0000001', completion: '0.0000005' }, supported_parameters: ['structured_outputs'] }] }));
+    }
+    let text = '';
+    for await (const chunk of req) text += chunk;
+    const body = JSON.parse(text);
+    bodies.push(body);
+    // answer with the first two ids the schema allows, as problems: plumbing, not quality, is under test here
+    const ids = body.response_format.json_schema.schema.properties.items.items.properties.facts.items.enum;
+    const answer = { headline: 'Look at the busiest part first.', items: [{ kind: 'problem', facts: [ids[0]], text: 'This is where it breaks.', ask: null }, { kind: 'risk', facts: [ids[1]], text: 'This is next.', ask: null }], next: { text: 'Change that part and run it again.', repair: null } };
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 2000, completion_tokens: 100, cost: 0.0003 } }));
+  }).listen(0);
+  await once(server, 'listening');
+  const out = `test-${process.pid}`;
+  try {
+    const child = spawn(process.execPath, ['ai-evals/bakeoff.mjs', '--models', 'fake/model@low', '--limit', '4', '--repeat', '1', '--out', out], {
+      cwd: new URL('..', import.meta.url), env: { ...process.env, OPENROUTER_API_KEY: 'test-key', OPENROUTER_BASE_URL: `http://127.0.0.1:${server.address().port}` },
+    });
+    let log = '';
+    child.stdout.on('data', (d) => { log += d; });
+    child.stderr.on('data', (d) => { log += d; });
+    const [code] = await once(child, 'exit');
+    assert.equal(code, 0, log);
+    assert.equal(bodies.length, 4);
+    for (const b of bodies) {
+      assert.equal(b.model, 'fake/model');
+      assert.equal(b.response_format.type, 'json_schema');
+      assert.deepEqual(b.provider, { data_collection: 'deny', require_parameters: true });
+      assert.deepEqual(b.reasoning, { effort: 'low' });
+    }
+    const md = readFileSync(new URL(`../ai-evals/results/bakeoff-${out}.md`, import.meta.url), 'utf8');
+    assert.match(md, /\| 1 \| fake\/model@low \|/);
+    // the cost is what the platform reported: 4 calls × $0.0003
+    assert.match(md, /Spent about \$0\.001\b/);
+  } finally {
+    server.close();
+    const dir = new URL('../ai-evals/results/', import.meta.url);
+    for (const f of readdirSync(dir).filter((f) => f.includes(out))) rmSync(new URL(f, dir));
+  }
+});

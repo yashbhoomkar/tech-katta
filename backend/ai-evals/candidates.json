@@ -1,0 +1,15 @@
+{
+  "note": "Models the bake-off compares, as OpenRouter model ids. '@low', '@medium' or '@none' sets the reasoning effort. The first four are the finalists of tech-katta-context/29-SELF-HOSTED-LLM-ON-A-VPS.md §12.4; the rest are cheaper challengers with strict JSON schemas on OpenRouter (checked 2026-11-16).",
+  "models": [
+    "meta/muse-ember@low",
+    "anthropic/claude-haiku-5.5@low",
+    "deepseek/deepseek-v4.1-flash@none",
+    "openai/gpt-6-luna@low",
+    "qwen/qwen3.8-flash@none",
+    "z-ai/glm-5.3-flash@none",
+    "minimax/minimax-m3.1-flash@low",
+    "google/gemini-3.1-flash-lite@low",
+    "google/gemma-4-26b-a4b-it",
+    "meta-llama/llama-4-scout"
+  ]
+}
