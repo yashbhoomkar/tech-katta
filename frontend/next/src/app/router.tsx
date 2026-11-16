@@ -49,8 +49,14 @@ function Loading({ children }: { children: ReactNode }) {
 function Root() {
   usePageViews();
   useEffect(() => {
-    const idle = (cb: () => void) => (typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500));
-    idle(prefetchPages);
+    // after the first page has loaded and settled: an idle callback alone fires while the page waits for the API,
+    // and compiling every page then slowed the first paint on phones (Lighthouse, 2026-11-16)
+    let timer = 0;
+    const idle = () => (typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(prefetchPages, { timeout: 5000 }) : prefetchPages());
+    const start = () => { timer = window.setTimeout(idle, 3000); };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => { window.clearTimeout(timer); window.removeEventListener("load", start); };
   }, []);
   return (
     <Providers>
