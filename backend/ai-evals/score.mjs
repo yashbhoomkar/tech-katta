@@ -8,13 +8,13 @@
 // A review is correct when all of these hold:
 // 1. it survives the verifier (shown to the learner as the model wrote it, at least in part);
 // 2. found_fault: one of its first two items, as shown, cites a fact in truth.must_lead_with (the cause the judge
-//    found, or for a passing design its tightest margin);
+//    found, or for a passing design its tightest margin) or truth.also_accept (another fact stating that cause);
 // 3. it never calls a fact the judge marked good a problem (checked on the raw answer: the verifier repairs this,
 //    but a model that does it is wrong);
 // 4. for a failing design, its first item is not praise.
 
 export function scoreReview(truth, raw, verified) {
-  const lead = new Set(truth.must_lead_with), good = new Set(truth.never_a_problem);
+  const lead = new Set([...truth.must_lead_with, ...(truth.also_accept || [])]), good = new Set(truth.never_a_problem);
   const rawItems = Array.isArray(raw?.items) ? raw.items.filter((it) => it && typeof it === 'object') : [];
   const cites = (it) => (Array.isArray(it?.facts) ? it.facts.filter((x) => typeof x === 'string') : []);
 

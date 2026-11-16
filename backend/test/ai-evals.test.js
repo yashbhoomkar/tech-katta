@@ -149,3 +149,30 @@ test('evaluate: a call refused for its rate (429) waits and is tried again; call
   assert.ok(slept.includes(61_000));
   assert.deepEqual(rows.map((r) => r.why), ['http 500', 'http 500']);
 });
+
+test('ground truth: a fact stating the same cause counts (over budget: the cost facts; overloaded: the part\'s load)', () => {
+  const { cases } = readGroundTruth();
+  const budget = cases.find((c) => c.id === 'url-shortener/everything-large');
+  assert.deepEqual(budget.also_accept.sort(), ['cost:db', 'cost:total']);
+  // the answer from the first real run, marked wrong before also_accept existed
+  const raw = { items: [item('problem', ['verdict', 'test:t01-quiet-afternoon', 'cost:total']), item('problem', ['cost:total', 'cost:db', 'cost:api'])] };
+  assert.equal(scoreReview(budget, raw, ok(raw)).found_fault, true);
+  const overloaded = cases.find((c) => c.id === 'url-shortener/no-cache-one-server');
+  assert.deepEqual(overloaded.also_accept, ['load:api']);
+  // an alternative is never a fact the judge marked good
+  for (const c of cases) for (const id of c.also_accept) assert.ok(!c.never_a_problem.includes(id), `${c.id}: ${id}`);
+});
+
+test('rescore: saved answers are marked again against the current truth, without calling a model', async () => {
+  const { rescoreRows } = await import('../ai-evals/rescore.mjs');
+  const { loadCases } = await import('../ai-evals/evaluate.mjs');
+  const c = loadCases().find((x) => x.id === 'url-shortener/everything-large');
+  const raw = { headline: 'Your design is over budget and the database drives most of the cost.', items: [{ kind: 'problem', facts: ['cost:total', 'cost:db'], text: 'The database is most of the bill.', ask: null }, { kind: 'problem', facts: ['cost:api'], text: 'The servers are the next largest cost.', ask: null }], next: { text: 'Choose a smaller database and run it again.', repair: null } };
+  const [row] = rescoreRows([{ case: c.id, outcome: 'verified', raw }], new Map([[c.id, c.truth]]), new Map([[c.id, c]]));
+  assert.equal(row.score.correct, true);
+});
+
+test('ground-truth-review.md matches the truth (else: node ai-evals/ground-truth.mjs --sheet)', async () => {
+  const { reviewSheet } = await import('../ai-evals/ground-truth.mjs');
+  assert.equal(readFileSync(new URL('../ai-evals/ground-truth-review.md', import.meta.url), 'utf8'), reviewSheet(readGroundTruth()));
+});
