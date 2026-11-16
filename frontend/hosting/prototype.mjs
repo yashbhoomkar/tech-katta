@@ -8,6 +8,7 @@
 // How to add a prototype: tech-katta-context/ui-prototypes/README.md
 import fs from "node:fs";
 import path from "node:path";
+import { allowCloudflareBeacon } from "./prototype-copies.mjs";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url)), frontend = path.dirname(here);
@@ -50,6 +51,9 @@ fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
 // the neo-brutalism design mock-up it was built from lives on at /p/neo-brutalism-mockup/.
 // Cloudflare: old prototype addresses keep working
 if (process.argv.includes("--cloudflare")) {
+  // Cloudflare's injected analytics beacon is allowed by this zone's CSP (prototype-copies.mjs)
+  const hp = path.join(dist, "_headers");
+  if (fs.existsSync(hp)) fs.writeFileSync(hp, allowCloudflareBeacon(fs.readFileSync(hp, "utf8")));
   const r = path.join(dist, "_redirects"), old = fs.existsSync(r) ? fs.readFileSync(r, "utf8") : "";
   fs.writeFileSync(r, "/next /p/next/ 301\n/next/ /p/next/ 301\n/p/revamp-2026-11-15/ /p/full-site/ 301\n/p/revamp-2026-11-15 /p/full-site/ 301\n/p/dark-modes/ /p/full-site/ 301\n/p/dark-modes /p/full-site/ 301\n/p/nb-dark/ /p/neo-brutalism/ 301\n/p/nb-dark /p/neo-brutalism/ 301\n" + old);
 }

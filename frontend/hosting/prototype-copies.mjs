@@ -18,3 +18,12 @@ export function copyProblem(html, name) {
 export function siblingPages(dirs) {
   return dirs.filter((d) => d !== "").map((d) => [`${d}/index.html`, `${d}.html`]);
 }
+
+/** prototype.katta.cc only: Cloudflare injects its Web Analytics beacon into every page of this zone, and the site's
+ *  CSP blocked it, so every page logged an error. Allow that one script and its endpoint here; tech.katta.cc (Vercel)
+ *  has no such injection and keeps its CSP unchanged. */
+export function allowCloudflareBeacon(headers) {
+  return headers
+    .replace(/script-src ([^;]*)/g, (m, v) => (v.includes("static.cloudflareinsights.com") ? m : `script-src ${v} https://static.cloudflareinsights.com`))
+    .replace(/connect-src ([^;]*)/g, (m, v) => (v.includes("cloudflareinsights.com") ? m : `connect-src ${v} https://cloudflareinsights.com`));
+}

@@ -2,7 +2,7 @@
 // must never be copied (hosting/prototype-copies.mjs, used by prototype-next.mjs).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COPIES, copyProblem, siblingPages } from "./prototype-copies.mjs";
+import { COPIES, allowCloudflareBeacon, copyProblem, siblingPages } from "./prototype-copies.mjs";
 
 const page = (base, style) => `<html lang="en"${style ? ` data-style="${style}"` : ""}><script src="${base}assets/index-1.js"></script></html>`;
 
@@ -24,4 +24,12 @@ test("an unknown copy is refused", () => {
 });
 test("every route page but the root gets a sibling .html, so a direct visit is not redirected", () => {
   assert.deepEqual(siblingPages(["", "home", "learn/concepts/caching"]), [["home/index.html", "home.html"], ["learn/concepts/caching/index.html", "learn/concepts/caching.html"]]);
+});
+test("the prototype's CSP allows Cloudflare's injected beacon, once, and nothing else changes", () => {
+  const h = "Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; connect-src 'self' https://tech-api.katta.cc";
+  const out = allowCloudflareBeacon(h);
+  assert.match(out, /script-src 'self' https:\/\/accounts.google.com\/gsi\/client https:\/\/static.cloudflareinsights.com;/);
+  assert.match(out, /connect-src 'self' https:\/\/tech-api.katta.cc https:\/\/cloudflareinsights.com$/);
+  assert.equal(allowCloudflareBeacon(out), out);
+  assert.match(out, /default-src 'self';/);
 });
