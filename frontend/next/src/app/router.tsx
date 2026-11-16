@@ -35,6 +35,8 @@ const ChallengePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.Ch
 const PracticePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.PracticePage);
 const ProblemWorkspacePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.ProblemWorkspacePage);
 const SandboxPage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.SandboxPage);
+const LegacyRedirect = page(() => import("@/pages/Legacy"), (m) => m.LegacyRedirect);
+const SharedDesignPage = page(() => import("@/pages/Legacy"), (m) => m.SharedDesignPage);
 
 /** Fetch every page's code once the first page has settled (idle), so later navigations do not wait. */
 export function prefetchPages(): void {
@@ -94,12 +96,16 @@ export const routes = [
           { path: "problems", element: gated(<ProblemsPage />) },
           { path: "problems/challenge/:id", element: gated(<ChallengePage />) },
           { path: "problems/sandbox", element: gated(<SandboxPage />) },
+          { path: "problems/shared", element: gated(<SharedDesignPage />) },
           { path: "practice", element: gated(<PracticePage />) },
           { path: "practice/:slug", element: gated(<PracticePage />) },
           { path: "problems/:slug", element: gated(<ProblemWorkspacePage />) },
           { path: "me", element: <Loading><MePage /></Loading> },
           { path: "privacy", element: gated(<PolicyPage which="privacy" />) },
           { path: "terms", element: gated(<PolicyPage which="terms" />) },
+          // tech.katta.cc's addresses (content/legacy.ts), so every old link lands on its page
+          { path: "dashboard", element: gated(<LegacyRedirect />) },
+          { path: "dashboard/*", element: gated(<LegacyRedirect />) },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

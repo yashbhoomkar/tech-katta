@@ -100,6 +100,20 @@ describe("app", () => {
     expect(screen.getByRole("link", { name: /Caching: when to add a cache/ })).toBeTruthy();
   });
 
+  it("tech.katta.cc's /dashboard addresses land on the same page, path or hash form", async () => {
+    mockApi();
+    const router = renderAt("/dashboard/concepts/caching/");
+    expect(await screen.findByRole("heading", { level: 1, name: "Caching: when to add a cache" })).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/learn/concepts/caching");
+  });
+
+  it("an old in-app hash link (/dashboard/#section/lesson) lands on the lesson", async () => {
+    mockApi();
+    const router = createMemoryRouter(routes, { initialEntries: [{ pathname: "/dashboard/", hash: "#concepts/caching" }] });
+    render(<RouterProvider router={router} />);
+    expect(await screen.findByRole("heading", { level: 1, name: "Caching: when to add a cache" })).toBeTruthy();
+  });
+
   it("an unknown top-level address shows the not-found page, which works before content has loaded", async () => {
     mockApi();
     renderAt("/no-such-page");
