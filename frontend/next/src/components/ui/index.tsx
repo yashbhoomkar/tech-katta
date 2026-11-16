@@ -1,3 +1,4 @@
+import { cx } from "@/lib/cx";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { Link, type LinkProps } from "react-router-dom";
@@ -80,7 +81,7 @@ export function ThemeSwitch({ label = "Theme" }: { label?: string }) {
 
 export function StateMessage({ title, children, action, scene }: { title: string; children?: ReactNode; action?: ReactNode; scene?: SceneKind }) {
   return (
-    <div className={s.state} role="status">
+    <div className={cx(s.state, scene && s.stateScene)} role="status">
       {scene && <StateScene kind={scene} />}
       <h2>{title}</h2>
       {children && <p>{children}</p>}

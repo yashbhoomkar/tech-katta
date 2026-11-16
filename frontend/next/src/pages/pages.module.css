@@ -257,3 +257,27 @@
 
 /* the small card figure (SectionMini) sets its own height: two-line labels on narrow cards */
 .tilePic, .hubPic { height: auto; min-height: 96px; }
+
+/* polish (2026-11-16 refinement pass) */
+/* the Continue card's section chip hugs its text instead of stretching across the card */
+.contText > :first-child { align-self: flex-start; }
+/* labels on coloured cards read in the card's own ink, in both themes */
+.hubMain :global(.mono), .tile :global(.mono) { color: var(--on-c-2); }
+/* not found: centred, the scene framed as a figure, quick links into each section */
+.lost { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 720px; min-height: calc(100vh - 40px); margin: 0 auto; padding: 8vh 24px 64px; justify-content: center; text-align: center; animation: tk-rise 360ms var(--out) both; }
+.lost h1 { font-size: clamp(32px, 5vw, 52px); }
+.lost > p:not(:global(.mono)) { max-width: 32em; font-size: 18px; }
+.lostFig { width: min(460px, 100%); padding: 22px 24px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--surface); box-shadow: var(--shadow); }
+.lostActions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.lostLinks { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.lostLinks a { display: inline-flex; gap: 8px; align-items: center; padding: 6px 12px; border-radius: var(--r-pill); background: var(--t); font-size: 14px; font-weight: 500; transition: transform var(--press) var(--out); }
+.lostLinks a:active { transform: scale(.97); }
+.lostLinks i { width: 9px; height: 9px; border-radius: 50%; background: var(--a); }
+@media (max-width: 980px) { .lost { min-height: calc(100dvh - 140px); padding-top: 4vh; } }
+:global(:root[data-style="neo-brutalism"]) .lostFig { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transform: rotate(-1deg); background-image: radial-gradient(color-mix(in srgb, var(--marigold) 45%, transparent) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+:global(:root[data-style="neo-brutalism"]) .lost :global(.mono) { display: inline-block; padding: 3px 8px; border: var(--bw) solid #1C1B1A; border-radius: 4px; background: var(--c-real); color: #1C1B1A; transform: rotate(-2deg); --rot: -2deg; animation: nb-slap 420ms var(--out) both 200ms; }
+:global(:root[data-style="neo-brutalism"]) .lostLinks { border-top: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .lostLinks a { border: var(--bw) solid var(--edge); border-radius: var(--r-sm); background: var(--c); color: #1C1B1A; font-weight: 700; box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lostLinks a { background: var(--surface); color: var(--a); border-color: var(--a); }
+:global(:root[data-style="neo-brutalism"]) .lostLinks a:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .lostLinks i { border-radius: 1px; border: 1.5px solid #1C1B1A; background: var(--marigold); }

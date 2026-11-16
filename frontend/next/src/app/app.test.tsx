@@ -100,6 +100,13 @@ describe("app", () => {
     expect(screen.getByRole("link", { name: /Caching: when to add a cache/ })).toBeTruthy();
   });
 
+  it("an unknown top-level address shows the not-found page, which works before content has loaded", async () => {
+    mockApi();
+    renderAt("/no-such-page");
+    expect(await screen.findByRole("heading", { name: "This page isn't here." })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Sections" })).toBeTruthy();
+  });
+
   it("an unknown section or path shows the not-found page", async () => {
     mockApi();
     renderAt("/learn/nothing-here");
