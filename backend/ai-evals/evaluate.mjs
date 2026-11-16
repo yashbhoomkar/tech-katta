@@ -17,18 +17,28 @@ export function loadCases({ only = null, limit = Infinity } = {}) {
 }
 
 /** Runs the cases; price = { in, out, cache } in dollars per million tokens, used when the provider reports no cost. */
-export async function evaluate({ client, config, cases, repeat = 1, price = null, concurrency = 4, onRow = () => {} }) {
+/** rpm: at most this many calls a minute (a platform's free tier limits it per model); a call refused for its rate
+ *  (HTTP 429) waits a minute and is tried again, up to 3 times, so the limit never counts against the model. */
+export async function evaluate({ client, config, cases, repeat = 1, price = null, concurrency = 4, rpm = 0, onRow = () => {}, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
   const jobs = [];
   for (const c of cases) for (let k = 0; k < repeat; k += 1) jobs.push([c, k]);
   const rows = new Array(jobs.length);
-  let next = 0;
+  let next = 0, slot = 0;
+  const gap = rpm > 0 ? Math.ceil(60_000 / rpm) : 0;
+  // the next free start time, shared by the workers: calls start at least `gap` apart
+  const pace = async () => { if (!gap) return; const now = Date.now(), at = Math.max(now, slot); slot = at + gap; if (at > now) await sleep(at - now); };
   async function worker() {
     while (next < jobs.length) {
       const i = next++, [c, k] = jobs[i];
       let res;
-      try {
-        res = await client.call({ system: SYSTEM, problemBlock: problemBlock(c.problem), requestBlock: reviewRequest(c.pack), schema: reviewSchema(c.pack), maxOutputTokens: config.maxOutputTokens, mock: c.pack });
-      } catch (e) { res = { ok: false, why: String(e?.message || e), usage: null, ms: 0 }; }
+      for (let attempt = 0; ; attempt += 1) {
+        await pace();
+        try {
+          res = await client.call({ system: SYSTEM, problemBlock: problemBlock(c.problem), requestBlock: reviewRequest(c.pack), schema: reviewSchema(c.pack), maxOutputTokens: config.maxOutputTokens, mock: c.pack });
+        } catch (e) { res = { ok: false, why: String(e?.message || e), usage: null, ms: 0 }; }
+        if (res.ok || res.why !== 'http 429' || attempt >= 3) break;
+        await sleep(61_000);
+      }
       const v = res.ok ? verifyReview(res.json, c.pack, { names: namesOf(c.pack, c.problem.requests.map((r) => r.name)) }) : null;
       const outcome = !res.ok ? 'error' : !v.ok ? 'fallback' : v.dropped.length ? 'partial' : 'verified';
       const score = scoreReview(c.truth, res.ok ? res.json : null, v);

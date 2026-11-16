@@ -137,3 +137,15 @@ for (const [platform, s] of Object.entries(STAND_INS)) {
     }
   });
 }
+
+test('evaluate: a call refused for its rate (429) waits and is tried again; calls are paced to the rpm given', async () => {
+  const { evaluate, loadCases } = await import('../ai-evals/evaluate.mjs');
+  const cases = loadCases({ limit: 2 });
+  let calls = 0;
+  const slept = [];
+  const client = { call: async () => { calls += 1; return calls === 1 ? { ok: false, why: 'http 429', usage: null, ms: 1 } : { ok: false, why: 'http 500', usage: null, ms: 1 }; } };
+  const { rows } = await evaluate({ client, config: { maxOutputTokens: 100 }, cases, rpm: 60_000, concurrency: 1, sleep: async (ms) => { slept.push(ms); } });
+  assert.equal(calls, 3); // the first case: refused, then tried again; the second case once
+  assert.ok(slept.includes(61_000));
+  assert.deepEqual(rows.map((r) => r.why), ['http 500', 'http 500']);
+});

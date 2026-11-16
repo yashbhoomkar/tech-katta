@@ -8,7 +8,8 @@
 //
 // Options: --platform vercel|openrouter · --models a,b (that platform's ids; else candidates.json) · --repeat N
 // (default 3; 5 for the final decision) · --limit N cases · --problem <slug> · --out <name> · --budget <dollars>
-// (skips a model whose estimate would pass it; default 5). A model id may end in @none, @minimal, @low or @medium:
+// (skips a model whose estimate would pass it; default 5) · --max-out <tokens> (answer + reasoning; default 4000) ·
+// --rpm N (calls a minute per model; default 5 on Vercel, its free-tier limit; 0 for none). A model id may end in @none, @minimal, @low or @medium:
 // the reasoning effort.
 //
 // The platforms (checked 2026-11-16). Each gives one account, one balance and one key for every provider's models,
@@ -53,6 +54,11 @@ const estimateOnly = args.includes('--estimate');
 const platformName = opt('platform', 'vercel'), P = PLATFORMS[platformName];
 if (!P) { console.error(`--platform must be one of: ${Object.keys(PLATFORMS).join(', ')}`); process.exit(1); }
 const repeat = Number(opt('repeat', 3)), limit = Number(opt('limit', Infinity)), only = opt('problem', null), budget = Number(opt('budget', 5));
+// Room for the answer and the model's reasoning, which counts as output: a trial on 2026-11-16 used about 1,000
+// reasoning tokens at effort low, so production's default of 1,500 cut answers off (spec: raise AI_MAX_OUTPUT_TOKENS)
+const maxOut = String(opt('max-out', 4000));
+// Vercel's free tier allows 5 calls a minute per model (seen 2026-11-16); paid credit lifts it. 0 = no pacing.
+const rpm = Number(opt('rpm', platformName === 'vercel' ? 5 : 0));
 // candidates.json names each model per platform, with its reasoning effort
 const candidates = JSON.parse(readFileSync(new URL('./candidates.json', import.meta.url), 'utf8')).models;
 const models = (opt('models', null)?.split(',') ?? candidates.filter((c) => c[platformName]).map((c) => `${c[platformName]}${c.effort ? `@${c.effort}` : ''}`)).map((s) => s.trim()).filter(Boolean);
@@ -74,15 +80,17 @@ if (missing.length) { console.error(`Not on ${P.name}: ${missing.map((m) => m.id
 
 // Tokens of one call, measured from the real prompts (about 3.5 characters a token) and spec 29 §12.1's output size
 const promptChars = cases.reduce((t, c) => t + SYSTEM.length + problemBlock(c.problem).length + reviewRequest(c.pack).length, 0) / cases.length;
-const perCall = { input: Math.round(promptChars / 3.5), output: 450 };
+// output: about 450 tokens of answer, plus about 1,000 of reasoning for a model that reasons (measured 2026-11-16)
+const perCall = { input: Math.round(promptChars / 3.5), output: 450, reasoning: 1000 };
 const priceOf = (id) => P.price(cat.get(id));
 // uncached input (a pessimistic estimate); reasoning tokens would add to the output
-const estimate = (id) => (cases.length * repeat * (perCall.input * priceOf(id).in + perCall.output * priceOf(id).out)) / 1e6;
+const reasons = (spec) => { const { effort } = parse(spec); return effort && effort !== 'none'; };
+const estimateOf = (m) => (cases.length * repeat * (perCall.input * priceOf(m.id).in + (perCall.output + (reasons(m.spec) ? perCall.reasoning : 0)) * priceOf(m.id).out)) / 1e6;
 
-console.log(`${P.name} · ${cases.length} cases × ${repeat} runs = ${cases.length * repeat} calls a model · about ${perCall.input} tokens in, ${perCall.output} out a call`);
+console.log(`${P.name} · ${cases.length} cases × ${repeat} runs = ${cases.length * repeat} calls a model · about ${perCall.input} tokens in, ${perCall.output} out a call (+${perCall.reasoning} reasoning when an effort is set)`);
 let total = 0;
 for (const m of models.map(parse)) {
-  const e = estimate(m.id), p = priceOf(m.id);
+  const e = estimateOf(m), p = priceOf(m.id);
   total += e;
   console.log(`  ${m.spec.padEnd(40)} $${p.in.toFixed(3)} in / $${p.out.toFixed(3)} out per million · estimate $${e.toFixed(3)}${P.schema(cat.get(m.id)) ? '' : ' · no strict schema: JSON mode'}`);
 }
@@ -93,21 +101,27 @@ if (!key) { console.error(`Set ${P.keyVar} (one key from ${P.name} covers every 
 const stamp = opt('out', new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-'));
 mkdirSync(new URL('./results/', import.meta.url), { recursive: true });
 const results = [];
-let spent = 0;
-for (const m of models.map(parse)) {
-  if (spent + estimate(m.id) > budget) { console.log(`\nSkipped ${m.spec}: the budget of $${budget} would be passed (use --budget).`); continue; }
+// Each model has its own rate limit, so all models run at the same time; the budget is checked before any starts.
+let planned = 0;
+const chosen = models.map(parse).filter((m) => {
+  if (planned + estimateOf(m) > budget) { console.log(`Skipped ${m.spec}: the budget of $${budget} would be passed (use --budget).`); return false; }
+  planned += estimateOf(m);
+  return true;
+});
+if (rpm) console.log(`Paced at ${rpm} calls a minute per model: about ${Math.ceil((cases.length * repeat) / rpm)} minutes.`);
+await Promise.all(chosen.map(async (m) => {
   const config = aiConfig({
-    AI_PROVIDER: 'openai', AI_BASE_URL: P.base, AI_API_KEY: key, AI_MODEL: m.id, AI_JSON_MODE: P.schema(cat.get(m.id)) ? 'schema' : 'object', AI_TIMEOUT_MS: '60000',
+    AI_PROVIDER: 'openai', AI_BASE_URL: P.base, AI_API_KEY: key, AI_MODEL: m.id, AI_JSON_MODE: P.schema(cat.get(m.id)) ? 'schema' : 'object', AI_TIMEOUT_MS: '60000', AI_MAX_OUTPUT_TOKENS: maxOut,
     AI_EXTRA_BODY: JSON.stringify({ ...P.body(), ...(reasoning(m.effort) ? { reasoning: reasoning(m.effort) } : {}) }),
   });
-  process.stdout.write(`\n${m.spec}: `);
-  const { rows, summary } = await evaluate({ client: createClient(config), config, cases, repeat, price: priceOf(m.id), onRow: (r) => process.stdout.write(r.score.correct ? '.' : r.outcome === 'error' ? 'E' : r.outcome === 'fallback' ? 'F' : 'x') });
-  spent += summary.cost_usd ?? estimate(m.id);
+  let done = 0;
+  const { rows, summary } = await evaluate({ client: createClient(config), config, cases, repeat, rpm, concurrency: rpm ? 2 : 4, price: priceOf(m.id), onRow: () => { done += 1; if (done % 25 === 0) console.log(`  ${m.spec}: ${done} of ${cases.length * repeat}`); } });
   const failed = gateFailures(summary);
   results.push({ model: m.spec, summary, passes: !failed.length, failed });
   writeFileSync(new URL(`./results/bakeoff-${stamp}-${m.spec.replace(/[^a-z0-9.-]+/gi, '_')}.json`, import.meta.url), JSON.stringify({ model: m.spec, summary, rows }, null, 1));
-  console.log(`\n  correct ${summary.correct_pct} % · fault found ${summary.found_fault_pct} % · fallback ${summary.fallback_pct} % · errors ${summary.error_pct} % · p95 ${summary.ms_p95} ms · $${summary.cost_per_correct_review_usd ?? '?'} per correct review${failed.length ? ` · fails: ${failed.join(', ')}` : ' · passes'}`);
-}
+  console.log(`${m.spec}: correct ${summary.correct_pct} % · fault found ${summary.found_fault_pct} % · fallback ${summary.fallback_pct} % · errors ${summary.error_pct} % · p95 ${summary.ms_p95} ms · $${summary.cost_per_correct_review_usd ?? '?'} per correct review${failed.length ? ` · fails: ${failed.join(', ')}` : ' · passes'}`);
+}));
+const spent = results.reduce((t, r) => t + (r.summary.cost_usd ?? 0), 0);
 
 // Best first: models that pass every gate, cheapest correct review first; then the rest, most correct first.
 results.sort((a, b) => (b.passes - a.passes) || (a.passes ? (a.summary.cost_per_correct_review_usd ?? Infinity) - (b.summary.cost_per_correct_review_usd ?? Infinity) : b.summary.correct_pct - a.summary.correct_pct));

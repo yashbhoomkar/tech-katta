@@ -40,8 +40,23 @@ AI_GATEWAY_API_KEY=… node ai-evals/bakeoff.mjs --models meta/muse-ember@low,za
 
 Options: `--platform vercel|openrouter` · `--models a,b` (that platform's ids) · `--repeat N` (3; use 5 for the final
 decision) · `--limit N` · `--problem <slug>` · `--out <name>` · `--budget <dollars>` (default 5: a model whose estimate
-would pass it is skipped). A model id may end in `@none`, `@minimal`, `@low` or `@medium`, the reasoning effort.
+would pass it is skipped) · `--max-out <tokens>` (answer plus reasoning, default 4000) · `--rpm N` (calls a minute per
+model; default 5 on Vercel). A model id may end in `@none`, `@minimal`, `@low` or `@medium`, the reasoning effort.
 `candidates.json` gives each model's id on both platforms.
+
+Learned on the first real run (2026-11-16):
+
+- **Vercel's free credit needs a card on the team** (verified, not charged), else every request answers
+  `customer_verification_required`.
+- **The free tier allows 5 calls a minute per model.** The bake-off paces itself to that, runs every model at once
+  (each has its own limit) and waits out a 429. One round of 75 designs takes about 15 minutes for all ten models.
+- **Reasoning counts as output.** At effort `low`, Muse Ember thinks for about 1,000 tokens before answering, so the
+  production default `AI_MAX_OUTPUT_TOKENS=1500` cut 3 answers in 5 short. The bake-off allows 4,000; raise production's
+  setting for whichever model wins.
+- **One design per call, on purpose.** Several designs in one request would test a different job than production's,
+  and the price is per token, not per call, so it saves nothing.
+- In a cloud session whose key is injected by a proxy, run Node with `NODE_USE_ENV_PROXY=1` (Node's `fetch` ignores
+  `HTTPS_PROXY` otherwise).
 
 The bake-off sends only our own sample designs, never learners' text. In production, ask the platform for providers
 that neither keep nor train on prompts: on Vercel `providerOptions.gateway.zeroDataRetention: true` (needs a paid
