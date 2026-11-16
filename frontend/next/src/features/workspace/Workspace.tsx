@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy, useEffect, type ReactNode } from "react";
+import { setShareBase } from "@legacy/lab/share.js";
 import { useNavigate } from "react-router-dom";
 import { Block } from "@legacy/dashboard/blocks.jsx";
 import { Article, withFigs } from "@legacy/dashboard/article.jsx";
@@ -40,7 +41,11 @@ function useHashRoutes() {
   }, [navigate]);
 }
 
-function Frame({ children }: { children: ReactNode }) {
+// share links made here open here: /problems/shared#problems/shared/<data> (pages/Legacy.tsx); the current app's
+// default form still works through the /dashboard route
+setShareBase(`${import.meta.env.BASE_URL}problems/shared#problems/shared/`);
+
+export function Frame({ children }: { children: ReactNode }) {
   const theme = useDocTheme();
   useHashRoutes();
   return (

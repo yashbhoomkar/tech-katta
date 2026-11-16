@@ -192,3 +192,16 @@ declare module "@legacy/dashboard/icons.jsx" {
   /** line icons and the section marks (spec 24 G4): concepts, components, interview-questions, quick-notes, real-systems, problems */
   export const Icon: ComponentType<{ name: string }>;
 }
+declare module "@legacy/routes.js" {
+  /** Old Lab addresses ("lab", "lab/<id>", "problems/challenge/<problem>") as today's route keys. */
+  export function fromLab(key: string, problems?: string[]): string;
+}
+declare module "@legacy/lab/share.js" {
+  /** Where share links point: the base before the encoded design (the new frontend sets its own). */
+  export function setShareBase(base: string): void;
+}
+declare module "@legacy/lab/SharedDesign.jsx" {
+  import type { ComponentType } from "react";
+  const SharedDesign: ComponentType<{ data: string; problemTitle?: (slug: string) => string | undefined }>;
+  export default SharedDesign;
+}
