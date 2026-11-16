@@ -303,3 +303,24 @@ test('interviewer-view test script, end to end against a stand-in for Vercel: ma
     for (const f of readdirSync(dir).filter((f) => f.includes(out))) rmSync(new URL(f, dir));
   }
 });
+
+test('interviewer-view script: finds every free reasoning model (catalog + one tiny call each)', async () => {
+  const { discoverFreeReasoning } = await import('../ai-evals/observe-bakeoff.mjs');
+  const catalog = { data: [
+    { id: 'a/free-thinker', type: 'language', tags: ['reasoning', 'structured-output'], reasoning_options: [{ type: 'effort', values: ['minimal', 'low', 'high'] }] },
+    { id: 'b/paid-thinker', type: 'language', tags: ['reasoning', 'structured-output'] },
+    { id: 'c/no-reasoning', type: 'language', tags: ['structured-output'] },
+    { id: 'd/free-thinker-batch', type: 'language', tags: ['reasoning', 'structured-output'] },
+    { id: 'e/free-no-effort', type: 'language', tags: ['reasoning', 'structured-output'] },
+  ] };
+  const tried = [];
+  const fake = async (url, init) => {
+    if (url.endsWith('/models')) return { json: async () => catalog };
+    const model = JSON.parse(init.body).model;
+    tried.push(model);
+    return { json: async () => (model.startsWith('b/') ? { error: { message: 'Free tier users do not have access to this model.' } } : { choices: [{ message: { content: 'ok' } }] }) };
+  };
+  const specs = await discoverFreeReasoning({ base: 'http://x' }, 'k', { fetch: fake });
+  assert.deepEqual(tried, ['a/free-thinker', 'b/paid-thinker', 'e/free-no-effort']);
+  assert.deepEqual(specs, ['a/free-thinker@low', 'e/free-no-effort']);
+});

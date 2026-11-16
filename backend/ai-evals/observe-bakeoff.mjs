@@ -11,6 +11,8 @@
 // Options:
 //   --models a,b      platform ids, each optionally @none|@minimal|@low|@medium (else observe-candidates.json)
 //   --tier free|paid|all   which candidates to take from observe-candidates.json (default free)
+//   --tier free-reasoning  instead: every model the free credit serves that can reason, found at run time (one tiny
+//                          call each); --skip a,b leaves out models already tested
 //   --repeat N        runs per design (default 3)       --limit N   only the first N designs (a cheap trial)
 //   --out name        results/observe-<name>-*.jsonl, one line per answer, written as it arrives
 //   --resume          skip answers already in the --out files (a stopped run loses nothing and pays nothing twice)
@@ -43,6 +45,27 @@ export function loadDesigns() {
     const pack = redact(buildEvidence(d.source, problem));
     return { ...d, problem, pack, request: observeRequest(problem, d.source, pack) };
   });
+}
+
+/** Every model the platform serves on the free credit that can reason: from the public catalog (reasoning and strict
+ *  JSON, language models, no batch/fast/image variants), each tried with one tiny call (a fraction of a cent in all).
+ *  The effort is the lowest the catalog lists for the model ("low" preferred), or none when it lists none.
+ *  Returns specs such as "meta/muse-ember@low". Vercel only (its catalog tags reasoning and free access is per team). */
+export async function discoverFreeReasoning(P, key, { fetch: f = fetch } = {}) {
+  const list = (await (await f(`${P.base}/models`)).json()).data;
+  const cands = list.filter((m) => m.type === 'language' && (m.tags || []).includes('reasoning') && (m.tags || []).includes('structured-output')
+    && !/-batch|-fast|-ultrafast|image/.test(m.id));
+  const specs = [];
+  for (const m of cands) {
+    const r = await f(`${P.base}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: m.id, messages: [{ role: 'user', content: 'Say ok' }], max_tokens: 16 }) }).catch(() => null);
+    const body = r ? await r.json().catch(() => null) : null;
+    if (!body?.choices) continue; // not on the free credit (403), not found, or failing
+    const efforts = (m.reasoning_options || []).find((o) => o.type === 'effort')?.values || [];
+    const effort = ['low', 'minimal', 'medium'].find((e) => efforts.includes(e));
+    specs.push(`${m.id}${effort ? `@${effort}` : ''}`);
+  }
+  return specs;
 }
 
 /** Marks one answer of one design. */
@@ -108,7 +131,16 @@ async function main() {
   const repeat = Number(opt('repeat', 3)), limit = Number(opt('limit', Infinity)), budget = Number(opt('budget', 2));
   const rpm = Number(opt('rpm', platformName === 'vercel' ? 5 : 0)), maxOut = String(opt('max-out', 4000)), tier = opt('tier', 'free');
   const listed = JSON.parse(readFileSync(new URL('./observe-candidates.json', import.meta.url), 'utf8')).models;
-  const specs = (opt('models', null)?.split(',') ?? listed.filter((m) => tier === 'all' || m.tier === tier).map((m) => `${m.id}${m.effort ? `@${m.effort}` : ''}`)).map((s) => s.trim()).filter(Boolean);
+  let specs = (opt('models', null)?.split(',') ?? listed.filter((m) => tier === 'all' || m.tier === tier).map((m) => `${m.id}${m.effort ? `@${m.effort}` : ''}`)).map((s) => s.trim()).filter(Boolean);
+  if (tier === 'free-reasoning' && !opt('models', null)) {
+    const key = process.env[P.keyVar] || '';
+    if (!key) throw new Error(`--tier free-reasoning tries each model once: set ${P.keyVar}.`);
+    specs = await discoverFreeReasoning(P, key);
+    console.log(`Free reasoning models found: ${specs.length}`);
+    // models already tested in another run can be left out with --skip a,b (ids, without @effort)
+    const skip = new Set((opt('skip', '') || '').split(',').filter(Boolean));
+    specs = specs.filter((x) => !skip.has(x.split('@')[0]));
+  }
   const designs = loadDesigns().slice(0, limit);
   const stamp = opt('out', new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-'));
   for (const d of designs) if (d.pack.verdict.word !== 'Accepted') console.warn(`warning: ${d.id} does not pass the judge (${d.pack.verdict.word}): it tests nothing the judge misses`);
