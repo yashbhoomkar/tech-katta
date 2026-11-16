@@ -69,12 +69,15 @@ export function pagesOf(site, articles) {
   const listOf = (id) => {
     const inSec = ok.filter((a) => a.section === (id === "problems" ? "interview-questions" : id));
     const groups = site.dashboard?.groups?.[id === "problems" ? "interview-questions" : id] || [];
-    const blocks = groups.length ? groups.map(([g, name, desc]) => [name, desc, inSec.filter((a) => a.group === g)]) : [[null, null, inSec]];
+    // The Problems hub lists the same questions as Interview Questions; leave out the "Start here" guides there so the two
+    // pages don't read as duplicates to search engines.
+    const used = id === "problems" ? groups.filter(([g]) => g !== "start") : groups;
+    const blocks = used.length ? used.map(([g, name, desc]) => [name, desc, inSec.filter((a) => a.group === g)]) : [[null, null, inSec]];
     return blocks.filter((b) => b[2].length).map(([name, desc, list]) => `${name ? `<h2>${esc(name)}</h2>` : ""}${desc ? `<p>${esc(desc)}</p>` : ""}<ul>${list.map((a) => `<li>${link(a)}${a.dek ? ` — ${esc(a.dek)}` : ""}</li>`).join("")}</ul>`).join("");
   };
 
   const pages = sections.map(([id, label, card]) => {
-    const description = cards[card]?.desc || site.dashboard?.heads?.[id]?.desc || `${label} on Tech Katta, the system design library.`;
+    const description = cards[card]?.desc || site.dashboard?.heads?.[id]?.desc || (id === "problems" && site.problems?.desc) || `${label} on Tech Katta, the system design library.`;
     return {
       key: id,
       title: `${SECTION_TITLES[id] || label} | Tech Katta`,
