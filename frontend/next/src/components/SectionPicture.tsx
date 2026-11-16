@@ -1,20 +1,9 @@
-import { useContent } from "@/content/ContentProvider";
-import { FigureThumb } from "@/features/reader/FigureThumb";
-import { CardPicture } from "./CardPicture";
 import { MarkSticker } from "./MarkSticker";
-import { look } from "@/lib/look";
 
-// The picture on a section's card, as on tech.katta.cc: the library card's diagram where the API names one
-// (site.topics cards: Concepts, Components, Interview Questions), otherwise the section's first lesson figure.
-const CARD_ID: Record<string, string> = { concepts: "concepts", components: "components", "interview-questions": "problems" };
-
+// The picture on a section's card (Home Explore, Learn, the landing cards). It used to be the library card's mini
+// diagram or the section's first lesson figure, shrunk to fit; at card size neither could be read (owner,
+// 2026-11-16), so a card shows its section's mark as a sticker in the card's colour. Figures are drawn only where
+// they can be read: lessons, full screen, the topic sheet and the landing figure.
 export function SectionPicture({ sectionId, className }: { sectionId: string; className?: string | undefined }) {
-  const { site, articles } = useContent();
-  // neo-brutalism: the section's mark as a sticker, never a shrunken figure
-  if (look() === "neo-brutalism") return <MarkSticker section={sectionId} className={className} />;
-  const visual = site.topics.cards.find((c) => c.id === CARD_ID[sectionId])?.visual;
-  if (visual) return <CardPicture visual={visual} className={className} />;
-  const own = sectionId === "problems" ? articles.filter((a) => a.tests !== undefined) : articles.filter((a) => a.section === sectionId);
-  const fig = own.find((a) => a.fig)?.fig;
-  return fig ? <FigureThumb id={fig} className={className} /> : null;
+  return <MarkSticker section={sectionId} className={className} />;
 }

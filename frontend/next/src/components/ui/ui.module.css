@@ -72,16 +72,23 @@
 :global(:root[data-style="neo-brutalism"]) .skeleton { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }
 :global(:root[data-style="neo-brutalism"]) .themeSwitch button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
 
-/* the neo-brutalism card picture (MarkSticker): a white sticker with a halftone in the section colour, the section's
-   mark drawn large in ink, its request dot in marigold */
-.sticker { position: relative; display: grid; place-items: center; align-content: center; gap: 8px; overflow: hidden; min-height: 96px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: var(--r-md);
-  background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 70%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }
-.stickerMark { display: grid; place-items: center; width: 64px; height: 64px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: 8px; background: var(--c, var(--marigold)); box-shadow: 3px 3px 0 var(--edge, var(--ink)); transform: rotate(-3deg); }
-.stickerMark svg { width: 44px; height: 44px; fill: none; stroke: #1C1B1A; stroke-width: 1.7; stroke-linecap: square; stroke-linejoin: miter; }
-.stickerMark :global(.ico-dot) { fill: var(--marigold); stroke: #1C1B1A; stroke-width: 1; }
-.stickerLabel { padding: 2px 7px; border: var(--bw, 2px) solid var(--edge, var(--ink)); border-radius: 4px; background: var(--surface); color: var(--ink); font: 700 10.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+/* the card picture (MarkSticker): a figure shrunk onto a card cannot be read, so a card shows its section's mark,
+   large, on a tile in the card's colour. Default look: a soft white pane, a rounded tile with a gentle shadow, a dot
+   grid in the section colour. Neo-brutalism: outlined, a hard shadow, tilted, a halftone (below). */
+.sticker { position: relative; display: grid; place-items: center; align-content: center; gap: 8px; overflow: hidden; min-height: 96px; border-radius: 14px;
+  background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 55%, transparent) 1.2px, transparent 1.7px) 0 0 / 12px 12px, var(--preview); color: var(--on-preview); }
+.stickerMark { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: var(--c, var(--marigold)); box-shadow: 0 8px 18px -8px rgb(0 0 0 / .35), inset 0 0 0 1px rgb(0 0 0 / .06); }
+.stickerMark svg { width: 40px; height: 40px; fill: none; stroke: #17161A; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.stickerMark :global(.ico-dot) { fill: var(--marigold); stroke: #17161A; stroke-width: .8; }
+.stickerLabel { padding: 3px 9px; border-radius: 999px; background: var(--sunken); color: var(--ink); font: 600 10.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+:global(:root[data-theme="dark"]) .sticker { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 30%, transparent) 1.2px, transparent 1.7px) 0 0 / 12px 12px, var(--preview); }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .stickerMark { transition: transform 160ms var(--out); }
-  :global(a:hover) .stickerMark { transform: rotate(3deg) scale(1.06); }
+  .stickerMark { transition: transform 260ms var(--spring); }
+  :global(a:hover) .stickerMark { transform: translateY(-3px) scale(1.05); }
 }
-:global(:root[data-theme="dark"]) .sticker { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 28%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .sticker { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 70%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .sticker { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 28%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px, var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .stickerMark { border: var(--bw) solid var(--edge); border-radius: 8px; box-shadow: 3px 3px 0 var(--edge); transform: rotate(-3deg); }
+:global(:root[data-style="neo-brutalism"]) .stickerMark svg { width: 44px; height: 44px; stroke: #1C1B1A; stroke-width: 1.7; stroke-linecap: square; stroke-linejoin: miter; }
+:global(:root[data-style="neo-brutalism"]) .stickerLabel { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); font-weight: 700; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) { :global(:root[data-style="neo-brutalism"]) :global(a:hover) .stickerMark { transform: rotate(3deg) scale(1.06); } }
