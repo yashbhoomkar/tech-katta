@@ -84,7 +84,7 @@
   .fresh { animation: markIn 450ms var(--out) 350ms backwards; }
 }
 
-/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css) ---------- */
 :global(:root[data-style="neo-brutalism"]) .head { border: var(--bw) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh); background: var(--c); color: #1C1B1A; }
 :global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(32px, 4.4vw, 52px); }
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .head { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }

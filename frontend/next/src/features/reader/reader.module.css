@@ -243,7 +243,7 @@
 /* spec 24 §4.3: long lessons lay out the part below the first screens only as it nears (less work on first paint) */
 .prose > .blockWrap:nth-child(n+14) > :not(h2, h3) { content-visibility: auto; contain-intrinsic-size: auto 240px; }
 
-/* ---------- neo-brutalism (styles/themes/neo-brutalism.css): a calm reader. Outlines and keys, no loud blocks in
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css): a calm reader. Outlines and keys, no loud blocks in
    the text, because long reading tires under brutalism (the owner's open question; calm is the prototype's default) ---------- */
 :global(:root[data-style="neo-brutalism"]) .head { border-bottom: var(--bw) solid var(--rule); }
 :global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(32px, 4.6vw, 52px); }

@@ -185,7 +185,7 @@
   .tile:hover .tilePic svg, .hubCard:hover .hubPic svg { transform: scale(1.03); }
 }
 
-/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ----------
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css) ----------
    light: flat section blocks, black outline, hard shadow; dark (option D): dark cards with a 3 px outline in the
    section colour, a solid shadow in a darker shade of it, coloured titles and bars */
 :global(:root[data-style="neo-brutalism"]) :is(.tile, .hubCard, .sechead) { border: var(--bw) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh); color: #1C1B1A; }

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, type ComponentType, type ReactNode } from "react";
 import { createBrowserRouter, Outlet, ScrollRestoration } from "react-router-dom";
 import { NotFoundPage } from "@/pages/NotFound";
+import { RouteError } from "./RouteError";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageMetaProvider } from "@/components/layout/PageMeta";
 import { ContentGate } from "@/content/ContentGate";
@@ -84,10 +85,14 @@ const gated = (el: ReactNode) => <ContentGate><Loading>{el}</Loading></ContentGa
 export const routes = [
   {
     element: <Root />,
+    // any error a page throws while rendering shows a friendly page instead of a blank screen (RouteError)
+    errorElement: <RouteError />,
     children: [
       { path: "/", element: <Landing /> },
       {
         element: <AppShell />,
+        // inside the shell: the sidebar and tabs stay, so the reader can move on
+        errorElement: <RouteError />,
         children: [
           { path: "home", element: gated(<HomePage />) },
           { path: "learn", element: gated(<LearnPage />) },

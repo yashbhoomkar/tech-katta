@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "@/lib/api/client";
 import { useResource } from "@/lib/resource";
-import { markComplete, recordReading, useProgress } from "@/lib/progress";
+import { markComplete, useProgress } from "@/lib/progress";
 import { useContent } from "@/content/ContentProvider";
 import { sectionView } from "@/content/model";
 import { isSectionId, paths, sectionMeta } from "@/content/sections";
@@ -21,13 +21,16 @@ import { topicsOf } from "@legacy/dashboard/topics.jsx";
 import { ListenBar, Topics } from "@/features/reader/LegacyLesson";
 import { useLegacySite } from "@/features/legacy/site";
 import type { ArticleResponse } from "@/lib/api/types";
-
-const EMPTY = { slug: "", section: "", body: [], dek: "", title: "" } as unknown as ArticleResponse;
 import { previewCut } from "@legacy/preview.js";
 import { useGate } from "@/content/gate";
 import { PreviewLock } from "@/components/Locks";
 import s from "@/features/reader/reader.module.css";
 import { NotFoundPage } from "./NotFound";
+import { useReadingProgress, ProgressLine } from "./reader/progress";
+import { Toc, PhoneToc } from "./reader/toc";
+import { Burst } from "./reader/Burst";
+
+const EMPTY = { slug: "", section: "", body: [], dek: "", title: "" } as unknown as ArticleResponse;
 
 // The lesson reader: /learn/<section>/<slug>. The list data (title, dek, group) is already loaded with the
 // app; the body comes from /v1/articles/<slug>, so the header shows at once and the body follows.
@@ -226,144 +229,3 @@ export function ReaderPage() {
   );
 }
 
-/** Ten pieces in the section colours fly out from the button. */
-function Burst() {
-  const colours = ["var(--a-concepts)", "var(--a-components)", "var(--a-interview)", "var(--a-problems)", "var(--marigold)"];
-  return (
-    <span className={s.burstHost} aria-hidden="true">
-      {Array.from({ length: 10 }, (_, i) => {
-        const a = (i / 10) * Math.PI * 2;
-        const d = 46 + (i % 3) * 14;
-        return <i key={i} className={s.burst} style={{ background: colours[i % colours.length], ["--x" as string]: `${Math.cos(a) * d}px`, ["--y" as string]: `${Math.sin(a) * d}px`, ["--rot" as string]: `${(i % 2 ? 1 : -1) * 120}deg` }} />;
-      })}
-    </span>
-  );
-}
-
-/** Saves how far down the lesson the reader has got (at most every second), so Home can offer "Continue". */
-function useReadingProgress(slug: string, ready: boolean) {
-  useEffect(() => {
-    if (!ready) return;
-    let last = 0;
-    let timer = 0;
-    const save = () => {
-      timer = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const read = max > 0 ? window.scrollY / max : 1;
-      if (read > last + 0.02 || read >= 0.99) {
-        last = read;
-        recordReading(slug, read);
-      }
-    };
-    const onScroll = () => {
-      if (!timer) timer = window.setTimeout(save, 1000);
-    };
-    recordReading(slug, 0);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (timer) window.clearTimeout(timer);
-    };
-  }, [slug, ready]);
-}
-
-function ProgressLine() {
-  const bar = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let frame = 0;
-    const draw = () => {
-      frame = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      bar.current?.style.setProperty("--p", String(max > 0 ? Math.min(1, window.scrollY / max) : 0));
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(draw);
-    };
-    draw();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, []);
-  return <div ref={bar} className={s.progress} aria-hidden="true" />;
-}
-
-/** The h2 nearest above the reading line (a third down the screen). */
-function useActiveHeading(ids: string[]): string | null {
-  const [active, setActive] = useState<string | null>(null);
-  useEffect(() => {
-    if (!ids.length) return;
-    let frame = 0;
-    const pick = () => {
-      frame = 0;
-      const line = window.innerHeight / 3;
-      let cur: string | null = null;
-      for (const id of ids) {
-        const el = document.getElementById(id);
-        if (el && el.getBoundingClientRect().top <= line) cur = id;
-      }
-      setActive(cur ?? ids[0] ?? null);
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(pick);
-    };
-    pick();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, [ids]);
-  return active;
-}
-
-function jump(id: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
-  history.replaceState(history.state, "", `#${id}`);
-}
-
-function Toc({ toc }: { toc: { id: string; text: string }[] }) {
-  const ids = useMemo(() => toc.map((t) => t.id), [toc]);
-  const active = useActiveHeading(ids);
-  // the marker beside the current heading slides to the next one instead of jumping
-  const list = useRef<HTMLUListElement>(null);
-  const [mark, setMark] = useState<{ y: number; h: number } | null>(null);
-  useLayoutEffect(() => {
-    const a = list.current?.querySelector<HTMLElement>("a[aria-current]");
-    setMark(a ? { y: a.offsetTop, h: a.offsetHeight } : null);
-  }, [active]);
-  return (
-    <nav className={s.toc} aria-label="On this page" data-tour="toc">
-      <p className="mono">On this page</p>
-      <ul ref={list}>
-        {mark && <i className={s.tocMark} style={{ transform: `translateY(${mark.y}px)`, height: mark.h }} aria-hidden="true" />}
-        {toc.map((t) => (
-          <li key={t.id}>
-            <a href={`#${t.id}`} aria-current={t.id === active ? "location" : undefined} onClick={(e) => { e.preventDefault(); jump(t.id); }}>{t.text}</a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-function PhoneToc({ toc }: { toc: { id: string; text: string }[] }) {
-  return (
-    <details className={s.phoneToc}>
-      <summary><Icon name="toc" size={18} /> On this page <Icon name="down" size={16} /></summary>
-      <ul>
-        {toc.map((t) => (
-          <li key={t.id}>
-            <a href={`#${t.id}`} onClick={(e) => { e.preventDefault(); (e.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open"); jump(t.id); }}>{t.text}</a>
-          </li>
-        ))}
-      </ul>
-    </details>
-  );
-}

@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from "vite";
 // The current app's figure manifest plugin: which module draws which figure ("virtual:fig-manifest").
 import figManifest from "../figs-manifest.js";
 // the looks (VITE_STYLE): scripts/look.mjs
-import { checkLook, lookHtml } from "./scripts/look.mjs";
+import { checkLook, lookHtml, onlyLook } from "./scripts/look.mjs";
 // preconnect and preload for the content API: scripts/hints.mjs
 import { apiHints } from "./scripts/hints.mjs";
 
@@ -15,7 +15,7 @@ const legacy = fileURLToPath(new URL("../src", import.meta.url));
 // e.g. BASE_PATH=/ once it replaces the old app).
 const base = process.env.BASE_PATH ?? "/next/";
 // The look: unset is the default design; VITE_STYLE=neo-brutalism builds the same app in the second look
-// (styles/themes/neo-brutalism.css), served at prototype.katta.cc/p/neo-brutalism/. Set on <html> in the page itself,
+// (styles/looks/neo-brutalism/theme.css), served at prototype.katta.cc/p/neo-brutalism/. Set on <html> in the page itself,
 // so the first paint already has it.
 const style = checkLook(process.env.VITE_STYLE ?? "");
 const lookPlugin: Plugin = { name: "tk-look", transformIndexHtml: (html) => apiHints(lookHtml(html, style), process.env.VITE_API_BASE ?? "https://tech-api.katta.cc") };
@@ -25,12 +25,15 @@ export default defineConfig({
   // the footer's "Last updated", as on tech.katta.cc
   define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   plugins: [react(), lookPlugin, figManifest(`${legacy}/figs`)],
+  // a build carries only its own look's rules: the CSS modules' blocks for other looks are dropped
+  css: { postcss: { plugins: [onlyLook(style)] } },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy, "@look": fileURLToPath(new URL(`./src/styles/looks/${style || "default"}`, import.meta.url)) },
     // the current app's figures import "react" from frontend/: make them share this app's single copy
     dedupe: ["react", "react-dom"],
   },
   // no public source maps, like the current app; es2020 keeps older phones (Safari 14+) working
-  build: { target: "es2020", sourcemap: false, assetsInlineLimit: 0 },
+  // OUT_DIR lets two looks be built side by side (the e2e suite serves both); scripts/postbuild.mjs reads the same
+  build: { target: "es2020", sourcemap: false, assetsInlineLimit: 0, outDir: process.env.OUT_DIR ?? "dist" },
   server: { port: 5174 },
 });
