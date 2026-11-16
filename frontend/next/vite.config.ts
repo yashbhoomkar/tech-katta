@@ -5,6 +5,8 @@ import { defineConfig, type Plugin } from "vite";
 import figManifest from "../figs-manifest.js";
 // the looks (VITE_STYLE): scripts/look.mjs
 import { checkLook, lookHtml } from "./scripts/look.mjs";
+// preconnect and preload for the content API: scripts/hints.mjs
+import { apiHints } from "./scripts/hints.mjs";
 
 const legacy = fileURLToPath(new URL("../src", import.meta.url));
 
@@ -16,7 +18,7 @@ const base = process.env.BASE_PATH ?? "/next/";
 // (styles/themes/neo-brutalism.css), served at prototype.katta.cc/p/neo-brutalism/. Set on <html> in the page itself,
 // so the first paint already has it.
 const style = checkLook(process.env.VITE_STYLE ?? "");
-const lookPlugin: Plugin = { name: "tk-look", transformIndexHtml: (html) => lookHtml(html, style) };
+const lookPlugin: Plugin = { name: "tk-look", transformIndexHtml: (html) => apiHints(lookHtml(html, style), process.env.VITE_API_BASE ?? "https://tech-api.katta.cc") };
 
 export default defineConfig({
   base,

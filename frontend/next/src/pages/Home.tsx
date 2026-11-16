@@ -61,7 +61,7 @@ export function HomePage() {
               <SectionMini section={next.section} around={next.slug} className={s.contMini} />
               <div className={s.contText}>
                 <Chip>{site.dashboard.sections.find(([id]) => id === next.section)?.[1]}</Chip>
-                <h3>{next.title}</h3>
+                <h2>{next.title}</h2>
                 {resume ? (
                   <>
                     <ProgressBar value={progress[next.slug]?.read ?? 0} label="Read so far" />
@@ -102,7 +102,7 @@ export function HomePage() {
           <div className={s.pod} data-accent="problems">
             <div>
               <p className="mono">Problem of the day</p>
-              <h3>{today.title}</h3>
+              <h2>{today.title}</h2>
               <p className={s.muted}>{today.group === "start" ? "Guide" : today.group[0]?.toUpperCase() + today.group.slice(1)}</p>
             </div>
             <ButtonLink variant="primary" to={paths.problem(today.slug)}>Open the canvas</ButtonLink>

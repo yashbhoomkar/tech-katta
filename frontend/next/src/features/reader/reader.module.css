@@ -14,11 +14,11 @@
 .crumbs a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 .head { margin: 22px 0 28px; padding-bottom: 26px; border-bottom: 1px solid var(--line); animation: tk-rise 360ms var(--out) both; }
-.head :global(.mono) { color: color-mix(in srgb, var(--a) 50%, var(--ink)); }
+.head :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
 .head h1 { margin-top: 10px; font-size: clamp(32px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -.03em; text-wrap: balance; }
 .dek { margin-top: 14px; font: 400 20px/1.5 var(--serif); color: var(--ink-2); text-wrap: pretty; }
 .meta { display: flex; gap: 14px; align-items: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
-.doneChip { display: inline-flex; gap: 5px; align-items: center; padding: 3px 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--pass) 14%, transparent); color: var(--pass); font-weight: 600; }
+.doneChip { display: inline-flex; gap: 5px; align-items: center; padding: 3px 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--pass) 9%, transparent); color: var(--pass); font-weight: 600; }
 
 .loading { display: flex; flex-direction: column; gap: 12px; }
 
@@ -95,7 +95,7 @@
 .more { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .more > summary { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; list-style: none; font-weight: 600; }
 .more > summary::-webkit-details-marker { display: none; }
-.more > summary small { padding: 3px 8px; border-radius: var(--r-pill); background: var(--t); color: color-mix(in srgb, var(--a) 50%, var(--ink)); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.more > summary small { padding: 3px 8px; border-radius: var(--r-pill); background: var(--t); color: color-mix(in srgb, var(--a) 36%, var(--ink)); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .more > summary span { flex: 1; }
 .more > summary svg { transition: transform var(--base) var(--out); color: var(--muted); }
 .more[open] > summary svg { transform: rotate(180deg); }
@@ -104,17 +104,17 @@
 
 .type { padding: 20px 22px; border: 1px solid var(--line); border-left: 4px solid var(--a); border-radius: var(--r-md); background: var(--surface); }
 .prose .type h3 { margin-top: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
-.type h3 small { font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--a) 50%, var(--ink)); }
+.type h3 small { font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
 .type dl { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; margin-top: 14px; font-size: 15.5px; line-height: 1.55; }
 .type dt { font-weight: 600; color: var(--ink-2); }
-.type dt[data-kind="ex"] { color: color-mix(in srgb, var(--a) 50%, var(--ink)); }
+.type dt[data-kind="ex"] { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
 .typeMore { margin-top: 14px; font-size: 15.5px; }
 .typeMore summary { cursor: pointer; font-weight: 600; color: var(--link); }
 .typeMore p { margin-top: 10px; }
 
 .example { padding: 22px; border-radius: var(--r-lg); background: var(--t); }
 .exHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
-.exHead :global(.mono) { color: color-mix(in srgb, var(--a) 50%, var(--ink)); }
+.exHead :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
 .exHead b { font-size: 20px; }
 .exHead small { font: 500 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
 .example > p { margin-top: 10px; }
@@ -123,7 +123,7 @@
 .example dt { font-weight: 600; }
 
 .analogy { padding: 18px 20px; border-radius: var(--r-md); background: var(--sunken); }
-.analogy :global(.mono) { color: color-mix(in srgb, var(--a) 50%, var(--ink)); }
+.analogy :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
 .analogy p { margin-top: 6px; font: italic 18px/1.6 var(--serif); }
 
 .lab { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--c); color: var(--on-c); transition: transform var(--base) var(--out); }

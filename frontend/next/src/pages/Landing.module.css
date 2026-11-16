@@ -25,7 +25,7 @@
 .rcard:nth-child(odd) { transform: rotate(-1.5deg); }
 .rcard:nth-child(even) { transform: rotate(1.5deg) translateY(12px); }
 .rcard :global(.mono) { color: var(--on-c-2); }
-.rcard h3 { font-size: 22px; }
+.rcard :is(h2, h3) { font-size: 22px; }
 .rcard p { font-size: 14px; line-height: 1.45; color: var(--on-c-2); }
 .rcard:active { transform: scale(.98); }
 @media (hover: hover) and (pointer: fine) { .rcard:hover { transform: rotate(0) translateY(-8px); } }
@@ -205,7 +205,7 @@
 .heroFigHead { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 4px 4px 0; font: 500 11px var(--mono); letter-spacing: .05em; color: var(--muted); }
 .heroFigHead b { display: inline-flex; gap: 8px; align-items: center; font-weight: 500; }
 .heroFigHead b i { width: 8px; height: 8px; border-radius: 2px; background: var(--marigold); }
-.heroFigHead span { padding: 2px 8px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--pass) 14%, transparent); color: var(--pass); }
+.heroFigHead span { padding: 2px 8px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--pass) 9%, transparent); color: var(--pass); }
 .heroFig figure { margin: 6px 0 0; border: 0; background: none; padding: 0; }
 .stats { list-style: none; margin: 44px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; text-align: center; }
 .stats b { display: block; font: 600 52px/1 var(--sans); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
@@ -271,7 +271,7 @@
 :global(:root[data-style="neo-brutalism"]) .shape { border: var(--bw) solid var(--edge); box-shadow: var(--sh); border-radius: 6px; }
 :global(:root[data-style="neo-brutalism"]) .arc { display: none; }
 :global(:root[data-style="neo-brutalism"]) .rcard { border: var(--bw) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh); color: #1C1B1A; }
-:global(:root[data-style="neo-brutalism"]) .rcard h3 { font-family: var(--display); font-weight: 400; }
+:global(:root[data-style="neo-brutalism"]) .rcard :is(h2, h3) { font-family: var(--display); font-weight: 400; }
 :global(:root[data-style="neo-brutalism"]) .hero .rcard:active { transform: rotate(var(--r, 0deg)) translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
 @media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) .hero .rcard:hover { transform: rotate(0deg) translate(-2px, -6px); box-shadow: var(--sh-lg); } }
 :global(:root[data-style="neo-brutalism"]) :is(.pv, .pvPic) { border: var(--bw) solid var(--edge); border-bottom: 0; border-radius: var(--r-md) var(--r-md) 0 0; }
@@ -329,3 +329,5 @@
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .final { background-image: radial-gradient(rgb(28 27 26 / .14) 1.2px, transparent 1.7px); }
 :global(:root[data-style="neo-brutalism"]) .stage { background-image: radial-gradient(rgb(28 27 26 / .13) 1.2px, transparent 1.7px); background-size: 9px 9px; }
 @media (prefers-reduced-motion: reduce) { .tickerRun { animation: none !important; } }
+/* the landing cards stay colour blocks in dark too, so their small labels keep the block's ink */
+:global(:root[data-style="neo-brutalism"]) .rcard :global(.mono) { color: rgb(28 27 26 / .82); }
