@@ -115,7 +115,7 @@ export function buildGroundTruth() {
 /** A sheet for a person to check the truth by reading: per problem, each design, the author's fault, and the facts
  *  (as sentences) a correct review must lead with. Written to ground-truth-review.md by --sheet. */
 export function reviewSheet(gt) {
-  const esc = (s) => String(s ?? '').replace(/\|/g, '\\|');
+  const esc = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
   const lines = [
     '# Ground truth, for a person to check',
     '',

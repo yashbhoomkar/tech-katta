@@ -144,7 +144,7 @@ const ADVICE = {
 };
 const named = (x) => (x ? (Array.isArray(x) ? x : [x]).map((re) => ADVICE[Object.keys(A).find((k) => A[k] === re)] || String(re)).join(' or ') : '');
 export function answerKeySheet() {
-  const esc = (s) => String(s ?? '').replace(/\|/g, '\\|');
+  const esc = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
   const out = [
     '# The answer key, in plain words',
     '',
