@@ -254,3 +254,52 @@ test('interviewer view: answers are checked and marked (catch, false alarm, wron
   assert.equal(scoreObserve(clean, verifyObserve({ points: [point(7, 'key_choice', 'problem')] }, clean.source)).false_alarms, 1);
   assert.equal(scoreObserve(clean, verifyObserve({ points: [point(5, 'security', 'problem')] }, clean.source), ['security']).correct, true);
 });
+
+test('interviewer-view test script, end to end against a stand-in for Vercel: marks, saves each answer, resumes, keeps to the budget', async () => {
+  const { loadDesigns } = await import('../ai-evals/observe-bakeoff.mjs');
+  const designs = loadDesigns();
+  const calls = [];
+  // the stand-in answers like a careful model: a "problem" on the flawed line of a flawed design, nothing on a clean one
+  const server = createServer(async (req, res) => {
+    res.setHeader('content-type', 'application/json');
+    if (req.url.endsWith('/models')) return res.end(JSON.stringify({ data: [
+      { id: 'fake/good', pricing: { input: '0.0000001', output: '0.0000005' }, tags: ['structured-output'] },
+      { id: 'fake/dear', pricing: { input: '0.01', output: '0.01' }, tags: ['structured-output'] },
+    ] }));
+    let text = '';
+    for await (const chunk of req) text += chunk;
+    const body = JSON.parse(text);
+    calls.push(body.model);
+    const d = designs.find((x) => body.messages[1].content.includes(x.source.split('\n').find((l) => l.startsWith('table')) || x.source.split('\n')[0]) && body.messages[1].content.includes(x.source.split('\n')[x.line ? x.line - 1 : 0]));
+    const points = d?.kind === 'flawed' ? [{ line: d.line, category: d.categories[0], severity: 'problem', text: 'This line is wrong for this problem.' }] : [];
+    res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ points }) } }], usage: { prompt_tokens: 1300, completion_tokens: 300 } }));
+  }).listen(0);
+  await once(server, 'listening');
+  const out = `obs-test-${process.pid}`, env = { ...process.env, AI_GATEWAY_API_KEY: 'test-key', AI_GATEWAY_BASE_URL: `http://127.0.0.1:${server.address().port}` };
+  const run = async (extra) => {
+    const child = spawn(process.execPath, ['ai-evals/observe-bakeoff.mjs', '--models', 'fake/good@low,fake/dear', '--repeat', '1', '--rpm', '0', '--out', out, ...extra], { cwd: new URL('..', import.meta.url), env });
+    let log = '';
+    child.stdout.on('data', (x) => { log += x; });
+    child.stderr.on('data', (x) => { log += x; });
+    const [code] = await once(child, 'exit');
+    assert.equal(code, 0, log);
+    return log;
+  };
+  try {
+    const first = await run(['--limit', '12']);
+    assert.match(first, /fake\/dear.*skipped: over the \$2 budget/);            // the budget guard
+    assert.equal(calls.filter((m) => m === 'fake/dear').length, 0);
+    assert.equal(calls.length, 12);                                              // one answer per design
+    const lines = readFileSync(new URL(`../ai-evals/results/observe-${out}-fake_good_low.jsonl`, import.meta.url), 'utf8').trim().split('\n');
+    assert.equal(lines.length, 12);                                              // saved as it went
+    await run(['--limit', '14', '--resume']);
+    assert.equal(calls.length, 14);                                              // resume: only the 2 new designs
+    const md = readFileSync(new URL(`../ai-evals/results/observe-${out}.md`, import.meta.url), 'utf8');
+    assert.match(md, /\| 1 \| fake\/good@low \| yes \| 100 % \| 0 % \|/);       // the careful stand-in clears the bar
+    assert.match(md, /Which model caught which flaw/);
+  } finally {
+    server.close();
+    const dir = new URL('../ai-evals/results/', import.meta.url);
+    for (const f of readdirSync(dir).filter((f) => f.includes(out))) rmSync(new URL(f, dir));
+  }
+});

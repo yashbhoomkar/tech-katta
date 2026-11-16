@@ -1,5 +1,23 @@
 # The AI evaluator: ground truth and model bake-off
 
+> **The current test is the interviewer's view** (2026-11-16): the model's job is only what the deterministic judge
+> cannot determine (`REQUIREMENTS.md`). Its test set is `blind-spots.mjs` (in plain words: `blind-spots.md`): 10
+> flawed designs that all pass the judge, each with its own finding, and 12 clean ones. The test script:
+>
+> ```sh
+> node ai-evals/observe-bakeoff.mjs --estimate                                    # free: models, prices, cost
+> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --out first-run
+> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --out first-run --resume   # after a stop
+> ```
+>
+> Models come from `observe-candidates.json` (`--tier free` by default: the free credit's 8 shortlisted models;
+> `--tier paid` needs bought credit). Every answer is saved as it arrives (`results/observe-<out>-<model>.jsonl`), so a
+> stopped run loses nothing and `--resume` pays for nothing twice. A model whose estimate would pass `--budget`
+> (default $2) is skipped before any call. The report ranks the models that clear the bar (catches ≥ 80 %, false
+> alarms ≤ 10 %, errors ≤ 2 %, p95 ≤ 10 s) by cost per correct answer, and shows which model caught which flaw.
+>
+> The sections below describe the earlier test of the review job (restating the judge's findings), kept for reference.
+
 The AI evaluator tells a learner where the faults in their system design are. It is not a chat: one Submit gives one
 review (spec 22 §12, the `review` job). The deterministic judge finds the faults; the model chooses which matter
 most and explains them, citing the judge's facts. This folder answers one question: **which model does that job

@@ -1,0 +1,17 @@
+{
+  "note": "Models for the interviewer's-view bake-off (observe-bakeoff.mjs), Vercel AI Gateway ids. tier 'free': served by the team's free monthly credit (checked one by one on 2026-11-16); tier 'paid': needs bought credit, which ends the free monthly credit, so these run only if no free model clears the bar. effort: the reasoning effort sent (omitted: the model's default).",
+  "models": [
+    { "id": "meta/muse-ember", "effort": "low", "tier": "free", "why": "Strongest so far: caught the ticket flaw on its line in the trial" },
+    { "id": "openai/gpt-oss-120b", "effort": "low", "tier": "free", "why": "OpenAI's open-weights model, same price as Muse Ember" },
+    { "id": "openai/gpt-oss-20b", "effort": "low", "tier": "free", "why": "A fifth of the price: can a small model do the job?" },
+    { "id": "alibaba/qwen3.7-flash", "effort": "low", "tier": "free", "why": "The cheapest model that reasons" },
+    { "id": "google/gemini-2.5-flash-lite", "effort": "low", "tier": "free", "why": "Google's cheap tier" },
+    { "id": "openai/gpt-5-mini", "effort": "low", "tier": "free", "why": "A stronger, dearer reference: does paying more buy catches?" },
+    { "id": "deepseek/deepseek-v3.1", "tier": "free", "why": "DeepSeek's model on the free tier" },
+    { "id": "nvidia/nemotron-3-super-120b-a12b", "tier": "free", "why": "A large open model from another maker" },
+    { "id": "anthropic/claude-haiku-5.5", "effort": "low", "tier": "paid", "why": "Newest generation, same price as Muse Ember" },
+    { "id": "openai/gpt-6-luna", "effort": "low", "tier": "paid", "why": "Newest generation, same price as Muse Ember" },
+    { "id": "deepseek/deepseek-v4.1-flash", "effort": "none", "tier": "paid", "why": "The strongest open-weights finalist of spec 29" },
+    { "id": "zai/glm-5.3-flash", "effort": "low", "tier": "paid", "why": "A cheap reasoning model from another maker" }
+  ]
+}
