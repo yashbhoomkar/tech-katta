@@ -1,20 +1,31 @@
-// Scores one model answer against the ground truth of its design (ground-truth.json). Pure.
+// Scores one model answer. Pure.
 //
-//   scoreReview(truth, raw, verified) → { correct, found_fault, lead_rank, called_good_a_problem, praised_failing,
-//                                         survived, why }
+//   scoreReview(truth, raw, verified, key?) → { correct, found_fault, lead_rank, advice_ok, wrong_advice, both_faults,
+//                                               called_good_a_problem, praised_failing, survived, why }
+//   truth     the design's entry in ground-truth.json (generated from the judge: verdict, good facts, errors)
 //   raw       the model's JSON as it answered (before the verifier), or null if the call failed
 //   verified  verifyReview's result for that answer, or null
+//   key       the design's entry in answer-key.mjs (written by hand); without one, only the generated truth is used
 //
 // A review is correct when all of these hold:
 // 1. it survives the verifier (shown to the learner as the model wrote it, at least in part);
-// 2. found_fault: one of its first two items, as shown, cites a fact in truth.must_lead_with (the cause the judge
-//    found, or for a passing design its tightest margin) or truth.also_accept (another fact stating that cause);
-// 3. it never calls a fact the judge marked good a problem (checked on the raw answer: the verifier repairs this,
+// 2. found_fault: one of its first two items, as the model wrote them, cites a fact that states the fault (key.lead;
+//    without a key, truth.must_lead_with and truth.also_accept);
+// 3. advice_ok: its words point to the right fix (key.fix), and do not give only advice that is wrong for this design
+//    (key.wrong without key.fix);
+// 4. both_faults: for a design with two faults, the review cites each (key.needs);
+// 5. it never calls a fact the judge marked good a problem (checked on the raw answer: the verifier repairs this,
 //    but a model that does it is wrong);
-// 4. for a failing design, its first item is not praise.
+// 6. for a failing design, its first item is not praise.
 
-export function scoreReview(truth, raw, verified) {
-  const lead = new Set([...truth.must_lead_with, ...(truth.also_accept || [])]), good = new Set(truth.never_a_problem);
+const list = (x) => (x ? (Array.isArray(x) ? x : [x]) : []);
+const hits = (res, text) => list(res).some((re) => re.test(text));
+
+export function scoreReview(truth, raw, verified, key = null) {
+  const keyLead = key && Array.isArray(key.lead) ? key.lead : null;
+  // a template's lead is "the errors": whichever error facts the judge reported
+  const lead = new Set(keyLead ?? (key?.lead === 'errors' ? truth.must_lead_with : [...truth.must_lead_with, ...(truth.also_accept || [])]));
+  const good = new Set(truth.never_a_problem);
   const rawItems = Array.isArray(raw?.items) ? raw.items.filter((it) => it && typeof it === 'object') : [];
   const cites = (it) => (Array.isArray(it?.facts) ? it.facts.filter((x) => typeof x === 'string') : []);
 
@@ -29,13 +40,24 @@ export function scoreReview(truth, raw, verified) {
   const lead_rank = rank < 0 ? null : rank + 1;
   const found_fault = lead_rank !== null && lead_rank <= 2;
 
+  // the advice: what the shown review says (headline, items, next step), with the measured values filled in
+  const words = survived ? [verified.review.headline, ...verified.review.items.map((it) => `${it.text} ${it.ask || ''}`), verified.review.next?.text].join(' ') : '';
+  const fixOk = !key?.fix || hits(key.fix, words);
+  const wrong_advice = survived && !!key?.wrong && hits(key.wrong, words) && !fixOk;
+  const advice_ok = !survived ? false : fixOk;
+  const cited = new Set(own.filter(Boolean).flatMap(cites));
+  const both_faults = list(key?.needs).every((id) => cited.has(id));
+
   const why = [];
   if (!raw) why.push('no answer');
   else if (!survived) why.push(`verifier: ${verified?.why || 'rejected'}`);
   if (survived && !found_fault) why.push(lead_rank ? `fault cited only at item ${lead_rank}` : 'fault not cited');
+  if (survived && !fixOk) why.push(wrong_advice ? 'wrong advice' : 'no fix suggested');
+  if (survived && !both_faults) why.push('missed the second fault');
   if (called_good_a_problem) why.push('called a good fact a problem');
   if (praised_failing) why.push('led a failing design with praise');
-  return { correct: survived && found_fault && !called_good_a_problem && !praised_failing, found_fault, lead_rank, called_good_a_problem, praised_failing, survived, shown_items: shown.length, why: why.join('; ') };
+  const correct = survived && found_fault && advice_ok && both_faults && !called_good_a_problem && !praised_failing;
+  return { correct, found_fault, lead_rank, advice_ok, wrong_advice, both_faults, called_good_a_problem, praised_failing, survived, shown_items: shown.length, why: why.join('; ') };
 }
 
 // The verified review's items in order, with null where the item came from the report instead of the model.
@@ -54,6 +76,8 @@ export function summarise(rows) {
   return {
     correct_pct: pct(c((r) => r.score?.correct)),
     found_fault_pct: pct(c((r) => r.score?.found_fault)),
+    advice_ok_pct: pct(c((r) => r.score?.advice_ok)),
+    wrong_advice: c((r) => r.score?.wrong_advice),
     called_good_a_problem: c((r) => r.score?.called_good_a_problem),
     praised_failing: c((r) => r.score?.praised_failing),
     // the same design, every repeat: correct every time (consistency)

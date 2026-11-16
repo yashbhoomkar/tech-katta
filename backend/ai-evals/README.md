@@ -9,7 +9,9 @@ correctly for the least money?**
 |---|---|
 | `ground-truth.json` | What a correct review must say, for each of 75 designs (every reference, wrong design and template of the 10 Practice problems). Generated; see `ground-truth.md` |
 | `ground-truth.mjs` | Builds it from `content/problems2` and the judge; `--check` says whether it is out of date |
-| `score.mjs` | Marks one model answer against its design's truth, and the gates a model must pass |
+| `answer-key.mjs` | **The answer key, written by hand**: per design the fault, the facts that state it, the right fix and wrong advice. `answer-key.md` is the same in plain words |
+| `score.mjs` | Marks one model answer against the key, and the gates a model must pass |
+| `rescore.mjs` | Marks saved answers again after the key changes, without calling any model |
 | `evaluate.mjs` | Runs one model over the cases: the production prompt, verifier and scoring |
 | `run.mjs` | One model, from the server's `AI_*` settings (the mock by default: free, offline) |
 | `bakeoff.mjs` | Several models through one platform (**Vercel AI Gateway** or **OpenRouter**), ranked by cost per correct review |
@@ -64,10 +66,21 @@ plan or bought credit), on OpenRouter `provider.data_collection: "deny"`.
 
 ## How a model is judged
 
-Each answer goes through the production verifier, then is scored against `ground-truth.json`. An answer is
-**correct** when it survives the verifier, cites the fault the judge found in its first two items (for a passing
-design: where it would break first), never calls a fact the judge marked good a problem, and does not lead a
-failing design with praise.
+Every answer goes through the production verifier, then is marked against **`answer-key.mjs`, written by hand**
+after reading each design and everything the judge reports about it (`answer-key.md` is the same key in plain words,
+for a person to check). An answer is **correct** when:
+
+1. it survives the verifier;
+2. one of its first two points cites a fact that states the fault;
+3. **its advice points to the right fix** (a CDN for images, an index for a full-table scan, a quorum for lost
+   writes...), and is not only advice that would be wrong for that design (more servers instead of a CDN, a bigger
+   database for a missing index);
+4. for a design with two faults, it mentions both;
+5. it never calls a fact the judge marked good a problem, and does not open a failing design with praise.
+
+`ground-truth.json` is generated from the judge and only supplies the verdicts, the good facts and the errors; it
+cannot say whether advice is right, which is why the key is written by hand. Saved answers can be marked again
+against a changed key with `node ai-evals/rescore.mjs <out>`, without calling any model.
 
 A model **passes** when, over every run of every case: correct ≥ 90 %, fallbacks and errors ≤ 2 %, no good fact called
 a problem, no failing design praised, 95th-percentile time ≤ 10 s (`GATES` in `score.mjs`). Passing models are ranked

@@ -176,3 +176,53 @@ test('ground-truth-review.md matches the truth (else: node ai-evals/ground-truth
   const { reviewSheet } = await import('../ai-evals/ground-truth.mjs');
   assert.equal(readFileSync(new URL('../ai-evals/ground-truth-review.md', import.meta.url), 'utf8'), reviewSheet(readGroundTruth()));
 });
+
+test('answer key: written for every design, naming only facts the model is shown, and agreeing with the verdict', async () => {
+  const { ANSWER_KEY } = await import('../ai-evals/answer-key.mjs');
+  const { loadCases } = await import('../ai-evals/evaluate.mjs');
+  const { factsFor } = await import('../src/ai/prompt.js');
+  const cases = loadCases();
+  assert.equal(ANSWER_KEY.size, cases.length);
+  for (const c of cases) {
+    const k = ANSWER_KEY.get(c.id);
+    assert.ok(k, `no answer key for ${c.id}`);
+    const sent = new Set(factsFor(c.pack).map((f) => f.id));
+    for (const id of [...(Array.isArray(k.lead) ? k.lead : []), ...(k.needs || [])]) assert.ok(sent.has(id), `${c.id}: ${id} is not shown to the model`);
+    assert.equal(k.fault === null, c.pack.verdict.word === 'Accepted', c.id);
+    if (k.fault !== null) assert.ok(k.fix, `${c.id}: no fix`);
+  }
+});
+
+test('answer key: the advice is marked (right fix, wrong advice, both faults)', async () => {
+  const { ANSWER_KEY } = await import('../ai-evals/answer-key.mjs');
+  const { loadCases } = await import('../ai-evals/evaluate.mjs');
+  const { verifyReview, namesOf } = await import('../src/ai/verify.js');
+  const byId = new Map(loadCases().map((c) => [c.id, c]));
+  const mark = (id, items, next) => {
+    const c = byId.get(id), raw = { headline: 'The judge found one main fault.', items, next: { text: next, repair: null } };
+    return scoreReview(c.truth, raw, verifyReview(raw, c.pack, { names: namesOf(c.pack, c.problem.requests.map((r) => r.name)) }), ANSWER_KEY.get(id));
+  };
+  const p = (facts, text) => ({ kind: 'problem', facts, text, ask: null });
+  // the right fact but a vague next step (a real answer of the first run)
+  const vague = mark('url-shortener/no-cache', [p(['finding:p99:GET_LINK:db'], 'The database is the slowest hop at the peak.'), p(['load:db'], 'It runs hot at the busiest moment.')], 'Focus on the database part first and recheck its peak load.');
+  assert.equal(vague.found_fault, true);
+  assert.equal(vague.correct, false);
+  assert.match(vague.why, /no fix suggested/);
+  const good = mark('url-shortener/no-cache', [p(['finding:p99:GET_LINK:db'], 'The database is the slowest hop at the peak.'), p(['load:db'], 'It runs hot at the busiest moment.')], 'Put a cache in front of the database for opens, and clear it on write.');
+  assert.equal(good.correct, true);
+  // more servers for images that need a CDN: wrong advice
+  const servers = mark('image-serving/no-cdn', [p(['finding:overloaded:GET_IMAGE:api'], 'The servers get far more views than they can serve.'), p(['load:lb'], 'The load balancer is over its limit too.')], 'Add more servers so the views fit.');
+  assert.equal(servers.wrong_advice, true);
+  assert.equal(servers.correct, false);
+  const cdn = mark('image-serving/no-cdn', [p(['finding:overloaded:GET_IMAGE:api'], 'The servers get far more views than they can serve.'), p(['load:lb'], 'The load balancer is over its limit too.')], 'Serve the images from a CDN in front of the load balancer.');
+  assert.equal(cdn.correct, true);
+  // two faults: citing only one is not enough
+  const one = mark('news-feed/quick-writes', [p(['finding:lost:POST:kv'], 'A post acknowledged by one copy dies with it.'), { kind: 'risk', facts: ['test:t04-a-node-dies'], text: 'The node test failed.', ask: null }], 'Use a write and read quorum so they overlap.');
+  assert.equal(one.both_faults, false);
+  assert.equal(one.correct, false);
+});
+
+test('answer-key.md matches the key (else: node ai-evals/answer-key.mjs)', async () => {
+  const { answerKeySheet } = await import('../ai-evals/answer-key.mjs');
+  assert.equal(readFileSync(new URL('../ai-evals/answer-key.md', import.meta.url), 'utf8'), answerKeySheet());
+});

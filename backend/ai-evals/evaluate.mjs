@@ -5,6 +5,7 @@ import { SYSTEM, problemBlock, reviewRequest, reviewSchema } from '../src/ai/pro
 import { verifyReview, namesOf } from '../src/ai/verify.js';
 import { buildGroundTruth, readGroundTruth, loadProblems, designsOf } from './ground-truth.mjs';
 import { scoreReview, summarise } from './score.mjs';
+import { ANSWER_KEY } from './answer-key.mjs';
 
 /** The cases: each ground-truth entry with the pack and problem it was made from. Stops if the file is stale. */
 export function loadCases({ only = null, limit = Infinity } = {}) {
@@ -12,7 +13,7 @@ export function loadCases({ only = null, limit = Infinity } = {}) {
   if (JSON.stringify(file.cases) !== JSON.stringify(fresh.cases)) throw new Error('ai-evals/ground-truth.json is out of date: run node ai-evals/ground-truth.mjs, read the diff, then run again');
   const truth = new Map(file.cases.map((c) => [c.id, c]));
   return loadProblems().filter((p) => !only || p.slug === only)
-    .flatMap((p) => designsOf(p).map((d) => ({ id: `${p.slug}/${d.design}`, problem: p, pack: redact(buildEvidence(d.source, p)), truth: truth.get(`${p.slug}/${d.design}`) })))
+    .flatMap((p) => designsOf(p).map((d) => ({ id: `${p.slug}/${d.design}`, problem: p, pack: redact(buildEvidence(d.source, p)), truth: truth.get(`${p.slug}/${d.design}`), key: ANSWER_KEY.get(`${p.slug}/${d.design}`) })))
     .slice(0, limit);
 }
 
@@ -41,7 +42,7 @@ export async function evaluate({ client, config, cases, repeat = 1, price = null
       }
       const v = res.ok ? verifyReview(res.json, c.pack, { names: namesOf(c.pack, c.problem.requests.map((r) => r.name)) }) : null;
       const outcome = !res.ok ? 'error' : !v.ok ? 'fallback' : v.dropped.length ? 'partial' : 'verified';
-      const score = scoreReview(c.truth, res.ok ? res.json : null, v);
+      const score = scoreReview(c.truth, res.ok ? res.json : null, v, c.key);
       rows[i] = { case: c.id, problem: c.problem.slug, design: c.truth.design, run: k + 1, outcome, why: res.ok ? (v.ok ? v.dropped.map((d) => d.rule).join(', ') : v.why) : res.why, score, ms: res.ms, usage: res.usage, cost: costOf(res.usage, price), review: v?.review || null, raw: res.json ?? null };
       onRow(rows[i]);
     }
