@@ -1,9 +1,8 @@
-import { MarkSticker } from "./MarkSticker";
+import { SectionMini } from "./SectionMini";
 
-// The picture on a section's card (Home Explore, Learn, the landing cards). It used to be the library card's mini
-// diagram or the section's first lesson figure, shrunk to fit; at card size neither could be read (owner,
-// 2026-11-16), so a card shows its section's mark as a sticker in the card's colour. Figures are drawn only where
-// they can be read: lessons, full screen, the topic sheet and the landing figure.
+// The picture on a section's card (Home Explore, Learn, the landing cards): a small figure drawn for the card
+// (SectionMini) — the section's mark and the next lessons on a path — rather than a lesson figure shrunk to fit,
+// which could not be read (owner, 2026-11-16).
 export function SectionPicture({ sectionId, className }: { sectionId: string; className?: string | undefined }) {
-  return <MarkSticker section={sectionId} className={className} />;
+  return <SectionMini section={sectionId} className={className} />;
 }
