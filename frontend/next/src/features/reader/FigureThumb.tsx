@@ -4,16 +4,15 @@ import { readTokens } from "@legacy/theme/palette.js";
 import { useDocTheme } from "./useDocTheme";
 import tokens from "./figureTokens.module.css";
 import s from "./reader.module.css";
-import { look } from "@/lib/look";
 import { MarkSticker } from "@/components/MarkSticker";
 
 // A lesson's first figure, drawn still and small, as the picture on its card (Home, section lists). Its code loads
 // only when the card comes near the screen, so a long list stays light.
 
-/** In the neo-brutalism look a lesson's card shows its section's mark as a sticker with the lesson's tag instead
- *  (`section` and `label`): a whole figure shrunk to a thumbnail cannot be read. */
+/** Given its `section`, a lesson's card shows the section's mark as a sticker with the lesson's tag (`label`)
+ *  instead: a whole figure shrunk to a thumbnail cannot be read (owner, 2026-11-16). */
 export function FigureThumb({ id, className, section, label }: { id: string | undefined; className?: string | undefined; section?: string | undefined; label?: string | undefined }) {
-  if (section && look() === "neo-brutalism") return <MarkSticker section={section} label={label} className={className} />;
+  if (section) return <MarkSticker section={section} label={label} className={className} />;
   return <FigureDrawing id={id} className={className} />;
 }
 

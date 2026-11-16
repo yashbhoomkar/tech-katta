@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { FigureThumb } from "@/features/reader/FigureThumb";
 import { TransitionLink } from "@/components/TransitionLink";
 import { QuickNotes } from "./QuickNotes";
 import { useContent } from "@/content/ContentProvider";
@@ -97,7 +96,6 @@ function Section({ id }: { id: Parameters<typeof sectionView>[2] }) {
                   <span className={s.no}>{String(i + 1).padStart(2, "0")}</span>
                   <span className={s.lessonTitle} data-morph="">{a.title}</span>
                   <span className={s.lessonTag}>{a.tag}</span>
-                  {a.fig && <FigureThumb id={a.fig} className={s.lessonThumb} />}
                 </TransitionLink>
               );
             })}
