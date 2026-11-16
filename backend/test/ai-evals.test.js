@@ -1,6 +1,6 @@
 // The AI evaluator's ground truth and bake-off (ai-evals/): the truth file matches the problems and the judge, the
-// scorer marks right and wrong reviews as a person would, and the bake-off runs end to end through a stand-in for
-// OpenRouter (no network, no money).
+// scorer marks right and wrong reviews as a person would, and the bake-off runs end to end through stand-ins for
+// Vercel AI Gateway and OpenRouter (no network, no money).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -74,48 +74,66 @@ test('gates: a model passes only when every line holds', () => {
   assert.equal(gateFailures({ ...pass, praised_failing: 1, ms_p95: 12000 }).length, 2);
 });
 
-test('the bake-off runs end to end through a stand-in for OpenRouter, with the terms production should use', async () => {
-  const bodies = [];
-  const server = createServer(async (req, res) => {
-    if (req.url.endsWith('/models')) {
+// A stand-in for a platform: its model list in the platform's own format, and answers that cite the first two fact ids
+// the schema allows (plumbing, not quality, is under test here). OpenRouter reports each call's cost; Vercel does not,
+// so the bake-off prices it from the list.
+const STAND_INS = {
+  openrouter: {
+    env: (url) => ({ OPENROUTER_API_KEY: 'test-key', OPENROUTER_BASE_URL: url }),
+    model: { id: 'fake/model', pricing: { prompt: '0.0000001', completion: '0.0000005' }, supported_parameters: ['structured_outputs'] },
+    usage: { prompt_tokens: 2000, completion_tokens: 100, cost: 0.0003 },
+    provider: { data_collection: 'deny', require_parameters: true },
+  },
+  vercel: {
+    env: (url) => ({ AI_GATEWAY_API_KEY: 'test-key', AI_GATEWAY_BASE_URL: url }),
+    model: { id: 'fake/model', pricing: { input: '0.0000001', output: '0.0000005' }, tags: ['structured-output'] },
+    usage: { prompt_tokens: 2000, completion_tokens: 100 },
+    provider: undefined,
+  },
+};
+
+for (const [platform, s] of Object.entries(STAND_INS)) {
+  test(`the bake-off runs end to end through a stand-in for ${platform}, one key for every model`, async () => {
+    const bodies = [], keys = new Set();
+    const server = createServer(async (req, res) => {
       res.setHeader('content-type', 'application/json');
-      return res.end(JSON.stringify({ data: [{ id: 'fake/model', pricing: { prompt: '0.0000001', completion: '0.0000005' }, supported_parameters: ['structured_outputs'] }] }));
+      if (req.url.endsWith('/models')) return res.end(JSON.stringify({ data: [s.model] }));
+      keys.add(req.headers.authorization);
+      let text = '';
+      for await (const chunk of req) text += chunk;
+      const body = JSON.parse(text);
+      bodies.push(body);
+      const ids = body.response_format.json_schema.schema.properties.items.items.properties.facts.items.enum;
+      const answer = { headline: 'Look at the busiest part first.', items: [{ kind: 'problem', facts: [ids[0]], text: 'This is where it breaks.', ask: null }, { kind: 'risk', facts: [ids[1]], text: 'This is next.', ask: null }], next: { text: 'Change that part and run it again.', repair: null } };
+      res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(answer) } }], usage: s.usage }));
+    }).listen(0);
+    await once(server, 'listening');
+    const out = `test-${platform}-${process.pid}`;
+    try {
+      const child = spawn(process.execPath, ['ai-evals/bakeoff.mjs', '--platform', platform, '--models', 'fake/model@low', '--limit', '4', '--repeat', '1', '--out', out], {
+        cwd: new URL('..', import.meta.url), env: { ...process.env, ...s.env(`http://127.0.0.1:${server.address().port}`) },
+      });
+      let log = '';
+      child.stdout.on('data', (d) => { log += d; });
+      child.stderr.on('data', (d) => { log += d; });
+      const [code] = await once(child, 'exit');
+      assert.equal(code, 0, log);
+      assert.equal(bodies.length, 4);
+      assert.deepEqual([...keys], ['Bearer test-key']);
+      for (const b of bodies) {
+        assert.equal(b.model, 'fake/model');
+        assert.equal(b.response_format.type, 'json_schema');
+        assert.deepEqual(b.provider, s.provider);
+        assert.deepEqual(b.reasoning, { effort: 'low' });
+      }
+      const md = readFileSync(new URL(`../ai-evals/results/bakeoff-${out}.md`, import.meta.url), 'utf8');
+      assert.match(md, /\| 1 \| fake\/model@low \|/);
+      // 4 calls: reported $0.0003 each (OpenRouter), or 2,000 in and 100 out at $0.10 / $0.50 a million (Vercel)
+      assert.match(md, /Spent about \$0\.001\b/);
+    } finally {
+      server.close();
+      const dir = new URL('../ai-evals/results/', import.meta.url);
+      for (const f of readdirSync(dir).filter((f) => f.includes(out))) rmSync(new URL(f, dir));
     }
-    let text = '';
-    for await (const chunk of req) text += chunk;
-    const body = JSON.parse(text);
-    bodies.push(body);
-    // answer with the first two ids the schema allows, as problems: plumbing, not quality, is under test here
-    const ids = body.response_format.json_schema.schema.properties.items.items.properties.facts.items.enum;
-    const answer = { headline: 'Look at the busiest part first.', items: [{ kind: 'problem', facts: [ids[0]], text: 'This is where it breaks.', ask: null }, { kind: 'risk', facts: [ids[1]], text: 'This is next.', ask: null }], next: { text: 'Change that part and run it again.', repair: null } };
-    res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 2000, completion_tokens: 100, cost: 0.0003 } }));
-  }).listen(0);
-  await once(server, 'listening');
-  const out = `test-${process.pid}`;
-  try {
-    const child = spawn(process.execPath, ['ai-evals/bakeoff.mjs', '--models', 'fake/model@low', '--limit', '4', '--repeat', '1', '--out', out], {
-      cwd: new URL('..', import.meta.url), env: { ...process.env, OPENROUTER_API_KEY: 'test-key', OPENROUTER_BASE_URL: `http://127.0.0.1:${server.address().port}` },
-    });
-    let log = '';
-    child.stdout.on('data', (d) => { log += d; });
-    child.stderr.on('data', (d) => { log += d; });
-    const [code] = await once(child, 'exit');
-    assert.equal(code, 0, log);
-    assert.equal(bodies.length, 4);
-    for (const b of bodies) {
-      assert.equal(b.model, 'fake/model');
-      assert.equal(b.response_format.type, 'json_schema');
-      assert.deepEqual(b.provider, { data_collection: 'deny', require_parameters: true });
-      assert.deepEqual(b.reasoning, { effort: 'low' });
-    }
-    const md = readFileSync(new URL(`../ai-evals/results/bakeoff-${out}.md`, import.meta.url), 'utf8');
-    assert.match(md, /\| 1 \| fake\/model@low \|/);
-    // the cost is what the platform reported: 4 calls × $0.0003
-    assert.match(md, /Spent about \$0\.001\b/);
-  } finally {
-    server.close();
-    const dir = new URL('../ai-evals/results/', import.meta.url);
-    for (const f of readdirSync(dir).filter((f) => f.includes(out))) rmSync(new URL(f, dir));
-  }
-});
+  });
+}

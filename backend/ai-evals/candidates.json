@@ -1,15 +1,15 @@
 {
-  "note": "Models the bake-off compares, as OpenRouter model ids. '@low', '@medium' or '@none' sets the reasoning effort. The first four are the finalists of tech-katta-context/29-SELF-HOSTED-LLM-ON-A-VPS.md §12.4; the rest are cheaper challengers with strict JSON schemas on OpenRouter (checked 2026-11-16).",
+  "note": "Models the bake-off compares, with each platform's id for the same model and the reasoning effort to use (none, minimal, low, medium; omitted for models without reasoning). The first four are the finalists of tech-katta-context/29-SELF-HOSTED-LLM-ON-A-VPS.md §12.4; the rest are cheaper challengers. All support strict JSON schemas on both platforms (checked 2026-11-16).",
   "models": [
-    "meta/muse-ember@low",
-    "anthropic/claude-haiku-5.5@low",
-    "deepseek/deepseek-v4.1-flash@none",
-    "openai/gpt-6-luna@low",
-    "qwen/qwen3.8-flash@none",
-    "z-ai/glm-5.3-flash@none",
-    "minimax/minimax-m3.1-flash@low",
-    "google/gemini-3.1-flash-lite@low",
-    "google/gemma-4-26b-a4b-it",
-    "meta-llama/llama-4-scout"
+    { "name": "Meta Muse Ember 1.0", "vercel": "meta/muse-ember", "openrouter": "meta/muse-ember", "effort": "low" },
+    { "name": "Claude Haiku 5.5", "vercel": "anthropic/claude-haiku-5.5", "openrouter": "anthropic/claude-haiku-5.5", "effort": "low" },
+    { "name": "DeepSeek V4.1 Flash", "vercel": "deepseek/deepseek-v4.1-flash", "openrouter": "deepseek/deepseek-v4.1-flash", "effort": "none" },
+    { "name": "GPT-6 Luna", "vercel": "openai/gpt-6-luna", "openrouter": "openai/gpt-6-luna", "effort": "low" },
+    { "name": "Qwen3.8 Flash", "vercel": "alibaba/qwen3.8-flash", "openrouter": "qwen/qwen3.8-flash", "effort": "none" },
+    { "name": "GLM-5.3 Flash", "vercel": "zai/glm-5.3-flash", "openrouter": "z-ai/glm-5.3-flash", "effort": "low" },
+    { "name": "MiniMax M3.1 Flash", "vercel": "minimax/minimax-m3.1-flash", "openrouter": "minimax/minimax-m3.1-flash", "effort": "low" },
+    { "name": "Gemini 3.1 Flash-Lite", "vercel": "google/gemini-3.1-flash-lite", "openrouter": "google/gemini-3.1-flash-lite", "effort": "low" },
+    { "name": "Gemma 4 26B", "vercel": "google/gemma-4-26b-a4b-it", "openrouter": "google/gemma-4-26b-a4b-it" },
+    { "name": "Llama 4 Scout", "vercel": "meta/llama-4-scout", "openrouter": "meta-llama/llama-4-scout" }
   ]
 }
