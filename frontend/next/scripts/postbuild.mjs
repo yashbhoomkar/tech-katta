@@ -14,9 +14,11 @@ const SECTIONS = { concepts: "Concepts", components: "Components", "interview-qu
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 /** index.html with this page's title and description */
-function page(title, description) {
+function page(title, description, preload) {
   let out = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)} · Tech Katta</title>`);
   if (description) out = out.replace(/<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${esc(description)}" />`);
+  // a lesson's page starts its own request at once instead of after the site and articles (Lighthouse, 2026-11-16)
+  if (preload) out = out.replace("</head>", `    <link rel="preload" as="fetch" href="${API}${preload}" crossorigin />\n  </head>`);
   return out;
 }
 
@@ -40,7 +42,7 @@ async function get(p) {
 try {
   const { articles } = await get("/v1/articles");
   for (const a of articles) {
-    routes.set(`learn/${a.section}/${a.slug}`, [a.title, a.dek]);
+    routes.set(`learn/${a.section}/${a.slug}`, [a.title, a.dek, `/v1/articles/${encodeURIComponent(a.slug)}`]);
     if (a.tests) routes.set(`problems/${a.slug}`, [a.title, a.dek]);
   }
 } catch (err) {
@@ -60,10 +62,10 @@ try {
   console.warn(`postbuild: challenge routes skipped (${err.message})`);
 }
 
-for (const [r, [title, description]] of routes) {
+for (const [r, [title, description, preload]] of routes) {
   const dir = path.join(dist, r);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, "index.html"), page(title, description));
+  fs.writeFileSync(path.join(dir, "index.html"), page(title, description, preload));
 }
 fs.writeFileSync(path.join(dist, "404.html"), html);
 console.log(`postbuild: ${routes.size} route pages + 404.html`);
