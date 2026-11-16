@@ -222,7 +222,7 @@ function HeroCards({ cards }: { cards: HeroCard[] }) {
           return (
             <Link key={c.id} to={c.to} className={s.rcard} data-accent={c.accent} style={{ ["--r" as string]: r, ["--y" as string]: y, ["--dl" as string]: `${dl}ms` }}>
               <span className="mono">{c.no}</span>
-              <h3>{c.title} ▸</h3>
+              <h2>{c.title} ▸</h2>
               <p>{c.desc}</p>
               {c.id === "problems" ? <Preview id={c.id} /> : <SectionPicture sectionId={c.id} className={s.pvPic} />}
             </Link>

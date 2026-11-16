@@ -9,7 +9,10 @@
 // 100 wildcard redirects). Deep links inside each copy are served by its own route pages and 404.html. Run before
 // emit.mjs.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { copyProblem } from "./prototype-copies.mjs";
+import { copyProblem, siblingPages } from "./prototype-copies.mjs";
+import { copyFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const name = process.argv[2] ?? "next";
 const src = new URL("../next/dist/", import.meta.url);
@@ -28,6 +31,13 @@ const out = new URL(`p/${name}/`, dist);
 rmSync(out, { recursive: true, force: true });
 mkdirSync(new URL("p/", dist), { recursive: true });
 cpSync(src, out, { recursive: true });
+// direct visits without a redirect: a sibling .html for every route page (prototype-copies.mjs, siblingPages)
+const root = fileURLToPath(out);
+const dirs = readdirSync(root, { recursive: true, withFileTypes: true })
+  .filter((e) => e.isFile() && e.name === "index.html")
+  .map((e) => path.relative(root, e.parentPath ?? e.path).split(path.sep).join("/"))
+  .filter((d) => !d.startsWith("assets"));
+for (const [from, to] of siblingPages(dirs)) copyFileSync(path.join(root, from), path.join(root, to));
 if (name === "next") {
   rmSync(new URL("next/", dist), { recursive: true, force: true });
   mkdirSync(new URL("next/", dist), { recursive: true });

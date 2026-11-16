@@ -2,7 +2,7 @@
 // must never be copied (hosting/prototype-copies.mjs, used by prototype-next.mjs).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COPIES, copyProblem } from "./prototype-copies.mjs";
+import { COPIES, copyProblem, siblingPages } from "./prototype-copies.mjs";
 
 const page = (base, style) => `<html lang="en"${style ? ` data-style="${style}"` : ""}><script src="${base}assets/index-1.js"></script></html>`;
 
@@ -21,4 +21,7 @@ test("a build in the wrong look is refused", () => {
 });
 test("an unknown copy is refused", () => {
   assert.match(copyProblem(page("/p/x/"), "x"), /unknown copy/);
+});
+test("every route page but the root gets a sibling .html, so a direct visit is not redirected", () => {
+  assert.deepEqual(siblingPages(["", "home", "learn/concepts/caching"]), [["home/index.html", "home.html"], ["learn/concepts/caching/index.html", "learn/concepts/caching.html"]]);
 });
