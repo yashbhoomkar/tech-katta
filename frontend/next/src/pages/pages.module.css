@@ -251,3 +251,9 @@
 :global(:root[data-style="neo-brutalism"]) .done .lessonTitle::after { content: "DONE"; display: inline-block; margin-left: 10px; padding: 1px 6px; border: var(--bw) solid var(--edge); border-radius: 3px; background: var(--c-problems); color: #1C1B1A; font: 700 10px/1.4 var(--mono); letter-spacing: .08em; vertical-align: 2px; transform: rotate(-4deg); }
 :global(:root[data-style="neo-brutalism"]) .levels button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
 :global(:root[data-style="neo-brutalism"]) .lessonThumb { display: none; }
+/* Home's Continue card: the lesson you are on between its neighbours (SectionMini) */
+.contMini { width: 220px; flex: none; align-self: stretch; }
+@media (max-width: 640px) { .contMini { width: 100%; min-height: 0; } }
+
+/* the small card figure (SectionMini) sets its own height: two-line labels on narrow cards */
+.tilePic, .hubPic { height: auto; min-height: 96px; }
