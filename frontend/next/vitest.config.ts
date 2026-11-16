@@ -20,5 +20,7 @@ export default defineConfig({
   test: {
     // the current app's packages (frontend/node_modules) are bundled so they share this app's single React
     server: { deps: { inline: [/@vercel\/analytics/, /@xyflow/] } },
-    environment: "jsdom", setupFiles: ["./src/test/setup.ts"], css: false, restoreMocks: true },
+    environment: "jsdom",
+    // e2e/ is Playwright's (npm run e2e), not vitest's
+    exclude: ["e2e/**", "node_modules/**", "dist/**"], setupFiles: ["./src/test/setup.ts"], css: false, restoreMocks: true },
 });

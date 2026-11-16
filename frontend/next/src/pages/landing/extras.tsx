@@ -10,14 +10,14 @@ import { useContent } from "@/content/ContentProvider";
 import { paths } from "@/content/sections";
 import { ArticleBody } from "@/features/reader/ArticleBody";
 import tokens from "@/features/reader/figureTokens.module.css";
-import { look } from "@/lib/look";
+import { LOOK } from "@/lib/look";
 import { tickerItems } from "@/content/ticker";
 import type { ArticleResponse, SiteResponse } from "@/lib/api/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useOnce, countUp } from "@/lib/motion";
 import { Skeleton } from "@/components/ui";
 import { useLegacySite } from "@/features/legacy/site";
-import s from "./Landing.module.css";
+import s from "../Landing.module.css";
 
 // The landing sections tech.katta.cc has, from the same site copy: the hero figure (an animated Kafka diagram),
 // the numbers strip, "Practise system design the way interviews test it", and IND vs PAK on a real canvas.
@@ -137,7 +137,7 @@ export function LandingLab() {
  *  loops without a seam; screen readers get it once. The default look has no ticker. */
 export function Ticker() {
   const { site, articles } = useContent();
-  if (look() !== "neo-brutalism") return null;
+  if (LOOK !== "neo-brutalism") return null;
   const items = tickerItems(site, articles);
   const run = (hidden: boolean) => (
     <span aria-hidden={hidden || undefined}>{items.map((t) => <span key={t}>{t}<i aria-hidden="true">✦</i></span>)}</span>

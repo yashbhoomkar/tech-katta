@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist");
+const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", process.env.OUT_DIR ?? "dist");
 const html = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 const API = process.env.VITE_API_BASE ?? "https://tech-api.katta.cc";
 const SECTIONS = { concepts: "Concepts", components: "Components", "interview-questions": "Interview Questions", "real-systems": "Real Systems", "quick-notes": "Quick Notes" };

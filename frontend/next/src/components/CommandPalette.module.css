@@ -19,7 +19,7 @@
   .foot { display: none; }
 }
 
-/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css) ---------- */
 :global(:root[data-style="neo-brutalism"]) .box { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
 :global(:root[data-style="neo-brutalism"]) .inputRow { border-bottom: var(--bw) solid var(--rule); }
 :global(:root[data-style="neo-brutalism"]) .foot { border-top: var(--bw) solid var(--rule); }

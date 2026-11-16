@@ -61,7 +61,7 @@
   .dialog::before { content: ""; position: absolute; left: 50%; top: 8px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
 }
 
-/* ---------- neo-brutalism (styles/themes/neo-brutalism.css) ---------- */
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css) ---------- */
 :global(:root[data-style="neo-brutalism"]) .dialog { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-xl); box-shadow: var(--sh-lg); }
 @media (max-width: 640px) { :global(:root[data-style="neo-brutalism"]) .dialog { border-bottom: 0; box-shadow: none; border-radius: var(--r-xl) var(--r-xl) 0 0; } :global(:root[data-style="neo-brutalism"]) .dialog::before { background: var(--edge); } }
 :global(:root[data-style="neo-brutalism"]) .x { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--sh-sm); }

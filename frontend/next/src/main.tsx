@@ -3,17 +3,9 @@ import "@fontsource-variable/source-serif-4/wght-italic.css";
 import "@fontsource-variable/geist-mono";
 import "./styles/tokens.css";
 import "./styles/global.css";
-// the second look (data-style="neo-brutalism" on <html>, set by the build: VITE_STYLE). Its rules apply only under
-// that attribute, and the fonts are fetched only when a page uses them.
-import "@fontsource/archivo/400.css";
-import "@fontsource/archivo/600.css";
-import "@fontsource/archivo/700.css";
-import "@fontsource/archivo-black/400.css";
-import "@fontsource/space-mono/400.css";
-import "@fontsource/space-mono/700.css";
-import "./styles/themes/neo-brutalism.css";
-// the look's own motion (vite.config.ts points @look at styles/looks/<look>/): loaded after global.css, so its keyframes win
-import "@look/motion.css";
+// this build's look (VITE_STYLE; vite.config.ts points @look at styles/looks/<look>/): its fonts, tokens and motion,
+// after global.css so they win. Only the built look's CSS is in the bundle.
+import "@look";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
