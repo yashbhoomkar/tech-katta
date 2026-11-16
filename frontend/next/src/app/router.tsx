@@ -20,9 +20,13 @@ import { usePageViews } from "@/lib/analytics";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPage = ComponentType<any>;
 const LOADERS: (() => Promise<unknown>)[] = [];
-function page<M>(load: () => Promise<M>, pick: (m: M) => AnyPage) {
+/** A lazy page. When a chunk fails to load after a release, the current app's handler (frontend/src/api.js,
+ *  "vite:preloadError") cancels the error and reloads the page, which makes the import resolve to undefined: the page
+ *  then keeps showing Loading until the reload, instead of throwing. Without that handler the import rejects and
+ *  RouteError asks for a reload. */
+export function page<M>(load: () => Promise<M | undefined>, pick: (m: M) => AnyPage) {
   LOADERS.push(load);
-  return lazy(() => load().then((m) => ({ default: pick(m) })));
+  return lazy(() => load().then((m) => (m === undefined ? new Promise<never>(() => {}) : { default: pick(m) })));
 }
 const LandingPage = page(() => import("@/pages/Landing"), (m) => m.LandingPage);
 const HomePage = page(() => import("@/pages/Home"), (m) => m.HomePage);
