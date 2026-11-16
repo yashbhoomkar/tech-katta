@@ -58,7 +58,7 @@ export function HomePage() {
           <Card className={s.pad} tour="cont">
             <p className="mono">{resume ? "Continue where you left off" : "Start here"}</p>
             <div className={s.contIn} data-accent={nextAccent}>
-              {next.fig ? <FigureThumb id={next.fig} className={s.thumb} /> : <div className={s.thumb} aria-hidden="true">{next.tag}</div>}
+              {next.fig ? <FigureThumb id={next.fig} className={s.thumb} section={next.section} label={next.tag} /> : <div className={s.thumb} aria-hidden="true">{next.tag}</div>}
               <div className={s.contText}>
                 <Chip>{site.dashboard.sections.find(([id]) => id === next.section)?.[1]}</Chip>
                 <h3>{next.title}</h3>

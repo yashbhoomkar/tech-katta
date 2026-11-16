@@ -9,27 +9,19 @@
 // 100 wildcard redirects). Deep links inside each copy are served by its own route pages and 404.html. Run before
 // emit.mjs.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyProblem } from "./prototype-copies.mjs";
 
 const name = process.argv[2] ?? "next";
-const LOOKS = { next: "", "neo-brutalism": "neo-brutalism" };
-if (!(name in LOOKS)) {
-  console.error(`prototype-next: unknown copy "${name}" (known: ${Object.keys(LOOKS).join(", ")})`);
-  process.exit(1);
-}
 const src = new URL("../next/dist/", import.meta.url);
 const dist = new URL("../dist/", import.meta.url);
 if (!existsSync(new URL("index.html", src))) {
   console.error(`next/dist is missing: build it with BASE_PATH=/p/${name}/ npm run build:next`);
   process.exit(1);
 }
-// guard against copying a build made for the other address or look
-const html = readFileSync(new URL("index.html", src), "utf8");
-if (!html.includes(`/p/${name}/assets/`)) {
-  console.error(`prototype-next: next/dist was not built with BASE_PATH=/p/${name}/`);
-  process.exit(1);
-}
-if (LOOKS[name] ? !html.includes(`data-style="${LOOKS[name]}"`) : html.includes("data-style=")) {
-  console.error(`prototype-next: next/dist was built with the wrong VITE_STYLE for /p/${name}/`);
+// refuse a build made for another address or look (prototype-copies.mjs, tested in hosting.test.js)
+const problem = copyProblem(readFileSync(new URL("index.html", src), "utf8"), name);
+if (problem) {
+  console.error(`prototype-next: ${problem}`);
   process.exit(1);
 }
 const out = new URL(`p/${name}/`, dist);

@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 // The current app's figure manifest plugin: which module draws which figure ("virtual:fig-manifest").
 import figManifest from "../figs-manifest.js";
+// the looks (VITE_STYLE): scripts/look.mjs
+import { checkLook, lookHtml } from "./scripts/look.mjs";
 
 const legacy = fileURLToPath(new URL("../src", import.meta.url));
 
@@ -13,14 +15,8 @@ const base = process.env.BASE_PATH ?? "/next/";
 // The look: unset is the default design; VITE_STYLE=neo-brutalism builds the same app in the second look
 // (styles/themes/neo-brutalism.css), served at prototype.katta.cc/p/neo-brutalism/. Set on <html> in the page itself,
 // so the first paint already has it.
-const STYLES: Record<string, string> = { "neo-brutalism": "#F8F2E5" };
-const style = process.env.VITE_STYLE ?? "";
-if (style && !STYLES[style]) throw new Error(`VITE_STYLE: unknown look "${style}" (known: ${Object.keys(STYLES).join(", ")})`);
-const lookPlugin: Plugin = {
-  name: "tk-look",
-  transformIndexHtml: (html) =>
-    style ? html.replace('<html lang="en">', `<html lang="en" data-style="${style}">`).replace(/(<meta name="theme-color" content=")[^"]*/, `$1${STYLES[style]}`) : html,
-};
+const style = checkLook(process.env.VITE_STYLE ?? "");
+const lookPlugin: Plugin = { name: "tk-look", transformIndexHtml: (html) => lookHtml(html, style) };
 
 export default defineConfig({
   base,

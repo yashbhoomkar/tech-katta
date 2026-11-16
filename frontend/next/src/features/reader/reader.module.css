@@ -281,3 +281,5 @@
 /* neo-brutalism: the burst throws square, outlined confetti */
 :global(:root[data-style="neo-brutalism"]) .burst { width: 11px; height: 11px; border-radius: 0; border: 2px solid var(--edge); }
 :global(:root[data-style="neo-brutalism"]) .figLoading { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }
+/* the lesson title carries a marigold print shadow in light (none in dark, where it turns brown) */
+:global(:root[data-style="neo-brutalism"]:not([data-theme="dark"])) .head h1 { text-shadow: 3px 3px 0 var(--marigold); }

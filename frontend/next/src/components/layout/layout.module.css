@@ -150,3 +150,6 @@ button.me { width: 100%; border: 0; text-align: left; }
 :global(:root[data-style="neo-brutalism"]) .tabActive { color: var(--ink); }
 :global(:root[data-style="neo-brutalism"]) .tabActive > svg { color: #1C1B1A; }
 :global(:root[data-style="neo-brutalism"]) .skip { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+/* the chosen row stamps down onto its shadow */
+:global(:root[data-style="neo-brutalism"]) .sideMark { animation: nb-stamp-in 260ms var(--out); }
+:global(:root[data-style="neo-brutalism"]) .tabActive::before { animation: nb-stamp-in 220ms var(--out); }

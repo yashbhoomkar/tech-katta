@@ -10,6 +10,8 @@ import { useContent } from "@/content/ContentProvider";
 import { paths } from "@/content/sections";
 import { ArticleBody } from "@/features/reader/ArticleBody";
 import tokens from "@/features/reader/figureTokens.module.css";
+import { look } from "@/lib/look";
+import { tickerItems } from "@/content/ticker";
 import type { ArticleResponse, SiteResponse } from "@/lib/api/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useOnce, countUp } from "@/lib/motion";
@@ -128,5 +130,21 @@ export function LandingLab() {
         <p className={s.note}>{l.note}</p>
       </div>
     </section>
+  );
+}
+
+/** The neo-brutalism look's running strip under the hero (its mock-up's ticker), from live counts. Drawn twice so it
+ *  loops without a seam; screen readers get it once. The default look has no ticker. */
+export function Ticker() {
+  const { site, articles } = useContent();
+  if (look() !== "neo-brutalism") return null;
+  const items = tickerItems(site, articles);
+  const run = (hidden: boolean) => (
+    <span aria-hidden={hidden || undefined}>{items.map((t) => <span key={t}>{t}<i aria-hidden="true">✦</i></span>)}</span>
+  );
+  return (
+    <div className={s.ticker} role="marquee" aria-label="Tech Katta in numbers">
+      <div className={s.tickerRun}>{run(false)}{run(true)}</div>
+    </div>
   );
 }
