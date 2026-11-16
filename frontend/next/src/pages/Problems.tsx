@@ -143,7 +143,7 @@ export function ProblemsPage() {
                 <span className={cx("mono", s.pn)}>{r.a.no.replace(/^\D+\/\/\s*/, "")}</span>
                 <span className={s.pt}>{r.a.title}</span>
                 <span className={s.pm}><Chip level={asLevel(r.a.group)}>{r.a.tag}</Chip>{r.tests ? <span>{r.tests} tests</span> : null}{r.best != null && <b>{r.best}</b>}</span>
-                <span className={s.ps} aria-label={r.status === "new" ? "not started" : r.status}>{r.status === "solved" ? "✓" : r.status === "started" ? "◐" : ""}</span>
+                <span className={s.ps} role="img" aria-label={r.status === "new" ? "not started" : r.status}>{r.status === "solved" ? "✓" : r.status === "started" ? "◐" : ""}</span>
               </Link>
             </li>
           ))}
@@ -167,7 +167,7 @@ export function ProblemsPage() {
               <Link key={c.id} to={`/problems/challenge/${c.id}`} className={s.chal} style={{ animationDelay: `${i * 40}ms` }}>
                 <p className="mono">{lab.status === "success" ? (lab.data.levels?.[c.level] ?? c.level) : c.level}</p>
                 <h3>{c.title}</h3>
-                <span className={s.stars} aria-label={`${n} of ${c.stars.length} stars`}>{Array.from({ length: c.stars.length }, (_, k) => <i key={k} data-on={k < n ? "" : undefined}>★</i>)}</span>
+                <span className={s.stars} role="img" aria-label={`${n} of ${c.stars.length} stars`}>{Array.from({ length: c.stars.length }, (_, k) => <i key={k} data-on={k < n ? "" : undefined}>★</i>)}</span>
               </Link>
             );
           })}

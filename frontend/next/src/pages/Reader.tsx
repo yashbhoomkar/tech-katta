@@ -147,7 +147,7 @@ export function ReaderPage() {
           {toc.length > 0 && mode === "full" && <PhoneToc toc={toc} />}
 
           {res.status === "loading" && (
-            <div className={s.loading} aria-label="Loading the lesson">
+            <div className={s.loading} role="status" aria-label="Loading the lesson">
               <Skeleton height={18} /><Skeleton height={18} width="92%" /><Skeleton height={18} width="80%" />
               <Skeleton height={220} />
             </div>

@@ -1,26 +1,57 @@
+import { lazy, Suspense, useEffect, type ComponentType, type ReactNode } from "react";
 import { createBrowserRouter, Outlet, ScrollRestoration } from "react-router-dom";
+import { NotFoundPage } from "@/pages/NotFound";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageMetaProvider } from "@/components/layout/PageMeta";
 import { ContentGate } from "@/content/ContentGate";
-import { HomePage } from "@/pages/Home";
-import { LandingPage } from "@/pages/Landing";
-import { LearnPage } from "@/pages/Learn";
-import { MePage } from "@/pages/Me";
-import { NotFoundPage } from "@/pages/NotFound";
-import { ReaderPage } from "@/pages/Reader";
-import { PolicyPage } from "@/pages/Policy";
-import { ProblemsPage } from "@/pages/Problems";
-import { ChallengePage, PracticePage, ProblemWorkspacePage, SandboxPage } from "@/pages/ProblemWorkspace";
-import { SectionPage } from "@/pages/Section";
 import { Providers } from "./Providers";
 import { HostAnalytics } from "@legacy/hostanalytics.jsx";
 import { usePageViews } from "@/lib/analytics";
 
 // Routes. The landing page has its own chrome; every other page sits in the app shell. Paths mirror the
 // full-site prototype (/learn/<section>/<slug>, /problems/<slug>, /me) without its hash.
+//
+// Each page's code loads when it is first opened (Lighthouse, 2026-11-16: the first load ran every page's code on
+// a phone's CPU before painting). The page you open fetches only its own chunk; once it is idle, the other pages
+// are fetched in the background, so moving around stays instant. The not-found page is small and stays in the
+// main bundle.
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPage = ComponentType<any>;
+const LOADERS: (() => Promise<unknown>)[] = [];
+function page<M>(load: () => Promise<M>, pick: (m: M) => AnyPage) {
+  LOADERS.push(load);
+  return lazy(() => load().then((m) => ({ default: pick(m) })));
+}
+const LandingPage = page(() => import("@/pages/Landing"), (m) => m.LandingPage);
+const HomePage = page(() => import("@/pages/Home"), (m) => m.HomePage);
+const LearnPage = page(() => import("@/pages/Learn"), (m) => m.LearnPage);
+const SectionPage = page(() => import("@/pages/Section"), (m) => m.SectionPage);
+const ReaderPage = page(() => import("@/pages/Reader"), (m) => m.ReaderPage);
+const ProblemsPage = page(() => import("@/pages/Problems"), (m) => m.ProblemsPage);
+const MePage = page(() => import("@/pages/Me"), (m) => m.MePage);
+const PolicyPage = page(() => import("@/pages/Policy"), (m) => m.PolicyPage);
+const ChallengePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.ChallengePage);
+const PracticePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.PracticePage);
+const ProblemWorkspacePage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.ProblemWorkspacePage);
+const SandboxPage = page(() => import("@/pages/ProblemWorkspace"), (m) => m.SandboxPage);
+
+/** Fetch every page's code once the first page has settled (idle), so later navigations do not wait. */
+export function prefetchPages(): void {
+  for (const load of LOADERS) void load().catch(() => {});
+}
+
+/** While a page's code arrives: an empty area of the page's height, so nothing jumps. */
+function Loading({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<div aria-busy="true" style={{ minHeight: "70vh" }} />}>{children}</Suspense>;
+}
 
 function Root() {
   usePageViews();
+  useEffect(() => {
+    const idle = (cb: () => void) => (typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500));
+    idle(prefetchPages);
+  }, []);
   return (
     <Providers>
       <Outlet />
@@ -33,14 +64,14 @@ function Landing() {
   return (
     <PageMetaProvider>
       <ContentGate>
-        <LandingPage />
+        <Loading><LandingPage /></Loading>
       </ContentGate>
       <ScrollRestoration />
     </PageMetaProvider>
   );
 }
 
-const gated = (el: React.ReactNode) => <ContentGate>{el}</ContentGate>;
+const gated = (el: ReactNode) => <ContentGate><Loading>{el}</Loading></ContentGate>;
 
 export const routes = [
   {
@@ -60,7 +91,7 @@ export const routes = [
           { path: "practice", element: gated(<PracticePage />) },
           { path: "practice/:slug", element: gated(<PracticePage />) },
           { path: "problems/:slug", element: gated(<ProblemWorkspacePage />) },
-          { path: "me", element: <MePage /> },
+          { path: "me", element: <Loading><MePage /></Loading> },
           { path: "privacy", element: gated(<PolicyPage which="privacy" />) },
           { path: "terms", element: gated(<PolicyPage which="terms" />) },
           { path: "*", element: <NotFoundPage /> },

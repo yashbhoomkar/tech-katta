@@ -18,7 +18,7 @@ export function ContentGate({ children }: { children: ReactNode }) {
     );
   }
   return (
-    <div className={s.wrap} aria-busy="true" aria-label="Loading">
+    <div className={s.wrap} role="status" aria-busy="true" aria-label="Loading">
       <Skeleton width="40%" height={34} />
       <Skeleton width="65%" />
       <div className={s.grid}>

@@ -181,6 +181,6 @@ function BlockView({ block: b, id, article, numbers }: BlockProps) {
 /** A figure, drawn once the figure colours are read for the current theme (keyed by it, so a theme change redraws). */
 function FigureSlot({ id, n, cap }: { id: string; n: number; cap: string | undefined }) {
   const ctx = useContext(FigureTheme);
-  if (!ctx) return <div className={s.figLoading} aria-label="Loading figure" />;
+  if (!ctx) return <div className={s.figLoading} role="status" aria-label="Loading figure" />;
   return <LegacyFigure key={`${id}:${ctx.theme}`} id={id} n={n} cap={cap} still={ctx.still} />;
 }

@@ -20,6 +20,6 @@ export function LegacyFigure({ id, n, cap, still }: { id: string; n: number; cap
     return () => { gone = true; };
   }, [id, ready]);
   if (!knownFig(id) || failed) return <p className={s.figError}>This figure couldn't be loaded. The rest of the lesson is fine.</p>;
-  if (!ready) return <div className={s.figLoading} aria-label="Loading figure" />;
+  if (!ready) return <div className={s.figLoading} role="status" aria-label="Loading figure" />;
   return <div className={`tk-legacy ${tokens.tokens} ${s.legacyFig}`}><Fig id={id} n={n} cap={cap} still={still} rd="" /></div>;
 }
