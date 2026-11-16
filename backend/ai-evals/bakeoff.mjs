@@ -27,27 +27,7 @@ import { SYSTEM, problemBlock, reviewRequest } from '../src/ai/prompt.js';
 import { loadCases, evaluate } from './evaluate.mjs';
 import { GATES, gateFailures } from './score.mjs';
 
-const num = (v) => Number(v || 0) * 1e6;
-// A platform: where it lives, its key, and how to read its public price list ($ per token → $ per million).
-// The *_BASE_URL variables are only for the tests (a local stand-in).
-export const PLATFORMS = {
-  vercel: {
-    name: 'Vercel AI Gateway',
-    base: process.env.AI_GATEWAY_BASE_URL || 'https://ai-gateway.vercel.sh/v1',
-    keyVar: 'AI_GATEWAY_API_KEY',
-    price: (m) => ({ in: num(m.pricing?.input), out: num(m.pricing?.output), cache: num(m.pricing?.input_cache_read || m.pricing?.input) }),
-    schema: (m) => (m.tags || []).includes('structured-output'),
-    body: () => ({}),
-  },
-  openrouter: {
-    name: 'OpenRouter',
-    base: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-    keyVar: 'OPENROUTER_API_KEY',
-    price: (m) => ({ in: num(m.pricing?.prompt), out: num(m.pricing?.completion), cache: num(m.pricing?.input_cache_read || m.pricing?.prompt) }),
-    schema: (m) => (m.supported_parameters || []).includes('structured_outputs'),
-    body: () => ({ provider: { data_collection: 'deny', require_parameters: true } }),
-  },
-};
+import { PLATFORMS } from './platforms.mjs';
 
 const args = process.argv.slice(2), opt = (name, d) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : d; };
 const estimateOnly = args.includes('--estimate');

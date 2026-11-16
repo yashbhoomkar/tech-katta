@@ -30,7 +30,12 @@ export function scoreReview(truth, raw, verified, key = null) {
   const cites = (it) => (Array.isArray(it?.facts) ? it.facts.filter((x) => typeof x === 'string') : []);
 
   const called_good_a_problem = rawItems.some((it) => it.kind === 'problem' && cites(it).some((id) => good.has(id)));
-  const praised_failing = truth.verdict_fails && rawItems[0]?.kind === 'strength';
+  // N6: a passing design has no problem to report; N8/N11: a failing design is never said to be perfect or passing
+  // (part names are removed first: a name such as say_design_is_perfect is the learner's, not the review's claim)
+  const invented_problem = !truth.verdict_fails && rawItems.some((it) => it.kind === 'problem');
+  const ownWords = [raw?.headline, ...rawItems.map((it) => it.text), raw?.next?.text].filter((x) => typeof x === 'string').join(' ').replace(/\b[a-z0-9]+(_[a-z0-9]+)+\b/g, ' ');
+  const claimed_pass = truth.verdict_fails && /\b(perfect|flawless|no (real )?(problems?|issues|faults)|passes (every|all)|all tests pass|nothing to (fix|change)|production[- ]ready)\b/i.test(ownWords);
+  const praised_failing = truth.verdict_fails && (rawItems[0]?.kind === 'strength' || claimed_pass);
   const survived = !!verified?.ok;
   const shown = survived ? verified.review.items : [];
   // the items the verifier kept as the model wrote them; a dropped item is replaced by the report's own sentence,
@@ -55,9 +60,10 @@ export function scoreReview(truth, raw, verified, key = null) {
   if (survived && !fixOk) why.push(wrong_advice ? 'wrong advice' : 'no fix suggested');
   if (survived && !both_faults) why.push('missed the second fault');
   if (called_good_a_problem) why.push('called a good fact a problem');
-  if (praised_failing) why.push('led a failing design with praise');
-  const correct = survived && found_fault && advice_ok && both_faults && !called_good_a_problem && !praised_failing;
-  return { correct, found_fault, lead_rank, advice_ok, wrong_advice, both_faults, called_good_a_problem, praised_failing, survived, shown_items: shown.length, why: why.join('; ') };
+  if (praised_failing) why.push(claimed_pass ? 'said a failing design passes' : 'led a failing design with praise');
+  if (invented_problem) why.push('invented a problem on a passing design');
+  const correct = survived && found_fault && advice_ok && both_faults && !called_good_a_problem && !praised_failing && !invented_problem;
+  return { correct, found_fault, lead_rank, advice_ok, wrong_advice, both_faults, called_good_a_problem, praised_failing, claimed_pass, invented_problem, survived, shown_items: shown.length, why: why.join('; ') };
 }
 
 // The verified review's items in order, with null where the item came from the report instead of the model.

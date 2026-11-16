@@ -226,3 +226,31 @@ test('answer-key.md matches the key (else: node ai-evals/answer-key.mjs)', async
   const { answerKeySheet } = await import('../ai-evals/answer-key.mjs');
   assert.equal(readFileSync(new URL('../ai-evals/answer-key.md', import.meta.url), 'utf8'), answerKeySheet());
 });
+
+test('interviewer view: every test design passes the judge, and each flawed one has its own finding on a real line', async () => {
+  const { loadDesigns } = await import('../ai-evals/observe-bakeoff.mjs');
+  const designs = loadDesigns();
+  for (const d of designs) assert.equal(d.pack.verdict.word, 'Accepted', `${d.id} must pass the judge, else it tests nothing the judge misses`);
+  const flawed = designs.filter((d) => d.kind === 'flawed');
+  assert.ok(flawed.length >= 10);
+  assert.equal(new Set(flawed.map((d) => d.finding)).size, flawed.length, 'two flawed designs share a finding');
+  for (const d of flawed) assert.ok(d.source.split('\n')[d.line - 1]?.trim(), `${d.id}: line ${d.line} is empty`);
+});
+
+test('interviewer view: answers are checked and marked (catch, false alarm, wrong line, bad shape)', async () => {
+  const { verifyObserve, scoreObserve } = await import('../ai-evals/observe.mjs');
+  const { BLIND_SPOTS } = await import('../ai-evals/blind-spots.mjs');
+  const spot = BLIND_SPOTS.find((d) => d.id === 'ticket-booking/one-row-per-show');
+  const point = (line, category, severity) => ({ line, category, severity, text: 'One row per show, so booking a seat overwrites the others.' });
+  assert.equal(scoreObserve(spot, verifyObserve({ points: [point(7, 'key_choice', 'problem')] }, spot.source)).caught, true);
+  assert.match(scoreObserve(spot, verifyObserve({ points: [point(7, 'key_choice', 'consider')] }, spot.source)).why, /right line/);
+  assert.match(scoreObserve(spot, verifyObserve({ points: [point(3, 'key_choice', 'problem')] }, spot.source)).why, /missed/);
+  assert.equal(verifyObserve({ points: [point(6, 'key_choice', 'problem')] }, spot.source).points.length, 0); // line 6 is blank
+  assert.equal(verifyObserve({ points: [point(99, 'key_choice', 'problem')] }, spot.source).dropped[0].rule, 'line');
+  assert.equal(verifyObserve({ nope: [] }, spot.source).ok, false);
+  const clean = { id: 'x/reference', kind: 'clean', source: spot.source };
+  assert.equal(scoreObserve(clean, verifyObserve({ points: [] }, clean.source)).correct, true);
+  assert.equal(scoreObserve(clean, verifyObserve({ points: [point(7, 'key_choice', 'consider')] }, clean.source)).correct, true);
+  assert.equal(scoreObserve(clean, verifyObserve({ points: [point(7, 'key_choice', 'problem')] }, clean.source)).false_alarms, 1);
+  assert.equal(scoreObserve(clean, verifyObserve({ points: [point(5, 'security', 'problem')] }, clean.source), ['security']).correct, true);
+});
