@@ -58,7 +58,7 @@ const CHAPTERS = [
     parts: { cache: 'alert', db: 'alert', cache2: 'hidden', replica: 'hidden' },
     paths: { c1: 'down', c2: 'down', d2: 'hot', d3: 'hot', c1b: 'hidden', rep: 'hidden' },
     labels: { cache: ['down', 'alert'], db: ['37,600 req/s · overloaded', 'alert'], api2: ['× 3 · p99 2,000 ms', 'alert'] } },
-  { cam: { at: [12.4, 3.2], zoom: 1.4, sx: 0.66, sy: 0.62 }, speed: 0.2, explode: true, logs: true,
+  { cam: { at: [12.4, 3.2], zoom: 1.4, sx: 0.66, sy: 0.62, phoneAt: [13.9, 2.7] }, speed: 0.2, explode: true, logs: true,
     parts: { cache: 'alert', db: 'alert', cache2: 'hidden', replica: 'hidden', client: 'dim', cdn: 'dim', lb: 'dim', api1: 'dim', api3: 'dim', ids: 'dim' },
     paths: { c1: 'down', c2: 'down', d2: 'hot', d3: 'hot', c1b: 'hidden', rep: 'hidden' },
     labels: { cache: ['down', 'alert'], db: null, api2: null } },
@@ -66,7 +66,7 @@ const CHAPTERS = [
     parts: { cache: 'ok', cache2: 'ok', db: 'ok', replica: 'ok' },
     paths: { c1: 'ok', c2: 'ok', d2: 'ok', d3: 'ok', c1b: 'ok', rep: 'ok' },
     labels: { cache: ['restored', 'ok'], cache2: ['new node', 'ok'], db: ['1,200 req/s · healthy', 'ok'], replica: ['1,100 req/s', 'ok'], api2: ['× 3 · p99 41 ms', 'ok'] } },
-  { cam: { at: [8.5, 2], zoom: 0.6, sx: 0.5, sy: 0.78 }, speed: 0.14,
+  { cam: { at: [8.5, 2], zoom: 0.5, sx: 0.5, sy: 0.9 }, speed: 0.14,
     parts: { cache: 'ok', cache2: 'ok', db: 'ok', replica: 'ok' },
     paths: { c1: 'ok', c2: 'ok', d2: 'ok', d3: 'ok', c1b: 'ok', rep: 'ok' },
     labels: {} },
@@ -240,8 +240,9 @@ export function createScene(svg, { reduced }) {
     W = svg.clientWidth; H = svg.clientHeight;
     if (chapter >= 0) moveCam(CHAPTERS[chapter].cam);
   }
-  function moveCam({ at, zoom, sx, sy }) {
+  function moveCam({ at: atDesk, zoom, sx, sy, phoneAt }) {
     const phone = W <= 760;
+    const at = phone && phoneAt ? phoneAt : atDesk;
     const base = phone ? Math.min(W / 760, H / 520) : Math.min(W / 1440, H / 900) * 1.08;
     const s = zoom * base * (phone ? 1.05 : 1);
     const [fx, fy] = iso(at[0], at[1], 0.6);

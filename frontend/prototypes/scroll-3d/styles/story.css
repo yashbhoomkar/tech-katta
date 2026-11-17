@@ -120,7 +120,7 @@ main { position: relative; z-index: 2; }
   .track::before, .track::after { display: none; }
   .track li { padding: 0 0 0 32px; }
   .progress { display: none; }
-  .next { width: 48px; height: 48px; right: 16px; }
+  .next { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
