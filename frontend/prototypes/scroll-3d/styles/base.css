@@ -1,0 +1,44 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 400 17px/1.6 Manrope, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: inherit; }
+.mono, code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+.accent { color: var(--accent); }
+.ok { color: var(--ok); }
+.alert { color: var(--alert); }
+.center { text-align: center; justify-content: center; margin-left: auto; margin-right: auto; }
+.small { font-size: 12px; color: var(--ink-3); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+/* Buttons: pills with a round chip */
+.btn {
+  display: inline-flex; align-items: center; gap: 14px;
+  min-height: 52px; padding: 6px 6px 6px 24px;
+  border-radius: 999px; border: 1px solid transparent;
+  font: 700 16px/1 Manrope, sans-serif; text-decoration: none; cursor: pointer;
+  transition: transform .16s ease-out, box-shadow .2s ease-out, background-color .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn-sm { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.btn-dark { background: var(--ink); color: var(--page); box-shadow: 0 10px 24px -10px var(--shadow); }
+.btn-light { background: var(--card); color: var(--ink); border-color: var(--line); }
+.btn-violet { background: var(--accent); color: #fff; box-shadow: 0 12px 28px -12px var(--accent); }
+[data-theme="dark"] .btn-violet { color: #120E1E; }
+.chip {
+  display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--page); color: var(--ink); font-size: 18px;
+}
+.btn-violet .chip { background: rgba(255, 255, 255, .22); color: inherit; }
+.chip-violet { background: var(--accent-soft); color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); }
+  .btn:hover .chip { transform: translateX(2px); }
+  .chip { transition: transform .2s ease-out; }
+}

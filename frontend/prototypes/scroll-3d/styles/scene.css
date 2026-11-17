@@ -1,0 +1,76 @@
+/* The isometric scene: one SVG fixed behind the story. Shapes are drawn by scripts/scene.js. */
+.scene { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100svh; z-index: 0; pointer-events: none; }
+.scene .cam { transition: transform .9s cubic-bezier(.22, .8, .24, 1); }
+.scene .grid { stroke: var(--grid); stroke-width: 1; fill: none; transition: opacity .9s; }
+.scene .grid-major { stroke: var(--grid); stroke-width: 1.4; fill: none; opacity: .9; }
+
+/* Parts: faces of each block */
+.part { transition: opacity .7s ease-out, transform .9s cubic-bezier(.22, .8, .24, 1); }
+.part .top { fill: var(--blk-top); }
+.part .left { fill: var(--blk-left); }
+.part .right { fill: var(--blk-right); }
+.part .top, .part .left, .part .right { fill-opacity: var(--blk-alpha); stroke: var(--blk-edge); stroke-width: .8; stroke-linejoin: round; transition: fill .6s, stroke .6s; }
+.part .mark { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; opacity: .85; }
+[data-theme="dark"] .part .mark { stroke: #E9E3FF; }
+.part .shade { fill: var(--shadow); }
+.part.alert .top { fill: var(--alert-top); }
+.part.alert .left { fill: var(--alert-left); }
+.part.alert .right { fill: var(--alert-right); }
+.part.alert .top, .part.alert .left, .part.alert .right { stroke: rgba(201, 83, 30, .7); }
+.part.ok .top { fill: var(--ok-top); }
+.part.ok .left { fill: var(--ok-left); }
+.part.ok .right { fill: var(--ok-right); }
+.part.ok .top, .part.ok .left, .part.ok .right { stroke: rgba(21, 122, 82, .6); }
+.part.hidden { opacity: 0; transform: translateY(26px); }
+.part.dim { opacity: .28; }
+.ring { fill: none; stroke: var(--alert-fill); stroke-width: 1.4; opacity: 0; transition: opacity .6s; }
+.part.alert .ring { opacity: .7; animation: ring 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ring { from { transform: scale(.7); opacity: .8; } to { transform: scale(1.35); opacity: 0; } }
+
+/* Database layers pull apart in chapter 3 */
+.layer { transition: transform .9s cubic-bezier(.22, .8, .24, 1); }
+
+/* Paths and moving dots */
+.path { fill: none; stroke: var(--path); stroke-width: 1.4; stroke-dasharray: 1.5 6; stroke-linecap: round; transition: stroke .6s, opacity .6s; }
+.path.down { stroke: var(--ink-3); opacity: .35; stroke-dasharray: 6 6; }
+.path.hot { stroke: var(--alert-fill); }
+.path.ok { stroke: var(--ok-fill); stroke-dasharray: none; stroke-width: 2; opacity: .75; }
+.path.hidden { opacity: 0; }
+.req { fill: var(--dot); }
+.req.hot { fill: var(--alert-fill); }
+.req.ok { fill: var(--ok-fill); }
+
+/* Labels: upright pills */
+.pill { transition: opacity .6s ease-out, transform .6s ease-out; }
+.pill rect { fill: var(--pill); stroke: var(--pill-line); }
+.pill text { font: 500 11px/1 "IBM Plex Mono", monospace; fill: var(--ink-2); }
+.pill text .name { font-family: Manrope, sans-serif; font-weight: 700; fill: var(--ink); font-size: 12px; }
+.pill .led { fill: var(--ink-3); }
+.pill.alert .led { fill: var(--alert-fill); }
+.pill.alert text .v { fill: var(--alert); }
+.pill.ok .led { fill: var(--ok-fill); }
+.pill.ok text .v { fill: var(--ok); }
+.pill.hidden { opacity: 0; transform: translateY(6px); }
+.sev { transition: opacity .4s; }
+.sev rect { fill: var(--card); stroke: var(--alert-fill); }
+.sev text { font: 600 11px/1 Manrope, sans-serif; fill: var(--alert); }
+.sev.on { animation: blink 1.25s steps(1) infinite; }
+@keyframes blink { 50% { opacity: .45; } }
+.sev.hidden { opacity: 0; animation: none; }
+
+/* Layer readings and log lines (chapter 3) */
+.reading rect { fill: var(--pill); stroke: var(--alert-fill); stroke-opacity: .5; }
+.reading text { font: 500 11px/1 "IBM Plex Mono", monospace; fill: var(--ink); }
+.reading text .v { fill: var(--alert); }
+.reading, .logs { transition: opacity .6s ease-out .25s; }
+.reading.hidden, .logs.hidden { opacity: 0; transition-delay: 0s; }
+.logs text { font: 400 11px/1 "IBM Plex Mono", monospace; fill: var(--ink-3); }
+.logs text .warn { fill: var(--alert); }
+
+@media (max-width: 760px) {
+  .scene { height: 46vh; height: 46svh; background: linear-gradient(var(--page) 82%, transparent); z-index: 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene .cam, .part, .layer, .pill, .path, .reading, .logs { transition: none; }
+  .part.alert .ring, .sev.on { animation: none; }
+}

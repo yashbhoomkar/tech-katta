@@ -1,0 +1,75 @@
+/* Every colour of the prototype, light and dark under the same names. Text pairs are at least 4.5:1. */
+:root {
+  --page: #F8F7FB;
+  --page-fade: rgba(248, 247, 251, .92);
+  --grid: rgba(28, 24, 37, .07);
+  --ink: #1C1825;
+  --ink-2: #5B5568;
+  --ink-3: #8A849A;
+  --line: rgba(28, 24, 37, .12);
+  --card: #FFFFFF;
+  --accent: #6D3FE0;
+  --accent-ink: #5B2FD0;
+  --accent-soft: #EEE9FE;
+  --alert: #C9531E;          /* text on page: 4.7:1 */
+  --alert-fill: #F07B3F;
+  --alert-soft: #FDE6D9;
+  --ok: #157A52;             /* text on page: 5.3:1 */
+  --ok-fill: #2DBA7F;
+  --ok-soft: #DDF5EA;
+  /* blocks: top, left and right faces */
+  --blk-top: #D9CFFC;
+  --blk-left: #B9A6F7;
+  --blk-right: #9D85F0;
+  --blk-edge: rgba(91, 47, 208, .55);
+  --blk-alpha: .82;
+  --alert-top: #FBC5A6;
+  --alert-left: #F59A6B;
+  --alert-right: #E8692E;
+  --ok-top: #BDEFD8;
+  --ok-left: #7FD9B0;
+  --ok-right: #3FBF88;
+  --shadow: rgba(60, 40, 120, .12);
+  --path: rgba(28, 24, 37, .35);
+  --pill: rgba(255, 255, 255, .92);
+  --pill-line: rgba(28, 24, 37, .10);
+  --dot: #6D3FE0;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --page: #0F0D16;
+  --page-fade: rgba(15, 13, 22, .92);
+  --grid: rgba(255, 255, 255, .055);
+  --ink: #ECE9F5;
+  --ink-2: #A9A3BA;
+  --ink-3: #7F7892;
+  --line: rgba(255, 255, 255, .12);
+  --card: #1A1724;
+  --accent: #9B7BFF;
+  --accent-ink: #B49CFF;
+  --accent-soft: #241D3D;
+  --alert: #FF9A62;
+  --alert-fill: #F07B3F;
+  --alert-soft: #3A2218;
+  --ok: #4ED39A;
+  --ok-fill: #2DBA7F;
+  --ok-soft: #14301F;
+  --blk-top: #5E48B8;
+  --blk-left: #3D2C86;
+  --blk-right: #2C1F66;
+  --blk-edge: rgba(180, 156, 255, .55);
+  --blk-alpha: .9;
+  --alert-top: #F59A6B;
+  --alert-left: #C4551F;
+  --alert-right: #93391A;
+  --ok-top: #5FD9A4;
+  --ok-left: #23946A;
+  --ok-right: #186B4C;
+  --shadow: rgba(0, 0, 0, .45);
+  --path: rgba(236, 233, 245, .35);
+  --pill: rgba(26, 23, 36, .92);
+  --pill-line: rgba(255, 255, 255, .12);
+  --dot: #B49CFF;
+  color-scheme: dark;
+}
