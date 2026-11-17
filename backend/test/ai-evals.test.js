@@ -301,6 +301,12 @@ test('interviewer view, prompt v2: says how to read the notation, what belongs t
   for (const c of Object.keys(CATEGORIES)) assert.ok(SYSTEM_OBSERVE.includes(`- ${c}: `), c);
   assert.deepEqual(observeSchema().properties.points.items.properties.category.enum, Object.keys(CATEGORIES));
   assert.ok(!Object.keys(CATEGORIES).some((c) => ['cost', 'scaling', 'availability', 'other'].includes(c)), 'the judge\'s ground is not a category');
+  // the category descriptions are general: none shares a phrase of three words (two of them not filler) with a case
+  const { CASES } = await import('../ai-evals/cases-v3.mjs');
+  const filler = new Set(['the', 'a', 'an', 'of', 'to', 'is', 'it', 'in', 'on', 'or', 'and', 'for', 'this', 'that', 'not', 'be', 'by', 'its', 'what', 'how', 'can', 'with', 'are', 'as', 'at', 'one']);
+  const grams = (t) => { const w = t.toLowerCase().replace(/[^a-z ]+/g, ' ').split(/\s+/).filter(Boolean), o = []; for (let i = 0; i + 3 <= w.length; i += 1) { const g = w.slice(i, i + 3); if (g.filter((x) => !filler.has(x)).length >= 2) o.push(g.join(' ')); } return o; };
+  const caseText = new Set(grams(CASES.flatMap((c) => [c.why || '', ...(c.faults || []).flatMap((f) => [f.finding, f.why, f.good])]).join(' | ')));
+  for (const [c, text] of Object.entries(CATEGORIES)) assert.deepEqual(grams(text).filter((g) => caseText.has(g)), [], `the description of ${c} echoes a test case`);
   for (const d of loadDesigns()) {
     const sent = `${d.request.system}\n${d.request.problemBlock}\n${d.request.requestBlock}`;
     assert.ok(d.request.requestBlock.includes('<<<DESIGN') && d.request.requestBlock.includes('DESIGN>>>'), d.id);
@@ -411,6 +417,37 @@ test('interviewer view: a model is summarised against the bar, and one obeyed hi
   assert.deepEqual([digits.score.caught, digits.lenient.caught], [false, true]);                   // what the no-digit rule cost, without a new run
 });
 
+test('interviewer view: a person\'s review of the close calls is shown beside the automatic numbers, never instead', async () => {
+  const { loadDesigns, markAnswer, summarise, toReview, reviewedSummary, reviewSheet, report, reviewKey, modelName } = await import('../ai-evals/observe-bakeoff.mjs');
+  const { mockObserve } = await import('../ai-evals/observe.mjs');
+  const designs = loadDesigns();
+  assert.equal(modelName('meta/muse-ember@low'), 'meta_muse-ember_low');
+  const rowsOf = (mode) => designs.map((d) => ({ design: d.id, kind: d.kind, cls: d.cls, run: 1, ms: 900, cost: 0.001, ...markAnswer(d, { ok: true, json: mockObserve(d, mode) }) }));
+  const wrong = { model: 'm_wrong', rows: rowsOf('wrong-reason') }, noisy = { model: 'm_noisy', rows: rowsOf('noisy') };
+  for (const r of [wrong, noisy]) r.summary = summarise(r.rows);
+  const items = toReview([wrong, noisy]);
+  assert.equal(items.filter((i) => i.kind === 'reason' && i.model === 'm_wrong').length, wrong.rows.filter((r) => r.kind === 'flawed').length);
+  assert.equal(items.filter((i) => i.kind === 'alarm' && i.model === 'm_noisy').length, noisy.rows.filter((r) => r.kind === 'clean').length);
+  assert.equal(reviewedSummary('m_wrong', wrong.rows, {}), null);              // nothing reviewed: nothing shown
+  // accepting every "wrong reason" makes the wrong-reason reviewer a catcher, in the reviewed numbers only
+  const accept = Object.fromEntries(items.filter((i) => i.model === 'm_wrong').map((i) => [i.key, 'accept']));
+  const rev = reviewedSummary('m_wrong', wrong.rows, accept);
+  assert.deepEqual([wrong.summary.catch_pct, rev.catch_pct, rev.passes], [0, 100, true]);
+  // a rejected verdict keeps the automatic mark
+  const two = wrong.rows.find((r) => r.design === 'rate-limiter/two-faults-key-and-exposed-read');
+  assert.equal(reviewedSummary('m_wrong', [two], { [reviewKey('m_wrong', two)]: 'reject' }).catch_pct, 0);
+  // a fair false alarm, accepted, leaves the reviewed false-alarm rate; a rejected one stays
+  const alarms = items.filter((i) => i.model === 'm_noisy');
+  const half = Object.fromEntries(alarms.map((i, n) => [i.key, n % 2 ? 'reject' : 'accept']));
+  assert.ok(reviewedSummary('m_noisy', noisy.rows, half).false_alarm_pct < noisy.summary.false_alarm_pct);
+  const md = report({ stamp: 't', platform: 'p', designs, repeat: 1, results: [wrong, noisy], reviews: accept });
+  assert.match(md, /\| m_wrong \| \d+ \| 0 % → 100 % \| 0 % → 0 % \| no \/ yes · \*\*borderline: the owner decides\*\* \|/);
+  assert.match(md, /\| 1 \| m_wrong \| no: catches under 80 %/);                       // the official ranking is unchanged
+  const sheet = reviewSheet({ stamp: 't', designs, results: [wrong, noisy], reviews: accept });
+  assert.match(sheet, /\| `m_wrong#rate-limiter\/key-by-minute#1` \| reason \| accept \|/);
+  assert.ok(!sheet.split('\n').some((l) => l.startsWith('| `') && l.split(' | ').length !== 5), 'a review row breaks the table');
+});
+
 const spawnBakeoff = async (argv, env) => {
   const child = spawn(process.execPath, ['ai-evals/observe-bakeoff.mjs', ...argv], { cwd: new URL('..', import.meta.url), env: { ...process.env, ...env } });
   let log = '';
@@ -427,7 +464,7 @@ test('interviewer-view script, the mock run: four stand-in reviewers, no network
     const { code, log } = await spawnBakeoff(['--mock', '--repeat', '1', '--out', out], { AI_GATEWAY_BASE_URL: 'http://127.0.0.1:9' }); // nothing listens there
     assert.equal(code, 0, log);
     assert.match(log, /MOCK RUN PASSED/);
-    assert.match(readFileSync(new URL(`../ai-evals/results/observe-${out}.md`, import.meta.url), 'utf8'), /\| 1 \| mock\/perfect \| yes \| 100 % \| 0 % \|/);
+    assert.match(readFileSync(new URL(`../ai-evals/results/observe-${out}.md`, import.meta.url), 'utf8'), /\| 1 \| mock_perfect \| yes \| 100 % \| 0 % \|/);
     const { readRuns, answersDoc } = await import('../ai-evals/answers-doc.mjs');
     const { loadCases } = await import('../ai-evals/cases-v3.mjs');
     const { loadProblems } = await import('../ai-evals/ground-truth.mjs');
@@ -482,7 +519,7 @@ test('interviewer-view script, end to end against a stand-in for Vercel: marks, 
     await run(['--limit', '14', '--resume']);
     assert.equal(calls.length, 14);                                              // resume: only the 2 new designs
     const md = readFileSync(new URL(`../ai-evals/results/observe-${out}.md`, import.meta.url), 'utf8');
-    assert.match(md, /\| 1 \| fake\/good@low \| yes \| 100 % \| 0 % \|/);       // the careful stand-in clears the bar
+    assert.match(md, /\| 1 \| fake_good_low \| yes \| 100 % \| 0 % \|/);       // the careful stand-in clears the bar
     assert.match(md, /Catches per class/);
     const capped = await run(['--limit', '30', '--resume', '--max-spend', '0.0035'], 3); // each call costs $0.001: stops after 4 more
     assert.match(capped, /Stopped: this run has spent/);

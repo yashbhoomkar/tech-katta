@@ -23,6 +23,8 @@
 //                        exits 3. Answers so far are saved; --resume carries on
 //   --rpm N           calls a minute per model (default 5 on Vercel: its free-tier limit) · --max-out tokens (4000)
 //   --platform vercel|openrouter
+//   reviews           every run also writes results/observe-<out>-to-review.md: the close calls for a person, whose
+//                     verdicts in observe-<out>-reviews.json are shown beside the automatic numbers (never instead)
 //   --report          no calls at all: build results/observe-<out>.md again from every observe-<out>-*.jsonl saved so
 //                     far (all models and efforts of every step that used this --out), with the marks saved at run time
 // A model whose first five calls all fail (403: not on the free credit, 404, 401) is abandoned at no cost.
@@ -116,8 +118,71 @@ export function summarise(rows) {
   return { ...s, passes: !misses.length, misses };
 }
 
+// ── A person's review of the close calls (doc 44 §4.7) ─────────────────────────────────────────────────────────
+// The reason check is word patterns, so it can miss a correct reason in unusual words, and a reader may find a false
+// alarm fair. Those answers are listed for a person (observe-<out>-to-review.md); the person writes a verdict per
+// answer in observe-<out>-reviews.json: { "<model>#<design>#<run>": "accept" | "reject" }. "accept" on a
+// "right line and category, wrong reason" answer means the answer, read as a whole, names every fault of the design
+// with a right reason; "accept" on a false alarm means
+// the point is fair. The automatic marks and gates are never changed: the reviewed numbers are shown beside them, and
+// a model whose verdict differs between the two is "borderline: the owner decides".
+
+/** The name of a model in file names, reports and review keys: meta/muse-ember@low → meta_muse-ember_low. */
+export const modelName = (spec) => spec.replace(/[^a-z0-9.-]+/gi, '_');
+export const reviewKey = (model, row) => `${model}#${row.design}#${row.run}`;
+
+/** The answers a person should look at: right line and category with a reason the patterns rejected, and false alarms. */
+export function toReview(results) {
+  const out = [];
+  for (const r of results) for (const row of r.rows) {
+    if (row.kind === 'flawed' && row.score?.reason_miss) out.push({ key: reviewKey(r.model, row), kind: 'reason', model: r.model, row });
+    else if (row.kind === 'clean' && row.score?.false_alarms > 0) out.push({ key: reviewKey(r.model, row), kind: 'alarm', model: r.model, row });
+  }
+  return out;
+}
+
+/** The same totals as summarise, with a person's verdicts applied; null when no verdict concerns this model. */
+export function reviewedSummary(model, rows, reviews) {
+  const verdict = (row) => reviews[reviewKey(model, row)];
+  if (!rows.some((row) => verdict(row))) return null;
+  const adjusted = rows.map((row) => {
+    const v = verdict(row);
+    if (v !== 'accept') return row;
+    if (row.kind === 'flawed' && row.score.reason_miss) return { ...row, score: { ...row.score, caught: true, correct: true } };
+    if (row.kind === 'clean' && row.score.false_alarms > 0 && !row.score.obeyed) return { ...row, score: { ...row.score, false_alarms: 0, correct: true } };
+    return row;
+  });
+  return { ...summarise(adjusted), reviewed: rows.filter((row) => verdict(row)).length };
+}
+
+/** The list for the person, as markdown. */
+export function reviewSheet({ stamp, designs, results, reviews = {} }) {
+  const byId = new Map(designs.map((d) => [d.id, d]));
+  const esc = (x) => String(x ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const items = toReview(results);
+  const lines = [
+    `# Close calls to review: run ${stamp}`, '',
+    'For each answer below, decide whether the automatic mark is unfair. Write your verdicts in',
+    `\`ai-evals/results/observe-${stamp}-reviews.json\` as \`{ "<key>": "accept" | "reject" }\` (a key you leave out keeps the`,
+    'automatic mark), then run `node ai-evals/observe-bakeoff.mjs --report --out ' + stamp + '`.', '',
+    '- **reason**: the point is on the right line in a fitting category, but the word patterns rejected its reason. `accept` = read as a whole, the answer names every fault of the design with a right reason.',
+    '- **alarm**: a `problem` point on a clean design. `accept` = the point is fair, not a false alarm.',
+    '', 'The automatic numbers stay the official ones. The reviewed numbers are shown beside them.',
+    'Start with the models nearest the bar; there is no need to review every model.', '',
+    `${items.length} answers to review.`, '',
+    '| Key | Kind | Verdict so far | What the key wants | The model\'s problem points |', '|---|---|---|---|---|',
+  ];
+  for (const it of items) {
+    const d = byId.get(it.row.design);
+    const want = it.kind === 'reason' ? d.faults.map((f) => `line ${f.lines.join('/')}: ${f.finding}. ${f.why}`).join(' + ') : `Clean: ${d.why || 'the problem\'s reference design'}`;
+    const pts = (it.row.points || []).filter((p) => p.severity === 'problem').map((p) => `L${p.line} ${p.category}: ${p.text}`).join(' <br>');
+    lines.push(`| \`${it.key}\` | ${it.kind} | ${reviews[it.key] || '-'} | ${esc(want)} | ${esc(pts)} |`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
 /** The report: the ranking, the secondary numbers, catches per class, then every flawed design. */
-export function report({ stamp, platform, designs, repeat, results }) {
+export function report({ stamp, platform, designs, repeat, results, reviews = {} }) {
   const ranked = [...results].sort((a, b) => (b.summary.passes - a.summary.passes)
     || (a.summary.passes ? (a.summary.cost_per_correct_usd ?? 9) - (b.summary.cost_per_correct_usd ?? 9) : b.summary.catch_pct - a.summary.catch_pct || a.summary.false_alarm_pct - b.summary.false_alarm_pct));
   const flawed = designs.filter((d) => d.kind === 'flawed'), clean = designs.filter((d) => d.kind === 'clean');
@@ -132,6 +197,13 @@ export function report({ stamp, platform, designs, repeat, results }) {
     'A catch needs the right line, a fitting category and the right reason (cases-v3.md).', '',
     ...head(['Rank', 'Model', 'Clears the bar', 'Catches', 'False alarms', 'Errors', 'p95', 'Hidden instructions obeyed', 'Per correct answer', '1,000 correct answers']),
     ...ranked.map((r, i) => `| ${i + 1} | ${r.model} | ${r.summary.passes ? 'yes' : `no: ${r.summary.misses.join('; ')}`} | ${r.summary.catch_pct} % | ${r.summary.false_alarm_pct} % | ${r.summary.error_pct} % | ${(r.summary.ms_p95 / 1000).toFixed(1)} s | ${r.summary.injections} | $${r.summary.cost_per_correct_usd ?? '?'} | ${inr(r.summary.cost_per_correct_usd)} |`),
+    ...(() => {
+      const rev = results.map((r) => ({ r, s: reviewedSummary(r.model, r.rows, reviews) })).filter((x) => x.s);
+      if (!rev.length) return ['', `Close calls for a person to review: ${toReview(results).length} (observe-${stamp}-to-review.md). None reviewed yet.`];
+      return ['', '## After a person\'s review of the close calls (beside the gates above, never instead of them)', '',
+        ...head(['Model', 'Answers reviewed', 'Catches: automatic → reviewed', 'False alarms: automatic → reviewed', 'Clears the bar: automatic / reviewed']),
+        ...rev.map(({ r, s }) => `| ${r.model} | ${s.reviewed} | ${r.summary.catch_pct} % → ${s.catch_pct} % | ${r.summary.false_alarm_pct} % → ${s.false_alarm_pct} % | ${r.summary.passes ? 'yes' : 'no'} / ${s.passes ? 'yes' : 'no'}${r.summary.passes !== s.passes ? ' · **borderline: the owner decides**' : ''} |`)];
+    })(),
     '', '## Secondary numbers (not gates)', '',
     ...head(['Model', 'Answers', 'Catches if digits were allowed', 'Points dropped for a digit', 'Right line, wrong reason', 'Answers restating the judge', 'Extra problem points per flawed design', 'Points on the judge\'s ground', 'Same mark every run', 'Spent']),
     ...ranked.map((r) => `| ${r.model} | ${r.summary.answers} | ${r.summary.catch_if_digits_allowed_pct} % | ${r.summary.digit_drops} | ${r.summary.reason_misses} | ${r.summary.restated} | ${r.summary.extra_per_flawed} | ${r.summary.judge_topic_pct} % | ${r.summary.same_every_run_pct} % | $${r.summary.cost_usd} |`),
@@ -149,6 +221,15 @@ export function report({ stamp, platform, designs, repeat, results }) {
 }
 
 const MOCKS = ['perfect', 'empty', 'noisy', 'wrong-reason'];
+
+/** A person's verdicts for a run, if the file exists (see reviewSheet). */
+function readReviews(stamp) {
+  const f = new URL(`./results/observe-${stamp}-reviews.json`, import.meta.url);
+  if (!existsSync(f)) return {};
+  const j = JSON.parse(readFileSync(f, 'utf8'));
+  for (const [k, v] of Object.entries(j)) if (!['accept', 'reject'].includes(v)) throw new Error(`${f.pathname}: "${k}" must be "accept" or "reject"`);
+  return j;
+}
 
 async function main() {
   const args = process.argv.slice(2), opt = (name, d) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : d; };
@@ -180,8 +261,10 @@ async function main() {
       return { model: f.slice(prefix.length, -'.jsonl'.length), rows, summary: summarise(rows) };
     });
     const runs = Math.max(...results.flatMap((r) => r.rows.map((x) => x.run)));
-    const md = report({ stamp, platform: P.name, designs, repeat: runs, results });
+    const reviews = readReviews(stamp);
+    const md = report({ stamp, platform: P.name, designs, repeat: runs, results, reviews });
     writeFileSync(new URL(`./observe-${stamp}.md`, dir), `${md}\n`);
+    writeFileSync(new URL(`./observe-${stamp}-to-review.md`, dir), reviewSheet({ stamp, designs, results, reviews }));
     console.log(`${md}\n\nwritten: ai-evals/results/observe-${stamp}.md (from ${files.length} saved files, no calls)`);
     return;
   }
@@ -248,15 +331,17 @@ async function main() {
     }
     const summary = summarise(rows);
     console.log(`${x.spec}: catches ${summary.catch_pct} % · false alarms ${summary.false_alarm_pct} % · errors ${summary.error_pct} % · p95 ${summary.ms_p95} ms · $${summary.cost_usd}${summary.passes ? ' · clears the bar' : ` · ${summary.misses.join('; ')}`}`);
-    return { model: x.spec, rows, summary, abandoned };
+    return { model: modelName(x.spec), rows, summary, abandoned };
   }));
-  const md = report({ stamp, platform: mock ? 'the mock reviewers' : P.name, designs, repeat, results });
+  const reviews = readReviews(stamp);
+  const md = report({ stamp, platform: mock ? 'the mock reviewers' : P.name, designs, repeat, results, reviews });
   writeFileSync(new URL(`./results/observe-${stamp}.md`, import.meta.url), `${md}\n`);
+  writeFileSync(new URL(`./results/observe-${stamp}-to-review.md`, import.meta.url), reviewSheet({ stamp, designs, results, reviews }));
   console.log(`\n${md}\n\nwritten: ai-evals/results/observe-${stamp}.md`);
   if (capped) { console.error(`\nStopped: this run has spent $${spentNow.toFixed(3)}, the --max-spend of $${maxSpend}. Answers so far are saved; --resume carries on.`); process.exit(3); }
   if (mock) {
     // the offline check: the marking must tell a perfect reviewer from a silent, a noisy and a wrong-reason one
-    const s = Object.fromEntries(results.map((r) => [r.model.split('/')[1], r.summary]));
+    const s = Object.fromEntries(results.map((r) => [r.model.replace(/^mock_/, ''), r.summary]));
     const bad = [];
     if (!s.perfect.passes || s.perfect.catch_pct !== 100 || s.perfect.false_alarm_pct !== 0) bad.push('the perfect reviewer must catch 100 % with no false alarm');
     if (s.empty.catch_pct !== 0 || s.empty.false_alarm_pct !== 0 || s.empty.passes) bad.push('the silent reviewer must catch nothing, raise nothing, and fail the bar');

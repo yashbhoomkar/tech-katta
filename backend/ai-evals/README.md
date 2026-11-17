@@ -20,6 +20,8 @@
 > NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --tier lead --out v3-lead --budget 1 --max-spend 1 --resume   # after a stop
 > node ai-evals/observe-bakeoff.mjs --report --out v3-lead                        # the report again from saved answers, no calls
 > node ai-evals/answers-doc.mjs v3-lead                                           # every answer, to read
+> # a person reviews the close calls listed in results/observe-v3-lead-to-review.md, writes results/observe-v3-lead-reviews.json,
+> # then runs --report again: the reviewed numbers appear beside the automatic ones (never instead)
 > ```
 >
 > **Marking.** A flawed design is caught when a `problem` point names the fault's line, in a fitting category, and

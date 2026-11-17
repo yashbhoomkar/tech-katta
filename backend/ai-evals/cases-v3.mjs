@@ -18,16 +18,18 @@ export const CASES_VERSION = 3;
 
 /** The categories a point may use: one per taxonomy class of things the judge cannot see. */
 export const CATEGORIES = {
-  key: "A table's key does not fit its rows: a sql primary key that is not unique per row (rows overwrite each other), or a nosql partition key that piles rows onto few partitions or is not what a lookup asks for",
-  data_model: 'The columns cannot hold what the problem needs: something required is missing, or a stored value has to be rewritten by unrelated writes',
-  store_fit: 'The kind of store does not suit the data or the rule it must enforce (large files in a key-value store, a no-double-sale rule in a store that cannot enforce it)',
-  id_design: 'The ids are wrong for this problem: guessable where the data is private, or too few of them',
-  consistency: 'A read can show something wrong, or writes can be applied in the wrong order',
-  caching: 'A cache or CDN setting defeats its purpose for this data (not: whether a TTL is fresh enough, the judge checks that)',
-  security: 'Someone can read or change data they should not: a store reachable without a server in between',
-  api_contract: 'The reply cannot contain what the request promises, because the work happens after the reply',
-  failure_handling: 'A retry or a crash leaves duplicates or half-done work',
+  key: "A table's key does not fit how its rows are written or read",
+  data_model: 'The columns do not fit what must be kept or read',
+  store_fit: 'The type of store does not suit this data or how it must behave',
+  id_design: 'The way ids are made does not suit this problem',
+  consistency: 'A read or a write can give a wrong result for this problem',
+  caching: 'A cache or CDN is set up in a way that works against its purpose (not whether it is fresh enough: the judge checks that)',
+  security: 'Someone could read or change something they should not',
+  api_contract: 'A request cannot return what it promises',
+  failure_handling: 'A failure or a retry leaves the data wrong',
 };
+// Kept general on purpose: an example here would point the model at a planted fault (a test checks that no
+// description shares a phrase of three words or more with any case's finding, reason or answer).
 
 /** The taxonomy: every class of fault the judge cannot detect at runtime, and why it cannot. */
 export const CLASSES = {
