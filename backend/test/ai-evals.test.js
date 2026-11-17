@@ -556,3 +556,18 @@ test('interviewer-view script: finds every free reasoning model (catalog + one t
   assert.deepEqual(tried, ['a/free-thinker', 'b/paid-thinker', 'e/free-no-effort']);
   assert.deepEqual(specs, ['a/free-thinker@low', 'e/free-no-effort']);
 });
+
+test('probe-free-tier: every strict-JSON language model is a candidate (no batch/fast/image), and the effort is the lowest of low, minimal, medium', async () => {
+  const { candidatesOf, effortOf } = await import('../ai-evals/probe-free-tier.mjs');
+  const list = [
+    { id: 'a/x', type: 'language', tags: ['structured-output'] },
+    { id: 'a/x-batch', type: 'language', tags: ['structured-output'] },
+    { id: 'a/y', type: 'language', tags: ['reasoning'] },
+    { id: 'a/z', type: 'embedding', tags: ['structured-output'] },
+    { id: 'a/r', type: 'language', tags: ['reasoning', 'structured-output'], reasoning_options: [{ type: 'effort', values: ['minimal', 'low', 'high'] }] },
+  ];
+  assert.deepEqual(candidatesOf(list).map((m) => m.id), ['a/x', 'a/r']);
+  assert.equal(effortOf(list[4]), 'low');
+  assert.equal(effortOf({ reasoning_options: [{ type: 'effort', values: ['minimal', 'high'] }] }), 'minimal');
+  assert.equal(effortOf({}), null);
+});
