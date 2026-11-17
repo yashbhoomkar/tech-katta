@@ -1,20 +1,35 @@
 # The AI evaluator: ground truth and model bake-off
 
-> **The current test is the interviewer's view** (2026-11-16): the model's job is only what the deterministic judge
-> cannot determine (`REQUIREMENTS.md`). Its test set is `blind-spots.mjs` (in plain words: `blind-spots.md`): 10
-> flawed designs that all pass the judge, each with its own finding, and 12 clean ones. The test script:
+> **The current test is the interviewer's view, prompt v2 and ground truth v3** (2026-11-17). The model's job is only
+> what the deterministic judge cannot determine (`REQUIREMENTS.md`). The whole plan (what was learned, the response
+> contract, the test set, the search procedure and a runbook) is `tech-katta-context/44-AI-EVALUATOR-MODEL-SEARCH-PLAN.md`.
+>
+> | File | What it is |
+> |---|---|
+> | `observe.mjs` | Prompt v2, the JSON schema, the verifier (`verifyObserve`), the reason check (`reasonOk`), the marking (`scoreObserve`) and a mock reviewer |
+> | `cases-v3.mjs` | **Ground truth v3, written by hand before any run**: the taxonomy, 40 designs, the 9 references as clean cases, 3 held-out cases, the coverage matrix. In plain words: `cases-v3.md` (`node ai-evals/cases-v3.mjs` writes it) |
+> | `observe-bakeoff.mjs` | Runs models over the cases through one platform, saves every answer, reports against the bar |
+> | `observe-candidates.json` | The models, in tiers `lead`, `free`, `paid` |
+> | `answers-doc.mjs` | Writes every saved answer of a run as a document to read |
+> | `blind-spots.mjs`, `blind-spots.md` | The first test set (22 designs, 2026-11-16). Superseded by `cases-v3.mjs`; kept because docs 40, 41 and 43 refer to it |
 >
 > ```sh
-> node ai-evals/observe-bakeoff.mjs --estimate                                    # free: models, prices, cost
-> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --out first-run
-> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --out first-run --resume   # after a stop
+> node ai-evals/observe-bakeoff.mjs --mock                                        # offline: must print MOCK RUN PASSED
+> NODE_USE_ENV_PROXY=1 node ai-evals/observe-bakeoff.mjs --estimate --tier lead   # free: models, prices, cost
+> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --tier lead --out v3-lead --budget 1 --max-spend 1
+> NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --tier lead --out v3-lead --budget 1 --max-spend 1 --resume   # after a stop
+> node ai-evals/answers-doc.mjs v3-lead                                           # every answer, to read
 > ```
 >
-> Models come from `observe-candidates.json` (`--tier free` by default: the free credit's 8 shortlisted models;
-> `--tier paid` needs bought credit). Every answer is saved as it arrives (`results/observe-<out>-<model>.jsonl`), so a
-> stopped run loses nothing and `--resume` pays for nothing twice. A model whose estimate would pass `--budget`
-> (default $2) is skipped before any call. The report ranks the models that clear the bar (catches ≥ 80 %, false
-> alarms ≤ 10 %, errors ≤ 2 %, p95 ≤ 10 s) by cost per correct answer, and shows which model caught which flaw.
+> **Marking.** A flawed design is caught when a `problem` point names the fault's line, in a fitting category, and
+> its text states the reason (word patterns in the case; a right line with a wrong reason is not a catch). On a clean
+> design any `problem` point is a false alarm. A point with a digit is dropped, as in production. The bar: catches
+> ≥ 80 %, false alarms ≤ 10 %, errors ≤ 2 %, p95 ≤ 10 s, no hidden instruction obeyed; then cost per correct answer.
+> Every answer is saved as it arrives (`results/observe-<out>-<model>.jsonl`); `--resume` pays for nothing twice;
+> `--budget` skips a model whose estimate would pass it; `--max-spend` stops the run at a measured cost; a model
+> whose first five calls all fail (403 on the free tier) is abandoned.
+>
+> **The key is fixed before a run and is never changed after one** (owner, 2026-11-16).
 >
 > The sections below describe the earlier test of the review job (restating the judge's findings), kept for reference.
 

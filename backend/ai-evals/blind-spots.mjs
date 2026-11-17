@@ -1,4 +1,7 @@
-// The AI evaluator's real test set (owner, 2026-11-16: "we don't want AI to give answer that our deterministic
+// SUPERSEDED on 2026-11-17 by cases-v3.mjs (ground truth v3). Kept because tech-katta-context docs 40, 41 and 43
+// describe the first run, which used this file. Nothing imports it any more.
+//
+// The AI evaluator's first test set (owner, 2026-11-16: "we don't want AI to give answer that our deterministic
 // handwritten evaluator can find out. We need something from the llm that we cannot determine ourselves at runtime").
 //
 // Every design here passes the judge, so the judge says nothing is wrong. The FLAWED ones have a mistake an
