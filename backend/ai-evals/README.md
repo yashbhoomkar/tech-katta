@@ -18,6 +18,7 @@
 > NODE_USE_ENV_PROXY=1 node ai-evals/observe-bakeoff.mjs --estimate --tier lead   # free: models, prices, cost
 > NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --tier lead --out v3-lead --budget 1 --max-spend 1
 > NODE_USE_ENV_PROXY=1 AI_GATEWAY_API_KEY=… node ai-evals/observe-bakeoff.mjs --tier lead --out v3-lead --budget 1 --max-spend 1 --resume   # after a stop
+> node ai-evals/observe-bakeoff.mjs --report --out v3-lead                        # the report again from saved answers, no calls
 > node ai-evals/answers-doc.mjs v3-lead                                           # every answer, to read
 > ```
 >

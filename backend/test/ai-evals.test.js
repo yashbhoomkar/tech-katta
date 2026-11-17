@@ -435,6 +435,11 @@ test('interviewer-view script, the mock run: four stand-in reviewers, no network
     assert.match(doc, /\| mock_perfect \| 1 \| caught \| L5 · key · problem: /);
     assert.match(doc, /\| mock_wrong-reason \| 1 \| missed \(right line and category, wrong reason\) \|/);
     assert.match(doc, /\| mock_noisy \| 1 \| false alarm \|/);
+    // --report rebuilds the report from the saved answers, with no call at all
+    const again = await spawnBakeoff(['--report', '--out', out], { AI_GATEWAY_BASE_URL: 'http://127.0.0.1:9' });
+    assert.equal(again.code, 0, again.log);
+    assert.match(again.log, /from 4 saved files, no calls/);
+    assert.match(again.log, /\| 1 \| mock_perfect \| yes \| 100 % \| 0 % \|/);
   } finally { cleanResults(out); }
 });
 

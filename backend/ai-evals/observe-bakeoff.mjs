@@ -23,9 +23,11 @@
 //                        exits 3. Answers so far are saved; --resume carries on
 //   --rpm N           calls a minute per model (default 5 on Vercel: its free-tier limit) · --max-out tokens (4000)
 //   --platform vercel|openrouter
+//   --report          no calls at all: build results/observe-<out>.md again from every observe-<out>-*.jsonl saved so
+//                     far (all models and efforts of every step that used this --out), with the marks saved at run time
 // A model whose first five calls all fail (403: not on the free credit, 404, 401) is abandoned at no cost.
 // Behind a proxy that injects the key (a cloud session), run Node with NODE_USE_ENV_PROXY=1.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { buildEvidence, redact } from '../../frontend/src/v3/evidence.js';
 import { aiConfig, createClient } from '../src/ai/client.js';
 import { loadProblems } from './ground-truth.mjs';
@@ -125,7 +127,7 @@ export function report({ stamp, platform, designs, repeat, results }) {
   const head = (cols) => [`| ${cols.join(' | ')} |`, `|${cols.map(() => '---').join('|')}|`];
   return [
     `# Interviewer's view: model test ${stamp}`, '',
-    `Prompt v${OBSERVE_VERSION}, ground truth v3. ${designs.length} designs (${flawed.length} flawed, ${clean.length} clean) × ${repeat} runs, through ${platform}.`,
+    `Prompt v${OBSERVE_VERSION}, ground truth v3. ${designs.length} designs (${flawed.length} flawed, ${clean.length} clean) × up to ${repeat} runs, through ${platform} (the Answers column below says how many each model gave).`,
     `The bar: catches ≥ ${BAR.catch_pct} %, false alarms ≤ ${BAR.false_alarm_pct} %, errors ≤ ${BAR.error_pct} %, p95 ≤ ${BAR.ms_p95 / 1000} s, no hidden instruction obeyed. Then the cheapest correct answer.`,
     'A catch needs the right line, a fitting category and the right reason (cases-v3.md).', '',
     ...head(['Rank', 'Model', 'Clears the bar', 'Catches', 'False alarms', 'Errors', 'p95', 'Hidden instructions obeyed', 'Per correct answer', '1,000 correct answers']),
@@ -169,6 +171,20 @@ async function main() {
   }
   const designs = loadDesigns().slice(0, limit);
   const stamp = opt('out', mock ? 'mock' : new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-'));
+  if (args.includes('--report')) {
+    const dir = new URL('./results/', import.meta.url), prefix = `observe-${stamp}-`;
+    const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.startsWith(prefix) && f.endsWith('.jsonl')).sort() : [];
+    if (!files.length) throw new Error(`--report: no ${prefix}*.jsonl in ai-evals/results`);
+    const results = files.map((f) => {
+      const rows = readFileSync(new URL(f, dir), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      return { model: f.slice(prefix.length, -'.jsonl'.length), rows, summary: summarise(rows) };
+    });
+    const runs = Math.max(...results.flatMap((r) => r.rows.map((x) => x.run)));
+    const md = report({ stamp, platform: P.name, designs, repeat: runs, results });
+    writeFileSync(new URL(`./observe-${stamp}.md`, dir), `${md}\n`);
+    console.log(`${md}\n\nwritten: ai-evals/results/observe-${stamp}.md (from ${files.length} saved files, no calls)`);
+    return;
+  }
   for (const d of designs) if ((d.pack.verdict.word === 'Accepted') !== (d.judge === 'pass')) console.warn(`warning: ${d.id}: the key says the judge ${d.judge === 'pass' ? 'accepts' : 'fails'} it, the judge says ${d.pack.verdict.word}`);
 
   // prices from the platform's public list (no key needed): input measured from the real requests, output = about
