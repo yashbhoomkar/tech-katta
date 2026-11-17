@@ -19,4 +19,22 @@ export const PLATFORMS = {
     schema: (m) => (m.supported_parameters || []).includes('structured_outputs'),
     body: () => ({ provider: { data_collection: 'deny', require_parameters: true } }),
   },
+  // Google AI Studio's own API, through its OpenAI-compatible endpoint. Its free tier has no price list: a key from a
+  // project with no billing account cannot be charged, so every price is 0 (the cost columns then say nothing). On
+  // the free tier Google may use prompts to improve its products: fine for these made-up designs, not for production.
+  gemini: {
+    name: 'Google AI Studio (Gemini API)',
+    base: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai',
+    keyVar: 'GEMINI_API_KEY',
+    catalogNeedsKey: true,
+    id: (m) => String(m.id).replace(/^models\//, ''),
+    price: () => ({ in: 0, out: 0, cache: 0 }),
+    schema: () => true,
+    body: () => ({}),
+    reasoning: (effort) => ({ reasoning_effort: effort }),
+  },
 };
+// The body fields that set a model's reasoning effort: Vercel and OpenRouter take { reasoning }, Gemini its own field.
+export const reasoningBody = (P, effort) => (!effort ? {} : P.reasoning ? P.reasoning(effort) : { reasoning: effort === 'none' ? { enabled: false } : { effort } });
+export const catalogOf = async (P, key) => (await (await fetch(`${P.base}/models`, P.catalogNeedsKey ? { headers: { Authorization: `Bearer ${key}` } } : {})).json()).data
+  .map((m) => (P.id ? { ...m, id: P.id(m) } : m));

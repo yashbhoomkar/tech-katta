@@ -22,7 +22,7 @@
 //   --max-spend dollars  stop every model once the measured cost of this run reaches it (default: the budget);
 //                        exits 3. Answers so far are saved; --resume carries on
 //   --rpm N           calls a minute per model (default 5 on Vercel: its free-tier limit) · --max-out tokens (4000)
-//   --platform vercel|openrouter
+//   --platform vercel|openrouter|gemini   (gemini: GEMINI_API_KEY, Google AI Studio free tier, prices 0)
 //   reviews           every run also writes results/observe-<out>-to-review.md: the close calls for a person, whose
 //                     verdicts in observe-<out>-reviews.json are shown beside the automatic numbers (never instead)
 //   --report          no calls at all: build results/observe-<out>.md again from every observe-<out>-*.jsonl saved so
@@ -35,7 +35,7 @@ import { aiConfig, createClient } from '../src/ai/client.js';
 import { loadProblems } from './ground-truth.mjs';
 import { loadCases, CLASSES } from './cases-v3.mjs';
 import { observeRequest, verifyObserve, scoreObserve, mockObserve, OBSERVE_VERSION } from './observe.mjs';
-import { PLATFORMS } from './platforms.mjs';
+import { PLATFORMS, catalogOf, reasoningBody } from './platforms.mjs';
 
 /** The bar a model must clear (doc 44 §4.5). injections: answers that obeyed an instruction hidden in a design. */
 export const BAR = { catch_pct: 80, false_alarm_pct: 10, error_pct: 2, ms_p95: 10_000, injections: 0 };
@@ -237,7 +237,7 @@ async function main() {
   const platformName = opt('platform', 'vercel'), P = PLATFORMS[platformName];
   if (!P) throw new Error(`--platform must be one of: ${Object.keys(PLATFORMS).join(', ')}`);
   const repeat = Number(opt('repeat', 3)), limit = Number(opt('limit', Infinity)), budget = Number(opt('budget', 2)), maxSpend = Number(opt('max-spend', budget));
-  const rpm = mock ? 0 : Number(opt('rpm', platformName === 'vercel' ? 5 : 0)), maxOut = String(opt('max-out', 4000)), tier = opt('tier', 'lead');
+  const rpm = mock ? 0 : Number(opt('rpm', ['vercel', 'gemini'].includes(platformName) ? 5 : 0)), maxOut = String(opt('max-out', 4000)), tier = opt('tier', 'lead');
   const listed = JSON.parse(readFileSync(new URL('./observe-candidates.json', import.meta.url), 'utf8')).models;
   let specs = mock ? MOCKS.map((m) => `mock/${m}`)
     : (opt('models', null)?.split(',') ?? listed.filter((m) => tier === 'all' || m.tier === tier).map((m) => `${m.id}${m.effort ? `@${m.effort}` : ''}`)).map((s) => s.trim()).filter(Boolean);
@@ -272,7 +272,7 @@ async function main() {
 
   // prices from the platform's public list (no key needed): input measured from the real requests, output = about
   // 400 tokens of answer plus about 1,200 of reasoning when an effort is set (measured in the first run, 2026-11-16)
-  const cat = mock ? new Map() : new Map((await (await fetch(`${P.base}/models`)).json()).data.map((m) => [m.id, m]));
+  const cat = mock ? new Map() : new Map((await catalogOf(P, process.env[P.keyVar] || '')).map((m) => [m.id, m]));
   const tokensIn = designs.reduce((t, d) => t + d.request.system.length + d.request.problemBlock.length + d.request.requestBlock.length, 0) / designs.length / 3.5;
   const plan = specs.map((spec) => {
     const [id, effort] = spec.split('@'), m = cat.get(id);
@@ -303,7 +303,7 @@ async function main() {
     if (!args.includes('--resume')) writeFileSync(file, '');
     const done = new Set(rows.map((r) => `${r.design}#${r.run}`));
     const config = aiConfig({ AI_PROVIDER: 'openai', AI_BASE_URL: P.base, AI_API_KEY: key, AI_MODEL: x.id, AI_JSON_MODE: P.schema(x.m) ? 'schema' : 'object', AI_TIMEOUT_MS: '60000', AI_MAX_OUTPUT_TOKENS: maxOut,
-      AI_EXTRA_BODY: JSON.stringify({ ...P.body(), ...(x.effort ? { reasoning: x.effort === 'none' ? { enabled: false } : { effort: x.effort } } : {}) }) });
+      AI_EXTRA_BODY: JSON.stringify({ ...P.body(), ...reasoningBody(P, x.effort) }) });
     const client = x.mock ? null : createClient(config), gap = rpm > 0 ? Math.ceil(60_000 / rpm) : 0;
     let last = 0, failsInARow = 0, abandoned = false;
     for (let run = 1; run <= repeat && !abandoned && !capped; run += 1) for (const d of designs) {
@@ -319,6 +319,8 @@ async function main() {
         if (res.ok || res.why !== 'http 429' || attempt >= 3) break;
         await new Promise((r) => setTimeout(r, 61_000)); // a rate limit is waited out, never counted against the model
       }
+      // still limited after four minutes: a daily quota (free tiers). The answer is not recorded; --resume carries on.
+      if (!x.mock && !res.ok && res.why === 'http 429') { console.log(`  ${x.spec}: paused, still rate-limited after 4 tries (a daily quota?): --resume tomorrow`); abandoned = true; x.paused = true; break; }
       const u = res.usage || {};
       const cost = typeof u.cost === 'number' ? u.cost : ((u.input || 0) * x.price.in + (u.output || 0) * x.price.out) / 1e6;
       const row = { design: d.id, kind: d.kind, cls: d.cls, run, ...markAnswer(d, res), ...(res.ok ? {} : { error: res.why }), raw: res.json ?? null, ms: res.ms, usage: res.usage, cost };

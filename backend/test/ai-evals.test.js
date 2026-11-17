@@ -594,3 +594,22 @@ test('probe-free-tier: every strict-JSON language model is a candidate (no batch
   assert.equal(effortOf({ reasoning_options: [{ type: 'effort', values: ['minimal', 'high'] }] }), 'minimal');
   assert.equal(effortOf({}), null);
 });
+
+test('the Gemini platform: its own reasoning field, model ids without "models/", a catalog read with the key, no prices', async () => {
+  const { PLATFORMS, reasoningBody, catalogOf } = await import('../ai-evals/platforms.mjs');
+  const G = PLATFORMS.gemini;
+  assert.deepEqual(reasoningBody(G, 'low'), { reasoning_effort: 'low' });
+  assert.deepEqual(reasoningBody(PLATFORMS.vercel, 'low'), { reasoning: { effort: 'low' } });
+  assert.deepEqual(reasoningBody(PLATFORMS.vercel, 'none'), { reasoning: { enabled: false } });
+  assert.deepEqual(reasoningBody(G, undefined), {});
+  assert.deepEqual(G.price({}), { in: 0, out: 0, cache: 0 });
+  const seen = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { seen.push([url, init?.headers?.Authorization]); return { json: async () => ({ data: [{ id: 'models/gemini-x' }] }) }; };
+  try {
+    assert.deepEqual((await catalogOf(G, 'k')).map((m) => m.id), ['gemini-x']);
+    await catalogOf(PLATFORMS.vercel, 'k');
+  } finally { globalThis.fetch = real; }
+  assert.equal(seen[0][1], 'Bearer k');
+  assert.equal(seen[1][1], undefined); // the public catalogs get no key
+});
