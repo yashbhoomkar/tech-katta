@@ -1035,7 +1035,7 @@ export function caseSheet(cases, slugs) {
     `| Class | ${slugs.join(' | ')} |`, `|---|${slugs.map(() => '---').join('|')}|`,
     ...Object.keys(CAN_OCCUR).map((k) => `| ${k}. ${CLASSES[k].name} | ${slugs.map((s) => (cells.get(`${k}|${s}`) ? `\`${cells.get(`${k}|${s}`).split('/')[1]}\`` : SKIPPED[`${k}|${s}`] ? 'skip' : '·')).join(' | ')} |`),
     '', '### Why a cell is skipped', '', '| Cell | Reason |', '|---|---|',
-    ...Object.entries(SKIPPED).map(([k, v]) => `| ${k.replace('|', ' × ')} | ${esc(v)} |`),
+    ...Object.entries(SKIPPED).map(([k, v]) => `| ${k.split('|').join(' × ')} | ${esc(v)} |`),
     '', '## The designs', '',
   ];
   for (const c of cases) {
