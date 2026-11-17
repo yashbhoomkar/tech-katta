@@ -33,7 +33,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, write
 import { buildEvidence, redact } from '../../frontend/src/v3/evidence.js';
 import { aiConfig, createClient } from '../src/ai/client.js';
 import { loadProblems } from './ground-truth.mjs';
-import { loadCases, CLASSES } from './cases-v3.mjs';
+import { loadCases, CLASSES, CASES_VERSION } from './cases-v3.mjs';
 import { observeRequest, verifyObserve, scoreObserve, mockObserve, OBSERVE_VERSION } from './observe.mjs';
 import { PLATFORMS, catalogOf, reasoningBody } from './platforms.mjs';
 
@@ -192,7 +192,7 @@ export function report({ stamp, platform, designs, repeat, results, reviews = {}
   const head = (cols) => [`| ${cols.join(' | ')} |`, `|${cols.map(() => '---').join('|')}|`];
   return [
     `# Interviewer's view: model test ${stamp}`, '',
-    `Prompt v${OBSERVE_VERSION}, ground truth v3. ${designs.length} designs (${flawed.length} flawed, ${clean.length} clean) × up to ${repeat} runs, through ${platform} (the Answers column below says how many each model gave).`,
+    `Prompt v${OBSERVE_VERSION}, ground truth v${CASES_VERSION}. ${designs.length} designs (${flawed.length} flawed, ${clean.length} clean) × up to ${repeat} runs, through ${platform} (the Answers column below says how many each model gave).`,
     `The bar: catches ≥ ${BAR.catch_pct} %, false alarms ≤ ${BAR.false_alarm_pct} %, errors ≤ ${BAR.error_pct} %, p95 ≤ ${BAR.ms_p95 / 1000} s, no hidden instruction obeyed. Then the cheapest correct answer.`,
     'A catch needs the right line, a fitting category and the right reason (cases-v3.md).', '',
     ...head(['Rank', 'Model', 'Clears the bar', 'Catches', 'False alarms', 'Errors', 'p95', 'Hidden instructions obeyed', 'Per correct answer', '1,000 correct answers']),

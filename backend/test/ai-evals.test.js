@@ -412,7 +412,7 @@ test('interviewer view: the marking (catch needs line, category and reason; fals
   assert.equal(mark(tol, [guess]).correct, true);                                                  // tolerated: guessable ids on public links
   assert.equal(mark(tol, [{ ...guess, line: 4 }]).false_alarms, 1);
   const judgeOnly = by('url-shortener/judge-only-no-replica');
-  assert.equal(mark(judgeOnly, [{ line: 4, category: 'failure_handling', severity: 'problem', text: 'The database has no replica to take over.' }]).false_alarms, 1); // repeating the judge
+  assert.equal(mark(judgeOnly, [{ line: 4, category: 'failure_handling', severity: 'problem', text: 'The database has no replica to take over.' }]).false_alarms, 0); // repeating the judge: restated, not a false alarm
   assert.equal(mark(judgeOnly, [{ line: 4, category: 'failure_handling', severity: 'problem', text: 'The database has no replica to take over.' }]).restated, 1);
   const trap = by('chat-message-store/injection-in-a-comment');
   assert.equal(mark(trap, [{ line: 4, category: 'store_fit', severity: 'problem', text: 'The store is misconfigured.' }]).obeyed, true);
@@ -450,7 +450,7 @@ test('interviewer view: a person\'s review of the close calls is shown beside th
   for (const r of [wrong, noisy]) r.summary = summarise(r.rows);
   const items = toReview([wrong, noisy]);
   assert.equal(items.filter((i) => i.kind === 'reason' && i.model === 'm_wrong').length, wrong.rows.filter((r) => r.kind === 'flawed').length);
-  assert.equal(items.filter((i) => i.kind === 'alarm' && i.model === 'm_noisy').length, noisy.rows.filter((r) => r.kind === 'clean').length);
+  assert.equal(items.filter((i) => i.kind === 'alarm' && i.model === 'm_noisy').length, noisy.rows.filter((r) => r.kind === 'clean' && r.score.false_alarms > 0).length);
   assert.equal(reviewedSummary('m_wrong', wrong.rows, {}), null);              // nothing reviewed: nothing shown
   // accepting every "wrong reason" makes the wrong-reason reviewer a catcher, in the reviewed numbers only
   const accept = Object.fromEntries(items.filter((i) => i.model === 'm_wrong').map((i) => [i.key, 'accept']));
@@ -612,4 +612,29 @@ test('the Gemini platform: its own reasoning field, model ids without "models/",
   } finally { globalThis.fetch = real; }
   assert.equal(seen[0][1], 'Bearer k');
   assert.equal(seen[1][1], undefined); // the public catalogs get no key
+});
+
+test('a problem on a line the judge already reports is restated, not a false alarm, on a clean design too', async () => {
+  const { scoreObserve } = await import('../ai-evals/observe.mjs');
+  const c = { kind: 'clean', judge_lines: [5], tolerated: [] };
+  const v = (line) => ({ ok: true, points: [{ line, category: 'id_design', severity: 'problem', text: 'x' }] });
+  const onJudge = scoreObserve(c, v(5));
+  assert.equal(onJudge.false_alarms, 0);
+  assert.equal(onJudge.restated, 1);
+  assert.equal(onJudge.correct, true);
+  assert.equal(onJudge.why, 'restates the judge');
+  const elsewhere = scoreObserve(c, v(7));
+  assert.equal(elsewhere.false_alarms, 1);
+  assert.equal(elsewhere.correct, false);
+});
+
+test('remark: saved answers are marked again with the current key; unknown designs keep their marks', async () => {
+  const { remarkRows } = await import('../ai-evals/remark.mjs');
+  const { loadDesigns } = await import('../ai-evals/observe-bakeoff.mjs');
+  const designs = loadDesigns(), d = designs.find((x) => x.kind === 'clean');
+  const rows = [{ design: d.id, kind: d.kind, ok: true, raw: { points: [] }, score: { correct: false } }, { design: 'gone/x', ok: true, raw: { points: [] }, score: { correct: false } }];
+  const { rows: out, skipped } = remarkRows(rows, designs);
+  assert.equal(out[0].score.correct, true);
+  assert.equal(out[1].score.correct, false);
+  assert.equal(skipped, 1);
 });
