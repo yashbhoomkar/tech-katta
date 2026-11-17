@@ -97,6 +97,36 @@ test('W001, W002, W003', () => {
   assert.deepEqual(single, ['"api" has no spare. If it fails, GET_LINK and CREATE_LINK stop.', '"db" has no spare. If it fails, GET_LINK and CREATE_LINK stop.']);
 });
 
+test('W004, W005, W006, W007: design checks load cannot show, as notes that never fail', () => {
+  assert.deepEqual(warns(REF).filter((c) => c >= 'W004'), []);                           // the reference is clean
+  // W004: a store or cache reached from the client with no server in between (a read or a write)
+  const exposed = REF.replace('client > lb > api > cache | db', 'client > cache | db');
+  assert.ok(warns(exposed).includes('W004'));
+  const w004 = compile(exposed, P).warnings.find((w) => w.code === 'W004');
+  assert.deepEqual([w004.line, w004.part], [10, 'cache']);
+  assert.match(w004.message, /^GET_LINK reaches "cache" straight from the client, with no server in between/);
+  assert.ok(warns(REF.replace('client > lb > api > ids > db', 'client > db')).includes('W004'));
+  assert.ok(!warns(REF.replace('client > lb > api', 'client > api')).includes('W004')); // a server first is fine
+  // W005: a write's id is made after the queue
+  const queued = `${REF.replace('write CREATE_LINK: client > lb > api > ids > db then invalidate cache', 'write CREATE_LINK: client > lb > api ~> q > w > ids > db')}q = queue()\nw = worker(count=2)\n`;
+  assert.ok(warns(queued).includes('W005'));
+  assert.equal(compile(queued, P).warnings.find((w) => w.code === 'W005').message, 'CREATE_LINK makes its id after the queue: the reply cannot give it back, and a job delivered twice gets a second id.');
+  const before = `${REF.replace('write CREATE_LINK: client > lb > api > ids > db then invalidate cache', 'write CREATE_LINK: client > lb > api > ids ~> q > w > db')}q = queue()\nw = worker(count=2)\n`;
+  assert.ok(!warns(before).includes('W005'));                                            // the id made before the queue is fine
+  // W006: a counter with fewer values than the problem's items
+  assert.ok(warns(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=16)')).includes('W006'));
+  assert.match(compile(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=16)'), P).warnings.find((w) => w.code === 'W006').message, /16-bit counter, but this problem has up to 10,00,00,000 items/);
+  assert.ok(!warns(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=32)')).includes('W006')); // 2^32 > 10 crore
+  // W007: a CDN keeping answers for far less than the problem allows
+  const PC = { ...P, requests: [{ ...P.requests[0], cdn_ok: true, max_stale_s: 86400 }, P.requests[1]] };
+  const cdnDesign = (ttl) => `cdn = cdn(ttl_s=${ttl})\n${REF.replace('client > lb > api > cache | db', 'client > cdn | lb > api > cache | db')}`;
+  const w7 = (ttl) => compile(cdnDesign(ttl), PC).warnings.filter((w) => w.code === 'W007');
+  assert.equal(w7(1).length, 1);
+  assert.equal(w7(1)[0].message, '"cdn" keeps an answer for 1 s, but GET_LINK may be up to 86400 s old: it goes back to the origin far more often than needed.');
+  assert.equal(w7(3600).length, 0);
+  for (const code of ['W004', 'W005', 'W006', 'W007']) assert.ok(MESSAGES[code], code);
+});
+
 test('a template with unfinished routes gives only E029/E030; comments and blank lines are free', () => {
   const r = compile('lb  = lb()\napi = server(count=1, size=small)\n\n# add your parts\nread  GET_LINK:    client > lb > api > \nwrite CREATE_LINK: client > lb > api > \n', P);
   assert.deepEqual(r.errors.map((e) => e.code), ['E029', 'E030']);

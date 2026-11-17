@@ -2,7 +2,7 @@
 
 Generated from `cases-v3.mjs` (`node ai-evals/cases-v3.mjs`). Do not edit by hand.
 
-49 scored designs: 30 flawed, 19 clean. 3 more are held out for an owner decision.
+49 scored designs: 22 flawed, 27 clean. 3 more are held out for an owner decision.
 
 ## Coverage: class × problem
 
@@ -14,12 +14,12 @@ A name: the one flawed design in that cell. `skip`: left empty on purpose (reaso
 | B. Row identity (sql primary key) | `key-by-time` | skip | skip | skip | `one-row-per-user` | · | `one-row-per-game` | `one-row-per-show` | skip | skip |
 | C. Data model | skip | skip | `no-window-column` | skip | skip | · | `stored-rank` | `no-booking-id-column` | skip | skip |
 | D. Store fit | skip | skip | skip | skip | skip | `photos-in-key-value` | skip | `seats-in-key-value` | skip | skip |
-| E. Id design | `id-space-too-small` | `guessable-ids` | · | skip | · | skip | · | skip | skip | · |
+| E. Id design | skip | `guessable-ids` | · | skip | · | skip | · | skip | skip | · |
 | F. Consistency and ordering | · | · | · | skip | skip | · | skip | skip | `nothing-to-order-by` | `updates-through-parallel-workers` |
-| G. Caching semantics | skip | skip | · | skip | · | `cdn-forgets-at-once` | skip | skip | · | skip |
-| H. Security and privacy | `clients-read-the-store` | skip | skip | skip | skip | skip | `clients-write-the-database` | skip | `clients-read-the-store` | skip |
-| I. API contract | skip | `create-through-a-queue` | skip | skip | · | skip | skip | `book-through-a-queue` | skip | skip |
-| J. Failure handling | skip | skip | · | · | `id-made-by-the-worker` | · | · | skip | · | · |
+| G. Caching semantics | skip | skip | · | skip | · | skip | skip | skip | · | skip |
+| H. Security and privacy | skip | skip | skip | skip | skip | skip | skip | skip | skip | skip |
+| I. API contract | skip | skip | skip | skip | · | skip | skip | skip | skip | skip |
+| J. Failure handling | skip | skip | · | · | skip | · | · | skip | · | · |
 
 ### Why a cell is skipped
 
@@ -81,6 +81,14 @@ A name: the one flawed design in that cell. `skip`: left empty on purpose (reaso
 | J × paste-bin | With a queue it would be cell I; without one the notation shows no retry. |
 | J × ticket-booking | A retried BOOK needs a request id, which the notation cannot show. |
 | J × url-shortener | No queue or retry in the notation for this problem. |
+| E × url-shortener | The judge reports this fault itself now (W006); id-space-too-small is a judge-only case. |
+| G × image-serving | The judge reports this fault itself now (W007); cdn-forgets-at-once is a judge-only case. |
+| H × chat-message-store | The judge reports this fault itself now (W004); clients-read-the-store is a judge-only case. |
+| H × url-shortener | The judge reports this fault itself now (W004); clients-read-the-store is a judge-only case. |
+| H × leaderboard | The judge reports this fault itself now (W004); clients-write-the-database is a judge-only case. |
+| I × ticket-booking | The judge reports this fault itself now (W005); book-through-a-queue is a judge-only case. |
+| I × paste-bin | The judge reports this fault itself now (W005); create-through-a-queue is a judge-only case. |
+| J × notification-sender | The judge reports this fault itself now (W005); id-made-by-the-worker is a judge-only case. |
 
 ## The designs
 
@@ -388,7 +396,7 @@ Class E · **flawed** · the judge: Accepted
 
 ### url-shortener/id-space-too-small
 
-Class E · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb    = lb()
@@ -403,12 +411,8 @@ Class E · **flawed** · the judge: Accepted
 10 | write CREATE_LINK: client > lb > api > ids > db then invalidate cache
 ```
 
-- **Fault:** A counter too narrow for the problem: it runs out and codes repeat. Line 5; categories id_design, consistency, data_model.
-  - Why: A 16-bit counter has 65,536 values; the problem needs up to 10 crore links. The counter runs out, and codes wrap round and repeat.
-  - The reason must say: one of (bit / narrow / width / wide / space / range / size / values / enough) AND one of (run out / runs out / ran out / exhaust / wrap / overflow / roll over / not enough / too few / too small / too narrow / cannot hold / cannot cover / cannot reach / fewer / more links than / far short / repeat / reuse / duplicate / collid)
-  - Counts: "The counter is far too narrow for this problem. It runs out of values long before the links the service must hold, and then codes wrap round and repeat, so a code would point at two URLs. The id needs a much wider space."
-  - Does not count (wrong reason): "A counter makes codes that are easy to guess, so anyone can open other people's links."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W006): a counter too narrow for the problem: it runs out and codes repeat. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point, except security on line 5 (tolerated).
 
 ### chat-message-store/nothing-to-order-by
 
@@ -461,7 +465,7 @@ Class F · **flawed** · the judge: Accepted
 
 ### image-serving/cdn-forgets-at-once
 
-Class G · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | cdn   = cdn(ttl_s=1)
@@ -474,16 +478,12 @@ Class G · **flawed** · the judge: Accepted
  8 | write UPLOAD_IMAGE: client > lb > api > ids > files
 ```
 
-- **Fault:** A CDN lifetime of one second on content that never changes. Line 1; categories caching.
-  - Why: Photos never change after upload, but the CDN keeps each for a second, so it keeps going back to the origin for content that is still correct.
-  - The reason must say: one of (never change / do not change / does not change / immutab / unchang / infrequently chang / rarely chang / static / not change / never updated / never modified / cannot change) AND one of (ttl / expir / short / second / refetch / re fetch / origin / again / refresh / revalidat / keeps asking / goes back / going back / forget / lifetime)
-  - Counts: "Photos never change after upload, yet the CDN is told to forget each one almost at once. It keeps going back to the origin for content that is still correct. For content that cannot change, a long lifetime at the edge is safe."
-  - Does not count (wrong reason): "The CDN sits in front of the load balancer, so uploads cannot reach the servers."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W007): a CDN lifetime of one second on content that never changes. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### chat-message-store/clients-read-the-store
 
-Class H · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb  = lb()
@@ -497,16 +497,12 @@ Class H · **flawed** · the judge: Accepted
  9 | write SEND_MESSAGE: client > lb > api > ids > kv
 ```
 
-- **Fault:** Clients read the store directly (private chats). Line 8; categories security, api_contract.
-  - Why: The read goes from the client straight to the store. Nothing checks who is asking, and the store is open to the internet. Reads must pass through the servers.
-  - The reason must say: one of ((?:client|direct|straight|no server|without (?:a |the |any )?server|bypass|skip|exposed|internet)) AND one of (anyone / any chat / any user / other people / other users / someone else / not theirs / check / auth / permission / access control / who is asking / identity / private / expos / internet / leak / abuse / attack / unprotected / nothing (?:validates|limits|protects|stands) / rate limit / throttl / credential / scrap / dump / hide / hidden)
-  - Counts: "Reads go straight from the client to the store, with no server in between. Nothing checks who is asking, so anyone who can reach the store can read any chat, and the database itself is open to the internet. Reads need to pass through something that can check them."
-  - Does not count (wrong reason): "Reads skip the load balancer, so they are not spread evenly over the storage nodes."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W004): clients read the store directly (private chats). Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### url-shortener/clients-read-the-store
 
-Class H · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb    = lb()
@@ -521,16 +517,12 @@ Class H · **flawed** · the judge: Accepted
 10 | write CREATE_LINK: client > lb > api > ids > db then invalidate cache
 ```
 
-- **Fault:** Clients read the store directly (the cache and the database). Line 9; categories security, api_contract.
-  - Why: The read goes from the client straight to the store. Nothing checks who is asking, and the store is open to the internet. Reads must pass through the servers.
-  - The reason must say: one of ((?:client|direct|straight|no server|without (?:a |the |any )?server|bypass|skip|exposed|internet)) AND one of (anyone / any chat / any user / other people / other users / someone else / not theirs / check / auth / permission / access control / who is asking / identity / private / expos / internet / leak / abuse / attack / unprotected / nothing (?:validates|limits|protects|stands) / rate limit / throttl / credential / scrap / dump / hide / hidden)
-  - Counts: "Opens go straight from the client to the cache and the database. That puts the data store on the internet with nothing in front to check a request or stop abuse. Reads should pass through the servers, as writes do."
-  - Does not count (wrong reason): "Reads skip the load balancer, so they are not spread evenly over the storage nodes."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W004): clients read the store directly (the cache and the database). Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point, except security or id_design on line 5 (tolerated).
 
 ### leaderboard/clients-write-the-database
 
-Class H · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb    = lb()
@@ -544,16 +536,12 @@ Class H · **flawed** · the judge: Accepted
  9 | write SUBMIT_SCORE: client > db
 ```
 
-- **Fault:** Players write their scores straight into the database. Line 9; categories security, api_contract.
-  - Why: SUBMIT_SCORE goes from the client straight to the database. Nothing checks a score, so a player can write any value, and the database is open to the internet.
-  - The reason must say: one of (client / player / direct / straight / no server / without (?:a |the |any )?server / bypass / skip) AND one of (cheat / fake / forg / any score / any value / whatever / tamper / trust / validat / check / verif / someone else / other players / anyone / expos / internet / unprotected)
-  - Counts: "Players write their scores straight into the database, with no server in between. Nothing checks a score, so a player can submit any value they like, or change someone else's, and the database is open to the internet. Writes must pass through something that can validate them."
-  - Does not count (wrong reason): "Writes that skip the load balancer all land on one database machine, which is too much for it."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W004): players write their scores straight into the database. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### ticket-booking/book-through-a-queue
 
-Class I · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb     = lb()
@@ -570,16 +558,12 @@ Class I · **flawed** · the judge: Accepted
 12 | write BOOK:      client > lb > api ~> queue > worker > ids > db then invalidate cache
 ```
 
-- **Fault:** A booking confirmed before it is decided. Lines 4 or 12; categories api_contract, consistency.
-  - Why: BOOK is handed to a queue and answered before a worker has checked the seat. The fan is told the booking is accepted while the seat may already be gone, and no booking id exists to return.
-  - The reason must say: one of ((?:queue|async|background|hand(?:ed|s)? (?:off|over|to)|without waiting|worker)) AND one of (before / not yet / still / has not / cannot know / does not know / no way to / without knowing / too late / already / both / later / after) AND one of (answer / reply / respon / return / told / confirm / acknowledg / result / booking id / outcome / free / taken / sold / accept)
-  - Counts: "BOOK is handed to a queue and answered before a worker has checked the seat. The fan hears the booking is accepted while nobody knows yet whether the seat is still free, and there is no booking id to return. Decide a booking before confirming it."
-  - Does not count (wrong reason): "The queue has no spare, so if it fails every booking stops."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W005): a booking confirmed before it is decided. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### paste-bin/create-through-a-queue
 
-Class I · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb     = lb()
@@ -596,16 +580,12 @@ Class I · **flawed** · the judge: Accepted
 12 | write CREATE_PASTE: client > lb > api ~> queue > worker > ids > db
 ```
 
-- **Fault:** The id is made after the reply, so there is nothing to return. Lines 4 or 7 or 12; categories api_contract, consistency, id_design.
-  - Why: CREATE_PASTE is handed to a queue and the id is made later by a worker. When the server replies, no id exists, so it has no link to return.
-  - The reason must say: one of ((?:queue|async|background|hand(?:ed|s)? (?:off|over|to)|without waiting|worker) / later / after the reply) AND one of (before / not yet / has not / no id / cannot return / nothing to return / does not exist / only later / until / after / yet) AND one of (id / link / return / reply / answer / respon / share / open / not found / missing)
-  - Counts: "CREATE_PASTE is handed to a queue, and the id is only made later by a worker. When the server replies, no id exists yet, so it has nothing to return and the engineer has no link to share. The id must exist before the reply."
-  - Does not count (wrong reason): "The worker is small, so pastes are saved slowly."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W005): the id is made after the reply, so there is nothing to return. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### notification-sender/id-made-by-the-worker
 
-Class J · **flawed** · the judge: Accepted
+Class L · **clean** · the judge: Accepted
 
 ```
  1 | lb     = lb()
@@ -620,16 +600,12 @@ Class J · **flawed** · the judge: Accepted
 10 | write SEND: client > lb > api ~> queue > worker > ids > db
 ```
 
-- **Fault:** The id is made after the queue: a job delivered again is a new notification. Lines 6 or 10; categories failure_handling, id_design, consistency.
-  - Why: The id is made by the worker. If a worker fails part-way and the queue delivers the job again, it gets a new id, so nothing can tell it is the same notification and the user gets it twice.
-  - The reason must say: one of (retr / redeliver / again / twice / second time / crash / fail / more than once / at least once / re run / rerun / replay / restart) AND one of (new id / fresh id / different id / another id / own id / new one / cannot tell / cannot recogni / no way to (?:tell|know|recogni|detect) / not recogni / idempoten / dedup / same notification / sent twice / delivered twice / two rows / duplicate)
-  - Counts: "The id is made by the worker, after the queue. If a worker fails part-way and the job is delivered again, it gets a new id, so nothing can tell it is the same notification and the user gets it twice. Make the id before the job is queued."
-  - Does not count (wrong reason): "The id generator sits after the queue, which slows the workers down."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **Why it is clean:** The judge now reports the fault itself (W005): the id is made after the queue: a job delivered again is a new notification. Nothing else is wrong: the right answer is empty.
+- **False alarm:** any `problem` point.
 
 ### rate-limiter/two-faults-key-and-exposed-read
 
-Class A+H · **flawed** · the judge: Accepted
+Class A+judge · **flawed** · the judge: Accepted
 
 ```
  1 | lb  = lb()
@@ -647,16 +623,11 @@ Class A+H · **flawed** · the judge: Accepted
   - The reason must say: one of (window / minute / time / bucket) AND one of (one partition / same partition / single partition / one node / single node / same node / one key / same key / single key / hot / pile / concentrat / skew / every user / all users / everyone / idle); OR one of (user) AND one of (every partition / all partitions / every node / all nodes / all the nodes / scatter / fan out / cannot go to one / cross partition / across (?:the )?(?:partitions|nodes))
   - Counts: "The counters are partitioned by the time window, so every user's counter for the current minute sits in the same partition. All checks land on one key while the other nodes idle. Partition by what the check looks up."
   - Does not count (wrong reason): "An index is not allowed on a key-value table, so the lookup by user_id fails."
-- **Fault:** Clients read the store directly (users' usage). Line 8; categories security, api_contract.
-  - Why: The read goes from the client straight to the store. Nothing checks who is asking, and the store is open to the internet. Reads must pass through the servers.
-  - The reason must say: one of ((?:client|direct|straight|no server|without (?:a |the |any )?server|bypass|skip|exposed|internet)) AND one of (anyone / any chat / any user / other people / other users / someone else / not theirs / check / auth / permission / access control / who is asking / identity / private / expos / internet / leak / abuse / attack / unprotected / nothing (?:validates|limits|protects|stands) / rate limit / throttl / credential / scrap / dump / hide / hidden)
-  - Counts: "GET_USAGE goes straight from the client to the store, with no server in between. Nothing checks who is asking, so anyone can read any user's usage, and the store is open to the internet. Reads must pass through the servers."
-  - Does not count (wrong reason): "Reads skip the load balancer, so they are not spread evenly over the storage nodes."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **False alarm:** not counted on a flawed design; other problem points are reported as "extra". A problem point on line 8 restates the judge.
 
 ### chat-message-store/two-faults-order-and-exposed-read
 
-Class F+H · **flawed** · the judge: Accepted
+Class F+judge · **flawed** · the judge: Accepted
 
 ```
  1 | lb  = lb()
@@ -675,12 +646,7 @@ Class F+H · **flawed** · the judge: Accepted
   - The reason must say: one of (order / sort / sequence / chronolog / recent / newest / latest / came first / timeline) AND one of (random / no time / no timestamp / no column / no way / nothing / missing / cannot / without / lacks / not stored / no sent)
   - Counts: "Opening a chat must return its recent messages in order, but ids are random and no column records when a message was sent. Nothing in a row says which message came first, so the chat cannot be put in order or cut to the newest."
   - Does not count (wrong reason): "Random ids of this width will collide across the messages, so two messages get the same id."
-- **Fault:** Clients read the store directly (private chats). Line 8; categories security, api_contract.
-  - Why: The read goes from the client straight to the store. Nothing checks who is asking, and the store is open to the internet. Reads must pass through the servers.
-  - The reason must say: one of ((?:client|direct|straight|no server|without (?:a |the |any )?server|bypass|skip|exposed|internet)) AND one of (anyone / any chat / any user / other people / other users / someone else / not theirs / check / auth / permission / access control / who is asking / identity / private / expos / internet / leak / abuse / attack / unprotected / nothing (?:validates|limits|protects|stands) / rate limit / throttl / credential / scrap / dump / hide / hidden)
-  - Counts: "Reads go straight from the client to the store, with no server in between. Nothing checks who is asking, so anyone who can reach the store can read any chat. Reads need to pass through something that can check them."
-  - Does not count (wrong reason): "Reads skip the load balancer, so they are not spread evenly over the storage nodes."
-- **False alarm:** not counted on a flawed design; other problem points are reported as "extra".
+- **False alarm:** not counted on a flawed design; other problem points are reported as "extra". A problem point on line 8 restates the judge.
 
 ### paste-bin/judge-fault-and-guessable-ids
 

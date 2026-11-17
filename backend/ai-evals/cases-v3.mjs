@@ -1,4 +1,8 @@
-// Ground truth v3 of the interviewer's view (tech-katta-context/44-AI-EVALUATOR-MODEL-SEARCH-PLAN.md §3).
+// Ground truth of the interviewer's view (tech-katta-context/44-AI-EVALUATOR-MODEL-SEARCH-PLAN.md §3).
+// v3 (2026-11-17, run that day: docs 45, 46). v4 (2026-11-17, after that run, before any run of v4): the judge now
+// reports four kinds of fault itself (compile warnings W004–W007, frontend/src/tkd/compile.js), so the designs whose
+// fault it reports become judge-only cases (JUDGE_REPORTS below): the AI must not repeat them. The faults as written
+// for v3 are kept unchanged in CASES; loadCases applies the change. The file keeps its v3 name.
 // Designed from a taxonomy of what the judge cannot see, BEFORE any model was run against it (owner, 2026-11-16:
 // never design the ground truth after paying for a run). It does not start from blind-spots.mjs or answer-key.mjs.
 //
@@ -14,7 +18,7 @@
 // must not; the tests check both, and the mock reviewer answers with them).
 // The plain-words sheet: node ai-evals/cases-v3.mjs writes cases-v3.md.
 
-export const CASES_VERSION = 3;
+export const CASES_VERSION = 4;
 
 /** The categories a point may use: one per taxonomy class of things the judge cannot see. */
 export const CATEGORIES = {
@@ -883,14 +887,43 @@ export const HELD_OUT = [
   { id: 'rate-limiter/three-nodes-and-key-by-minute', question: 'In rate-limiter/three-nodes, who is to blame: the storage nodes (the author) or the servers (the judge)?', why: 'A judge-fault-plus-hidden-fault case built on that design. Until the blame is settled, the line that restates the judge is not known.' },
 ];
 
-/** Every scored case: the hand-written ones, then every reference except the held-out one, as clean cases. */
+/** v4: designs whose fault the judge now reports itself, with the warning and the fault (index in `faults`). */
+export const JUDGE_REPORTS = {
+  'url-shortener/id-space-too-small': { code: 'W006', fault: 0 },
+  'image-serving/cdn-forgets-at-once': { code: 'W007', fault: 0 },
+  'chat-message-store/clients-read-the-store': { code: 'W004', fault: 0 },
+  'url-shortener/clients-read-the-store': { code: 'W004', fault: 0 },
+  'leaderboard/clients-write-the-database': { code: 'W004', fault: 0 },
+  'ticket-booking/book-through-a-queue': { code: 'W005', fault: 0 },
+  'paste-bin/create-through-a-queue': { code: 'W005', fault: 0 },
+  'notification-sender/id-made-by-the-worker': { code: 'W005', fault: 0 },
+  'rate-limiter/two-faults-key-and-exposed-read': { code: 'W004', fault: 1 },
+  'chat-message-store/two-faults-order-and-exposed-read': { code: 'W004', fault: 1 },
+};
+/** Fault classes the judge now covers in every cell where they occur (no AI case is left for them). */
+export const JUDGE_CLASSES = { G: 'W007', H: 'W004', J: 'W005' };
+
+/** A case as v4 scores it: a fault the judge reports moves to judge_lines (repeating it is restating the judge);
+ *  a design left with no fault becomes a judge-only clean case (class L). */
+export function applyJudgeReports(c) {
+  const j = JUDGE_REPORTS[c.id];
+  if (!j) return c;
+  const reported = c.faults[j.fault], rest = c.faults.filter((_, i) => i !== j.fault);
+  const judge_lines = [...(c.judge_lines || []), ...reported.lines];
+  if (rest.length) return { ...c, cls: `${c.cls.split('+')[0]}+judge`, faults: rest, judge_lines, judge_reports: j.code };
+  const { faults, ...base } = c;
+  return { ...base, cls: 'L', kind: 'clean', judge_lines, judge_reports: j.code, was: reported.finding,
+    why: `The judge now reports the fault itself (${j.code}): ${reported.finding.charAt(0).toLowerCase()}${reported.finding.slice(1)}. Nothing else is wrong: the right answer is empty.` };
+}
+
+/** Every scored case: the hand-written ones (as v4 scores them), then every reference except the held-out one. */
 export function loadCases(problems) {
   const refs = problems.filter((p) => REFERENCES[p.slug]).map((p) => ({ id: `${p.slug}/reference`, cls: 'K', kind: 'clean', judge: 'pass', source: p.reference, ...REFERENCES[p.slug] }));
-  return [...CASES, ...refs];
+  return [...CASES.map(applyJudgeReports), ...refs];
 }
 
 /** The coverage matrix: class × problem → the case in that cell. Throws on a repeat. */
-export function coverage(cases = CASES) {
+export function coverage(cases = CASES.map(applyJudgeReports)) {
   const cells = new Map();
   for (const c of cases) {
     if (c.kind !== 'flawed' || c.cls.length !== 1 || c.cls === 'M') continue; // single-fault cells only
@@ -962,6 +995,12 @@ export const SKIPPED = {
   'J|ticket-booking': 'A retried BOOK needs a request id, which the notation cannot show.',
   'J|url-shortener': 'No queue or retry in the notation for this problem.',
 };
+
+// v4: the cells whose design is now a judge-only case
+for (const [id, j] of Object.entries(JUDGE_REPORTS)) {
+  const c = CASES.find((x) => x.id === id);
+  if (c && c.cls.length === 1) SKIPPED[`${c.cls}|${id.split('/')[0]}`] = `The judge reports this fault itself now (${j.code}); ${id.split('/')[1]} is a judge-only case.`;
+}
 
 /** Which problems a class can occur in at all (the parts or requests it needs). */
 export const CAN_OCCUR = {

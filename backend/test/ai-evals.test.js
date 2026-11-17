@@ -235,7 +235,7 @@ test('ground truth v3: the judge says what the key says, every fault sits on rea
   const { CATEGORIES } = await import('../ai-evals/cases-v3.mjs');
   const designs = loadDesigns();
   assert.equal(new Set(designs.map((d) => d.id)).size, designs.length, 'two cases share an id');
-  assert.ok(designs.filter((d) => d.kind === 'flawed').length >= 25 && designs.filter((d) => d.kind === 'clean').length >= 15);
+  assert.ok(designs.filter((d) => d.kind === 'flawed').length >= 20 && designs.filter((d) => d.kind === 'clean').length >= 15);
   for (const d of designs) {
     assert.equal(d.pack.verdict.word === 'Accepted', d.judge === 'pass', `${d.id}: the key says the judge ${d.judge}, the judge says ${d.pack.verdict.word}`);
     const lines = d.source.replace(/\n+$/, '').split('\n');
@@ -263,10 +263,10 @@ test('ground truth v3: the judge says what the key says, every fault sits on rea
 });
 
 test('ground truth v3: the coverage matrix has no repeat and no gap, and held-out cases are not scored', async () => {
-  const { CASES, CLASSES, CAN_OCCUR, SKIPPED, HELD_OUT, coverage, loadCases } = await import('../ai-evals/cases-v3.mjs');
+  const { CASES, CLASSES, CAN_OCCUR, SKIPPED, HELD_OUT, JUDGE_CLASSES, coverage, loadCases } = await import('../ai-evals/cases-v3.mjs');
   const { loadProblems } = await import('../ai-evals/ground-truth.mjs');
   const problems = loadProblems(), slugs = problems.map((p) => p.slug);
-  const cells = coverage(CASES); // throws on two designs in one cell
+  const cells = coverage(); // throws on two designs in one cell (v4: as scored, judge-reported faults moved out)
   for (const [k, list] of Object.entries(CAN_OCCUR)) {
     assert.ok(CLASSES[k], k);
     for (const s of list) {
@@ -274,7 +274,8 @@ test('ground truth v3: the coverage matrix has no repeat and no gap, and held-ou
       const filled = cells.has(`${k}|${s}`), skipped = !!SKIPPED[`${k}|${s}`];
       assert.ok(filled !== skipped, `cell ${k} × ${s} must be either filled or skipped with a reason (filled: ${filled}, skipped: ${skipped})`);
     }
-    assert.ok(list.some((s) => cells.has(`${k}|${s}`)), `class ${k} has no design at all`);
+    if (!JUDGE_CLASSES[k]) assert.ok(list.some((s) => cells.has(`${k}|${s}`)) || loadCases(problems).some((c) => c.kind === 'flawed' && c.cls.split('+')[0] === k), `class ${k} has no AI case at all`);
+    else assert.ok(!list.some((s) => cells.has(`${k}|${s}`)), `class ${k} is the judge's now (${JUDGE_CLASSES[k]}) but still has an AI case`);
   }
   for (const key of [...cells.keys(), ...Object.keys(SKIPPED)]) { const [k, s] = key.split('|'); assert.ok(CAN_OCCUR[k]?.includes(s), `${key} is outside CAN_OCCUR`); }
   const flawedSlugs = new Set(CASES.filter((c) => c.kind === 'flawed').map((c) => c.id.split('/')[0]));
@@ -282,6 +283,24 @@ test('ground truth v3: the coverage matrix has no repeat and no gap, and held-ou
   const scored = new Set(loadCases(problems).map((c) => c.id));
   for (const h of HELD_OUT) { assert.ok(!scored.has(h.id), `${h.id} is held out but scored`); assert.ok(h.question && h.why); }
   assert.equal(scored.size, CASES.length + slugs.length - 1); // every reference but ticket-booking's
+});
+
+test('ground truth v4: the judge reports each fault moved out of the AI set, with its warning on the fault\'s line', async () => {
+  const { CASES, JUDGE_REPORTS, CASES_VERSION } = await import('../ai-evals/cases-v3.mjs');
+  const { loadProblems } = await import('../ai-evals/ground-truth.mjs');
+  const { compile } = await import('../../frontend/src/tkd/compile.js');
+  assert.equal(CASES_VERSION, 4);
+  const problems = new Map(loadProblems().map((p) => [p.slug, p]));
+  for (const [id, j] of Object.entries(JUDGE_REPORTS)) {
+    const c = CASES.find((x) => x.id === id), fault = c.faults[j.fault];
+    const lines = compile(c.source, problems.get(id.split('/')[0])).warnings.filter((w) => w.code === j.code).map((w) => w.line);
+    assert.ok(lines.some((l) => fault.lines.includes(l)), `${id}: the judge gives no ${j.code} on line ${fault.lines.join('/')} (it gives ${lines.join(', ') || 'none'})`);
+  }
+  // and no other case, reference or problem design trips W004–W007
+  for (const c of CASES.filter((x) => !JUDGE_REPORTS[x.id])) {
+    const w = compile(c.source, problems.get(c.id.split('/')[0])).warnings.filter((x) => ['W004', 'W005', 'W006', 'W007'].includes(x.code));
+    assert.deepEqual(w.map((x) => x.code), [], c.id);
+  }
 });
 
 test('cases-v3.md matches the cases (else: node ai-evals/cases-v3.mjs)', async () => {
