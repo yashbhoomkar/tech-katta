@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "no-cdn": {
@@ -151,7 +151,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "cache-behind-servers": {
    "verdict": "Overloaded",
@@ -261,7 +261,7 @@
      "part": "cache"
     }
    ],
-   "judge_version": 2
+   "judge_version": 3
   },
   "one-server": {
    "verdict": "Overloaded",
@@ -366,7 +366,7 @@
      "part": "api"
     }
    ],
-   "judge_version": 2
+   "judge_version": 3
   },
   "random-32-bit-ids": {
    "verdict": "Wrong Answer",
@@ -435,7 +435,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "many-servers": {
    "verdict": "Over Budget",
@@ -504,7 +504,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }

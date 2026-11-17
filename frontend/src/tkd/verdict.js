@@ -23,7 +23,7 @@ export function explain(f, design) {
     case 'stale': return msg('stale', { request: f.request, stale_s: n.stale_s, max: n.max });
     case 'ryw': return msg('ryw', { request: f.request, part: f.part });
     case 'no_id': return msg('no_id', { request: f.request });
-    case 'collision': return msg('collision', { n: count(n.n), bits: n.bits, kind: n.kind });
+    case 'collision': return n.kind === 'counter' ? msg('exhausted', { n: count(n.n), bits: n.bits }) : msg('collision', { n: count(n.n), bits: n.bits, kind: n.kind });
     case 'lost': return msg('lost', { part: f.part, n: group(n.n) });
     case 'unavailable': return msg('unavailable', { request: f.request, actual: f.actual, expected: f.expected, part: f.part });
     case 'overloaded': return msg('overloaded', { part: f.part, load: group(n.load), cap: group(n.cap) });

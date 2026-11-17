@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "sql-counters": {
@@ -154,7 +154,7 @@
      "part": "db"
     }
    ],
-   "judge_version": 2
+   "judge_version": 3
   },
   "write-to-all-copies": {
    "verdict": "Unavailable",
@@ -240,7 +240,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "too-few-servers": {
    "verdict": "Overloaded",
@@ -331,7 +331,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "three-nodes": {
    "verdict": "Too Slow",
@@ -416,7 +416,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "huge-cluster": {
    "verdict": "Over Budget",
@@ -485,7 +485,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }

@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "no-cache-one-server": {
@@ -154,7 +154,7 @@
      "part": "api"
     }
    ],
-   "judge_version": 2
+   "judge_version": 3
   },
   "no-cache": {
    "verdict": "Too Slow",
@@ -239,7 +239,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "async-replica": {
    "verdict": "Data Lost",
@@ -308,7 +308,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "no-replica": {
    "verdict": "Unavailable",
@@ -408,7 +408,7 @@
      "part": "db"
     }
    ],
-   "judge_version": 2
+   "judge_version": 3
   },
   "random-32-bit-ids": {
    "verdict": "Wrong Answer",
@@ -477,7 +477,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "day-long-cache-no-invalidate": {
    "verdict": "Wrong Answer",
@@ -546,7 +546,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "everything-large": {
    "verdict": "Over Budget",
@@ -615,7 +615,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }

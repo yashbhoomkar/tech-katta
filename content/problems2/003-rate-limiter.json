@@ -214,7 +214,7 @@
     {
       "name": "three-nodes",
       "expect": "Too Slow",
-      "why": "Three nodes run at two thirds of their capacity at the peak; each check waits longer than the promise allows.",
+      "why": "Six large servers run at 84 % of what they can take at the peak, so the slowest checks wait longer than the promise allows. Three storage nodes are enough here.",
       "source": "lb  = lb()\napi = server(count=6, size=large)\nkv  = nosql(nodes=3, rf=3, w=1, r=1)\n\ntable kv.counters(user_id pk, window, calls)\n\nwrite CHECK:     client > lb > api > kv\nread  GET_USAGE: client > lb > api > kv\n"
     },
     {

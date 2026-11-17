@@ -6,6 +6,8 @@ import { parse, parseLenient } from './parse.js';
 import { compile } from './compile.js';
 import { format, canonical } from './format.js';
 import { MESSAGES } from './messages.js';
+import { staticFindings } from './checks.js';
+import { explain } from './verdict.js';
 
 const P = { total_items: 1e8, requests: [
   { name: 'GET_LINK', mode: 'read', table: 'links', key: 'code', distinct_keys: 1e6, item_bytes: 500, skew: 0.8, max_stale_s: 3600, cdn_ok: false, says: 'x' },
@@ -95,6 +97,38 @@ test('W001, W002, W003', () => {
   assert.equal(w002.message, 'Calls reach only one of your 4 "api" servers: there is no lb in front.');
   const single = compile(REF.replace('count=4', 'count=1').replace('replicas=1', 'replicas=0'), P).warnings.filter((w) => w.code === 'W003').map((w) => w.message);
   assert.deepEqual(single, ['"api" has no spare. If it fails, GET_LINK and CREATE_LINK stop.', '"db" has no spare. If it fails, GET_LINK and CREATE_LINK stop.']);
+});
+
+test('W004, W005, W007: design checks load cannot show, as notes that never fail; a counter too narrow fails (judge 3)', () => {
+  assert.deepEqual(warns(REF).filter((c) => c >= 'W004'), []);                           // the reference is clean
+  // W004: a store or cache reached from the client with no server in between (a read or a write)
+  const exposed = REF.replace('client > lb > api > cache | db', 'client > cache | db');
+  assert.ok(warns(exposed).includes('W004'));
+  const w004 = compile(exposed, P).warnings.find((w) => w.code === 'W004');
+  assert.deepEqual([w004.line, w004.part], [10, 'cache']);
+  assert.match(w004.message, /^GET_LINK reaches "cache" straight from the client, with no server in between/);
+  assert.ok(warns(REF.replace('client > lb > api > ids > db', 'client > db')).includes('W004'));
+  assert.ok(!warns(REF.replace('client > lb > api', 'client > api')).includes('W004')); // a server first is fine
+  // W005: a write's id is made after the queue
+  const queued = `${REF.replace('write CREATE_LINK: client > lb > api > ids > db then invalidate cache', 'write CREATE_LINK: client > lb > api ~> q > w > ids > db')}q = queue()\nw = worker(count=2)\n`;
+  assert.ok(warns(queued).includes('W005'));
+  assert.equal(compile(queued, P).warnings.find((w) => w.code === 'W005').message, 'CREATE_LINK makes its id after the queue: the reply cannot give it back, and a job delivered twice gets a second id.');
+  const before = `${REF.replace('write CREATE_LINK: client > lb > api > ids > db then invalidate cache', 'write CREATE_LINK: client > lb > api > ids ~> q > w > db')}q = queue()\nw = worker(count=2)\n`;
+  assert.ok(!warns(before).includes('W005'));                                            // the id made before the queue is fine
+  // a counter with fewer values than the problem's items: a failing collision finding, not a note
+  const narrow = staticFindings(compile(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=16)'), P).design, P);
+  assert.deepEqual(narrow.map((f) => [f.type, f.part, f.numbers.kind]), [['collision', 'ids', 'counter']]);
+  assert.equal(explain(narrow[0]), 'With 10 crore items, a 16-bit counter runs out of ids and starts repeating them. Use more bits.');
+  assert.deepEqual(staticFindings(compile(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=32)'), P).design, P), []); // 2^32 > 10 crore
+  assert.ok(!warns(REF.replace('idgen(kind=counter)', 'idgen(kind=counter, bits=16)')).includes('W006'));
+  // W007: a CDN keeping answers for far less than the problem allows
+  const PC = { ...P, requests: [{ ...P.requests[0], cdn_ok: true, max_stale_s: 86400 }, P.requests[1]] };
+  const cdnDesign = (ttl) => `cdn = cdn(ttl_s=${ttl})\n${REF.replace('client > lb > api > cache | db', 'client > cdn | lb > api > cache | db')}`;
+  const w7 = (ttl) => compile(cdnDesign(ttl), PC).warnings.filter((w) => w.code === 'W007');
+  assert.equal(w7(1).length, 1);
+  assert.equal(w7(1)[0].message, '"cdn" keeps an answer for 1 s, but GET_LINK may be up to 86400 s old: it goes back to the origin far more often than needed.');
+  assert.equal(w7(3600).length, 0);
+  for (const code of ['W004', 'W005', 'W007', 'exhausted']) assert.ok(MESSAGES[code], code);
 });
 
 test('a template with unfinished routes gives only E029/E030; comments and blank lines are free', () => {

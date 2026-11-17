@@ -72,7 +72,7 @@ export function createClient(config, { fetch = globalThis.fetch, sleep = (ms) =>
     if (!r.ok) return { retry: RETRY.has(r.status), why: `http ${r.status}` };
     const choice = data?.choices?.[0], message = choice?.message;
     const u = data?.usage || {};
-    const usage = { input: u.prompt_tokens ?? 0, cached: u.prompt_tokens_details?.cached_tokens ?? u.prompt_cache_hit_tokens ?? 0, output: u.completion_tokens ?? 0 };
+    const usage = { input: u.prompt_tokens ?? 0, cached: u.prompt_tokens_details?.cached_tokens ?? u.prompt_cache_hit_tokens ?? 0, output: u.completion_tokens ?? 0, ...(typeof u.cost === 'number' ? { cost: u.cost } : {}) };
     if (message?.refusal) return { why: 'refusal', usage };
     if (choice?.finish_reason && choice.finish_reason !== 'stop') return { why: `stopped: ${choice.finish_reason}`, usage };
     const text = typeof message?.content === 'string' ? message.content : Array.isArray(message?.content) ? message.content.map((c) => c?.text || '').join('') : '';

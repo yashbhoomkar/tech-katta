@@ -10,7 +10,7 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Zotato's community app shows each user a home feed of posts from the restaurants and friends they follow. A feed is kept ready per user (about **4 KB**: the newest 20 posts) and rebuilt when someone they follow posts.\n\nDesign the **feed read** and the **post write**. Opening the app reads one feed; a post updates the feeds it belongs to.\n\nFeeds must be fresh: a feed may be at most **30 seconds** old. A post that was accepted must not be lost. Opens should feel instant: half of them under 14 ms. The budget is ₹1.75 lakh a month.",
+  "statement": "Zotato's community app shows each user a home feed of posts from the restaurants and friends they follow. A feed is kept ready per user (about **4 KB**: the newest 20 posts) and rebuilt when someone they follow posts.\n\nDesign the **feed read** and the **post write**. Opening the app reads one feed; a post updates the feeds it belongs to. In your design the POST route stands for that whole update: one write to where the feeds live for each post.\n\nFeeds must be fresh: a feed may be at most **30 seconds** old. A post that was accepted must not be lost. Opens should feel instant: half of them under 14 ms. The budget is ₹1.75 lakh a month.",
   "constraints": [
     "50 lakh users with a feed",
     "Peak: 8,000 feed opens and 800 posts a second",

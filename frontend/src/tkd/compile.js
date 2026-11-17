@@ -146,6 +146,24 @@ export function compile(input, problem) {
     const spare = (p.kind === 'server' || p.kind === 'worker') ? p.count > 1 : p.kind === 'cache' ? p.nodes > 1 : p.kind === 'sql' ? p.replicas > 0 : true;
     if (!spare && fg.has(name)) warnings.push(w('W003', p.line, { name, requests: listWords(fg.get(name)) }, name));
   }
+  // design checks that load cannot show (tech-katta-context/45-AI-EVALUATOR-RUN-RESULTS.md §10): notes, never a fail
+  for (const [name, r] of Object.entries(routes)) {
+    const R = reqByName.get(name);
+    // W004: a store or cache reached from the client with no server or worker in between
+    const firstCompute = r.hops.findIndex((h) => COMPUTE.has(parts[h.part]?.kind));
+    for (const [i, h] of r.hops.entries()) {
+      if (firstCompute >= 0 && i > firstCompute) break;
+      if (['sql', 'nosql', 'cache'].includes(parts[h.part]?.kind)) { warnings.push(w('W004', r.line, { name: h.part, REQUEST: name }, h.part)); break; }
+    }
+    // W005: a write's id is made after the queue (the reply cannot carry it; a job delivered twice gets a second id)
+    const q = r.hops.findIndex((h) => h.op === '~>'), g = r.hops.findIndex((h) => parts[h.part]?.kind === 'idgen');
+    if (r.mode === 'write' && q >= 0 && g > q) warnings.push(w('W005', r.line, { REQUEST: name }, r.hops[g].part));
+    // W007: a CDN that keeps answers for far less than the problem allows
+    if (R?.mode === 'read' && Number.isFinite(R.max_stale_s)) for (const h of r.hops) {
+      const p = parts[h.part];
+      if (p?.kind === 'cdn' && p.ttl_s * 60 < R.max_stale_s) warnings.push(w('W007', p.line, { name: h.part, ttl: p.ttl_s, REQUEST: name, max: R.max_stale_s }, h.part));
+    }
+  }
   warnings.sort((a, b) => a.line - b.line);
   return { ok: true, design: { parts, tables, routes }, warnings };
 }
