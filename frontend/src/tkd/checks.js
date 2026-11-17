@@ -44,6 +44,10 @@ export function staticFindings(design, problem) {
       if (g.id_kind === 'random' || g.id_kind === 'hash') {
         const n = problem.total_items || 0, expected = (n * n) / 2 ** (g.bits + 1);
         if (expected >= 1) out.push({ type: 'collision', request: R.name, phase: null, part: idHop.part, expected: 'no repeated ids', actual: `about ${group(Math.round(expected))} repeats expected`, numbers: { n, bits: g.bits, kind: g.id_kind, collisions: expected } });
+      } else if (g.id_kind === 'counter') {
+        // a counter with fewer values than the problem's items runs out, and every id after that repeats (judge 3)
+        const n = problem.total_items || 0, room = 2 ** g.bits;
+        if (n > room) out.push({ type: 'collision', request: R.name, phase: null, part: idHop.part, expected: 'no repeated ids', actual: `about ${group(Math.round(n - room))} repeats expected`, numbers: { n, bits: g.bits, kind: g.id_kind, collisions: n - room } });
       }
     }
   }

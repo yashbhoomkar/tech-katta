@@ -2,7 +2,7 @@
 
 Generated from `cases-v3.mjs` (`node ai-evals/cases-v3.mjs`). Do not edit by hand.
 
-49 scored designs: 22 flawed, 27 clean. 3 more are held out for an owner decision.
+50 scored designs: 22 flawed, 28 clean. 0 more are held out for an owner decision.
 
 ## Coverage: class × problem
 
@@ -81,7 +81,7 @@ A name: the one flawed design in that cell. `skip`: left empty on purpose (reaso
 | J × paste-bin | With a queue it would be cell I; without one the notation shows no retry. |
 | J × ticket-booking | A retried BOOK needs a request id, which the notation cannot show. |
 | J × url-shortener | No queue or retry in the notation for this problem. |
-| E × url-shortener | The judge reports this fault itself now (W006); id-space-too-small is a judge-only case. |
+| E × url-shortener | The judge reports this fault itself now (collision); id-space-too-small is a judge-only case. |
 | G × image-serving | The judge reports this fault itself now (W007); cdn-forgets-at-once is a judge-only case. |
 | H × chat-message-store | The judge reports this fault itself now (W004); clients-read-the-store is a judge-only case. |
 | H × url-shortener | The judge reports this fault itself now (W004); clients-read-the-store is a judge-only case. |
@@ -396,7 +396,7 @@ Class E · **flawed** · the judge: Accepted
 
 ### url-shortener/id-space-too-small
 
-Class L · **clean** · the judge: Accepted
+Class L · **clean** · the judge: fails it
 
 ```
  1 | lb    = lb()
@@ -411,7 +411,7 @@ Class L · **clean** · the judge: Accepted
 10 | write CREATE_LINK: client > lb > api > ids > db then invalidate cache
 ```
 
-- **Why it is clean:** The judge now reports the fault itself (W006): a counter too narrow for the problem: it runs out and codes repeat. Nothing else is wrong: the right answer is empty.
+- **Why it is clean:** The judge now reports the fault itself (collision): a counter too narrow for the problem: it runs out and codes repeat. Nothing else is wrong: the right answer is empty.
 - **False alarm:** any `problem` point, except security on line 5 (tolerated).
 
 ### chat-message-store/nothing-to-order-by
@@ -1098,6 +1098,26 @@ Class K · **clean** · the judge: Accepted
 - **Why it is clean:** pk player_id with index(game_id); an async replica is fine (a lost score is not a disaster, 5 s allowed).
 - **False alarm:** any `problem` point.
 
+### ticket-booking/reference
+
+Class K · **clean** · the judge: Accepted
+
+```
+ 1 | lb    = lb()
+ 2 | api   = server(count=6, size=large)
+ 3 | cache = cache(nodes=2, memory_gb=1, ttl_s=60)
+ 4 | db    = sql(size=large, replicas=1, sync=true)
+ 5 | ids   = idgen(kind=counter)
+ 6 | 
+ 7 | table db.seats(seat_id pk, show_id, status, booking_id) index(show_id)
+ 8 | 
+ 9 | read  GET_SEATS: client > lb > api > cache | db
+10 | write BOOK:      client > lb > api > ids > db then invalidate cache
+```
+
+- **Why it is clean:** pk seat_id with index(show_id): each seat of each show has its own seat_id (the statement says so), and the seat map is read by show through the index.
+- **False alarm:** any `problem` point.
+
 ### chat-message-store/reference
 
 Class K · **clean** · the judge: Accepted
@@ -1141,6 +1161,3 @@ Class K · **clean** · the judge: Accepted
 
 | Design | Owner question | Why it waits |
 |---|---|---|
-| ticket-booking/reference | Is seat_id unique across shows? | If it is, the reference (seat_id pk, index(show_id)) is clean. If seat_id is a seat number that repeats in every show, the reference itself has a key fault and a model that reports it is right. |
-| ticket-booking/clean-snowflake-ids | Is seat_id unique across shows? | A clean variant of the reference (snowflake booking ids). Same doubt as the reference. |
-| rate-limiter/three-nodes-and-key-by-minute | In rate-limiter/three-nodes, who is to blame: the storage nodes (the author) or the servers (the judge)? | A judge-fault-plus-hidden-fault case built on that design. Until the blame is settled, the line that restates the judge is not known. |

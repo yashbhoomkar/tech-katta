@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "cache-not-cleared": {
@@ -124,7 +124,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "replica-reads": {
    "verdict": "Wrong Answer",
@@ -193,7 +193,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "async-replica": {
    "verdict": "Data Lost",
@@ -262,7 +262,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "medium-db": {
    "verdict": "Overloaded",
@@ -364,7 +364,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "random-ids": {
    "verdict": "Wrong Answer",
@@ -433,7 +433,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "big-everything": {
    "verdict": "Over Budget",
@@ -502,7 +502,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }

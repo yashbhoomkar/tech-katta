@@ -10,7 +10,7 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Zotato sells tickets for the IPL final. At 10 am sharp, lakhs of fans open the seat map and try to **book**. Each booking takes one seat and creates a booking id.\n\nDesign the seat map read and the booking write. The rules are strict:\n\n- A seat must **never be sold twice**: after a booking, every seat map must show it taken at once (read your writes).\n- A confirmed booking must **never be lost**, even if the database primary dies.\n- Booking ids must never repeat.\n\nThe seat map is read far more than seats are booked, and a few shows (the final) take almost all the traffic. The budget is ₹2 lakh a month.",
+  "statement": "Zotato sells tickets for the IPL final. At 10 am sharp, lakhs of fans open the seat map and try to **book**. Each booking takes one seat and creates a booking id.\n\nDesign the seat map read and the booking write. Each seat of each show has its own `seat_id`. The rules are strict:\n\n- A seat must **never be sold twice**: after a booking, every seat map must show it taken at once (read your writes).\n- A confirmed booking must **never be lost**, even if the database primary dies.\n- Booking ids must never repeat.\n\nThe seat map is read far more than seats are booked, and a few shows (the final) take almost all the traffic. The budget is ₹2 lakh a month.",
   "constraints": [
     "Up to 50 crore bookings in total",
     "Peak: 8,000 seat-map reads and 1,200 bookings a second",

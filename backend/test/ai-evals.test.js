@@ -282,23 +282,27 @@ test('ground truth v3: the coverage matrix has no repeat and no gap, and held-ou
   for (const s of slugs) assert.ok(flawedSlugs.has(s), `no flawed design for ${s}`);
   const scored = new Set(loadCases(problems).map((c) => c.id));
   for (const h of HELD_OUT) { assert.ok(!scored.has(h.id), `${h.id} is held out but scored`); assert.ok(h.question && h.why); }
-  assert.equal(scored.size, CASES.length + slugs.length - 1); // every reference but ticket-booking's
+  assert.equal(scored.size, CASES.length + slugs.length); // every hand-written case and every reference (none held out)
 });
 
 test('ground truth v4: the judge reports each fault moved out of the AI set, with its warning on the fault\'s line', async () => {
   const { CASES, JUDGE_REPORTS, CASES_VERSION } = await import('../ai-evals/cases-v3.mjs');
   const { loadProblems } = await import('../ai-evals/ground-truth.mjs');
   const { compile } = await import('../../frontend/src/tkd/compile.js');
+  const { staticFindings } = await import('../../frontend/src/tkd/checks.js');
   assert.equal(CASES_VERSION, 4);
   const problems = new Map(loadProblems().map((p) => [p.slug, p]));
   for (const [id, j] of Object.entries(JUDGE_REPORTS)) {
     const c = CASES.find((x) => x.id === id), fault = c.faults[j.fault];
-    const lines = compile(c.source, problems.get(id.split('/')[0])).warnings.filter((w) => w.code === j.code).map((w) => w.line);
+    const problem = problems.get(id.split('/')[0]), compiled = compile(c.source, problem);
+    // a note (W004, W005, W007) on the fault's line, or a failing finding of that type at a part on that line (judge 3)
+    const lines = j.fails ? staticFindings(compiled.design, problem).filter((f) => f.type === j.code).map((f) => compiled.design.parts[f.part].line)
+      : compiled.warnings.filter((w) => w.code === j.code).map((w) => w.line);
     assert.ok(lines.some((l) => fault.lines.includes(l)), `${id}: the judge gives no ${j.code} on line ${fault.lines.join('/')} (it gives ${lines.join(', ') || 'none'})`);
   }
-  // and no other case, reference or problem design trips W004–W007
+  // and no other case trips W004, W005 or W007
   for (const c of CASES.filter((x) => !JUDGE_REPORTS[x.id])) {
-    const w = compile(c.source, problems.get(c.id.split('/')[0])).warnings.filter((x) => ['W004', 'W005', 'W006', 'W007'].includes(x.code));
+    const w = compile(c.source, problems.get(c.id.split('/')[0])).warnings.filter((x) => ['W004', 'W005', 'W007'].includes(x.code));
     assert.deepEqual(w.map((x) => x.code), [], c.id);
   }
 });

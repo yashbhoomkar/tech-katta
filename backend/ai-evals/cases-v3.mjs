@@ -867,7 +867,7 @@ write SEND_MESSAGE: client > lb > api > ids > kv
   },
 ];
 
-/** What is known about each reference design (they are clean cases; ticket-booking's is held out, see HELD_OUT). */
+/** What is known about each reference design (they are all clean cases). */
 export const REFERENCES = {
   'url-shortener': { tolerated: [{ line: 6, categories: ['security', 'id_design'] }], why: 'Counter codes on public promo links: guessable, and harmless here.' },
   'paste-bin': { tolerated: [{ line: 5, categories: ['security', 'id_design'] }], why: 'Snowflake ids are partly predictable from the time: fair to mention.' },
@@ -875,21 +875,23 @@ export const REFERENCES = {
   'news-feed': { why: 'One ready feed per user in a key-value store.' },
   'notification-sender': { why: 'No idgen: SEND does not create ids. The queue reply is what the problem asks for.' },
   'image-serving': { why: 'No table: photos live in object storage.' },
+  'ticket-booking': { why: 'pk seat_id with index(show_id): each seat of each show has its own seat_id (the statement says so), and the seat map is read by show through the index.' },
   leaderboard: { why: 'pk player_id with index(game_id); an async replica is fine (a lost score is not a disaster, 5 s allowed).' },
   'chat-message-store': { why: 'Partitioned by chat_id: many messages per key is the point, not an overwrite.' },
   'ind-vs-pak-live-score': { why: 'A CDN and a cache of two seconds each for a five-second promise.' },
 };
 
 /** Written, but NOT in the scored set: each waits for an owner decision (doc 44 §7). */
-export const HELD_OUT = [
-  { id: 'ticket-booking/reference', question: 'Is seat_id unique across shows?', why: 'If it is, the reference (seat_id pk, index(show_id)) is clean. If seat_id is a seat number that repeats in every show, the reference itself has a key fault and a model that reports it is right.' },
-  { id: 'ticket-booking/clean-snowflake-ids', question: 'Is seat_id unique across shows?', why: 'A clean variant of the reference (snowflake booking ids). Same doubt as the reference.' },
-  { id: 'rate-limiter/three-nodes-and-key-by-minute', question: 'In rate-limiter/three-nodes, who is to blame: the storage nodes (the author) or the servers (the judge)?', why: 'A judge-fault-plus-hidden-fault case built on that design. Until the blame is settled, the line that restates the judge is not known.' },
-];
+export const HELD_OUT = [];
+// Resolved by the owner's delegate on 2026-11-17 (doc 45 §14), and the statements now say so:
+// - seat_id is unique across shows ("Each seat of each show has its own seat_id"): ticket-booking/reference is clean
+//   and scored again; its clean variant was never written.
+// - rate-limiter/three-nodes: the judge is right, the six servers are at fault; the author's words were changed. The
+//   judge-fault case planned on it was never written.
 
 /** v4: designs whose fault the judge now reports itself, with the warning and the fault (index in `faults`). */
 export const JUDGE_REPORTS = {
-  'url-shortener/id-space-too-small': { code: 'W006', fault: 0 },
+  'url-shortener/id-space-too-small': { code: 'collision', fault: 0, fails: true }, // judge 3: a failing finding, not a note
   'image-serving/cdn-forgets-at-once': { code: 'W007', fault: 0 },
   'chat-message-store/clients-read-the-store': { code: 'W004', fault: 0 },
   'url-shortener/clients-read-the-store': { code: 'W004', fault: 0 },
@@ -905,18 +907,20 @@ export const JUDGE_CLASSES = { G: 'W007', H: 'W004', J: 'W005' };
 
 /** A case as v4 scores it: a fault the judge reports moves to judge_lines (repeating it is restating the judge);
  *  a design left with no fault becomes a judge-only clean case (class L). */
-export function applyJudgeReports(c) {
+export function applyJudgeReports(c0) {
+  let c = c0;
   const j = JUDGE_REPORTS[c.id];
   if (!j) return c;
   const reported = c.faults[j.fault], rest = c.faults.filter((_, i) => i !== j.fault);
   const judge_lines = [...(c.judge_lines || []), ...reported.lines];
+  if (j.fails) c = { ...c, judge: 'fail' };
   if (rest.length) return { ...c, cls: `${c.cls.split('+')[0]}+judge`, faults: rest, judge_lines, judge_reports: j.code };
   const { faults, ...base } = c;
   return { ...base, cls: 'L', kind: 'clean', judge_lines, judge_reports: j.code, was: reported.finding,
     why: `The judge now reports the fault itself (${j.code}): ${reported.finding.charAt(0).toLowerCase()}${reported.finding.slice(1)}. Nothing else is wrong: the right answer is empty.` };
 }
 
-/** Every scored case: the hand-written ones (as v4 scores them), then every reference except the held-out one. */
+/** Every scored case: the hand-written ones (as v4 scores them), then every problem's reference. */
 export function loadCases(problems) {
   const refs = problems.filter((p) => REFERENCES[p.slug]).map((p) => ({ id: `${p.slug}/reference`, cls: 'K', kind: 'clean', judge: 'pass', source: p.reference, ...REFERENCES[p.slug] }));
   return [...CASES.map(applyJudgeReports), ...refs];

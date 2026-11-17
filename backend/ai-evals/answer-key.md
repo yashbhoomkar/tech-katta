@@ -38,7 +38,7 @@ is the fault right, is the fix what a good interviewer would say, is the "wrong 
 | sql-counters | Every check is a write, 10,050 a second, and one SQL primary takes about 2,500. Replicas add no write capacity. | finding:overloaded:CHECK:db, finding:p99:CHECK:none, load:db | a partitioned key-value store | read replicas or a cache |
 | write-to-all-copies | Each write waits for all three copies (w equals the replication factor), so one dead node stops every check. | finding:unavailable:CHECK:kv | fewer copies per write or overlapping read and write quorums | more or larger servers |
 | too-few-servers | Four large servers serve 8,000 checks a second; the peak sends 10,050. | finding:overloaded:CHECK:api, finding:p99:CHECK:none, load:api | more or larger servers | - |
-| three-nodes | Six servers run at 84 % at the peak and the slowest checks wait past 100 ms. **Content issue:** The author says the three storage nodes are the problem, but this design also cuts the servers from 8 to 6 and the judge measures the servers as the slowest hop. Either the design should keep 8 servers (then the nodes are the only change) or the author's words should change. | finding:p99:CHECK:api, load:api | more or larger servers | - |
+| three-nodes | Six servers run at 84 % at the peak and the slowest checks wait past 100 ms. | finding:p99:CHECK:api, load:api | more or larger servers | - |
 | huge-cluster | Twelve servers and twelve storage nodes pass every test at ₹2,66,000 against ₹1,60,000. | finding:budget:all:api, cost:total, cost:api, cost:kv | smaller or fewer parts | - |
 
 ## news-feed

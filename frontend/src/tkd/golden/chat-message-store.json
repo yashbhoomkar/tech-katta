@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "one-copy-each-way": {
@@ -124,7 +124,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "write-all-read-one": {
    "verdict": "Unavailable",
@@ -216,7 +216,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "write-one-read-all": {
    "verdict": "Data Lost",
@@ -296,7 +296,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "sql-messages": {
    "verdict": "Overloaded",
@@ -392,7 +392,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "random-ids": {
    "verdict": "Wrong Answer",
@@ -461,7 +461,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "big-cluster": {
    "verdict": "Over Budget",
@@ -530,7 +530,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }

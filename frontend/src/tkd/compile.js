@@ -164,11 +164,6 @@ export function compile(input, problem) {
       if (p?.kind === 'cdn' && p.ttl_s * 60 < R.max_stale_s) warnings.push(w('W007', p.line, { name: h.part, ttl: p.ttl_s, REQUEST: name, max: R.max_stale_s }, h.part));
     }
   }
-  // W006: a counter with fewer values than the problem has items: it runs out and its ids repeat
-  for (const [name, p] of Object.entries(parts)) {
-    const n = problem?.total_items || 0;
-    if (p.kind === 'idgen' && p.id_kind === 'counter' && n && 2 ** p.bits < n) warnings.push(w('W006', p.line, { name, bits: p.bits, n: n.toLocaleString('en-IN') }, name));
-  }
   warnings.sort((a, b) => a.line - b.line);
   return { ok: true, design: { parts, tables, routes }, warnings };
 }

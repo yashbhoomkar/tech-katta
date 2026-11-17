@@ -843,7 +843,7 @@
     "first_failed": "t02-peak"
    },
    "verdict_fails": true,
-   "fault": "Three nodes run at two thirds of their capacity at the peak; each check waits longer than the promise allows.",
+   "fault": "Six large servers run at 84 % of what they can take at the peak, so the slowest checks wait longer than the promise allows. Three storage nodes are enough here.",
    "fault_parts": [
     "api"
    ],

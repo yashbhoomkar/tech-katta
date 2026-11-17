@@ -10,7 +10,7 @@
   ],
   "companies": [],
   "free": true,
-  "statement": "Zotato runs a quiz game during cricket matches. Players **submit scores** after every question, and everyone keeps the **top-100 list** of their game open, refreshing it all the time.\n\nDesign the leaderboard. Scores are stored per player; the top list is read per game. There are only about a thousand games running at once, so a few lists take all the reads.\n\nThe top list may be at most **5 seconds** old, and it must keep working when the cache restarts. A lost score is not a disaster (the player's next answer resends it). The budget is ₹1.9 lakh a month.",
+  "statement": "Zotato runs a quiz game during cricket matches. Players **submit scores** after every question, and everyone keeps the **top-100 list** of their game open, refreshing it all the time.\n\nDesign the leaderboard. Scores are stored per player; the top list is read per game. A player plays in one game at a time. There are only about a thousand games running at once, so a few lists take all the reads.\n\nThe top list may be at most **5 seconds** old, and it must keep working when the cache restarts. A lost score is not a disaster (the player's next answer resends it). The budget is ₹1.9 lakh a month.",
   "constraints": [
     "About 1,000 games at a time, 10 lakh players",
     "Peak: 6,000 top-list reads and 1,200 score submits a second",

@@ -1,5 +1,5 @@
 {
- "judge_version": 2,
+ "judge_version": 3,
  "reference": {
   "verdict": "Accepted",
   "passed": 5,
@@ -54,7 +54,7 @@
    }
   ],
   "warnings": [],
-  "judge_version": 2
+  "judge_version": 3
  },
  "wrong": {
   "no-index": {
@@ -146,7 +146,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "minute-ttl": {
    "verdict": "Wrong Answer",
@@ -215,7 +215,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "medium-db": {
    "verdict": "Overloaded",
@@ -306,7 +306,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "no-cache": {
    "verdict": "Overloaded",
@@ -397,7 +397,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   },
   "big-everything": {
    "verdict": "Over Budget",
@@ -466,7 +466,7 @@
     }
    ],
    "warnings": [],
-   "judge_version": 2
+   "judge_version": 3
   }
  }
 }
