@@ -1,0 +1,98 @@
+// The lessons. Each is a scroll story: as a step scrolls into view, the 3D system on the right becomes that step's
+// design (counts, as in the simulator) with that step's colours, labels and camera. Words follow the owner's style:
+// short sentences, plain English, Indian context.
+const D = (o = {}) => ({ apps: 2, cache: 0, replicas: 0, queue: 0, cdn: 0, ...o });
+
+export const TRACKS = [
+  { id: 'start', name: 'Start here', blurb: 'What every system is made of, and the two ideas that carry most of the load.',
+    lessons: ['load-balancing', 'caching'] },
+  { id: 'scale', name: 'When one is not enough', blurb: 'Copies, queues and edges: how a system grows without falling over.',
+    lessons: ['replicas', 'queues', 'cdn', 'sharding'] },
+  { id: 'real', name: 'Real evenings', blurb: 'Whole systems on their worst night, told as they happened.',
+    lessons: ['toss-night', 'ticket-minute'] },
+];
+
+export const LESSONS = {
+  'load-balancing': {
+    title: 'Load balancing', minutes: 6, hook: 'One server is a single point of failure. Two need someone to choose between them.',
+    preview: D({ apps: 3 }), incident: 'ind-vs-pak',
+    steps: [
+      { kicker: 'The problem', thin: 'One server.', heavy: 'Everyone’s requests.',
+        body: ['Every tap in the app becomes a request. With one server, every request waits for the same machine.', 'At 9,400 requests a second it is nearly full. One more spike, and pages start timing out.'],
+        design: D({ apps: 1 }), state: { parts: { app0: 'warn' }, labels: { app0: ['9.4k/s · 94 %', 'warn'], client: ['', '', 'users'] }, speed: 1.4 } },
+      { kicker: 'Add a server', thin: 'Two servers.', heavy: 'Someone has to choose.',
+        body: ['A second server doubles what you can take, but your users only know one address.', 'The load balancer is that address. It takes each request and hands it to a server.'],
+        design: D({ apps: 2 }), state: { parts: { lb: 'ok' }, labels: { lb: ['one address'], app0: ['4.7k/s'], app1: ['4.7k/s'] }, speed: 1.2 } },
+      { kicker: 'Spread the work', thin: 'Round robin,', heavy: 'or least busy first.',
+        body: ['The simplest rule takes turns: first server, second, third, again. Better ones send each request to the server with the fewest open requests.', 'Either way, no machine is full while another sits idle.'],
+        fact: ['Each server', '3,100 /s · 31 %'],
+        design: D({ apps: 3 }), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok' }, labels: { app0: ['3.1k/s', 'ok'], app1: ['3.1k/s', 'ok'], app2: ['3.1k/s', 'ok'] }, speed: 1 } },
+      { kicker: 'When one dies', thin: 'A server crashes.', heavy: 'Nobody notices.',
+        body: ['Every few seconds the load balancer asks each server: are you alive? A server that does not answer stops getting traffic.', 'The other two carry the load until it comes back. Users see nothing.'],
+        design: D({ apps: 3 }), state: { parts: { app1: 'alert', app0: 'warn', app2: 'warn' }, paths: { 'lb-app1': 'down' }, labels: { app1: ['down', 'alert'], app0: ['4.7k/s · 47 %', 'warn'], app2: ['4.7k/s · 47 %', 'warn'], lb: ['health check'] }, speed: 1.2 } },
+      { kicker: 'The habit', thin: 'Scale out,', heavy: 'not up.',
+        body: ['A bigger machine has a ceiling and is still one machine. Many small ones behind a load balancer have neither problem.', 'Keep servers stateless (no user data stored on them), and you can add or remove one at any time.'],
+        design: D({ apps: 5 }), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok', app3: 'ok', app4: 'ok' }, labels: { lb: ['5 healthy', 'ok'] }, speed: 1 } },
+    ] },
+  caching: {
+    title: 'Caching', minutes: 8, hook: 'Most reads ask for the same few things. Remember the answers.',
+    preview: D({ apps: 2, cache: 2 }), incident: 'ind-vs-pak',
+    steps: [
+      { kicker: 'The problem', thin: 'Every read', heavy: 'goes to the database.',
+        body: ['A short link is opened 40,000 times a second during a match. Each open asks the database the same question: where does this link go?', 'A database can answer about 6,000 of those a second. The rest wait, then fail.'],
+        design: D({ apps: 3 }), state: { parts: { db: 'alert' }, labels: { db: ['36k reads/s · 6k max', 'alert'] }, speed: 1.6 } },
+      { kicker: 'Remember the answer', thin: 'Put a cache', heavy: 'in front.',
+        body: ['A cache keeps recent answers in memory. The app asks the cache first; only a miss goes to the database.', 'Memory answers in under a millisecond, and one node takes tens of thousands of reads a second.'],
+        design: D({ apps: 3, cache: 1 }), state: { parts: { cache0: 'ok', db: 'ok' }, labels: { cache0: ['hit 95 %', 'ok'], db: ['1.8k reads/s', 'ok'] }, speed: 1.4 } },
+      { kicker: 'The number that matters', thin: 'Hit rate', heavy: 'is everything.',
+        body: ['At a 95 % hit rate, only 1 read in 20 reaches the database. At 80 %, it is 1 in 5: four times the load.', 'Popular things stay hot. That is why caching works so well for links, product pages and scores.'],
+        fact: ['36k reads at 95 % hit', '1.8k reach the db'],
+        design: D({ apps: 3, cache: 1 }), state: { parts: { cache0: 'ok' }, labels: { cache0: ['hit 95 %', 'ok'], db: ['1.8k/s'] }, speed: 1.4, explode: ['db'] } },
+      { kicker: 'The catch', thin: 'The cache dies.', heavy: 'The database takes it all.',
+        body: ['One cache node, no spare. When it goes, every read falls through at once, and the database was sized for a twentieth of that.', 'This is how most big outages look: one small part fails, and something else drowns.'],
+        design: D({ apps: 3, cache: 1 }), state: { parts: { cache0: 'alert', db: 'alert' }, paths: { 'app0-cache': 'down', 'app1-cache': 'down', 'app2-cache': 'down' }, labels: { cache0: ['down', 'alert'], db: ['36k reads/s', 'alert'] }, speed: 1.6 } },
+      { kicker: 'The fix', thin: 'Spread the keys', heavy: 'over nodes.',
+        body: ['With three cache nodes, each holds a third of the keys. When one dies, only its third misses, and the misses refill it within seconds.', 'Pair it with a read replica, and the database can survive even that third.'],
+        design: D({ apps: 3, cache: 3, replicas: 1 }), state: { parts: { cache1: 'alert', cache0: 'ok', cache2: 'ok', db: 'warn', rep0: 'ok' }, labels: { cache1: ['down', 'alert'], db: ['12k misses for 5 s', 'warn'], rep0: ['sharing reads', 'ok'] }, speed: 1.3 } },
+    ] },
+  replicas: {
+    title: 'Read replicas', minutes: 7, hook: 'Copies of the database that share the reading, and step in when the original falls.',
+    preview: D({ apps: 2, replicas: 2 }), incident: 'salary-day',
+    steps: [
+      { kicker: 'The problem', thin: 'One database', heavy: 'does everything.',
+        body: ['Every balance check and every payment lands on one machine. On the 1st of the month, that machine is the busiest thing you own.', 'And if it stops, everything stops.'],
+        design: D({ apps: 3 }), state: { parts: { db: 'warn' }, labels: { db: ['reads + writes · 92 %', 'warn'] }, speed: 1.3 } },
+      { kicker: 'Copies', thin: 'Replicas copy', heavy: 'every change.',
+        body: ['A replica receives every write the primary makes and applies it too, a few milliseconds later. Reads can go to any copy.', 'Two replicas triple how much you can read.'],
+        design: D({ apps: 3, replicas: 2 }), state: { parts: { rep0: 'ok', rep1: 'ok', db: 'ok' }, labels: { rep0: ['reads', 'ok'], rep1: ['reads', 'ok'], db: ['writes', 'ok'] }, speed: 1.2 } },
+      { kicker: 'The catch', thin: 'Copies are', heavy: 'a little behind.',
+        body: ['Right after you pay, a replica may not know yet. If your next screen reads from it, the payment seems missing.', 'The usual rule: read your own recent writes from the primary; everything else from replicas.'],
+        fact: ['Replication lag', 'usually 5–50 ms'],
+        design: D({ apps: 3, replicas: 2 }), state: { parts: { rep0: 'warn' }, labels: { rep0: ['12 ms behind', 'warn'], db: ['payment written'] }, speed: 1 } },
+      { kicker: 'When the primary falls', thin: 'A replica', heavy: 'takes over.',
+        body: ['The primary crashes. Within seconds a replica is promoted: it becomes the new primary, and writes go to it.', 'Without a replica, every payment fails until someone restarts the old machine.'],
+        design: D({ apps: 3, replicas: 2 }), state: { parts: { db: 'alert', rep0: 'ok' }, labels: { db: ['down', 'alert'], rep0: ['promoted', 'ok', 'new primary'] }, speed: 1.2 } },
+    ] },
+  queues: {
+    title: 'Queues', minutes: 6, hook: 'When writes arrive faster than you can take them, make them wait in line instead of failing.',
+    preview: D({ apps: 2, queue: 1 }), incident: 'concert-tickets',
+    steps: [
+      { kicker: 'The problem', thin: 'A minute of', heavy: 'pure writes.',
+        body: ['Tickets open at noon. 1.2 lakh people press Book: hold this seat, take this payment. Each is a write.', 'The database writes about 4,000 a second. In that minute, 15,000 a second arrive.'],
+        design: D({ apps: 3 }), state: { parts: { db: 'alert' }, labels: { db: ['15k writes/s · 4k max', 'alert'] }, speed: 1.8 } },
+      { kicker: 'Wait in line', thin: 'Put a queue', heavy: 'in front.',
+        body: ['The app drops each booking into a queue and answers at once: you are in line. Workers take bookings off the queue as fast as the database can write them.', 'Nothing is refused. The database works at full speed, never past it.'],
+        design: D({ apps: 3, queue: 1 }), state: { parts: { queue: 'warn', db: 'ok' }, labels: { queue: ['holding 42,000', 'warn'], db: ['4k writes/s', 'ok'] }, speed: 1.5 } },
+      { kicker: 'Late, not lost', thin: 'The line', heavy: 'drains.',
+        body: ['When the rush passes, the queue empties. Some confirmations arrive a minute late, but every booking is kept.', 'Tell people where they stand in line, and a wait feels fair.'],
+        fact: ['Backlog at the peak', '42,000 bookings'],
+        design: D({ apps: 3, queue: 1 }), state: { parts: { queue: 'ok', db: 'ok' }, labels: { queue: ['empty', 'ok'], db: ['caught up', 'ok'] }, speed: 0.8 } },
+      { kicker: 'Where it does not help', thin: 'Queues fix writes.', heavy: 'Not reads.',
+        body: ['Someone looking at the seat map cannot wait a minute for an answer. Reads need caches and replicas; queues are for work that can happen a little later.'],
+        design: D({ apps: 3, queue: 1, cache: 1 }), state: { parts: { cache0: 'ok', queue: 'ok' }, labels: { cache0: ['seat map', 'ok'], queue: ['bookings', 'ok'] }, speed: 1 } },
+    ] },
+  cdn: { title: 'CDNs', minutes: 5, hook: 'Answer images and pages from a city near the user, before they reach you.', soon: true, preview: D({ apps: 2, cdn: 1 }) },
+  sharding: { title: 'Sharding', minutes: 9, hook: 'When one database cannot hold it all, split the data by key.', soon: true, preview: D({ apps: 3, replicas: 3 }) },
+  'toss-night': { title: 'How a cricket app survives the toss', minutes: 12, hook: 'Crores of people open the app in the same ten seconds.', soon: true, preview: D({ apps: 5, cache: 3, replicas: 2, cdn: 1 }) },
+  'ticket-minute': { title: 'Inside a ticket sale minute', minutes: 10, hook: 'Fairness, holds and the queue everyone sees.', soon: true, preview: D({ apps: 3, queue: 1, cache: 1 }) },
+};
