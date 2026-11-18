@@ -43,7 +43,7 @@ export function mount(view, _p, { reduced }) {
     const l = LESSONS[id];
     world.setSystem(layout(l.preview));
     const f = world.frame();
-    world.setCamera({ t: f.t, dist: f.dist * 1.05, az: 42, el: 32, sx: 0.5, sy: 0.55 });
+    world.setCamera({ t: f.t, dist: f.dist * 0.78, az: 42, el: 32, sx: 0.5, sy: 0.55 });
     const ok = Object.fromEntries(Object.keys(layout(l.preview).parts).filter((k) => !['client', 'lb', 'cdn'].includes(k)).map((k) => [k, l.soon ? '' : 'ok']));
     world.setState({ parts: ok, speed: 0.9 });
     capT.textContent = l.title.toUpperCase();

@@ -4,7 +4,7 @@
 tech katta UI UX and widget placements for the new prototype. You can think and redesign everything."
 
 ## The idea
-rca.gg teaches by letting you watch a system fail. Here the live 3D system is the product, not decoration:
+Watching a system fail teaches more than reading about it. Here the live 3D system is the product, not decoration:
 - **Landing** (`#/`): one incident told in six scroll steps over the 3D world, then the three ways in.
 - **Learn** (`#/learn`): a plain list of tracks; hovering a lesson rebuilds, on the right, the system it ends with.
 - **Lessons** (`#/learn/<id>`): scroll stories. Each step sets the system's design, colours and labels.
@@ -16,13 +16,19 @@ rca.gg teaches by letting you watch a system fail. Here the live 3D system is th
 - **You** (`#/me`): lessons read, incidents survived, best runs (this device only). No streaks or badges.
 One top bar (Learn · Incidents · Simulator · You), no sidebar.
 
-## Scroll drives the animation, then the words take over (owner, after rca.gg)
-"One thing to observe on rca.gg is that when anyone scrolls, only then the animation proceeds, and then the actual
-textual content takes over the animation." `story.js`: each chapter after the opening is a tall section in two phases.
+## Scroll drives the animation, then the words take over
+`story.js`: each chapter after the opening is a tall section in two phases.
 While it scrolls into place, its scroll position blends the world from the previous chapter to this one (camera,
 parts rising one by one, colours, glows, paths: `world.setState(next, { from, mix, reveal })`); the scene is centre
 stage and there are no words. Then the section pins: its words fade in (`--t`) and the scene slides aside. Nothing runs
 on a timer, so scrolling back plays it backwards.
+
+## The look is Tech Katta's own
+Owner, 2026-11-18: "I don't want the UI to be exactly the same as rca.gg, I don't want any legal issues." The palette,
+type, shapes and components are Tech Katta's: paper, ink and marigold from `frontend/next` tokens; Instrument Sans,
+Source Serif italic for emphasis, Geist Mono; outlined paper models with marigold lights; square ink-bordered tags; a
+vertical chapter rail; a dot grid. Status colours are the app's fail red, warn amber and pass green. Keep it that way:
+take ideas (scroll-driven story, 3D systems) from other sites, never their palette, fonts, shapes or components.
 
 ## Files
 | File | Role |

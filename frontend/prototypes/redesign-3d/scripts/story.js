@@ -1,4 +1,4 @@
-// A scroll story, after rca.gg: the scroll drives the animation, then the words take over.
+// A scroll story: the scroll drives the animation, then the words take over.
 // Step 0 is the opening (a normal screen). Every later step is a tall section in two phases:
 //   1. while the section scrolls into place (its top travels from the bottom of the screen to the top), the 3D world
 //      plays the change from the previous step to this one: the camera travels, new parts rise one by one, colours

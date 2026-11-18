@@ -6,18 +6,20 @@
 // createWorld returns null without WebGL; pages then show their words without the scene.
 import * as THREE from './vendor/three.module.min.js';
 
+// Tech Katta's own look: paper models with ink outlines (like the lesson figures), marigold indicator lights; status
+// colours from the app's tokens (fail red, warn amber, pass green).
 const PALETTE = {
-  light: { page: '#F8F7FB', grid: '#1C1825', gridOp: 0.06, shadow: 0.11, block: '#CDBEFB', blockE: '#6D3FE0', blockEI: 0.05, edge: '#8B6CF0',
-    disc: '#F7F5FF', discEdge: '#B7A8F0', path: '#1C1825', pathOp: 0.3, dot: '#6D3FE0', hemi: 1.55, sun: 1.25, ground: '#d8d0f5' },
-  dark: { page: '#0F0D16', grid: '#ECE9F5', gridOp: 0.05, shadow: 0.35, block: '#5B47B8', blockE: '#3B2A8F', blockEI: 0.35, edge: '#B49CFF',
-    disc: '#3B3159', discEdge: '#9F88F5', path: '#ECE9F5', pathOp: 0.28, dot: '#B49CFF', hemi: 0.9, sun: 0.9, ground: '#1a1530' },
+  light: { page: '#F6F5F1', grid: '#17161A', gridOp: 0.07, shadow: 0.14, block: '#FBFAF7', blockE: '#000000', blockEI: 0, edge: '#17161A',
+    disc: '#FBFAF7', discEdge: '#17161A', path: '#17161A', pathOp: 0.35, dot: '#26449E', hemi: 1.45, sun: 1.35, ground: '#e9e6de', led: '#FFC233' },
+  dark: { page: '#131312', grid: '#F2F0EB', gridOp: 0.05, shadow: 0.4, block: '#2E2D2A', blockE: '#000000', blockEI: 0, edge: '#CAC7C0',
+    disc: '#2E2D2A', discEdge: '#CAC7C0', path: '#F2F0EB', pathOp: 0.3, dot: '#9DB8FF', hemi: 0.95, sun: 1.0, ground: '#1c1c1a', led: '#FFC233' },
 };
 const TONE = {
-  alert: { c: '#F7A374', e: '#E8692E', ei: 0.45, edge: '#E0632A', glow: '#F07B3F', dot: '#F07B3F' },
-  warn: { c: '#F9D27A', e: '#D99A12', ei: 0.3, edge: '#C98A0A', glow: '#F2B53A', dot: '#E0A21E' },
-  ok: { c: '#93E3C0', e: '#1E9E6A', ei: 0.18, edge: '#25A872', glow: '#2DBA7F', dot: '#2DBA7F' },
+  alert: { c: '#F4A69B', e: '#E5484D', ei: 0.35, edge: '#B3261E', glow: '#E5484D', dot: '#E5484D' },
+  warn: { c: '#FFD98A', e: '#F5A524', ei: 0.25, edge: '#9C4A00', glow: '#F5A524', dot: '#D98A00' },
+  ok: { c: '#A8E3C1', e: '#2FA36B', ei: 0.15, edge: '#17794A', glow: '#2FA36B', dot: '#2FA36B' },
 };
-const TONE_DARK = { alert: { c: '#F28A55', ei: 0.6, edge: '#FF9A62' }, warn: { c: '#E8B54A', ei: 0.45, edge: '#FFC85C' }, ok: { c: '#3FBF88', ei: 0.35, edge: '#4ED39A' } };
+const TONE_DARK = { alert: { c: '#C9453F', ei: 0.5, edge: '#FF8478' }, warn: { c: '#C98A1A', ei: 0.4, edge: '#FFC870' }, ok: { c: '#2E8A5C', ei: 0.3, edge: '#75D079' } };
 
 function roundedSlab(w, d, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
@@ -75,9 +77,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // ---- parts ----
   function buildPart(id, def) {
     const g = new THREE.Group(); g.position.set(def.x, -1.4, def.z);
-    const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0, transparent: true, opacity: 0 });
+    const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, transparent: true, opacity: 0 });
     const mEdge = new THREE.LineBasicMaterial({ transparent: true, opacity: 0 });
-    const mWhite = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+    const mWhite = new THREE.MeshBasicMaterial({ color: pal.led, transparent: true, opacity: 0, toneMapped: false });
     mBlock.color.set(def.kind === 'db' ? pal.disc : pal.block); mEdge.color.set(pal.edge);
     const layers = [], hits = [];
     const add = (geom, edgeGeom, y, parent = g, mat = mBlock) => {
@@ -89,13 +91,10 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     let top = 0;
     const k = def.kind;
     if (k === 'server') {
-      const [sg, se] = slab(1.5, 1.5, 0.3, 0.14);
-      const slot = geo('slot', () => new THREE.BoxGeometry(0.02, 0.05, 0.34));
-      for (let i = 0; i < 3; i++) {
-        add(sg, se, i * 0.42);
-        for (let j = 0; j < 2; j++) { const m = new THREE.Mesh(slot, mWhite); m.position.set(0.78, i * 0.42 + 0.15, -0.15 + j * 0.4); g.add(m); }
-      }
-      top = 1.2;
+      const [sg, se] = slab(1.4, 1.4, 1.05, 0.12); add(sg, se, 0);
+      const led = geo('led', () => new THREE.BoxGeometry(0.02, 0.07, 0.5));
+      for (let j = 0; j < 2; j++) { const m = new THREE.Mesh(led, mWhite); m.position.set(0.735, 0.3 + j * 0.38, 0); g.add(m); }
+      top = 1.1;
     } else if (k === 'cache') {
       const [sg, se] = slab(1.3, 1.3, 0.7, 0.14); add(sg, se, 0);
       const bolt = geo('bolt', () => { const b = new THREE.Shape(); b.moveTo(0.06, 0.3); b.lineTo(-0.14, -0.02); b.lineTo(0, -0.02); b.lineTo(-0.08, -0.3); b.lineTo(0.16, 0.04); b.lineTo(0.02, 0.04); b.closePath(); return new THREE.ShapeGeometry(b); });
@@ -142,7 +141,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
 
   // ---- paths: L-shaped dashed lines on the floor, requests moving along them (instanced dots from one pool) ----
   const MAX_DOTS = 900;
-  const dots = new THREE.InstancedMesh(geo('dot', () => new THREE.SphereGeometry(0.06, 12, 8)), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), MAX_DOTS);
+  const dots = new THREE.InstancedMesh(geo('dot', () => new THREE.BoxGeometry(0.1, 0.1, 0.1)), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), MAX_DOTS);
   dots.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   const hiddenM = new THREE.Matrix4().makeScale(0, 0, 0);
   for (let i = 0; i < MAX_DOTS; i++) { dots.setMatrixAt(i, hiddenM); dots.setColorAt(i, new THREE.Color(1, 1, 1)); }
@@ -323,9 +322,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       p.mBlock.color.lerp(colA.set(A.c).lerp(colB.set(B.c), cm), s);
       p.mBlock.emissive.lerp(colA.set(A.e).lerp(colB.set(B.e), cm), s);
       p.mBlock.emissiveIntensity = lerp(p.mBlock.emissiveIntensity, lerp(A.ei, B.ei, cm) + (hover ? 0.25 : 0), s);
-      p.mBlock.opacity = 0.9 * p.vis;
+      p.mBlock.opacity = p.vis; p.mBlock.transparent = p.vis < 0.99; p.mBlock.depthWrite = p.vis > 0.5;
       p.mEdge.color.lerp(colA.set(A.edge).lerp(colB.set(B.edge), cm), s);
-      p.mEdge.opacity = 0.55 * p.vis; p.mWhite.opacity = 0.9 * p.vis;
+      p.mEdge.opacity = 0.85 * p.vis; p.mWhite.opacity = p.vis;
       p.glow.material.color.copy(colA.set(A.glow).lerp(colB.set(B.glow), cm));
       p.glow.material.opacity = lerp(p.glow.material.opacity, lerp(A.glowOp, B.glowOp, mix) * p.vis, s);
       const alertNow = (mix >= 0.5 ? p.state : p.prev) === 'alert';
