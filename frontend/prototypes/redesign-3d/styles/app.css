@@ -559,3 +559,18 @@ body { background: var(--page); background-attachment: scroll; }
 /* round 3: no idle scroll; 1.05 screens a chapter, the change runs into the words */
 .step.scrub { height: 105vh; height: 105svh; }
 @media (max-width: 760px) { .step.scrub { height: 105svh; } }
+
+/* phones, after the way rca.gg lays out its scroll story (the layout, not its look): the scene fills the whole
+   screen behind everything; a chapter's words sit at the bottom over a fade into the page; in the hero the words are
+   at the top and the system below them */
+@media (max-width: 760px) {
+  .stage-wrap { z-index: 0; }
+  .stage { height: 100vh; height: 100svh; }
+  .stage::before { content: none; }
+  .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(transparent 38%, color-mix(in srgb, var(--page) 88%, transparent) 62%, var(--page) 80%); transition: opacity .3s; }
+  .at-hero .stage::after { background: linear-gradient(var(--page) 14%, color-mix(in srgb, var(--page) 85%, transparent) 34%, transparent 52%); }
+  .step.scrub { height: 105svh; }
+  .step.scrub > .pin { justify-content: flex-end; padding: 0 16px max(40px, env(safe-area-inset-bottom)); }
+  .step.hero { min-height: 100svh; padding-top: 96px; }
+  .stage canvas { opacity: calc(1 - var(--read) * .25); }
+}

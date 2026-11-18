@@ -234,7 +234,8 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
 
   function placeCamera(now) {
     const phone = W <= 760;
-    const d = cam.dist * (phone ? 1.05 : 1) * Math.max(1, 1.45 / Math.max(camera.aspect, 0.6));
+    // phones: the scene fills the screen and comes close (parts may run off the edges), as the words sit over it
+    const d = cam.dist * (phone ? Math.min(1.3, 1.45 / Math.max(camera.aspect, 0.6)) : Math.max(1, 1.45 / Math.max(camera.aspect, 0.6)));
     const drift = reduced || still ? 0 : Math.sin(now * 0.00015) * 1.2;
     const az = THREE.MathUtils.degToRad(cam.az + drift), el = THREE.MathUtils.degToRad(cam.el);
     const [tx, tz] = cam.t;
@@ -279,12 +280,13 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // tries its own spot just above its part first, then spots further up and to either side; if it had to move, a thin
   // leader line ties it back to its part. Positions ease toward their target so labels do not jump.
   const queue = [];
+  let labelMaxY = 0.52;
   const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   leaders.setAttribute('class', 'p3-leaders'); overlay.appendChild(leaders);
   const lines = [];
   function place(el, x, y, z, show) {
     const [sx, sy, sz] = project(x, y, z);
-    const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > 40 && sy < H - 20;
+    const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > 40 && sy < (W > 760 ? H - 20 : H * labelMaxY);
     if (on) queue.push({ el, ax: sx, ay: sy }); else { el.style.opacity = '0'; el._placed = false; }
   }
   function layoutLabels() {
@@ -422,5 +424,5 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, onPick: (cb) => { pickCb = cb; }, destroy };
+  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, onPick: (cb) => { pickCb = cb; }, destroy };
 }

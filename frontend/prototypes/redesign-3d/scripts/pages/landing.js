@@ -11,7 +11,7 @@ const D = (o) => ({ apps: 3, cache: 1, replicas: 0, queue: 0, cdn: 0, ...o });
 const FULL = D({ cache: 3, replicas: 2, queue: 1, cdn: 1 });
 const allOk = (d) => Object.fromEntries(['app0', 'app1', 'app2', 'app3', 'cache0', 'cache1', 'cache2', 'db', 'rep0', 'rep1', 'queue', 'cdn'].map((k) => [k, 'ok']).filter(([k]) => k.startsWith('App server') ? Number(k.slice(3)) < d.apps : true));
 const STEPS = [
-  { design: D({}), cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.05, el: 30, phoneSy: 0.56 }, state: { labels: { cache0: ['hit 94%'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
+  { design: D({}), cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.05, el: 30, phoneSy: 0.72, phoneZoom: 1.45 }, state: { labels: { cache0: ['hit 94%'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
   { design: D({}), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok', cache0: 'ok' }, labels: { cache0: ['37,600 hits/s', 'ok'], db: ['2,400 req/s'], app1: ['p99 38 ms', 'ok'] }, speed: 1.5 } },
   { design: D({}), state: { parts: { cache0: 'alert', db: 'alert', client: 'dim' }, paths: { 'app0-cache': 'down', 'app1-cache': 'down', 'app2-cache': 'down', db: 'alert' }, labels: { cache0: ['down', 'alert'], db: ['37,600 req/s · overloaded', 'alert'], app1: ['p99 2,000 ms', 'alert'] }, speed: 1.6 } },
   { design: D({ cache: 3, replicas: 2 }), state: { parts: { cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok' }, labels: { cache1: ['3 nodes', 'ok'], db: ['1,200 req/s', 'ok'], rep0: ['sharing reads', 'ok'] }, speed: 1.2 } },

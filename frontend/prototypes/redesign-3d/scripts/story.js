@@ -45,7 +45,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
   // each step's two cameras: centre stage (while it animates) and aside (while you read)
   const cams = steps.map((s) => {
     const f = frameOf(s), c = s.cam || {};
-    const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.58 };
+    const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1) * (innerWidth <= 760 ? (c.phoneZoom || 1) : 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.36 };
     const side = c.side !== false;
     // centre: the system is the focus while the scroll plays the change (closer, centre stage);
     // aside: the words are the focus while you read (further away, to the side, faded by --read in app.css)
@@ -66,6 +66,8 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
       const r = els[k].getBoundingClientRect();
       if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.8)); t = clamp((vh * 0.24 - r.top) / (vh * 0.22)); }
     }
+    root.classList.toggle('at-hero', i === 0);
+    world?.setLabelBand?.(i === 0 ? 0.98 : 0.52);
     if (i === 0) { a = 1; t = 1; if (introRaf && lastStep <= 0) { lastStep = 0; onStep?.(0, 0, 1); return; } }
     // the words: hidden while the scene animates, then in
     els.forEach((el, k) => { if (k > 0) { const v = k === i ? t : k === i - 1 && i > 0 ? 1 - clamp(a * 1.6) : 0; el.style.setProperty('--t', v.toFixed(3)); el.classList.toggle('live', k === i && t > 0.5); } });
