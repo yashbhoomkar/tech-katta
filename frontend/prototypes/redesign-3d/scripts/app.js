@@ -41,7 +41,14 @@ route();
 
 // top bar: solid once you scroll (phones navigate with the floating bar at the bottom)
 const top = document.getElementById('top');
-addEventListener('scroll', () => top.classList.toggle('solid', scrollY > 8), { passive: true });
+// the top bar slides away while you scroll down and comes back as soon as you scroll up (or near the top)
+let lastY = scrollY;
+addEventListener('scroll', () => {
+  const y = scrollY;
+  top.classList.toggle('solid', y > 8);
+  if (Math.abs(y - lastY) > 6) { document.body.classList.toggle('bar-away', y > 120 && y > lastY); lastY = y; }
+}, { passive: true });
+addEventListener('hashchange', () => document.body.classList.remove('bar-away'));
 
 
 // theme: System / Light / Dark, the same key as the other prototypes (boot-theme.js sets it before paint)
