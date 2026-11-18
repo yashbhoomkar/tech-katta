@@ -1,0 +1,121 @@
+/* Shared controls: buttons, chips, progress bars, cards, skeletons, the theme switch. */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: var(--r-pill); padding: 12px 22px; font-weight: 500; font-size: 15px; white-space: nowrap;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  transition: transform var(--press) var(--out), background-color 150ms ease, border-color 150ms ease;
+}
+.btn:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .btn:hover { transform: translateY(-1px); } .btn:active { transform: scale(.97); } }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+.primary { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
+.ghost { background: transparent; border-color: transparent; }
+@media (hover: hover) and (pointer: fine) { .ghost:hover { background: var(--sunken); transform: none; } }
+.sm { padding: 8px 14px; font-size: 13.5px; }
+.icon { padding: 0; width: 38px; height: 38px; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-pill); padding: 4px 10px; font-size: 12.5px; font-weight: 500; background: var(--t, var(--sunken)); color: var(--ink); }
+.easy { background: var(--t-problems); color: var(--pass); }
+.medium { background: var(--t-components); color: var(--warn); }
+.hard { background: var(--t-real); color: var(--fail); }
+
+.bar { height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 3px; background: var(--a, var(--pass)); transform-origin: left center; animation: tk-bar 900ms var(--out) both 120ms; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--hl); }
+
+.skeleton { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--sunken) 30%, var(--line) 50%, var(--sunken) 70%) 0 0 / 300% 100%; animation: tk-shimmer 1.1s linear infinite; }
+
+.themeSwitch { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--r-pill); background: var(--sunken); }
+.themeSwitch button { display: grid; place-items: center; width: 34px; height: 28px; border: 0; border-radius: var(--r-pill); background: none; color: var(--muted); transition: background-color 150ms ease, color 150ms ease; }
+.themeSwitch button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .1), var(--hl); }
+
+.state { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 56px 0; max-width: 36em; }
+.state h2 { font-size: 26px; }
+.state p { color: var(--ink-2); }
+/* a library card's diagram (CardPicture) */
+.cardPicture { display: block; overflow: hidden; padding: 10px 12px; border-radius: 12px; background: var(--bg); }
+.cardPicture svg { display: block; width: 100%; height: auto; max-height: 120px; }
+
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css): keys with a hard shadow that press into it ---------- */
+:global(:root[data-style="neo-brutalism"]) .btn { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); font-weight: 700; box-shadow: var(--sh); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out), background-color 120ms ease; }
+:global(:root[data-style="neo-brutalism"]) .primary { background: var(--marigold); color: var(--on-marigold); }
+:global(:root[data-style="neo-brutalism"]) .ghost { border-color: transparent; box-shadow: none; background: transparent; }
+:global(:root[data-style="neo-brutalism"]) .sm { box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .btn:active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .sm:active { transform: translate(2px, 2px); }
+:global(:root[data-style="neo-brutalism"]) .ghost:active { transform: scale(.94); }
+:global(:root[data-style="neo-brutalism"]) .btn:disabled { box-shadow: none; transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  :global(:root[data-style="neo-brutalism"]) .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--sh-lg); }
+  :global(:root[data-style="neo-brutalism"]) .sm:hover { box-shadow: var(--sh); }
+  :global(:root[data-style="neo-brutalism"]) .ghost:hover { transform: none; box-shadow: none; background: var(--sunken); }
+  :global(:root[data-style="neo-brutalism"]) .btn:active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+}
+:global(:root[data-style="neo-brutalism"]) .chip { border: var(--bw) solid var(--edge); border-radius: var(--r-sm); font-weight: 700; background: var(--t, var(--surface)); }
+:global(:root[data-style="neo-brutalism"]) :is(.easy, .medium, .hard) { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .easy { background: var(--c-problems); }
+:global(:root[data-style="neo-brutalism"]) .medium { background: var(--c-components); }
+:global(:root[data-style="neo-brutalism"]) .hard { background: var(--c-real); }
+/* stepped progress: an outlined track, a square fill that lands in steps */
+:global(:root[data-style="neo-brutalism"]) .bar { height: 12px; border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .bar > i { border-radius: 0; animation: nb-step 640ms steps(8, end) both 120ms; }
+:global(:root[data-style="neo-brutalism"]) .card { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .card { box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .themeSwitch { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .themeSwitch button { border-radius: 4px; }
+:global(:root[data-style="neo-brutalism"]) .themeSwitch button[aria-pressed="true"] { background: var(--marigold); color: #1C1B1A; box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .cardPicture { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+:global(:root[data-style="neo-brutalism"]) .state h2 { font-size: 30px; }
+/* neo-brutalism loading: an outlined hatched block; its stripes march (looks/neo-brutalism/motion.css, tk-shimmer) */
+:global(:root[data-style="neo-brutalism"]) .skeleton { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }
+:global(:root[data-style="neo-brutalism"]) .themeSwitch button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
+
+/* the small figure on a card (SectionMini): the section's mark and a short path through its real lessons, a
+   request travelling along it. Narrow cards stack the path; from 300 px wide it runs sideways. */
+.mini { container-type: inline-size; display: flex; align-items: center; gap: 10px; min-height: 96px; padding: 10px 12px; overflow: hidden; border-radius: 14px;
+  background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 55%, transparent) 1.1px, transparent 1.6px) 0 0 / 12px 12px, var(--preview); color: var(--on-preview); }
+:global(:root[data-theme="dark"]) .mini { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 26%, transparent) 1.1px, transparent 1.6px) 0 0 / 12px 12px, var(--preview); }
+.miniMark { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--c, var(--marigold)); box-shadow: 0 4px 10px -5px rgb(0 0 0 / .35); }
+.miniMark svg { width: 22px; height: 22px; fill: none; stroke: #17161A; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.miniMark :global(.ico-dot) { fill: var(--marigold); stroke: #17161A; stroke-width: .8; }
+.miniPath { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+@container (max-width: 220px) { .miniMark { width: 28px; height: 28px; border-radius: 8px; } .miniMark svg { width: 18px; height: 18px; } .mini { gap: 8px; padding: 8px; } .miniStep { font-size: 10.5px; padding: 3px 6px; } }
+/* the line through the steps, and the request on it */
+.miniPath::before { content: ""; position: absolute; left: 50%; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: color-mix(in srgb, var(--a, var(--ink)) 70%, var(--ink)); opacity: .55; }
+.miniPath::after { content: ""; position: absolute; left: 50%; top: 0; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--marigold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--marigold) 35%, transparent); animation: mini-down 2.4s var(--inout) infinite; }
+@keyframes mini-down { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes mini-across { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+.miniStep { position: relative; z-index: 1; display: block; min-width: 0; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--preview); color: var(--on-preview);
+  font: 600 11px/1.25 var(--sans); text-align: center; overflow: hidden; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: calc(2.5em + 10px); }
+.miniNow { background: var(--c, var(--marigold)); border-color: color-mix(in srgb, var(--c) 50%, #17161A); color: #17161A; }
+.miniDone::after { content: " ✓"; color: var(--pass); }
+@container (min-width: 300px) {
+  .miniPath { flex-direction: row; align-items: center; gap: 14px; }
+  .miniStep { flex: 1; padding: 6px 8px; overflow-wrap: normal; }
+  .miniPath::before { left: 4px; right: 4px; top: 50%; bottom: auto; width: auto; height: 2px; margin: -1px 0 0; }
+  .miniPath::after { top: 50%; left: 0; animation-name: mini-across; }
+  .miniMark { width: 40px; height: 40px; }
+  .miniMark svg { width: 26px; height: 26px; }
+}
+@media (prefers-reduced-motion: reduce) { .miniPath::after { animation: none; opacity: 0; } }
+/* neo-brutalism: outlined boxes with a hard shadow, the mark a tilted sticker, the request a square chip that hops
+   from box to box (steps, one per box) */
+:global(:root[data-style="neo-brutalism"]) .mini { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 70%, transparent) 1.3px, transparent 1.8px) 0 0 / 9px 9px, var(--surface); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .mini { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 26%, transparent) 1.3px, transparent 1.8px) 0 0 / 9px 9px, var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .miniMark { border: var(--bw) solid var(--edge); border-radius: 6px; box-shadow: 2px 2px 0 var(--edge); transform: rotate(-4deg); }
+:global(:root[data-style="neo-brutalism"]) .miniMark svg { stroke: #1C1B1A; stroke-width: 1.8; stroke-linecap: square; stroke-linejoin: miter; }
+:global(:root[data-style="neo-brutalism"]) .miniPath::before { background: var(--edge); opacity: 1; }
+:global(:root[data-style="neo-brutalism"]) .miniPath::after { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 0; border: 2px solid #1C1B1A; box-shadow: 2px 2px 0 #1C1B1A; animation-timing-function: steps(var(--n, 3), jump-start); animation-duration: 2.1s; }
+:global(:root[data-style="neo-brutalism"]) .miniStep { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 2px 2px 0 var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .miniNow { background: var(--c); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .miniNow { background: var(--surface); color: var(--a); border-color: var(--a); box-shadow: 2px 2px 0 var(--edge-c); }
+
+/* polish (2026-11-16 refinement pass) */
+/* a chip never wraps or shrinks: "0 of 10 done" stays on one line beside a long heading */
+.chip { white-space: nowrap; flex: none; }
+/* an empty or error state with a scene (404, offline, broken): the scene large, everything centred in the page */
+.stateScene { align-items: center; justify-content: center; min-height: min(70vh, 640px); margin: 0 auto; text-align: center; }
+.stateScene > :global(.tk-legacy) { padding: 18px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); }
+:global(:root[data-style="neo-brutalism"]) .stateScene > :global(.tk-legacy) { border: var(--bw) solid var(--edge); box-shadow: var(--sh); transform: rotate(-1deg); }
