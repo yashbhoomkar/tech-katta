@@ -7,7 +7,8 @@ import { COPIES, allowCloudflareBeacon, copyProblem, siblingPages } from "./prot
 const page = (base, style) => `<html lang="en"${style ? ` data-style="${style}"` : ""}><script src="${base}assets/index-1.js"></script></html>`;
 
 test("each copy takes only a build for its own address and look", () => {
-  assert.deepEqual(Object.keys(COPIES), ["next", "neo-brutalism"]);
+  assert.deepEqual(Object.keys(COPIES), ["next", "neo-brutalism", "soft-3d"]);
+  assert.equal(copyProblem(page("/p/soft-3d/", "soft-3d"), "soft-3d"), null);
   assert.equal(copyProblem(page("/p/next/"), "next"), null);
   assert.equal(copyProblem(page("/p/neo-brutalism/", "neo-brutalism"), "neo-brutalism"), null);
 });

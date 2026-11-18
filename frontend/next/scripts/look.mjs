@@ -1,6 +1,6 @@
 // The looks the new frontend can be built in (VITE_STYLE). "" is the default look. Each look names the colour of
 // its page, which becomes the browser's theme colour before the app starts.
-export const LOOKS = { "": null, "neo-brutalism": "#F8F2E5" };
+export const LOOKS = { "": null, "neo-brutalism": "#F8F2E5", "soft-3d": "#F8F7FB" };
 
 /** Throws on an unknown look, so a typo cannot ship the default look by mistake. */
 export function checkLook(style) {

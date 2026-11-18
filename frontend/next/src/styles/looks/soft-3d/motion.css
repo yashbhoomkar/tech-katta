@@ -1,0 +1,9 @@
+/* Soft 3D motion: the default look's grammar (ease-out arrivals, no bounce), a little slower and softer, so things
+   settle like objects under a camera rather than pop. Only this build loads it, after global.css. */
+@keyframes tk-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes tk-word { from { opacity: 0; transform: translateY(18px); filter: blur(8px); } }
+@keyframes tk-card { from { opacity: 0; translate: 0 28px; scale: .98; } }
+@keyframes tk-pop { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes tk-vt-in { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
+@keyframes s3-float { 50% { translate: 0 -6px; } }
+@keyframes s3-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }

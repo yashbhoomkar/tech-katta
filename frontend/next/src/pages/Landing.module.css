@@ -332,3 +332,10 @@
 @media (prefers-reduced-motion: reduce) { .tickerRun { animation: none !important; } }
 /* the landing cards stay colour blocks in dark too, so their small labels keep the block's ink */
 :global(:root[data-style="neo-brutalism"]) .rcard :global(.mono) { color: rgb(28 27 26 / .82); }
+
+/* ---------- soft 3D (styles/looks/soft-3d): the story replaces the hero; the bands below sit on the grid ---------- */
+.storyWait { min-height: 100vh; min-height: 100svh; }
+:global(:root[data-style="soft-3d"]) .nav { background: var(--glass); }
+:global(:root[data-style="soft-3d"]) .band { background: transparent; }
+:global(:root[data-style="soft-3d"]) .alt { background: color-mix(in srgb, var(--surface) 55%, transparent); border-block: 1px solid var(--line); }
+:global(:root[data-style="soft-3d"]) .final { background: var(--band-strong); color: var(--on-band-strong); }

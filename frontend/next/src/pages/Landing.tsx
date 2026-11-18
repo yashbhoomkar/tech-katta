@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useContent } from "@/content/ContentProvider";
 import { SECTIONS, paths, sectionMeta } from "@/content/sections";
@@ -14,6 +14,10 @@ import s from "./Landing.module.css";
 import { scrollToId, LearnMenu, MobileMenu } from "./landing/nav";
 import { splitTitle, HeroCards } from "./landing/hero";
 import { Reveal, LookInside, JudgeCard } from "./landing/bands";
+
+/** The soft 3D look opens with the 3D scroll story (landing/Story3d.tsx, three.js). The condition is fixed at build
+ *  time, so the other looks' bundles carry none of it. */
+const Story3d = import.meta.env.VITE_STYLE === "soft-3d" ? lazy(() => import("./landing/Story3d")) : null;
 
 /** the build date, shown in the footer as tech.katta.cc does */
 const BUILT = new Date(__BUILD_DATE__).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -75,25 +79,31 @@ export function LandingPage() {
       </header>
       {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} />}
 
-      <section ref={hero} className={cx(s.hero, !heroSeen && s.off)}>
-        {SHAPES.map((sh, n) => <i key={n} className={s.shape} style={{ ...sh, ["--n" as string]: n }} aria-hidden="true" />)}
-        <div className={s.wrap}>
-          <Link to={paths.problems} className={s.newchip}><i aria-hidden="true" />{site.hero.chip} · {site.hero.chipText}</Link>
-          <h1>
-            {titleStart.split(" ").map((w, i) => <span key={i}><span className={s.word} style={{ animationDelay: `${i * 110}ms` }}>{w}</span> </span>)}
-            <em className={s.word} style={{ animationDelay: `${titleStart.split(" ").length * 95}ms` }}>{titleEnd}</em>
-          </h1>
-          <p className={s.lead}>{site.hero.description}</p>
-          <div className={s.ctas}>
-            <ButtonLink variant="primary" to={paths.home}>{site.hero.primary}, free</ButtonLink>
-            <a className={s.ghostBtn} href="#ind-vs-pak" onClick={(e) => { e.preventDefault(); scrollToId("ind-vs-pak"); }}>{site.hero.secondary}</a>
+      {Story3d ? (
+        <Suspense fallback={<div className={s.storyWait} />}><Story3d /></Suspense>
+      ) : (
+        <>
+        <section ref={hero} className={cx(s.hero, !heroSeen && s.off)}>
+          {SHAPES.map((sh, n) => <i key={n} className={s.shape} style={{ ...sh, ["--n" as string]: n }} aria-hidden="true" />)}
+          <div className={s.wrap}>
+            <Link to={paths.problems} className={s.newchip}><i aria-hidden="true" />{site.hero.chip} · {site.hero.chipText}</Link>
+            <h1>
+              {titleStart.split(" ").map((w, i) => <span key={i}><span className={s.word} style={{ animationDelay: `${i * 110}ms` }}>{w}</span> </span>)}
+              <em className={s.word} style={{ animationDelay: `${titleStart.split(" ").length * 95}ms` }}>{titleEnd}</em>
+            </h1>
+            <p className={s.lead}>{site.hero.description}</p>
+            <div className={s.ctas}>
+              <ButtonLink variant="primary" to={paths.home}>{site.hero.primary}, free</ButtonLink>
+              <a className={s.ghostBtn} href="#ind-vs-pak" onClick={(e) => { e.preventDefault(); scrollToId("ind-vs-pak"); }}>{site.hero.secondary}</a>
+            </div>
+            <p className={s.note}>No card. Sign in with Google and everything opens.</p>
+            <HeroCards cards={cards} />
           </div>
-          <p className={s.note}>No card. Sign in with Google and everything opens.</p>
-          <HeroCards cards={cards} />
-        </div>
-        <div className={s.arc} aria-hidden="true" />
-      </section>
-      <Ticker />
+          <div className={s.arc} aria-hidden="true" />
+        </section>
+        <Ticker />
+        </>
+      )}
 
       <section className={s.figBand} aria-label="A figure from the lessons">
         <div className={s.wrap}>

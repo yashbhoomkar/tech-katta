@@ -1,0 +1,114 @@
+/* Soft 3D: a third look for the same app, in the style of the scroll-3d prototype (/p/scroll-3d/), itself after
+   rca.gg (owner, 2026-11-18: "create a new prototype with this design similar to rca.gg").
+   Switched on by data-style="soft-3d" on <html> (VITE_STYLE=soft-3d). Same token names as tokens.css, plus
+   --accent (violet), --accent-soft, --alert / --ok and their fills, --display, --glass.
+   - pale lavender page with a faint grid, white cards with a hairline and a soft violet shadow;
+   - one accent, violet; orange only means broken, green only means fixed;
+   - headlines in Manrope, light weight for the first line and heavy for the second; labels in IBM Plex Mono;
+   - dark pill buttons; glass bars; the landing opens with the 3D story. */
+
+:root[data-style="soft-3d"] {
+  --sans: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --display: var(--sans);
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: var(--sans);
+  --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 24px; --r-pill: 999px;
+
+  color-scheme: light;
+  --page: #F8F7FB;
+  --surface: #FFFFFF;
+  --raised: #FFFFFF;
+  --sunken: #F0EDF8;
+  --ink: #1C1825; --ink-2: #4D475A; --muted: #6A6479;
+  --line: rgb(28 24 37 / .10); --line-strong: rgb(28 24 37 / .18);
+  --btn: #1C1825; --on-btn: #FFFFFF;
+  --accent: #6D3FE0; --accent-ink: #5B2FD0; --accent-soft: #EEE9FE; --on-accent: #FFFFFF;
+  --marigold: #D9CFFC; --on-marigold: #1C1825;     /* the brand highlight becomes soft violet */
+  --link: #5B2FD0; --focus: #6D3FE0;
+  --alert: #C9531E; --alert-fill: #F07B3F; --alert-soft: #FDE6D9;
+  --ok: #157A52; --ok-fill: #2DBA7F; --ok-soft: #DDF5EA;
+  --pass: #157A52; --fail: #C2412D; --warn: #A1520F; --star: #6D3FE0;
+  --video: #1C1825; --on-video: #F8F7FB;
+  --scrim: rgb(28 24 37 / .40);
+  --shadow: 0 1px 2px rgb(60 40 120 / .05), 0 18px 40px -22px rgb(60 40 120 / .35);
+  --shadow-pop: 0 1px 0 rgb(255 255 255 / .6) inset, 0 30px 70px -24px rgb(60 40 120 / .45);
+  --hl: inset 0 0 0 0 transparent;
+  --glass: rgb(255 255 255 / .72);
+  --grid-line: rgb(28 24 37 / .045);
+  --band-strong: #1C1825; --on-band-strong: #FFFFFF;
+  --selection: rgb(109 63 224 / .22);
+
+  /* sections: cool pastels around the violet (one lightness), so no section fights the accent */
+  --c-concepts: #D8E3FF;   --a-concepts: #9DB8FF;   --t-concepts: #EDF2FF;
+  --c-components: #FCDDC8; --a-components: #F2AE85; --t-components: #FEF1E8;
+  --c-interview: #E5DDFD;  --a-interview: #B9A6F7;  --t-interview: #F3EFFE;
+  --c-problems: #C9F0DE;   --a-problems: #7FD9B0;   --t-problems: #E8F8F0;
+  --c-real: #FAD5DB;       --a-real: #F0A0AD;       --t-real: #FDEEF0;
+  --c-notes: #F1EDC6;      --a-notes: #D8D07E;      --t-notes: #F8F6E3;
+  --on-c: #1C1825; --on-c-2: rgb(28 24 37 / .76);
+  --track-on-c: rgb(255 255 255 / .6); --fill-on-c: #1C1825;
+  --preview: #FFFFFF; --on-preview: #1C1825;
+}
+
+:root[data-style="soft-3d"][data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0F0D16;
+  --surface: #17141F;
+  --raised: #1F1B2A;
+  --sunken: #221E2E;
+  --ink: #ECE9F5; --ink-2: #C3BDD3; --muted: #9A93AE;
+  --line: rgb(255 255 255 / .09); --line-strong: rgb(255 255 255 / .16);
+  --btn: #ECE9F5; --on-btn: #0F0D16;
+  --accent: #9B7BFF; --accent-ink: #B49CFF; --accent-soft: #241D3D; --on-accent: #0F0D16;
+  --marigold: #9B7BFF; --on-marigold: #0F0D16;
+  --link: #B49CFF; --focus: #B49CFF;
+  --alert: #FF9A62; --alert-fill: #F07B3F; --alert-soft: #3A2218;
+  --ok: #4ED39A; --ok-fill: #2DBA7F; --ok-soft: #14301F;
+  --pass: #4ED39A; --fail: #FF8A7A; --warn: #FFB26B; --star: #B49CFF;
+  --video: #000000; --on-video: #ECE9F5;
+  --scrim: rgb(0 0 0 / .62);
+  --shadow: 0 0 0 1px rgb(255 255 255 / .06), 0 24px 50px -24px rgb(0 0 0 / .8);
+  --shadow-pop: 0 0 0 1px rgb(255 255 255 / .08), 0 30px 70px -20px rgb(0 0 0 / .85);
+  --hl: inset 0 1px 0 rgb(255 255 255 / .05);
+  --glass: rgb(23 20 31 / .7);
+  --grid-line: rgb(255 255 255 / .035);
+  --band-strong: #1F1B2A; --on-band-strong: #ECE9F5;
+  --selection: rgb(155 123 255 / .35);
+
+  --c-concepts: #8FAEFF;   --a-concepts: #8FAEFF;
+  --c-components: #F4A577; --a-components: #F4A577;
+  --c-interview: #B49CFF;  --a-interview: #B49CFF;
+  --c-problems: #5FD9A4;   --a-problems: #5FD9A4;
+  --c-real: #F58C9D;       --a-real: #F58C9D;
+  --c-notes: #DCD26A;      --a-notes: #DCD26A;
+  --t-concepts: #1D1A27; --t-components: #1D1A27; --t-interview: #1D1A27; --t-problems: #1D1A27; --t-real: #1D1A27; --t-notes: #1D1A27;
+  --on-c: #0F0D16; --on-c-2: rgb(15 13 22 / .76);
+  --track-on-c: rgb(0 0 0 / .2); --fill-on-c: #0F0D16;
+  --preview: #0F0D16; --on-preview: #ECE9F5;
+}
+
+/* the page: a faint grid that fades out downwards, like the floor the 3D scene stands on */
+:root[data-style="soft-3d"] body {
+  background:
+    radial-gradient(1200px 600px at 70% -10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 44px 44px,
+    var(--page);
+  background-attachment: fixed;
+}
+
+/* ---------- base type ---------- */
+:root[data-style="soft-3d"] :is(h1, h2, h3, h4) { font-family: var(--display); font-weight: 650; letter-spacing: -.035em; line-height: 1.06; }
+:root[data-style="soft-3d"] :is(h1, h2) em { font-family: var(--display); font-style: normal; font-weight: 750; color: var(--accent); letter-spacing: -.04em; }
+:root[data-style="soft-3d"] .mono { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: .14em; color: var(--muted); }
+:root[data-style="soft-3d"] :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+:root[data-style="soft-3d"] ::selection { background: var(--selection); }
+:root[data-style="soft-3d"] a:not([class]) { color: var(--link); }
+
+/* the lesson figures sit on this page's paper */
+:root[data-style="soft-3d"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #F8F7FB; }
+:root[data-style="soft-3d"][data-theme="dark"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #0F0D16; }
+
+/* one control height, real touch targets (the same rule production keeps) */
+:root[data-style="soft-3d"] { --ctl-h: 40px; }
+@media (pointer: coarse) { :root[data-style="soft-3d"] { --ctl-h: 44px; } }

@@ -119,3 +119,19 @@
 .stateScene { align-items: center; justify-content: center; min-height: min(70vh, 640px); margin: 0 auto; text-align: center; }
 .stateScene > :global(.tk-legacy) { padding: 18px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); }
 :global(:root[data-style="neo-brutalism"]) .stateScene > :global(.tk-legacy) { border: var(--bw) solid var(--edge); box-shadow: var(--sh); transform: none; }
+
+/* ---------- soft 3D (styles/looks/soft-3d/theme.css): dark pills, hairline cards with a soft violet shadow ---------- */
+:global(:root[data-style="soft-3d"]) .btn { font-weight: 600; letter-spacing: -.01em; border-color: var(--line-strong); box-shadow: 0 1px 2px rgb(60 40 120 / .06); }
+:global(:root[data-style="soft-3d"]) .primary { background: var(--btn); color: var(--on-btn); border-color: var(--btn); box-shadow: 0 10px 24px -12px rgb(28 24 37 / .55); }
+:global(:root[data-style="soft-3d"][data-theme="dark"]) .primary { box-shadow: 0 10px 30px -12px rgb(155 123 255 / .45); }
+:global(:root[data-style="soft-3d"]) .ghost { box-shadow: none; }
+:global(:root[data-style="soft-3d"]) .card { border-color: var(--line); box-shadow: var(--shadow); }
+:global(:root[data-style="soft-3d"]) .chip { font-weight: 600; }
+:global(:root[data-style="soft-3d"]) .easy { background: var(--ok-soft); color: var(--ok); }
+:global(:root[data-style="soft-3d"]) .medium { background: var(--accent-soft); color: var(--accent-ink); }
+:global(:root[data-style="soft-3d"]) .hard { background: var(--alert-soft); color: var(--alert); }
+:global(:root[data-style="soft-3d"]) .bar > i { background: var(--a, var(--accent)); }
+:global(:root[data-style="soft-3d"]) .themeSwitch { background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); }
+:global(:root[data-style="soft-3d"]) .themeSwitch button[aria-pressed="true"] { color: var(--accent-ink); }
+:global(:root[data-style="soft-3d"]) .miniPath::after { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+:global(:root[data-style="soft-3d"]) .miniMark :global(.ico-dot) { fill: var(--accent); }

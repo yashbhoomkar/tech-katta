@@ -199,3 +199,11 @@
 .tokens :global(.tc-fig svg) { height: auto; }
 /* the phone hint under a figure ("swipe sideways") reads at 4.5:1 */
 .tokens :global(.a-fig-hint) { color: var(--ink-3); }
+
+/* soft 3D: the lesson's brand colour (Listen, highlights) is the look's violet, not marigold */
+:global(:root[data-style="soft-3d"]) .tokens.tokens, :global(:root[data-style="soft-3d"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
+  --brand: #6D3FE0; --brand-strong: #5B2FD0; --brand-edge: #4C25B5; --brand-ink: #4C25B5; --brand-line: #CDBEFB; --brand-tint: #EEE9FE; --on-brand: #FFFFFF; --mark: #D9CFFC;
+}
+:global(:root[data-style="soft-3d"][data-theme="dark"]) .tokens.tokens, :global(:root[data-style="soft-3d"][data-theme="dark"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom)) {
+  --brand: #9B7BFF; --brand-strong: #B49CFF; --brand-edge: #7C5CE8; --brand-ink: #CBB9FF; --brand-line: #4A3A86; --brand-tint: #241D3D; --on-brand: #0F0D16; --mark: #5B47B8;
+}

@@ -1,5 +1,5 @@
 // The new frontend's copies on prototype.katta.cc: /p/<name>/ → the look it is built in (VITE_STYLE; "" = default).
-export const COPIES = { next: "", "neo-brutalism": "neo-brutalism" };
+export const COPIES = { next: "", "neo-brutalism": "neo-brutalism", "soft-3d": "soft-3d" };
 
 /** Why next/dist cannot be copied to /p/<name>/, or null when it can: it must be built for that address
  *  (BASE_PATH=/p/<name>/) and in that copy's look. */
