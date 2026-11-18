@@ -1,25 +1,39 @@
-// The landing: one evening told over the 3D world, chapter by chapter. Everything that moves is 3D: the system
+// The landing: one evening told over the 3D world (an event pipeline: producers, Kafka, consumers, SQL), chapter by chapter. Everything that moves is 3D: the system
 // builds itself when the page opens, and each chapter's scroll drives its change (story.js). The parts wear the same
 // pastels as everywhere else (palette.js); the "meet the parts" chapter introduces them.
 import { mountStory, stageHtml } from '../story.js';
-import { LEGEND, KIND_PASTEL } from '../palette.js';
+import { KIND_PASTEL } from '../palette.js';
+
+/** the parts of this page's system, for the colour key (colours from palette.js) */
+const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
 
 /** the signature: a part named in the text carries its colour dot, the same as its 3D label */
 const pd = (kind) => `<i class="pd" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
-const D = (o) => ({ apps: 3, cache: 1, replicas: 0, queue: 0, cdn: 0, ...o });
-const FULL = D({ cache: 3, replicas: 2, queue: 1, cdn: 1 });
-const allOk = (d) => Object.fromEntries(['app0', 'app1', 'app2', 'app3', 'cache0', 'cache1', 'cache2', 'db', 'rep0', 'rep1', 'queue', 'cdn'].map((k) => [k, 'ok']).filter(([k]) => k.startsWith('App server') ? Number(k.slice(3)) < d.apps : true));
+/** The landing's system (owner: "servers producing to Kafka, then a Kafka consumer consuming that and putting it in an
+ *  SQL db"): users → app servers (producers) → a Kafka topic (partitions) → a consumer group → an SQL database. */
+function pipe({ producers = 3, partitions = 3, consumers = 3 } = {}) {
+  const P = (kind, x, z, name, extra = {}) => ({ kind, x, z, name, ...extra });
+  const rows = (n, gap) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * gap);
+  const parts = { users: P('laptop', -3.4, 0, 'Users'), topic: P('kafka', 5.4, 0, 'Kafka topic', { partitions }), sql: P('db', 14.2, 0, 'SQL database') };
+  const paths = {};
+  rows(producers, 2.1).forEach((z, i) => { parts[`p${i}`] = P('server', 0, z, 'App server'); paths[`u-p${i}`] = ['users', `p${i}`]; paths[`p${i}-t`] = [`p${i}`, 'topic']; });
+  rows(consumers, consumers > 4 ? 1.45 : 1.9).forEach((z, i) => { parts[`c${i}`] = P('consumer', 10.4, z, 'Consumer'); paths[`t-c${i}`] = ['topic', `c${i}`]; paths[`c${i}-s`] = [`c${i}`, 'sql']; });
+  return { parts, paths };
+}
+const ids = (prefix, n) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
+const all = (list, st) => Object.fromEntries(list.map((k) => [k, st]));
+const PIPE = pipe(), PIPE6 = pipe({ partitions: 6, consumers: 6 });
 const STEPS = [
-  { design: D({}), cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.05, el: 30, phoneSy: 0.72, phoneZoom: 1.45 }, state: { labels: { cache0: ['hit 94%'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
-  { design: D({}), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok', cache0: 'ok' }, labels: { cache0: ['37,600 hits/s', 'ok'], db: ['2,400 req/s'], app1: ['p99 38 ms', 'ok'] }, speed: 1.5 } },
-  { design: D({}), state: { parts: { cache0: 'alert', db: 'alert', client: 'dim' }, paths: { 'app0-cache': 'down', 'app1-cache': 'down', 'app2-cache': 'down', db: 'alert' }, labels: { cache0: ['down', 'alert'], db: ['37,600 req/s · overloaded', 'alert'], app1: ['p99 2,000 ms', 'alert'] }, speed: 1.6 } },
-  { design: D({ cache: 3, replicas: 2 }), state: { parts: { cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok' }, labels: { cache1: ['3 nodes', 'ok'], db: ['1,200 req/s', 'ok'], rep0: ['sharing reads', 'ok'] }, speed: 1.2 } },
-  // meet the parts: every kind, named, in its own pastel
-  { design: FULL, cam: { zoom: 1.02, el: 34, az: 48 }, state: { labels: { app1: ['', '', 'App server'], lb: ['', '', 'Load balancer'], cache1: ['', '', 'Cache'], db: ['', '', 'Database'], queue: ['', '', 'Queue'], cdn: ['', '', 'CDN'] }, speed: 0.7 } },
-  // simulate: the whole system under a spike; parts busy, then holding
-  { design: FULL, cam: { zoom: 0.95, el: 40, az: 42 }, state: { parts: { app0: 'warn', app1: 'warn', app2: 'warn', cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok', queue: 'warn', cdn: 'ok' }, labels: { app1: ['89% busy', 'warn'], queue: ['holding 12,000', 'warn'], db: ['4k writes/s', 'ok'], cdn: ['70% answered', 'ok'] }, speed: 2.2 } },
-  { design: FULL, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: allOk(FULL), speed: 0.7 } },
+  { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.72, phoneZoom: 1.45 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
+  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'ok'), sql: 'ok' }, labels: { p1: ['publishing 50k/s', 'ok'], topic: ['lag 0', 'ok'], c1: ['keeping up', 'ok'], sql: ['batched writes', 'ok'] }, speed: 1.6 } },
+  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { p1: ['still publishing', 'ok'], topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
+  { system: PIPE6, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' }, fill: { topic: 0.06 }, labels: { topic: ['6 partitions · lag draining', 'ok'], c2: ['6 consumers', 'ok'], sql: ['batches of 500', 'ok'] }, speed: 1.5 } },
+  // meet the parts: every kind in this system, named, in its own colour
+  { system: PIPE6, cam: { el: 34, az: 48 }, state: { labels: { users: ['', '', 'Users'], p1: ['', '', 'App server'], topic: ['', '', 'Kafka topic'], c2: ['', '', 'Consumer'], sql: ['', '', 'SQL database'] }, speed: 0.8 } },
+  // learn and build: the same pipeline under a heavier evening; producers busy, the topic absorbing it
+  { system: PIPE6, cam: { el: 40, az: 42 }, state: { parts: { ...all(ids('p', 3), 'warn'), ...all(ids('c', 6), 'ok'), topic: 'warn', sql: 'ok' }, fill: { topic: 0.35 }, labels: { p1: ['92% busy', 'warn'], topic: ['absorbing the burst', 'warn'], sql: ['steady', 'ok'] }, speed: 2.2 } },
+  { system: PIPE6, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' }, speed: 0.8 } },
 ];
 /** "what you will design": one real system in one figure, a chat app, built from the same parts and colours */
 function chatApp() {
@@ -52,20 +66,20 @@ export function mount(view, _p, { reduced }) {
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>The spike</p>
-      <h2 class="headline"><span class="thin">IND vs PAK, 36,000 link opens a second</span><span class="heavy accent">Everything is green</span></h2>
-      <p class="lead">The promo SMS reaches crores of fans at the toss. The ${pd("cache")}cache answers almost every open before the ${pd("db")}database hears.</p>
-      <dl class="stats"><div><dt>Traffic</dt><dd>36k/s</dd></div><div><dt>Cache hit</dt><dd>94%</dd></div><div><dt>p99</dt><dd>38 ms</dd></div></dl>
+      <h2 class="headline"><span class="thin">IND vs PAK, 50,000 predictions a second</span><span class="heavy accent">Everything keeps up</span></h2>
+      <p class="lead">Every ball, crores of fans predict the next one. ${pd("server")}App servers publish each prediction to a ${pd("kafka")}Kafka topic and answer at once; ${pd("consumer")}consumers read the topic and write batches into the ${pd("db")}SQL database.</p>
+      <dl class="stats"><div><dt>Published</dt><dd>50k/s</dd></div><div><dt>Consumer lag</dt><dd>0</dd></div><div><dt>Write time</dt><dd>12 ms</dd></div></dl>
     </div>
     <div class="step" data-step="2">
       <p class="kicker"><span>02</span><i></i>It breaks</p>
-      <h2 class="headline"><span class="thin">The cache goes down</span><span class="heavy accent">The database takes it all</span></h2>
-      <p class="lead">One ${pd("cache")}cache node, no spare. Every open falls through to a ${pd("db")}database that serves 6,000 reads a second. 37,600 arrive.</p>
-      <dl class="stats"><div><dt>Errors</dt><dd class="alert">58%</dd></div><div><dt>Since</dt><dd>20:14 IST</dd></div><div><dt>Severity</dt><dd class="alert">SEV-1</dd></div></dl>
+      <h2 class="headline"><span class="thin">The database slows down</span><span class="heavy accent">The consumers fall behind</span></h2>
+      <p class="lead">An index rebuild makes every write in the ${pd("db")}SQL database take 900 ms. ${pd("consumer")}Consumers wait on it, and messages pile up in the ${pd("kafka")}topic. Nothing is lost: Kafka keeps them until someone reads them.</p>
+      <dl class="stats"><div><dt>Consumer lag</dt><dd class="alert">2.1M</dd></div><div><dt>Predictions lost</dt><dd>0</dd></div><div><dt>Leaderboard</dt><dd class="alert">6 min late</dd></div></dl>
     </div>
     <div class="step" data-step="3">
       <p class="kicker"><span>03</span><i></i>Fix it</p>
-      <h2 class="headline"><span class="thin">Three cache nodes, two replicas</span><span class="heavy accent">Run it again and it holds</span></h2>
-      <p class="lead">Now a dead ${pd("cache")}cache node loses a third of the keys, not all of them, and two ${pd("db")}replicas share what falls through.</p>
+      <h2 class="headline"><span class="thin">Six partitions, six consumers, batched writes</span><span class="heavy accent">The lag drains</span></h2>
+      <p class="lead">More ${pd("kafka")}partitions let more ${pd("consumer")}consumers read side by side, and writing 500 rows at a time asks far less of the ${pd("db")}database. The backlog empties in minutes.</p>
     </div>
     <div class="step" data-step="4">
       <p class="kicker"><span>04</span><i></i>The parts</p>
@@ -76,7 +90,7 @@ export function mount(view, _p, { reduced }) {
     <div class="step" data-step="5">
       <p class="kicker"><span>05</span><i></i>Learn and build</p>
       <h2 class="headline"><span class="thin">Learn it as a story like this</span><span class="heavy accent">Then build your own and press Run</span></h2>
-      <p class="lead">Every lesson moves like this page. Then add ${pd("server")}servers, ${pd("cache")}caches, ${pd("db")}replicas, a ${pd("queue")}queue, a ${pd("globe")}CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
+      <p class="lead">Every lesson moves like this page. Then build your own: ${pd("server")}servers, ${pd("kafka")}topics, ${pd("consumer")}consumers, ${pd("db")}databases, ${pd("cache")}caches. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
       <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="6">

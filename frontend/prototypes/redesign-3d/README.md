@@ -76,3 +76,13 @@ match night. Moment: the bright 3D system, one per screen; the chrome around it 
 the text carries its colour dot (`pd()` in landing.js). Removed: the gradient headline highlighter and gradient
 buttons, the coloured washes and dot grid behind the page, uppercase tracked labels, full stops on headlines. Hero:
 text on the left, the system on the right.
+
+## The landing's system: an event pipeline (2026-11-18)
+Owner: "this looks rca.gg copy … instead of servers, cache, database have something else, like servers producing to
+Kafka, then a Kafka consumer consuming that and putting it in an SQL db." The landing tells one IND vs PAK fantasy
+night through `pipe()` in landing.js: users → app servers (producers) → a Kafka topic → a consumer group → an SQL
+database. New 3D kinds in world.js: `kafka` (partition logs with segment ticks and an orange backlog bar that grows
+and drains with `state.fill`) and `consumer` (an octagonal worker). Colours: Kafka lemon (the colour of waiting
+messages, as the queue), consumer lime (new). Chapters: the spike (lag 0) → it breaks (database slow, lag 2.1M,
+nothing lost) → fix it (6 partitions, 6 consumers, batched writes; lag drains) → the parts → learn and build →
+a chat app → your turn.

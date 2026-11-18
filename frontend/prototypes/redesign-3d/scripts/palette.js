@@ -6,12 +6,12 @@
 // fill in light and dark (bright reads well on both); never one lavender with one violet.
 export const PASTEL = {
   light: { sky: ['#3DB5FF', '#0B6FB8'], lilac: ['#C98BFF', '#7E3FC2'], peach: ['#FFA24D', '#C2620F'], mint: ['#3DDC97', '#12895A'],
-    lemon: ['#FFD43B', '#B08A00'], rose: ['#FF7AC6', '#C2338A'], mist: ['#D9D6E4', '#6F6A80'] },
+    lemon: ['#FFD43B', '#B08A00'], rose: ['#FF7AC6', '#C2338A'], lime: ['#A3E635', '#4D7C0F'], mist: ['#D9D6E4', '#6F6A80'] },
   dark: { sky: ['#3DB5FF', '#BDE6FF'], lilac: ['#C98BFF', '#E8D2FF'], peach: ['#FFA24D', '#FFD7B0'], mint: ['#3DDC97', '#B4F3D6'],
-    lemon: ['#FFD43B', '#FFF0A8'], rose: ['#FF7AC6', '#FFC6E6'], mist: ['#5E5B68', '#CFCADB'] },
+    lemon: ['#FFD43B', '#FFF0A8'], rose: ['#FF7AC6', '#FFC6E6'], lime: ['#A3E635', '#E2F9B8'], mist: ['#5E5B68', '#CFCADB'] },
 };
 /** which pastel each kind of part wears */
-export const KIND_PASTEL = { server: 'sky', lb: 'lilac', cache: 'peach', db: 'mint', queue: 'lemon', globe: 'rose', laptop: 'mist', small: 'lilac' };
+export const KIND_PASTEL = { server: 'sky', lb: 'lilac', cache: 'peach', db: 'mint', queue: 'lemon', kafka: 'lemon', consumer: 'lime', globe: 'rose', laptop: 'mist', small: 'lilac' };
 /** the parts as people meet them, in the legend */
 export const LEGEND = [
   ['server', 'App server', 'sky'], ['lb', 'Load balancer', 'lilac'], ['cache', 'Cache', 'peach'],

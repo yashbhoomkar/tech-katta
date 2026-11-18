@@ -81,9 +81,10 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     const g = new THREE.Group(); g.position.set(def.x, -1.4, def.z);
     const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0, transparent: true, opacity: 0 });
     const mEdge = new THREE.LineBasicMaterial({ transparent: true, opacity: 0 });
-    const mWhite = new THREE.MeshBasicMaterial({ color: pal.led, transparent: true, opacity: 0, toneMapped: false });
+    const mWhite = new THREE.MeshBasicMaterial({ color: def.kind === 'kafka' ? 0x1B1A22 : pal.led, transparent: true, opacity: 0, toneMapped: false });
     { const kc = kindColours(def.kind, dark); mBlock.color.set(kc[0]); mEdge.color.set(kc[1]); }
-    const layers = [], hits = [];
+    const layers = [], hits = [], layersBack = [];
+    let backMat = null, backLen = 0;
     const add = (geom, edgeGeom, y, parent = g, mat = mBlock) => {
       const mesh = new THREE.Mesh(geom, mat); mesh.position.y = y; mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); hits.push(mesh);
       if (edgeGeom) { const e = new THREE.LineSegments(edgeGeom, mEdge); e.position.y = y; parent.add(e); }
@@ -120,6 +121,27 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     } else if (k === 'lb') {
       add(geo('hex', () => new THREE.CylinderGeometry(0.85, 0.85, 0.24, 6)), geo('hexe', () => new THREE.EdgesGeometry(GEO.hex, 30)), 0.12);
       top = 0.3;
+    } else if (k === 'kafka') {
+      // a Kafka topic: N partition logs side by side, segment ticks across each, and a backlog bar inside that
+      // grows from the consumer end when consumers fall behind (state.fill)
+      const n = def.partitions || 3, L = 3.4;
+      const [pg, pe] = slab(L, 0.56, 0.34, 0.1);
+      const tick = geo('tick', () => new THREE.BoxGeometry(0.03, 0.012, 0.5));
+      const back = geo('backlog', () => new THREE.BoxGeometry(1, 0.1, 0.4));
+      const zs = Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * 0.72);
+      const mBack = new THREE.MeshStandardMaterial({ color: 0xF97316, roughness: 0.5, emissive: 0xF97316, emissiveIntensity: 0.25, transparent: true, opacity: 0 });
+      for (const z of zs) {
+        const m = add(pg, pe, 0); m.position.z = z; g.children[g.children.length - 1].position.z = z;
+        for (let t = 1; t < 8; t++) { const tk = new THREE.Mesh(tick, mWhite); tk.position.set(-L / 2 + t * (L / 8), 0.36, z); g.add(tk); }
+        const b = new THREE.Mesh(back, mBack); b.position.set(L / 2 - 0.05, 0.4, z); b.scale.x = 0.001; g.add(b); layersBack.push(b);
+      }
+      backMat = mBack; backLen = L - 0.1;
+      top = 0.55;
+    } else if (k === 'consumer') {
+      // a consumer: an octagonal worker with a status band
+      add(geo('oct', () => new THREE.CylinderGeometry(0.62, 0.62, 0.72, 8)), geo('octe', () => new THREE.EdgesGeometry(GEO.oct, 30)), 0.36);
+      const band = new THREE.Mesh(geo('band', () => new THREE.CylinderGeometry(0.635, 0.635, 0.06, 8)), mWhite); band.position.y = 0.5; g.add(band);
+      top = 0.8;
     } else if (k === 'queue') {
       const [qg, qe] = slab(0.5, 1.4, 0.5, 0.1);
       for (let i = 0; i < 4; i++) { const m = add(qg, qe, 0); m.position.x = -0.9 + i * 0.6; g.children[g.children.length - 1].position.x = -0.9 + i * 0.6; }
@@ -135,10 +157,10 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     scene.add(g);
     const pill = document.createElement('div'); pill.className = 'p3'; pill.style.opacity = '0'; overlay.appendChild(pill);
     hits.forEach((h) => { h.userData.part = id; });
-    return { id, def, g, mBlock, mEdge, mWhite, layers, hits, top, glow, ring, pill, state: '', vis: 0, rise: -1.4, explode: 0, gone: false };
+    return { id, def, g, mBlock, mEdge, mWhite, layers, hits, top, glow, ring, pill, layersBack, backMat, backLen, fill: 0, state: '', vis: 0, rise: -1.4, explode: 0, gone: false };
   }
   function disposePart(p) {
-    scene.remove(p.g); p.mBlock.dispose(); p.mEdge.dispose(); p.mWhite.dispose(); p.glow.material.dispose(); p.ring.material.dispose(); p.pill.remove();
+    scene.remove(p.g); p.backMat?.dispose(); p.mBlock.dispose(); p.mEdge.dispose(); p.mWhite.dispose(); p.glow.material.dispose(); p.ring.material.dispose(); p.pill.remove();
   }
 
   // ---- paths: L-shaped dashed lines on the floor, requests moving along them (instanced dots from one pool) ----
@@ -169,7 +191,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   function setSystem({ parts: P = {}, paths: L = {} }, { instant = false } = {}) {
     for (const [id, def] of Object.entries(P)) {
       const old = parts.get(id);
-      if (old && !old.gone && old.def.kind === def.kind && (old.def.layers || 3) === (def.layers || 3)) {
+      if (old && !old.gone && old.def.kind === def.kind && (old.def.layers || 3) === (def.layers || 3) && (old.def.partitions || 3) === (def.partitions || 3)) {
         old.def = { ...old.def, ...def }; old.target = [def.x, def.z];
         continue;
       }
@@ -189,8 +211,8 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // A state, optionally blended from another: mix 0 shows `from`, 1 shows this state, in between the colours, glows,
   // visibility and request paths blend. Scroll stories drive mix from the scroll position. reveal (id → 0..1) raises
   // parts out of the floor one by one; rate sets how tightly the picture follows (higher = closer to the scroll).
-  let mix = 1, fromLabels = null, explodePrev = new Set();
-  function setState({ parts: S = {}, paths: L = {}, labels: B = {}, speed: sp, explode = [], avoid = 0 } = {}, { from = null, mix: m = 1, reveal = null, rate = 5 } = {}) {
+  let mix = 1, fromLabels = null, explodePrev = new Set(), fillNow = {}, fillPrev = {};
+  function setState({ parts: S = {}, paths: L = {}, labels: B = {}, speed: sp, explode = [], fill = {}, avoid = 0 } = {}, { from = null, mix: m = 1, reveal = null, rate = 5 } = {}) {
     for (const [id, p] of parts) { p.state = S[id] || ''; p.prev = from ? (from.parts?.[id] || '') : p.state; p.reveal = reveal?.[id] ?? 1; }
     for (const [id, p] of paths) {
       const gone = (st, k) => st?.[k] === 'hidden';
@@ -200,6 +222,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     }
     mix = Math.max(0, Math.min(1, m)); fromLabels = from ? (from.labels || {}) : null;
     labels = B; if (sp != null) speed = from && from.speed != null ? from.speed + (sp - from.speed) * mix : sp;
+    fillNow = fill; fillPrev = from ? (from.fill || {}) : fill;
     explodeIds = new Set(explode); explodePrev = new Set(from ? from.explode || [] : explode); avoidLeft = avoid; stateRate = rate;
   }
   let stateRate = 5, camRate = 4.5;
@@ -380,6 +403,11 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       const alertNow = (mix >= 0.5 ? p.state : p.prev) === 'alert';
       if (alertNow && !reduced) { const ph = (now * 0.0006) % 1; p.ring.material.color.set(TONE.alert.glow); p.ring.scale.setScalar(0.8 + ph * 0.9); p.ring.material.opacity = 0.7 * (1 - ph) * Math.abs(mix - 0.5) * 2; }
       else { p.ring.material.opacity = lerp(p.ring.material.opacity, 0, s); p.ring.scale.setScalar(1); }
+      if (p.layersBack.length) {
+        p.fill = lerp(p.fill, lerp(fillPrev[id] || 0, fillNow[id] || 0, mix), s);
+        p.backMat.opacity = p.fill > 0.01 ? p.vis : 0;
+        for (const b of p.layersBack) { const w = Math.max(0.001, p.fill * p.backLen); b.scale.x = w; b.position.x = p.backLen / 2 - w / 2; }
+      }
       if (p.layers.length) { p.explode = lerp(p.explode, lerp(explodePrev.has(id) ? 1 : 0, explodeIds.has(id) ? 1 : 0, mix), s); p.layers.forEach((lg, i) => { lg.position.y = i * 0.62 * p.explode; }); }
       // labels: the new state's once the blend is nearly done, the old one's near its start, none in between
       const useNew = mix >= 0.8, useOld = fromLabels && mix <= 0.2;
