@@ -627,3 +627,13 @@ body.bar-away .top { transform: translateY(-100%); }
   .stage canvas { opacity: calc(1 - var(--read) * .9); filter: saturate(calc(1 - var(--read) * .7)); }
   .stage::after { background: linear-gradient(transparent 16%, color-mix(in srgb, var(--page) 90%, transparent) 40%, var(--page) 60%); }
 }
+
+/* landing words: white in dark mode, black in light mode (owner) */
+.landing-story { --word: #000000; --word-2: #2A2830; }
+[data-theme="dark"] .landing-story { --word: #FFFFFF; --word-2: #E6E3EE; }
+.landing-story .headline, .landing-story .headline .thin, .landing-story .headline .heavy, .landing-story .lead, .landing-story .stats dd:not(.alert), .landing-story .legend li { color: var(--word); }
+.landing-story .kicker, .landing-story .stats dt, .landing-story .topics { color: var(--word-2); }
+.landing-story .kicker span { color: var(--word); }
+.below h2, .below h3, .below .q, .faq summary { color: var(--ink); }
+/* 3D labels never show through settled words */
+.stage .overlay { opacity: calc(1 - min(1, var(--read) * 2.5)); }
