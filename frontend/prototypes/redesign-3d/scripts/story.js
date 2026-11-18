@@ -47,7 +47,9 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     const f = frameOf(s), c = s.cam || {};
     const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.58 };
     const side = c.side !== false;
-    return { centre: { ...base, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? (c.sx ?? 0.68) : 0.5, sy: c.sy ?? 0.54 }, side };
+    // centre: the system is the focus while the scroll plays the change (closer, centre stage);
+    // aside: the words are the focus while you read (further away, to the side, faded by --read in app.css)
+    return { centre: { ...base, dist: base.dist * 0.86, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, dist: base.dist * 1.18, sx: side ? (c.sx ?? 0.7) : 0.5, sy: c.sy ?? 0.54 }, side };
   });
 
   let sysKey = '';
@@ -82,6 +84,8 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
         world.setState({ ...cur.state, avoid: 0 }, { from: prev.state, mix: m, reveal, rate: 9 });
         world.setCamera(lerpCam(cams[i - 1].side ? cams[i - 1].aside : cams[i - 1].centre, cams[i].centre, m), { rate: 7 });
         canvas.style.setProperty('--side', ((1 - m) * (cams[i - 1].side && i - 1 > 0 ? 1 : 0)).toFixed(3));
+        // the system comes forward as soon as the scroll starts the change
+        stage.style.setProperty('--read', (i - 1 > 0 ? 1 - clamp(a / 0.25) : 0).toFixed(3));
       } else {
         // phase 2: this step, while its words come in; the scene slides aside
         system(`s${i}`, sysOf(cur));
@@ -89,6 +93,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
         world.setState({ ...cur.state, avoid: side && k > 0.5 ? 0.47 : 0 }, { rate: 9 });
         world.setCamera(i === 0 ? cams[0].centre : lerpCam(cams[i].centre, cams[i].aside, k), { rate: 7 });
         canvas.style.setProperty('--side', (side ? k : 0).toFixed(3));
+        stage.style.setProperty('--read', k.toFixed(3));
       }
     }
     const frac = i === 0 ? 0 : i - 1 + (a < 1 ? a * 0.5 : 0.5 + t * 0.5);

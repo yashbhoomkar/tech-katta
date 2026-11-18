@@ -520,3 +520,13 @@ body { background: var(--page); background-attachment: scroll; }
   .step.hero .actions { justify-content: flex-start; }
 }
 @media (min-width: 761px) { .step.hero .lead { max-width: 30em; } }
+
+/* focus (owner: "more focus on the 3D figures; the transition only visible while scrolling, then the text"): while a
+   chapter scrolls in, --read is 0 and the system is bright, close and labelled; once it settles, --read goes to 1
+   and the system steps back (faded, labels hidden) so the words lead. story.js sets --read from the scroll. */
+.stage { --read: 0; }
+.stage canvas { opacity: calc(1 - var(--read) * .62); filter: saturate(calc(1 - var(--read) * .45)); }
+.stage .overlay { opacity: calc(1 - var(--read)); }
+.pin > .headline { font-size: clamp(40px, 4.8vw, 70px); }
+.pin > .lead { font-size: 18px; color: var(--ink); }
+@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .5); } .pin > .lead { font-size: 16px; } }
