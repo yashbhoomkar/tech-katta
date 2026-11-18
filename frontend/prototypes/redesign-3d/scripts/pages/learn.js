@@ -63,7 +63,7 @@ export function mount(view, [sectionId], { reduced }) {
       if (shown === slug || !bySlug[slug]) return; shown = slug;
       const a = bySlug[slug], steps = recipeFor(a), s = steps[Math.min(steps.length - 1, PREVIEW[slug] ?? steps.length - 1)];
       capT.textContent = `${numOf(a.no)} · ${splitTitle(a.title)[0]}`;
-      capS.textContent = RECIPES[slug] && s.words ? `${s.words[0]}: ${s.words[1].charAt(0).toLowerCase()}${s.words[1].slice(1)}` : splitTitle(a.title)[1] || a.dek;
+      capS.textContent = RECIPES[slug] && s.words ? `${(s.words[0] || s.h2 || '').replace(/^\d+\.\s*/, '')}: ${s.words[1].charAt(0).toLowerCase()}${s.words[1].slice(1)}` : splitTitle(a.title)[1] || a.dek;
       view.querySelectorAll('.lesson.on').forEach((x) => x.classList.remove('on'));
       view.querySelector(`[data-preview="${slug}"]`)?.classList.add('on');
       if (!world) return;
