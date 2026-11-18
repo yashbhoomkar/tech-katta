@@ -892,3 +892,6 @@ a.lesson:hover b { color: var(--ink); }
 }
 @media (min-width: 761px) { .article-story .step.hero .kicker { margin-inline: 0; } }
 @media (min-width: 761px) { .article-story .step.hero .headline { font-size: clamp(42px, 4.5vw, 70px); } .article-story .step.hero > * { max-width: 520px; } }
+/* long inline code (a whole SQL statement) wraps instead of widening the page on phones */
+.prose { overflow-wrap: break-word; }
+.prose code { white-space: normal; overflow-wrap: anywhere; }

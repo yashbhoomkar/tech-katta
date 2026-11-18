@@ -51,7 +51,9 @@ export function mount(view, [section, slug], { reduced }) {
     const [t1, t2] = splitTitle(a.title);
     const phone = innerWidth <= 760;
     // phones: every chapter keeps its system centred in the top part of the screen, above the glass panel of words
-    const steps = recipeFor(a).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: 0.75, sy: 0.56, el: 30, zoom: 1.18, phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
+    const span = (sy) => { const ps = Object.values(sy.parts), xs = ps.map((q) => q.x), zs = ps.map((q) => q.z); return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)); };
+    const heroZoom = (sy) => { const w = span(sy); return w < 7 ? 1.55 : w < 10 ? 1.32 : 1.18; }; // small systems sit further back, clear of the headline
+    const steps = recipeFor(a).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
       : phone ? { ...s, cam: { ...(s.cam || {}), side: false, phoneSy: 0.3, phoneZoom: 1.75 } } : s));
     const h2s = a.body.filter((b) => b.t === 'h2');
     view.innerHTML = `
