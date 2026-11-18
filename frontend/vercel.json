@@ -19,14 +19,6 @@
     {
       "source": "/analytics",
       "destination": "/analytics/index.html"
-    },
-    {
-      "source": "/next",
-      "destination": "/next/index.html"
-    },
-    {
-      "source": "/next/(.*)",
-      "destination": "/next/index.html"
     }
   ],
   "headers": [
@@ -64,16 +56,7 @@
       ]
     },
     {
-      "source": "/next/(.*)",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex, follow"
-        }
-      ]
-    },
-    {
-      "source": "/next/assets/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -979,6 +962,146 @@
     {
       "source": "/dashboard/papers/(.*)",
       "destination": "/dashboard/concepts/",
+      "permanent": true
+    },
+    {
+      "source": "/next",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/next/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/next/(.*)",
+      "destination": "/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts",
+      "destination": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/",
+      "destination": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/concepts/(.*)",
+      "destination": "/learn/concepts/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components",
+      "destination": "/learn/components",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/",
+      "destination": "/learn/components",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/components/(.*)",
+      "destination": "/learn/components/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/interview-questions",
+      "destination": "/learn/interview-questions",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/interview-questions/",
+      "destination": "/learn/interview-questions",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/interview-questions/(.*)",
+      "destination": "/learn/interview-questions/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/real-systems",
+      "destination": "/learn/real-systems",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/real-systems/",
+      "destination": "/learn/real-systems",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/real-systems/(.*)",
+      "destination": "/learn/real-systems/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/quick-notes",
+      "destination": "/learn/quick-notes",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/quick-notes/",
+      "destination": "/learn/quick-notes",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/quick-notes/(.*)",
+      "destination": "/learn/quick-notes/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/problems",
+      "destination": "/problems",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/problems/",
+      "destination": "/problems",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/problems/(.*)",
+      "destination": "/problems/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/practice",
+      "destination": "/practice",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/practice/",
+      "destination": "/practice",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/practice/(.*)",
+      "destination": "/practice/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/privacy",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/privacy/",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/terms",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/terms/",
+      "destination": "/terms",
       "permanent": true
     },
     {

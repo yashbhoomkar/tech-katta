@@ -7,7 +7,7 @@ Nothing here changes how the site runs today: Vercel still serves the website an
 
 | Part | Host | Address | Deployed by |
 |---|---|---|---|
-| Website (static: landing, dashboard, article pages) | Vercel (project root `frontend/`) | tech.katta.cc, analytics.katta.cc | Vercel's Git integration, on push to `main` |
+| Website (static: the new frontend `frontend/next` at the root since 2026-11-18, the analytics page; `hosting/switch.mjs`) | Vercel (project root `frontend/`) | tech.katta.cc, analytics.katta.cc | Vercel's Git integration, on push to `main` |
 | API (one Node.js process) | A Linux VPS: Nginx → Node, run by systemd | tech-api.katta.cc (proxied by Cloudflare) | `.github/workflows/deploy-backend.yml` over SSH |
 | Status page | Vercel (project root `status-page/`) | status.katta.cc | Vercel's Git integration |
 | Database | MongoDB Atlas | (connection string secret) | not deployed |

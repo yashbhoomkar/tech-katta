@@ -17,7 +17,17 @@ export const OG_IMAGE = SITE + "/og-2026-11.png";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 // inline text: `code` as in the app (src/dashboard/text.jsx)
 const inl = (s) => String(s || "").split(/`([^`]+)`/).map((t, i) => (i % 2 ? `<code>${esc(t)}</code>` : esc(t))).join("");
-const urlOf = (key) => SITE + "/dashboard/" + (key ? key + "/" : "");
+// The page address of a route key. "dashboard" is the old app's (/dashboard/<key>/); "next" is the new frontend's,
+// which replaced it on 2026-11-18 (/learn/<section>/<slug>, /problems, /privacy …; hosting/switch.mjs).
+const dashboardUrl = (key) => SITE + "/dashboard/" + (key ? key + "/" : "");
+export function nextPath(key) {
+  const [sec = "", slug] = String(key || "").split("/");
+  if (!sec) return "/home";
+  if (sec === "privacy" || sec === "terms" || sec === "problems") return slug ? `/${sec}/${slug}` : `/${sec}`;
+  return slug ? `/learn/${sec}/${slug}` : `/learn/${sec}`;
+}
+let urlOf = dashboardUrl;
+export function useAddresses(style) { urlOf = style === "next" ? (key) => SITE + nextPath(key) : dashboardUrl; }
 
 // Section titles as people search for them ("system design interview questions"), for the <title> only.
 const SECTION_TITLES = {
@@ -116,7 +126,7 @@ export function homeOf(site, articles) {
   const secs = pages.filter((p) => p.ld && !p.key.includes("/"));
   const h = site.hero || {};
   return `<main><p>${esc(h.eyebrow || "")}</p><h1>${esc(h.title || "System design, explained.")}</h1><p>${esc(h.description || "")}</p>`
-    + `<p><a href="${SITE}/dashboard/concepts/">Start with the concepts</a> · <a href="${SITE}/dashboard/interview-questions/">System design interview questions</a> · <a href="${SITE}/dashboard/problems/">Practice problems</a></p>`
+    + `<p><a href="${esc(urlOf("concepts"))}">Start with the concepts</a> · <a href="${esc(urlOf("interview-questions"))}">System design interview questions</a> · <a href="${esc(urlOf("problems"))}">Practice problems</a></p>`
     + secs.map((s) => { const list = pages.filter((p) => p.key.startsWith(s.key + "/") && p.body); return list.length ? `<section><h2><a href="${esc(urlOf(s.key))}">${esc(s.title.replace(/ \| Tech Katta$/, ""))}</a></h2><p>${esc(s.description)}</p><ul>${list.map((p) => `<li><a href="${esc(urlOf(p.key))}">${esc(p.title.replace(/(: System Design Interview)? \| Tech Katta$/, ""))}</a></li>`).join("")}</ul></section>` : ""; }).join("")
     + `</main>`;
 }

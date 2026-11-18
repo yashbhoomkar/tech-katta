@@ -1,0 +1,74 @@
+// The new frontend replaces the old app at tech.katta.cc (2026-11-18, tech-katta-context 47-NEO-BRUTALISM-PRODUCTION.md).
+// Runs after both builds (npm run build does): `vite build` (the old app: still built, because the owner's analytics
+// page and the health page come from it) and next/ built at the site root in the neo-brutalism look (build:next).
+//
+// 1. The old app's pages go: the landing (index.html) and the dashboard shell with its article pages (dashboard/).
+// 2. next/dist is copied over dist/, so the new app answers at / and at every route it prerendered.
+// 3. Every article, section and policy page gets what the old article pages had for search engines (seo.js): its
+//    title and description, canonical address, link-preview tags, JSON-LD and a crawlable preview of the text inside
+//    <div id="root"> (the app replaces it when it starts). The landing gets the site's JSON-LD and home summary.
+// 4. sitemap.xml and llms.txt list the new addresses. /dashboard/… addresses redirect to them (hosting/routes.json);
+//    /dashboard/ itself (and /dashboard/#key links) opens the app, whose /dashboard route sends each to its new home.
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { pagesOf, renderHome, render, sitemap, llmsTxt, useAddresses, nextPath, SITE, OG_IMAGE } from "../seo.js";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const dist = path.resolve(here, "..", "dist");
+const next = path.resolve(here, "..", "next", "dist");
+const contentDir = path.resolve(here, "..", "..", "content");
+
+if (!existsSync(path.join(next, "index.html"))) {
+  console.error("switch: next/dist is missing: build the new frontend first (npm run build:next)");
+  process.exit(1);
+}
+if (!existsSync(path.join(dist, "analytics", "index.html"))) {
+  console.error("switch: dist/analytics is missing: run vite build first");
+  process.exit(1);
+}
+
+// 1. the old app's pages
+for (const p of ["index.html", "dashboard", "next", "llms.txt", "sitemap.xml"]) rmSync(path.join(dist, p), { recursive: true, force: true });
+
+// 2. the new app, at the root
+cpSync(next, dist, { recursive: true });
+
+// every page of the new app: indexable now, with the link-preview image the old pages had
+const htmlFiles = [];
+const walk = (dir) => { for (const n of readdirSync(dir)) { const f = path.join(dir, n); if (statSync(f).isDirectory()) { if (f !== path.join(dist, "analytics")) walk(f); } else if (n.endsWith(".html") && n !== "health.html") htmlFiles.push(f); } };
+walk(dist);
+const preview = `<meta property="og:site_name" content="Tech Katta"/><meta property="og:type" content="website"/><meta property="og:image" content="${OG_IMAGE}"/><meta name="twitter:card" content="summary_large_image"/>`;
+for (const f of htmlFiles) {
+  let html = readFileSync(f, "utf8").replace(/\s*<meta name="robots" content="noindex" \/>/, "");
+  if (!html.includes('property="og:image"')) html = html.replace("</head>", `${preview}</head>`);
+  writeFileSync(f, html);
+}
+
+// 3. search-engine pages, from the content folder (the build sees the whole repository)
+const read = (...p) => JSON.parse(readFileSync(path.join(contentDir, ...p), "utf8"));
+const site = read("site.json");
+const articles = read("articles", "index.json").articles.map((ref) => read("articles", `${ref}.json`));
+useAddresses("next");
+const pages = pagesOf(site, articles);
+const shell = readFileSync(path.join(dist, "404.html"), "utf8");
+let written = 0;
+for (const p of pages) {
+  const file = path.join(dist, ...nextPath(p.key).split("/").filter(Boolean), "index.html");
+  // start from the page the app prerendered (it may carry a preload for the lesson's data), else the plain shell
+  const base = existsSync(file) ? readFileSync(file, "utf8") : shell;
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, render(base, p));
+  written += 1;
+}
+const home = path.join(dist, "index.html");
+writeFileSync(home, renderHome(readFileSync(home, "utf8"), site, articles).replace("</head>", `<link rel="canonical" href="${SITE}/"/></head>`));
+
+// /dashboard/ (and /dashboard/#key links): the app, which sends each old address to its new home
+mkdirSync(path.join(dist, "dashboard"), { recursive: true });
+writeFileSync(path.join(dist, "dashboard", "index.html"), shell.replace(/<title>[^<]*<\/title>/, "<title>Tech Katta</title>").replace("</head>", '<meta name="robots" content="noindex"/></head>'));
+
+// 4. the sitemap and the content map for AI assistants
+writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
+writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
+console.log(`switch: the new frontend is the site; ${written} search-engine pages, the home page, sitemap.xml and llms.txt for the new addresses`);

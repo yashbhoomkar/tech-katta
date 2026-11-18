@@ -241,14 +241,14 @@
 :global(:root[data-style="neo-brutalism"]) .avatar { border: var(--bw) solid var(--edge); }
 :global(:root[data-style="neo-brutalism"]) .keys div { border-top-width: var(--bw); }
 /* mock-up details: halftone on the big colour blocks, sticker labels, the DONE stamp */
-:global(:root[data-style="neo-brutalism"]) :is(.sechead, .hubMain) { background-image: radial-gradient(rgb(28 27 26 / .13) 1.2px, transparent 1.7px); background-size: 9px 9px; }
-:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.sechead, .hubMain) { background-image: radial-gradient(rgb(237 230 214 / .06) 1.2px, transparent 1.7px); }
+:global(:root[data-style="neo-brutalism"]) :is(.sechead, .hubMain) { background-image: none; }  /* production: no halftone */
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) :is(.sechead, .hubMain) { background-image: none; }
 :global(:root[data-style="neo-brutalism"]) :is(.pad, .pod) > :global(.mono), :global(:root[data-style="neo-brutalism"]) .pod :global(.mono), :global(:root[data-style="neo-brutalism"]) .sechead :global(.mono) {
-  display: inline-block; align-self: flex-start; width: fit-content; padding: 3px 8px; border: var(--bw) solid #1C1B1A; border-radius: 4px;
-  color: #1C1B1A !important; background: var(--marigold); transform: rotate(-1.5deg); transform-origin: left center; white-space: nowrap; --rot: -1.5deg; animation: nb-slap 420ms var(--out) both 160ms; }
-:global(:root[data-style="neo-brutalism"]) .pod :global(.mono) { background: var(--c-problems); }
-:global(:root[data-style="neo-brutalism"]) .sechead :global(.mono) { background: #FFFFFF; --rot: -2deg; transform: rotate(-2deg); }
-:global(:root[data-style="neo-brutalism"]) .done .lessonTitle::after { content: "DONE"; display: inline-block; margin-left: 10px; padding: 1px 6px; border: var(--bw) solid var(--edge); border-radius: 3px; background: var(--c-problems); color: #1C1B1A; font: 700 10px/1.4 var(--mono); letter-spacing: .08em; vertical-align: 2px; transform: rotate(-4deg); }
+  display: inline-block; align-self: flex-start; width: fit-content; padding: 0; border: 0; border-radius: 0;
+  color: inherit !important; opacity: .82; background: none; transform: none; white-space: nowrap; animation: none; }  /* production: a plain label, not a sticker */
+:global(:root[data-style="neo-brutalism"]) .pod :global(.mono) { background: none; }
+:global(:root[data-style="neo-brutalism"]) .sechead :global(.mono) { background: none; transform: none; }
+:global(:root[data-style="neo-brutalism"]) .done .lessonTitle::after { content: "DONE"; display: inline-block; margin-left: 10px; padding: 1px 6px; border: var(--bw) solid var(--edge); border-radius: 3px; background: var(--c-problems); color: #1C1B1A; font: 700 10px/1.4 var(--mono); letter-spacing: .08em; vertical-align: 2px; transform: none; }
 :global(:root[data-style="neo-brutalism"]) .levels button[aria-pressed="true"] { animation: nb-stamp-in 220ms var(--out); }
 :global(:root[data-style="neo-brutalism"]) .lessonThumb { display: none; }
 /* Home's Continue card: the lesson you are on between its neighbours (SectionMini) */
@@ -274,8 +274,8 @@
 .lostLinks a:active { transform: scale(.97); }
 .lostLinks i { width: 9px; height: 9px; border-radius: 50%; background: var(--a); }
 @media (max-width: 980px) { .lost { min-height: calc(100dvh - 140px); padding-top: 4vh; } }
-:global(:root[data-style="neo-brutalism"]) .lostFig { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transform: rotate(-1deg); background-image: radial-gradient(color-mix(in srgb, var(--marigold) 45%, transparent) 1.2px, transparent 1.7px); background-size: 9px 9px; }
-:global(:root[data-style="neo-brutalism"]) .lost :global(.mono) { display: inline-block; padding: 3px 8px; border: var(--bw) solid #1C1B1A; border-radius: 4px; background: var(--c-real); color: #1C1B1A; transform: rotate(-2deg); --rot: -2deg; animation: nb-slap 420ms var(--out) both 200ms; }
+:global(:root[data-style="neo-brutalism"]) .lostFig { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transform: none; background-image: radial-gradient(color-mix(in srgb, var(--marigold) 45%, transparent) 1.2px, transparent 1.7px); background-size: 9px 9px; }
+:global(:root[data-style="neo-brutalism"]) .lost :global(.mono) { display: inline-block; padding: 3px 8px; border: var(--bw) solid #1C1B1A; border-radius: 4px; background: var(--c-real); color: #1C1B1A; transform: none; --rot: -2deg; animation: nb-slap 420ms var(--out) both 200ms; }
 :global(:root[data-style="neo-brutalism"]) .lostLinks { border-top: var(--bw) solid var(--rule); }
 :global(:root[data-style="neo-brutalism"]) .lostLinks a { border: var(--bw) solid var(--edge); border-radius: var(--r-sm); background: var(--c); color: #1C1B1A; font-weight: 700; box-shadow: var(--sh-sm); }
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lostLinks a { background: var(--surface); color: var(--a); border-color: var(--a); }

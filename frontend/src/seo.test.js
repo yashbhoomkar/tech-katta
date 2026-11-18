@@ -75,3 +75,12 @@ test('every article preview stops before the end and shows some text', async () 
     assert.ok(cut >= 1 && cut < a.body.length, r);
   }
 });
+
+test("nextPath: the new frontend's address for each old page key", async () => {
+  const { nextPath } = await import("../seo.js");
+  assert.equal(nextPath(""), "/home");
+  assert.equal(nextPath("concepts"), "/learn/concepts");
+  assert.equal(nextPath("concepts/caching"), "/learn/concepts/caching");
+  assert.equal(nextPath("problems"), "/problems");
+  assert.equal(nextPath("privacy"), "/privacy");
+});
