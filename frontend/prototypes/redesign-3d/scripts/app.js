@@ -41,12 +41,10 @@ route();
 
 // top bar: solid once you scroll (phones navigate with the floating bar at the bottom)
 const top = document.getElementById('top');
-// the top bar slides away while you scroll down and comes back as soon as you scroll up (or near the top)
-let lastY = scrollY;
+// the top bar belongs to the top of the page: it leaves once you scroll down and comes back only at the top
 addEventListener('scroll', () => {
-  const y = scrollY;
-  top.classList.toggle('solid', y > 8);
-  if (Math.abs(y - lastY) > 6) { document.body.classList.toggle('bar-away', y > 120 && y > lastY); lastY = y; }
+  top.classList.toggle('solid', scrollY > 8);
+  document.body.classList.toggle('bar-away', scrollY > 120);
 }, { passive: true });
 addEventListener('hashchange', () => document.body.classList.remove('bar-away'));
 

@@ -38,14 +38,15 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     if (i === 0) return;
     el.classList.add('scrub');
     const pin = document.createElement('div'); pin.className = 'pin';
-    while (el.firstChild) pin.appendChild(el.firstChild);
-    el.appendChild(pin);
+    const card = document.createElement('div'); card.className = 'card'; // the words' panel (glass on phones)
+    while (el.firstChild) card.appendChild(el.firstChild);
+    pin.appendChild(card); el.appendChild(pin);
   });
 
   // each step's two cameras: centre stage (while it animates) and aside (while you read)
   const cams = steps.map((s) => {
     const f = frameOf(s), c = s.cam || {};
-    const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1) * (innerWidth <= 760 ? (c.phoneZoom || 1) : 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.36 };
+    const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1) * (innerWidth <= 760 ? (c.phoneZoom || 1) : 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.2 };
     const side = c.side !== false;
     // centre: the system is the focus while the scroll plays the change (closer, centre stage);
     // aside: the words are the focus while you read (further away, to the side, faded by --read in app.css)

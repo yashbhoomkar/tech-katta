@@ -83,12 +83,12 @@ main.leaving { opacity: 0; }
 /* scrubbed steps: a tall section; the words are pinned and wait for the animation (story.js sets --t, 0 → 1) */
 .step.scrub { display: block; min-height: 0; height: 215vh; height: 215svh; padding: 0; }
 .step.scrub > .pin { max-width: none; position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 110px var(--gut) 90px; }
-.pin > * { max-width: 470px; opacity: var(--t, 0); transform: translateY(calc((1 - var(--t, 0)) * 26px)); will-change: opacity, transform; }
+.card > * { max-width: 470px; opacity: var(--t, 0); transform: translateY(calc((1 - var(--t, 0)) * 26px)); will-change: opacity, transform; }
 .step.scrub:not(.live) .pin { pointer-events: none; }
 .step.finale .pin { align-items: center; text-align: center; }
-.step.finale .pin > * { max-width: 1100px; }
+.step.finale .card > * { max-width: 1100px; }
 .lesson-story .step.finale .pin { align-items: flex-start; text-align: left; }
-.lesson-story .step.finale .pin > * { max-width: 470px; }
+.lesson-story .step.finale .card > * { max-width: 470px; }
 .scroll-cue { position: absolute; left: var(--gut); bottom: 26px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font: 500 10.5px var(--mono); letter-spacing: .18em; color: var(--ink-3); }
 .step.hero { justify-content: flex-start; padding-top: 20vh; align-items: center; text-align: center; }
 .step.hero > *, .step.finale > * { max-width: 1100px; }
@@ -333,7 +333,7 @@ body[data-page="sim"] { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
-  .pin > * { transform: none; }
+  .card > * { transform: none; }
 }
 
 /* ===================== Tech Katta's own identity (owner, 2026-11-18: "I don't want the UI to be exactly the same as
@@ -393,8 +393,8 @@ h1, h2, h3 { font-weight: 600; letter-spacing: -.025em; }
 .kicker { display: inline-flex; width: fit-content; gap: 8px; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--card); font: 500 11px/1 var(--mono); letter-spacing: .06em; color: var(--ink-2); text-transform: none; }
 .kicker span { color: var(--ink); font-weight: 600; }
 .kicker i { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
-.step.finale .pin .kicker, .step.hero .kicker { margin-inline: auto; }
-.lesson-story .step.finale .pin .kicker { margin-inline: 0; }
+.step.finale .card .kicker, .step.hero .kicker { margin-inline: auto; }
+.lesson-story .step.finale .card .kicker { margin-inline: 0; }
 /* buttons: square-cornered, an arrow instead of a round chip */
 .btn { border-radius: 10px; min-height: 48px; padding: 0 20px; gap: 10px; font-weight: 600; }
 .btn.sm { min-height: 40px; border-radius: 8px; }
@@ -527,9 +527,9 @@ body { background: var(--page); background-attachment: scroll; }
 .stage { --read: 0; }
 .stage canvas { opacity: calc(1 - var(--read) * .62); filter: saturate(calc(1 - var(--read) * .45)); }
 .stage .overlay { opacity: calc(1 - var(--read)); }
-.pin > .headline { font-size: clamp(40px, 4.8vw, 70px); }
-.pin > .lead { font-size: 18px; color: var(--ink); }
-@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .5); } .pin > .lead { font-size: 16px; } }
+.card > .headline { font-size: clamp(40px, 4.8vw, 70px); }
+.card > .lead { font-size: 18px; color: var(--ink); }
+@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .5); } .card > .lead { font-size: 16px; } }
 
 /* shorter chapters (owner: "too much of scrolling … too much of gap between two scrolls"): 1.4 screens each, the
    change plays over the first 0.75 screen, the words arrive within the next 0.2 */
@@ -540,10 +540,10 @@ body { background: var(--page); background-attachment: scroll; }
 /* every chapter's words start at the same place, in one column width, with one headline size */
 @media (min-width: 761px) {
   .step.scrub > .pin { justify-content: flex-start; padding-top: max(150px, 22vh); }
-  .pin > * { max-width: 540px; }
-  .pin > .headline { font-size: clamp(38px, 3.9vw, 58px); }
+  .card > * { max-width: 540px; }
+  .card > .headline { font-size: clamp(38px, 3.9vw, 58px); }
   .step.finale .pin { justify-content: center; padding-top: 110px; }
-  .step.finale .pin > .headline { font-size: clamp(40px, 4.4vw, 64px); }
+  .step.finale .card > .headline { font-size: clamp(40px, 4.4vw, 64px); }
 }
 /* the hero follows the same two-line pattern: first line secondary, second primary */
 .step.hero .thin { color: var(--ink-2); font-weight: 400; }
@@ -580,8 +580,8 @@ body { background: var(--page); background-attachment: scroll; }
 @media (max-width: 760px) {
   .stage canvas { opacity: calc(1 - var(--read) * .74); filter: saturate(calc(1 - var(--read) * .6)); }
   .stage::after { background: linear-gradient(transparent 22%, color-mix(in srgb, var(--page) 82%, transparent) 46%, var(--page) 68%); }
-  .pin > .headline { font-size: clamp(30px, 8.6vw, 40px); margin-bottom: 16px; }
-  .pin > .lead { font-size: 16px; }
+  .card > .headline { font-size: clamp(30px, 8.6vw, 40px); margin-bottom: 16px; }
+  .card > .lead { font-size: 16px; }
 }
 
 /* the floating bar on phones: Dashboard · Learn · Practice (replaces the menu button) */
@@ -603,7 +603,7 @@ body { background: var(--page); background-attachment: scroll; }
 }
 /* brighter words (owner: "Make the text more bright") */
 [data-theme="dark"] { --ink: #F4F2FA; --ink-2: #D9D5E6; --ink-3: #ABA6BC; }
-.pin > .lead, .step.hero .lead { color: var(--ink); }
+.card > .lead, .step.hero .lead { color: var(--ink); }
 .headline .thin { color: var(--ink-2); }
 @media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .8); } }
 
@@ -675,4 +675,49 @@ body.bar-away .top { transform: translateY(-100%); }
   /* no empty band before the footer */
   .foot.page { padding-top: 28px; }
   .landing-story .step.scrub:last-of-type { height: 92svh; }
+}
+
+/* ===== the words' panel and one glass recipe (owner: "TEXT IS IMPORTANT", "think more on glass UI") ===== */
+:root { --glass-bg: rgb(255 255 255 / .62); --glass-edge: rgb(255 255 255 / .75); --glass-line: rgb(27 26 34 / .08);
+  --glass-hl: linear-gradient(rgb(255 255 255 / .55), rgb(255 255 255 / 0) 40%); --glass-shadow: 0 20px 50px -24px rgb(30 25 60 / .35); --glass-blur: saturate(1.6) blur(22px); }
+[data-theme="dark"] { --glass-bg: rgb(22 21 30 / .58); --glass-edge: rgb(255 255 255 / .14); --glass-line: rgb(255 255 255 / .06);
+  --glass-hl: linear-gradient(rgb(255 255 255 / .09), rgb(255 255 255 / 0) 40%); --glass-shadow: 0 24px 60px -20px rgb(0 0 0 / .75); }
+.card { display: flex; flex-direction: column; }
+.card > * { max-width: 540px; }
+/* text is never half see-through: it is solid within the first quarter of its entrance, only the slide continues */
+.card > * { opacity: min(1, calc(var(--t, 0) * 4)); transform: translateY(calc((1 - var(--t, 0)) * 18px)); }
+@media (min-width: 761px) { .step.finale .card { align-items: center; text-align: center; } .step.finale .card > * { max-width: 1100px; } }
+@media (max-width: 760px) {
+  .card { position: relative; padding: 18px 18px 20px; border-radius: 22px; isolation: isolate;
+    opacity: min(1, calc(var(--t, 0) * 4)); transform: translateY(calc((1 - var(--t, 0)) * 24px)); }
+  .card > * { opacity: 1; transform: none; }
+  .card::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--glass-hl), var(--glass-bg);
+    border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+  .card > .kicker { margin-bottom: 12px; }
+  .card > .headline { margin-bottom: 12px; }
+  .card > .lead { margin-bottom: 14px; font-size: 16px; line-height: 1.55; }
+  .card > .stats, .card > .legend { margin-bottom: 4px; }
+  .card > .actions { margin-top: 8px; }
+  /* the glass panel carries the contrast now: no page fade, the scene stays bright around it */
+  .stage::after { opacity: 0 !important; }
+  .stage canvas { opacity: 1; filter: none; }
+  .step.scrub > .pin { padding: 0 12px calc(max(16px, env(safe-area-inset-bottom)) + 88px); }
+}
+/* the same glass on the bottom bar and the 3D labels */
+@media (max-width: 760px) {
+  .tabbar { background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+  .tabbar a[aria-current] { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--glass-line); }
+}
+.p3 { background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+.p3 b { color: var(--ink); }
+/* the top bar lives at the top of the page only; it does not come back on scroll up */
+body.bar-away .top { transform: translateY(-100%); }
+@media (max-width: 760px) {
+  .card { padding: 14px 16px 16px; transform: translateY(calc((1 - var(--t, 0)) * 10px)); }
+  .card > .headline { font-size: clamp(26px, 7.4vw, 32px); }
+  .card > .lead { font-size: 15px; }
+  .card > .legend { grid-template-columns: repeat(3, auto); gap: 6px 14px; font-size: 12.5px; }
+  .card > .legend i { width: 12px; height: 12px; border-radius: 4px; }
+  .card > .stats dd { font-size: 16px; }
+  .card > .actions .btn { min-height: 42px; font-size: 14.5px; }
 }
