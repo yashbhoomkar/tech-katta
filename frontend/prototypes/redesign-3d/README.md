@@ -86,3 +86,15 @@ and drains with `state.fill`) and `consumer` (an octagonal worker). Colours: Kaf
 messages, as the queue), consumer lime (new). Chapters: the spike (lag 0) → it breaks (database slow, lag 2.1M,
 nothing lost) → fix it (6 partitions, 6 consumers, batched writes; lag drains) → the parts → learn and build →
 a chat app → your turn.
+
+## 2026-11-19: Dashboard, Learn and concept articles
+- **Learn** (`#/learn/<section>`): four tabs (concepts, components, interview questions, real systems) with the real
+  66 articles from `tech-api.katta.cc/v1/articles` (bundled snapshot in `scripts/data/articles.js` if offline). A 3D
+  preview of each article's figure rebuilds on hover; on phones it stays at the top and follows the middle row.
+- **Articles** (`#/learn/<section>/<slug>`): a 3D scroll story (`scripts/figures.js`, slug → steps), then the full
+  article from the API with every block type. Wide screens keep a 3D figure beside the text that follows its sections.
+  Reaching the end marks it read. Hand-built stories: networking, caching, sharding, consistent hashing, CAP; the
+  rest get a generic figure until their own recipe is written.
+- **Dashboard** (`#/me`, `#/dashboard`): one 3D system whose parts carry the 21 concepts; a part turns amber when
+  started and green when all its concepts are read; tap a part to open its next concept.
+- The four sample lessons are gone; their old links redirect to the matching concept.
