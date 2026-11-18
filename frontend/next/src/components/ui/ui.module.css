@@ -130,6 +130,7 @@
 :global(:root[data-style="soft-3d"]) .easy { background: var(--ok-soft); color: var(--ok); }
 :global(:root[data-style="soft-3d"]) .medium { background: var(--accent-soft); color: var(--accent-ink); }
 :global(:root[data-style="soft-3d"]) .hard { background: var(--alert-soft); color: var(--alert); }
+:global(:root[data-style="soft-3d"]:not([data-theme="dark"])) .hard { color: #A3400F; }
 :global(:root[data-style="soft-3d"]) .bar > i { background: var(--a, var(--accent)); }
 :global(:root[data-style="soft-3d"]) .themeSwitch { background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); }
 :global(:root[data-style="soft-3d"]) .themeSwitch button[aria-pressed="true"] { color: var(--accent-ink); }

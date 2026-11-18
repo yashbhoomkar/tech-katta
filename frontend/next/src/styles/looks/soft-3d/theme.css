@@ -100,7 +100,7 @@
 /* ---------- base type ---------- */
 :root[data-style="soft-3d"] :is(h1, h2, h3, h4) { font-family: var(--display); font-weight: 650; letter-spacing: -.035em; line-height: 1.06; }
 :root[data-style="soft-3d"] :is(h1, h2) em { font-family: var(--display); font-style: normal; font-weight: 750; color: var(--accent); letter-spacing: -.04em; }
-:root[data-style="soft-3d"] .mono { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: .14em; color: var(--muted); }
+:where(:root[data-style="soft-3d"]) .mono { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: .14em; color: var(--muted); }
 :root[data-style="soft-3d"] :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 :root[data-style="soft-3d"] ::selection { background: var(--selection); }
 :root[data-style="soft-3d"] a:not([class]) { color: var(--link); }
