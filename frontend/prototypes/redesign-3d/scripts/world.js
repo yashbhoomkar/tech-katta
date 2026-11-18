@@ -12,15 +12,15 @@ import { kindColours } from './palette.js';
 // (sky, lilac, peach, mint, lemon, rose), with marigold indicator lights. Status: a coral-red glow when a part fails,
 // amber when it is busy; a healthy part keeps its own colour and gets a green halo.
 const PALETTE = {
-  light: { page: '#FAF8F5', grid: '#3A3550', gridOp: 0.05, shadow: 0.12, blockE: '#FFFFFF', blockEI: 0.04, path: '#3A3550', pathOp: 0.32, dot: '#2F4BB3', hemi: 1.5, sun: 1.3, ground: '#ece6f2', led: '#FFC233' },
+  light: { page: '#FAF8F5', grid: '#3A3550', gridOp: 0.05, shadow: 0.14, blockE: '#000000', blockEI: 0, path: '#3A3550', pathOp: 0.32, dot: '#2F4BB3', hemi: 1.05, sun: 1.15, ground: '#ece6f2', led: '#FFC233' },
   dark: { page: '#121218', grid: '#EDEAF5', gridOp: 0.045, shadow: 0.38, blockE: '#000000', blockEI: 0, path: '#EDEAF5', pathOp: 0.28, dot: '#A9BCFF', hemi: 0.95, sun: 1.0, ground: '#1d1a26', led: '#FFC233' },
 };
 const TONE = {
-  alert: { c: '#F7A3A0', e: '#EF4E4E', ei: 0.4, edge: '#C62F2F', glow: '#EF4E4E', dot: '#EF4E4E' },
+  alert: { c: '#FF6B6B', e: '#E5383B', ei: 0.45, edge: '#B01E22', glow: '#EF3B3B', dot: '#E5383B' },
   warn: { e: '#F5A524', ei: 0.05, glow: '#F5A524', dot: '#D98A00' },
   ok: { e: '#2FA36B', ei: 0.06, glow: '#2FA36B', dot: '#2FA36B' },
 };
-const TONE_DARK = { alert: { c: '#B83C3C', ei: 0.55, edge: '#FF8A8A' }, warn: { ei: 0.25 }, ok: { ei: 0.12 } };
+const TONE_DARK = { alert: { c: '#E04848', ei: 0.6, edge: '#FFB0B0' }, warn: { ei: 0.25 }, ok: { ei: 0.12 } };
 
 function roundedSlab(w, d, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
@@ -52,7 +52,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   if (!renderer.getContext()) return null;
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = THREE.NeutralToneMapping; // keeps the pastels' hue and saturation (ACES washes light colours out)
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;

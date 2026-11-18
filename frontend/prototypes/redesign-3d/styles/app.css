@@ -371,9 +371,9 @@ body[data-page="sim"] { overflow: hidden; }
 /* soft light from the six section pastels at the top of the page, over a faint dot grid */
 /* --sky, --lilac, --peach, --mint, --lemon, --rose (and --k-<kind>) come from scripts/palette.js, the one source of the pastels */
 body { font-family: var(--sans); background:
-  radial-gradient(700px 380px at 12% -6%, color-mix(in srgb, var(--sky) 70%, transparent), transparent 70%),
-  radial-gradient(640px 360px at 52% -10%, color-mix(in srgb, var(--lilac) 60%, transparent), transparent 70%),
-  radial-gradient(700px 400px at 92% -4%, color-mix(in srgb, var(--peach) 65%, transparent), transparent 70%),
+  radial-gradient(700px 380px at 12% -6%, color-mix(in srgb, var(--sky) 42%, transparent), transparent 70%),
+  radial-gradient(640px 360px at 52% -10%, color-mix(in srgb, var(--lilac) 38%, transparent), transparent 70%),
+  radial-gradient(700px 400px at 92% -4%, color-mix(in srgb, var(--peach) 40%, transparent), transparent 70%),
   radial-gradient(var(--grid) 1px, transparent 1.3px) 0 0 / 22px 22px, var(--page);
   background-attachment: fixed; }
 h1, h2, h3 { font-weight: 600; letter-spacing: -.025em; }

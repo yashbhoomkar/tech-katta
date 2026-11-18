@@ -33,7 +33,7 @@ take ideas (scroll-driven story, 3D systems) from other sites, never their palet
 
 ## One palette, everywhere (owner: "Pastel colours chosen for those 3D components should remain consistent across
 the website")
-`scripts/palette.js` is the only place the pastels live: each kind of part has one (app servers sky, load balancer
+`scripts/palette.js` is the only place the pastels live (brighter since 2026-11-18, owner: "Choose some brighter colours, but still don't copy rca.gg"; the lilac leans orchid, away from lavender; NeutralToneMapping keeps them saturated in 3D): each kind of part has one (app servers sky, load balancer
 lilac, cache peach, databases mint, queue lemon, CDN rose, users mist). `world.js` colours the models from it and
 `applyPaletteVars()` writes the same values as CSS variables (`--sky`, `--k-server` …) for the page: legend chips,
 label dots, highlighters, tints. Status never replaces a part's colour except failure: busy adds an amber halo,
