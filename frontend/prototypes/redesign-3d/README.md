@@ -42,7 +42,8 @@ healthy a green one; broken turns coral red so it stands out.
 ## The landing (owner: "every animation should be 3D")
 Every motion on the landing is 3D: the opening system builds itself (parts rise one by one), then scroll-driven
 chapters: the spike, it breaks, find the cause, fix it, the parts (the legend), learn, simulate, what you will design
-(a city of six real systems, `city()` in landing.js, passed as `step.system`), your turn (free, Google sign-in).
+(one real system per figure: a chat app, `chatApp()` in landing.js, passed as `step.system`; owner: "I need one
+system in one figure"), your turn (free, Google sign-in).
 Below the 3D, plain text with no 2D animation: who it is for, who teaches it, questions. No flat
 cards or charts. The Incidents page was removed (owner: "Remove the incidents thing"); the simulator still opens
 with the IND vs PAK scenario.

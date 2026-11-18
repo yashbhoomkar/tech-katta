@@ -21,31 +21,27 @@ const STEPS = [
   { design: FULL, cam: { zoom: 0.95, el: 40, az: 42 }, state: { parts: { app0: 'warn', app1: 'warn', app2: 'warn', cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok', queue: 'warn', cdn: 'ok' }, labels: { app1: ['89 % busy', 'warn'], queue: ['holding 12,000', 'warn'], db: ['4k writes/s', 'ok'], cdn: ['70 % answered', 'ok'] }, speed: 2.2 } },
   { design: FULL, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: allOk(FULL), speed: 0.7 } },
 ];
-/** "what you'll design": a small city of real systems, each built from the same parts (and colours) */
-function city() {
-  const parts = {}, paths = {}, labels = {};
-  const C = [
-    ['url', 'URL shortener', 0, -12, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, -1.2], ['b', 'server', 2.4, 1.2], ['c', 'cache', 4.8, -1.2], ['d', 'db', 4.8, 1.2]], [['lb', 'a'], ['lb', 'b'], ['a', 'c'], ['b', 'd']]],
-    ['chat', 'Chat app', 14, -12, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, -1.2], ['b', 'server', 2.4, 1.2], ['q', 'queue', 5.4, 0], ['d', 'db', 8.4, 0]], [['lb', 'a'], ['lb', 'b'], ['a', 'q'], ['q', 'd']]],
-    ['tix', 'Ticket booking', 0, 0, [['a', 'server', 0, -1.2], ['b', 'server', 0, 1.2], ['q', 'queue', 3, 0], ['d', 'db', 6, 0]], [['a', 'q'], ['b', 'q'], ['q', 'd']]],
-    ['pay', 'Payments', 14, 0, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, 0], ['d', 'db', 4.8, -1.2], ['r', 'db', 4.8, 1.3, 2]], [['lb', 'a'], ['a', 'd'], ['d', 'r']]],
-    ['feed', 'News feed', 0, 12, [['g', 'globe', 0, 0], ['a', 'server', 2.4, 0], ['c', 'cache', 4.8, -1.2], ['e', 'cache', 4.8, 1.2], ['d', 'db', 7.2, 0]], [['g', 'a'], ['a', 'c'], ['a', 'e'], ['c', 'd']]],
-    ['vid', 'Video streaming', 14, 12, [['g', 'globe', 0, -1.2], ['h', 'globe', 0, 1.2], ['a', 'server', 2.6, 0], ['d', 'db', 5.2, 0]], [['g', 'a'], ['h', 'a'], ['a', 'd']]],
-  ];
-  for (const [id, name, cx, cz, ps, ls] of C) {
-    for (const [k, kind, dx, dz, layers] of ps) parts[`${id}-${k}`] = { kind, x: cx + dx, z: cz + dz, name, ...(layers ? { layers } : {}) };
-    ls.forEach(([a, b], n) => { paths[`${id}-${n}`] = [`${id}-${a}`, `${id}-${b}`]; });
-    labels[`${id}-${ps[1][0]}`] = ['', '', name];
-  }
+/** "what you will design": one real system in one figure, a chat app, built from the same parts and colours */
+function chatApp() {
+  const P = (kind, x, z, name, extra = {}) => ({ kind, x, z, name, ...extra });
+  const parts = {
+    users: P('laptop', 0, 0, 'users'), cdn: P('globe', 2.8, 0, 'cdn'), lb: P('lb', 5.6, 0, 'load balancer'),
+    ws1: P('server', 8.6, -2.2, 'app'), ws2: P('server', 8.6, 0, 'app'), ws3: P('server', 8.6, 2.2, 'app'),
+    cache: P('cache', 11.8, -3.6, 'cache'), queue: P('queue', 12.2, 2.4, 'queue'),
+    db: P('db', 15.2, -0.6, 'database'), rep: P('db', 17.8, -0.6, 'replica', { layers: 2 }),
+  };
+  const paths = { a: ['users', 'cdn'], b: ['cdn', 'lb'], c1: ['lb', 'ws1'], c2: ['lb', 'ws2'], c3: ['lb', 'ws3'],
+    d1: ['ws1', 'cache'], d2: ['ws2', 'db'], d3: ['ws3', 'queue'], e: ['queue', 'db'], f: ['db', 'rep'] };
+  const labels = { users: ['', '', 'Chat app'], ws2: ['messages · presence'], cache: ['online users'], queue: ['delivery'], db: ['chat history'] };
   return { system: { parts, paths }, labels };
 }
-const CITY = city();
-STEPS.splice(8, 0, { system: CITY.system, cam: { zoom: typeof innerWidth !== 'undefined' && innerWidth > 760 ? 1.6 : 1.12, el: 46, az: 45, sx: 0.73 }, state: { labels: CITY.labels, parts: { 'tix-q': 'warn', 'feed-c': 'ok', 'feed-e': 'ok' }, speed: 1 } });
+const CHAT = chatApp();
+STEPS.splice(8, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
 const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'THE PARTS', 'LEARN', 'SIMULATE', 'WHAT YOU BUILD', 'YOUR TURN'];
 
 export function mount(view, _p, { reduced }) {
   // phones: the legend under the words names the parts, so the six labels would only crowd the small scene
-  if (innerWidth <= 760) STEPS[5].state = { ...STEPS[5].state, labels: {} };
+  if (innerWidth <= 760) { STEPS[5].state = { ...STEPS[5].state, labels: {} }; STEPS[8].state = { ...STEPS[8].state, labels: { users: ['', '', 'Chat app'] } }; }
   const sim = '#/sim/ind-vs-pak';
   view.innerHTML = `
   <section class="story landing-story">
@@ -99,7 +95,7 @@ export function mount(view, _p, { reduced }) {
     <div class="step" data-step="8">
       <p class="kicker"><span>08</span><i></i>WHAT YOU WILL DESIGN</p>
       <h2 class="headline"><span class="thin">Not toy diagrams.</span><span class="heavy accent">The apps you use every day.</span></h2>
-      <p class="lead">URL shorteners, chat, ticket booking, payments, news feeds, video. Each is built from the same six parts, taught as a story, then handed to you to break.</p>
+      <p class="lead">Like this chat app: messages, who is online, delivery when a friend’s phone is off. Then URL shorteners, ticket booking, payments, news feeds and video, each built from the same six parts.</p>
       <p class="topics mono">CONCEPTS · COMPONENTS · INTERVIEW QUESTIONS · REAL SYSTEMS</p>
     </div>
     <div class="step finale" data-step="9">
