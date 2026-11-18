@@ -12,6 +12,7 @@
 //                                                    (tech-katta-context/22-EVALUATOR-V3.md §12, §17.1)
 //   GET  /v1/practice/me/credits                     the caller's interviewer reviews left this month and today
 // The server judges the source itself and never takes a verdict, cost or p99 from the browser.
+import { originCheck } from '../origins.js';
 import { createHash } from 'node:crypto';
 import { judgeAll, stripHidden, JUDGE_VERSION } from '../../../frontend/src/tkd/judge.js';
 import { canonical } from '../../../frontend/src/tkd/format.js';
@@ -63,7 +64,8 @@ export function practiceRoutes({ problems, accounts, store, judge, evidence, ai,
   const limiter = makeLimiter(), cache = lru(RESULT_CACHE), judging = new Set();
   const runJudge = judge || (async ({ source, problem }) => ({ judged: judgeAll(source, problem, { all: true }) }));
   const runEvidence = evidence || (async ({ source, problem }) => ({ judged: buildEvidence(source, problem, { mode: 'submit' }) }));
-  const cors = (request) => (request.headers.origin === allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : { 'Access-Control-Allow-Origin': '*' });
+  const isSite = originCheck(allowedOrigin);
+  const cors = (request) => (isSite(request.headers.origin) ? { 'Access-Control-Allow-Origin': request.headers.origin, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : { 'Access-Control-Allow-Origin': '*' });
   const send = (request, response, status, body, extra = {}) => {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Content-Security-Policy': JSON_CSP, ...cors(request), ...extra });
     response.end(request.method === 'HEAD' ? undefined : JSON.stringify(body));
@@ -81,7 +83,7 @@ export function practiceRoutes({ problems, accounts, store, judge, evidence, ai,
 
   async function submit(request, response, problem) {
     if (!enabled) return fail(request, response, 503, 'sign_in_not_configured');
-    if (request.headers.origin !== allowedOrigin) return fail(request, response, 403, 'bad_origin');
+    if (!isSite(request.headers.origin)) return fail(request, response, 403, 'bad_origin');
     const user = await me(request);
     if (!user) return fail(request, response, 401, 'signed_out');
     const account = String(user.id);
@@ -188,7 +190,7 @@ export function practiceRoutes({ problems, accounts, store, judge, evidence, ai,
       }
       if (parts[0] === 'submissions' && ID.test(parts[1] || '') && parts.length <= 3) {
         if (!enabled) return fail(request, response, 503, 'sign_in_not_configured');
-        if (!read && request.headers.origin !== allowedOrigin) return fail(request, response, 403, 'bad_origin');
+        if (!read && !isSite(request.headers.origin)) return fail(request, response, 403, 'bad_origin');
         const user = await me(request);
         if (!user) return fail(request, response, 401, 'signed_out');
         if (parts.length === 2) {

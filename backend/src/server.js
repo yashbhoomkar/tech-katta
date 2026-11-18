@@ -1,3 +1,4 @@
+import { DEFAULT_ORIGINS, originCheck, parseOrigins } from './origins.js';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +18,9 @@ const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), '
 const startedAt = Date.now();
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 5000);
-const allowedOrigin = process.env.FRONTEND_ORIGIN || 'https://tech.katta.cc';
+// the sites that may call the API with a session (one origin or a comma-separated list, see origins.js)
+const allowedOrigin = parseOrigins(process.env.FRONTEND_ORIGIN || DEFAULT_ORIGINS);
+const isSite = originCheck(allowedOrigin);
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('PORT must be an integer between 1 and 65535.');
@@ -31,8 +34,8 @@ function sendJson(request, response, statusCode, body) {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Content-Security-Policy': JSON_CSP,
-    ...(request.headers.origin === allowedOrigin ? {
-      'Access-Control-Allow-Origin': allowedOrigin,
+    ...(isSite(request.headers.origin) ? {
+      'Access-Control-Allow-Origin': request.headers.origin,
       'Vary': 'Origin',
     } : {}),
   });
@@ -199,8 +202,8 @@ function route(request, response) {
       'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age': '600',
-      ...(request.headers.origin === allowedOrigin ? {
-        'Access-Control-Allow-Origin': allowedOrigin,
+      ...(isSite(request.headers.origin) ? {
+        'Access-Control-Allow-Origin': request.headers.origin,
         'Vary': 'Origin',
       } : {}),
     });
