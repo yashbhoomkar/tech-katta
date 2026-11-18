@@ -721,3 +721,8 @@ body.bar-away .top { transform: translateY(-100%); }
   .card > .stats dd { font-size: 16px; }
   .card > .actions .btn { min-height: 42px; font-size: 14.5px; }
 }
+
+/* normal scroll pace (owner: "reduce the sensitivity of scrolling a bit, set it to normal"): 1.3 screens a section */
+.step.scrub { height: 130vh; height: 130svh; }
+@media (max-width: 760px) { .step.scrub { height: 130svh; } }
+.landing-story .step.scrub:last-of-type { height: 110svh; }

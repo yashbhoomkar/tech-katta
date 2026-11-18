@@ -65,7 +65,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     let i = 0, a = 1, t = 1;
     for (let k = 1; k < els.length; k++) {
       const r = els[k].getBoundingClientRect();
-      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.8)); t = clamp((vh * 0.24 - r.top) / (vh * 0.22)); }
+      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 1.0)); t = clamp((vh * 0.06 - r.top) / (vh * 0.3)); }
     }
     root.classList.toggle('at-hero', i === 0);
     world?.setLabelBand?.(0.94); // labels fade out with --read once the words come in
