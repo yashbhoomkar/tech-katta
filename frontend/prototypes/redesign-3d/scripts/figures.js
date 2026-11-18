@@ -401,11 +401,174 @@ Object.assign(RECIPES, {
   ],
 });
 
+// ---- real systems: what each company changed, as one system per figure ----
+const SHOP = (redis) => sys({ ...row('a', 3, 0, 2, 'server', 'Checkout'), ...(redis ? { r: P('cache', 4.4, -2.6, 'Redis holds') } : {}), db: P('db', 6, 1, 'MySQL stock') },
+  { a: ['a0', 'db'], b: ['a1', 'db'], c: ['a2', 'db'], ...(redis ? { d: ['a0', 'r'], e: ['a1', 'r'] } : {}) });
+const DISC = (svc, scylla) => sys({ users: P('laptop', -2, 0, 'Discord'), api: P('server', 1.8, 0, 'API'), ...(svc ? { ds: P('server', 5, 0, 'Data service') } : {}),
+  ...ring(5, 2.2, 'db', scylla ? 'ScyllaDB' : 'Cassandra', 'n', { layers: 2 }) },
+  { a: ['users', 'api'], b: [svc ? 'ds' : 'api', 'n2'], ...(svc ? { c: ['api', 'ds'] } : {}) });
+// the ring sits to the right of the API
+const shift = (sy, dx) => ({ parts: Object.fromEntries(Object.entries(sy.parts).map(([k, v]) => [k, k.startsWith('n') ? { ...v, x: v.x + dx } : v])), paths: sy.paths });
+const SLACK = (kafka) => sys({ ...row('web', 2, 0, 2.4, 'server', 'Web app'), ...(kafka ? { k: P('kafka', 3.8, 0, 'Kafka', { partitions: 2 }), relay: P('consumer', 6.8, 0, 'Relay') } : {}),
+  redis: P('cache', kafka ? 9.6 : 4.4, 0, 'Redis queue'), ...row('w', 2, kafka ? 13 : 8, 2.4, 'consumer', 'Worker') },
+  kafka ? { a: ['web0', 'k'], b: ['web1', 'k'], c: ['k', 'relay'], d: ['relay', 'redis'], e: ['redis', 'w0'], f: ['redis', 'w1'] } : { a: ['web0', 'redis'], b: ['web1', 'redis'], e: ['redis', 'w0'], f: ['redis', 'w1'] });
+const FIG = sys({ ...row('u', 3, 0, 2.2, 'laptop', 'Editor'), mp: P('server', 4.4, 0, 'Multiplayer server'), db: P('db', 8.4, 0, 'File') },
+  { a: ['u0', 'mp'], b: ['u1', 'mp'], c: ['u2', 'mp'], d: ['mp', 'db'] });
+const SPOT = (idx) => sys({ svc: P('server', 0, 0, 'Service'), bt: P('db', 4, -2.6, 'Bigtable', { layers: 2 }), lake: P('db', 8, 1.4, 'Parquet on cloud storage', { layers: 4 }), ...(idx ? { ix: P('cache', 4, 1.4, 'Key index') } : {}) },
+  { a: ['svc', 'bt'], ...(idx ? { b: ['svc', 'ix'], c: ['ix', 'lake'] } : { b: ['svc', 'lake'] }) });
+const META = (gw) => { const parts = { ...row('c', 4, 0, 1.8, 'laptop', 'Client host'), ...row('d', 3, gw ? 8.4 : 6, 2.4, 'db', 'ZippyDB host', { layers: 2 }), ...(gw ? row('g', 2, 4.2, 2.4, 'lb', 'ZGateway') : {}) };
+  const paths = {};
+  if (gw) { for (let i = 0; i < 4; i++) paths[`cg${i}`] = [`c${i}`, `g${i < 2 ? 0 : 1}`]; for (let g = 0; g < 2; g++) for (let d = 0; d < 3; d++) paths[`g${g}d${d}`] = [`g${g}`, `d${d}`]; }
+  else for (let i = 0; i < 4; i++) for (let d = 0; d < 3; d++) paths[`c${i}d${d}`] = [`c${i}`, `d${d}`];
+  return sys(parts, paths); };
+
+Object.assign(RECIPES, {
+  'shopify-reservations': [
+    { system: SHOP(true), state: { labels: { db: ['the last unit'] }, speed: 0.8 } },
+    { system: SHOP(true), words: ['Two systems', 'No shared transaction'], text: 'Holds lived in Redis and stock in MySQL. With no transaction across the two, a failure between them could leave a hold without stock or stock without a hold.',
+      state: { parts: { r: 'warn', db: 'warn' }, labels: { r: ['holds', 'warn'], db: ['stock', 'warn'] }, speed: 1.3 } },
+    { system: SHOP(false), words: ['One row per unit', 'SKIP LOCKED shares them out'], text: 'Each row is one unit for sale. A checkout locks the rows it takes, and SKIP LOCKED makes the next checkout pass over them to free ones instead of waiting.',
+      state: { parts: { db: 'ok', a0: 'ok', a1: 'ok', a2: 'ok' }, labels: { db: ['one row per unit', 'ok'] }, speed: 1.4 } },
+    { system: SHOP(false), words: ['The slowdown', 'Connections, not queries'], text: 'When checkouts slowed, the queries were fine. The time went on getting a database connection, so the fix was in connection handling.',
+      state: { parts: { a0: 'warn', a1: 'warn', a2: 'warn', db: 'ok' }, labels: { a1: ['waiting for a connection', 'warn'], db: ['queries fast', 'ok'] }, speed: 1.2 } },
+  ],
+  'discord-messages': [
+    { system: shift(DISC(false, false), 7), state: { labels: { n0: ['trillions of messages'] }, speed: 0.8 } },
+    { system: shift(DISC(false, false), 7), words: ['177 Cassandra nodes', 'Paging the on-call team'], text: 'The message store kept growing, and hot channels made some nodes fall behind. Running it took more and more of the team.',
+      state: { parts: { n2: 'alert', n3: 'warn' }, labels: { n2: ['hot partition', 'alert'] }, speed: 1.6 } },
+    { system: shift(DISC(true, false), 9), words: ['A service in front', 'Identical reads merged'], text: 'Requests for one channel go to the same data service instance. The first starts one query and the rest wait for its answer, so a burst becomes one read.',
+      state: { parts: { ds: 'ok', n2: 'ok' }, labels: { ds: ['one query per burst', 'ok'] }, speed: 1.4 } },
+    { system: shift(DISC(true, true), 9), words: ['Moved to ScyllaDB', 'Trillions of messages in nine days'], text: 'With the data service in place, the messages were copied to ScyllaDB in nine days and the cluster became far calmer to run.',
+      state: { parts: all(['n0', 'n1', 'n2', 'n3', 'n4'], 'ok'), labels: { n0: ['calm', 'ok'] }, speed: 1.2 } },
+  ],
+  'slack-job-queue': [
+    { system: SLACK(false), state: { labels: { redis: ['up to 33,000 jobs/s'] }, speed: 0.8 } },
+    { system: SLACK(false), words: ['Redis filled up', 'Nothing could be queued'], text: 'During an outage the queue grew until Redis ran out of memory. Then nothing could be queued, or even taken off the queue.',
+      state: { parts: { redis: 'alert', w0: 'dim', w1: 'dim' }, labels: { redis: ['out of memory', 'alert'] }, speed: 1.8 } },
+    { system: SLACK(true), words: ['Kafka in front, not instead', 'A buffer on disk'], text: 'Kafka takes jobs as fast as the web app sends them and keeps the backlog on disk. A relay feeds Redis only as fast as its rate limit allows.',
+      state: { parts: { k: 'warn', relay: 'ok', redis: 'ok' }, fill: { k: 0.6 }, labels: { k: ['backlog on disk', 'warn'], redis: ['within memory', 'ok'] }, speed: 1.4 } },
+  ],
+  'figma-multiplayer': [
+    { system: FIG, state: { labels: { mp: ['one file, many people'] }, speed: 0.8 } },
+    { system: FIG, words: ['The server decides the order', 'So it can stay simple'], text: 'Figma skipped operational transforms. Every change goes through one server, which decides the order everyone sees.',
+      state: { parts: { mp: 'ok' }, labels: { mp: ['one order for all', 'ok'] }, speed: 1.3 } },
+    { system: FIG, words: ['Per property', 'The last write wins'], text: 'Changes to different properties never conflict. When two edits change the same property, the one that reaches the server last wins.',
+      state: { parts: { u0: 'warn', u2: 'ok' }, labels: { u0: ['colour: red', 'warn'], u2: ['colour: blue · wins', 'ok'] }, speed: 1.3 } },
+  ],
+  'spotify-data-lake': [
+    { system: SPOT(false), state: { labels: { lake: ['exabytes'], bt: ['petabytes'] }, speed: 0.8 } },
+    { system: SPOT(false), words: ['One user’s history', 'A chain of reads per file'], text: 'Without an index, every file needs a chain of reads, each waiting for the last, so a lookup by key in the lake is slow.',
+      state: { parts: { lake: 'warn' }, labels: { lake: ['read after read', 'warn'] }, speed: 1.3 } },
+    { system: SPOT(true), words: ['Look the key up first', 'A few small reads, all at once'], text: 'Random Access Parquet keeps an index from each key to its files and rows; the ranged reads then go out together, without copying data into a key-value store.',
+      state: { parts: { ix: 'ok', lake: 'ok' }, labels: { ix: ['key → files and rows', 'ok'], lake: ['ranged reads', 'ok'] }, speed: 1.4 } },
+  ],
+  'meta-zgateway': [
+    { system: META(false), state: { labels: { d1: ['ZippyDB'] }, speed: 0.8 } },
+    { system: META(false), words: ['A mesh of connections', 'Every client to every host'], text: 'More than a million client hosts connected straight to the database hosts they needed, so each host’s connections grew with the number of clients.',
+      state: { parts: { d0: 'warn', d1: 'warn', d2: 'warn' }, labels: { d1: ['connections keep growing', 'warn'] }, speed: 1.6 } },
+    { system: META(true), words: ['A stateless proxy tier', 'About 97% fewer connections'], text: 'Clients connect to their regional ZGateway, and database hosts see only the gateways. It is also one place to batch, merge duplicate reads and shed load.',
+      state: { parts: { g0: 'ok', g1: 'ok', d0: 'ok', d1: 'ok', d2: 'ok' }, labels: { g0: ['batches and merges', 'ok'], d1: ['bounded', 'ok'] }, speed: 1.3 } },
+  ],
+});
+
+const PREVIEW_Q = {};
+// ---- interview questions: the question's high-level design, then its deep dives. A chapter that names a section
+// (h2) takes its words from that section of the article at run time (article.js), so the text is always the article's.
+/** columns of parts, left to right; edges as "a>b c>d" */
+const hl = (cols, edges, gap = 3.8) => {
+  const parts = {};
+  cols.forEach((col, ci) => col.forEach(([id, kind, name, extra = {}], ri) => { parts[id] = P(kind, ci * gap, (ri - (col.length - 1) / 2) * 2.4, name, extra); }));
+  const paths = Object.fromEntries(edges.split(' ').map((e) => { const [a, b] = e.split('>'); return [`${a}-${b}`, [a, b]]; }));
+  return { parts, paths };
+};
+const qL = (id, name = 'Users') => [id, 'laptop', name];
+const qS = (id, name) => [id, 'server', name];
+const qD = (id, name, extra) => [id, 'db', name, extra];
+const qC = (id, name) => [id, 'cache', name];
+const qG = (id, name) => [id, 'globe', name];
+const qB = (id, name) => [id, 'lb', name];
+const qQ = (id, name) => [id, 'queue', name];
+const qK = (id, name, n = 2) => [id, 'kafka', name, { partitions: n }];
+const qW = (id, name = 'Worker') => [id, 'consumer', name];
+/** a design question: hero, the high-level design, then two deep dives that light the parts they are about */
+const design = (system, heroLabel, dives) => [
+  { system, state: { labels: heroLabel, speed: 0.8 } },
+  { system, h2: '4. High-level design', words: [null, 'The parts and how they connect'], state: { parts: all(Object.keys(system.parts).filter((k) => system.parts[k].kind !== 'laptop'), 'ok'), speed: 1.2 } },
+  ...dives.map(([h2, heavy, parts, labels, extra = {}]) => ({ system, h2, words: [null, heavy], state: { parts, labels, speed: 1.4, ...extra } })),
+];
+const Qs = {
+  url: hl([[qL('u')], [qB('lb', 'Load balancer')], [qS('w', 'Write service'), qS('r', 'Redirect service')], [qC('c', 'Cache'), qD('db', 'Links')]], 'u>lb lb>w lb>r w>db r>c r>db'),
+  sync: hl([[qL('ph', 'Phone'), qL('lap', 'Laptop')], [qS('api', 'API'), qS('sync', 'Sync service')], [qD('st', 'Object storage', { layers: 4 }), qD('db', 'File records')]], 'ph>api ph>st api>db sync>lap db>sync'),
+  near: hl([[qL('u', 'Customer')], [qS('s', 'Search service')], [qC('c', 'Cache'), qD('geo', 'Geo index', { layers: 2 }), qD('db', 'Restaurants')]], 'u>s s>c s>geo s>db'),
+  grocery: hl([[qL('u', 'Customer')], [qS('o', 'Order service')], [qC('c', 'Stock cache'), qD('inv', 'Store stock'), qS('dis', 'Dispatch')], [qL('r', 'Rider')]], 'u>o o>c o>inv o>dis dis>r'),
+  tickets: hl([[qL('u', 'Fans')], [qQ('wr', 'Waiting room')], [qS('b', 'Booking service')], [qC('h', 'Holds'), qD('db', 'Seats')]], 'u>wr wr>b b>h b>db'),
+  photos: hl([[qL('u')], [qG('cdn', 'CDN'), qS('api', 'API')], [qD('st', 'Image storage', { layers: 4 }), qD('db', 'Photo records'), qC('likes', 'Like counts')]], 'u>cdn u>api cdn>st api>db api>likes'),
+  feed: hl([[qL('u')], [qS('fs', 'Feed service'), qS('ps', 'Post service')], [qC('fc', 'Feed lists'), qK('k', 'New posts')], [qW('fo', 'Fan-out'), qD('db', 'Posts')]], 'u>fs u>ps fs>fc ps>k k>fo fo>fc ps>db'),
+  dating: hl([[qL('u')], [qS('sw', 'Swipe service')], [qD('db', 'Swipes', { layers: 2 }), qC('deck', 'Ready decks')], [qW('dw', 'Deck builder')]], 'u>sw sw>db sw>deck dw>deck'),
+  judge: hl([[qL('u', 'Coders')], [qS('api', 'Submit API')], [qQ('q', 'Run queue')], [qW('w0', 'Sandbox'), qW('w1', 'Sandbox')], [qD('db', 'Results')]], 'u>api api>q q>w0 q>w1 w0>db w1>db'),
+  chat: hl([[qL('a', 'Asha')], [qS('c1', 'Connection server')], [qS('cs', 'Chat service'), qD('db', 'Messages')], [qS('c2', 'Connection server')], [qL('b', 'Ravi')]], 'a>c1 c1>cs cs>db cs>c2 c2>b'),
+  notif: hl([[qS('svc', 'Services')], [qS('api', 'Notify API')], [qQ('otp', 'Urgent lane'), qQ('bulk', 'Bulk lane')], [qW('w0'), qW('w1')], [qG('push', 'SMS and push')]], 'svc>api api>otp api>bulk otp>w0 bulk>w1 w0>push w1>push'),
+  pay: hl([[qL('u', 'Customer')], [qS('ps', 'Payment service')], [qD('led', 'Ledger'), qG('prov', 'Payment provider')]], 'u>ps ps>led ps>prov'),
+  sched: hl([[qS('api', 'API')], [qD('db', 'Jobs by due time')], [qS('sc', 'Scheduler')], [qQ('q', 'Due jobs')], [qW('w0'), qW('w1')]], 'api>db db>sc sc>q q>w0 q>w1'),
+  crawl: hl([[qQ('fr', 'Frontier')], [qW('f0', 'Fetcher'), qW('f1', 'Fetcher')], [qG('web', 'The web'), qC('seen', 'Seen URLs')], [qD('st', 'Pages', { layers: 4 })]], 'fr>f0 fr>f1 f0>web f1>web f0>seen f1>st'),
+  board: hl([[qS('g', 'Game servers')], [qS('ss', 'Score service')], [qC('z', 'Sorted set'), qD('db', 'Scores')], [qL('u', 'Players')]], 'g>ss ss>z ss>db z>u'),
+  ads: hl([[qL('u')], [qS('api', 'Click API')], [qK('k', 'Clicks', 3)], [qW('sp', 'Stream counter'), qD('raw', 'Raw clicks', { layers: 4 })], [qD('db', 'Counts')]], 'u>api api>k k>sp k>raw sp>db'),
+  kv: { parts: { cl: P('laptop', -8.4, 0, 'Client'), ...ring(6, 4, 'db', 'Node', 'n', { layers: 2 }) }, paths: { q: ['cl', 'n3'], a: ['n3', 'n4'], b: ['n3', 'n2'] } },
+  editor: hl([[qL('e0', 'Editor'), qL('e1', 'Editor')], [qS('cs', 'Collab server')], [qD('db', 'Document'), qD('ops', 'Edit log', { layers: 4 })]], 'e0>cs e1>cs cs>db cs>ops'),
+  dispatch: hl([[qL('r', 'Riders'), qL('u', 'Customer')], [qS('loc', 'Location service'), qS('ord', 'Order service')], [qC('geo', 'Rider locations'), qS('dis', 'Dispatch')], [qD('db', 'Assignments')]], 'r>loc u>ord loc>geo ord>dis dis>geo dis>db'),
+  video: hl([[qL('cr', 'Creator')], [qD('raw', 'Uploads', { layers: 3 })], [qW('t0', 'Transcoder'), qW('t1', 'Transcoder')], [qD('st', 'Video chunks', { layers: 4 })], [qG('cdn', 'CDN')], [qL('v', 'Viewers')]], 'cr>raw raw>t0 raw>t1 t0>st t1>st st>cdn cdn>v', 3.4),
+  menus: hl([[qL('u')], [qS('s', 'Search service')], [qD('ix', 'Search index', { layers: 2 }), qK('k', 'Menu changes')], [qD('db', 'Menus')]], 'u>s s>ix db>k k>ix', 3.8),
+  live: hl([[qS('enc', 'Encoder')], [qS('or', 'Origin')], [qG('cdn0', 'CDN'), qG('cdn1', 'CDN')], [qL('v0', 'Viewers'), qL('v1', 'Viewers')]], 'enc>or or>cdn0 or>cdn1 cdn0>v0 cdn1>v1'),
+};
+const ok = (...ids) => all(ids, 'ok');
+Object.assign(RECIPES, {
+  'url-shortener': design(Qs.url, { r: ['opens'] }, [['Making short codes', 'The write path', ok('w', 'db'), { w: ['new short code', 'ok'] }], ['Fast redirects', 'Answered from the cache', ok('r', 'c'), { c: ['most opens', 'ok'] }]]),
+  'file-sync': design(Qs.sync, { st: ['the bytes'] }, [['Big files on patchy networks', 'Parts straight to storage', ok('st'), { st: ['upload in parts', 'ok'] }], ['Keeping devices in step', 'Changes reach every device', ok('sync', 'lap'), { lap: ['in step', 'ok'] }]]),
+  'restaurants-near-me': design(Qs.near, { geo: ['by location'] }, [['Finding what', 'A geo index answers first', ok('geo'), { geo: ['cells near you', 'ok'] }], ['The 8 pm rush', 'The cache takes the peak', { c: 'ok', s: 'warn' }, { c: ['popular areas', 'ok'] }]]),
+  'grocery-delivery': design(Qs.grocery, { inv: ['per dark store'] }, [['The last packet of milk', 'Two orders, one unit', { inv: 'warn' }, { inv: ['1 left', 'warn'] }], ['Showing stock while browsing', 'Read from a fast copy', ok('c'), { c: ['a little behind', 'ok'] }]]),
+  'ticket-booking': design(Qs.tickets, { db: ['every seat'] }, [['Never selling a seat twice', 'The database decides', ok('db', 'h'), { db: ['one buyer per seat', 'ok'] }], ['A fair line', 'A waiting room lets fans in', { wr: 'warn' }, { wr: ['in batches', 'warn'] }]]),
+  'photo-sharing': design(Qs.photos, { cdn: ['images'] }, [['Serving images fast', 'The CDN carries the images', ok('cdn', 'st'), { cdn: ['near the viewer', 'ok'] }], ['A like count for a viral photo', 'One hot counter', { likes: 'warn' }, { likes: ['one photo, many likes', 'warn'] }]]),
+  'news-feed': design(Qs.feed, { fc: ['one list per person'] }, [['Pull, push, or both', 'Lists written ahead', ok('k', 'fo', 'fc'), { fo: ['writes followers’ lists', 'ok'] }], ['Keeping lists small', 'Short lists in the cache', ok('fc'), { fc: ['recent posts only', 'ok'] }]]),
+  'dating-swipes': design(Qs.dating, { db: ['every swipe'] }, [['Spotting a match', 'Check the other side’s swipe', ok('db', 'sw'), { sw: ['both said yes', 'ok'] }], ['Decks that are ready', 'Built ahead by workers', ok('dw', 'deck'), { deck: ['ready before you open', 'ok'] }]]),
+  'coding-judge': design(Qs.judge, { q: ['submissions'] }, [['Running strangers', 'Each run in its own sandbox', ok('w0', 'w1'), { w0: ['isolated', 'ok'] }], ['Surviving the last 15 minutes', 'The queue absorbs the rush', { q: 'warn' }, { q: ['last-minute rush', 'warn'] }, { fill: {} }]]),
+  'chat-app': design(Qs.chat, { a: ['', '', 'Asha'], b: ['', '', 'Ravi'] }, [['Getting messages to the phone', 'Down an open connection', ok('c2', 'b'), { c2: ['holds Ravi’s connection', 'ok'] }], ['One order, and nothing lost', 'Stored, in order, per chat', ok('db'), { db: ['in order', 'ok'] }]]),
+  notifications: design(Qs.notif, { api: ['one front door'] }, [['Lanes', 'Urgent messages skip the queue', { otp: 'ok', bulk: 'warn' }, { otp: ['OTPs', 'ok'], bulk: ['offers can wait', 'warn'] }], ['Never twice', 'One send per id', ok('w0', 'w1'), { w0: ['sent once', 'ok'] }]]),
+  payments: design(Qs.pay, { led: ['every rupee'] }, [['Never twice', 'One key per payment', ok('ps', 'led'), { ps: ['same key, same answer', 'ok'] }], ['Unknown is not failed', 'Ask the provider before retrying', { prov: 'warn' }, { prov: ['no reply yet', 'warn'] }]]),
+  'job-scheduler': design(Qs.sched, { db: ['by due time'] }, [['Finding what', 'Due jobs, found by time', ok('db', 'sc'), { sc: ['what is due now', 'ok'] }], ['When a worker dies', 'Its lease runs out', { w0: 'alert', w1: 'ok' }, { w0: ['stopped', 'alert'], w1: ['takes it over', 'ok'] }]]),
+  'web-crawler': design(Qs.crawl, { fr: ['URLs to visit'] }, [['Being polite', 'A few requests per site', { web: 'ok', f0: 'ok', f1: 'warn' }, { f1: ['waits its turn', 'warn'] }], ['Never twice', 'Check before fetching', ok('seen'), { seen: ['already fetched?', 'ok'] }]]),
+  leaderboard: design(Qs.board, { z: ['always sorted'] }, [['Keeping it sorted', 'A sorted set in memory', ok('z'), { z: ['top scores', 'ok'] }], ['Your rank, cheaply', 'Ask the sorted set', ok('z', 'u'), { u: ['your rank', 'ok'] }]]),
+  'ad-clicks': design(Qs.ads, { k: ['every click'] }, [['Counting fast', 'Counted in the stream', ok('sp', 'db'), { sp: ['running counts', 'ok'] }], ['Late events and windows', 'By when the click happened', { sp: 'warn' }, { sp: ['late clicks', 'warn'] }]]),
+  'key-value-store': design(Qs.kv, { n0: ['a ring of nodes'] }, [['Where a key lives', 'Consistent hashing on a ring', ok('n3'), { n3: ['owns the key', 'ok'] }], ['Three copies', 'Agree enough to answer', ok('n2', 'n3', 'n4'), { n4: ['copy', 'ok'], n2: ['copy', 'ok'] }]]),
+  'shared-editor': design(Qs.editor, { cs: ['one document'] }, [['Two people, one line', 'The server orders the edits', ok('cs', 'ops'), { ops: ['one order', 'ok'] }], ['Your own typing feels instant', 'Shown on your screen first', ok('e0'), { e0: ['instant', 'ok'] }]]),
+  'rider-dispatch': design(Qs.dispatch, { geo: ['every few seconds'] }, [['Where riders are', 'Pings into a fast store', ok('loc', 'geo'), { geo: ['live positions', 'ok'] }], ['One order at a time', 'A rider is claimed once', ok('dis', 'db'), { db: ['one order per rider', 'ok'] }]]),
+  'video-streaming': design(Qs.video, { cdn: ['the weight'] }, [['Getting it ready fast', 'Chunks transcoded in parallel', ok('t0', 't1'), { t0: ['chunk by chunk', 'ok'] }], ['The CDN carries the weight', 'Viewers stream from the edge', ok('cdn', 'v'), { cdn: ['most of the bytes', 'ok'] }]]),
+  'menu-search': design(Qs.menus, { ix: ['by words'] }, [['Finding dishes by their words', 'An index of words', ok('ix', 's'), { ix: ['paneer → dishes', 'ok'] }], ['Fresh enough', 'Changes stream into the index', ok('k', 'ix'), { k: ['menu edits', 'ok'] }]]),
+  'ind-vs-pak': design(Qs.live, { v0: ['crores watching'] }, [['Everyone arrives at the toss', 'The CDN takes the crowd', { cdn0: 'warn', cdn1: 'warn', or: 'ok' }, { cdn0: ['the toss', 'warn'] }], ['Degrade, don', 'Lower quality, never down', ok('cdn0', 'cdn1'), { cdn1: ['lower bitrate', 'ok'] }]]),
+});
+// the start-here guides: one system that grows as the guide goes
+const FULL = hl([[qL('u')], [qB('lb', 'Load balancer')], [qS('a0', 'App server'), qS('a1', 'App server')], [qC('c', 'Cache'), qD('db', 'Database'), qK('k', 'Kafka')], [qW('w', 'Worker')]], 'u>lb lb>a0 lb>a1 a0>c a0>db a1>db a1>k k>w');
+const SMALL = hl([[qL('u')], [qS('a0', 'App server')], [qD('db', 'Database')]], 'u>a0 a0>db');
+const named = (sy, names) => ({ parts: Object.fromEntries(Object.entries(sy.parts).map(([k, v]) => [k, names[k] ? { ...v, name: names[k] } : v])), paths: sy.paths });
+const TECH = named(FULL, { lb: 'API gateway', c: 'Redis', db: 'PostgreSQL', k: 'Kafka', w: 'Flink' });
+const guide = (system, steps) => [{ system: steps[0][0], state: { speed: 0.8 } }, ...steps.map(([sy, h2, heavy, parts = {}, labels = {}]) => ({ system: sy, h2, words: [null, heavy], state: { parts, labels, speed: 1.2 } }))];
+Object.assign(RECIPES, {
+  'system-design-interviews': guide(FULL, [[SMALL, 'What happens in the room', 'You design, out loud'], [FULL, 'What is being scored', 'The reasons, not the boxes', ok('lb', 'a0', 'a1', 'db')], [FULL, 'What changes with seniority', 'Deeper on the hard part', { db: 'warn', k: 'ok' }, { db: ['the hard part', 'warn'] }]]),
+  'how-to-prepare': guide(FULL, [[SMALL, 'Weeks 1 and 2', 'Learn the parts'], [FULL, 'Weeks 2 to 4', 'Whole designs, worked', ok('a0', 'a1', 'c', 'db')], [FULL, 'Mock interviews', 'Practise under pressure', { a0: 'warn', a1: 'warn' }, { a1: ['out loud, on the clock', 'warn'] }]]),
+  'how-to-answer': guide(FULL, [[SMALL, '1. Requirements', 'What it must do'], [SMALL, '2. The numbers', 'Only the numbers that change the design', ok('db'), { db: ['how much data, how fast', 'ok'] }], [FULL, '4. High-level design', 'Every part, one sentence each', ok('lb', 'a0', 'a1', 'c', 'db', 'k', 'w')], [FULL, '5. Deep dives', 'Two or three hard parts', { c: 'warn', k: 'warn' }, { c: ['deep dive', 'warn'], k: ['deep dive', 'warn'] }]]),
+  'core-concepts-guide': guide(FULL, [[FULL, 'Networking essentials', 'How a request travels', ok('lb'), { lb: ['networking', 'ok'] }], [FULL, 'Caching', 'Answers kept in memory', ok('c'), { c: ['caching', 'ok'] }], [FULL, 'Sharding', 'Data split across machines', ok('db'), { db: ['sharding', 'ok'] }]]),
+  'technologies-guide': guide(TECH, [[TECH, 'Redis', 'In memory, very fast', ok('c'), { c: ['Redis', 'ok'] }], [TECH, 'Kafka', 'A log many can read', ok('k'), { k: ['Kafka', 'ok'] }], [TECH, 'PostgreSQL', 'The default database', ok('db'), { db: ['PostgreSQL', 'ok'] }]]),
+  'patterns-guide': guide(FULL, [[FULL, 'Real-time updates', 'From one event to every screen', ok('lb', 'u'), { u: ['live', 'ok'] }], [FULL, 'Scaling reads', 'Layers that take the load', ok('c'), { c: ['most reads', 'ok'] }], [FULL, 'Long jobs', 'Queued for workers', ok('k', 'w'), { w: ['minutes of work', 'ok'] }]]),
+  'questions-guide': guide(FULL, [[SMALL, 'Easy', 'Few parts, one hard idea'], [FULL, 'Medium', 'More parts, more trade-offs', ok('a0', 'a1', 'c', 'db', 'k')], [FULL, 'An order to take them in', 'Easy first, then build up', ok('lb', 'a0', 'a1', 'c', 'db', 'k', 'w')]]),
+});
+for (const k of ['url-shortener', 'file-sync', 'restaurants-near-me', 'grocery-delivery', 'ticket-booking', 'photo-sharing', 'news-feed', 'dating-swipes', 'coding-judge', 'chat-app', 'notifications', 'payments', 'job-scheduler', 'web-crawler', 'leaderboard', 'ad-clicks', 'key-value-store', 'shared-editor', 'rider-dispatch', 'video-streaming', 'menu-search', 'ind-vs-pak']) PREVIEW_Q[k] = 1;
+
 /** the step a list preview shows: the system working, not failing */
 export const PREVIEW = { 'networking-essentials': 1, caching: 2, sharding: 2, 'consistent-hashing': 3, 'cap-theorem': 1, 'api-design': 1, 'data-modelling': 3,
   'database-indexing': 2, 'numbers-to-know': 2, 'real-time-updates': 3, contention: 2, workflows: 2, 'scaling-reads': 2, 'scaling-writes': 2, 'big-files': 2,
   'long-jobs': 1, 'nearby-search': 2, 'vector-search': 1, 'time-series': 3, sketches: 3, 'change-capture': 3,
-  redis: 3, elasticsearch: 2, 'kafka-in-practice': 2, temporal: 1, 'api-gateways': 1, cassandra: 1, dynamodb: 2, postgresql: 2, flink: 2, zookeeper: 1 };
+  redis: 3, elasticsearch: 2, 'kafka-in-practice': 2, temporal: 1, 'api-gateways': 1, cassandra: 1, dynamodb: 2, postgresql: 2, flink: 2, zookeeper: 1,
+  'shopify-reservations': 2, 'discord-messages': 2, 'slack-job-queue': 2, 'figma-multiplayer': 2, 'spotify-data-lake': 2, 'meta-zgateway': 2, ...PREVIEW_Q,
+  'how-to-answer': 3, 'core-concepts-guide': 1, 'technologies-guide': 2, 'patterns-guide': 2, 'questions-guide': 3, 'system-design-interviews': 2, 'how-to-prepare': 2 };
 
 const splitHead = (t) => { const i = t.indexOf(': '); return i < 0 ? [t, ''] : [t.slice(0, i), t.charAt(i + 2).toUpperCase() + t.slice(i + 3)]; };
 
