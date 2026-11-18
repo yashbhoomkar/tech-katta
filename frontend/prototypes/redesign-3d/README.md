@@ -98,3 +98,6 @@ a chat app → your turn.
 - **Dashboard** (`#/me`, `#/dashboard`): one 3D system whose parts carry the 21 concepts; a part turns amber when
   started and green when all its concepts are read; tap a part to open its next concept.
 - The four sample lessons are gone; their old links redirect to the matching concept.
+- **All 21 concepts and all 10 components** now have their own 3D story in `scripts/figures.js` (one system per
+  figure, 3–4 chapters, words and numbers taken from each article's own text and figure captions). Interview
+  questions and real systems still use the generic two-step figure.
