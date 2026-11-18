@@ -51,14 +51,14 @@ addEventListener('hashchange', () => document.body.classList.remove('bar-away'))
 
 // theme: System / Light / Dark, the same key as the other prototypes (boot-theme.js sets it before paint)
 const themeBtn = document.getElementById('theme');
-const order = ['system', 'light', 'dark'], label = { system: 'System', light: 'Light', dark: 'Dark' };
-let pref = 'system';
-try { pref = localStorage.getItem('tk-proto-theme') || 'system'; } catch { /* storage blocked */ }
+const order = ['dark', 'light', 'system'], label = { system: 'System', light: 'Light', dark: 'Dark' };
+let pref = 'dark'; // dark is the default for everyone
+try { pref = localStorage.getItem('tk-r3d-theme') || 'dark'; } catch { /* storage blocked */ }
 function applyTheme() {
   const dark = pref === 'dark' || (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   themeBtn.textContent = label[pref]; themeBtn.setAttribute('aria-label', `Theme: ${label[pref]}`);
 }
-themeBtn.addEventListener('click', () => { pref = order[(order.indexOf(pref) + 1) % 3]; try { localStorage.setItem('tk-proto-theme', pref); } catch { /* blocked */ } applyTheme(); });
+themeBtn.addEventListener('click', () => { pref = order[(order.indexOf(pref) + 1) % 3]; try { localStorage.setItem('tk-r3d-theme', pref); } catch { /* blocked */ } applyTheme(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 applyTheme();
