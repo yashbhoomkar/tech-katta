@@ -117,7 +117,7 @@ button.me { width: 100%; border: 0; text-align: left; }
 }
 
 /* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css): solid bars with hard rules, sticker logo, key-like rows ---------- */
-:global(:root[data-style="neo-brutalism"]) .logo { border: var(--bw) solid var(--edge); border-radius: var(--r-md); box-shadow: var(--sh-sm); font-family: var(--display); font-weight: 400; letter-spacing: -.01em; }
+:global(:root[data-style="neo-brutalism"]) .logo { border: var(--bw) solid var(--edge); border-radius: var(--r-md); box-shadow: var(--sh-sm); font-family: var(--display); font-weight: 700; letter-spacing: -.01em; }
 :global(:root[data-style="neo-brutalism"]) .logo b { border-radius: 4px; background: #1C1B1A; color: var(--marigold); font-weight: 700; box-shadow: 0 0 0 var(--bw) var(--edge); }
 :global(:root[data-style="neo-brutalism"]) .sidebar { border-right: var(--bw-strong) solid var(--rule); box-shadow: none; background: var(--page); }
 :global(:root[data-style="neo-brutalism"]) .search { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); color: var(--ink-2); box-shadow: var(--sh-sm); }

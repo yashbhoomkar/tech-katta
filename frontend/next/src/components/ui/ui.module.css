@@ -104,10 +104,10 @@
    from box to box (steps, one per box) */
 :global(:root[data-style="neo-brutalism"]) .mini { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 70%, transparent) 1.3px, transparent 1.8px) 0 0 / 9px 9px, var(--surface); }
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .mini { background: radial-gradient(color-mix(in srgb, var(--c, var(--sunken)) 26%, transparent) 1.3px, transparent 1.8px) 0 0 / 9px 9px, var(--surface); }
-:global(:root[data-style="neo-brutalism"]) .miniMark { border: var(--bw) solid var(--edge); border-radius: 6px; box-shadow: 2px 2px 0 var(--edge); transform: rotate(-4deg); }
+:global(:root[data-style="neo-brutalism"]) .miniMark { border: var(--bw) solid var(--edge); border-radius: 6px; box-shadow: 2px 2px 0 var(--edge); transform: none; }
 :global(:root[data-style="neo-brutalism"]) .miniMark svg { stroke: #1C1B1A; stroke-width: 1.8; stroke-linecap: square; stroke-linejoin: miter; }
 :global(:root[data-style="neo-brutalism"]) .miniPath::before { background: var(--edge); opacity: 1; }
-:global(:root[data-style="neo-brutalism"]) .miniPath::after { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 0; border: 2px solid #1C1B1A; box-shadow: 2px 2px 0 #1C1B1A; animation-timing-function: steps(var(--n, 3), jump-start); animation-duration: 2.1s; }
+:global(:root[data-style="neo-brutalism"]) .miniPath::after { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 0; border: 2px solid #1C1B1A; box-shadow: 2px 2px 0 #1C1B1A; animation-timing-function: ease-in-out; animation-duration: 2.1s; }
 :global(:root[data-style="neo-brutalism"]) .miniStep { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 2px 2px 0 var(--edge); }
 :global(:root[data-style="neo-brutalism"]) .miniNow { background: var(--c); color: #1C1B1A; }
 :global(:root[data-style="neo-brutalism"][data-theme="dark"]) .miniNow { background: var(--surface); color: var(--a); border-color: var(--a); box-shadow: 2px 2px 0 var(--edge-c); }
@@ -118,4 +118,4 @@
 /* an empty or error state with a scene (404, offline, broken): the scene large, everything centred in the page */
 .stateScene { align-items: center; justify-content: center; min-height: min(70vh, 640px); margin: 0 auto; text-align: center; }
 .stateScene > :global(.tk-legacy) { padding: 18px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); }
-:global(:root[data-style="neo-brutalism"]) .stateScene > :global(.tk-legacy) { border: var(--bw) solid var(--edge); box-shadow: var(--sh); transform: rotate(-1deg); }
+:global(:root[data-style="neo-brutalism"]) .stateScene > :global(.tk-legacy) { border: var(--bw) solid var(--edge); box-shadow: var(--sh); transform: none; }

@@ -28,6 +28,7 @@ const routes = new Map([
   ["learn", ["Learn"]],
   ["problems", ["Problems", "Design problems with a test suite: traffic peaks, crashes and a budget decide your score."]],
   ["problems/sandbox", ["Sandbox", "A free canvas: any parts, any traffic."]],
+  ["problems/shared", ["A shared design", "A system design shared from Tech Katta's canvas."]],
   ["privacy", ["Privacy"]],
   ["terms", ["Terms and conditions"]],
   ["me", ["You"]],

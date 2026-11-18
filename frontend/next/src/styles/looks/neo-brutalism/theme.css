@@ -16,16 +16,16 @@
 
 :root[data-style="neo-brutalism"] {
   --sans: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --display: "Archivo Black", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --display: "Archivo", ui-sans-serif, system-ui, sans-serif;  /* production: Archivo Bold, calmer than Archivo Black */
   --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --serif: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
   --bw: 2px;
   --bw-strong: 3px;
-  --sh-d: 4px;
+  --sh-d: 3px;
   --sh: var(--sh-d) var(--sh-d) 0 var(--edge);
   --sh-sm: 2px 2px 0 var(--edge);
-  --sh-lg: calc(var(--sh-d) + 2px) calc(var(--sh-d) + 2px) 0 var(--edge);
+  --sh-lg: var(--sh-d) var(--sh-d) 0 var(--edge);
   --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 12px; --r-pill: 8px;
   --key: 100ms;
 
@@ -85,7 +85,7 @@
 :root[data-style="neo-brutalism"][data-theme="dark"] [data-accent] { --edge-c: color-mix(in srgb, var(--a) 45%, #000); }
 
 /* ---------- base type ---------- */
-:root[data-style="neo-brutalism"] :is(h1, h2, h3, h4) { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; line-height: 1.05; }
+:root[data-style="neo-brutalism"] :is(h1, h2, h3, h4) { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
 :root[data-style="neo-brutalism"] :is(b, strong) { font-weight: 700; }
 :root[data-style="neo-brutalism"] .mono { font-family: var(--mono); font-weight: 700; font-size: 11px; letter-spacing: .04em; color: var(--ink-2); }
 :root[data-style="neo-brutalism"] :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
@@ -100,11 +100,12 @@
 :root[data-style="neo-brutalism"][data-theme="dark"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #131211; }
 
 /* ---------- motion: the key press, stepped bars, the sticker slap ---------- */
-@keyframes nb-slap { 0% { opacity: 0; transform: scale(1.25) rotate(-6deg); } 70% { opacity: 1; transform: scale(.96) rotate(var(--rot, -2deg)); } 100% { transform: rotate(var(--rot, -2deg)); } }
+/* production (calm): labels and toasts fade in place; no tilt, no slap */
+@keyframes nb-slap { from { opacity: 0; transform: translateY(3px); } }
 @keyframes nb-step { from { transform: scaleX(0); } }
 @keyframes nb-wipe { 0%, 35% { background-size: 0% 100%; } 100% { background-size: 100% 100%; } }
 /* a chosen key drops onto its shadow (nav, filters, the theme switch) */
-@keyframes nb-stamp-in { from { transform: translate(-3px, -3px); box-shadow: 5px 5px 0 var(--edge); } }
+@keyframes nb-stamp-in { from { opacity: .7; } }
 @keyframes nb-ticker { to { transform: translateX(-50%); } }
 /* reduced motion: global.css already drops movement; the key press below is movement, so it goes too */
 
@@ -112,3 +113,12 @@
 .tk-look-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 :root[data-style="neo-brutalism"] #nb-hard feDropShadow { flood-color: #1C1B1A; }
 :root[data-style="neo-brutalism"][data-theme="dark"] #nb-hard feDropShadow { flood-color: #000; }
+
+/* ---------- production consistency (2026-11-18): one control height, real touch targets ---------- */
+/* Buttons, selects and text fields were 32-41 px tall from page to page. One token sets them: 40 px with a mouse,
+   44 px on touch screens (WCAG 2.5.5). :where keeps this at zero specificity, so a component that needs another
+   size still says so explicitly. */
+:root[data-style="neo-brutalism"] { --ctl-h: 40px; }
+@media (pointer: coarse) { :root[data-style="neo-brutalism"] { --ctl-h: 44px; } }
+:where(:root[data-style="neo-brutalism"]) :where(button, select, [role="tab"], input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="url"], :not([type]))) { min-height: var(--ctl-h); }
+@media (pointer: coarse) { :where(:root[data-style="neo-brutalism"]) :where(button, [role="tab"], [role="button"]) { min-width: 44px; } }
