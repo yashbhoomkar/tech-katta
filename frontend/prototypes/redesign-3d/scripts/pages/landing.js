@@ -78,7 +78,7 @@ export function mount(view, _p, { reduced }) {
   const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'YOUR TURN'];
   const story = mountStory(root, STEPS, { reduced, onStep: (i) => { n.textContent = `0${i} / 05`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.45, behavior: reduced ? 'auto' : 'smooth' }); });
-  const stopLogs = logFill(root.querySelector('.logword'));
+  const stopLogs = () => {};
   return () => { story.destroy(); stopLogs(); };
 }
 
@@ -90,8 +90,8 @@ export function logFill(el) {
   const draw = () => {
     const c = document.createElement('canvas'), W = 900, H = 380; c.width = W; c.height = H;
     const g = c.getContext('2d'); if (!g) return;
-    g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6D3FE0'; g.fillRect(0, 0, W, H);
-    g.font = '600 15px "IBM Plex Mono", monospace'; g.fillStyle = 'rgba(255,255,255,.5)';
+    g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#26449E'; g.fillRect(0, 0, W, H);
+    g.font = '600 15px "Geist Mono", monospace'; g.fillStyle = 'rgba(255,255,255,.5)';
     const L = ['cache ERROR node unreachable', 'db WARN connections 500/500', 'api ERROR upstream timeout 2000ms', 'lb WARN 5xx rate 31%', 'links.open 36,112/s', 'db queries 37,600/s', 'cache.hit 0% was=94%'];
     for (let y = 18, i = 0; y < H; y += 19, i++) g.fillText(`${L[i % 7]} · ${L[(i + 3) % 7]} · ${L[(i + 5) % 7]}`, -((i * 37) % 160), y);
     el.style.backgroundImage = `url(${c.toDataURL()})`;

@@ -6,18 +6,25 @@
 // createWorld returns null without WebGL; pages then show their words without the scene.
 import * as THREE from './vendor/three.module.min.js';
 
+// Tech Katta's own look: soft matte models, one pastel per kind of part, taken from the app's six section colours
+// (sky, lilac, peach, mint, lemon, rose), with marigold indicator lights. Status: a coral-red glow when a part fails,
+// amber when it is busy; a healthy part keeps its own colour and gets a green halo.
+const KIND = {
+  light: { server: ['#BFE3FA', '#5B93C2'], lb: ['#DCCFF7', '#8A72C9'], cache: ['#FDD3B0', '#D08A52'], db: ['#BFEBD6', '#4FA17E'],
+    queue: ['#F2E8A8', '#B3A23E'], globe: ['#F8CBD3', '#C9737F'], laptop: ['#ECEAF2', '#8D8899'], small: ['#E4DDF6', '#8D80B8'] },
+  dark: { server: ['#3D6E96', '#9FD0F5'], lb: ['#5B4A8F', '#C7B6F5'], cache: ['#9A5B2E', '#FFC38F'], db: ['#2F7A5A', '#9FE5C4'],
+    queue: ['#7C7128', '#F0E38A'], globe: ['#8C4553', '#F5B1BD'], laptop: ['#55525F', '#CFCADB'], small: ['#4B4268', '#C3B7EA'] },
+};
 const PALETTE = {
-  light: { page: '#F8F7FB', grid: '#1C1825', gridOp: 0.06, shadow: 0.11, block: '#CDBEFB', blockE: '#6D3FE0', blockEI: 0.05, edge: '#8B6CF0',
-    disc: '#F7F5FF', discEdge: '#B7A8F0', path: '#1C1825', pathOp: 0.3, dot: '#6D3FE0', hemi: 1.55, sun: 1.25, ground: '#d8d0f5' },
-  dark: { page: '#0F0D16', grid: '#ECE9F5', gridOp: 0.05, shadow: 0.35, block: '#5B47B8', blockE: '#3B2A8F', blockEI: 0.35, edge: '#B49CFF',
-    disc: '#3B3159', discEdge: '#9F88F5', path: '#ECE9F5', pathOp: 0.28, dot: '#B49CFF', hemi: 0.9, sun: 0.9, ground: '#1a1530' },
+  light: { page: '#FAF8F5', grid: '#3A3550', gridOp: 0.05, shadow: 0.12, blockE: '#FFFFFF', blockEI: 0.04, path: '#3A3550', pathOp: 0.32, dot: '#2F4BB3', hemi: 1.5, sun: 1.3, ground: '#ece6f2', led: '#FFC233' },
+  dark: { page: '#121218', grid: '#EDEAF5', gridOp: 0.045, shadow: 0.38, blockE: '#000000', blockEI: 0, path: '#EDEAF5', pathOp: 0.28, dot: '#A9BCFF', hemi: 0.95, sun: 1.0, ground: '#1d1a26', led: '#FFC233' },
 };
 const TONE = {
-  alert: { c: '#F7A374', e: '#E8692E', ei: 0.45, edge: '#E0632A', glow: '#F07B3F', dot: '#F07B3F' },
-  warn: { c: '#F9D27A', e: '#D99A12', ei: 0.3, edge: '#C98A0A', glow: '#F2B53A', dot: '#E0A21E' },
-  ok: { c: '#93E3C0', e: '#1E9E6A', ei: 0.18, edge: '#25A872', glow: '#2DBA7F', dot: '#2DBA7F' },
+  alert: { c: '#F7A3A0', e: '#EF4E4E', ei: 0.4, edge: '#C62F2F', glow: '#EF4E4E', dot: '#EF4E4E' },
+  warn: { c: '#FFD98A', e: '#F5A524', ei: 0.28, edge: '#A86600', glow: '#F5A524', dot: '#D98A00' },
+  ok: { e: '#2FA36B', ei: 0.06, glow: '#2FA36B', dot: '#2FA36B' },
 };
-const TONE_DARK = { alert: { c: '#F28A55', ei: 0.6, edge: '#FF9A62' }, warn: { c: '#E8B54A', ei: 0.45, edge: '#FFC85C' }, ok: { c: '#3FBF88', ei: 0.35, edge: '#4ED39A' } };
+const TONE_DARK = { alert: { c: '#B83C3C', ei: 0.55, edge: '#FF8A8A' }, warn: { c: '#B57A14', ei: 0.4, edge: '#FFC870' }, ok: { ei: 0.12 } };
 
 function roundedSlab(w, d, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
@@ -75,10 +82,10 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // ---- parts ----
   function buildPart(id, def) {
     const g = new THREE.Group(); g.position.set(def.x, -1.4, def.z);
-    const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0, transparent: true, opacity: 0 });
+    const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0, transparent: true, opacity: 0 });
     const mEdge = new THREE.LineBasicMaterial({ transparent: true, opacity: 0 });
-    const mWhite = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-    mBlock.color.set(def.kind === 'db' ? pal.disc : pal.block); mEdge.color.set(pal.edge);
+    const mWhite = new THREE.MeshBasicMaterial({ color: pal.led, transparent: true, opacity: 0, toneMapped: false });
+    mBlock.color.set((dark ? KIND.dark : KIND.light)[def.kind]?.[0] || '#E4DDF6'); mEdge.color.set((dark ? KIND.dark : KIND.light)[def.kind]?.[1] || '#8D80B8');
     const layers = [], hits = [];
     const add = (geom, edgeGeom, y, parent = g, mat = mBlock) => {
       const mesh = new THREE.Mesh(geom, mat); mesh.position.y = y; mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); hits.push(mesh);
@@ -89,13 +96,10 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     let top = 0;
     const k = def.kind;
     if (k === 'server') {
-      const [sg, se] = slab(1.5, 1.5, 0.3, 0.14);
-      const slot = geo('slot', () => new THREE.BoxGeometry(0.02, 0.05, 0.34));
-      for (let i = 0; i < 3; i++) {
-        add(sg, se, i * 0.42);
-        for (let j = 0; j < 2; j++) { const m = new THREE.Mesh(slot, mWhite); m.position.set(0.78, i * 0.42 + 0.15, -0.15 + j * 0.4); g.add(m); }
-      }
-      top = 1.2;
+      const [sg, se] = slab(1.4, 1.4, 1.05, 0.12); add(sg, se, 0);
+      const led = geo('led', () => new THREE.BoxGeometry(0.02, 0.07, 0.5));
+      for (let j = 0; j < 2; j++) { const m = new THREE.Mesh(led, mWhite); m.position.set(0.735, 0.3 + j * 0.38, 0); g.add(m); }
+      top = 1.1;
     } else if (k === 'cache') {
       const [sg, se] = slab(1.3, 1.3, 0.7, 0.14); add(sg, se, 0);
       const bolt = geo('bolt', () => { const b = new THREE.Shape(); b.moveTo(0.06, 0.3); b.lineTo(-0.14, -0.02); b.lineTo(0, -0.02); b.lineTo(-0.08, -0.3); b.lineTo(0.16, 0.04); b.lineTo(0.02, 0.04); b.closePath(); return new THREE.ShapeGeometry(b); });
@@ -142,7 +146,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
 
   // ---- paths: L-shaped dashed lines on the floor, requests moving along them (instanced dots from one pool) ----
   const MAX_DOTS = 900;
-  const dots = new THREE.InstancedMesh(geo('dot', () => new THREE.SphereGeometry(0.06, 12, 8)), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), MAX_DOTS);
+  const dots = new THREE.InstancedMesh(geo('dot', () => new THREE.BoxGeometry(0.1, 0.1, 0.1)), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), MAX_DOTS);
   dots.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   const hiddenM = new THREE.Matrix4().makeScale(0, 0, 0);
   for (let i = 0; i < MAX_DOTS; i++) { dots.setMatrixAt(i, hiddenM); dots.setColorAt(i, new THREE.Color(1, 1, 1)); }
@@ -282,12 +286,13 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
 
   // ---- how a state looks (targets the loop blends between) ----
   const colA = new THREE.Color(), colB = new THREE.Color();
+  const kindCol = (kind) => (dark ? KIND.dark : KIND.light)[kind] || (dark ? KIND.dark : KIND.light).small;
   const cmix = (m) => { const x = Math.max(0, Math.min(1, (m - 0.3) / 0.35)); return x * x * (3 - 2 * x); };
   function look(state, p, now) {
-    const t = tone(state), db = p.def.kind === 'db';
+    const t = tone(state), k = kindCol(p.def.kind);
     return {
       hidden: state === 'hidden' ? 1 : 0, vis: state === 'dim' ? 0.22 : 1,
-      c: t ? t.c : db ? pal.disc : pal.block, e: t ? t.e : pal.blockE, ei: t ? t.ei : pal.blockEI, edge: t ? t.edge : db ? pal.discEdge : pal.edge,
+      c: t?.c || k[0], e: t ? t.e : pal.blockE, ei: t ? t.ei : pal.blockEI, edge: t?.edge || k[1],
       glow: t ? t.glow : '#F07B3F', glowOp: state === 'alert' ? 0.42 + 0.1 * Math.sin(now * 0.004) : t ? 0.22 : 0,
     };
   }
@@ -323,9 +328,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       p.mBlock.color.lerp(colA.set(A.c).lerp(colB.set(B.c), cm), s);
       p.mBlock.emissive.lerp(colA.set(A.e).lerp(colB.set(B.e), cm), s);
       p.mBlock.emissiveIntensity = lerp(p.mBlock.emissiveIntensity, lerp(A.ei, B.ei, cm) + (hover ? 0.25 : 0), s);
-      p.mBlock.opacity = 0.9 * p.vis;
+      p.mBlock.opacity = p.vis; p.mBlock.transparent = p.vis < 0.99; p.mBlock.depthWrite = p.vis > 0.5;
       p.mEdge.color.lerp(colA.set(A.edge).lerp(colB.set(B.edge), cm), s);
-      p.mEdge.opacity = 0.55 * p.vis; p.mWhite.opacity = 0.9 * p.vis;
+      p.mEdge.opacity = 0.7 * p.vis; p.mWhite.opacity = p.vis;
       p.glow.material.color.copy(colA.set(A.glow).lerp(colB.set(B.glow), cm));
       p.glow.material.opacity = lerp(p.glow.material.opacity, lerp(A.glowOp, B.glowOp, mix) * p.vis, s);
       const alertNow = (mix >= 0.5 ? p.state : p.prev) === 'alert';
