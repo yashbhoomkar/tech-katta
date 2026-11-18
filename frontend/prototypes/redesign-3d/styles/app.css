@@ -895,3 +895,17 @@ a.lesson:hover b { color: var(--ink); }
 /* long inline code (a whole SQL statement) wraps instead of widening the page on phones */
 .prose { overflow-wrap: break-word; }
 .prose code { white-space: normal; overflow-wrap: anywhere; }
+/* an option the article weighs (first try, better, what you'd ship) and an analogy */
+.opt { margin: 22px 0; padding: 18px 20px 14px; border: 1px solid var(--line-2); border-radius: 16px; }
+.opt-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.opt-head .mono { font-size: 12px; color: var(--ink-2); }
+.opt-head b { font-size: 18px; color: var(--ink); letter-spacing: -.01em; }
+.opt > p { font-size: 16px; margin-bottom: 10px; }
+.opt dl { margin: 0; display: grid; gap: 8px; }
+.opt dl div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.55; }
+.opt dt { font-weight: 650; color: var(--ink); } .opt dd { margin: 0; color: var(--ink); }
+.opt ul { margin: 10px 0 0; font-size: 15px; }
+@media (max-width: 760px) { .opt dl div { grid-template-columns: 1fr; gap: 2px; } }
+.analogy { margin: 22px 0; padding: 14px 18px; border-left: 3px solid var(--lilac); }
+.analogy .mono { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+.analogy p { font-size: 16.5px; color: var(--ink); }

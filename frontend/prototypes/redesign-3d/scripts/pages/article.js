@@ -12,6 +12,9 @@ const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<'
 const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const numOf = (no = '') => (no.match(/(\d+)/) || [])[1] || '';
+// option labels arrive in capitals ("SQS, RABBITMQ"): sentence case, with names and acronyms restored
+const PROPER = { sqs: 'SQS', sns: 'SNS', cdn: 'CDN', url: 'URL', sql: 'SQL', rabbitmq: 'RabbitMQ', kafka: 'Kafka', kinesis: 'Kinesis', pulsar: 'Pulsar', google: 'Google', 'pub/sub': 'Pub/Sub', api: 'API' };
+const sentence = (t) => { const s = t.toLowerCase().replace(/[a-z/]+/g, (w) => PROPER[w] || w); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 function block(b, a) {
   switch (b.t) {
@@ -29,6 +32,11 @@ function block(b, a) {
     case 'example': { const e = a.example; if (!e) return ''; return `<aside class="example"><p class="ex-kind mono">${esc(e.kind.charAt(0) + e.kind.slice(1).toLowerCase())}</p><h3>${esc(e.name)}</h3><p>${inline(e.text)}</p>
       ${e.parts?.length ? `<dl>${e.parts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${inline(v)}</dd></div>`).join('')}</dl>` : ''}</aside>`; }
     case 'lab': return `<aside class="lab"><p>${inline(b.x)}</p><a class="btn light sm" href="#/sim/ind-vs-pak">${esc(b.go || 'Try it')}<span class="chip violet">→</span></a></aside>`;
+    case 'type': return `<article class="opt"><p class="opt-head">${b.name ? `<span class="mono">${esc(b.name)}</span>` : ''}<b>${esc(sentence(b.kind || ''))}</b></p>
+      ${b.what ? `<p>${inline(b.what)}</p>` : ''}
+      <dl>${[['Good for', b.use], ['Watch out', b.avoid], ['Example', b.ex], ['Like', b.like]].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${inline(v)}</dd></div>`).join('')}</dl>
+      ${b.more?.length ? `<ul>${b.more.map((m) => `<li>${inline(m)}</li>`).join('')}</ul>` : ''}</article>`;
+    case 'analogy': return `<aside class="analogy"><span class="mono">Think of it as</span><p>${inline(b.x)}</p></aside>`;
     default: return b.x ? `<p>${inline(b.x)}</p>` : '';
   }
 }
@@ -59,7 +67,10 @@ export function mount(view, [section, slug], { reduced }) {
       const k = a.body.findIndex((b) => b.t === 'h2' && b.x.toLowerCase().startsWith(step.h2.toLowerCase()));
       if (k < 0) return step;
       let text = '';
-      for (let j = k + 1; j < a.body.length && a.body[j].t !== 'h2' && text.length < 140; j++) if (a.body[j].t === 'p') text += (text ? ' ' : '') + a.body[j].x.replace(/`/g, '');
+      for (let j = k + 1; j < a.body.length && a.body[j].t !== 'h2' && text.length < 140; j++) { const b = a.body[j], x = b.t === 'p' ? b.x : b.t === 'list' ? b.items.slice(0, 2).join(' ') : ''; if (x) text += (text ? ' ' : '') + x.replace(/`/g, ''); }
+      if (text.length > 260) { const cut = text.slice(0, 260), end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? ')); text = end > 80 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`; }
+      if (!text) { for (let j = k + 1; j < a.body.length && a.body[j].t !== 'h2'; j++) if (a.body[j].t === 'type' && a.body[j].what) text = a.body[j].what; }
+      if (!text) { const tb = a.body.slice(k + 1).find((b, j, arr) => b.t === 'table' && !arr.slice(0, j).some((x) => x.t === 'h2')); if (tb) text = `${tb.rows.map((r) => r[0]).join(', ')}.`; }
       if (text.length > 260) { const cut = text.slice(0, 260), end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? ')); text = end > 80 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`; }
       return { ...step, words: [step.words?.[0] || a.body[k].x, step.words?.[1] || ''], text: text || step.text };
     };

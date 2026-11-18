@@ -101,3 +101,7 @@ a chat app → your turn.
 - **All 21 concepts and all 10 components** now have their own 3D story in `scripts/figures.js` (one system per
   figure, 3–4 chapters, words and numbers taken from each article's own text and figure captions). Interview
   questions and real systems still use the generic two-step figure.
+- **Every one of the 66 articles** has a 3D story: real systems show what each company changed; interview
+  questions show their high-level design, then two deep dives. A chapter that names a section (`h2`) takes its words
+  from that section at run time. The reader also renders the API's option cards (`type`: first try, better, what
+  you'd ship) and analogies, which had been skipped.
