@@ -637,3 +637,13 @@ body.bar-away .top { transform: translateY(-100%); }
 .below h2, .below h3, .below .q, .faq summary { color: var(--ink); }
 /* 3D labels never show through settled words */
 .stage .overlay { opacity: calc(1 - min(1, var(--read) * 2.5)); }
+
+/* one-stop: the finale's list of what is inside, and the catalogue below the 3D */
+.topics-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0 0 18px; }
+.topics-row span { padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--word, var(--ink)); }
+.inside-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 32px; margin: 0; }
+.inside-grid > div { display: flex; gap: 14px; padding-top: 16px; border-top: 1px solid var(--line); }
+.inside-grid dt { font-size: 32px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; min-width: 44px; color: var(--ink); }
+.inside-grid dd { margin: 0; color: var(--ink-2); font-size: 15px; }
+.inside-grid b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+@media (max-width: 760px) { .inside-grid { grid-template-columns: 1fr; gap: 18px; } .topics-row span { font-size: 13px; } }

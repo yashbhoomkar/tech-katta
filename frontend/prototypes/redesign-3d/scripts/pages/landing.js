@@ -1,4 +1,4 @@
-// The landing: one evening told over the 3D world (an event pipeline: producers, Kafka, consumers, SQL), chapter by chapter. Everything that moves is 3D: the system
+// The landing: Tech Katta as one place for system design interview prep, told over one 3D pipeline, chapter by chapter. Everything that moves is 3D: the system
 // builds itself when the page opens, and each chapter's scroll drives its change (story.js). The parts wear the same
 // pastels as everywhere else (palette.js); the "meet the parts" chapter introduces them.
 import { mountStory, stageHtml } from '../story.js';
@@ -24,16 +24,20 @@ function pipe({ producers = 3, partitions = 3, consumers = 3 } = {}) {
 const ids = (prefix, n) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 const all = (list, st) => Object.fromEntries(list.map((k) => [k, st]));
 const PIPE = pipe(), PIPE6 = pipe({ partitions: 6, consumers: 6 });
+// One chapter per part of interview prep (owner: "a one stop platform for all your system design interview"); every
+// chapter shows the same pipeline doing what that part of the platform teaches.
+const OK6 = { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' };
 const STEPS = [
   { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.66, phoneZoom: 1.5 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
-  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'ok'), sql: 'ok' }, labels: { p1: ['publishing 50k/s', 'ok'], topic: ['lag 0', 'ok'], c1: ['keeping up', 'ok'], sql: ['batched writes', 'ok'] }, speed: 1.6 } },
-  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { p1: ['still publishing', 'ok'], topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
-  { system: PIPE6, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' }, fill: { topic: 0.06 }, labels: { topic: ['6 partitions · lag draining', 'ok'], c2: ['6 consumers', 'ok'], sql: ['batches of 500', 'ok'] }, speed: 1.5 } },
-  // meet the parts: every kind in this system, named, in its own colour
+  // 01 concepts and components: every part named, in its own colour
   { system: PIPE6, cam: { el: 34, az: 48 }, state: { labels: { users: ['', '', 'Users'], p1: ['', '', 'App server'], topic: ['', '', 'Kafka topic'], c2: ['', '', 'Consumer'], sql: ['', '', 'SQL database'] }, speed: 0.8 } },
-  // learn and build: the same pipeline under a heavier evening; producers busy, the topic absorbing it
+  // 02 lessons you watch: the database slows, the lag piles up in the topic
+  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
+  // 03 interview questions: the questions an interviewer asks, pinned to the parts they are about
+  { system: PIPE6, state: { parts: OK6, fill: { topic: 0.06 }, labels: { p1: ['', '', 'What if a server crashes mid-publish?'], topic: ['', '', 'Why a topic, not direct writes?'], c2: ['', '', 'How many consumers per partition?'], sql: ['', '', 'Batch writes or row by row?'] }, speed: 1.2 } },
+  // 05 practice: the pipeline under a heavier evening, judged
   { system: PIPE6, cam: { el: 40, az: 42 }, state: { parts: { ...all(ids('p', 3), 'warn'), ...all(ids('c', 6), 'ok'), topic: 'warn', sql: 'ok' }, fill: { topic: 0.35 }, labels: { p1: ['92% busy', 'warn'], topic: ['absorbing the burst', 'warn'], sql: ['steady', 'ok'] }, speed: 2.2 } },
-  { system: PIPE6, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' }, speed: 0.8 } },
+  { system: PIPE6, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: OK6, speed: 0.8 } },
 ];
 /** "what you will design": one real system in one figure, a chat app, built from the same parts and colours */
 function chatApp() {
@@ -50,8 +54,8 @@ function chatApp() {
   return { system: { parts, paths }, labels };
 }
 const CHAT = chatApp();
-STEPS.splice(6, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
-const NAMES = ['Start', 'The spike', 'It breaks', 'Fix it', 'Learn', 'Practice', 'What you will design', 'Your turn'];
+STEPS.splice(4, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
+const NAMES = ['Start', 'Concepts and components', 'Lessons you watch', 'Interview questions', 'Real systems', 'Practice', 'Your turn'];
 
 export function mount(view, _p, { reduced }) {
   const sim = '#/sim/ind-vs-pak';
@@ -59,56 +63,62 @@ export function mount(view, _p, { reduced }) {
   <section class="story landing-story">
     ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">Start</span></div>`)}
     <div class="step hero" data-step="0">
-      <h1 class="headline"><span class="thin">Systems <span class="logword">break</span></span><span class="heavy accent">Learn to keep them up</span></h1>
-      <p class="lead">Tech Katta is system design you can watch. Every idea is a moving system, and every system is yours to break and fix.</p>
-      <div class="actions"><a class="btn dark" href="#/learn">Start learning<span class="chip">→</span></a><button class="btn light" type="button" data-next>See it break<span class="chip violet">↓</span></button></div>
+      <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
+      <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
+      <div class="actions"><a class="btn dark" href="#/learn">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
       <p class="scroll-cue mono" aria-hidden="true">Scroll to play</p>
     </div>
     <div class="step" data-step="1">
-      <p class="kicker"><span>01</span><i></i>The spike</p>
-      <h2 class="headline"><span class="thin">IND vs PAK, 50,000 predictions a second</span><span class="heavy accent">Everything keeps up</span></h2>
-      <p class="lead">Every ball, crores of fans predict the next one. ${pd("server")}App servers publish each prediction to a ${pd("kafka")}Kafka topic and answer at once; ${pd("consumer")}consumers read the topic and write batches into the ${pd("db")}SQL database.</p>
-      <dl class="stats"><div><dt>Published</dt><dd>50k/s</dd></div><div><dt>Consumer lag</dt><dd>0</dd></div><div><dt>Write time</dt><dd>12 ms</dd></div></dl>
+      <p class="kicker"><span>01</span><i></i>Concepts and components</p>
+      <h2 class="headline"><span class="thin">Every building block</span><span class="heavy accent">Kafka, caches, queues, databases</span></h2>
+      <p class="lead">21 concepts (caching, sharding, CAP, consistency) and 10 components interviewers name, like ${pd("kafka")}Kafka, Redis and PostgreSQL. Each part keeps one colour everywhere, so you can read any design at a glance.</p>
+      <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
     </div>
     <div class="step" data-step="2">
-      <p class="kicker"><span>02</span><i></i>It breaks</p>
-      <h2 class="headline"><span class="thin">The database slows down</span><span class="heavy accent">The consumers fall behind</span></h2>
-      <p class="lead">An index rebuild makes every write in the ${pd("db")}SQL database take 900 ms. ${pd("consumer")}Consumers wait on it, and messages pile up in the ${pd("kafka")}topic. Nothing is lost: Kafka keeps them until someone reads them.</p>
-      <dl class="stats"><div><dt>Consumer lag</dt><dd class="alert">2.1M</dd></div><div><dt>Predictions lost</dt><dd>0</dd></div><div><dt>Leaderboard</dt><dd class="alert">6 min late</dd></div></dl>
+      <p class="kicker"><span>02</span><i></i>Lessons you watch</p>
+      <h2 class="headline"><span class="thin">See it work, then see it break</span><span class="heavy accent">The why sticks</span></h2>
+      <p class="lead">Every lesson moves like this page. Here the ${pd("db")}database slows down, ${pd("consumer")}consumers fall behind and messages pile up in the ${pd("kafka")}topic. Nothing is lost, and you remember why.</p>
+      <dl class="stats"><div><dt>Consumer lag</dt><dd class="alert">2.1M</dd></div><div><dt>Messages lost</dt><dd>0</dd></div><div><dt>Lesson length</dt><dd>6–12 min</dd></div></dl>
     </div>
     <div class="step" data-step="3">
-      <p class="kicker"><span>03</span><i></i>Fix it</p>
-      <h2 class="headline"><span class="thin">Six partitions, six consumers, batched writes</span><span class="heavy accent">The lag drains</span></h2>
-      <p class="lead">More ${pd("kafka")}partitions let more ${pd("consumer")}consumers read side by side, and writing 500 rows at a time asks far less of the ${pd("db")}database. The backlog empties in minutes.</p>
+      <p class="kicker"><span>03</span><i></i>Interview questions</p>
+      <h2 class="headline"><span class="thin">The questions interviewers ask</span><span class="heavy accent">Answered the way they expect</span></h2>
+      <p class="lead">29 real system design questions, each with the requirements to clarify, the numbers to estimate, the design, and the trade-offs to say out loud.</p>
+      <div class="actions"><a class="btn light" href="#/learn">Browse the questions<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="4">
-      <p class="kicker"><span>04</span><i></i>Learn</p>
-      <h2 class="headline"><span class="thin">Every lesson moves like this page</span><span class="heavy accent">Every part keeps its colour</span></h2>
-      <p class="lead">Caching, queues, Kafka, replicas, sharding: each idea is a short story where the system changes as you scroll. Learn the colours once and you can read any system on Tech Katta.</p>
-      <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
-      <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a></div>
+      <p class="kicker"><span>04</span><i></i>Real systems</p>
+      <h2 class="headline"><span class="thin">How the apps you use are built</span><span class="heavy accent">Not toy diagrams</span></h2>
+      <p class="lead">Like this chat app: messages, who is online, delivery when a friend’s phone is off. Real systems take the parts you learned and put them together at Indian scale.</p>
     </div>
     <div class="step" data-step="5">
       <p class="kicker"><span>05</span><i></i>Practice</p>
-      <h2 class="headline"><span class="thin">Then build it yourself</span><span class="heavy accent">Press Run and watch it hold</span></h2>
-      <p class="lead">Add ${pd("server")}servers, ${pd("kafka")}topics, ${pd("consumer")}consumers and ${pd("db")}databases, then send a real evening of traffic through them. Amber is busy, red is broken, and every result tells you why.</p>
-      <div class="actions"><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
+      <h2 class="headline"><span class="thin">Design it yourself</span><span class="heavy accent">A judge tells you if it holds</span></h2>
+      <p class="lead">22 problems with tests. Draw your design, then a judge sends an evening of traffic through it, crashes a server and checks the bill. Every result says what broke and why.</p>
+      <dl class="stats"><div><dt>Problems</dt><dd>22</dd></div><div><dt>Challenges</dt><dd>8</dd></div><div><dt>Score</dt><dd>out of 100</dd></div></dl>
+      <div class="actions"><a class="btn light" href="${sim}">Open practice<span class="chip violet">→</span></a></div>
     </div>
-    <div class="step" data-step="6">
-      <p class="kicker"><span>06</span><i></i>What you will design</p>
-      <h2 class="headline"><span class="thin">Not toy diagrams</span><span class="heavy accent">The apps you use every day</span></h2>
-      <p class="lead">Like this chat app: messages, who is online, delivery when a friend’s phone is off. Then URL shorteners, ticket booking, payments, news feeds and video, each built from the same six parts.</p>
-      <p class="topics mono">Concepts · Components · Interview questions · Real systems</p>
-    </div>
-    <div class="step finale" data-step="7">
-      <p class="kicker"><span>07</span><i></i>Your turn</p>
-      <h2 class="headline"><span class="heavy">You will meet this night</span><span class="heavy accent">in an interview, or at work</span></h2>
-      <p class="lead">Better to meet it here first. Free: sign in with Google and everything opens.</p>
-      <div class="actions"><a class="btn violet" href="#/learn">Start learning, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Open the simulator</a></div>
+    <div class="step finale" data-step="6">
+      <p class="kicker"><span>06</span><i></i>Your turn</p>
+      <h2 class="headline"><span class="heavy">One place for your whole</span><span class="heavy accent">system design preparation</span></h2>
+      <p class="topics-row">${['Concepts', 'Components', 'Interview questions', 'Real systems', 'Practice'].map((t) => `<span>${t}</span>`).join('')}</p>
+      <p class="lead">Free. Sign in with Google and everything opens.</p>
+      <div class="actions"><a class="btn violet" href="#/learn">Start preparing, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
     </div>
   </section>
 
   <section class="page below">
+    <div class="inside">
+      <h2 class="sub-h">Everything in one place</h2>
+      <dl class="inside-grid">
+        <div><dt>21</dt><dd><b>Concepts</b>The ideas every design rests on: caching, sharding, CAP, indexing, the numbers to know</dd></div>
+        <div><dt>10</dt><dd><b>Components</b>The tools interviewers name, like Kafka, Redis, PostgreSQL and Cassandra, inside and out</dd></div>
+        <div><dt>29</dt><dd><b>Interview questions</b>Answered step by step: requirements, estimates, design, trade-offs</dd></div>
+        <div><dt>6</dt><dd><b>Real systems</b>How real apps are built, at Indian scale</dd></div>
+        <div><dt>22</dt><dd><b>Practice problems</b>Design it, and a judge runs traffic, failures and a budget against it</dd></div>
+        <div><dt>8</dt><dd><b>Challenges</b>Harder evenings, scored out of three stars</dd></div>
+      </dl>
+    </div>
     <div class="who">
       <h2 class="sub-h">Who it is for</h2>
       <div class="who-grid">
