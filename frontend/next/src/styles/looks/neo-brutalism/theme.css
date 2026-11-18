@@ -1,0 +1,124 @@
+/* Neo-brutalism: a second look for the same app (owner, 2026-11-16: /p/neo-brutalism as a theme of frontend/next).
+   Switched on by data-style="neo-brutalism" on <html>, which the build sets when VITE_STYLE=neo-brutalism
+   (vite.config.ts). Without the attribute nothing here applies, so /p/next and tech.katta.cc/next/ are unchanged.
+
+   The decisions come from the design prototype (frontend/prototypes/neo-brutalism, tech-katta-context
+   ui-prototypes/TRIED.md):
+   - flat colour blocks, 2 px outlines, one hard 4 px shadow with no blur, square-ish corners, sticker chips;
+   - keys press into their own shadow, and lift with a real mouse (100 ms);
+   - headlines in Archivo Black, labels in Space Mono, text in Archivo;
+   - round 3 "calmer colours": the section hues at about half saturation, cream page, near-black ink;
+   - dark is option D, "inverted blocks": dark cards with an outline in the section colour and a darker solid shadow,
+     cream outlines on objects, quiet grey for structure;
+   - the reader and the canvas stay calm (long reading tires under brutalism).
+   Same token names as tokens.css, plus --display, --bw, --bw-strong, --sh-d, --sh, --sh-sm, --sh-lg, --edge, --rule.
+   Component rules sit in each *.module.css under :global(:root[data-style="neo-brutalism"]). */
+
+:root[data-style="neo-brutalism"] {
+  --sans: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --display: "Archivo", ui-sans-serif, system-ui, sans-serif;  /* production: Archivo Bold, calmer than Archivo Black */
+  --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: "Archivo", ui-sans-serif, system-ui, sans-serif;
+
+  --bw: 2px;
+  --bw-strong: 3px;
+  --sh-d: 3px;
+  --sh: var(--sh-d) var(--sh-d) 0 var(--edge);
+  --sh-sm: 2px 2px 0 var(--edge);
+  --sh-lg: var(--sh-d) var(--sh-d) 0 var(--edge);
+  --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 12px; --r-pill: 8px;
+  --key: 100ms;
+
+  color-scheme: light;
+  --page: #F8F2E5;
+  --surface: #FFFDF8;
+  --raised: #FFFDF8;
+  --sunken: #F1E8D4;
+  --ink: #1C1B1A; --ink-2: #3A3835; --muted: #5E5B55;
+  --edge: #1C1B1A;
+  --rule: #1C1B1A;
+  --line: #1C1B1A; --line-strong: #1C1B1A;
+  --btn: #1C1B1A; --on-btn: #FFFFFF;
+  --marigold: #F3C766; --on-marigold: #1C1B1A;
+  --link: #2F4FBF; --focus: #2F4FBF;
+  --pass: #0B7A3E; --fail: #C21F1F; --warn: #9A4A00; --star: #1C1B1A;
+  --video: #1C1B1A; --on-video: #F8F2E5;
+  --scrim: rgb(28 27 26 / .55);
+  --shadow: var(--sh); --shadow-pop: var(--sh-lg); --hl: 0 0 0 0 transparent;
+  --band-strong: #1C1B1A; --on-band-strong: #F8F2E5;
+  --selection: #E6EAB8;
+
+  --c-concepts: #8FCDF5;   --a-concepts: #8FCDF5;   --t-concepts: #E0F1FE;
+  --c-components: #EFB78E; --a-components: #EFB78E; --t-components: #FCEBDF;
+  --c-interview: #CBB9F5;  --a-interview: #CBB9F5;  --t-interview: #F0EBFE;
+  --c-problems: #8CD6BA;   --a-problems: #8CD6BA;   --t-problems: #DFF4EB;
+  --c-real: #F7AFAB;       --a-real: #F7AFAB;       --t-real: #FFE8E7;
+  --c-notes: #DCE29E;      --a-notes: #DCE29E;      --t-notes: #EEF1DE;
+  --on-c: #1C1B1A; --on-c-2: rgb(28 27 26 / .78);
+  --track-on-c: rgb(28 27 26 / .18); --fill-on-c: #1C1B1A;
+  --preview: #FFFFFF; --on-preview: #1C1B1A;
+}
+
+:root[data-style="neo-brutalism"][data-theme="dark"] {
+  color-scheme: dark;
+  --page: #131211;
+  --surface: #1C1B19;
+  --raised: #252321;
+  --sunken: #2B2927;
+  --ink: #EDE6D6; --ink-2: #D6CEBD; --muted: #A9A193;
+  --edge: #D9D1C0;
+  --rule: #3B3934;
+  --line: #3B3934; --line-strong: #4A4740;
+  --btn: #EDE6D6; --on-btn: #1C1B1A;
+  --marigold: #F3C766; --on-marigold: #1C1B1A;
+  --link: #8FB0FF; --focus: #DCE29E;
+  --pass: #6EE7A0; --fail: #FF8A80; --warn: #FFB26B; --star: #F3C766;
+  --video: #000000; --on-video: #EDE6D6;
+  --scrim: rgb(0 0 0 / .7);
+  --band-strong: #F3C766; --on-band-strong: #1C1B1A;
+  --selection: rgb(232 245 92 / .35);
+  --t-concepts: #252421; --t-components: #252421; --t-interview: #252421; --t-problems: #252421; --t-real: #252421; --t-notes: #252421;
+  --track-on-c: rgb(28 27 26 / .22);
+  --preview: #131211; --on-preview: #EDE6D6;
+}
+/* dark D: a section's shadow is a darker shade of its colour */
+:root[data-style="neo-brutalism"][data-theme="dark"] [data-accent] { --edge-c: color-mix(in srgb, var(--a) 45%, #000); }
+
+/* ---------- base type ---------- */
+:root[data-style="neo-brutalism"] :is(h1, h2, h3, h4) { font-family: var(--display); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+:root[data-style="neo-brutalism"] :is(b, strong) { font-weight: 700; }
+:root[data-style="neo-brutalism"] .mono { font-family: var(--mono); font-weight: 700; font-size: 11px; letter-spacing: .04em; color: var(--ink-2); }
+:root[data-style="neo-brutalism"] :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+:root[data-style="neo-brutalism"] kbd { font-family: var(--mono); border: var(--bw) solid var(--edge) !important; box-shadow: var(--sh-sm); background: var(--surface); color: var(--ink); }
+:root[data-style="neo-brutalism"] ::selection { background: var(--selection); color: var(--ink); }
+
+/* the calm reader: lesson text keeps a reading face and size; only headings go loud */
+:root[data-style="neo-brutalism"] article :is(p, li) { font-family: var(--sans); }
+
+/* the lesson figures keep their own calm palette, on this page's paper */
+:root[data-style="neo-brutalism"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #F8F2E5; }
+:root[data-style="neo-brutalism"][data-theme="dark"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #131211; }
+
+/* ---------- motion: the key press, stepped bars, the sticker slap ---------- */
+/* production (calm): labels and toasts fade in place; no tilt, no slap */
+@keyframes nb-slap { from { opacity: 0; transform: translateY(3px); } }
+@keyframes nb-step { from { transform: scaleX(0); } }
+@keyframes nb-wipe { 0%, 35% { background-size: 0% 100%; } 100% { background-size: 100% 100%; } }
+/* a chosen key drops onto its shadow (nav, filters, the theme switch) */
+@keyframes nb-stamp-in { from { opacity: .7; } }
+@keyframes nb-ticker { to { transform: translateX(-50%); } }
+/* reduced motion: global.css already drops movement; the key press below is movement, so it goes too */
+
+/* the shared SVG definitions (lib/look.ts): the hard shadow under figure boxes, ink in light and black in dark */
+.tk-look-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+:root[data-style="neo-brutalism"] #nb-hard feDropShadow { flood-color: #1C1B1A; }
+:root[data-style="neo-brutalism"][data-theme="dark"] #nb-hard feDropShadow { flood-color: #000; }
+
+/* ---------- production consistency (2026-11-18): one control height, real touch targets ---------- */
+/* Buttons, selects and text fields were 32-41 px tall from page to page. One token sets them: 40 px with a mouse,
+   44 px on touch screens (WCAG 2.5.5). :where keeps this at zero specificity, so a component that needs another
+   size still says so explicitly. */
+:root[data-style="neo-brutalism"] { --ctl-h: 40px; }
+@media (pointer: coarse) { :root[data-style="neo-brutalism"] { --ctl-h: 44px; } }
+:where(:root[data-style="neo-brutalism"]) :where(button, select, [role="tab"], input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="url"], :not([type]))) { min-height: var(--ctl-h); }
+@media (pointer: coarse) { :where(:root[data-style="neo-brutalism"]) :where(button, [role="tab"], [role="button"]) { min-width: 44px; } }

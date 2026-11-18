@@ -1,0 +1,6 @@
+/* The current app's workspace fills the main area. --head is the height above it (the phone top bar), which its
+   own layout subtracts from the screen. */
+.frame { --head: 0px; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: var(--font); }
+.fill { min-height: inherit; }
+.loading { display: flex; flex-direction: column; gap: 14px; max-width: 900px; padding: 40px 48px; }
+@media (max-width: 980px) { .frame { --head: 56px; min-height: calc(100vh - 56px); } }

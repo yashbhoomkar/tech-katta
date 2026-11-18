@@ -30,6 +30,7 @@ test("Cloudflare: redirects keep Vercel's codes, a folder rewrite becomes its 40
   // "/health → /health.html" and the like are how Cloudflare serves pages anyway; a rule would loop
   // never a "/dashboard/* … 200" rule: Cloudflare would apply it over the article pages the build writes
   assert.ok(!/\*\s+\S+\s+200/.test(c.redirects));
+  // /dashboard/ (old in-app links with a #key) opens the new frontend's shell, which sends each to its new address
   assert.deepEqual(c.copies, [["dashboard/index.html", "dashboard/404.html"]]);
   assert.equal(c.manual.length, 1);
   assert.match(c.manual[0], /analytics\.katta\.cc/);
@@ -48,4 +49,21 @@ test("paths the hosts can't all express are refused", () => {
   assert.throws(() => cloudflareFiles({ ...base, rewrites: [{ from: "/a", to: "/b.html" }] }), /its own page only/);
   assert.deepEqual(cloudflareFiles({ ...base, rewrites: [{ from: "/a", to: "/a.html" }, { from: "/a/", to: "/a.html" }, { from: "/b", to: "/b/index.html" }] }).redirects, "\n");
   assert.deepEqual(cloudflareFiles({ ...base, redirects: [{ from: "/x/*", to: "/y/:splat" }, { from: "/z", to: "/w" }] }).redirects, "/z /w 307\n/x/* /y/:splat 307\n");
+});
+
+test("the new frontend is the site (2026-11-18): every old /dashboard/ address and /next/ redirects to its new home", () => {
+  const to = (from) => routes.redirects.find((r) => r.from === from)?.to;
+  for (const sec of ["concepts", "components", "interview-questions", "real-systems", "quick-notes"]) {
+    assert.equal(to(`/dashboard/${sec}/`), `/learn/${sec}`);
+    assert.equal(to(`/dashboard/${sec}/*`), `/learn/${sec}/:splat`);
+  }
+  assert.equal(to("/dashboard/problems/*"), "/problems/:splat");
+  assert.equal(to("/dashboard/practice/*"), "/practice/:splat");
+  assert.equal(to("/dashboard/privacy/"), "/privacy");
+  assert.equal(to("/next/*"), "/:splat");
+  assert.ok(routes.redirects.filter((r) => r.from.startsWith("/dashboard/") || r.from.startsWith("/next")).every((r) => r.permanent), "moves are permanent (308)");
+  // /dashboard/ itself still opens an app page (old #key links), and nothing else is served from /next/
+  assert.ok(routes.rewrites.some((r) => r.from === "/dashboard/*" && r.to === "/dashboard/index.html"));
+  assert.ok(!routes.rewrites.some((r) => r.from.startsWith("/next")));
+  assert.ok(!routes.headers.some((h) => h.path.startsWith("/next")));
 });

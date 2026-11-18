@@ -1,0 +1,288 @@
+/* The lesson reader: a reading column (about 70 characters), with "On this page" and the group's lessons on the
+   right on wide screens. Section colour comes from data-accent (--a, --t, --c). */
+
+.reader { position: relative; }
+.progress {
+  position: sticky; top: 0; z-index: 5; height: 3px; margin-bottom: -3px;
+  background: var(--a); transform-origin: 0 50%; transform: scaleX(var(--p, 0));
+}
+.layout { display: grid; grid-template-columns: minmax(0, 720px) 260px; justify-content: center; gap: 64px; padding: 36px 48px 80px; }
+.main { min-width: 0; }
+
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.crumbs a { color: var(--ink-2); }
+.crumbs a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+.head { margin: 22px 0 28px; padding-bottom: 26px; border-bottom: 1px solid var(--line); animation: tk-rise 360ms var(--out) both; }
+.head :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
+.head h1 { margin-top: 10px; font-size: clamp(32px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -.03em; text-wrap: balance; }
+.dek { margin-top: 14px; font: 400 20px/1.5 var(--serif); color: var(--ink-2); text-wrap: pretty; }
+.meta { display: flex; gap: 14px; align-items: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
+.doneChip { display: inline-flex; gap: 5px; align-items: center; padding: 3px 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--pass) 9%, transparent); color: var(--pass); font-weight: 600; }
+
+.loading { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── body text ─────────────────────────────────────────── */
+.prose { font-size: 17.5px; line-height: 1.7; color: var(--ink); }
+.moreBody > * + * { margin-top: 18px; }
+.prose h2 { margin-top: 52px; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; scroll-margin-top: 80px; }
+.prose h3 { margin-top: 34px; font-size: 21px; line-height: 1.3; letter-spacing: -.01em; scroll-margin-top: 80px; }
+.prose h2 + *, .prose h3 + * { margin-top: 12px; }
+.prose p { text-wrap: pretty; }
+.prose ul { padding-left: 1.3em; }
+.prose li + li { margin-top: 8px; }
+.prose li::marker { color: var(--a); }
+.prose code { padding: .1em .35em; border-radius: 5px; background: var(--sunken); font: .88em var(--mono); }
+
+/* ── figures ───────────────────────────────────────────── */
+.figure { margin: 34px 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.figHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.figTitle { font: 500 11.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.figIconBtn { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--r-sm); color: var(--ink-2); }
+.figIconBtn:hover { background: var(--sunken); color: var(--ink); }
+.figBody { margin-top: 10px; border-radius: var(--r-md); overflow: hidden; }
+.figBody > svg, .fullFig > svg { display: block; width: 100%; height: auto; }
+/* the figures' text classes (as in the current app's figure.css), in the figure palette set by .tokens */
+.figBody, .fullFig, .thumb { color: var(--ink); }
+.figBody :global(.fk), .fullFig :global(.fk), .thumb :global(.fk) { font: 600 10px var(--mono); letter-spacing: .06em; fill: var(--accent); }
+.figBody :global(.fsub), .fullFig :global(.fsub), .thumb :global(.fsub) { font: 12px var(--sans); fill: var(--muted); }
+.figBody :global(.fb), .fullFig :global(.fb), .thumb :global(.fb) { font: 600 12px var(--sans); fill: var(--ink); }
+.figBody :global(.fl), .fullFig :global(.fl), .thumb :global(.fl) { font: 500 10px var(--mono); fill: var(--muted); }
+.figBody :global(.fq), .fullFig :global(.fq), .thumb :global(.fq) { font: 500 12px var(--sans); fill: var(--ink); }
+.figBody :global(.fh), .fullFig :global(.fh), .thumb :global(.fh) { font: 600 10.5px var(--sans); fill: var(--ink); }
+.figBody :global(.fx), .fullFig :global(.fx), .thumb :global(.fx) { font: 700 14px var(--sans); fill: var(--ink); }
+.figBody :global(.halo), .fullFig :global(.halo), .thumb :global(.halo) { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+/* the step line above the figure shows the step text, so the figure's own copy is hidden */
+.figure[data-steps] .figBody :global(.tk-caps) { display: none; }
+.figure[data-steps] .figBody > svg:has(:global(.tk-caps)) { margin-top: -26px; }
+.figLoading { width: 100%; height: 100%; min-height: 160px; border-radius: var(--r-md); background: var(--sunken); animation: tk-shimmer 1.4s ease-in-out infinite; }
+.figCap { margin-top: 12px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+.figHint { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.figError { padding: 18px; border-radius: var(--r-md); background: var(--sunken); color: var(--muted); font-size: 14px; }
+/* phones: draw at a readable size and pan sideways */
+.figure[data-pan] .figBody { overflow-x: auto; overscroll-behavior-x: contain; }
+.figure[data-pan] .figBody > svg { width: 600px; max-width: none; }
+
+.steps { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.stepBtn { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--raised); color: var(--ink); font-size: 16px; line-height: 1; }
+.stepBtn:hover:not(:disabled) { border-color: var(--line-strong); }
+.stepBtn:disabled { opacity: .4; }
+.stepBtn[aria-pressed="true"] { background: var(--a); border-color: var(--a); color: var(--page); }
+.stepDots { display: flex; gap: 4px; margin: 0 6px; }
+.stepDots i { width: 14px; height: 4px; border-radius: 2px; background: var(--line); transition: background var(--fast) ease; }
+.stepDots i[data-on] { background: var(--a); }
+.stepText { flex: 1 1 200px; min-width: 0; font-size: 13px; color: var(--ink-2); }
+
+.full { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--page); animation: tk-fade 160ms ease both; }
+.fullHead { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+.fullClose { display: inline-flex; gap: 6px; align-items: center; padding: 8px 14px; border-radius: var(--r-pill); background: var(--sunken); font: 500 14px var(--sans); text-transform: none; letter-spacing: 0; }
+.fullStage { flex: 1; display: grid; place-items: center; padding: 24px; min-height: 0; }
+.fullFig { width: min(100%, calc((100vh - 120px) * var(--ar, 1.7))); max-height: 100%; }
+
+/* ── callouts ──────────────────────────────────────────── */
+.table { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
+.table table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; }
+.table th, .table td { padding: 11px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.table thead th { background: var(--sunken); font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); }
+.table tbody tr:last-child > * { border-bottom: 0; }
+.table tbody th { font-weight: 600; }
+
+.code { border-radius: var(--r-md); overflow: hidden; background: var(--video); color: var(--on-video); }
+.code figcaption { padding: 9px 16px; font: 500 11.5px var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .7; border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.code pre { margin: 0; padding: 16px; overflow-x: auto; font: 13.5px/1.6 var(--mono); }
+.prose .code code { padding: 0; background: none; font: inherit; }
+
+.more { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.more > summary { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; list-style: none; font-weight: 600; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary small { padding: 3px 8px; border-radius: var(--r-pill); background: var(--t); color: color-mix(in srgb, var(--a) 36%, var(--ink)); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.more > summary span { flex: 1; }
+.more > summary svg { transition: transform var(--base) var(--out); color: var(--muted); }
+.more[open] > summary svg { transform: rotate(180deg); }
+.moreBody { padding: 0 18px 20px; font-size: 16.5px; }
+.moreBody > :first-child { margin-top: 0; }
+
+.type { padding: 20px 22px; border: 1px solid var(--line); border-left: 4px solid var(--a); border-radius: var(--r-md); background: var(--surface); }
+.prose .type h3 { margin-top: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.type h3 small { font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
+.type dl { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; margin-top: 14px; font-size: 15.5px; line-height: 1.55; }
+.type dt { font-weight: 600; color: var(--ink-2); }
+.type dt[data-kind="ex"] { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
+.typeMore { margin-top: 14px; font-size: 15.5px; }
+.typeMore summary { cursor: pointer; font-weight: 600; color: var(--link); }
+.typeMore p { margin-top: 10px; }
+
+.example { padding: 22px; border-radius: var(--r-lg); background: var(--t); }
+.exHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.exHead :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
+.exHead b { font-size: 20px; }
+.exHead small { font: 500 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.example > p { margin-top: 10px; }
+.example dl { display: grid; gap: 8px; margin-top: 14px; font-size: 15px; }
+.example dl > div { display: grid; grid-template-columns: 140px 1fr; gap: 12px; }
+.example dt { font-weight: 600; }
+
+.analogy { padding: 18px 20px; border-radius: var(--r-md); background: var(--sunken); }
+.analogy :global(.mono) { color: color-mix(in srgb, var(--a) 36%, var(--ink)); }
+.analogy p { margin-top: 6px; font: italic 18px/1.6 var(--serif); }
+
+.lab { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--c); color: var(--on-c); transition: transform var(--base) var(--out); }
+.lab > span { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 15.5px; line-height: 1.5; }
+.lab :global(.mono) { color: var(--on-c-2); }
+.lab em { font-style: normal; font-weight: 600; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .lab:hover { transform: translateY(-2px); } }
+
+/* ── end of lesson ─────────────────────────────────────── */
+.foot { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--line); }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+.pageLink { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r-md); transition: border-color var(--fast) ease; }
+.pageLink:hover { border-color: var(--a); }
+.pageLink small { font-size: 12px; color: var(--muted); }
+.pageLink span { font-weight: 600; }
+.pageNext { text-align: right; }
+.pager > :global(a:last-child:not(.pageLink)) { justify-self: end; }
+
+/* ── side column ───────────────────────────────────────── */
+.side { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 30px; max-height: calc(100vh - 48px); overflow-y: auto; padding-top: 4px; }
+.side :global(.mono) { color: var(--muted); font-size: 11px; }
+.toc ul, .group ol { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
+.toc a { display: block; padding: 5px 0 5px 12px; border-left: 2px solid var(--line); font-size: 13.5px; line-height: 1.4; color: var(--muted); transition: color var(--fast) ease, border-color var(--fast) ease; }
+.toc a:hover { color: var(--ink); }
+.toc a[aria-current] { border-color: var(--a); color: var(--ink); font-weight: 500; }
+.group a { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; border-radius: var(--r-sm); font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
+.group a:hover { background: var(--sunken); }
+.group a[aria-current] { background: var(--t); color: var(--ink); font-weight: 600; }
+.group a i { display: grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line-strong); transform: translateY(2px); }
+.group a[data-done] i { background: var(--pass); border-color: var(--pass); color: var(--page); }
+
+.phoneToc { display: none; }
+
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 720px); gap: 0; }
+  .side { display: none; }
+  .phoneToc { display: block; margin-bottom: 8px; border: 1px solid var(--line); border-radius: var(--r-md); }
+  .phoneToc summary { display: flex; gap: 10px; align-items: center; padding: 12px 14px; cursor: pointer; list-style: none; font-weight: 600; font-size: 15px; }
+  .phoneToc summary::-webkit-details-marker { display: none; }
+  .phoneToc summary svg:last-child { margin-left: auto; transition: transform var(--base) var(--out); }
+  .phoneToc[open] summary svg:last-child { transform: rotate(180deg); }
+  .phoneToc ul { list-style: none; margin: 0; padding: 0 8px 10px; }
+  .phoneToc a { display: block; padding: 8px 10px; border-radius: var(--r-sm); font-size: 15px; color: var(--ink-2); }
+  .phoneToc a:hover { background: var(--sunken); }
+}
+@media (max-width: 680px) {
+  .layout { padding: 20px 16px 48px; }
+  .prose { font-size: 17px; }
+  .prose h2 { font-size: 24px; margin-top: 42px; }
+  .dek { font-size: 18px; }
+  .figure { margin: 26px -8px; padding: 10px; }
+  .type dl, .example dl > div { grid-template-columns: 1fr; gap: 2px; }
+  .type dd + dt, .example dl > div + div { margin-top: 8px; }
+  .pager { grid-template-columns: 1fr; }
+  .pageNext { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .head, .full { animation: none; }
+}
+
+/* ── read as: full text or cards; share ─────────────────── */
+.tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+.seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: var(--r-pill); background: var(--sunken); }
+.seg button { position: relative; z-index: 1; padding: 6px 14px; border: 0; border-radius: var(--r-pill); background: none; font-size: 13.5px; font-weight: 500; color: var(--muted); transition: color var(--fast) ease; }
+.seg button[aria-checked="true"] { color: var(--ink); }
+.seg button:active { transform: scale(.97); }
+.segPill { position: absolute; left: 3px; top: 3px; bottom: 3px; width: calc(50% - 3px); border-radius: var(--r-pill); background: var(--raised); box-shadow: var(--shadow); transition: transform 260ms var(--out); }
+.toolBtn { display: inline-flex; gap: 6px; align-items: center; padding: 7px 14px; border: 1px solid var(--line); border-radius: var(--r-pill); background: none; font-size: 13.5px; font-weight: 500; }
+.toolBtn:hover { border-color: var(--line-strong); }
+.toolBtn:active { transform: scale(.97); }
+/* the block being read aloud */
+.blockWrap { display: contents; }
+.prose > :where(.blockWrap + .blockWrap) > :first-child { margin-top: 18px; }
+.prose > :where(.blockWrap:has(> h2, > h3) + .blockWrap) > :first-child { margin-top: 12px; }
+.prose [data-reading] > *, .dek[data-reading] { background: color-mix(in srgb, var(--marigold) 26%, transparent); box-shadow: -10px 0 0 color-mix(in srgb, var(--marigold) 26%, transparent), -12px 0 0 var(--marigold); border-radius: 2px; transition: background-color 200ms ease; }
+
+/* ── mark complete burst ───────────────────────────────── */
+.completeWrap { position: relative; }
+.tick { animation: tk-star 420ms var(--spring) both; }
+.burstHost { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.burst { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 2px; animation: tk-burst 700ms var(--out) forwards; }
+
+/* a still figure as a card picture */
+.thumb { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
+.thumb > svg { display: block; width: 100%; height: auto; max-height: 100%; }
+.thumb :global(.tk-caps), .thumb :global(.tk-cap) { display: none; }
+
+/* the current app's figure frame, in this design's colours (legacy-scope + figureTokens on the wrapper) */
+.legacyFig { margin: 34px 0; font-family: var(--font); color: var(--ink); }
+.legacyFig :global(.a-fig) { margin: 0; border-radius: var(--r-lg); overflow: hidden; background: var(--bg); }
+.legacyFig :global(.a-fig-head) { border-radius: 0; }
+@media (max-width: 680px) { .legacyFig { margin: 26px -8px; } }
+
+/* ── tech.katta.cc lesson parity ── */
+.solveBtn { margin-top: 14px; }
+.exMini { margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.exMini > summary { padding: 12px 16px; cursor: pointer; font-size: 15px; color: var(--ink-2); }
+.exMini > summary b { color: var(--ink); }
+.exMini[open] > :not(summary) { padding: 0 16px 16px; animation: tk-rise 180ms var(--out) backwards; }
+.nextProblem { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; width: 100%; padding: 18px 20px; border-radius: var(--r-lg); background: var(--t); }
+.nextProblem a:first-child { display: flex; flex-direction: column; gap: 2px; }
+.nextProblem small { color: var(--muted); font-size: 12.5px; }
+.nextProblem b { font-size: 17px; }
+.allProblems { font-weight: 600; color: var(--link); }
+.backLink { color: var(--ink-2); font-weight: 500; }
+.backLink:hover { color: var(--ink); }
+.railCta { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--t); transition: transform var(--base) var(--out), border-color var(--fast) ease; }
+.railCta b { font-size: 14px; }
+@media (hover: hover) and (pointer: fine) { .railCta:hover { transform: translateY(-2px); border-color: var(--a); } }
+.toc ul { position: relative; }
+.toc a[aria-current] { border-color: transparent; }
+.tocMark { position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px; background: var(--a); transition: transform 420ms var(--out), height 420ms var(--out); }
+/* "Go deeper" opens with its content rising in */
+.more[open] > .moreBody > * { animation: tk-rise 180ms var(--out) backwards; }
+.typeMore[open] > p { animation: tk-rise 180ms var(--out) backwards; }
+@media (prefers-reduced-motion: reduce) { .tocMark { transition: none; } }
+/* spec 24 §4.3: long lessons lay out the part below the first screens only as it nears (less work on first paint) */
+.prose > .blockWrap:nth-child(n+14) > :not(h2, h3) { content-visibility: auto; contain-intrinsic-size: auto 240px; }
+
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css): a calm reader. Outlines and keys, no loud blocks in
+   the text, because long reading tires under brutalism (the owner's open question; calm is the prototype's default) ---------- */
+:global(:root[data-style="neo-brutalism"]) .head { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .head h1 { font-size: clamp(32px, 4.6vw, 52px); }
+:global(:root[data-style="neo-brutalism"]) .head :global(.mono) { color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .dek { font: 400 19px/1.5 var(--sans); }
+:global(:root[data-style="neo-brutalism"]) .doneChip { border: var(--bw) solid var(--edge); border-radius: 4px; background: var(--c-problems); color: #1C1B1A; font-family: var(--mono); font-weight: 700; text-transform: uppercase; --rot: -3deg; transform: rotate(var(--rot)); animation: nb-slap 360ms var(--out) both; }
+:global(:root[data-style="neo-brutalism"]) .seg { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .segPill { border-radius: 4px; background: var(--marigold); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .seg button { border-radius: 4px; font-weight: 700; color: var(--ink-2); }
+:global(:root[data-style="neo-brutalism"]) .seg button[aria-checked="true"] { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .toolBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; box-shadow: var(--sh-sm); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) .toolBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .stepBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-sm); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .stepBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) :is(.figure, .table, .more) { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); }
+:global(:root[data-style="neo-brutalism"]) .table thead th { background: #1C1B1A; color: #F8F2E5; font-family: var(--mono); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .table thead th { background: var(--edge); color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) :is(.table th, .table td) { border-bottom-color: var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .code { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .more > summary small { border: var(--bw) solid var(--edge); border-radius: 4px; color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .example { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .analogy { border-left: 6px solid var(--a, var(--edge)); border-radius: 4px; }
+:global(:root[data-style="neo-brutalism"]) .analogy p { font: 500 18px/1.6 var(--sans); }
+/* things you press: keys with a hard shadow */
+:global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .nextProblem, .railCta) { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh); transition: transform var(--key) var(--out), box-shadow var(--key) var(--out); }
+:global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .railCta):active { transform: translate(var(--sh-d), var(--sh-d)); box-shadow: 0 0 0 var(--edge); }
+@media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) :is(.lab, .pageLink, .railCta):hover { transform: translate(-2px, -2px); box-shadow: var(--sh-lg); border-color: var(--edge); } }
+:global(:root[data-style="neo-brutalism"]) .lab { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lab { background: var(--surface); color: var(--ink); border: var(--bw-strong) solid var(--a); box-shadow: var(--sh-d) var(--sh-d) 0 var(--edge-c); }
+:global(:root[data-style="neo-brutalism"][data-theme="dark"]) .lab :global(.mono) { color: var(--a); }
+:global(:root[data-style="neo-brutalism"]) .pageLink span, :global(:root[data-style="neo-brutalism"]) .nextProblem b { font-family: var(--display); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .toc a { border-left-width: 3px; }
+:global(:root[data-style="neo-brutalism"]) .tocMark { width: 3px; border-radius: 0; background: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .toc a[aria-current] { font-weight: 700; }
+/* neo-brutalism: the burst throws square, outlined confetti */
+:global(:root[data-style="neo-brutalism"]) .burst { width: 11px; height: 11px; border-radius: 0; border: 2px solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .figLoading { border: var(--bw) solid var(--edge); border-radius: 4px; background: repeating-linear-gradient(-45deg, var(--sunken) 0 7px, var(--surface) 7px 14px) 0 0 / 28px 28px; animation: tk-shimmer .6s linear infinite; }
+/* the lesson title carries a marigold print shadow in light (none in dark, where it turns brown) */
+/* production: the lesson title has no marigold shadow (calm reader) */
+
+/* production (calm): no confetti on Mark complete; the tick and the chip say it */
+:global(:root[data-style="neo-brutalism"]) .burstHost { display: none; }

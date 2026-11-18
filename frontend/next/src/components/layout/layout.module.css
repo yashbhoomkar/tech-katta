@@ -1,0 +1,159 @@
+/* App chrome. Desktop: fixed sidebar (full or rail) + content column. Phones (≤ 980 px): top bar + bottom tabs. */
+
+.skip { position: fixed; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: var(--r-pill); background: var(--btn); color: var(--on-btn); font-weight: 500; transition: top var(--base) var(--out); }
+.skip:focus { top: 12px; }
+
+.shell { display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; transition: grid-template-columns var(--base) var(--out); }
+:root[data-sidebar="rail"] .shell { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+.column { min-width: 0; display: flex; flex-direction: column; }
+.main { position: relative; flex: 1; outline: none; animation: tk-fade 160ms ease-out; }
+
+/* ---------- logo ---------- */
+.logo { display: inline-flex; align-items: center; gap: 9px; padding: 4px 14px 4px 4px; border: 1px solid var(--line-strong); border-radius: var(--r-pill); background: var(--surface); font-weight: 600; font-size: 18px; letter-spacing: -.03em; white-space: nowrap; }
+.logo b { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: var(--r-pill); background: var(--marigold); color: var(--on-marigold); font: 500 11px var(--mono); }
+
+/* ---------- sidebar ---------- */
+.sidebar { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: hidden auto; display: flex; flex-direction: column; gap: 4px; padding: 16px 14px; background: var(--surface); border-right: 1px solid var(--line); box-shadow: var(--hl); }
+.sideTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 6px; }
+.iconBtn { display: inline-grid; place-items: center; width: 38px; height: 38px; flex: none; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-2); transition: background-color 150ms ease, transform var(--press) var(--out); }
+.iconBtn:active { transform: scale(.94); }
+@media (hover: hover) and (pointer: fine) { .iconBtn:hover { background: var(--sunken); color: var(--ink); } }
+.search { display: flex; gap: 10px; align-items: center; margin: 8px 0 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--page); color: var(--muted); font-size: 14px; text-align: left; transition: border-color 150ms ease; }
+.search kbd { margin-left: auto; font: 500 11px var(--mono); border: 1px solid var(--line-strong); border-radius: 6px; padding: 1px 6px; }
+@media (hover: hover) and (pointer: fine) { .search:hover { border-color: var(--line-strong); } }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.navHead { padding: 14px 10px 4px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.navItem { position: relative; display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: var(--r-sm); font-weight: 500; font-size: 14px; color: var(--ink-2); transition: background-color 150ms ease, color 150ms ease; }
+.navItem small { margin-left: auto; font: 500 11px var(--mono); color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { .navItem:hover { background: var(--sunken); color: var(--ink); } }
+.navItem:active { transform: scale(.98); }
+.navActive { background: var(--sunken); color: var(--ink); font-weight: 600; }
+.navActive::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--a, var(--ink)); animation: markIn 320ms var(--out); }
+@keyframes markIn { from { transform: scaleY(0); } }
+.dotWrap { display: grid; place-items: center; width: 20px; flex: none; }
+.dot { width: 10px; height: 10px; border-radius: 9px; background: var(--a); }
+.sideFoot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+.themeRow { display: flex; justify-content: space-between; align-items: center; padding: 0 6px; font-size: 13px; color: var(--muted); }
+.me { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; background: var(--page); font-size: 14px; font-weight: 500; }
+.me small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.avatar { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 50%; background: var(--a-interview); color: #17161A; }
+
+/* rail */
+:root[data-sidebar="rail"] .sidebar { padding-inline: 12px; }
+:root[data-sidebar="rail"] .label { display: none; }
+:root[data-sidebar="rail"] .sideTop { flex-direction: column; }
+:root[data-sidebar="rail"] .logo { padding: 4px; }
+:root[data-sidebar="rail"] :is(.search, .navItem, .me) { justify-content: center; padding-inline: 0; }
+:root[data-sidebar="rail"] .navActive::before { left: -12px; }
+
+/* ---------- phones ---------- */
+.topbar, .tabbar { display: none; }
+@media (max-width: 980px) {
+  .shell, :root[data-sidebar="rail"] .shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { display: none; }
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--line); }
+  .topLeft { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .topTitle { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar .logo { font-size: 16px; }
+  .tabbar { position: fixed; inset: auto 0 0; z-index: 20; display: flex; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding: 6px max(6px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-top: 1px solid var(--line); }
+  .main { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+}
+.tab { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 500; }
+.tab::before { content: ""; position: absolute; top: 4px; left: 50%; width: 56px; height: 30px; margin-left: -28px; border-radius: 999px; background: var(--sunken); opacity: 0; transform: scaleX(.4); transition: transform 240ms var(--out), opacity 160ms ease; }
+.tab > svg { position: relative; transition: transform var(--press) var(--out); }
+.tab:active > svg { transform: scale(.9); }
+.tabActive { color: var(--ink); }
+.tabActive::before { opacity: 1; transform: none; }
+
+/* reading on a phone: bars slide away while scrolling down */
+@media (max-width: 980px) {
+  .topbar, .tabbar { transition: transform 300ms var(--out); }
+  :global(:root[data-bars="away"]) .topbar { transform: translateY(-100%); }
+  :global(:root[data-bars="away"]) .tabbar { transform: translateY(100%); }
+}
+
+/* the open section's lessons under its row */
+.sub { display: flex; flex-direction: column; margin: 2px 0 8px 22px; padding-left: 10px; border-left: 1px solid var(--line); animation: tk-fade 200ms ease; }
+.subHead { margin: 8px 0 2px; font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.subItem { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: var(--r-sm); font-size: 13px; line-height: 1.35; color: var(--ink-2); }
+.subItem i { width: 6px; height: 6px; flex: none; border-radius: 50%; border: 1.5px solid var(--line-strong); transform: translateY(-1px); }
+.subItem[data-done] i { background: var(--pass); border-color: var(--pass); }
+.subItem:hover { background: var(--sunken); }
+.subItem[aria-current] { background: var(--t); color: var(--ink); font-weight: 600; }
+.policyLinks { display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding: 12px 14px 0; }
+.policyLinks a { font: 500 11.5px var(--mono); color: var(--muted); }
+.policyLinks a:hover { color: var(--ink); }
+/* account */
+.acct { position: relative; }
+.meRow { display: flex; align-items: center; gap: 6px; }
+.meRow > a { flex: 1; min-width: 0; }
+.signInBtn { flex: none; padding: 7px 12px; border: 0; border-radius: var(--r-pill); background: var(--marigold); color: var(--on-marigold); font-size: 13px; font-weight: 600; }
+.signInBtn:active { transform: scale(.97); }
+button.me { width: 100%; border: 0; text-align: left; }
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.acctMenu { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 30; display: flex; flex-direction: column; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); box-shadow: var(--shadow-pop); animation: tk-pop 160ms var(--out); transform-origin: bottom left; }
+.acctMenu a, .acctMenu button { padding: 9px 10px; border: 0; border-radius: var(--r-sm); background: none; text-align: left; font-size: 14px; }
+.acctMenu a:hover, .acctMenu button:hover { background: var(--sunken); }
+.acctStatus { padding: 6px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font-size: 12.5px; color: var(--muted); }
+.danger { color: var(--fail); }
+.policyLinks + .sideFoot { margin-top: 10px; }
+
+/* the sliding side marker: one fill that moves to the active row; the rows sit above it */
+.nav { position: relative; }
+.nav > a, .nav > div { position: relative; z-index: 1; }
+.sideMark { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-md, 12px); background: var(--sunken); pointer-events: none; }
+.nav:has(> .sideMark) .navActive { background: transparent; }
+@media (prefers-reduced-motion: no-preference) { .sideMark { transition: transform 420ms var(--out), height 420ms var(--out), width 420ms var(--out); } }
+
+/* section marks (spec 24 G4): drawn from the figure parts, in the section's colour; the request dot turns marigold
+   on the section you are in */
+.markWrap { display: grid; place-items: center; width: 20px; flex: none; color: color-mix(in srgb, var(--a, var(--ink)) 55%, var(--ink)); }
+.markWrap svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.markWrap :global(.ico-dot) { fill: var(--a, var(--ink)); stroke: none; transition: fill 200ms ease; }
+.navActive .markWrap :global(.ico-dot) { fill: var(--marigold); stroke: var(--ink); stroke-width: .8; }
+/* spec 24 §4.3: below 680 px the bars are solid (a blur behind a fixed bar is redrawn on every scroll frame) */
+@media (max-width: 680px) {
+  .topbar, .tabbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--surface); }
+}
+
+/* ---------- neo-brutalism (styles/looks/neo-brutalism/theme.css): solid bars with hard rules, sticker logo, key-like rows ---------- */
+:global(:root[data-style="neo-brutalism"]) .logo { border: var(--bw) solid var(--edge); border-radius: var(--r-md); box-shadow: var(--sh-sm); font-family: var(--display); font-weight: 700; letter-spacing: -.01em; }
+:global(:root[data-style="neo-brutalism"]) .logo b { border-radius: 4px; background: #1C1B1A; color: var(--marigold); font-weight: 700; box-shadow: 0 0 0 var(--bw) var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .sidebar { border-right: var(--bw-strong) solid var(--rule); box-shadow: none; background: var(--page); }
+:global(:root[data-style="neo-brutalism"]) .search { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--surface); color: var(--ink-2); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .search kbd { box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .navHead { font-family: var(--mono); font-weight: 700; color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .navItem { border: var(--bw) solid transparent; border-radius: var(--r-md); font-weight: 600; color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .navActive::before { display: none; }
+/* the sliding marker becomes the key under the active row: the section's colour, outlined, with a small shadow */
+:global(:root[data-style="neo-brutalism"]) .sideMark { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--a-active, var(--marigold)); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .navActive { color: #1C1B1A; font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .nav:not(:has(> .sideMark)) .navActive { background: var(--a, var(--marigold)); border-color: var(--edge); box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .navActive small { color: rgb(28 27 26 / .75); }
+:global(:root[data-style="neo-brutalism"]) .navActive .markWrap { color: #1C1B1A; }
+@media (hover: hover) and (pointer: fine) { :global(:root[data-style="neo-brutalism"]) .navItem:not(.navActive):hover { background: var(--sunken); border-color: var(--edge); } }
+:global(:root[data-style="neo-brutalism"]) .me { border: var(--bw) solid var(--edge); border-radius: var(--r-lg); background: var(--surface); }
+:global(:root[data-style="neo-brutalism"]) .avatar { border: var(--bw) solid var(--edge); }
+:global(:root[data-style="neo-brutalism"]) .signInBtn { border: var(--bw) solid var(--edge); border-radius: var(--r-md); font-weight: 700; box-shadow: var(--sh-sm); }
+:global(:root[data-style="neo-brutalism"]) .signInBtn:active { transform: translate(2px, 2px); box-shadow: none; }
+:global(:root[data-style="neo-brutalism"]) .acctMenu { border: var(--bw-strong) solid var(--edge); border-radius: var(--r-lg); box-shadow: var(--sh-lg); }
+:global(:root[data-style="neo-brutalism"]) .sub { border-left: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .subItem i { border: var(--bw) solid var(--edge); border-radius: 2px; }
+:global(:root[data-style="neo-brutalism"]) .subItem[aria-current] { box-shadow: inset 4px 0 0 var(--a, var(--marigold)); }
+:global(:root[data-style="neo-brutalism"]) .policyLinks a { font-weight: 700; }
+/* phones: solid bars, a marigold key behind the active tab */
+:global(:root[data-style="neo-brutalism"]) :is(.topbar, .tabbar) { background: var(--page); backdrop-filter: none; -webkit-backdrop-filter: none; }
+:global(:root[data-style="neo-brutalism"]) .topbar { border-bottom: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .tabbar { border-top: var(--bw) solid var(--rule); }
+:global(:root[data-style="neo-brutalism"]) .tab { color: var(--ink-2); font-weight: 700; }
+:global(:root[data-style="neo-brutalism"]) .tab::before { border: var(--bw) solid var(--edge); border-radius: var(--r-md); background: var(--marigold); }
+:global(:root[data-style="neo-brutalism"]) .tabActive { color: var(--ink); }
+:global(:root[data-style="neo-brutalism"]) .tabActive > svg { color: #1C1B1A; }
+:global(:root[data-style="neo-brutalism"]) .skip { border: var(--bw) solid var(--edge); border-radius: var(--r-md); }
+/* the chosen row stamps down onto its shadow */
+:global(:root[data-style="neo-brutalism"]) .sideMark { animation: nb-stamp-in 260ms var(--out); }
+:global(:root[data-style="neo-brutalism"]) .tabActive::before { animation: nb-stamp-in 220ms var(--out); }
+
+/* neo-brutalism: the open lesson in the sidebar list is a small outlined key with the section colour on its edge */
+:global(:root[data-style="neo-brutalism"]) .subItem[aria-current] { background: var(--surface); border: var(--bw) solid var(--edge); box-shadow: inset 5px 0 0 var(--a, var(--marigold)), 2px 2px 0 var(--edge); font-weight: 700; }
+.logo b::before { content: "TK"; content: "TK" / ""; }
