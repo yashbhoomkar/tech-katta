@@ -574,3 +574,12 @@ body { background: var(--page); background-attachment: scroll; }
   .step.hero { min-height: 100svh; padding-top: 96px; }
   .stage canvas { opacity: calc(1 - var(--read) * .25); }
 }
+
+/* phones: once the words are in, the scene behind them fades well back (owner: "The text is not visible that much.
+   Make the background colours a bit faded"); the fade under the words starts higher; headlines take fewer lines */
+@media (max-width: 760px) {
+  .stage canvas { opacity: calc(1 - var(--read) * .74); filter: saturate(calc(1 - var(--read) * .6)); }
+  .stage::after { background: linear-gradient(transparent 22%, color-mix(in srgb, var(--page) 82%, transparent) 46%, var(--page) 68%); }
+  .pin > .headline { font-size: clamp(30px, 8.6vw, 40px); margin-bottom: 16px; }
+  .pin > .lead { font-size: 16px; }
+}
