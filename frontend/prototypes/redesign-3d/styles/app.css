@@ -658,3 +658,21 @@ body.bar-away .top { transform: translateY(-100%); }
 /* the last section is the end of the page: leave room for the footer */
 .landing-story .step.scrub:last-of-type { height: 100vh; height: 100svh; }
 @media (max-width: 760px) { .step.hero { padding-top: 84px; } .step.hero .lead { font-size: 15px; margin-bottom: 12px; } }
+
+/* phones (owner: "it makes the feel that the website is blank; the figures while scrolling should be present"):
+   while scrolling (--read 0) the scene is centre screen at full strength and nothing covers it; once the words are
+   in (--read 1) a fade comes in behind the text only, and the scene above it stays visible, a little softer */
+@media (max-width: 760px) {
+  .stage canvas { opacity: calc(1 - var(--read) * .4); filter: saturate(calc(1 - var(--read) * .3)); }
+  .stage::after { opacity: var(--read); background: linear-gradient(transparent 34%, color-mix(in srgb, var(--page) 92%, transparent) 50%, var(--page) 62%); }
+  .at-hero .stage::after { opacity: 1; }
+  /* hero buttons and the top bar fit any phone width */
+  .step.hero .actions { flex-wrap: wrap; justify-content: center; }
+  .top { gap: 8px; }
+  .top .logo { font-size: 17px; gap: 8px; }
+  .top .theme { padding: 0 8px; font-size: 11px; }
+  .top-cta { padding: 0 10px !important; font-size: 13px !important; }
+  /* no empty band before the footer */
+  .foot.page { padding-top: 28px; }
+  .landing-story .step.scrub:last-of-type { height: 92svh; }
+}

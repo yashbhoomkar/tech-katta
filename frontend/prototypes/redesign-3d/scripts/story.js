@@ -49,7 +49,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     const side = c.side !== false;
     // centre: the system is the focus while the scroll plays the change (closer, centre stage);
     // aside: the words are the focus while you read (further away, to the side, faded by --read in app.css)
-    return { centre: { ...base, dist: base.dist * 0.86, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, dist: base.dist * 1.18, sx: side ? (c.sx ?? 0.7) : 0.5, sy: c.sy ?? 0.54 }, side };
+    return { centre: { ...base, dist: base.dist * 0.86, phoneSy: c.side === false ? base.phoneSy : 0.48, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, dist: base.dist * 1.18, sx: side ? (c.sx ?? 0.7) : 0.5, sy: c.sy ?? 0.54 }, side };
   });
 
   let sysKey = '';
@@ -67,7 +67,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
       if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.8)); t = clamp((vh * 0.24 - r.top) / (vh * 0.22)); }
     }
     root.classList.toggle('at-hero', i === 0);
-    world?.setLabelBand?.(i === 0 ? 0.98 : 0.52);
+    world?.setLabelBand?.(0.94); // labels fade out with --read once the words come in
     if (i === 0) { a = 1; t = 1; if (introRaf && lastStep <= 0) { lastStep = 0; onStep?.(0, 0, 1); return; } }
     // the words: hidden while the scene animates, then in
     els.forEach((el, k) => { if (k > 0) { const v = k === i ? t : k === i - 1 && i > 0 ? 1 - clamp(a * 1.6) : 0; el.style.setProperty('--t', v.toFixed(3)); el.classList.toggle('live', k === i && t > 0.5); } });
