@@ -16,10 +16,27 @@ add a replica.
 | `styles/base.css` | type, buttons |
 | `styles/story.css` | chapter layout, stats, comparison, track, progress bar, phone layout |
 | `styles/scene.css` | how parts, paths, labels and alerts look in each state |
-| `scripts/scene.js` | draws the scene and moves it per chapter |
+| `scripts/scene3d.js` | the WebGL scene (three.js): parts, paths, dots, glow, camera, HTML labels |
+| `scripts/vendor/three.module.min.js` | three.js 0.170.0, copied from npm (the CSP allows only same-site scripts); licence beside it |
+| `scripts/scene.js` | the SVG fallback scene, used when WebGL is not available |
 | `scripts/main.js` | which chapter is on screen, progress bar, next button, theme switch |
 
-## How the scene works
+## How the scene works (WebGL, since 2026-11-18)
+Owner, after the SVG version: "Theirs look sooo good!! Fix everything". The scene is now real 3D:
+- `createScene3d(canvas, overlay)` builds a three.js scene: rounded extruded slabs with outlines, a glossy database,
+  soft shadows on a shadow-only ground, a faded grid, fog tied to camera distance, ACES tone mapping.
+- Camera: each `CHAPTERS[n]` has a target `t`, `dist`, azimuth `az`, elevation `el` and where on screen the target
+  sits (`sx`, `sy`, via `setViewOffset`). `main.js` passes a fractional chapter from scroll (`setProgress`), so the
+  camera scrubs between chapters, damped; the chapter's states (alert, ok, hidden, dim) switch when it is on screen.
+- Broken parts glow orange with a pulsing ring; fixed parts turn green. Requests are instanced dots along L-shaped
+  paths. Labels are HTML pills placed by projecting 3D points each frame (crisp text, theme colours).
+- Desktop side chapters: the canvas is masked out under the text column (`--side`). Phones: the scene sits in the
+  top 46 % of the screen, and only labels of broken or fixed parts show.
+- Light and dark palettes follow `data-theme`. The loop stops while the tab is hidden. Reduced motion: no damping,
+  no dots, no drift.
+- No WebGL: `main.js` removes the `webgl` class and uses the SVG scene below.
+
+## The SVG fallback scene
 - One SVG behind the page. `iso(x, y, z)` turns a world point (x down-right, y down-left, z up) into screen pixels:
   an isometric projection done in code, not CSS 3D. Edges stay crisp, labels stay upright and readable, and it works
   on every browser and phone without WebGL (the site's CSP allows only same-site scripts, no libraries).
