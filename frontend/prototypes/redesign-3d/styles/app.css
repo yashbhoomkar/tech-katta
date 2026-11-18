@@ -555,3 +555,7 @@ body { background: var(--page); background-attachment: scroll; }
 /* round 2 of shorter scroll: 1.15 screens a chapter */
 .step.scrub { height: 115vh; height: 115svh; }
 @media (max-width: 760px) { .step.scrub { height: 120svh; } }
+
+/* round 3: no idle scroll; 1.05 screens a chapter, the change runs into the words */
+.step.scrub { height: 105vh; height: 105svh; }
+@media (max-width: 760px) { .step.scrub { height: 105svh; } }

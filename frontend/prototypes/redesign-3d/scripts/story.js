@@ -64,7 +64,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     let i = 0, a = 1, t = 1;
     for (let k = 1; k < els.length; k++) {
       const r = els[k].getBoundingClientRect();
-      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.62)); t = clamp((-r.top + vh * 0.04) / (vh * 0.12)); }
+      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.8)); t = clamp((vh * 0.24 - r.top) / (vh * 0.22)); }
     }
     if (i === 0) { a = 1; t = 1; if (introRaf && lastStep <= 0) { lastStep = 0; onStep?.(0, 0, 1); return; } }
     // the words: hidden while the scene animates, then in
