@@ -74,3 +74,39 @@
   .scene .cam, .part, .layer, .pill, .path, .reading, .logs { transition: none; }
   .part.alert .ring, .sev.on { animation: none; }
 }
+
+/* ---------- the WebGL scene (scene3d.js) ---------- */
+.scene3d { display: none; }
+.webgl .scene3d { display: block; --side: 0;
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,calc(1 - var(--side))) 0 37%, #000 58%);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,calc(1 - var(--side))) 0 37%, #000 58%); }
+.webgl #scene { display: none; }
+.overlay3d { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.webgl .overlay3d { display: block; }
+.overlay3d { display: none; }
+/* labels: small soft pills that sit just above their part */
+.p3 {
+  position: absolute; left: 0; top: 0; translate: -50% -100%; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 999px;
+  background: var(--pill); box-shadow: 0 1px 2px rgba(28, 24, 37, .06), 0 6px 18px -6px rgba(60, 40, 120, .22);
+  font: 500 11px/1 "IBM Plex Mono", monospace; color: var(--ink-3); transition: opacity .35s ease-out;
+}
+.p3 b { font: 700 12px/1 Manrope, sans-serif; color: var(--ink); }
+.p3 .led { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+.p3 .led.ok { background: var(--ok-fill); } .p3 .v.ok { color: var(--ok); }
+.p3 .led.alert { background: var(--alert-fill); } .p3 .v.alert { color: var(--alert); }
+.p3:empty { display: none; }
+.p3-sev { color: var(--alert); font: 600 11px/1 Manrope, sans-serif; box-shadow: 0 0 0 1px var(--alert-fill), 0 6px 18px -6px rgba(232, 105, 46, .45); }
+.p3-sev.blink { animation: sev 1.25s steps(1) infinite; }
+@keyframes sev { 50% { opacity: .5; } }
+.p3-read { translate: 0 -50%; border-radius: 8px; padding: 8px 12px; color: var(--ink); font-size: 12px; box-shadow: 0 0 0 1px rgba(240, 123, 63, .35), 0 8px 22px -8px rgba(60, 40, 120, .25); }
+.p3-read .lv { color: var(--ink-3); } .p3-read .v { color: var(--alert); }
+.p3-logs { position: absolute; left: 0; top: 0; translate: -50% -100%; font: 400 11px/1.75 "IBM Plex Mono", monospace; color: var(--ink-3); white-space: pre; transition: opacity .5s ease-out; }
+.p3-logs b { font-weight: 500; color: var(--alert); }
+@media (max-width: 760px) {
+  .overlay3d { height: 46vh; height: 46svh; z-index: 3; }
+  .scene3d { position: fixed; inset: 0 0 auto 0; height: 46vh; height: 46svh; z-index: 3; }
+  .p3-logs { display: none; }
+  .p3 { font-size: 10px; padding: 4px 8px 4px 6px; } .p3 b { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .p3-sev.blink { animation: none; } }

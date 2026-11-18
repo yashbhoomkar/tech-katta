@@ -18,6 +18,9 @@
 </head>
 <body>
 <svg class="scene" id="scene" aria-hidden="true" focusable="false"></svg>
+<canvas class="scene scene3d" id="scene3d" aria-hidden="true"></canvas>
+<div class="overlay3d" id="overlay3d" aria-hidden="true"></div>
+<div class="scrollbar" id="scrollbar" aria-hidden="true"><i></i></div>
 
 <header class="top" id="top">
   <a class="logo" href="https://tech.katta.cc" aria-label="tech katta home">
@@ -35,7 +38,7 @@
 
 <main id="story">
   <section class="chapter hero" data-chapter="0" data-name="Start">
-    <h1 class="headline center"><span class="thin">Systems break.</span><span class="heavy accent">Design ones that don't.</span></h1>
+    <h1 class="headline center"><span class="thin">Systems <span class="logword">break.</span></span><span class="heavy accent">Design ones that don't.</span></h1>
     <p class="lead center">Practise system design on real problems. Watch your design run, fail and recover.</p>
     <div class="actions center">
       <a class="btn btn-dark" href="https://tech.katta.cc">Start practising<span class="chip" aria-hidden="true">→</span></a>

@@ -126,3 +126,41 @@ main { position: relative; z-index: 2; }
 @media (prefers-reduced-motion: reduce) {
   .segs i, .top, .next { transition: none; }
 }
+
+/* ---------- refinement, closer to rca.gg's calm (2026-11-18) ---------- */
+/* quieter type: a light first line and a medium accent line, not a heavy shout */
+.headline { font-size: clamp(38px, 4.4vw, 64px); line-height: 1.04; letter-spacing: -.035em; }
+.hero .headline { font-size: clamp(46px, 6.6vw, 104px); letter-spacing: -.045em; }
+.heavy { font-weight: 600; }
+.thin { font-weight: 300; }
+.chapter > * { max-width: 470px; }
+.lead { font-size: 17px; line-height: 1.65; font-weight: 400; }
+.kicker { font-size: 11px; letter-spacing: .2em; }
+.stats dd { font-weight: 600; }
+/* the text side is clean without a heavy wash: the scene sits right, the fog does the rest */
+body::before { background: linear-gradient(90deg, var(--page) 0%, color-mix(in srgb, var(--page) 92%, transparent) 30%, transparent 52%); }
+/* chapters: the words arrive as the chapter comes into view */
+.chapter > * { transition: opacity .7s ease-out, transform .7s cubic-bezier(.2, .8, .2, 1); }
+.js-reveal .chapter:not(.seen) > * { opacity: 0; transform: translateY(14px); }
+/* a thin progress line along the bottom edge */
+.scrollbar { position: fixed; left: 0; right: 0; bottom: 0; height: 2px; z-index: 12; pointer-events: none; }
+.scrollbar i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+/* the hero's word filled with live log text, which drifts; now and then it glitches */
+.hero .headline { max-width: none; }
+.hero .thin { white-space: nowrap; }
+.headline .logword { display: inline-block; }
+.logword {
+  display: inline-block; position: relative; font-weight: 800; color: transparent;
+  background-color: var(--accent); background-size: 900px 380px; -webkit-background-clip: text; background-clip: text;
+  animation: logs 16s linear infinite;
+}
+@keyframes logs { to { background-position: -900px 0; } }
+.logword::before, .logword::after { content: "break."; position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.logword::before { color: transparent; -webkit-text-stroke: 1.5px #E8452E; animation: glitch 5.2s steps(1) infinite; }
+.logword::after { color: rgba(232, 69, 46, .35); animation: glitch2 5.2s steps(1) infinite; }
+@keyframes glitch { 0%, 86%, 100% { opacity: 0; transform: none; } 87% { opacity: 1; transform: translate(-3px, 1px); } 89% { opacity: 1; transform: translate(2px, -1px); } 91% { opacity: 1; transform: translate(-1px, 0); } 93% { opacity: 0; } }
+@keyframes glitch2 { 0%, 86%, 100% { opacity: 0; clip-path: none; } 87% { opacity: 1; clip-path: inset(10% 0 55% 0); transform: translate(6px, 0); } 90% { opacity: 1; clip-path: inset(60% 0 8% 0); transform: translate(-6px, 0); } 92% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .logword, .logword::before, .logword::after { animation: none; }
+  .js-reveal .chapter:not(.seen) > * { opacity: 1; transform: none; }
+}
