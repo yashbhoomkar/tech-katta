@@ -1,8 +1,9 @@
 // The shell: hash routes, the top bar, the theme, page transitions. Each page module exports mount(view, params, ctx)
-// and returns a cleanup function. Routes: #/ · #/learn · #/learn/<lesson> · #/sim/<scenario> · #/me
+// and returns a cleanup function. Routes: #/ · #/learn[/<section>] · #/learn/<section>/<slug> · #/sim/<scenario> ·
+// #/me (also #/dashboard). Old sample-lesson links (#/learn/<id>) redirect to the real concept.
 import * as landing from './pages/landing.js';
 import * as learn from './pages/learn.js';
-import * as lesson from './pages/lesson.js';
+import * as article from './pages/article.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import { applyPaletteVars } from './palette.js';
@@ -11,14 +12,20 @@ applyPaletteVars();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const view = document.getElementById('view');
+const SEC = /^\/learn\/(concepts|components|interview-questions|real-systems)\/?$/;
+const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/([\w-]+)\/?$/;
+// the retired sample lessons, and bare slugs, go to the real article
+const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
-  [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [/^\/learn\/([\w-]+)$/, lesson, 'learn'],
-[/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/me\/?$/, me, 'me'],
+  [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
+  [/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/(?:me|dashboard)\/?$/, me, 'me'],
 ];
 let cleanup = null, token = 0;
 
 function route() {
   const path = location.hash.replace(/^#/, '') || '/';
+  const old = path.match(/^\/learn\/([\w-]+)\/?$/);
+  if (old && !SEC.test(path)) { location.replace(`#/learn/concepts/${OLD[old[1]] || old[1]}`); return; }
   const [re, mod, nav] = ROUTES.find(([r]) => r.test(path)) || [null, null, null];
   const my = ++token;
   const swap = () => {

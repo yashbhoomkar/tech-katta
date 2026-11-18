@@ -71,13 +71,13 @@ export function mount(view, _p, { reduced }) {
       <h2 class="headline"><span class="thin">21 concepts, 10 components</span><span class="heavy accent">Lessons you watch, not read</span></h2>
       <p class="lead">Caching, sharding, CAP, ${pd("kafka")}Kafka, Redis, PostgreSQL. Every idea is a short story where the system changes as you scroll: here the ${pd("db")}database slows and messages pile up in the ${pd("kafka")}topic.</p>
       <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
-      <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a></div>
+      <div class="actions"><a class="btn light" href="#/learn/concepts">See the lessons<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="2">
       <p class="kicker"><span>02</span><i></i>Interview</p>
       <h2 class="headline"><span class="thin">29 questions interviewers ask</span><span class="heavy accent">And 6 real systems, explained</span></h2>
       <p class="lead">Each answer walks through what to clarify, the numbers to estimate, the design and the trade-offs to say out loud. Real systems show how apps you use are built at Indian scale.</p>
-      <div class="actions"><a class="btn light" href="#/learn">Browse the questions<span class="chip violet">→</span></a></div>
+      <div class="actions"><a class="btn light" href="#/learn/interview-questions">Browse the questions<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="3">
       <p class="kicker"><span>03</span><i></i>Practice</p>

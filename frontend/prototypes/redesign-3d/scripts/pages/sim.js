@@ -4,7 +4,8 @@
 import { createWorld } from '../world.js';
 import { INCIDENTS, layout, run, cost, rupees, perSec, LIMITS, PARTS_INFO, PRICE, APP_CAP, DB_READ } from '../sim.js';
 import { sparkline, esc } from '../ui.js';
-import { LESSONS } from '../content.js';
+// what to read when a part fails: the simulator's lesson ids → the real concept articles
+const READ = { caching: ['caching', 'Caching'], replicas: ['scaling-reads', 'Scaling reads'], queues: ['scaling-writes', 'Scaling writes'], 'load-balancing': ['networking-essentials', 'Networking essentials'] };
 import { store } from '../store.js';
 
 const KEYS = ['apps', 'cache', 'replicas', 'queue', 'cdn'];
@@ -192,7 +193,7 @@ export function mount(view, [id], { reduced, go }) {
       <p class="kicker"><span>${r.passed ? 'SURVIVED' : 'IT BROKE'}</span><i></i>SCORE ${r.score} / 100</p>
       <h2 class="${r.passed ? 'ok' : 'alert'}">${r.passed ? 'The evening held.' : 'The evening did not hold.'}</h2>
       <ul class="checks">${r.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}"><i></i>${c.label}<b>${c.value}</b></li>`).join('')}</ul>
-      ${r.why.length ? `<div class="why"><p class="mono">WHAT HAPPENED</p>${r.why.map((w) => `<p>${w.text}${w.lesson && LESSONS[w.lesson] && !LESSONS[w.lesson].soon ? ` <a href="#/learn/${w.lesson}">Read: ${LESSONS[w.lesson].title} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job.</p></div>'}
+      ${r.why.length ? `<div class="why"><p class="mono">WHAT HAPPENED</p>${r.why.map((w) => `<p>${w.text}${w.lesson && READ[w.lesson] ? ` <a href="#/learn/concepts/${READ[w.lesson][0]}">Read: ${READ[w.lesson][1]} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job.</p></div>'}
       <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="#/sim/${nextInc.id}">Next scenario<span class="chip">→</span></a>` : ''}<button type="button" class="btn light v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button></div>`;
     verdict.hidden = false;
     view.querySelector('.brief').style.visibility = 'hidden';
