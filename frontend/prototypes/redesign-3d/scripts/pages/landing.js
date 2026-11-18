@@ -25,7 +25,7 @@ const ids = (prefix, n) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 const all = (list, st) => Object.fromEntries(list.map((k) => [k, st]));
 const PIPE = pipe(), PIPE6 = pipe({ partitions: 6, consumers: 6 });
 const STEPS = [
-  { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.72, phoneZoom: 1.45 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
+  { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.66, phoneZoom: 1.5 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
   { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'ok'), sql: 'ok' }, labels: { p1: ['publishing 50k/s', 'ok'], topic: ['lag 0', 'ok'], c1: ['keeping up', 'ok'], sql: ['batched writes', 'ok'] }, speed: 1.6 } },
   { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { p1: ['still publishing', 'ok'], topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
   { system: PIPE6, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok', sql: 'ok' }, fill: { topic: 0.06 }, labels: { topic: ['6 partitions · lag draining', 'ok'], c2: ['6 consumers', 'ok'], sql: ['batches of 500', 'ok'] }, speed: 1.5 } },
@@ -51,7 +51,7 @@ function chatApp() {
 }
 const CHAT = chatApp();
 STEPS.splice(6, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
-const NAMES = ['Start', 'The spike', 'It breaks', 'Fix it', 'The parts', 'Learn and build', 'What you will design', 'Your turn'];
+const NAMES = ['Start', 'The spike', 'It breaks', 'Fix it', 'Learn', 'Practice', 'What you will design', 'Your turn'];
 
 export function mount(view, _p, { reduced }) {
   const sim = '#/sim/ind-vs-pak';
@@ -82,16 +82,17 @@ export function mount(view, _p, { reduced }) {
       <p class="lead">More ${pd("kafka")}partitions let more ${pd("consumer")}consumers read side by side, and writing 500 rows at a time asks far less of the ${pd("db")}database. The backlog empties in minutes.</p>
     </div>
     <div class="step" data-step="4">
-      <p class="kicker"><span>04</span><i></i>The parts</p>
-      <h2 class="headline"><span class="thin">Every part has a colour</span><span class="heavy accent">The same one everywhere</span></h2>
-      <p class="lead">Learn them once. In every lesson and every simulation on Tech Katta, a part looks like this.</p>
+      <p class="kicker"><span>04</span><i></i>Learn</p>
+      <h2 class="headline"><span class="thin">Every lesson moves like this page</span><span class="heavy accent">Every part keeps its colour</span></h2>
+      <p class="lead">Caching, queues, Kafka, replicas, sharding: each idea is a short story where the system changes as you scroll. Learn the colours once and you can read any system on Tech Katta.</p>
       <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
+      <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="5">
-      <p class="kicker"><span>05</span><i></i>Learn and build</p>
-      <h2 class="headline"><span class="thin">Learn it as a story like this</span><span class="heavy accent">Then build your own and press Run</span></h2>
-      <p class="lead">Every lesson moves like this page. Then build your own: ${pd("server")}servers, ${pd("kafka")}topics, ${pd("consumer")}consumers, ${pd("db")}databases, ${pd("cache")}caches. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
-      <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
+      <p class="kicker"><span>05</span><i></i>Practice</p>
+      <h2 class="headline"><span class="thin">Then build it yourself</span><span class="heavy accent">Press Run and watch it hold</span></h2>
+      <p class="lead">Add ${pd("server")}servers, ${pd("kafka")}topics, ${pd("consumer")}consumers and ${pd("db")}databases, then send a real evening of traffic through them. Amber is busy, red is broken, and every result tells you why.</p>
+      <div class="actions"><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="6">
       <p class="kicker"><span>06</span><i></i>What you will design</p>
@@ -138,4 +139,4 @@ export function mount(view, _p, { reduced }) {
   return () => story.destroy();
 }
 
-export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">System design you can watch. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/learn">Learn</a><a href="#/sim/ind-vs-pak">Simulator</a><a href="#/me">You</a></nav></footer>`;
+export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">System design you can watch. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim/ind-vs-pak">Practice</a></nav></footer>`;

@@ -19,15 +19,19 @@
 <header class="top" id="top">
   <a class="logo" href="#/" aria-label="tech katta home"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</a>
   <nav class="links" aria-label="Main">
+    <a href="#/me" data-nav="me">Dashboard</a>
     <a href="#/learn" data-nav="learn">Learn</a>
-    <a href="#/sim/ind-vs-pak" data-nav="sim">Simulator</a>
-    <a href="#/me" data-nav="me">You</a>
+    <a href="#/sim/ind-vs-pak" data-nav="sim">Practice</a>
   </nav>
   <button class="theme" id="theme" type="button" aria-label="Theme: System">System</button>
-  <a class="btn dark sm top-cta" href="#/sim/ind-vs-pak">Open the simulator</a>
-  <button class="menu" id="menu" type="button" aria-label="Menu"><i></i><i></i></button>
+  <a class="btn dark sm top-cta" href="#/learn">Start learning</a>
 </header>
 <main id="view" tabindex="-1"></main>
+<nav class="tabbar" aria-label="Main">
+  <a href="#/me" data-nav="me"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg><span>Dashboard</span></a>
+  <a href="#/learn" data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5z"/><path d="M13 4h5.5c.8 0 1.5.7 1.5 1.5v13c0 .8-.7 1.5-1.5 1.5H13z"/></svg><span>Learn</span></a>
+  <a href="#/sim/ind-vs-pak" data-nav="sim"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg><span>Practice</span></a>
+</nav>
 <script type="module" src="scripts/app.js"></script>
 </body>
 </html>

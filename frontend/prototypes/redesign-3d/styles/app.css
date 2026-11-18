@@ -583,3 +583,26 @@ body { background: var(--page); background-attachment: scroll; }
   .pin > .headline { font-size: clamp(30px, 8.6vw, 40px); margin-bottom: 16px; }
   .pin > .lead { font-size: 16px; }
 }
+
+/* the floating bar on phones: Dashboard · Learn · Practice (replaces the menu button) */
+.tabbar { display: none; }
+@media (max-width: 760px) {
+  .top .links, .menu { display: none !important; }
+  .top-cta { display: inline-flex !important; min-height: 38px; padding: 0 14px; font-size: 14px; margin-left: 0; }
+  .theme { margin-left: auto; }
+  .tabbar { display: flex; position: fixed; z-index: 40; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); translate: -50% 0; gap: 4px; padding: 6px;
+    border-radius: 20px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow-lg);
+    backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 88px; padding: 8px 12px 6px; border-radius: 14px; color: var(--ink-2); text-decoration: none; font-size: 12px; font-weight: 600; }
+  .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+  .tabbar a[aria-current] { background: var(--ink); color: var(--page); }
+  body[data-page="sim"] .tabbar { display: none; }
+  /* room for the bar */
+  .step.scrub > .pin { padding-bottom: calc(max(40px, env(safe-area-inset-bottom)) + 84px); }
+  .foot { padding-bottom: 120px; }
+}
+/* brighter words (owner: "Make the text more bright") */
+[data-theme="dark"] { --ink: #F4F2FA; --ink-2: #D9D5E6; --ink-3: #ABA6BC; }
+.pin > .lead, .step.hero .lead { color: var(--ink); }
+.headline .thin { color: var(--ink-2); }
+@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .8); } }

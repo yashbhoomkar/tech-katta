@@ -39,12 +39,10 @@ function route() {
 addEventListener('hashchange', route);
 route();
 
-// top bar: solid once you scroll; phone menu
+// top bar: solid once you scroll (phones navigate with the floating bar at the bottom)
 const top = document.getElementById('top');
 addEventListener('scroll', () => top.classList.toggle('solid', scrollY > 8), { passive: true });
-const menu = document.getElementById('menu');
-menu.addEventListener('click', () => document.body.classList.toggle('menu-open'));
-addEventListener('hashchange', () => document.body.classList.remove('menu-open'));
+
 
 // theme: System / Light / Dark, the same key as the other prototypes (boot-theme.js sets it before paint)
 const themeBtn = document.getElementById('theme');

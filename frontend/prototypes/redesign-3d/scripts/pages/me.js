@@ -12,7 +12,7 @@ export function mount(view) {
     const nextLesson = lessons.find(([id]) => !read[id]), nextInc = INCIDENTS.find((i) => !best[i.id]?.passed);
     view.innerHTML = `
     <section class="page me">
-      <p class="kicker"><span>YOU</span><i></i>ON THIS DEVICE</p>
+      <p class="kicker"><span>Dashboard</span><i></i>On this device</p>
       <h1 class="headline"><span class="thin">Where you are.</span><span class="heavy accent">What comes next.</span></h1>
       <div class="me-stats">
         <div><small>Lessons read</small><b>${readN}<em> / ${lessons.length}</em></b><span class="bar"><i style="width:${(readN / lessons.length) * 100}%"></i></span></div>
