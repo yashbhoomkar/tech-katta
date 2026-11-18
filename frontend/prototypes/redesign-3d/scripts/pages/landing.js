@@ -22,6 +22,7 @@ export function mount(view, _p, { reduced }) {
       <h1 class="headline"><span class="thin">Systems <span class="logword">break.</span></span><span class="heavy accent">Learn to keep them up.</span></h1>
       <p class="lead">Tech Katta is system design you can watch. Read ideas as moving systems, then run real Indian evenings against your own design: IND vs PAK, ticket sales, salary day.</p>
       <div class="actions"><a class="btn dark" href="#/sim/${inc.id}">Run your first incident<span class="chip">→</span></a><button class="btn light" type="button" data-next>See it break<span class="chip violet">↓</span></button></div>
+      <div class="scroll-cue" aria-hidden="true"><span>SCROLL TO PLAY</span><i></i></div>
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>THE SPIKE</p>
@@ -76,7 +77,7 @@ export function mount(view, _p, { reduced }) {
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
   const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'YOUR TURN'];
   const story = mountStory(root, STEPS, { reduced, onStep: (i) => { n.textContent = `0${i} / 05`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
-  root.querySelector('[data-next]').addEventListener('click', () => root.querySelector('[data-step="1"]').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }));
+  root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.45, behavior: reduced ? 'auto' : 'smooth' }); });
   const stopLogs = logFill(root.querySelector('.logword'));
   return () => { story.destroy(); stopLogs(); };
 }

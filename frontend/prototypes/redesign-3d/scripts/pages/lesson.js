@@ -21,7 +21,7 @@ export function mount(view, [id], { reduced }) {
       <p class="kicker"><span>LESSON</span><i></i>${l.minutes} MIN</p>
       <h1 class="headline"><span class="heavy">${l.title}</span></h1>
       <p class="lead">${l.hook}</p>
-      <p class="hint mono">SCROLL: THE SYSTEM CHANGES WITH EACH STEP</p>
+      <p class="hint mono">SCROLL: THE SYSTEM MOVES FIRST, THEN THE WORDS</p>
     </header>
     ${l.steps.map((s, i) => `
     <div class="step" data-step="${i + 1}">
@@ -42,11 +42,11 @@ export function mount(view, [id], { reduced }) {
   const n = root.querySelector('.progress .n'), segs = [...root.querySelectorAll('.segs i')];
   const story = mountStory(root, steps, {
     reduced,
-    onStep: (i) => {
+    onStep: (i, _f, t) => {
       const k = Math.min(Math.max(i, 1), l.steps.length);
       n.textContent = `${String(k).padStart(2, '0')} / ${String(l.steps.length).padStart(2, '0')}`;
       segs.forEach((s, j) => s.classList.toggle('on', j < k && i > 0));
-      if (i === l.steps.length + 1) store.markRead(id);
+      if (i === l.steps.length + 1 && t > 0.5) store.markRead(id);
     },
   });
   return () => story.destroy();

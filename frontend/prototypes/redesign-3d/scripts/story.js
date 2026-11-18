@@ -1,38 +1,102 @@
-// A scroll story: steps on one side, one 3D world on a sticky stage. When a step reaches the middle of the screen,
-// the world becomes that step's design and state, and the camera glides to frame it. Used by the landing and lessons.
+// A scroll story, after rca.gg: the scroll drives the animation, then the words take over.
+// Step 0 is the opening (a normal screen). Every later step is a tall section in two phases:
+//   1. while the section scrolls into place (its top travels from the bottom of the screen to the top), the 3D world
+//      plays the change from the previous step to this one: the camera travels, new parts rise one by one, colours
+//      blend. The scene is centre stage and the old words have scrolled away. Scroll back and it plays backwards.
+//   2. then the section is pinned: the words fade in and the scene slides aside to make room. They stay while you
+//      read, and leave as the next section starts its own animation.
+// Nothing runs on a timer: where you are on the page is where the animation is.
 import { createWorld } from './world.js';
 import { layout } from './sim.js';
 
-export function mountStory(root, steps, { reduced, onStep, side = true } = {}) {
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => x * x * (3 - 2 * x);
+const lerp = (a, b, k) => a + (b - a) * k;
+const lerpCam = (a, b, k) => ({ t: [lerp(a.t[0], b.t[0], k), lerp(a.t[1], b.t[1], k)], dist: lerp(a.dist, b.dist, k), az: lerp(a.az, b.az, k), el: lerp(a.el, b.el, k), sx: lerp(a.sx, b.sx, k), sy: lerp(a.sy, b.sy, k), phoneSy: lerp(a.phoneSy, b.phoneSy, k) });
+
+/** the camera that frames a design (the world measures it; we keep our own copy so the scroll can blend) */
+function frameOf(design) {
+  const ps = Object.values(layout(design).parts);
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const p of ps) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
+  const span = Math.max(x1 - x0, z1 - z0, 4);
+  return { t: [(x0 + x1) / 2, (z0 + z1) / 2], dist: span * 2.2 + 12 };
+}
+
+export function mountStory(root, steps, { reduced, onStep } = {}) {
   const stage = root.querySelector('.stage');
   const canvas = stage.querySelector('canvas'), overlay = stage.querySelector('.overlay');
   let world = null;
   try { world = createWorld(canvas, overlay, { reduced }); } catch { world = null; }
   root.classList.toggle('flat', !world);
   const els = [...root.querySelectorAll('[data-step]')];
-  let current = -1;
-  function show(i) {
-    if (i === current) return;
-    current = i;
-    const s = steps[i];
-    els.forEach((e, k) => e.classList.toggle('on', k === i));
-    if (world && s) {
-      world.setSystem(layout(s.design), { instant: i === 0 && !world._started });
-      world._started = true;
-      const f = world.frame();
-      const c = s.cam || {};
-      const isSide = side && c.side !== false;
-      world.setCamera({ t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, sx: c.sx ?? (isSide ? 0.68 : 0.5), sy: c.sy ?? 0.54, phoneSy: c.phoneSy ?? 0.58 }, { instant: i === 0 && current === 0 && !world._camSet });
-      world._camSet = true;
-      world.setState({ ...s.state, avoid: isSide ? 0.47 : 0 });
+  // every step after the opening: pin its words so they can wait for the animation
+  els.forEach((el, i) => {
+    if (i === 0) return;
+    el.classList.add('scrub');
+    const pin = document.createElement('div'); pin.className = 'pin';
+    while (el.firstChild) pin.appendChild(el.firstChild);
+    el.appendChild(pin);
+  });
+
+  // each step's two cameras: centre stage (while it animates) and aside (while you read)
+  const cams = steps.map((s) => {
+    const f = frameOf(s.design), c = s.cam || {};
+    const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.58 };
+    const side = c.side !== false;
+    return { centre: { ...base, sx: 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? 0.68 : 0.5, sy: c.sy ?? 0.54 }, side };
+  });
+
+  let sysKey = '';
+  function system(key, design) { if (key !== sysKey && world) { sysKey = key; world.setSystem(design); } }
+  const union = (a, b) => { const A = layout(a), B = layout(b); return { parts: { ...A.parts, ...B.parts }, paths: { ...A.paths, ...B.paths } }; };
+
+  let raf = 0, lastStep = -1;
+  function update() {
+    raf = 0;
+    const vh = innerHeight;
+    // which step is animating or showing: the last one whose section has started to come in
+    let i = 0, a = 1, t = 1;
+    for (let k = 1; k < els.length; k++) {
+      const r = els[k].getBoundingClientRect();
+      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.9)); t = clamp(-r.top / (vh * 0.35)); }
     }
-    onStep?.(i);
+    if (i === 0) { a = 1; t = 1; }
+    // the words: hidden while the scene animates, then in
+    els.forEach((el, k) => { if (k > 0) { const v = k === i ? t : k === i - 1 && i > 0 ? 1 - clamp(a * 1.6) : 0; el.style.setProperty('--t', v.toFixed(3)); el.classList.toggle('live', k === i && t > 0.5); } });
+    if (world) {
+      const cur = steps[i], prev = steps[Math.max(0, i - 1)];
+      if (i > 0 && a < 1) {
+        // phase 1: from the previous step to this one, driven by the scroll
+        const m = ease(a);
+        system(`u${i}`, union(prev.design, cur.design));
+        const before = layout(prev.design).parts, after = layout(cur.design).parts;
+        const reveal = {};
+        let n = 0;
+        for (const id of Object.keys(after)) if (!before[id]) { reveal[id] = clamp((a - 0.15 - n * 0.09) / 0.35); n++; }
+        for (const id of Object.keys(before)) if (!after[id]) reveal[id] = 1 - clamp(a / 0.5);
+        world.setState({ ...cur.state, avoid: 0 }, { from: prev.state, mix: m, reveal, rate: 9 });
+        world.setCamera(lerpCam(cams[i - 1].side ? cams[i - 1].aside : cams[i - 1].centre, cams[i].centre, m), { rate: 7 });
+        canvas.style.setProperty('--side', ((1 - m) * (cams[i - 1].side && i - 1 > 0 ? 1 : 0)).toFixed(3));
+      } else {
+        // phase 2: this step, while its words come in; the scene slides aside
+        system(`s${i}`, layout(cur.design));
+        const k = i === 0 ? 0 : ease(t), side = cams[i].side && i > 0;
+        world.setState({ ...cur.state, avoid: side && k > 0.5 ? 0.47 : 0 }, { rate: 9 });
+        world.setCamera(i === 0 ? cams[0].centre : lerpCam(cams[i].centre, cams[i].aside, k), { rate: 7 });
+        canvas.style.setProperty('--side', (side ? k : 0).toFixed(3));
+      }
+    }
+    const frac = i === 0 ? 0 : i - 1 + (a < 1 ? a * 0.5 : 0.5 + t * 0.5);
+    if (i !== lastStep || true) onStep?.(i, frac, t);
+    lastStep = i;
   }
-  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) show(Number(e.target.dataset.step)); }, { rootMargin: '-45% 0px -45% 0px' });
-  const reveal = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { e.target.classList.add('seen'); reveal.unobserve(e.target); } }, { threshold: 0.15 });
-  els.forEach((e) => { io.observe(e); reveal.observe(e); });
-  show(0);
-  return { world, show, destroy() { io.disconnect(); reveal.disconnect(); world?.destroy(); } };
+  const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  if (world) { system('s0', layout(steps[0].design)); world.setState(steps[0].state); world.setCamera(cams[0].centre, { instant: true }); }
+  update();
+  return { world, destroy() { cancelAnimationFrame(raf); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); world?.destroy(); } };
 }
 
 /** the stage markup (sticky, spans the story) */

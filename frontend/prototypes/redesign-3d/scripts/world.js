@@ -185,16 +185,28 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     if (instant || reduced) for (const p of paths.values()) p.op = 1;
   }
 
-  function setState({ parts: S = {}, paths: L = {}, labels: B = {}, speed: sp, explode = [], avoid = 0 } = {}) {
-    for (const [id, p] of parts) p.state = S[id] || '';
-    for (const [id, p] of paths) p.state = L[id] || L[p.b] || '';
-    labels = B; if (sp != null) speed = sp; explodeIds = new Set(explode); avoidLeft = avoid;
+  // A state, optionally blended from another: mix 0 shows `from`, 1 shows this state, in between the colours, glows,
+  // visibility and request paths blend. Scroll stories drive mix from the scroll position. reveal (id → 0..1) raises
+  // parts out of the floor one by one; rate sets how tightly the picture follows (higher = closer to the scroll).
+  let mix = 1, fromLabels = null, explodePrev = new Set();
+  function setState({ parts: S = {}, paths: L = {}, labels: B = {}, speed: sp, explode = [], avoid = 0 } = {}, { from = null, mix: m = 1, reveal = null, rate = 5 } = {}) {
+    for (const [id, p] of parts) { p.state = S[id] || ''; p.prev = from ? (from.parts?.[id] || '') : p.state; p.reveal = reveal?.[id] ?? 1; }
+    for (const [id, p] of paths) {
+      p.state = L[id] || L[p.b] || '';
+      p.prev = from ? (from.paths?.[id] || from.paths?.[p.b] || '') : p.state;
+      p.reveal = Math.min(reveal?.[p.a] ?? 1, reveal?.[p.b] ?? 1);
+    }
+    mix = Math.max(0, Math.min(1, m)); fromLabels = from ? (from.labels || {}) : null;
+    labels = B; if (sp != null) speed = from && from.speed != null ? from.speed + (sp - from.speed) * mix : sp;
+    explodeIds = new Set(explode); explodePrev = new Set(from ? from.explode || [] : explode); avoidLeft = avoid; stateRate = rate;
   }
+  let stateRate = 5, camRate = 4.5;
 
   // ---- camera ----
   const camGoal = { t: [0, 0], dist: 40, az: 45, el: 30, sx: 0.5, sy: 0.5 };
   const cam = { ...camGoal, t: [0, 0] };
-  function setCamera(c, { instant = false } = {}) {
+  function setCamera(c, { instant = false, rate = 4.5 } = {}) {
+    camRate = rate;
     Object.assign(camGoal, c, { t: [...(c.t || camGoal.t)] });
     if (instant || reduced) Object.assign(cam, camGoal, { t: [...camGoal.t] });
   }
@@ -268,58 +280,80 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     if (on) el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
   }
 
+  // ---- how a state looks (targets the loop blends between) ----
+  const colA = new THREE.Color(), colB = new THREE.Color();
+  const cmix = (m) => { const x = Math.max(0, Math.min(1, (m - 0.3) / 0.35)); return x * x * (3 - 2 * x); };
+  function look(state, p, now) {
+    const t = tone(state), db = p.def.kind === 'db';
+    return {
+      hidden: state === 'hidden' ? 1 : 0, vis: state === 'dim' ? 0.22 : 1,
+      c: t ? t.c : db ? pal.disc : pal.block, e: t ? t.e : pal.blockE, ei: t ? t.ei : pal.blockEI, edge: t ? t.edge : db ? pal.discEdge : pal.edge,
+      glow: t ? t.glow : '#F07B3F', glowOp: state === 'alert' ? 0.42 + 0.1 * Math.sin(now * 0.004) : t ? 0.22 : 0,
+    };
+  }
+  function pathLook(st) {
+    const t = tone(st);
+    return { op: st === 'hidden' ? 0 : st === 'down' ? 0.12 : st === 'dim' ? 0.08 : st === 'ok' ? 0.75 : st === 'alert' || st === 'warn' ? 0.7 : pal.pathOp,
+      col: t ? t.dot : pal.path, dot: t ? t.dot : pal.dot, solid: st === 'ok', show: st !== 'hidden' && st !== 'down' && st !== 'dim' };
+  }
+
   // ---- the loop ----
   const lerp = (a, b, k) => a + (b - a) * k;
   let last = performance.now(), running = true, raf = 0, dead = false;
   function loop(now) {
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const k = reduced ? 1 : 1 - Math.exp(-dt * 4.5);
+    const k = reduced ? 1 : 1 - Math.exp(-dt * camRate);
     for (const key of ['dist', 'az', 'el', 'sx', 'sy']) cam[key] = lerp(cam[key], camGoal[key], k);
     cam.t = [lerp(cam.t[0], camGoal.t[0], k), lerp(cam.t[1], camGoal.t[1], k)];
     cam.phoneSy = camGoal.phoneSy; cam.phoneCentre = camGoal.phoneCentre;
     placeCamera(now);
-    const s = reduced ? 1 : 1 - Math.exp(-dt * 5);
+    const s = reduced ? 1 : 1 - Math.exp(-dt * stateRate);
 
     for (const [id, p] of parts) {
-      const hidden = p.gone || p.state === 'hidden', dim = p.state === 'dim';
-      p.vis = lerp(p.vis, hidden ? 0 : dim ? 0.22 : 1, s);
-      p.rise = lerp(p.rise, hidden ? -1.4 : 0, s);
+      const A = look(p.prev ?? p.state, p, now), B = look(p.state, p, now);
+      const hiddenF = lerp(A.hidden, B.hidden, mix), reveal = p.gone ? 0 : (p.reveal ?? 1) * (1 - hiddenF);
+      p.vis = lerp(p.vis, reveal * lerp(A.vis, B.vis, mix), s);
+      p.rise = lerp(p.rise, -1.4 * (1 - reveal), s);
       if (p.gone && p.vis < 0.02) { disposePart(p); parts.delete(id); continue; }
       p.g.position.y = p.rise; p.g.visible = p.vis > 0.02;
-      const t = tone(p.state), hover = id === hoverId;
-      col.set(t ? t.c : p.def.kind === 'db' ? pal.disc : pal.block); p.mBlock.color.lerp(col, s);
-      col.set(t ? t.e : pal.blockE); p.mBlock.emissive.lerp(col, s);
-      p.mBlock.emissiveIntensity = lerp(p.mBlock.emissiveIntensity, (t ? t.ei : pal.blockEI) + (hover ? 0.25 : 0), s);
+      const hover = id === hoverId;
+      // colours change in the middle of the blend, so the in-between (a muddy mix of two hues) stays short
+      const cm = cmix(mix);
+      p.mBlock.color.lerp(colA.set(A.c).lerp(colB.set(B.c), cm), s);
+      p.mBlock.emissive.lerp(colA.set(A.e).lerp(colB.set(B.e), cm), s);
+      p.mBlock.emissiveIntensity = lerp(p.mBlock.emissiveIntensity, lerp(A.ei, B.ei, cm) + (hover ? 0.25 : 0), s);
       p.mBlock.opacity = 0.9 * p.vis;
-      col.set(t ? t.edge : p.def.kind === 'db' ? pal.discEdge : pal.edge); p.mEdge.color.lerp(col, s);
+      p.mEdge.color.lerp(colA.set(A.edge).lerp(colB.set(B.edge), cm), s);
       p.mEdge.opacity = 0.55 * p.vis; p.mWhite.opacity = 0.9 * p.vis;
-      const alert = p.state === 'alert';
-      if (t) p.glow.material.color.set(t.glow);
-      p.glow.material.opacity = lerp(p.glow.material.opacity, (alert ? 0.42 + 0.1 * Math.sin(now * 0.004) : t ? 0.22 : 0) * p.vis, s);
-      if (alert && !reduced) { const ph = (now * 0.0006) % 1; p.ring.material.color.set(t.glow); p.ring.scale.setScalar(0.8 + ph * 0.9); p.ring.material.opacity = 0.7 * (1 - ph); }
+      p.glow.material.color.copy(colA.set(A.glow).lerp(colB.set(B.glow), cm));
+      p.glow.material.opacity = lerp(p.glow.material.opacity, lerp(A.glowOp, B.glowOp, mix) * p.vis, s);
+      const alertNow = (mix >= 0.5 ? p.state : p.prev) === 'alert';
+      if (alertNow && !reduced) { const ph = (now * 0.0006) % 1; p.ring.material.color.set(TONE.alert.glow); p.ring.scale.setScalar(0.8 + ph * 0.9); p.ring.material.opacity = 0.7 * (1 - ph) * Math.abs(mix - 0.5) * 2; }
       else { p.ring.material.opacity = lerp(p.ring.material.opacity, 0, s); p.ring.scale.setScalar(1); }
-      if (p.layers.length) { p.explode = lerp(p.explode, explodeIds.has(id) ? 1 : 0, s); p.layers.forEach((lg, i) => { lg.position.y = i * 0.62 * p.explode; }); }
-      const l = labels[id];
+      if (p.layers.length) { p.explode = lerp(p.explode, lerp(explodePrev.has(id) ? 1 : 0, explodeIds.has(id) ? 1 : 0, mix), s); p.layers.forEach((lg, i) => { lg.position.y = i * 0.62 * p.explode; }); }
+      // labels: the new state's once the blend is nearly done, the old one's near its start, none in between
+      const useNew = mix >= 0.8, useOld = fromLabels && mix <= 0.2;
+      const l = useNew || !fromLabels ? labels[id] : useOld ? fromLabels[id] : null;
+      const st = useNew || !fromLabels ? p.state : p.prev;
       if (l) { const html = `<i class="led ${l[1] || ''}"></i><b>${l[2] ?? p.def.name}</b>${l[0] ? ` <span class="v ${l[1] || ''}">${l[0]}</span>` : ''}`; if (p.pill._h !== html) { p.pill.innerHTML = html; p.pill._h = html; } }
-      place(p.pill, p.g.position.x, p.top + 0.45 + p.rise + (p.layers.length ? p.explode * 1.2 : 0), p.g.position.z, !!l && !hidden && !dim && p.vis > 0.6);
+      place(p.pill, p.g.position.x, p.top + 0.45 + p.rise + (p.layers.length ? p.explode * 1.2 : 0), p.g.position.z, !!l && st !== 'hidden' && st !== 'dim' && p.vis > 0.6 && (p.reveal ?? 1) > 0.95);
     }
 
     for (const p of paths.values()) {
-      const st = p.state;
       p.op = lerp(p.op, 1, s);
-      const op = (st === 'hidden' ? 0 : st === 'down' ? 0.12 : st === 'dim' ? 0.08 : st === 'ok' ? 0.75 : st === 'alert' || st === 'warn' ? 0.7 : pal.pathOp) * p.op;
-      p.mat.opacity = lerp(p.mat.opacity, op, s);
-      const t = tone(st);
-      col.set(t ? t.dot : pal.path); p.mat.color.lerp(col, s);
-      p.mat.dashSize = st === 'ok' ? 10 : 0.07;
-      const show = st !== 'hidden' && st !== 'down' && st !== 'dim' && speed > 0 && p.op > 0.5;
+      const pa = pathLook(p.prev ?? p.state), pb = pathLook(p.state);
+      p.mat.opacity = lerp(p.mat.opacity, lerp(pa.op, pb.op, mix) * p.op * (p.reveal ?? 1), s);
+      p.mat.color.lerp(colA.set(pa.col).lerp(colB.set(pb.col), cmix(mix)), s);
+      const cur = mix >= 0.5 ? pb : pa;
+      p.mat.dashSize = cur.solid ? 10 : 0.07;
+      const show = cur.show && speed > 0 && p.op > 0.5 && (p.reveal ?? 1) > 0.9;
       for (const d of p.dots) {
         if (!reduced) d.t = (d.t + dt * speed / p.len) % 1;
         if (!show) { dots.setMatrixAt(d.i, hiddenM); continue; }
         p.curve.getPointAt(d.t, tmpV);
         mtx.makeTranslation(tmpV.x, 0.08, tmpV.z); dots.setMatrixAt(d.i, mtx);
-        dots.setColorAt(d.i, col.set(t ? t.dot : pal.dot));
+        dots.setColorAt(d.i, col.set(cur.dot));
       }
     }
     dots.instanceMatrix.needsUpdate = true; if (dots.instanceColor) dots.instanceColor.needsUpdate = true;

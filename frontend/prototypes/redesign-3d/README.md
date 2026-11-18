@@ -16,6 +16,14 @@ rca.gg teaches by letting you watch a system fail. Here the live 3D system is th
 - **You** (`#/me`): lessons read, incidents survived, best runs (this device only). No streaks or badges.
 One top bar (Learn · Incidents · Simulator · You), no sidebar.
 
+## Scroll drives the animation, then the words take over (owner, after rca.gg)
+"One thing to observe on rca.gg is that when anyone scrolls, only then the animation proceeds, and then the actual
+textual content takes over the animation." `story.js`: each chapter after the opening is a tall section in two phases.
+While it scrolls into place, its scroll position blends the world from the previous chapter to this one (camera,
+parts rising one by one, colours, glows, paths: `world.setState(next, { from, mix, reveal })`); the scene is centre
+stage and there are no words. Then the section pins: its words fade in (`--t`) and the scene slides aside. Nothing runs
+on a timer, so scrolling back plays it backwards.
+
 ## Files
 | File | Role |
 |---|---|
