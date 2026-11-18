@@ -23,7 +23,7 @@ function frameOf(design) {
   return { t: [(x0 + x1) / 2, (z0 + z1) / 2], dist: span * 2.2 + 12 };
 }
 
-export function mountStory(root, steps, { reduced, onStep } = {}) {
+export function mountStory(root, steps, { reduced, onStep, intro = false } = {}) {
   const stage = root.querySelector('.stage');
   const canvas = stage.querySelector('canvas'), overlay = stage.querySelector('.overlay');
   let world = null;
@@ -61,7 +61,7 @@ export function mountStory(root, steps, { reduced, onStep } = {}) {
       const r = els[k].getBoundingClientRect();
       if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 0.9)); t = clamp(-r.top / (vh * 0.35)); }
     }
-    if (i === 0) { a = 1; t = 1; }
+    if (i === 0) { a = 1; t = 1; if (introRaf && lastStep <= 0) { lastStep = 0; onStep?.(0, 0, 1); return; } }
     // the words: hidden while the scene animates, then in
     els.forEach((el, k) => { if (k > 0) { const v = k === i ? t : k === i - 1 && i > 0 ? 1 - clamp(a * 1.6) : 0; el.style.setProperty('--t', v.toFixed(3)); el.classList.toggle('live', k === i && t > 0.5); } });
     if (world) {
@@ -95,8 +95,22 @@ export function mountStory(root, steps, { reduced, onStep } = {}) {
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll);
   if (world) { system('s0', layout(steps[0].design)); world.setState(steps[0].state); world.setCamera(cams[0].centre, { instant: true }); }
+  // the opening builds itself: parts rise out of the floor one by one, from the users to the database
+  let introRaf = 0;
+  if (world && intro && !reduced) {
+    const order = Object.entries(layout(steps[0].design).parts).sort((a, b) => a[1].x - b[1].x || a[1].z - b[1].z).map(([id]) => id);
+    const t0 = performance.now();
+    const tick = (now) => {
+      if (lastStep > 0) { introRaf = 0; return; } // the reader has scrolled on: the story takes over
+      const t = (now - t0) / 1000, reveal = {};
+      order.forEach((id, k) => { reveal[id] = clamp((t - 0.15 - k * 0.13) / 0.45); });
+      world.setState(steps[0].state, { reveal, rate: 12 });
+      if (t < 0.6 + order.length * 0.13) introRaf = requestAnimationFrame(tick); else { introRaf = 0; world.setState(steps[0].state); }
+    };
+    introRaf = requestAnimationFrame(tick);
+  }
   update();
-  return { world, destroy() { cancelAnimationFrame(raf); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); world?.destroy(); } };
+  return { world, destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(introRaf); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); world?.destroy(); } };
 }
 
 /** the stage markup (sticky, spans the story) */

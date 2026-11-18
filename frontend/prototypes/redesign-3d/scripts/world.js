@@ -5,26 +5,22 @@
 // request speed; setCamera() glides the camera. Labels are HTML pills laid over the canvas (crisp at any zoom).
 // createWorld returns null without WebGL; pages then show their words without the scene.
 import * as THREE from './vendor/three.module.min.js';
+import { RoomEnvironment } from './vendor/RoomEnvironment.js';
+import { kindColours } from './palette.js';
 
 // Tech Katta's own look: soft matte models, one pastel per kind of part, taken from the app's six section colours
 // (sky, lilac, peach, mint, lemon, rose), with marigold indicator lights. Status: a coral-red glow when a part fails,
 // amber when it is busy; a healthy part keeps its own colour and gets a green halo.
-const KIND = {
-  light: { server: ['#BFE3FA', '#5B93C2'], lb: ['#DCCFF7', '#8A72C9'], cache: ['#FDD3B0', '#D08A52'], db: ['#BFEBD6', '#4FA17E'],
-    queue: ['#F2E8A8', '#B3A23E'], globe: ['#F8CBD3', '#C9737F'], laptop: ['#ECEAF2', '#8D8899'], small: ['#E4DDF6', '#8D80B8'] },
-  dark: { server: ['#3D6E96', '#9FD0F5'], lb: ['#5B4A8F', '#C7B6F5'], cache: ['#9A5B2E', '#FFC38F'], db: ['#2F7A5A', '#9FE5C4'],
-    queue: ['#7C7128', '#F0E38A'], globe: ['#8C4553', '#F5B1BD'], laptop: ['#55525F', '#CFCADB'], small: ['#4B4268', '#C3B7EA'] },
-};
 const PALETTE = {
   light: { page: '#FAF8F5', grid: '#3A3550', gridOp: 0.05, shadow: 0.12, blockE: '#FFFFFF', blockEI: 0.04, path: '#3A3550', pathOp: 0.32, dot: '#2F4BB3', hemi: 1.5, sun: 1.3, ground: '#ece6f2', led: '#FFC233' },
   dark: { page: '#121218', grid: '#EDEAF5', gridOp: 0.045, shadow: 0.38, blockE: '#000000', blockEI: 0, path: '#EDEAF5', pathOp: 0.28, dot: '#A9BCFF', hemi: 0.95, sun: 1.0, ground: '#1d1a26', led: '#FFC233' },
 };
 const TONE = {
   alert: { c: '#F7A3A0', e: '#EF4E4E', ei: 0.4, edge: '#C62F2F', glow: '#EF4E4E', dot: '#EF4E4E' },
-  warn: { c: '#FFD98A', e: '#F5A524', ei: 0.28, edge: '#A86600', glow: '#F5A524', dot: '#D98A00' },
+  warn: { e: '#F5A524', ei: 0.05, glow: '#F5A524', dot: '#D98A00' },
   ok: { e: '#2FA36B', ei: 0.06, glow: '#2FA36B', dot: '#2FA36B' },
 };
-const TONE_DARK = { alert: { c: '#B83C3C', ei: 0.55, edge: '#FF8A8A' }, warn: { c: '#B57A14', ei: 0.4, edge: '#FFC870' }, ok: { ei: 0.12 } };
+const TONE_DARK = { alert: { c: '#B83C3C', ei: 0.55, edge: '#FF8A8A' }, warn: { ei: 0.25 }, ok: { ei: 0.12 } };
 
 function roundedSlab(w, d, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
@@ -70,6 +66,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 5;
   scene.add(hemi, sun, sun.target);
   scene.fog = new THREE.Fog(0xf8f7fb, 20, 60);
+  { const pm = new THREE.PMREMGenerator(renderer); const room = new RoomEnvironment(); scene.environment = pm.fromScene(room, 0.04).texture; scene.environmentIntensity = 0.35; room.dispose(); pm.dispose(); }
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.11 }));
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   const grid = new THREE.GridHelper(160, 160, 0x1c1825, 0x1c1825);
@@ -85,7 +82,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     const mBlock = new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0, transparent: true, opacity: 0 });
     const mEdge = new THREE.LineBasicMaterial({ transparent: true, opacity: 0 });
     const mWhite = new THREE.MeshBasicMaterial({ color: pal.led, transparent: true, opacity: 0, toneMapped: false });
-    mBlock.color.set((dark ? KIND.dark : KIND.light)[def.kind]?.[0] || '#E4DDF6'); mEdge.color.set((dark ? KIND.dark : KIND.light)[def.kind]?.[1] || '#8D80B8');
+    { const kc = kindColours(def.kind, dark); mBlock.color.set(kc[0]); mEdge.color.set(kc[1]); }
     const layers = [], hits = [];
     const add = (geom, edgeGeom, y, parent = g, mat = mBlock) => {
       const mesh = new THREE.Mesh(geom, mat); mesh.position.y = y; mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); hits.push(mesh);
@@ -286,14 +283,14 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
 
   // ---- how a state looks (targets the loop blends between) ----
   const colA = new THREE.Color(), colB = new THREE.Color();
-  const kindCol = (kind) => (dark ? KIND.dark : KIND.light)[kind] || (dark ? KIND.dark : KIND.light).small;
+  const kindCol = (kind) => kindColours(kind, dark);
   const cmix = (m) => { const x = Math.max(0, Math.min(1, (m - 0.3) / 0.35)); return x * x * (3 - 2 * x); };
   function look(state, p, now) {
     const t = tone(state), k = kindCol(p.def.kind);
     return {
       hidden: state === 'hidden' ? 1 : 0, vis: state === 'dim' ? 0.22 : 1,
       c: t?.c || k[0], e: t ? t.e : pal.blockE, ei: t ? t.ei : pal.blockEI, edge: t?.edge || k[1],
-      glow: t ? t.glow : '#F07B3F', glowOp: state === 'alert' ? 0.42 + 0.1 * Math.sin(now * 0.004) : t ? 0.22 : 0,
+      glow: t ? t.glow : '#F07B3F', glowOp: state === 'alert' ? 0.42 + 0.1 * Math.sin(now * 0.004) : state === 'warn' ? 0.34 : t ? 0.22 : 0,
     };
   }
   function pathLook(st) {
@@ -341,7 +338,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       const useNew = mix >= 0.8, useOld = fromLabels && mix <= 0.2;
       const l = useNew || !fromLabels ? labels[id] : useOld ? fromLabels[id] : null;
       const st = useNew || !fromLabels ? p.state : p.prev;
-      if (l) { const html = `<i class="led ${l[1] || ''}"></i><b>${l[2] ?? p.def.name}</b>${l[0] ? ` <span class="v ${l[1] || ''}">${l[0]}</span>` : ''}`; if (p.pill._h !== html) { p.pill.innerHTML = html; p.pill._h = html; } }
+      if (l) { const html = `<i class="led ${l[1] || ''}" style="${l[1] ? '' : `background:var(--k-${p.def.kind})`}"></i><b>${l[2] ?? p.def.name}</b>${l[0] ? ` <span class="v ${l[1] || ''}">${l[0]}</span>` : ''}`; if (p.pill._h !== html) { p.pill.innerHTML = html; p.pill._h = html; } }
       place(p.pill, p.g.position.x, p.top + 0.45 + p.rise + (p.layers.length ? p.explode * 1.2 : 0), p.g.position.z, !!l && st !== 'hidden' && st !== 'dim' && p.vis > 0.6 && (p.reveal ?? 1) > 0.95);
     }
 
@@ -376,7 +373,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     canvas.removeEventListener('click', onClick); canvas.removeEventListener('pointermove', onMove);
     for (const p of parts.values()) disposePart(p);
     for (const p of paths.values()) disposePath(p);
-    dots.material.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
+    dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
   return { setSystem, setState, setCamera, frame, onPick: (cb) => { pickCb = cb; }, destroy };

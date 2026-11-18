@@ -33,7 +33,7 @@ export function mount(view, [id], { reduced }) {
     <div class="step finale" data-step="${l.steps.length + 1}">
       <p class="kicker"><span>DONE</span><i></i>NOW TRY IT</p>
       <h2 class="headline sm"><span class="thin">You have read it.</span><span class="heavy accent">Now keep it up.</span></h2>
-      ${inc ? `<a class="next-card" href="#/sim/${inc.id}"><span class="mono">INCIDENT ${inc.no} · ${inc.level.toUpperCase()}</span><b>${inc.title}</b><span class="muted">${inc.brief}</span><span class="go">Run it →</span></a>` : ''}
+      ${inc ? `<a class="next-card" href="#/sim/${inc.id}"><span class="mono">TRY IT IN THE SIMULATOR · ${inc.level.toUpperCase()}</span><b>${inc.title}</b><span class="muted">${inc.brief}</span><span class="go">Run it →</span></a>` : ''}
       ${next ? `<a class="btn light" href="#/learn/${next}">Next: ${LESSONS[next].title}<span class="chip violet">→</span></a>` : ''}
     </div>
   </section>`;

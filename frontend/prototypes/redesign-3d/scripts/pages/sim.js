@@ -20,7 +20,7 @@ export function mount(view, [id], { reduced, go }) {
   <section class="sim">
     <div class="sim-stage"><canvas></canvas><div class="overlay"></div></div>
     <aside class="brief glass">
-      <a class="back mono" href="#/incidents">← INCIDENTS</a>
+      <a class="back mono" href="#/">← HOME</a>
       <p class="kicker"><span>INC-${inc.no}</span><i></i>${inc.level.toUpperCase()} · ${inc.system.toUpperCase()}</p>
       <h1>${inc.title}</h1>
       <p class="muted">${inc.brief}</p>
@@ -193,7 +193,7 @@ export function mount(view, [id], { reduced, go }) {
       <h2 class="${r.passed ? 'ok' : 'alert'}">${r.passed ? 'The evening held.' : 'The evening did not hold.'}</h2>
       <ul class="checks">${r.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}"><i></i>${c.label}<b>${c.value}</b></li>`).join('')}</ul>
       ${r.why.length ? `<div class="why"><p class="mono">WHAT HAPPENED</p>${r.why.map((w) => `<p>${w.text}${w.lesson && LESSONS[w.lesson] && !LESSONS[w.lesson].soon ? ` <a href="#/learn/${w.lesson}">Read: ${LESSONS[w.lesson].title} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job.</p></div>'}
-      <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="#/sim/${nextInc.id}">Next incident<span class="chip">→</span></a>` : ''}<button type="button" class="btn light v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button></div>`;
+      <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="#/sim/${nextInc.id}">Next scenario<span class="chip">→</span></a>` : ''}<button type="button" class="btn light v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button></div>`;
     verdict.hidden = false;
     view.querySelector('.brief').style.visibility = 'hidden';
     verdict.querySelector('.v-close').addEventListener('click', hideVerdict);

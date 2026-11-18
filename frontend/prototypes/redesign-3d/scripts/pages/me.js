@@ -16,14 +16,14 @@ export function mount(view) {
       <h1 class="headline"><span class="thin">Where you are.</span><span class="heavy accent">What comes next.</span></h1>
       <div class="me-stats">
         <div><small>Lessons read</small><b>${readN}<em> / ${lessons.length}</em></b><span class="bar"><i style="width:${(readN / lessons.length) * 100}%"></i></span></div>
-        <div><small>Incidents survived</small><b>${survived}<em> / ${INCIDENTS.length}</em></b><span class="bar"><i style="width:${(survived / INCIDENTS.length) * 100}%"></i></span></div>
+        <div><small>Simulator runs passed</small><b>${survived}<em> / ${INCIDENTS.length}</em></b><span class="bar"><i style="width:${(survived / INCIDENTS.length) * 100}%"></i></span></div>
       </div>
       <div class="me-next">
         ${nextLesson ? `<a class="next-card" href="#/learn/${nextLesson[0]}"><span class="mono">NEXT LESSON</span><b>${nextLesson[1].title}</b><span class="muted">${nextLesson[1].hook}</span><span class="go">Read →</span></a>` : ''}
-        ${nextInc ? `<a class="next-card" href="#/sim/${nextInc.id}"><span class="mono">NEXT INCIDENT · ${nextInc.level.toUpperCase()}</span><b>${nextInc.title}</b><span class="muted">${nextInc.brief}</span><span class="go">Run →</span></a>` : ''}
+        ${nextInc ? `<a class="next-card" href="#/sim/${nextInc.id}"><span class="mono">NEXT IN THE SIMULATOR · ${nextInc.level.toUpperCase()}</span><b>${nextInc.title}</b><span class="muted">${nextInc.brief}</span><span class="go">Run →</span></a>` : ''}
       </div>
       <h2 class="sub">Your runs</h2>
-      <table class="runs"><thead><tr><th>Incident</th><th>Best score</th><th>Design</th><th>Cost</th></tr></thead><tbody>
+      <table class="runs"><thead><tr><th>Scenario</th><th>Best score</th><th>Design</th><th>Cost</th></tr></thead><tbody>
         ${INCIDENTS.map((i) => { const b = best[i.id]; return `<tr><td><a href="#/sim/${i.id}">${i.title}</a></td><td>${b ? `<span class="${b.passed ? 'ok' : 'alert'}">${b.score}${b.passed ? ' · survived' : ''}</span>` : '<span class="muted">not run</span>'}</td><td class="mono">${b ? `${b.design.apps} app · ${b.design.cache} cache · ${b.design.replicas} rep${b.design.queue ? ' · queue' : ''}${b.design.cdn ? ' · cdn' : ''}` : '—'}</td><td>${b ? rupees(cost(b.design)) : '—'}</td></tr>`; }).join('')}
       </tbody></table>
       <p><button type="button" class="btn light reset">Clear my progress</button></p>

@@ -1,17 +1,19 @@
 // The shell: hash routes, the top bar, the theme, page transitions. Each page module exports mount(view, params, ctx)
-// and returns a cleanup function. Routes: #/ · #/learn · #/learn/<lesson> · #/incidents · #/sim/<incident> · #/me
+// and returns a cleanup function. Routes: #/ · #/learn · #/learn/<lesson> · #/sim/<scenario> · #/me
 import * as landing from './pages/landing.js';
 import * as learn from './pages/learn.js';
 import * as lesson from './pages/lesson.js';
-import * as incidents from './pages/incidents.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
+import { applyPaletteVars } from './palette.js';
+
+applyPaletteVars();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const view = document.getElementById('view');
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [/^\/learn\/([\w-]+)$/, lesson, 'learn'],
-  [/^\/incidents\/?$/, incidents, 'incidents'], [/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/me\/?$/, me, 'me'],
+[/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/me\/?$/, me, 'me'],
 ];
 let cleanup = null, token = 0;
 

@@ -8,8 +8,6 @@ Watching a system fail teaches more than reading about it. Here the live 3D syst
 - **Landing** (`#/`): one incident told in six scroll steps over the 3D world, then the three ways in.
 - **Learn** (`#/learn`): a plain list of tracks; hovering a lesson rebuilds, on the right, the system it ends with.
 - **Lessons** (`#/learn/<id>`): scroll stories. Each step sets the system's design, colours and labels.
-- **Incidents** (`#/incidents`): five Indian evenings (IND vs PAK, a ticket sale, a big sale, salary day, election
-  results), each a traffic curve, the failures that happen and a budget in rupees.
 - **Simulator** (`#/sim/<id>`): add app servers, cache nodes, read replicas, a queue, a CDN; Run plays the evening at
   two ticks a second; parts glow amber when busy, orange when they fail; then a verdict with what broke and the lesson
   that explains it. Click a part in 3D to see what it does.
@@ -33,10 +31,26 @@ Instrument Sans and Geist Mono; models are single matte blocks with marigold lig
 dot grid. A paper-and-ink variant is kept on the branch `redesign-3d-paper-ink`. Keep it that way:
 take ideas (scroll-driven story, 3D systems) from other sites, never their palette, fonts, shapes or components.
 
+## One palette, everywhere (owner: "Pastel colours chosen for those 3D components should remain consistent across
+the website")
+`scripts/palette.js` is the only place the pastels live: each kind of part has one (app servers sky, load balancer
+lilac, cache peach, databases mint, queue lemon, CDN rose, users mist). `world.js` colours the models from it and
+`applyPaletteVars()` writes the same values as CSS variables (`--sky`, `--k-server` …) for the page: legend chips,
+label dots, highlighters, tints. Status never replaces a part's colour except failure: busy adds an amber halo,
+healthy a green one; broken turns coral red so it stands out.
+
+## The landing (owner: "every animation should be 3D")
+Every motion on the landing is 3D: the opening system builds itself (parts rise one by one), then nine scroll-driven
+chapters: the spike, it breaks, find the cause, fix it, the parts (the legend), learn, simulate, your turn. No flat
+cards or charts. The Incidents page was removed (owner: "Remove the incidents thing"); the simulator still opens
+with the IND vs PAK scenario.
+
 ## Files
 | File | Role |
 |---|---|
 | `scripts/world.js` | the 3D engine (three.js, vendored): systems as data, parts rise in and sink out, states, labels, camera, picking |
+| `scripts/palette.js` | the pastels: one per kind of part, for the 3D models and the page |
+| `scripts/vendor/RoomEnvironment.js` | three.js 0.170 add-on (soft studio lighting for the matte pastels) |
 | `scripts/sim.js` | the traffic model, prices, the layout of a design, the incidents (tuned: each start design fails; several designs pass) |
 | `scripts/content.js` | tracks and lessons (four written: load balancing, caching, read replicas, queues) |
 | `scripts/story.js` | a scroll story: steps over a sticky 3D stage (landing, lessons) |
