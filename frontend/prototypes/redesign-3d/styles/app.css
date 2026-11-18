@@ -647,3 +647,14 @@ body.bar-away .top { transform: translateY(-100%); }
 .inside-grid dd { margin: 0; color: var(--ink-2); font-size: 15px; }
 .inside-grid b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
 @media (max-width: 760px) { .inside-grid { grid-template-columns: 1fr; gap: 18px; } .topics-row span { font-size: 13px; } }
+
+/* phones: the hero headline wraps (a long line widened the page and pushed the scene off) */
+@media (max-width: 760px) {
+  .step.hero .thin, .hero .thin { white-space: normal; }
+  .step.hero .headline { font-size: clamp(34px, 9.6vw, 46px); }
+  .step.hero .actions { flex-wrap: nowrap; gap: 10px; }
+  .step.hero .actions .btn { padding: 0 14px; min-height: 46px; font-size: 15px; }
+}
+/* the last section is the end of the page: leave room for the footer */
+.landing-story .step.scrub:last-of-type { height: 100vh; height: 100svh; }
+@media (max-width: 760px) { .step.hero { padding-top: 84px; } .step.hero .lead { font-size: 15px; margin-bottom: 12px; } }
