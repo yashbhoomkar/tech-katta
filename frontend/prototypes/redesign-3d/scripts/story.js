@@ -47,7 +47,7 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     const f = frameOf(s), c = s.cam || {};
     const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.58 };
     const side = c.side !== false;
-    return { centre: { ...base, sx: 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? (c.sx ?? 0.68) : 0.5, sy: c.sy ?? 0.54 }, side };
+    return { centre: { ...base, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? (c.sx ?? 0.68) : 0.5, sy: c.sy ?? 0.54 }, side };
   });
 
   let sysKey = '';

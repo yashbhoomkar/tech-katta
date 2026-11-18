@@ -299,7 +299,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       let best = null;
       for (let k = 0; k < 7 && !best; k++) {
         for (const dx of k === 0 ? [0] : [0, -(w / 2 + 14), w / 2 + 14]) {
-          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(8, home.y - k * (h + 6)), w, h };
+          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(76, home.y - k * (h + 6)), w, h };
           if (!hit(b)) { best = b; break; }
         }
       }

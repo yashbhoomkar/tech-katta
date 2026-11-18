@@ -485,3 +485,38 @@ a.lesson:hover b { color: var(--ink); }
 .p3-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .p3-leaders line { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
 .p3 { transition: opacity .35s ease-out; }
+
+/* ===================== unslop pass (2026-11-18), after the unslop skill by Damir Sokolovsky (@heydamir), CC BY 4.0,
+   https://github.com/heydamir/unslop. Direction: patient, exact, a little playful; a workbench of small models in
+   daylight on a match night. The bright 3D system is the one moment on each screen; the chrome around it is quiet:
+   one neutral surface, no hue gradients, no glows, sentence case, no full stops on headlines. Signature: a part named
+   in the text carries its colour dot. ===================== */
+body { background: var(--page); background-attachment: scroll; }
+/* headlines: no highlighter; the first line secondary, the second primary */
+.headline .accent, .headline .ok, [data-theme="dark"] .headline .accent, [data-theme="dark"] .headline .ok { background: none; color: var(--ink); }
+.headline .ok { color: var(--ok); }
+.headline .thin { color: var(--ink-2); font-weight: 400; }
+.logword { font-weight: 600; }
+/* labels in sentence case, normal tracking */
+.kicker { font: 500 12px/1 var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.kicker span { font-variant-numeric: tabular-nums; }
+.progress, .progress .mono, .scroll-cue, .topics, .teacher .mono { letter-spacing: 0; text-transform: none; font-size: 12px; }
+.stats dt { letter-spacing: 0; text-transform: none; font-size: 12px; }
+.stats dd { font-weight: 600; font-variant-numeric: tabular-nums; }
+/* buttons: one solid primary, one quiet secondary, no gradient */
+.btn.violet, [data-theme="dark"] .btn.violet { background: var(--ink); color: var(--page); box-shadow: none; }
+.btn.dark { box-shadow: none; }
+.teacher .face { background: var(--sunken); color: var(--ink); border: 1px solid var(--line); font-weight: 600; }
+.who-grid > div { border-top: 1px solid var(--line); padding-top: 20px; }
+/* the signature: a part's colour dot in running text */
+.pd { display: inline-block; width: .5em; height: .5em; margin: 0 .3em .08em .05em; border-radius: 50%; background: var(--c); vertical-align: middle; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); }
+/* hero: text on the left, the system building itself on the right */
+@media (min-width: 761px) {
+  .step.hero { align-items: flex-start; text-align: left; justify-content: center; padding-top: 120px; }
+  .step.hero > * { max-width: 560px; }
+  .step.hero .headline { font-size: clamp(48px, 5.2vw, 84px); }
+  .step.hero .thin { white-space: normal; }
+  .step.hero .lead { margin-inline: 0; }
+  .step.hero .actions { justify-content: flex-start; }
+}
+@media (min-width: 761px) { .step.hero .lead { max-width: 30em; } }

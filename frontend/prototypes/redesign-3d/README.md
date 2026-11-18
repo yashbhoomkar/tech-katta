@@ -67,3 +67,12 @@ reads/s + 4k writes/s, each replica +6k reads · queue holds writes the primary 
 share · a replica is promoted 2 s after the primary dies. Pass: errors under 1 %, p99 under the incident's limit, cost
 within budget. To retune, run every design against every incident (5 × 4 × 4 × 2 × 2) and check that the start design
 fails and at least one design passes within budget.
+
+## Unslop pass (2026-11-18)
+Owner: "Use this skill: https://github.com/heydamir/unslop". The landing was audited against unslop's signs and
+fixed in its passes. unslop is by Damir Sokolovsky (@heydamir), CC BY 4.0; this prototype follows its guidance, no
+code or images were copied. Direction: patient, exact, a little playful; a workbench of small models in daylight on a
+match night. Moment: the bright 3D system, one per screen; the chrome around it is quiet. Signature: a part named in
+the text carries its colour dot (`pd()` in landing.js). Removed: the gradient headline highlighter and gradient
+buttons, the coloured washes and dot grid behind the page, uppercase tracked labels, full stops on headlines. Hero:
+text on the left, the system on the right.

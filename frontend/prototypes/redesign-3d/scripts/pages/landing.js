@@ -2,13 +2,16 @@
 // builds itself when the page opens, and each chapter's scroll drives its change (story.js). The parts wear the same
 // pastels as everywhere else (palette.js); the "meet the parts" chapter introduces them.
 import { mountStory, stageHtml } from '../story.js';
-import { LEGEND } from '../palette.js';
+import { LEGEND, KIND_PASTEL } from '../palette.js';
+
+/** the signature: a part named in the text carries its colour dot, the same as its 3D label */
+const pd = (kind) => `<i class="pd" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
 const D = (o) => ({ apps: 3, cache: 1, replicas: 0, queue: 0, cdn: 0, ...o });
 const FULL = D({ cache: 3, replicas: 2, queue: 1, cdn: 1 });
 const allOk = (d) => Object.fromEntries(['app0', 'app1', 'app2', 'app3', 'cache0', 'cache1', 'cache2', 'db', 'rep0', 'rep1', 'queue', 'cdn'].map((k) => [k, 'ok']).filter(([k]) => k.startsWith('app') ? Number(k.slice(3)) < d.apps : true));
 const STEPS = [
-  { design: D({}), cam: { side: false, sy: 0.9, zoom: 1.25, el: 26 }, state: { labels: { cache0: ['hit 94 %'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
+  { design: D({}), cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.05, el: 30, phoneSy: 0.56 }, state: { labels: { cache0: ['hit 94 %'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
   { design: D({}), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok', cache0: 'ok' }, labels: { cache0: ['37,600 hits/s', 'ok'], db: ['2,400 req/s'], app1: ['p99 38 ms', 'ok'] }, speed: 1.5 } },
   { design: D({}), state: { parts: { cache0: 'alert', db: 'alert', client: 'dim' }, paths: { 'app0-cache': 'down', 'app1-cache': 'down', 'app2-cache': 'down', db: 'alert' }, labels: { cache0: ['down', 'alert'], db: ['37,600 req/s · overloaded', 'alert'], app1: ['p99 2,000 ms', 'alert'] }, speed: 1.6 } },
   { design: D({}), cam: { zoom: 0.62, t: [14.4, 1.2], az: 36, el: 24 }, state: { parts: { cache0: 'alert', db: 'alert', client: 'dim', lb: 'dim', app0: 'dim', app1: 'dim', app2: 'dim' }, labels: { db: ['6,000 max · 37,600 in', 'alert'] }, explode: ['db'], speed: 0.9 } },
@@ -37,68 +40,68 @@ function chatApp() {
 }
 const CHAT = chatApp();
 STEPS.splice(8, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
-const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'THE PARTS', 'LEARN', 'SIMULATE', 'WHAT YOU BUILD', 'YOUR TURN'];
+const NAMES = ['Start', 'The spike', 'It breaks', 'Find the cause', 'Fix it', 'The parts', 'Learn', 'Simulate', 'What you build', 'Your turn'];
 
 export function mount(view, _p, { reduced }) {
   const sim = '#/sim/ind-vs-pak';
   view.innerHTML = `
   <section class="story landing-story">
-    ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">START</span></div>`)}
+    ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${STEPS.length - 1}</span><span class="segs">${STEPS.slice(1).map(() => '<i></i>').join('')}</span><span class="mono name">Start</span></div>`)}
     <div class="step hero" data-step="0">
-      <h1 class="headline"><span class="thin">Systems <span class="logword">break.</span></span><span class="heavy accent">Learn to keep them up.</span></h1>
+      <h1 class="headline"><span class="thin">Systems <span class="logword">break</span></span><span class="heavy accent">Learn to keep them up</span></h1>
       <p class="lead">Tech Katta is system design you can watch. Every idea is a moving system, and every system is yours to break and fix.</p>
       <div class="actions"><a class="btn dark" href="#/learn">Start learning<span class="chip">→</span></a><button class="btn light" type="button" data-next>See it break<span class="chip violet">↓</span></button></div>
-      <p class="scroll-cue mono" aria-hidden="true">SCROLL TO PLAY</p>
+      <p class="scroll-cue mono" aria-hidden="true">Scroll to play</p>
     </div>
     <div class="step" data-step="1">
-      <p class="kicker"><span>01</span><i></i>THE SPIKE</p>
-      <h2 class="headline"><span class="thin">IND vs PAK. 36,000 link opens a second.</span><span class="heavy accent">Everything is green.</span></h2>
-      <p class="lead">The promo SMS reaches crores of fans at the toss. The cache answers almost every open before the database hears.</p>
+      <p class="kicker"><span>01</span><i></i>The spike</p>
+      <h2 class="headline"><span class="thin">IND vs PAK, 36,000 link opens a second</span><span class="heavy accent">Everything is green</span></h2>
+      <p class="lead">The promo SMS reaches crores of fans at the toss. The ${pd("cache")}cache answers almost every open before the ${pd("db")}database hears.</p>
       <dl class="stats"><div><dt>Traffic</dt><dd>36k /s</dd></div><div><dt>Cache hit</dt><dd>94 %</dd></div><div><dt>p99</dt><dd>38 ms</dd></div></dl>
     </div>
     <div class="step" data-step="2">
-      <p class="kicker"><span>02</span><i></i>IT BREAKS</p>
-      <h2 class="headline"><span class="thin">The cache goes down.</span><span class="heavy accent">The database takes it all.</span></h2>
-      <p class="lead">One cache node, no spare. Every open falls through to a database built for a sixth of that.</p>
+      <p class="kicker"><span>02</span><i></i>It breaks</p>
+      <h2 class="headline"><span class="thin">The cache goes down</span><span class="heavy accent">The database takes it all</span></h2>
+      <p class="lead">One ${pd("cache")}cache node, no spare. Every open falls through to a ${pd("db")}database built for a sixth of that.</p>
       <dl class="stats"><div><dt>Errors</dt><dd class="alert">58 %</dd></div><div><dt>Since</dt><dd>20:14 IST</dd></div><div><dt>Severity</dt><dd class="alert">SEV-1</dd></div></dl>
     </div>
     <div class="step" data-step="3">
-      <p class="kicker"><span>03</span><i></i>FIND THE CAUSE</p>
-      <h2 class="headline"><span class="thin">The database isn’t broken.</span><span class="heavy accent">It is outnumbered.</span></h2>
+      <p class="kicker"><span>03</span><i></i>Find the cause</p>
+      <h2 class="headline"><span class="thin">The database isn’t broken</span><span class="heavy accent">It is outnumbered</span></h2>
       <p class="lead">It serves 6,000 reads a second, exactly as built. 37,600 arrived. The real question: why did one cache node hold everything?</p>
     </div>
     <div class="step" data-step="4">
-      <p class="kicker"><span>04</span><i></i>FIX IT</p>
-      <h2 class="headline"><span class="thin">Three cache nodes, two replicas.</span><span class="heavy ok">Run it again. It holds.</span></h2>
-      <p class="lead">Now a dead node loses a third of the keys, not all of them, and two replicas share what falls through.</p>
+      <p class="kicker"><span>04</span><i></i>Fix it</p>
+      <h2 class="headline"><span class="thin">Three cache nodes, two replicas</span><span class="heavy ok">Run it again and it holds</span></h2>
+      <p class="lead">Now a dead ${pd("cache")}cache node loses a third of the keys, not all of them, and two ${pd("db")}replicas share what falls through.</p>
     </div>
     <div class="step" data-step="5">
-      <p class="kicker"><span>05</span><i></i>THE PARTS</p>
-      <h2 class="headline"><span class="thin">Every part has a colour.</span><span class="heavy accent">The same one everywhere.</span></h2>
+      <p class="kicker"><span>05</span><i></i>The parts</p>
+      <h2 class="headline"><span class="thin">Every part has a colour</span><span class="heavy accent">The same one everywhere</span></h2>
       <p class="lead">Learn them once. In every lesson and every simulation on Tech Katta, a part looks like this.</p>
       <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
     </div>
     <div class="step" data-step="6">
-      <p class="kicker"><span>06</span><i></i>LEARN</p>
-      <h2 class="headline"><span class="thin">Every lesson is a story</span><span class="heavy accent">like the one you just scrolled.</span></h2>
+      <p class="kicker"><span>06</span><i></i>Learn</p>
+      <h2 class="headline"><span class="thin">Every lesson is a story</span><span class="heavy accent">like the one you just scrolled</span></h2>
       <p class="lead">Caching, replicas, queues, load balancing: the system on screen changes with every paragraph, so you see why each part exists.</p>
       <div class="actions"><a class="btn light" href="#/learn">Open the lessons<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="7">
-      <p class="kicker"><span>07</span><i></i>SIMULATE</p>
-      <h2 class="headline"><span class="thin">Then build your own.</span><span class="heavy accent">Press Run. Watch it hold.</span></h2>
-      <p class="lead">Add servers, caches, replicas, a queue, a CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
+      <p class="kicker"><span>07</span><i></i>Simulate</p>
+      <h2 class="headline"><span class="thin">Then build your own</span><span class="heavy accent">Press Run and watch it hold</span></h2>
+      <p class="lead">Add ${pd("server")}servers, ${pd("cache")}caches, ${pd("db")}replicas, a ${pd("queue")}queue, a ${pd("globe")}CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
       <div class="actions"><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="8">
-      <p class="kicker"><span>08</span><i></i>WHAT YOU WILL DESIGN</p>
-      <h2 class="headline"><span class="thin">Not toy diagrams.</span><span class="heavy accent">The apps you use every day.</span></h2>
+      <p class="kicker"><span>08</span><i></i>What you will design</p>
+      <h2 class="headline"><span class="thin">Not toy diagrams</span><span class="heavy accent">The apps you use every day</span></h2>
       <p class="lead">Like this chat app: messages, who is online, delivery when a friend’s phone is off. Then URL shorteners, ticket booking, payments, news feeds and video, each built from the same six parts.</p>
-      <p class="topics mono">CONCEPTS · COMPONENTS · INTERVIEW QUESTIONS · REAL SYSTEMS</p>
+      <p class="topics mono">Concepts · Components · Interview questions · Real systems</p>
     </div>
     <div class="step finale" data-step="9">
-      <p class="kicker"><span>09</span><i></i>YOUR TURN</p>
-      <h2 class="headline"><span class="heavy">You will meet this night</span><span class="heavy accent">in an interview, or at work.</span></h2>
+      <p class="kicker"><span>09</span><i></i>Your turn</p>
+      <h2 class="headline"><span class="heavy">You will meet this night</span><span class="heavy accent">in an interview, or at work</span></h2>
       <p class="lead">Better to meet it here first. Free: sign in with Google and everything opens.</p>
       <div class="actions"><a class="btn violet" href="#/learn">Start learning, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Open the simulator</a></div>
     </div>
@@ -115,7 +118,7 @@ export function mount(view, _p, { reduced }) {
     </div>
     <div class="teacher">
       <span class="face" aria-hidden="true">Y</span>
-      <div><p class="mono">TAUGHT BY</p><p class="q">“Hi, I’m Yash. I build backend systems for a living, and I write these the way I wish someone had explained them to me.”</p></div>
+      <div><p class="mono">Taught by</p><p class="q">“Hi, I’m Yash. I build backend systems for a living, and I write these the way I wish someone had explained them to me.”</p></div>
     </div>
     <div class="faq">
       <h2 class="sub-h">Questions</h2>
