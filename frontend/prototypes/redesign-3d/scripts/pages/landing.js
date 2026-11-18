@@ -40,8 +40,6 @@ STEPS.splice(8, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, st
 const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'THE PARTS', 'LEARN', 'SIMULATE', 'WHAT YOU BUILD', 'YOUR TURN'];
 
 export function mount(view, _p, { reduced }) {
-  // phones: the legend under the words names the parts, so the six labels would only crowd the small scene
-  if (innerWidth <= 760) { STEPS[5].state = { ...STEPS[5].state, labels: {} }; STEPS[8].state = { ...STEPS[8].state, labels: { users: ['', '', 'Chat app'] } }; }
   const sim = '#/sim/ind-vs-pak';
   view.innerHTML = `
   <section class="story landing-story">

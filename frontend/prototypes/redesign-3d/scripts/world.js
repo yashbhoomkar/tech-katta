@@ -274,11 +274,55 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // ---- labels ----
   const tmpV = new THREE.Vector3(), mtx = new THREE.Matrix4(), col = new THREE.Color();
   function project(x, y, z) { tmpV.set(x, y, z).project(camera); return [(tmpV.x + 1) / 2 * W, (1 - tmpV.y) / 2 * H, tmpV.z]; }
+  // Labels never overlap: each frame they are collected (place), then laid out together (layoutLabels). A label
+  // tries its own spot just above its part first, then spots further up and to either side; if it had to move, a thin
+  // leader line ties it back to its part. Positions ease toward their target so labels do not jump.
+  const queue = [];
+  const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  leaders.setAttribute('class', 'p3-leaders'); overlay.appendChild(leaders);
+  const lines = [];
   function place(el, x, y, z, show) {
     const [sx, sy, sz] = project(x, y, z);
     const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > 40 && sy < H - 20;
-    el.style.opacity = on ? '' : '0';
-    if (on) el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
+    if (on) queue.push({ el, ax: sx, ay: sy }); else { el.style.opacity = '0'; el._placed = false; }
+  }
+  function layoutLabels() {
+    const boxes = [];
+    const hit = (b) => boxes.some((o) => b.x < o.x + o.w + 6 && b.x + b.w + 6 > o.x && b.y < o.y + o.h + 4 && b.y + b.h + 4 > o.y);
+    queue.sort((a, b) => a.ay - b.ay);
+    let used = 0;
+    for (const q of queue) {
+      const { el, ax, ay } = q;
+      if (el._wh?.h0 !== el._h) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h };
+      const w = el._wh.w, h = el._wh.h;
+      const home = { x: ax - w / 2, y: ay - h - 6, w, h };
+      let best = null;
+      for (let k = 0; k < 7 && !best; k++) {
+        for (const dx of k === 0 ? [0] : [0, -(w / 2 + 14), w / 2 + 14]) {
+          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(8, home.y - k * (h + 6)), w, h };
+          if (!hit(b)) { best = b; break; }
+        }
+      }
+      best = best || home;
+      boxes.push(best);
+      const e = reduced || !el._placed ? 1 : 0.25;
+      el._x = el._placed ? el._x + (best.x - el._x) * e : best.x;
+      el._y = el._placed ? el._y + (best.y - el._y) * e : best.y;
+      el._placed = true;
+      el.style.opacity = '';
+      el.style.translate = '0 0';
+      el.style.transform = `translate(${el._x.toFixed(1)}px, ${el._y.toFixed(1)}px)`;
+      // leader line when the label sits away from its part
+      const cx = Math.max(el._x + 6, Math.min(el._x + w - 6, ax)), cy = el._y + h;
+      if (Math.hypot(cx - ax, cy - ay) > 12) {
+        let ln = lines[used];
+        if (!ln) { ln = document.createElementNS('http://www.w3.org/2000/svg', 'line'); leaders.appendChild(ln); lines.push(ln); }
+        ln.setAttribute('x1', ax.toFixed(1)); ln.setAttribute('y1', ay.toFixed(1)); ln.setAttribute('x2', cx.toFixed(1)); ln.setAttribute('y2', cy.toFixed(1));
+        ln.style.display = ''; used++;
+      }
+    }
+    for (let i = used; i < lines.length; i++) lines[i].style.display = 'none';
+    queue.length = 0;
   }
 
   // ---- how a state looks (targets the loop blends between) ----
@@ -359,6 +403,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       }
     }
     dots.instanceMatrix.needsUpdate = true; if (dots.instanceColor) dots.instanceColor.needsUpdate = true;
+    layoutLabels();
     renderer.render(scene, camera);
     raf = requestAnimationFrame(loop);
   }

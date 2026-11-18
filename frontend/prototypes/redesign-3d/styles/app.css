@@ -480,3 +480,8 @@ a.lesson:hover b { color: var(--ink); }
 .faq details[open] summary::after { content: "−"; }
 .faq details p { margin-top: 10px; max-width: 640px; }
 @media (max-width: 760px) { .who-grid { grid-template-columns: 1fr; gap: 24px; } .below { gap: 52px; padding-top: 80px; } }
+
+/* leader lines from a moved label to its part (world.js, layoutLabels) */
+.p3-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.p3-leaders line { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 3; opacity: .7; }
+.p3 { transition: opacity .35s ease-out; }
