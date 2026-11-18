@@ -14,12 +14,9 @@ const STEPS = [
   { design: D({}), cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.05, el: 30, phoneSy: 0.56 }, state: { labels: { cache0: ['hit 94%'], db: ['420 req/s'], lb: ['3 healthy'] }, speed: 0.6 } },
   { design: D({}), state: { parts: { app0: 'ok', app1: 'ok', app2: 'ok', cache0: 'ok' }, labels: { cache0: ['37,600 hits/s', 'ok'], db: ['2,400 req/s'], app1: ['p99 38 ms', 'ok'] }, speed: 1.5 } },
   { design: D({}), state: { parts: { cache0: 'alert', db: 'alert', client: 'dim' }, paths: { 'app0-cache': 'down', 'app1-cache': 'down', 'app2-cache': 'down', db: 'alert' }, labels: { cache0: ['down', 'alert'], db: ['37,600 req/s · overloaded', 'alert'], app1: ['p99 2,000 ms', 'alert'] }, speed: 1.6 } },
-  { design: D({}), cam: { zoom: 0.62, t: [14.4, 1.2], az: 36, el: 24 }, state: { parts: { cache0: 'alert', db: 'alert', client: 'dim', lb: 'dim', app0: 'dim', app1: 'dim', app2: 'dim' }, labels: { db: ['6,000 max · 37,600 in', 'alert'] }, explode: ['db'], speed: 0.9 } },
   { design: D({ cache: 3, replicas: 2 }), state: { parts: { cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok' }, labels: { cache1: ['3 nodes', 'ok'], db: ['1,200 req/s', 'ok'], rep0: ['sharing reads', 'ok'] }, speed: 1.2 } },
   // meet the parts: every kind, named, in its own pastel
   { design: FULL, cam: { zoom: 1.02, el: 34, az: 48 }, state: { labels: { app1: ['', '', 'App server'], lb: ['', '', 'Load balancer'], cache1: ['', '', 'Cache'], db: ['', '', 'Database'], queue: ['', '', 'Queue'], cdn: ['', '', 'CDN'] }, speed: 0.7 } },
-  // learn by watching: close on the cache; the rest steps back
-  { design: FULL, cam: { zoom: 0.5, t: [13.5, -3.9], az: 30, el: 28 }, state: { parts: { client: 'hidden', cdn: 'hidden', lb: 'hidden', app0: 'hidden', app1: 'hidden', app2: 'hidden', queue: 'hidden', rep0: 'hidden', rep1: 'hidden', db: 'hidden', cache1: 'alert' }, labels: { cache1: ['one node dies', 'alert'], cache0: ['⅓ of the keys'], cache2: ['⅓ of the keys'] }, speed: 0.8 } },
   // simulate: the whole system under a spike; parts busy, then holding
   { design: FULL, cam: { zoom: 0.95, el: 40, az: 42 }, state: { parts: { app0: 'warn', app1: 'warn', app2: 'warn', cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok', queue: 'warn', cdn: 'ok' }, labels: { app1: ['89% busy', 'warn'], queue: ['holding 12,000', 'warn'], db: ['4k writes/s', 'ok'], cdn: ['70% answered', 'ok'] }, speed: 2.2 } },
   { design: FULL, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: allOk(FULL), speed: 0.7 } },
@@ -39,8 +36,8 @@ function chatApp() {
   return { system: { parts, paths }, labels };
 }
 const CHAT = chatApp();
-STEPS.splice(8, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
-const NAMES = ['Start', 'The spike', 'It breaks', 'Find the cause', 'Fix it', 'The parts', 'Learn', 'Simulate', 'What you build', 'Your turn'];
+STEPS.splice(6, 0, { system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
+const NAMES = ['Start', 'The spike', 'It breaks', 'Fix it', 'The parts', 'Learn and build', 'What you will design', 'Your turn'];
 
 export function mount(view, _p, { reduced }) {
   const sim = '#/sim/ind-vs-pak';
@@ -62,45 +59,34 @@ export function mount(view, _p, { reduced }) {
     <div class="step" data-step="2">
       <p class="kicker"><span>02</span><i></i>It breaks</p>
       <h2 class="headline"><span class="thin">The cache goes down</span><span class="heavy accent">The database takes it all</span></h2>
-      <p class="lead">One ${pd("cache")}cache node, no spare. Every open falls through to a ${pd("db")}database built for a sixth of that.</p>
+      <p class="lead">One ${pd("cache")}cache node, no spare. Every open falls through to a ${pd("db")}database that serves 6,000 reads a second. 37,600 arrive.</p>
       <dl class="stats"><div><dt>Errors</dt><dd class="alert">58%</dd></div><div><dt>Since</dt><dd>20:14 IST</dd></div><div><dt>Severity</dt><dd class="alert">SEV-1</dd></div></dl>
     </div>
     <div class="step" data-step="3">
-      <p class="kicker"><span>03</span><i></i>Find the cause</p>
-      <h2 class="headline"><span class="thin">The database isn’t broken</span><span class="heavy accent">It is outnumbered</span></h2>
-      <p class="lead">The ${pd("db")}database serves 6,000 reads a second, exactly as built. 37,600 arrived. The real question: why did one ${pd("cache")}cache node hold everything?</p>
-    </div>
-    <div class="step" data-step="4">
-      <p class="kicker"><span>04</span><i></i>Fix it</p>
+      <p class="kicker"><span>03</span><i></i>Fix it</p>
       <h2 class="headline"><span class="thin">Three cache nodes, two replicas</span><span class="heavy accent">Run it again and it holds</span></h2>
       <p class="lead">Now a dead ${pd("cache")}cache node loses a third of the keys, not all of them, and two ${pd("db")}replicas share what falls through.</p>
     </div>
-    <div class="step" data-step="5">
-      <p class="kicker"><span>05</span><i></i>The parts</p>
+    <div class="step" data-step="4">
+      <p class="kicker"><span>04</span><i></i>The parts</p>
       <h2 class="headline"><span class="thin">Every part has a colour</span><span class="heavy accent">The same one everywhere</span></h2>
       <p class="lead">Learn them once. In every lesson and every simulation on Tech Katta, a part looks like this.</p>
       <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
     </div>
+    <div class="step" data-step="5">
+      <p class="kicker"><span>05</span><i></i>Learn and build</p>
+      <h2 class="headline"><span class="thin">Learn it as a story like this</span><span class="heavy accent">Then build your own and press Run</span></h2>
+      <p class="lead">Every lesson moves like this page. Then add ${pd("server")}servers, ${pd("cache")}caches, ${pd("db")}replicas, a ${pd("queue")}queue, a ${pd("globe")}CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
+      <div class="actions"><a class="btn light" href="#/learn">See the lessons<span class="chip violet">→</span></a><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
+    </div>
     <div class="step" data-step="6">
-      <p class="kicker"><span>06</span><i></i>Learn</p>
-      <h2 class="headline"><span class="thin">Every lesson is a story</span><span class="heavy accent">like the one you just scrolled</span></h2>
-      <p class="lead">Caching, replicas, queues, load balancing: the system on screen changes with every paragraph, so you see why each part exists.</p>
-      <div class="actions"><a class="btn light" href="#/learn">Open the lessons<span class="chip violet">→</span></a></div>
-    </div>
-    <div class="step" data-step="7">
-      <p class="kicker"><span>07</span><i></i>Simulate</p>
-      <h2 class="headline"><span class="thin">Then build your own</span><span class="heavy accent">Press Run and watch it hold</span></h2>
-      <p class="lead">Add ${pd("server")}servers, ${pd("cache")}caches, ${pd("db")}replicas, a ${pd("queue")}queue, a ${pd("globe")}CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
-      <div class="actions"><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
-    </div>
-    <div class="step" data-step="8">
-      <p class="kicker"><span>08</span><i></i>What you will design</p>
+      <p class="kicker"><span>06</span><i></i>What you will design</p>
       <h2 class="headline"><span class="thin">Not toy diagrams</span><span class="heavy accent">The apps you use every day</span></h2>
       <p class="lead">Like this chat app: messages, who is online, delivery when a friend’s phone is off. Then URL shorteners, ticket booking, payments, news feeds and video, each built from the same six parts.</p>
       <p class="topics mono">Concepts · Components · Interview questions · Real systems</p>
     </div>
-    <div class="step finale" data-step="9">
-      <p class="kicker"><span>09</span><i></i>Your turn</p>
+    <div class="step finale" data-step="7">
+      <p class="kicker"><span>07</span><i></i>Your turn</p>
       <h2 class="headline"><span class="heavy">You will meet this night</span><span class="heavy accent">in an interview, or at work</span></h2>
       <p class="lead">Better to meet it here first. Free: sign in with Google and everything opens.</p>
       <div class="actions"><a class="btn violet" href="#/learn">Start learning, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Open the simulator</a></div>
@@ -134,7 +120,7 @@ export function mount(view, _p, { reduced }) {
   const root = view.querySelector('.story');
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
   const story = mountStory(root, STEPS, { reduced, intro: true, onStep: (i) => { n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
-  root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.24, behavior: reduced ? 'auto' : 'smooth' }); });
+  root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.14, behavior: reduced ? 'auto' : 'smooth' }); });
   return () => story.destroy();
 }
 

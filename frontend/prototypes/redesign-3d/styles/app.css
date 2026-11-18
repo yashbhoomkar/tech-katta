@@ -551,3 +551,7 @@ body { background: var(--page); background-attachment: scroll; }
 .progress .name { display: none; }
 /* below the 3D: one column for every section */
 .below > * { max-width: 920px; }
+
+/* round 2 of shorter scroll: 1.15 screens a chapter */
+.step.scrub { height: 115vh; height: 115svh; }
+@media (max-width: 760px) { .step.scrub { height: 120svh; } }
