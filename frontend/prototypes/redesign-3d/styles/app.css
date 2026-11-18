@@ -530,3 +530,24 @@ body { background: var(--page); background-attachment: scroll; }
 .pin > .headline { font-size: clamp(40px, 4.8vw, 70px); }
 .pin > .lead { font-size: 18px; color: var(--ink); }
 @media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .5); } .pin > .lead { font-size: 16px; } }
+
+/* shorter chapters (owner: "too much of scrolling … too much of gap between two scrolls"): 1.4 screens each, the
+   change plays over the first 0.75 screen, the words arrive within the next 0.2 */
+.step.scrub { height: 140vh; height: 140svh; }
+@media (max-width: 760px) { .step.scrub { height: 140svh; } }
+
+/* ---------- consistency pass on the landing ---------- */
+/* every chapter's words start at the same place, in one column width, with one headline size */
+@media (min-width: 761px) {
+  .step.scrub > .pin { justify-content: flex-start; padding-top: max(150px, 22vh); }
+  .pin > * { max-width: 540px; }
+  .pin > .headline { font-size: clamp(38px, 3.9vw, 58px); }
+  .step.finale .pin { justify-content: center; padding-top: 110px; }
+  .step.finale .pin > .headline { font-size: clamp(40px, 4.4vw, 64px); }
+}
+/* the hero follows the same two-line pattern: first line secondary, second primary */
+.step.hero .thin { color: var(--ink-2); font-weight: 400; }
+/* the rail shows progress only; the chapter's name is already in its tag */
+.progress .name { display: none; }
+/* below the 3D: one column for every section */
+.below > * { max-width: 920px; }

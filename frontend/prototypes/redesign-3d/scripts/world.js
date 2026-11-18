@@ -193,8 +193,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   function setState({ parts: S = {}, paths: L = {}, labels: B = {}, speed: sp, explode = [], avoid = 0 } = {}, { from = null, mix: m = 1, reveal = null, rate = 5 } = {}) {
     for (const [id, p] of parts) { p.state = S[id] || ''; p.prev = from ? (from.parts?.[id] || '') : p.state; p.reveal = reveal?.[id] ?? 1; }
     for (const [id, p] of paths) {
-      p.state = L[id] || L[p.b] || '';
-      p.prev = from ? (from.paths?.[id] || from.paths?.[p.b] || '') : p.state;
+      const gone = (st, k) => st?.[k] === 'hidden';
+      p.state = gone(S, p.a) || gone(S, p.b) ? 'hidden' : L[id] || L[p.b] || '';
+      p.prev = from ? (gone(from.parts, p.a) || gone(from.parts, p.b) ? 'hidden' : from.paths?.[id] || from.paths?.[p.b] || '') : p.state;
       p.reveal = Math.min(reveal?.[p.a] ?? 1, reveal?.[p.b] ?? 1);
     }
     mix = Math.max(0, Math.min(1, m)); fromLabels = from ? (from.labels || {}) : null;

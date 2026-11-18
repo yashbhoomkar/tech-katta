@@ -26,15 +26,15 @@ export const perSec = (n) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 
 
 /** the 3D system for a design: parts and paths, ids app0.., cache0.., rep0.., db, queue, cdn, lb, client */
 export function layout(d) {
-  const parts = { client: { kind: 'laptop', x: 0, z: 0, name: 'users' }, lb: { kind: 'lb', x: 5.4, z: 0, name: 'load balancer' }, db: { kind: 'db', x: 14.4, z: 1.2, name: 'primary db' } };
+  const parts = { client: { kind: 'laptop', x: 0, z: 0, name: 'Users' }, lb: { kind: 'lb', x: 5.4, z: 0, name: 'Load balancer' }, db: { kind: 'db', x: 14.4, z: 1.2, name: 'Database' } };
   const paths = {};
-  if (d.cdn) { parts.cdn = { kind: 'globe', x: 2.7, z: 0, name: 'cdn' }; paths.in = ['client', 'cdn']; paths.edge = ['cdn', 'lb']; }
+  if (d.cdn) { parts.cdn = { kind: 'globe', x: 2.7, z: 0, name: 'CDN' }; paths.in = ['client', 'cdn']; paths.edge = ['cdn', 'lb']; }
   else paths.in = ['client', 'lb'];
   const rows = (n, gap) => Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * gap);
-  rows(d.apps, 2.2).forEach((z, i) => { parts[`app${i}`] = { kind: 'server', x: 8.6, z, name: 'app' }; paths[`lb-app${i}`] = ['lb', `app${i}`]; });
-  for (let i = 0; i < d.cache; i++) parts[`cache${i}`] = { kind: 'cache', x: 11.6 + i * 1.9, z: -3.9 - (d.apps > 4 ? 1.2 : 0), name: 'cache' };
-  rows(d.replicas, 2.1).forEach((z, i) => { parts[`rep${i}`] = { kind: 'db', x: 17.6, z: 1.2 + z, name: 'replica', layers: 2 }; paths[`db-rep${i}`] = ['db', `rep${i}`]; });
-  if (d.queue) { parts.queue = { kind: 'queue', x: 11.8, z: 4.6 + (d.apps > 4 ? 1.2 : 0), name: 'queue' }; paths['queue-db'] = ['queue', 'db']; }
+  rows(d.apps, 2.2).forEach((z, i) => { parts[`app${i}`] = { kind: 'server', x: 8.6, z, name: 'App server' }; paths[`lb-app${i}`] = ['lb', `app${i}`]; });
+  for (let i = 0; i < d.cache; i++) parts[`cache${i}`] = { kind: 'cache', x: 11.6 + i * 1.9, z: -3.9 - (d.apps > 4 ? 1.2 : 0), name: 'Cache' };
+  rows(d.replicas, 2.1).forEach((z, i) => { parts[`rep${i}`] = { kind: 'db', x: 17.6, z: 1.2 + z, name: 'Replica', layers: 2 }; paths[`db-rep${i}`] = ['db', `rep${i}`]; });
+  if (d.queue) { parts.queue = { kind: 'queue', x: 11.8, z: 4.6 + (d.apps > 4 ? 1.2 : 0), name: 'Queue' }; paths['queue-db'] = ['queue', 'db']; }
   for (let i = 0; i < d.apps; i++) {
     if (d.cache) paths[`app${i}-cache`] = [`app${i}`, `cache${i % d.cache}`];
     paths[`app${i}-db`] = [`app${i}`, d.replicas ? `rep${i % d.replicas}` : 'db'];
