@@ -15,8 +15,11 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const lerpCam = (a, b, k) => ({ t: [lerp(a.t[0], b.t[0], k), lerp(a.t[1], b.t[1], k)], dist: lerp(a.dist, b.dist, k), az: lerp(a.az, b.az, k), el: lerp(a.el, b.el, k), sx: lerp(a.sx, b.sx, k), sy: lerp(a.sy, b.sy, k), phoneSy: lerp(a.phoneSy, b.phoneSy, k) });
 
 /** the camera that frames a design (the world measures it; we keep our own copy so the scroll can blend) */
-function frameOf(design) {
-  const ps = Object.values(layout(design).parts);
+/** a step's 3D system: a hand-built one (step.system) or the layout of a simulator design (step.design) */
+const sysOf = (step) => step.system || layout(step.design);
+
+function frameOf(step) {
+  const ps = Object.values(sysOf(step).parts);
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   for (const p of ps) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
   const span = Math.max(x1 - x0, z1 - z0, 4);
@@ -41,15 +44,15 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
 
   // each step's two cameras: centre stage (while it animates) and aside (while you read)
   const cams = steps.map((s) => {
-    const f = frameOf(s.design), c = s.cam || {};
+    const f = frameOf(s), c = s.cam || {};
     const base = { t: c.t || f.t, dist: (c.dist || f.dist) * (c.zoom || 1), az: c.az ?? 42, el: c.el ?? 30, phoneSy: c.phoneSy ?? 0.58 };
     const side = c.side !== false;
-    return { centre: { ...base, sx: 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? 0.68 : 0.5, sy: c.sy ?? 0.54 }, side };
+    return { centre: { ...base, sx: 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, sx: side ? (c.sx ?? 0.68) : 0.5, sy: c.sy ?? 0.54 }, side };
   });
 
   let sysKey = '';
   function system(key, design) { if (key !== sysKey && world) { sysKey = key; world.setSystem(design); } }
-  const union = (a, b) => { const A = layout(a), B = layout(b); return { parts: { ...A.parts, ...B.parts }, paths: { ...A.paths, ...B.paths } }; };
+  const union = (a, b) => { const A = sysOf(a), B = sysOf(b); return { parts: { ...A.parts, ...B.parts }, paths: { ...A.paths, ...B.paths } }; };
 
   let raf = 0, lastStep = -1;
   function update() {
@@ -69,18 +72,19 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
       if (i > 0 && a < 1) {
         // phase 1: from the previous step to this one, driven by the scroll
         const m = ease(a);
-        system(`u${i}`, union(prev.design, cur.design));
-        const before = layout(prev.design).parts, after = layout(cur.design).parts;
+        system(`u${i}`, union(prev, cur));
+        const before = sysOf(prev).parts, after = sysOf(cur).parts;
         const reveal = {};
-        let n = 0;
-        for (const id of Object.keys(after)) if (!before[id]) { reveal[id] = clamp((a - 0.15 - n * 0.09) / 0.35); n++; }
+        const fresh = Object.keys(after).filter((id) => !before[id]).sort((p, q) => after[p].x - after[q].x || after[p].z - after[q].z);
+        const gap = Math.min(0.09, 0.45 / Math.max(1, fresh.length));
+        fresh.forEach((id, n) => { reveal[id] = clamp((a - 0.15 - n * gap) / 0.35); });
         for (const id of Object.keys(before)) if (!after[id]) reveal[id] = 1 - clamp(a / 0.5);
         world.setState({ ...cur.state, avoid: 0 }, { from: prev.state, mix: m, reveal, rate: 9 });
         world.setCamera(lerpCam(cams[i - 1].side ? cams[i - 1].aside : cams[i - 1].centre, cams[i].centre, m), { rate: 7 });
         canvas.style.setProperty('--side', ((1 - m) * (cams[i - 1].side && i - 1 > 0 ? 1 : 0)).toFixed(3));
       } else {
         // phase 2: this step, while its words come in; the scene slides aside
-        system(`s${i}`, layout(cur.design));
+        system(`s${i}`, sysOf(cur));
         const k = i === 0 ? 0 : ease(t), side = cams[i].side && i > 0;
         world.setState({ ...cur.state, avoid: side && k > 0.5 ? 0.47 : 0 }, { rate: 9 });
         world.setCamera(i === 0 ? cams[0].centre : lerpCam(cams[i].centre, cams[i].aside, k), { rate: 7 });
@@ -94,11 +98,11 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
   const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll);
-  if (world) { system('s0', layout(steps[0].design)); world.setState(steps[0].state); world.setCamera(cams[0].centre, { instant: true }); }
+  if (world) { system('s0', sysOf(steps[0])); world.setState(steps[0].state); world.setCamera(cams[0].centre, { instant: true }); }
   // the opening builds itself: parts rise out of the floor one by one, from the users to the database
   let introRaf = 0;
   if (world && intro && !reduced) {
-    const order = Object.entries(layout(steps[0].design).parts).sort((a, b) => a[1].x - b[1].x || a[1].z - b[1].z).map(([id]) => id);
+    const order = Object.entries(sysOf(steps[0]).parts).sort((a, b) => a[1].x - b[1].x || a[1].z - b[1].z).map(([id]) => id);
     const t0 = performance.now();
     const tick = (now) => {
       if (lastStep > 0) { introRaf = 0; return; } // the reader has scrolled on: the story takes over

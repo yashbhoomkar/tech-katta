@@ -458,3 +458,25 @@ a.lesson:hover b { color: var(--ink); }
 [data-theme="dark"] .headline .ok { background: linear-gradient(90deg, color-mix(in srgb, var(--mint) 70%, transparent), color-mix(in srgb, var(--sky) 70%, transparent)) 0 90% / 100% 26% no-repeat; }
 /* the highlighter sits under the words only, line by line, even when the line wraps */
 .headline > span.heavy.accent, .headline > span.heavy.ok { display: inline; width: auto; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+/* ---------- landing, below the 3D story: plain text, no 2D animation ---------- */
+.topics { margin-top: 6px; font-size: 11px; letter-spacing: .14em; color: var(--ink-3); }
+.below { display: grid; gap: 72px; padding-top: 110px; }
+.sub-h { font-size: clamp(26px, 2.6vw, 34px); margin-bottom: 22px; }
+.who-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.who-grid > div { padding-top: 16px; border-top: 4px solid var(--c); }
+.who-grid h3 { font-size: 19px; margin-bottom: 8px; }
+.who-grid p, .faq p { color: var(--ink-2); font-size: 15.5px; }
+.teacher { display: flex; gap: 22px; align-items: center; max-width: 820px; }
+.teacher .face { flex: none; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, var(--sky), var(--lilac) 55%, var(--peach)); color: #1B1A22; font-size: 26px; font-weight: 700; }
+.teacher .mono { font-size: 11px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 6px; }
+.teacher .q { font-size: clamp(18px, 1.8vw, 22px); line-height: 1.45; font-weight: 500; }
+.faq { max-width: 820px; }
+.faq details { border-top: 1px solid var(--line); padding: 16px 0; }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; color: var(--ink-3); }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { margin-top: 10px; max-width: 640px; }
+@media (max-width: 760px) { .who-grid { grid-template-columns: 1fr; gap: 24px; } .below { gap: 52px; padding-top: 80px; } }

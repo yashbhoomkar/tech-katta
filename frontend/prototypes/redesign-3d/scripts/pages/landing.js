@@ -21,7 +21,27 @@ const STEPS = [
   { design: FULL, cam: { zoom: 0.95, el: 40, az: 42 }, state: { parts: { app0: 'warn', app1: 'warn', app2: 'warn', cache0: 'ok', cache1: 'ok', cache2: 'ok', db: 'ok', rep0: 'ok', rep1: 'ok', queue: 'warn', cdn: 'ok' }, labels: { app1: ['89 % busy', 'warn'], queue: ['holding 12,000', 'warn'], db: ['4k writes/s', 'ok'], cdn: ['70 % answered', 'ok'] }, speed: 2.2 } },
   { design: FULL, cam: { side: false, sy: 0.93, zoom: 1.35, el: 42 }, state: { parts: allOk(FULL), speed: 0.7 } },
 ];
-const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'THE PARTS', 'LEARN', 'SIMULATE', 'YOUR TURN'];
+/** "what you'll design": a small city of real systems, each built from the same parts (and colours) */
+function city() {
+  const parts = {}, paths = {}, labels = {};
+  const C = [
+    ['url', 'URL shortener', 0, -12, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, -1.2], ['b', 'server', 2.4, 1.2], ['c', 'cache', 4.8, -1.2], ['d', 'db', 4.8, 1.2]], [['lb', 'a'], ['lb', 'b'], ['a', 'c'], ['b', 'd']]],
+    ['chat', 'Chat app', 14, -12, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, -1.2], ['b', 'server', 2.4, 1.2], ['q', 'queue', 5.4, 0], ['d', 'db', 8.4, 0]], [['lb', 'a'], ['lb', 'b'], ['a', 'q'], ['q', 'd']]],
+    ['tix', 'Ticket booking', 0, 0, [['a', 'server', 0, -1.2], ['b', 'server', 0, 1.2], ['q', 'queue', 3, 0], ['d', 'db', 6, 0]], [['a', 'q'], ['b', 'q'], ['q', 'd']]],
+    ['pay', 'Payments', 14, 0, [['lb', 'lb', 0, 0], ['a', 'server', 2.4, 0], ['d', 'db', 4.8, -1.2], ['r', 'db', 4.8, 1.3, 2]], [['lb', 'a'], ['a', 'd'], ['d', 'r']]],
+    ['feed', 'News feed', 0, 12, [['g', 'globe', 0, 0], ['a', 'server', 2.4, 0], ['c', 'cache', 4.8, -1.2], ['e', 'cache', 4.8, 1.2], ['d', 'db', 7.2, 0]], [['g', 'a'], ['a', 'c'], ['a', 'e'], ['c', 'd']]],
+    ['vid', 'Video streaming', 14, 12, [['g', 'globe', 0, -1.2], ['h', 'globe', 0, 1.2], ['a', 'server', 2.6, 0], ['d', 'db', 5.2, 0]], [['g', 'a'], ['h', 'a'], ['a', 'd']]],
+  ];
+  for (const [id, name, cx, cz, ps, ls] of C) {
+    for (const [k, kind, dx, dz, layers] of ps) parts[`${id}-${k}`] = { kind, x: cx + dx, z: cz + dz, name, ...(layers ? { layers } : {}) };
+    ls.forEach(([a, b], n) => { paths[`${id}-${n}`] = [`${id}-${a}`, `${id}-${b}`]; });
+    labels[`${id}-${ps[1][0]}`] = ['', '', name];
+  }
+  return { system: { parts, paths }, labels };
+}
+const CITY = city();
+STEPS.splice(8, 0, { system: CITY.system, cam: { zoom: typeof innerWidth !== 'undefined' && innerWidth > 760 ? 1.6 : 1.12, el: 46, az: 45, sx: 0.73 }, state: { labels: CITY.labels, parts: { 'tix-q': 'warn', 'feed-c': 'ok', 'feed-e': 'ok' }, speed: 1 } });
+const NAMES = ['START', 'THE SPIKE', 'IT BREAKS', 'FIND THE CAUSE', 'FIX IT', 'THE PARTS', 'LEARN', 'SIMULATE', 'WHAT YOU BUILD', 'YOUR TURN'];
 
 export function mount(view, _p, { reduced }) {
   // phones: the legend under the words names the parts, so the six labels would only crowd the small scene
@@ -76,11 +96,40 @@ export function mount(view, _p, { reduced }) {
       <p class="lead">Add servers, caches, replicas, a queue, a CDN. Send a real evening of traffic through it. Amber is busy, red is broken, and every result tells you why.</p>
       <div class="actions"><a class="btn light" href="${sim}">Open the simulator<span class="chip violet">→</span></a></div>
     </div>
-    <div class="step finale" data-step="8">
-      <p class="kicker"><span>08</span><i></i>YOUR TURN</p>
+    <div class="step" data-step="8">
+      <p class="kicker"><span>08</span><i></i>WHAT YOU WILL DESIGN</p>
+      <h2 class="headline"><span class="thin">Not toy diagrams.</span><span class="heavy accent">The apps you use every day.</span></h2>
+      <p class="lead">URL shorteners, chat, ticket booking, payments, news feeds, video. Each is built from the same six parts, taught as a story, then handed to you to break.</p>
+      <p class="topics mono">CONCEPTS · COMPONENTS · INTERVIEW QUESTIONS · REAL SYSTEMS</p>
+    </div>
+    <div class="step finale" data-step="9">
+      <p class="kicker"><span>09</span><i></i>YOUR TURN</p>
       <h2 class="headline"><span class="heavy">You will meet this night</span><span class="heavy accent">in an interview, or at work.</span></h2>
-      <p class="lead">Better to meet it here first.</p>
-      <div class="actions"><a class="btn violet" href="#/learn">Start learning<span class="chip">→</span></a><a class="btn light" href="${sim}">Open the simulator</a></div>
+      <p class="lead">Better to meet it here first. Free: sign in with Google and everything opens.</p>
+      <div class="actions"><a class="btn violet" href="#/learn">Start learning, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Open the simulator</a></div>
+    </div>
+  </section>
+
+  <section class="page below">
+    <div class="who">
+      <h2 class="sub-h">Who it is for</h2>
+      <div class="who-grid">
+        <div style="--c:var(--sky)"><h3>Preparing for interviews</h3><p>System design rounds, answered the way interviewers expect, with the reasoning you can say out loud.</p></div>
+        <div style="--c:var(--mint)"><h3>Already building backends</h3><p>The patterns behind the services you run: why a cache falls over, when a queue helps, what a replica costs.</p></div>
+        <div style="--c:var(--peach)"><h3>Curious how apps work</h3><p>What happens when crores of people open the same link at once, in plain words and Indian examples.</p></div>
+      </div>
+    </div>
+    <div class="teacher">
+      <span class="face" aria-hidden="true">Y</span>
+      <div><p class="mono">TAUGHT BY</p><p class="q">“Hi, I’m Yash. I build backend systems for a living, and I write these the way I wish someone had explained them to me.”</p></div>
+    </div>
+    <div class="faq">
+      <h2 class="sub-h">Questions</h2>
+      <details><summary>Is it free?</summary><p>Yes. Sign in with Google and every lesson and the simulator open. No card.</p></details>
+      <details><summary>Do I need to know coding?</summary><p>Basic programming helps. Every idea is explained from scratch, in plain words, with a system you can watch.</p></details>
+      <details><summary>How is this different from articles and videos?</summary><p>You watch systems run and break, then you build your own and the simulator tells you exactly what broke and why.</p></details>
+      <details><summary>Is the simulator real?</summary><p>It is a teaching model: a few honest numbers for servers, caches, databases and queues, chosen so you can see how parts behave under load.</p></details>
+      <details><summary>Does it work on a phone?</summary><p>Lessons do. The simulator is easier on a bigger screen.</p></details>
     </div>
   </section>
   ${footer()}`;

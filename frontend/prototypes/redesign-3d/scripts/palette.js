@@ -1,13 +1,14 @@
 // The one place the pastels live. Every kind of part has one pastel, and the same colour is used everywhere on the
 // site: the 3D models (world.js), the legend chips and label dots, highlights and tints (app.css reads the CSS
 // variables this file sets). Named after the app's six section colours.
-// Brighter pastels (owner, 2026-11-18: "Choose some brighter colours, but still don't copy rca.gg"): six clear hues
-// as a family, never one lavender with one violet; the lilac leans orchid (pink), away from lavender.
+// Bright colours (owner, 2026-11-18: "Choose some brighter colours, but still don't copy rca.gg", then, of the app
+// servers' dull blue: "Change that blue colour. Look for bright colours"). Six saturated hues as a family, the same
+// fill in light and dark (bright reads well on both); never one lavender with one violet.
 export const PASTEL = {
-  light: { sky: ['#8CD2FF', '#2C83C9'], lilac: ['#E3A8F7', '#A04FC4'], peach: ['#FFB980', '#D9772A'], mint: ['#86E5B8', '#22A06B'],
-    lemon: ['#FFE36E', '#C29E00'], rose: ['#FF9FB4', '#D9506F'], mist: ['#D9D6E4', '#6F6A80'] },
-  dark: { sky: ['#4FAEF0', '#B5E2FF'], lilac: ['#B76AD9', '#EBC6FA'], peach: ['#E8894A', '#FFD0A8'], mint: ['#34B77E', '#A8F0CC'],
-    lemon: ['#CBAE2C', '#FFF0A0'], rose: ['#D9637E', '#FFC0CE'], mist: ['#5E5B68', '#CFCADB'] },
+  light: { sky: ['#3DB5FF', '#0B6FB8'], lilac: ['#C98BFF', '#7E3FC2'], peach: ['#FFA24D', '#C2620F'], mint: ['#3DDC97', '#12895A'],
+    lemon: ['#FFD43B', '#B08A00'], rose: ['#FF7AC6', '#C2338A'], mist: ['#D9D6E4', '#6F6A80'] },
+  dark: { sky: ['#3DB5FF', '#BDE6FF'], lilac: ['#C98BFF', '#E8D2FF'], peach: ['#FFA24D', '#FFD7B0'], mint: ['#3DDC97', '#B4F3D6'],
+    lemon: ['#FFD43B', '#FFF0A8'], rose: ['#FF7AC6', '#FFC6E6'], mist: ['#5E5B68', '#CFCADB'] },
 };
 /** which pastel each kind of part wears */
 export const KIND_PASTEL = { server: 'sky', lb: 'lilac', cache: 'peach', db: 'mint', queue: 'lemon', globe: 'rose', laptop: 'mist', small: 'lilac' };

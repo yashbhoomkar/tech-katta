@@ -16,11 +16,11 @@ const PALETTE = {
   dark: { page: '#121218', grid: '#EDEAF5', gridOp: 0.045, shadow: 0.38, blockE: '#000000', blockEI: 0, path: '#EDEAF5', pathOp: 0.28, dot: '#A9BCFF', hemi: 0.95, sun: 1.0, ground: '#1d1a26', led: '#FFC233' },
 };
 const TONE = {
-  alert: { c: '#FF6B6B', e: '#E5383B', ei: 0.45, edge: '#B01E22', glow: '#EF3B3B', dot: '#E5383B' },
+  alert: { c: '#F23B3B', e: '#D92626', ei: 0.4, edge: '#9E1414', glow: '#EF3B3B', dot: '#E5383B' },
   warn: { e: '#F5A524', ei: 0.05, glow: '#F5A524', dot: '#D98A00' },
   ok: { e: '#2FA36B', ei: 0.06, glow: '#2FA36B', dot: '#2FA36B' },
 };
-const TONE_DARK = { alert: { c: '#E04848', ei: 0.6, edge: '#FFB0B0' }, warn: { ei: 0.25 }, ok: { ei: 0.12 } };
+const TONE_DARK = { alert: { c: '#F04646', ei: 0.5, edge: '#FFB0B0' }, warn: { ei: 0.25 }, ok: { ei: 0.12 } };
 
 function roundedSlab(w, d, h, r) {
   const s = new THREE.Shape(), x = -w / 2, y = -d / 2;
