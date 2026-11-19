@@ -46,22 +46,43 @@ function glowTexture() {
 const GEO = {};
 function geo(key, make) { return GEO[key] || (GEO[key] = make()); }
 
+// Quality (owner: "Our website loads slow on other people's phone who have a bit slow processor"). Three levels:
+//   0 full: soft shadows on a 2048 map, antialiasing, up to 2x pixels
+//   1 light: hard shadows on a 1024 map, 1x pixels, no antialiasing, no frosted-glass blur on the page
+//   2 lighter: no shadows, and the 3D draws at 30 fps
+// A phone with few cores or little memory (or Data Saver on) starts light; any device that cannot hold about 45 fps
+// steps down by itself, and remembers it, so the next page and the next visit start where it settled.
+const Q_KEY = 'tk-r3d-q';
+let quality = (() => {
+  try { const v = localStorage.getItem(Q_KEY); if (v !== null) return Math.max(0, Math.min(2, +v || 0)); } catch { /* storage blocked */ }
+  const n = navigator; return (n.hardwareConcurrency || 8) <= 4 || (n.deviceMemory || 8) <= 4 || n.connection?.saveData ? 1 : 0;
+})();
+const worlds = new Set();
+const markLite = () => document.documentElement.classList.toggle('lite', quality >= 1);
+markLite();
+function stepDown() {
+  if (quality >= 2) return;
+  quality++; markLite();
+  try { localStorage.setItem(Q_KEY, String(quality)); } catch { /* storage blocked */ }
+  worlds.forEach((f) => f());
+}
+
 export function createWorld(canvas, overlay, { reduced = false, still = false } = {}) {
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: quality === 0, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
   if (!renderer.getContext()) return null;
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping; // keeps the pastels' hue and saturation (ACES washes light colours out)
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = quality < 2;
+  renderer.shadowMap.type = quality === 0 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(22, 1, 0.5, 400);
   const hemi = new THREE.HemisphereLight(0xffffff, 0xd8d0f5, 1.5);
   const sun = new THREE.DirectionalLight(0xffffff, 1.25);
-  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  sun.castShadow = quality < 2; sun.shadow.mapSize.set(quality === 0 ? 2048 : 1024, quality === 0 ? 2048 : 1024);
   Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 70 });
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 5;
   scene.add(hemi, sun, sun.target);
@@ -248,7 +269,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   let W = 1, H = 1;
   function resize() {
     W = canvas.clientWidth || 1; H = canvas.clientHeight || 1;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, W <= 760 ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality >= 1 ? 1 : W <= 760 ? 1.5 : 2));
     renderer.setSize(W, H, false); camera.aspect = W / H;
   }
   addEventListener('resize', resize);
@@ -399,8 +420,27 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // ---- the loop ----
   const lerp = (a, b, k) => a + (b - a) * k;
   let last = performance.now(), running = true, raf = 0, dead = false;
+  // the watchdog: after a short warm-up, it times about 2 s of frames; slower than 22 ms a frame on average (about
+  // 45 fps) twice in a row steps down a level (once could be the page still loading). Timed, not counted, so the
+  // slowest phones are caught as fast as the rest.
+  let wFrames = 0, wSum = 0, lastDraw = 0, slow = 0;
+  const applyQuality = () => {
+    renderer.shadowMap.type = quality === 0 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    renderer.shadowMap.enabled = sun.castShadow = quality < 2;
+    sun.shadow.mapSize.set(quality === 0 ? 2048 : 1024, quality === 0 ? 2048 : 1024);
+    sun.shadow.map?.dispose(); sun.shadow.map = null;
+    scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
+    resize(); wFrames = 0; wSum = 0;
+  };
+  worlds.add(applyQuality);
   function loop(now) {
     if (!running) return;
+    if (quality >= 2 && now - lastDraw < 31) { raf = requestAnimationFrame(loop); return; }
+    const gap = now - last;
+    if (quality < 2 && gap < 1000 && !document.hidden) {
+      if (++wFrames > 8) { wSum += gap; if (wSum > 2000) { slow = wSum / (wFrames - 8) > 22 ? slow + 1 : 0; if (slow >= 2) { slow = 0; stepDown(); } wFrames = 0; wSum = 0; } }
+    }
+    lastDraw = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const k = reduced ? 1 : 1 - Math.exp(-dt * camRate);
     for (const key of ['dist', 'az', 'el', 'sx', 'sy']) cam[key] = lerp(cam[key], camGoal[key], k);
@@ -478,7 +518,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   raf = requestAnimationFrame(loop);
 
   function destroy() {
-    dead = true; running = false; cancelAnimationFrame(raf); seen?.disconnect();
+    worlds.delete(applyQuality); dead = true; running = false; cancelAnimationFrame(raf); seen?.disconnect();
     removeEventListener('resize', resize); ro?.disconnect(); themeObs.disconnect();
     document.removeEventListener('visibilitychange', onVis);
     canvas.removeEventListener('click', onClick); canvas.removeEventListener('pointermove', onMove);

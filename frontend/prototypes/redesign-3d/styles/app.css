@@ -1306,3 +1306,9 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 .tour-spot.still, .tour-card.still { transition: opacity .2s; }
 .tour-card.still.in > * { animation: none; }
 @media (prefers-reduced-motion: reduce) { .tour-spot, .tour-card { transition: opacity .2s; } .tour-card.in > *, .tour-offer { animation: none; } }
+
+/* Light quality (html.lite, set by world.js on slow phones): frosted-glass blur re-renders whatever is behind it, and
+   behind most glass here is a 3D canvas redrawing every frame, so slow phones get solid glass instead. Same look, no blur. */
+html.lite { --glass-blur: none; --glass-bg: rgb(255 255 255 / .92); }
+html.lite[data-theme="dark"] { --glass-bg: rgb(22 21 30 / .92); }
+html.lite .top, html.lite .fact, html.lite .p3, html.lite .glass, html.lite .tabbar, html.lite .tour-card, html.lite .tour-offer, html.lite .part-card, html.lite .explore-hint { backdrop-filter: none; -webkit-backdrop-filter: none; }
