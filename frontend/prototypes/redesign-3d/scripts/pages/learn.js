@@ -6,6 +6,8 @@ import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
 import { recipeFor, RECIPES, PREVIEW } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
+import { PLACES } from '../shell.js';
+const tagText = (t = '') => t.toLowerCase().replace(/^./, (c) => c.toUpperCase()).replace(/\b(cap|cdc|api|sql|ai|cdn)\b/gi, (w) => w.toUpperCase());
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const numOf = (no = '') => (no.match(/(\d+)/) || [])[1] || '';
@@ -27,30 +29,54 @@ export function mount(view, [sectionId], { reduced }) {
     const groups = sec.groups.map(([g, name]) => [name, mine.filter((a) => a.group === g)]).filter(([, l]) => l.length);
     const other = mine.filter((a) => !sec.groups.some(([g]) => g === a.group));
     if (other.length) groups.push(['More', other]);
+    const next = mine.find((x) => !read[`${x.section}/${x.slug}`]);
+    const levels = sec.id === 'interview-questions' ? ['easy', 'medium', 'hard'].filter((l) => mine.some((x) => x.group === l)) : [];
+    const colour = (PLACES.find((p) => p.id === sec.id) || PLACES[2]).colour;
     view.innerHTML = `
-    <section class="page learn">
-      <div class="learn-list">
-        <p class="kicker"><span>Learn</span><i></i>${done} of ${mine.length} read</p>
-        <h1 class="headline"><span class="thin">${esc(sec.name)}</span><span class="heavy accent">${esc(HEAD[sec.id][0])}</span></h1>
-        <nav class="tabs" aria-label="Sections">${SECTIONS.map((s) => `<a href="#/learn/${s.id}" ${s.id === sec.id ? 'aria-current="page"' : ''}>${esc(s.name)}<span class="mono">${list.filter((a) => a.section === s.id).length}</span></a>`).join('')}</nav>
-        <p class="lead">${esc(HEAD[sec.id][1])}</p>
-        ${groups.map(([name, items], gi) => `
-          <div class="track-block">
-            <div class="track-head"><span class="mono">0${gi + 1}</span><h2>${esc(name)}</h2><span class="mono muted">${items.length}</span></div>
-            <ol class="lessons">
-              ${items.map((a) => { const [h, rest] = splitTitle(a.title), isRead = read[`${a.section}/${a.slug}`]; return `<li>
-                <a class="lesson" href="#/learn/${a.section}/${a.slug}" data-preview="${a.slug}">
-                  <span class="l-n mono">${numOf(a.no)}</span>
-                  <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(rest || a.dek)}</span></span>
-                  <span class="l-meta mono">${isRead ? '<span class="ok">✓ Read</span>' : RECIPES[a.slug] ? '<span class="story-tag">3D story</span>' : ''}</span>
-                </a></li>`; }).join('')}
-            </ol>
-          </div>`).join('')}
+    <section class="page learn" style="--acc: var(--${colour})">
+      <header class="sec-head">
+        <div>
+          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/home">Home</a><span>/</span><span>Learn</span></nav>
+          <h1 class="headline"><span class="thin">${esc(sec.name)}</span><span class="heavy accent">${esc(HEAD[sec.id][0])}</span></h1>
+          <p class="lead">${esc(HEAD[sec.id][1])}</p>
+          <nav class="tabs" aria-label="Sections">${SECTIONS.map((s) => `<a href="#/learn/${s.id}" ${s.id === sec.id ? 'aria-current="page"' : ''}>${esc(s.name)}<span class="mono">${list.filter((a) => a.section === s.id).length}</span></a>`).join('')}</nav>
+        </div>
+        <div class="cprog">
+          <b>${done} of ${mine.length} done</b>
+          <span class="cbar"><i style="width:${mine.length ? (done / mine.length) * 100 : 0}%"></i></span>
+          ${next ? `<small>Next up: ${esc(splitTitle(next.title)[0])}</small><a class="btn dark sm" href="#/learn/${next.section}/${next.slug}">${done ? 'Continue' : 'Start'} →</a>` : '<small>All done here</small>'}
+        </div>
+      </header>
+      ${levels.length ? `<div class="seg levels" role="group" aria-label="Filter by difficulty" style="--n:${levels.length + 1}">${['all', ...levels].map((l, i) => `<button type="button" data-level="${l}" data-i="${i}" aria-pressed="${l === 'all'}">${l === 'all' ? 'All' : l[0].toUpperCase() + l.slice(1)}</button>`).join('')}<i class="seg-pill" aria-hidden="true"></i></div>`
+        : groups.length > 1 ? `<nav class="jump" aria-label="Groups">${groups.map(([name], gi) => `<a href="#g-${gi}" data-jumpg="${gi}">${esc(name)}</a>`).join('')}</nav>` : ''}
+      <div class="learn-cols">
+        <div class="learn-list">
+          ${groups.map(([name, items], gi) => { const gd = items.filter((x) => read[`${x.section}/${x.slug}`]).length; const gid = sec.groups.find(([, n]) => n === name)?.[0] || 'more';
+            return `<section class="track-block" id="g-${gi}" data-group="${gid}">
+              <div class="track-head"><h2>${esc(name)}</h2><span class="chip-done mono">${gd} of ${items.length} done</span></div>
+              <ol class="lessons">
+                ${items.map((a, i) => { const [h, rest] = splitTitle(a.title), isRead = read[`${a.section}/${a.slug}`]; return `<li>
+                  <a class="lesson${isRead ? ' done' : ''}" href="#/learn/${a.section}/${a.slug}" data-preview="${a.slug}">
+                    <span class="st" role="img" aria-label="${isRead ? 'Done' : 'Not started'}">${isRead ? '✓' : ''}</span>
+                    <span class="l-n mono">${String(i + 1).padStart(2, '0')}</span>
+                    <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(rest || a.dek)}</span></span>
+                    <span class="l-tag mono">${esc(tagText(a.tag))}</span>
+                  </a></li>`; }).join('')}
+              </ol>
+            </section>`; }).join('')}
+        </div>
+        <aside class="learn-preview" aria-hidden="true"><div class="preview-card"><canvas></canvas><div class="overlay"></div><p class="preview-cap"><span class="cap-t mono"></span><span class="cap-s"></span></p></div></aside>
       </div>
-      <aside class="learn-preview" aria-hidden="true"><div class="preview-card"><canvas></canvas><div class="overlay"></div><p class="preview-cap"><span class="cap-t mono"></span><span class="cap-s"></span></p></div></aside>
     </section>
     ${footer()}`;
 
+    // difficulty filter (interview questions): the pill slides to the choice; the start guides always show
+    view.querySelectorAll('[data-level]').forEach((b) => b.addEventListener('click', () => {
+      view.querySelectorAll('[data-level]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      view.querySelector('.levels').style.setProperty('--at', b.dataset.i);
+      view.querySelectorAll('.track-block').forEach((g) => { g.hidden = !(b.dataset.level === 'all' || g.dataset.group === b.dataset.level || !levels.includes(g.dataset.group)); });
+    }));
+    view.querySelectorAll('[data-jumpg]').forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); view.querySelector(`#g-${l.dataset.jumpg}`)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }));
     const card = view.querySelector('.preview-card');
     world?.destroy(); world = null;
     try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; }

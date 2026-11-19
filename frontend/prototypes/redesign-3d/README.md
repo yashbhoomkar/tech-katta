@@ -118,3 +118,10 @@ a chat app → your turn.
   icons) with progress and what is next; cards slide up in turn; on phones a sideways-swipe deck with dots.
 - **Motion**: sideways page slides between app pages (view transitions, direction from the sidebar order); on phones,
   swipe the Learn list to change tab (it follows the finger, rubber-bands at the ends).
+- **Inside a section and an article** (after tech.katta.cc): section pages have a header with a progress card (x of
+  y done, next up, Start/Continue), group jump links (a sliding-pill difficulty filter on interview questions),
+  groups with "x of y done", rows with a status tick, number, title and tag; the 3D preview stays beside the list.
+  The reader has a reading-progress line, breadcrumbs, number and tag, read time ("with details"), a Completed chip,
+  Full text / Cards (a sliding pill; Cards opens one topic at a time, swipe or step between them), Share, a right
+  rail with the 3D figure, "On this page" that follows you and the group's lessons, and "Mark complete & next"
+  (a burst in the part colours, a toast). Articles now count as read when marked complete, as on tech.katta.cc.

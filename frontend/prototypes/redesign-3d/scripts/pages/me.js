@@ -65,7 +65,7 @@ export function mount(view, _p, { reduced, go }) {
             <li><a href="#/sim/ind-vs-pak"><span class="prog-n">Practice runs passed</span><span class="prog-v mono">${passed} / ${INCIDENTS.length}</span><span class="bar"><i style="width:${(passed / INCIDENTS.length) * 100}%"></i></span></a></li>
           </ul>
           <h2 class="sub-h">Recently read</h2>
-          ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count as read when you reach their end.</p>'}
+          ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
         </div>
         <div>
           <h2 class="sub-h">Parts and their concepts</h2>

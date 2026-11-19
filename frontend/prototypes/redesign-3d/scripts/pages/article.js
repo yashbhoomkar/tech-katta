@@ -6,6 +6,14 @@ import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS } from
 import { recipeFor } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
+import { PLACES } from '../shell.js';
+
+/** a small note that slides up from the bottom and goes */
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); setTimeout(() => t.classList.add('out'), 1800); setTimeout(() => t.remove(), 2300);
+}
+const sentenceNo = (t = '') => sentence(t.replace(/\s*\/\/\s*/, ' '));
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** running text: escaped, with `code` spans */
@@ -13,7 +21,7 @@ const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const numOf = (no = '') => (no.match(/(\d+)/) || [])[1] || '';
 // option labels arrive in capitals ("SQS, RABBITMQ"): sentence case, with names and acronyms restored
-const PROPER = { sqs: 'SQS', sns: 'SNS', cdn: 'CDN', url: 'URL', sql: 'SQL', rabbitmq: 'RabbitMQ', kafka: 'Kafka', kinesis: 'Kinesis', pulsar: 'Pulsar', google: 'Google', 'pub/sub': 'Pub/Sub', api: 'API' };
+const PROPER = { sqs: 'SQS', sns: 'SNS', cdn: 'CDN', url: 'URL', sql: 'SQL', rabbitmq: 'RabbitMQ', kafka: 'Kafka', kinesis: 'Kinesis', pulsar: 'Pulsar', google: 'Google', 'pub/sub': 'Pub/Sub', api: 'API', cap: 'CAP', cdc: 'CDC', ai: 'AI', ind: 'IND', pak: 'PAK', vs: 'vs' };
 const sentence = (t) => { const s = t.toLowerCase().replace(/[a-z/]+/g, (w) => PROPER[w] || w); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 function block(b, a) {
@@ -77,6 +85,17 @@ export function mount(view, [section, slug], { reduced }) {
     const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
       : phone ? { ...s, cam: { ...(s.cam || {}), side: false, phoneSy: 0.3, phoneZoom: 1.75 } } : s));
     const h2s = a.body.filter((b) => b.t === 'h2');
+    // topics for the Cards view: each h2 section, with its first line as a lede (tech.katta.cc's "Cards")
+    const topics = [], introBlocks = [];
+    for (const b of a.body) { if (b.t === 'h2') topics.push({ title: b.x, blocks: [] }); else (topics.length ? topics[topics.length - 1].blocks : introBlocks).push(b); }
+    topics.forEach((t) => { const p = t.blocks.find((b) => b.t === 'p') || t.blocks.find((b) => b.t === 'list'); const x = p ? (p.x || p.items[0]) : ''; t.lede = x.replace(/`/g, '').slice(0, 120) + (x.length > 120 ? '…' : ''); });
+    const intro = introBlocks.map((b) => block(b, a)).join('');
+    const words = (bs) => JSON.stringify(bs).split(/\s+/).length;
+    const withDetails = Math.round(words(a.body) / 230);
+    const colour = (PLACES.find((p) => p.id === a.section) || PLACES[2]).colour;
+    const isDone = !!store.get().read[id], isProblem = a.section === 'interview-questions' && a.group !== 'start';
+    const lab = a.body.find((b) => b.t === 'lab');
+    let mode = 'full'; try { mode = localStorage.getItem('tk-r3d-reader') === 'cards' ? 'cards' : 'full'; } catch { /* blocked */ }
     view.innerHTML = `
     <section class="story landing-story article-story">
       ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${steps.length - 1}</span><span class="segs">${steps.slice(1).map(() => '<i></i>').join('')}</span></div>`)}
@@ -94,23 +113,44 @@ export function mount(view, [section, slug], { reduced }) {
         ${i === steps.length - 2 ? '<div class="actions"><button class="btn light" type="button" data-skip>Read the article<span class="chip violet">↓</span></button></div>' : ''}
       </div>`).join('')}
     </section>
-    <article class="reader" id="read">
+    <article class="reader" id="read" style="--acc: var(--${colour})">
+      <i class="read-line" aria-hidden="true"></i>
       <div class="reader-grid">
         <div class="prose">
           <header class="prose-head">
-            <p class="kicker"><span>The article</span><i></i>${minutes(a)} min</p>
-            ${h2s.length > 2 ? `<nav class="toc" aria-label="In this article"><p class="mono">In this article</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></nav>` : ''}
-          </header>
-          ${a.body.map((b) => block(b, a)).join('')}
-          <div class="reader-end">
-            <p class="mono done-note">${store.get().read[id] ? 'Read. It counts on your dashboard.' : 'Reaching here marks it read on your dashboard.'}</p>
-            <div class="end-links">
-              ${prev ? `<a class="end-card" href="#/learn/${a.section}/${prev.slug}"><span class="mono">Previous</span><b>${esc(splitTitle(prev.title)[0])}</b></a>` : '<span></span>'}
-              ${next ? `<a class="end-card next" href="#/learn/${a.section}/${next.slug}"><span class="mono">Next</span><b>${esc(splitTitle(next.title)[0])}</b><span class="muted">${esc(next.dek)}</span></a>` : `<a class="end-card next" href="#/learn/${a.section}"><span class="mono">Done</span><b>Back to ${esc(sec.name.toLowerCase())}</b></a>`}
+            <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/learn">Learn</a><span>/</span><a href="#/learn/${a.section}">${esc(sec.name)}</a>${groupName ? `<span>/</span><span>${esc(groupName)}</span>` : ''}</nav>
+            <p class="mono rd-no">${esc(sentenceNo(a.no))}${a.tag ? ` · ${esc(sentenceNo(a.tag))}` : ''}</p>
+            <h2 class="rd-title">${esc(a.title)}</h2>
+            <p class="rd-meta"><span>${topics.length > 1 ? `${topics.length} topics · ` : ''}${minutes(a)} min read${withDetails > minutes(a) ? ` · ${withDetails} with details` : ''}</span><span class="done-chip" ${isDone ? '' : 'hidden'}>✓ Completed</span></p>
+            <div class="rd-tools">
+              ${topics.length > 1 ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
+              <button type="button" class="tool-btn" data-share>Share</button>
             </div>
+            ${h2s.length > 2 ? `<details class="phone-toc"><summary>In this article</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></details>` : ''}
+          </header>
+          <div class="rd-full">${a.body.map((b) => block(b, a)).join('')}</div>
+          <div class="rd-cards" hidden>
+            ${intro ? `<div class="rd-intro">${intro}</div>` : ''}
+            <div class="topic-grid">${topics.map((t, i) => `<button type="button" class="topic-card" data-topic="${i}" style="--i:${i}"><span class="mono">${String(i + 1).padStart(2, '0')}</span><b>${inline(t.title)}</b><span class="muted">${esc(t.lede)}</span></button>`).join('')}</div>
+            <div class="topic-open" hidden></div>
           </div>
+          <footer class="rd-foot">
+            <div class="complete-wrap"><button type="button" class="btn dark complete" data-complete>${isDone ? 'Next' : 'Mark complete'}${next ? ' & next' : ''}<span class="chip">→</span></button><span class="burst" aria-hidden="true"></span></div>
+            <div class="pager">
+              ${prev ? `<a class="page-link" href="#/learn/${a.section}/${prev.slug}"><small>Previous</small><span>${esc(prev.title)}</span></a>` : '<span></span>'}
+              ${next ? `<a class="page-link next" href="#/learn/${a.section}/${next.slug}"><small>Next</small><span>${esc(next.title)}</span></a>` : `<a class="page-link next" href="#/learn/${a.section}"><small>Done</small><span>Back to ${esc(sec.name.toLowerCase())}</span></a>`}
+            </div>
+            <a class="back-link" href="#/learn/${a.section}">← All ${esc(sec.name.toLowerCase())}</a>
+          </footer>
         </div>
-        <aside class="reader-fig" aria-hidden="true"><div class="fig-card"><canvas></canvas><div class="overlay"></div><p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div></aside>
+        <aside class="reader-rail" aria-label="Lesson navigation">
+          <div class="fig-card" aria-hidden="true"><canvas></canvas><div class="overlay"></div><p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div>
+          ${h2s.length > 1 ? `<nav class="rail-toc" aria-label="On this page"><p class="mono">On this page</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></nav>` : ''}
+          ${isProblem || lab ? `<a class="rail-cta" href="#/sim/ind-vs-pak"><small class="mono">${isProblem ? 'Practise' : 'Try it'}</small><b>${isProblem ? 'Run a design in the simulator' : esc(lab.go || 'Open the challenge')} →</b></a>` : ''}
+          <nav class="rail-group" aria-label="Lessons in ${esc(groupName || sec.name)}"><p class="mono">${esc(groupName || sec.name)}</p><ol>
+            ${mine.filter((x) => x.group === a.group).map((x) => `<li><a href="#/learn/${x.section}/${x.slug}" ${x.slug === a.slug ? 'aria-current="page"' : ''} class="${store.get().read[`${x.section}/${x.slug}`] ? 'done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(x.title)[0])}</a></li>`).join('')}
+          </ol></nav>
+        </aside>
       </div>
     </article>
     ${footer()}`;
@@ -144,16 +184,62 @@ export function mount(view, [section, slug], { reduced }) {
       aside.setState({ ...s.state, avoid: 0 });
     };
     showSection(0);
-    // which section you are in, and the end of the article (marks it read)
-    const end = view.querySelector('.reader-end');
+    // which section you are in: the 3D figure and the contents list follow it; the line at the top shows how far
+    const toc = [...view.querySelectorAll('.rail-toc a')], line = view.querySelector('.read-line'), readEl = view.querySelector('#read');
     const onScroll = () => {
-      let k = 0; heads.forEach((h, i) => { if (h.getBoundingClientRect().top < innerHeight * 0.45) k = i; });
+      let k = 0; heads.forEach((h, i) => { if (h.offsetParent && h.getBoundingClientRect().top < innerHeight * 0.45) k = i; });
       showSection(k);
+      toc.forEach((l, i) => l.classList.toggle('on', i === k));
+      const r = readEl.getBoundingClientRect(), f = Math.max(0, Math.min(1, -r.top / Math.max(1, r.height - innerHeight)));
+      line.style.transform = `scaleX(${f.toFixed(3)})`; line.style.opacity = r.top < 0 ? '1' : '0';
     };
-    addEventListener('scroll', onScroll, { passive: true });
-    io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { store.markRead(id); end.querySelector('.done-note').textContent = 'Read. It counts on your dashboard.'; } });
-    io.observe(end);
-    io._off = () => removeEventListener('scroll', onScroll);
+    addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+    // Full text or Cards (remembered); Cards opens one topic at a time, and on phones you swipe between topics
+    const full = view.querySelector('.rd-full'), cards = view.querySelector('.rd-cards'), open = view.querySelector('.topic-open'), grid = view.querySelector('.topic-grid');
+    const setMode = (m) => {
+      mode = m; try { localStorage.setItem('tk-r3d-reader', m); } catch { /* blocked */ }
+      full.hidden = m !== 'full'; cards.hidden = m !== 'cards';
+      view.querySelectorAll('.seg [data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
+      view.querySelector('.seg')?.classList.toggle('right', m === 'cards');
+      view.querySelector('.rail-toc')?.toggleAttribute('hidden', m === 'cards');
+      closeTopic();
+    };
+    let cur = -1;
+    const showTopic = (i, dir = 0) => {
+      if (i < 0 || i >= topics.length) return;
+      cur = i; grid.hidden = true; open.hidden = false; view.querySelector('.rd-intro')?.toggleAttribute('hidden', true);
+      open.innerHTML = `<div class="topic-nav"><button type="button" class="tool-btn" data-back>← All topics</button><span class="mono">${i + 1} of ${topics.length}</span></div>
+        <h2>${inline(topics[i].title)}</h2>${topics[i].blocks.map((b) => block(b, a)).join('')}
+        <div class="topic-pager">${i > 0 ? `<button type="button" class="page-link" data-go="${i - 1}"><small>Previous topic</small><span>${inline(topics[i - 1].title)}</span></button>` : '<span></span>'}${i < topics.length - 1 ? `<button type="button" class="page-link next" data-go="${i + 1}"><small>Next topic</small><span>${inline(topics[i + 1].title)}</span></button>` : ''}</div>`;
+      open.classList.remove('from-left', 'from-right'); void open.offsetWidth; if (dir) open.classList.add(dir > 0 ? 'from-right' : 'from-left');
+      showSection(i);
+      scrollTo({ top: readEl.offsetTop + view.querySelector('.prose-head').offsetHeight - (innerWidth <= 760 ? 70 : 40), behavior: 'auto' });
+    };
+    const closeTopic = () => { cur = -1; open.hidden = true; open.innerHTML = ''; grid.hidden = false; view.querySelector('.rd-intro')?.removeAttribute('hidden'); };
+    grid.addEventListener('click', (e) => { const c = e.target.closest('[data-topic]'); if (c) showTopic(+c.dataset.topic); });
+    open.addEventListener('click', (e) => { if (e.target.closest('[data-back]')) closeTopic(); const g = e.target.closest('[data-go]'); if (g) showTopic(+g.dataset.go, +g.dataset.go > cur ? 1 : -1); });
+    let sx = 0, sy = 0;
+    open.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    open.addEventListener('touchend', (e) => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) showTopic(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); });
+    view.querySelectorAll('.seg [data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+    if (topics.length > 1) setMode(mode);
+
+    // share: the phone's share sheet, or copy the link
+    view.querySelector('[data-share]').addEventListener('click', async () => {
+      const url = location.href;
+      try { if (navigator.share) await navigator.share({ title: a.title, text: a.dek, url }); else { await navigator.clipboard.writeText(url); toast('Copied the link'); } } catch { /* closed */ }
+    });
+    // mark complete: a tick and a burst in the part colours, then on to the next lesson
+    view.querySelector('[data-complete]').addEventListener('click', (e) => {
+      const btn = e.currentTarget, wasDone = !!store.get().read[id];
+      store.markRead(id);
+      view.querySelector('.done-chip').hidden = false;
+      if (!wasDone) { toast('Marked complete'); if (!reduced) { const burst = view.querySelector('.burst'); burst.classList.remove('go'); void burst.offsetWidth; burst.classList.add('go'); } }
+      btn.disabled = true;
+      setTimeout(() => { location.hash = next ? `#/learn/${a.section}/${next.slug}` : `#/learn/${a.section}`; }, wasDone || reduced ? 0 : 700);
+    });
+    io = { disconnect() {}, _off: () => removeEventListener('scroll', onScroll) };
   });
   return () => { alive = false; story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
 }
