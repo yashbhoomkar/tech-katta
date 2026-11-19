@@ -178,5 +178,12 @@ phones, breadcrumbs, which navigation shows, theme icon). All held, apart from t
 | 41 | The Full text / Cards switch was 44 px tall beside a 40 px Share button. | Both 40 px. |
 | 42 | Owner: "For interview questions and real systems we don't want the animation to be sticked, rather there should be no animation." | Those two section pages are plain lists, full width, no 3D preview. |
 
-Known and left: the Dashboard's 3D parts are not keyboard-reachable (the list below them is); the stylesheet is still
-layered (the shared scale is a final block, not merged into the older ones).
+## Third pass (2026-11-19): the two items that had been left
+
+| # | Was | Now |
+|---|---|---|
+| 29 | The Dashboard's 3D parts were not keyboard-reachable (only the list below them was). | Hovering or focusing a part's row in the list lifts that part in the 3D and fades the rest, so the keyboard path drives the figure too. The simulator's 3D scene also has an accessible name. |
+| 31 | The shared scale was a final block that beat older rules with `!important`. | The old rules were corrected at the source (29 label rules now 12 px, no capitals, no wide tracking) and the final block has no `!important`. Checked by comparing the computed style of every element on 8 pages at two widths before and after: identical except the preview captions, which are now correctly 12 px (they were 11 px). |
+
+Also swept all pages for duplicate ids, buttons and links without a name, heading-level skips, more than one h1, a missing main
+landmark and focus rings on every control: only the simulator's canvas needed a label. Nothing left open from this audit.

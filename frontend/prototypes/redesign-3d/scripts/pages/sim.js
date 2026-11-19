@@ -19,7 +19,7 @@ export function mount(view, [id], { reduced, go }) {
 
   view.innerHTML = `
   <section class="sim">
-    <div class="sim-stage"><canvas></canvas><div class="overlay"></div></div>
+    <div class="sim-stage"><canvas role="img" aria-label="Your system in 3D: users, load balancer, app servers, cache and database"></canvas><div class="overlay"></div></div>
     <aside class="brief glass">
       <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/sim">Practice</a></nav>
       <p class="kicker"><span>Scenario ${Number(inc.no)}</span><i></i>${inc.level} · ${inc.system}</p>

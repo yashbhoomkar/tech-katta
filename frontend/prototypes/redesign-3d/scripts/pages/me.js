@@ -107,6 +107,11 @@ export function mount(view, _p, { reduced, go }) {
     for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [`${r}/${cs.length}`, tone]; }
     parts.a2 = parts.a1;
     world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
+    // a row in the list highlights its part in the 3D (mouse or keyboard focus); the others fade back meanwhile
+    const base = { parts, labels };
+    const lift = (id) => { const dim = Object.fromEntries(Object.keys(parts).map((k) => [k, (k === id || (id === 'a1' && k === 'a2')) ? parts[k] : 'dim'])); world.setState({ parts: dim, labels, speed: 1.2 }); };
+    const rest = () => world.setState({ ...base, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
+    view.querySelectorAll('.parts-map li').forEach((li) => { li.addEventListener('mouseenter', () => lift(li.dataset.part)); li.addEventListener('focusin', () => lift(li.dataset.part)); li.addEventListener('mouseleave', rest); li.addEventListener('focusout', rest); });
     world.onPick((id) => {
       const key = id === 'a2' ? 'a1' : id;
       if (!key || !MAP[key]?.concepts.length) return;

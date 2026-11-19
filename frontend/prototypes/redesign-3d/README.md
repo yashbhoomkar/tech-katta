@@ -141,3 +141,5 @@ a chat app → your turn.
 All 32 findings in `AUDIT.md` are addressed (status table at the top). New `#/sim` Practice page; Home/Practise/read wording
 unified; one scale for heading sizes, radii, button heights, label size, text colours and card hover (last block of
 app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rules removed.
+
+- Third audit pass: Dashboard 3D follows list focus/hover; the shared scale no longer uses `!important` (older label rules fixed at the source, verified element by element).
