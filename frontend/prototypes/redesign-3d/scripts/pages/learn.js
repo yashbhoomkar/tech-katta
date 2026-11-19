@@ -82,7 +82,7 @@ export function mount(view, [sectionId], { reduced }) {
     const card = view.querySelector('.preview-card');
     world?.destroy(); world = null;
     if (card) { try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; } card.classList.toggle('flat', !world); }
-    world?.setLabelBand(0.8); // clear of the caption at the bottom
+    world?.setLabelBand(0.8); world?.setLabelTop(10); // clear of the caption at the bottom
     const capT = card?.querySelector('.cap-t'), capS = card?.querySelector('.cap-s');
     const bySlug = Object.fromEntries(mine.map((a) => [a.slug, a]));
     let shown = null;
@@ -129,7 +129,7 @@ export function mount(view, [sectionId], { reduced }) {
       if (!x0) return; x0 = 0;
       const to = horiz && Math.abs(dx) > 70 ? at + (dx < 0 ? 1 : -1) : at;
       learnEl.style.transition = 'transform .3s var(--out), opacity .3s'; learnEl.style.transform = ''; learnEl.style.opacity = '';
-      if (to !== at && SECTIONS[to]) { document.documentElement.dataset.dirHint = dx < 0 ? 'fwd' : 'back'; location.hash = `#/learn/${SECTIONS[to].id}`; }
+      if (to !== at && SECTIONS[to]) { document.documentElement.dataset.dirHint = dx < 0 ? 'fwd' : 'back'; window.tkFresh = true; location.hash = `#/learn/${SECTIONS[to].id}`; }
     };
     learnEl.addEventListener('touchstart', start, { passive: true }); learnEl.addEventListener('touchmove', move, { passive: true }); learnEl.addEventListener('touchend', end);
     cleanup.push(() => { learnEl.removeEventListener('touchstart', start); learnEl.removeEventListener('touchmove', move); learnEl.removeEventListener('touchend', end); });

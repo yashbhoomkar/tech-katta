@@ -8,6 +8,24 @@ import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import * as practice from './pages/practice.js';
 import { updateShell } from './shell.js';
+import { listNow, splitTitle, SECTIONS } from './articles.js';
+import { INCIDENTS } from './sim.js';
+
+/** the browser tab and history say where you are */
+function titleFor(path, nav) {
+  const brand = 'Tech Katta';
+  if (nav === 'home') return `${brand}: everything for your system design interview`;
+  if (nav === 'me') return `Dashboard · ${brand}`;
+  if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Practice'} · ${inc ? 'Practice · ' : ''}${brand}`; }
+  const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
+  if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
+  return `Not found · ${brand}`;
+}
+
+// back and forward return you to where you were on a page (links open pages at the top)
+const positions = {}; let linkClick = false, curPath = '';
+addEventListener('scroll', () => { if (curPath) positions[curPath] = scrollY; }, { passive: true });
+document.addEventListener('click', (e) => { if (e.target.closest('a[href^="#/"], [data-next], [data-skip]')) linkClick = true; }, true);
 import { applyPaletteVars } from './palette.js';
 
 applyPaletteVars();
@@ -39,11 +57,16 @@ function route() {
     document.body.dataset.page = nav || 'missing';
     updateShell(nav || 'missing', path);
     view.replaceChildren();
+    document.title = titleFor(path, nav || 'missing');
+    const back = !linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0; linkClick = false; window.tkFresh = false; curPath = '';
     scrollTo(0, 0);
     if (!mod) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="#/me">Go to the Dashboard<span class="chip">→</span></a></p></section>`; }
-    else cleanup = mod.mount(view, (path.match(re) || []).slice(1), { reduced, go: (h) => { location.hash = h; } }) || null;
+    else cleanup = mod.mount(view, (path.match(re) || []).slice(1), { reduced, go: (h) => { window.tkFresh = true; location.hash = h; } }) || null;
     view.classList.remove('leaving');
     view.focus({ preventScroll: true });
+    curPath = path;
+    // restore after the content has its height (articles load their text a moment later)
+    if (back) { let n = 0; const t = setInterval(() => { scrollTo(0, back); if (Math.abs(scrollY - back) < 4 || ++n > 12) clearInterval(t); }, 120); }
   };
   const rank = { me: 0, learn: 1, sim: 2 }, was = document.body.dataset.page;
   const inApp = (n) => n in rank;

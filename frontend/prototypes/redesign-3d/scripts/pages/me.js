@@ -101,10 +101,10 @@ export function mount(view, _p, { reduced, go }) {
     if (!world) return;
     world.setSystem(SYSTEM);
     const f = world.frame(), phone = innerWidth <= 760;
-    world.setCamera({ t: f.t, dist: f.dist * (phone ? 0.6 : 0.9), az: 40, el: 34, sx: phone ? 0.5 : 0.66, sy: phone ? 0.52 : 0.54 }, { instant: true });
-    world.setLabelBand(phone ? 0.98 : 0.94);
+    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.72 : 0.6) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.52 : 0.54 }, { instant: true });
+    world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10);
     const parts = {}, labels = {};
-    for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [`${r}/${cs.length}`, tone]; }
+    for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [innerWidth < 380 ? '' : `${r}/${cs.length}`, tone]; /* 320 px phones: counts live in the list below, so the pills stay short */ }
     parts.a2 = parts.a1;
     world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
     // a row in the list highlights its part in the 3D (mouse or keyboard focus); the others fade back meanwhile

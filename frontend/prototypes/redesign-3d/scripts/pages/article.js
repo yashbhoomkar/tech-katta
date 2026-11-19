@@ -168,7 +168,7 @@ export function mount(view, [section, slug], { reduced }) {
       try { aside = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { aside = null; }
     }
     card.classList.toggle('flat', !aside);
-    aside?.setLabelBand(0.86);
+    aside?.setLabelBand(0.86); aside?.setLabelTop(10);
     let shown = -1;
     const capN = card.querySelector('.cap-n'), capT = card.querySelector('.cap-t');
     const showSection = (k) => {
@@ -235,7 +235,7 @@ export function mount(view, [section, slug], { reduced }) {
       view.querySelector('.done-chip').hidden = false;
       if (!wasDone) { toast('Marked complete'); if (!reduced) { const burst = view.querySelector('.burst'); burst.classList.remove('go'); void burst.offsetWidth; burst.classList.add('go'); } }
       btn.disabled = true;
-      setTimeout(() => { location.hash = next ? `#/learn/${a.section}/${next.slug}` : `#/learn/${a.section}`; }, wasDone || reduced ? 0 : 700);
+      setTimeout(() => { window.tkFresh = true; location.hash = next ? `#/learn/${a.section}/${next.slug}` : `#/learn/${a.section}`; }, wasDone || reduced ? 0 : 700);
     });
     io = { disconnect() {}, _off: () => removeEventListener('scroll', onScroll) };
   });

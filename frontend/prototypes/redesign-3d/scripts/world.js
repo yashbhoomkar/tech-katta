@@ -303,13 +303,13 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // tries its own spot just above its part first, then spots further up and to either side; if it had to move, a thin
   // leader line ties it back to its part. Positions ease toward their target so labels do not jump.
   const queue = [];
-  let labelMaxY = 0.52;
+  let labelMaxY = 0.52, labelMinY = 76; // labels may not sit higher than labelMinY px (76 clears the landing's top bar)
   const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   leaders.setAttribute('class', 'p3-leaders'); overlay.appendChild(leaders);
   const lines = [];
   function place(el, x, y, z, show) {
     const [sx, sy, sz] = project(x, y, z);
-    const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > 40 && sy < (W > 760 ? H - 20 : H * labelMaxY);
+    const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > Math.min(40, labelMinY + 24) && sy < (W > 760 ? H - 20 : H * labelMaxY);
     if (on) queue.push({ el, ax: sx, ay: sy }); else { el.style.opacity = '0'; el._placed = false; }
   }
   function layoutLabels() {
@@ -325,7 +325,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       let best = null;
       for (let k = 0; k < 7 && !best; k++) {
         for (const dx of k === 0 ? [0] : [0, -(w / 2 + 14), w / 2 + 14]) {
-          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(76, home.y - k * (h + 6)), w, h };
+          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(labelMinY, home.y - k * (h + 6)), w, h };
           if (!hit(b)) { best = b; break; }
         }
       }
@@ -460,5 +460,5 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, onPick: (cb) => { pickCb = cb; }, destroy };
+  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, onPick: (cb) => { pickCb = cb; }, destroy };
 }

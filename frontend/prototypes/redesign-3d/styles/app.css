@@ -1164,3 +1164,13 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 @media (max-width: 760px) { .sim.verdict-open .hud { display: none; } }
 /* the Full text / Cards switch is as tall as the Share button beside it (40 px) */
 .seg button { min-height: 32px; }
+
+/* very small phones: the hero already carries the same button, so the top bar keeps just the logo and the theme icon */
+@media (max-width: 379px) { .top .top-cta { display: none !important; } }
+/* landscape phones: the bottom bar shrinks to icons so it does not cover the words */
+@media (max-height: 500px) and (max-width: 999px) {
+  .tabbar a { flex-direction: row; min-width: 0; padding: 8px 14px; } .tabbar a span { display: none; }
+  .tabbar { bottom: 8px; }
+  .step.scrub > .pin { padding-bottom: 64px; } .foot { padding-bottom: 80px; }
+}
+@media (max-width: 999px) { .dock .parts { -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); } }

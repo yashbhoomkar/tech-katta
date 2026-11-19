@@ -49,7 +49,7 @@ export function mount(view, _p, { reduced }) {
   let world = null;
   try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; }
   card.classList.toggle('flat', !world);
-  world?.setLabelBand(0.8);
+  world?.setLabelBand(0.8); world?.setLabelTop(10);
   const capT = card.querySelector('.cap-t'), capS = card.querySelector('.cap-s');
   let shown = null;
   const preview = (id) => {

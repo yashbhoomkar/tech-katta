@@ -187,3 +187,18 @@ phones, breadcrumbs, which navigation shows, theme icon). All held, apart from t
 
 Also swept all pages for duplicate ids, buttons and links without a name, heading-level skips, more than one h1, a missing main
 landmark and focus rings on every control: only the simulator's canvas needed a label. Nothing left open from this audit.
+
+## Fourth pass (2026-11-19): new angles
+
+Tried screen sizes and behaviours not covered before: 320 px and 360 px phones, landscape phones (800×380), a 1920 px desktop,
+page titles, back and forward, links versus history.
+
+| # | Found | Fixed |
+|---|---|---|
+| 43 | Every page had the same browser-tab and history title, "Redesign 3D". | Each page names itself: "Caching · Concepts · Tech Katta", "Dashboard · Tech Katta", the scenario's name under Practice, "Not found" on the 404. |
+| 44 | The back button always landed at the top of a page, so returning from an article to a long list lost your place. | Back and forward restore the scroll position; links, Mark complete and tab swipes still open pages at the top (checked: list at 700 px, article opens at 0, back returns to 700, Mark complete opens the next article at 0). |
+| 45 | At 320 px the top bar's "Start preparing" ran off the right edge (the hero has the same button). | Hidden below 380 px. |
+| 46 | In landscape phones the bottom bar covered the words. | It shrinks to icons only and sits lower. |
+| 47 | At 1920 px the Dashboard headline touched the 3D. | The figure moves right on very wide screens. |
+| 48 | Part labels on the 320 px Dashboard overlapped ("API gateway" under "App servers"), because the label layout always reserved 76 px at the top for the landing's top bar. | That margin is now a setting: 10 px on the Dashboard, section previews, Practice and article figures. Counts are left off the 3D pills on 320 px phones (they are in the list). |
+| 49 | The simulator's parts strip scrolls sideways on phones with no hint. | A fade on the right edge. |
