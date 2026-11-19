@@ -124,7 +124,7 @@ export function mount(view, [section, slug], { reduced }) {
               ${topics.length > 1 ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
               <button type="button" class="tool-btn" data-share>Share</button>
             </div>
-            ${h2s.length > 2 ? `<details class="phone-toc"><summary>In this article</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></details>` : ''}
+            ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></details>` : ''}
           </header>
           <div class="rd-full">${a.body.map((b) => block(b, a)).join('')}</div>
           <div class="rd-cards" hidden>

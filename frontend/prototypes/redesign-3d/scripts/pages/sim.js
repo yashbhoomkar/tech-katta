@@ -195,11 +195,11 @@ export function mount(view, [id], { reduced, go }) {
       <ul class="checks">${r.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}"><i></i>${c.label}<b>${c.value}</b></li>`).join('')}</ul>
       ${r.why.length ? `<div class="why"><p class="mono">What happened</p>${r.why.map((w) => `<p>${w.text}${w.lesson && READ[w.lesson] ? ` <a href="#/learn/concepts/${READ[w.lesson][0]}">Read: ${READ[w.lesson][1]} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job</p></div>'}
       <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="#/sim/${nextInc.id}">Next scenario<span class="chip">→</span></a>` : ''}<button type="button" class="btn light v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button></div>`;
-    verdict.hidden = false;
+    verdict.hidden = false; view.querySelector('.sim').classList.add('verdict-open');
     view.querySelector('.brief').style.visibility = 'hidden';
     verdict.querySelector('.v-close').addEventListener('click', hideVerdict);
   }
-  function hideVerdict() { verdict.hidden = true; view.querySelector('.brief').style.visibility = ''; }
+  function hideVerdict() { verdict.hidden = true; view.querySelector('.sim').classList.remove('verdict-open'); view.querySelector('.brief').style.visibility = ''; }
   runBtn.addEventListener('click', start);
   const onResize = () => frameCam();
   addEventListener('resize', onResize);

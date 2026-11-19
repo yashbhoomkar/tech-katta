@@ -81,6 +81,7 @@ export function updateShell(nav, path) {
   here = { nav, path };
   const app = nav && nav !== 'home';
   document.body.classList.toggle('in-app', !!app);
+  document.body.classList.toggle('focus-page', /^\/sim\/[\w-]+/.test(path)); // the full-screen simulator
   if (!side) {
     side = document.createElement('aside'); side.className = 'side'; side.setAttribute('aria-label', 'Sidebar');
     document.body.prepend(side);

@@ -29,6 +29,8 @@ export function mount(view, [sectionId], { reduced }) {
     const groups = sec.groups.map(([g, name]) => [name, mine.filter((a) => a.group === g)]).filter(([, l]) => l.length);
     const other = mine.filter((a) => !sec.groups.some(([g]) => g === a.group));
     if (other.length) groups.push(['More', other]);
+    // interview questions and real systems: a plain list, no 3D preview (owner: "there should be no animation")
+    const noFig = sec.id === 'interview-questions' || sec.id === 'real-systems';
     const next = mine.find((x) => !read[`${x.section}/${x.slug}`]);
     const levels = sec.id === 'interview-questions' ? ['easy', 'medium', 'hard'].filter((l) => mine.some((x) => x.group === l)) : [];
     const colour = (PLACES.find((p) => p.id === sec.id) || PLACES[2]).colour;
@@ -49,7 +51,7 @@ export function mount(view, [sectionId], { reduced }) {
       </header>
       ${levels.length ? `<div class="seg levels" role="group" aria-label="Filter by difficulty" style="--n:${levels.length + 1}">${['all', ...levels].map((l, i) => `<button type="button" data-level="${l}" data-i="${i}" aria-pressed="${l === 'all'}">${l === 'all' ? 'All' : l[0].toUpperCase() + l.slice(1)}</button>`).join('')}<i class="seg-pill" aria-hidden="true"></i></div>`
         : groups.length > 1 ? `<nav class="jump" aria-label="Groups">${groups.map(([name], gi) => `<a href="#g-${gi}" data-jumpg="${gi}">${esc(name)}</a>`).join('')}</nav>` : ''}
-      <div class="learn-cols">
+      <div class="learn-cols${noFig ? ' one' : ''}">
         <div class="learn-list">
           ${groups.map(([name, items], gi) => { const gd = items.filter((x) => read[`${x.section}/${x.slug}`]).length; const gid = sec.groups.find(([, n]) => n === name)?.[0] || 'more';
             return `<section class="track-block" id="g-${gi}" data-group="${gid}">
@@ -65,7 +67,7 @@ export function mount(view, [sectionId], { reduced }) {
               </ol>
             </section>`; }).join('')}
         </div>
-        <aside class="learn-preview" aria-hidden="true"><div class="preview-card"><canvas></canvas><div class="overlay"></div><p class="preview-cap"><span class="cap-t mono"></span><span class="cap-s"></span></p></div></aside>
+        ${noFig ? '' : `<aside class="learn-preview" aria-hidden="true"><div class="preview-card"><canvas></canvas><div class="overlay"></div><p class="preview-cap"><span class="cap-t mono"></span><span class="cap-s"></span></p></div></aside>`}
       </div>
     </section>
     ${footer()}`;
@@ -79,17 +81,16 @@ export function mount(view, [sectionId], { reduced }) {
     view.querySelectorAll('[data-jumpg]').forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); view.querySelector(`#g-${l.dataset.jumpg}`)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }));
     const card = view.querySelector('.preview-card');
     world?.destroy(); world = null;
-    try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; }
-    card.classList.toggle('flat', !world);
+    if (card) { try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; } card.classList.toggle('flat', !world); }
     world?.setLabelBand(0.8); // clear of the caption at the bottom
-    const capT = card.querySelector('.cap-t'), capS = card.querySelector('.cap-s');
+    const capT = card?.querySelector('.cap-t'), capS = card?.querySelector('.cap-s');
     const bySlug = Object.fromEntries(mine.map((a) => [a.slug, a]));
     let shown = null;
     function preview(slug) {
       if (shown === slug || !bySlug[slug]) return; shown = slug;
       const a = bySlug[slug], steps = recipeFor(a), s = steps[Math.min(steps.length - 1, PREVIEW[slug] ?? steps.length - 1)];
-      capT.textContent = `${numOf(a.no)} · ${splitTitle(a.title)[0]}`;
-      capS.textContent = RECIPES[slug] && s.words ? `${(s.words[0] || s.h2 || '').replace(/^\d+\.\s*/, '')}: ${s.words[1].charAt(0).toLowerCase()}${s.words[1].slice(1)}` : splitTitle(a.title)[1] || a.dek;
+      if (capT) capT.textContent = `${numOf(a.no)} · ${splitTitle(a.title)[0]}`;
+      if (capS) capS.textContent = RECIPES[slug] && s.words ? `${(s.words[0] || s.h2 || '').replace(/^\d+\.\s*/, '')}: ${s.words[1].charAt(0).toLowerCase()}${s.words[1].slice(1)}` : splitTitle(a.title)[1] || a.dek;
       view.querySelectorAll('.lesson.on').forEach((x) => x.classList.remove('on'));
       view.querySelector(`[data-preview="${slug}"]`)?.classList.add('on');
       if (!world) return;

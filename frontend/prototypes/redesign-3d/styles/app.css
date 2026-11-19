@@ -753,8 +753,9 @@ a.lesson:hover b { color: var(--ink); }
 .more[open] summary::after { content: "−"; }
 .more > div { padding: 0 18px 8px; font-size: 16px; }
 .more > div > p { margin: 0 0 14px; }
-.example { margin: 18px 0 30px; padding: 22px 22px 16px; border-radius: 20px; border: 1px solid var(--glass-edge); background: var(--glass-hl), color-mix(in srgb, var(--peach) 9%, var(--card)); }
-.example .ex-kind { font-size: 12px; color: var(--ink-2); }
+.example { margin: 18px 0 30px; padding: 22px 22px 16px; border: 1px solid var(--line-2); background: var(--card); } /* neutral: the owner did not like the peach tint */
+.example .ex-kind { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.example .ex-kind::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--acc, var(--lilac)); }
 .example h3 { margin: 4px 0 8px; font-size: 24px; }
 .example p { font-size: 16px; color: var(--ink); }
 .example dl { margin: 14px 0 0; display: grid; gap: 10px; }
@@ -1096,7 +1097,6 @@ body .dash .headline, body .learn .headline, body .missing .headline, body .read
 }
 .place, .topic-card, .page-link, .next-card, .rail-cta { transition: transform .25s var(--out), border-color .2s; }
 /* glass only floats over the 3D: it is not for a plain page section */
-.example { background: color-mix(in srgb, var(--peach) 9%, var(--card)); border: 1px solid var(--line); }
 /* panels over the 3D use the one glass recipe (the older .glass was a different blur, edge and shadow) */
 .glass, .brief, .hud, .dock, .verdict, .tip { background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
 .brief .crumbs { margin-bottom: 4px; }
@@ -1141,3 +1141,26 @@ body .dash .headline, body .learn .headline, body .missing .headline, body .read
 body .step .actions .btn { min-height: 48px; }
 .spark text { font-size: var(--label) !important; }
 main:focus, main:focus-visible, #view:focus-visible { outline: none; }
+
+/* ---- second pass (2026-11-19) ---- */
+/* no blue left anywhere: the accent is the text colour, the part colours are the only colours (focus ring, selection,
+   the simulator's selected part, stepper hover, running ring, footer hover all used the old blue) */
+:root, [data-theme="dark"] { --accent: var(--ink); --accent-ink: var(--ink); --accent-soft: color-mix(in srgb, var(--ink) 9%, transparent); }
+::selection { background: color-mix(in srgb, var(--sky) 35%, transparent); }
+.logo-mark i::after { background: var(--sky); }
+.spark .area { fill: color-mix(in srgb, var(--sky) 22%, transparent); }
+.spark .line { stroke: var(--sky); }
+/* the bottom bar shows on the Practice list; only the full-screen simulator hides it */
+@media (max-width: 999px) {
+  body[data-page="sim"]:not(.focus-page) .tabbar { display: flex; }
+  body.focus-page .tabbar { display: none; }
+}
+/* the logo is a real tap target */
+.top .logo { min-height: 40px; }
+/* list rows sit inside their dividers (the hover fill used to bleed 10-12 px past them) */
+.lesson { margin: 0 !important; padding-left: 10px; padding-right: 10px; }
+.learn-cols.one { grid-template-columns: minmax(0, 820px); }
+/* phones: the verdict replaces the live stats, it does not sit on top of them */
+@media (max-width: 760px) { .sim.verdict-open .hud { display: none; } }
+/* the Full text / Cards switch is as tall as the Share button beside it (40 px) */
+.seg button { min-height: 32px; }

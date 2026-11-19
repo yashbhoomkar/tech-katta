@@ -158,3 +158,25 @@ Also found while fixing: a stray blue line across the Practice and 404 pages (th
 
 1–5 first (navigation and dead ends), then one tokens pass for 10–14 (sizes, radii, colours; it fixes most of the
 visual drift at once), then 6, 7, 15–20 (words and headers), then Practice (9), then the rest.
+
+## Second pass (2026-11-19, after the owner's review)
+
+Re-checked all 32 fixes with an automated pass on every page at 412, 900 and 1440 px (full stops in headings, text in
+capitals, blue links, primary buttons without the arrow, the ✓ character, overflowing boxes, tap targets under 34 px on
+phones, breadcrumbs, which navigation shows, theme icon). All held, apart from the gaps below, now fixed:
+
+| # | Found | Fixed |
+|---|---|---|
+| 33 | The worked-example card's peach tint read as brown in dark mode (owner: "Did not like the colour"). | A neutral card with the section's colour as a small dot by its label. |
+| 34 | The old blue accent survived in the focus ring, text selection, the simulator's traffic chart, the selected part and stepper hover in the dock, the running ring and the footer link hover. | The accent now points to the text colour; the chart and selection use the app-server colour. No blue left. |
+| 35 | The top bar's "Start preparing" was the only primary button without the arrow. | Arrow added. |
+| 36 | The Practice list hid the bottom bar on phones (the rule meant for the full-screen simulator caught it too). | Only the simulator hides it. |
+| 37 | The logo in the phone top bar was a 22 px tap target. | 40 px. |
+| 38 | Section list rows bled 10–12 px past their dividers on hover. | Rows sit inside the dividers. |
+| 39 | On phones the simulator's verdict sat on top of the live stats panel. | The stats panel hides while the verdict shows. |
+| 40 | The contents list was "In this article" on phones and "On this page" on desktop. | "On this page" on both. |
+| 41 | The Full text / Cards switch was 44 px tall beside a 40 px Share button. | Both 40 px. |
+| 42 | Owner: "For interview questions and real systems we don't want the animation to be sticked, rather there should be no animation." | Those two section pages are plain lists, full width, no 3D preview. |
+
+Known and left: the Dashboard's 3D parts are not keyboard-reachable (the list below them is); the stylesheet is still
+layered (the shared scale is a final block, not merged into the older ones).
