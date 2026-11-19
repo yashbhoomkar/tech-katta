@@ -50,6 +50,9 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     const side = c.side !== false;
     // centre: the system is the focus while the scroll plays the change (closer, centre stage);
     // aside: the words are the focus while you read (further away, to the side, faded by --read in app.css)
+    // hold: one shot per chapter (owner: "it appears as if the animation is just zooming in and out"): the camera
+    // travels to the chapter's own target and angle, and keeps its distance while the words come in
+    if (c.hold) return { centre: { ...base, phoneSy: base.phoneSy, sx: c.cx ?? (side ? 0.5 : 0.5), sy: c.sy ?? 0.55 }, aside: { ...base, phoneSy: base.phoneSy, sx: side ? (c.sx ?? 0.74) : 0.5, sy: c.sy ?? 0.55 }, side };
     return { centre: { ...base, dist: base.dist * 0.86, phoneSy: c.side === false ? base.phoneSy : 0.48, sx: c.cx ?? 0.5, sy: c.sy ?? (side ? 0.52 : 0.6) }, aside: { ...base, dist: base.dist * 1.18, sx: side ? (c.sx ?? 0.7) : 0.5, sy: c.sy ?? 0.54 }, side };
   });
 

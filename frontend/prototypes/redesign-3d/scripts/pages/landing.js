@@ -31,11 +31,14 @@ const OK6 = { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok',
 const STEPS = [
   { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.76, phoneZoom: 1.3 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
   // learn: lessons you watch; the database slows and the lag piles up in the topic
-  { system: PIPE, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
+  // the camera dollies in low onto the database that is slowing down
+  { system: PIPE, cam: { hold: true, t: [12.4, 0.2], dist: 17, az: 22, el: 20, phoneZoom: 1.35, phoneSy: 0.34 }, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
   // interview: the questions an interviewer asks, pinned to the parts they are about
-  { system: PIPE6, state: { parts: OK6, fill: { topic: 0.06 }, labels: { p1: ['', '', 'What if a server crashes mid-publish?'], topic: ['', '', 'Why a topic, not direct writes?'], c2: ['', '', 'How many consumers per partition?'], sql: ['', '', 'Batch writes or row by row?'] }, speed: 1.2 } },
+  // it swings round to the Kafka topic, the part most questions are about
+  { system: PIPE6, cam: { hold: true, t: [6.2, 0], dist: 21, az: 64, el: 34, phoneZoom: 1.35, phoneSy: 0.34 }, state: { parts: OK6, fill: { topic: 0.06 }, labels: { p1: ['', '', 'What if a server crashes mid-publish?'], topic: ['', '', 'Why a topic, not direct writes?'], c2: ['', '', 'How many consumers per partition?'], sql: ['', '', 'Batch writes or row by row?'] }, speed: 1.2 } },
   // practice: the pipeline under a heavier evening, holding
-  { system: PIPE6, cam: { el: 40, az: 42 }, state: { parts: { ...all(ids('p', 3), 'warn'), ...all(ids('c', 6), 'ok'), topic: 'warn', sql: 'ok' }, fill: { topic: 0.35 }, labels: { p1: ['92% busy', 'warn'], topic: ['absorbing the burst', 'warn'], sql: ['steady', 'ok'] }, speed: 2.2 } },
+  // then cranes up over the whole pipeline holding a heavy evening
+  { system: PIPE6, cam: { hold: true, t: [5.6, 0], dist: 44, az: 36, el: 54, phoneZoom: 1.25, phoneSy: 0.34 }, state: { parts: { ...all(ids('p', 3), 'warn'), ...all(ids('c', 6), 'ok'), topic: 'warn', sql: 'ok' }, fill: { topic: 0.35 }, labels: { p1: ['92% busy', 'warn'], topic: ['absorbing the burst', 'warn'], sql: ['steady', 'ok'] }, speed: 2.2 } },
 ];
 /** "what you will design": one real system in one figure, a chat app, built from the same parts and colours */
 function chatApp() {

@@ -131,3 +131,8 @@ a chat app → your turn.
   redirects to `#/me`; the sidebar and phone bar start with Dashboard.
 - **3D only draws while visible**: world.js pauses its render loop when the canvas is off screen (and, as before,
   when the tab is hidden). Measured: ~550 draw calls a second on screen, 0 when scrolled away.
+- **One shot per landing chapter** (owner: "if we don't give that much attention to the animation it appears as if
+  the animation is just zooming in and out ... zoom into database, kafka, database or something like that"): the
+  camera no longer moves closer then back for every chapter (`cam.hold` in story.js). It travels: the whole
+  pipeline → a low dolly onto the slowing SQL database (Learn) → an orbit round the Kafka topic (Interview) → a crane
+  up over the whole pipeline (Practice).
