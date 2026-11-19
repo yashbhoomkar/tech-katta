@@ -36,7 +36,7 @@ export function mount(view, [sectionId], { reduced }) {
     <section class="page learn" style="--acc: var(--${colour})">
       <header class="sec-head">
         <div>
-          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/home">Home</a><span>/</span><span>Learn</span></nav>
+          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Learn</span></nav>
           <h1 class="headline"><span class="thin">${esc(sec.name)}</span><span class="heavy accent">${esc(HEAD[sec.id][0])}</span></h1>
           <p class="lead">${esc(HEAD[sec.id][1])}</p>
           <nav class="tabs" aria-label="Sections">${SECTIONS.map((s) => `<a href="#/learn/${s.id}" ${s.id === sec.id ? 'aria-current="page"' : ''}>${esc(s.name)}<span class="mono">${list.filter((a) => a.section === s.id).length}</span></a>`).join('')}</nav>

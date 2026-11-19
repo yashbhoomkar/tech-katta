@@ -6,7 +6,6 @@ import * as learn from './pages/learn.js';
 import * as article from './pages/article.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
-import * as home from './pages/home.js';
 import { updateShell } from './shell.js';
 import { applyPaletteVars } from './palette.js';
 
@@ -19,13 +18,14 @@ const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/(
 // the retired sample lessons, and bare slugs, go to the real article
 const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
-  [/^\/?$/, landing, 'home'], [/^\/home\/?$/, home, 'start'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
+  [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
   [/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/(?:me|dashboard)\/?$/, me, 'me'],
 ];
 let cleanup = null, token = 0, prevPath = '';
 
 function route() {
   const path = location.hash.replace(/^#/, '') || '/';
+  if (/^\/home\/?$/.test(path)) { location.replace('#/me'); return; } // one page: the Dashboard is home
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path)) { location.replace(`#/learn/concepts/${OLD[old[1]] || old[1]}`); return; }
   const [re, mod, nav] = ROUTES.find(([r]) => r.test(path)) || [null, null, null];
@@ -44,7 +44,7 @@ function route() {
     view.classList.remove('leaving');
     view.focus({ preventScroll: true });
   };
-  const rank = { start: 0, me: 1, learn: 2, sim: 3 }, was = document.body.dataset.page;
+  const rank = { me: 0, learn: 1, sim: 2 }, was = document.body.dataset.page;
   const inApp = (n) => n in rank;
   if (cleanup && !reduced && inApp(was) && inApp(nav) && document.startViewTransition) {
     const hint = document.documentElement.dataset.dirHint; delete document.documentElement.dataset.dirHint;

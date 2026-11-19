@@ -438,12 +438,20 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     renderer.render(scene, camera);
     raf = requestAnimationFrame(loop);
   }
-  const onVis = () => { if (dead) return; if (document.hidden) running = false; else if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(loop); } };
+  // draw only while it can be seen: a hidden tab, or a canvas scrolled off screen, costs no GPU time or battery
+  let onScreen = true;
+  const onVis = () => {
+    if (dead) return;
+    const want = !document.hidden && onScreen;
+    if (!want) running = false; else if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(loop); }
+  };
+  const seen = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; onVis(); }, { rootMargin: '120px' }) : null;
+  seen?.observe(canvas);
   document.addEventListener('visibilitychange', onVis);
   raf = requestAnimationFrame(loop);
 
   function destroy() {
-    dead = true; running = false; cancelAnimationFrame(raf);
+    dead = true; running = false; cancelAnimationFrame(raf); seen?.disconnect();
     removeEventListener('resize', resize); ro?.disconnect(); themeObs.disconnect();
     document.removeEventListener('visibilitychange', onVis);
     canvas.removeEventListener('click', onClick); canvas.removeEventListener('pointermove', onMove);

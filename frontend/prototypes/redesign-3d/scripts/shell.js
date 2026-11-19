@@ -1,4 +1,4 @@
-// The app's frame for everything past the landing: a left sidebar on wide screens (after tech.katta.cc's own: Home,
+// The app's frame for everything past the landing: a left sidebar on wide screens (after tech.katta.cc's own: the Dashboard,
 // then Learn by section with how much is read, the open section's articles under it, then Practise; the active row's
 // fill slides between rows; "[" folds it to a rail of icons) and the glass bottom bar on phones. The landing keeps
 // its own top bar; this frame is for working in the app.
@@ -9,8 +9,7 @@ import { store } from './store.js';
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** each place in the app has one colour, shared by its sidebar row, its home card and its icon */
 export const PLACES = [
-  { id: 'start', href: '#/home', name: 'Home', colour: 'mist', icon: 'home', blurb: 'Where you left off, and everything else' },
-  { id: 'me', href: '#/me', name: 'Dashboard', colour: 'sky', icon: 'grid', blurb: 'The system you can explain, and your progress' },
+  { id: 'me', href: '#/me', name: 'Dashboard', colour: 'sky', icon: 'grid', blurb: 'Where you are, what is next, and everything here' },
   { id: 'concepts', href: '#/learn/concepts', name: 'Concepts', colour: 'lilac', section: true, blurb: 'The ideas every design is built from' },
   { id: 'components', href: '#/learn/components', name: 'Components', colour: 'peach', section: true, blurb: 'The tools interviewers name, and when to pick them' },
   { id: 'interview-questions', href: '#/learn/interview-questions', name: 'Interview questions', colour: 'mint', section: true, blurb: 'Asked in real interviews, answered out loud' },
@@ -49,11 +48,11 @@ function draw() {
     <div class="side-top"><a class="logo" href="#/" aria-label="tech katta, the landing page"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span><span class="lbl">tech katta</span></a>
       <button type="button" class="side-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>
     <nav class="side-nav" aria-label="App"><i class="side-mark" aria-hidden="true"></i>
-      ${row(PLACES[0])}${row(PLACES[1])}
+      ${row(PLACES[0])}
       <p class="side-head lbl">Learn</p>
       ${PLACES.filter((p) => p.section).map((p) => row(p) + sub(p.id)).join('')}
       <p class="side-head lbl">Practise</p>
-      ${row(PLACES[6])}
+      ${row(PLACES[5])}
     </nav>
     <div class="side-foot"><button class="theme" type="button" data-theme-btn>Dark</button></div>`;
   side.querySelector('[data-rail]').addEventListener('click', toggleRail);

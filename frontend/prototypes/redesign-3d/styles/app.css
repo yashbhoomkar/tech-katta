@@ -1131,3 +1131,4 @@ html[data-dir="back"]::view-transition-new(root) { animation-name: vt-in-back; }
 .reader { overflow-x: clip; }
 .sec-head > * { min-width: 0; }
 @media (max-width: 900px) { .learn-cols > * { align-self: stretch; } }
+.deck + .deck-dots + .dash-grid, .deck + .dash-grid { margin-top: 48px; }

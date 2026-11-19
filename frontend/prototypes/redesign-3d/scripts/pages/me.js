@@ -7,6 +7,7 @@ import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
 import { store } from '../store.js';
 import { KIND_PASTEL } from '../palette.js';
 import { footer } from './landing.js';
+import { PLACES, icon, tally } from '../shell.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const P = (kind, x, z, name, concepts, extra = {}) => ({ kind, x, z, name, concepts, ...extra });
@@ -57,13 +58,17 @@ export function mount(view, _p, { reduced, go }) {
       </div>
     </section>
     <section class="page dash-more">
+      <h2 class="sub-h">Everything here</h2>
+      <div class="deck" role="list">
+        ${PLACES.filter((p) => p.id !== 'me').map((p, i) => { const t = tally(p.id, list), n = p.id === 'practice' ? INCIDENTS.find((x) => !best[x.id]?.passed) : list.find((a) => a.section === p.id && !isRead(a));
+          return `<a class="place" role="listitem" href="${p.href}" style="--c:var(--${p.colour}); --i:${i}">
+            <span class="place-icon">${icon(p)}</span><b>${esc(p.name)}</b><span class="muted">${esc(p.blurb)}</span>
+            <span class="place-bar"><i style="width:${t.total ? (t.done / t.total) * 100 : 0}%"></i></span>
+            <span class="place-meta mono">${t.done} of ${t.total}${n ? ` · next: ${esc(n.title ? splitTitle(n.title)[0] : '')}` : ''}</span></a>`; }).join('')}
+      </div>
+      <p class="deck-dots" aria-hidden="true">${PLACES.filter((p) => p.id !== 'me').map(() => '<i></i>').join('')}</p>
       <div class="dash-grid">
         <div>
-          <h2 class="sub-h">Your prep</h2>
-          <ul class="prog">
-            ${SECTIONS.map((s) => { const m = list.filter((a) => a.section === s.id), r = m.filter(isRead).length; return `<li><a href="#/learn/${s.id}"><span class="prog-n">${esc(s.name)}</span><span class="prog-v mono">${r} / ${m.length}</span><span class="bar"><i style="width:${m.length ? (r / m.length) * 100 : 0}%"></i></span></a></li>`; }).join('')}
-            <li><a href="#/sim/ind-vs-pak"><span class="prog-n">Practice runs passed</span><span class="prog-v mono">${passed} / ${INCIDENTS.length}</span><span class="bar"><i style="width:${(passed / INCIDENTS.length) * 100}%"></i></span></a></li>
-          </ul>
           <h2 class="sub-h">Recently read</h2>
           ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
         </div>
@@ -79,6 +84,9 @@ export function mount(view, _p, { reduced, go }) {
     </section>
     ${footer()}`;
 
+    const deck = view.querySelector('.deck'), dots = [...view.querySelectorAll('.deck-dots i')];
+    const onDeck = () => { const w = deck.firstElementChild?.offsetWidth || 1; const k = Math.round(deck.scrollLeft / (w + 12)); dots.forEach((d, j) => d.classList.toggle('on', j === k)); };
+    deck.addEventListener('scroll', onDeck, { passive: true }); onDeck();
     view.querySelector('.reset').addEventListener('click', () => { if (confirm('Clear what you have read and run on this device?')) { store.reset(); draw(list); } });
     const stage = view.querySelector('.dash-stage');
     world?.destroy(); world = null;

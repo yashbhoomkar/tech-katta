@@ -125,3 +125,9 @@ a chat app → your turn.
   Full text / Cards (a sliding pill; Cards opens one topic at a time, swipe or step between them), Share, a right
   rail with the 3D figure, "On this page" that follows you and the group's lessons, and "Mark complete & next"
   (a burst in the part colours, a toast). Articles now count as read when marked complete, as on tech.katta.cc.
+- **One page, not two** (owner: "Why home and dashboard are different pages. There should be only dashboard page"):
+  Home is merged into the Dashboard: the 3D system and next concept, then a card per place (Concepts, Components,
+  Interview questions, Real systems, Practice) with progress, then recently read and the parts' concepts. `#/home`
+  redirects to `#/me`; the sidebar and phone bar start with Dashboard.
+- **3D only draws while visible**: world.js pauses its render loop when the canvas is off screen (and, as before,
+  when the tab is hidden). Measured: ~550 draw calls a second on screen, 0 when scrolled away.

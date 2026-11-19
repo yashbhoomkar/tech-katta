@@ -63,7 +63,7 @@ export function mount(view, _p, { reduced }) {
     <div class="step hero" data-step="0">
       <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
       <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
-      <div class="actions"><a class="btn dark" href="#/home">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
+      <div class="actions"><a class="btn dark" href="#/me">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
       <p class="scroll-cue mono" aria-hidden="true">Scroll to play</p>
     </div>
     <div class="step" data-step="1">
@@ -83,7 +83,7 @@ export function mount(view, _p, { reduced }) {
       <p class="kicker"><span>03</span><i></i>Practice</p>
       <h2 class="headline"><span class="thin">22 problems, 8 challenges</span><span class="heavy accent">A judge tells you if it holds</span></h2>
       <p class="lead">Draw your design. A judge sends an evening of traffic through it, crashes a server and checks the bill, then tells you what broke and why. Free: sign in with Google and everything opens.</p>
-      <div class="actions"><a class="btn violet" href="#/home">Start preparing, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
+      <div class="actions"><a class="btn violet" href="#/me">Start preparing, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
     </div>
   </section>
 
@@ -96,4 +96,4 @@ export function mount(view, _p, { reduced }) {
   return () => story.destroy();
 }
 
-export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">System design you can watch. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/home">Home</a><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim/ind-vs-pak">Practice</a></nav></footer>`;
+export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">System design you can watch. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim/ind-vs-pak">Practice</a></nav></footer>`;
