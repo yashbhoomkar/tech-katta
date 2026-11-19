@@ -1254,3 +1254,10 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 .tap-ring { width: 26px; height: 26px; margin: -13px 0 0 -13px; animation: none; border: 2px solid #fff; background: var(--sky); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sky) 35%, transparent), 0 4px 14px rgb(0 0 0 / .35); }
 .tap-ring::after { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 2px solid var(--sky); animation: ring-pulse 1.8s var(--out) infinite; }
 @media (prefers-reduced-motion: reduce) { .tap-ring::after { animation: none; opacity: .5; } }
+
+/* Tap cue colour: hot coral, a hue the 3D scene never uses, so the ring and the hint dot read as one call to action */
+:root { --beacon: #ff4a3d; }
+.eh-dot { background: var(--beacon); }
+.eh-dot::after { border-color: var(--beacon); }
+.tap-ring { background: var(--beacon); box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon) 35%, transparent), 0 0 18px color-mix(in srgb, var(--beacon) 60%, transparent), 0 4px 14px rgb(0 0 0 / .35); }
+.tap-ring::after { border-color: var(--beacon); }
