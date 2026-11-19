@@ -52,41 +52,29 @@ export function mount(view, _p, { reduced, go }) {
       <div class="dash-copy">
         <div class="dash-head"><nav class="crumbs mono" aria-label="Breadcrumb"><span>Dashboard</span></nav>
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
-        <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part, or pick a concept from the list below. Progress is saved on this device.</p>
+        <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="#/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Play the story →</span></a>`
           : `<a class="next-card" href="#/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>
       </div>
     </section>
     <section class="page dash-more">
       <h2 class="sub-h">Everything here</h2>
-      <div class="deck" role="list">
+      <ul class="places">
         ${PLACES.filter((p) => p.id !== 'me').map((p, i) => { const t = tally(p.id, list), n = p.id === 'practice' ? INCIDENTS.find((x) => !best[x.id]?.passed) : list.find((a) => a.section === p.id && !isRead(a));
-          return `<a class="place" role="listitem" href="${p.href}" style="--c:var(--${p.colour}); --i:${i}">
-            <span class="place-icon">${icon(p)}</span><b>${esc(p.name)}</b><span class="muted">${esc(p.blurb)}</span>
-            <span class="place-bar"><i style="width:${t.total ? (t.done / t.total) * 100 : 0}%"></i></span>
-            <span class="place-meta mono">${t.done} of ${t.total}${n ? ` · next: ${esc(n.title ? splitTitle(n.title)[0] : '')}` : ''}</span></a>`; }).join('')}
-      </div>
-      <p class="deck-dots" aria-hidden="true">${PLACES.filter((p) => p.id !== 'me').map(() => '<i></i>').join('')}</p>
-      <div class="dash-grid">
-        <div>
-          <h2 class="sub-h">Recently completed</h2>
-          ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
-        </div>
-        <div>
-          <h2 class="sub-h">Parts and their concepts</h2>
-          <ul class="parts-map">
-            ${rowsIds.map((id) => { const { cs, r, tone } = partInfo(id); return `<li data-part="${id}" class="${tone}"><div class="pm-head">${pd(MAP[id].kind)}<b>${esc(MAP[id].name)}</b><span class="mono pm-v ${tone}">${r} / ${cs.length}</span></div>
-              <p>${cs.map((a) => `<a href="#/learn/concepts/${a.slug}" class="${isRead(a) ? 'done' : ''}">${isRead(a) ? '<i class="tk" aria-hidden="true"></i>' : ''}${esc(splitTitle(a.title)[0])}</a>`).join('')}</p></li>`; }).join('')}
-          </ul>
-          <p><button type="button" class="btn light sm reset">Clear my progress</button></p>
-        </div>
+          return `<li style="--c:var(--${p.colour}); --i:${i}"><a class="place" href="${p.href}">
+            <span class="place-icon">${icon(p)}</span>
+            <span class="place-main"><b>${esc(p.name)}</b><span class="muted">${esc(p.blurb)}</span></span>
+            <span class="place-prog"><span class="place-count mono">${t.done} of ${t.total}</span><span class="place-bar"><i style="width:${t.total ? (t.done / t.total) * 100 : 0}%"></i></span></span>
+            <span class="place-meta mono">${n ? `Next: ${esc(n.title ? splitTitle(n.title)[0] : '')}` : 'All done'}</span></a></li>`; }).join('')}
+      </ul>
+      <div class="dash-recent">
+        <h2 class="sub-h">Recently completed</h2>
+        ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
+        <p><button type="button" class="btn light sm reset">Clear my progress</button></p>
       </div>
     </section>
     ${footer()}`;
 
-    const deck = view.querySelector('.deck'), dots = [...view.querySelectorAll('.deck-dots i')];
-    const onDeck = () => { const w = deck.firstElementChild?.offsetWidth || 1; const k = Math.round(deck.scrollLeft / (w + 12)); dots.forEach((d, j) => d.classList.toggle('on', j === k)); };
-    deck.addEventListener('scroll', onDeck, { passive: true }); onDeck();
     const resetBtn = view.querySelector('.reset');
     let armTimer = 0;
     resetBtn.addEventListener('click', () => {
@@ -101,17 +89,12 @@ export function mount(view, _p, { reduced, go }) {
     if (!world) return;
     world.setSystem(SYSTEM);
     const f = world.frame(), phone = innerWidth <= 760;
-    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.72 : 0.6) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.52 : 0.54 }, { instant: true });
-    world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10);
+    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
+    world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10); world.setLabelMode(phone ? 'edge' : 'free');
     const parts = {}, labels = {};
     for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [innerWidth < 380 ? '' : `${r}/${cs.length}`, tone]; /* 320 px phones: counts live in the list below, so the pills stay short */ }
     parts.a2 = parts.a1;
     world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
-    // a row in the list highlights its part in the 3D (mouse or keyboard focus); the others fade back meanwhile
-    const base = { parts, labels };
-    const lift = (id) => { const dim = Object.fromEntries(Object.keys(parts).map((k) => [k, (k === id || (id === 'a1' && k === 'a2')) ? parts[k] : 'dim'])); world.setState({ parts: dim, labels, speed: 1.2 }); };
-    const rest = () => world.setState({ ...base, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
-    view.querySelectorAll('.parts-map li').forEach((li) => { li.addEventListener('mouseenter', () => lift(li.dataset.part)); li.addEventListener('focusin', () => lift(li.dataset.part)); li.addEventListener('mouseleave', rest); li.addEventListener('focusout', rest); });
     world.onPick((id) => {
       const key = id === 'a2' ? 'a1' : id;
       if (!key || !MAP[key]?.concepts.length) return;

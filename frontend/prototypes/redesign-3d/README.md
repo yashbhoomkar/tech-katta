@@ -148,3 +148,9 @@ app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rul
   question interviewers ask about it), and the article that teaches it. The colour key in Learn is a row of buttons
   that open the same cards. Scrolling still works over the 3D and closes the card; Esc and × close it too. The hero
   says "Tap any part to see what it does · scroll to play". Phones get the card as a sheet above the bottom bar.
+- **Dashboard labels on phones are callouts** (owner: "every label is very congested"): two columns at the left and right
+  edges, each in its parts' top-to-bottom order, with a thin line to the part (`world.setLabelMode('edge')`). Checked at
+  360 and 412 px: 11 labels, no overlaps, none off screen.
+- **Dashboard, "Everything here"** (owner: "why do we have Parts and their concepts … the cards should be listed vertically
+  for mobile, and for desktop think for it"): "Parts and their concepts" is gone (the 3D and Learn already carry it).
+  The places are progress rows: one column on phones, two on tablets, and one row of five cards on wide screens.

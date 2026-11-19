@@ -303,7 +303,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   // tries its own spot just above its part first, then spots further up and to either side; if it had to move, a thin
   // leader line ties it back to its part. Positions ease toward their target so labels do not jump.
   const queue = [];
-  let labelMaxY = 0.52, labelMinY = 76; // labels may not sit higher than labelMinY px (76 clears the landing's top bar)
+  let labelMaxY = 0.52, labelMinY = 76, labelMode = 'free'; // 'edge': callouts in two columns at the sides (small screens) // labels may not sit higher than labelMinY px (76 clears the landing's top bar)
   const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   leaders.setAttribute('class', 'p3-leaders'); overlay.appendChild(leaders);
   const lines = [];
@@ -312,7 +312,46 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     const on = show && sz < 1 && sx > (W > 760 ? W * avoidLeft : -200) && sx < W - 30 && sy > Math.min(40, labelMinY + 24) && sy < (W > 760 ? H - 20 : H * labelMaxY);
     if (on) queue.push({ el, ax: sx, ay: sy }); else { el.style.opacity = '0'; el._placed = false; }
   }
+  /** move a label toward its spot (eased so labels glide, not jump) and draw its leader line from (cx, cy) to the part */
+  function put(el, best, ax, ay, cx, cy, used) {
+    const e = reduced || !el._placed ? 1 : 0.25;
+    el._x = el._placed ? el._x + (best.x - el._x) * e : best.x;
+    el._y = el._placed ? el._y + (best.y - el._y) * e : best.y;
+    el._placed = true;
+    el.style.opacity = ''; el.style.translate = '0 0';
+    el.style.transform = `translate(${el._x.toFixed(1)}px, ${el._y.toFixed(1)}px)`;
+    if (Math.hypot(cx - ax, cy - ay) <= 12) return used;
+    let ln = lines[used];
+    if (!ln) { ln = document.createElementNS('http://www.w3.org/2000/svg', 'line'); leaders.appendChild(ln); lines.push(ln); }
+    ln.setAttribute('x1', ax.toFixed(1)); ln.setAttribute('y1', ay.toFixed(1)); ln.setAttribute('x2', cx.toFixed(1)); ln.setAttribute('y2', cy.toFixed(1));
+    ln.style.display = '';
+    return used + 1;
+  }
+  /** callouts: labels stand in two columns at the left and right edges, each column in its parts' top-to-bottom order,
+   *  with a thin line to the part, so on a narrow screen they never pile onto the parts or each other */
+  function layoutEdge() {
+    const size = (el) => { if (el._wh?.h0 !== el._h) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h }; return el._wh; };
+    const byX = [...queue].sort((a, b) => a.ax - b.ax), half = Math.ceil(byX.length / 2);
+    const cols = [[byX.slice(0, half), true], [byX.slice(half), false]];
+    const bottom = H * Math.min(labelMaxY, 1) - 8;
+    let used = 0;
+    for (const [col, left] of cols) {
+      col.sort((a, b) => a.ay - b.ay);
+      const ys = []; let y = labelMinY;
+      for (const q of col) { const { h } = size(q.el); const want = Math.max(q.ay - h / 2, y); ys.push(want); y = want + h + 8; }
+      const over = y - 8 - bottom; // too tall: lift the column, but not above the top
+      if (over > 0) for (let k = 0; k < ys.length; k++) ys[k] = Math.max(labelMinY + k * 0, ys[k] - over);
+      for (let k = 1; k < ys.length; k++) ys[k] = Math.max(ys[k], ys[k - 1] + size(col[k - 1].el).h + 8);
+      col.forEach((q, k) => {
+        const { w, h } = size(q.el), x = left ? 8 : W - w - 8, best = { x, y: ys[k] };
+        used = put(q.el, best, q.ax, q.ay, left ? x + w : x, ys[k] + h / 2, used);
+      });
+    }
+    for (let i = used; i < lines.length; i++) lines[i].style.display = 'none';
+    queue.length = 0;
+  }
   function layoutLabels() {
+    if (labelMode === 'edge') return layoutEdge();
     const boxes = [];
     const hit = (b) => boxes.some((o) => b.x < o.x + o.w + 6 && b.x + b.w + 6 > o.x && b.y < o.y + o.h + 4 && b.y + b.h + 4 > o.y);
     queue.sort((a, b) => a.ay - b.ay);
@@ -331,21 +370,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
       }
       best = best || home;
       boxes.push(best);
-      const e = reduced || !el._placed ? 1 : 0.25;
-      el._x = el._placed ? el._x + (best.x - el._x) * e : best.x;
-      el._y = el._placed ? el._y + (best.y - el._y) * e : best.y;
-      el._placed = true;
-      el.style.opacity = '';
-      el.style.translate = '0 0';
-      el.style.transform = `translate(${el._x.toFixed(1)}px, ${el._y.toFixed(1)}px)`;
       // leader line when the label sits away from its part
-      const cx = Math.max(el._x + 6, Math.min(el._x + w - 6, ax)), cy = el._y + h;
-      if (Math.hypot(cx - ax, cy - ay) > 12) {
-        let ln = lines[used];
-        if (!ln) { ln = document.createElementNS('http://www.w3.org/2000/svg', 'line'); leaders.appendChild(ln); lines.push(ln); }
-        ln.setAttribute('x1', ax.toFixed(1)); ln.setAttribute('y1', ay.toFixed(1)); ln.setAttribute('x2', cx.toFixed(1)); ln.setAttribute('y2', cy.toFixed(1));
-        ln.style.display = ''; used++;
-      }
+      const cx = Math.max(best.x + 6, Math.min(best.x + w - 6, ax)), cy = best.y + h;
+      used = put(el, best, ax, ay, cx, cy, used);
     }
     for (let i = used; i < lines.length; i++) lines[i].style.display = 'none';
     queue.length = 0;
@@ -460,7 +487,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; },
+  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMode: (m) => { labelMode = m; },
     /** a part's position on the canvas in px (for a card beside it), or null */
     screenOf: (id) => { const p = parts.get(id); if (!p || p.gone) return null; const [x, y] = project(p.g.position.x, p.top + p.rise, p.g.position.z); return [x, y]; }, onPick: (cb) => { pickCb = cb; }, destroy };
 }

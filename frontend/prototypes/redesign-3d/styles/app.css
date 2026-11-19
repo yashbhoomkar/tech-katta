@@ -1203,3 +1203,30 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 @keyframes pc-up { from { opacity: 0; transform: translateY(24px); } }
 @media (min-width: 1000px) { .part-card.sheet { bottom: 24px; left: auto; right: 24px; width: 340px; } }
 @media (max-width: 760px) { .step.hero .scroll-cue { display: block; margin-top: 14px; text-align: center; color: var(--word-2); } }
+@media (max-width: 760px) { .dash-stage { height: 46svh; min-height: 340px; } }
+
+/* Dashboard "Everything here" (owner: "the cards scrollable horizontal should be listed vertically for mobile, and for
+   desktop think for it"): phones a vertical list of rows; tablets two columns of rows; wide screens one row of five
+   progress cards, an overview at a glance (the sidebar already carries the same names) */
+.places { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: 1fr; }
+.places > li { animation: rise .5s var(--out) both; animation-delay: calc(var(--i) * 60ms); }
+.places .place { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "icon main prog" "icon meta meta"; align-items: center; gap: 2px 14px; min-height: 0; height: 100%; padding: 14px 16px; }
+.places .place-icon { grid-area: icon; width: 40px; height: 40px; margin: 0; align-self: start; }
+.place-main { grid-area: main; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.place-main b { font-size: 17px; }
+.place-main .muted { font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+.place-prog { grid-area: prog; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: 84px; }
+.place-prog .place-bar { width: 100%; margin: 0; }
+.place-count { color: var(--ink-2); }
+.places .place-meta { grid-area: meta; margin-top: 6px; }
+@media (max-width: 480px) { .place-main .muted { display: none; } }
+@media (min-width: 761px) and (max-width: 1199px) { .places { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1200px) {
+  .places { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+  .places .place { grid-template-columns: 1fr; grid-template-areas: "icon" "main" "prog" "meta"; align-content: start; gap: 10px; padding: 18px; }
+  .place-prog { width: 100%; align-items: stretch; flex-direction: column-reverse; }
+  .place-main .muted { min-height: 2.8em; }
+  .places .place-meta { margin-top: 0; }
+}
+.dash-recent { margin-top: 48px; max-width: 720px; }
+.deck-dots { display: none !important; }
