@@ -1230,3 +1230,27 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 }
 .dash-recent { margin-top: 48px; max-width: 720px; }
 .deck-dots { display: none !important; }
+
+/* the hint for how to explore (owner: "make it highlighted or do something so it will be visible a lot"): a glass pill
+   under the hero buttons, full-strength words, a pulsing dot for tap and a bobbing arrow for scroll; plus a ring
+   pulsing on the Kafka topic in the 3D until the first tap or scroll */
+.explore-hint { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 26px; padding: 10px 16px; border-radius: 999px; width: fit-content;
+  background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  font-size: 15px; font-weight: 600; color: var(--word); pointer-events: auto; }
+.eh-tap, .eh-scroll { display: inline-flex; align-items: center; gap: 10px; }
+.eh-scroll { color: var(--word-2); }
+.eh-dot { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--sky); flex: none; }
+.eh-dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--sky); animation: eh-pulse 1.6s var(--out) infinite; }
+.eh-arrow { font-style: normal; display: inline-block; animation: eh-bob 1.6s ease-in-out infinite; }
+@keyframes eh-pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(2.1); opacity: 0; } }
+@keyframes eh-bob { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+.tap-ring { position: fixed; z-index: 4; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; pointer-events: none; border: 2px solid var(--sky); background: color-mix(in srgb, var(--sky) 18%, transparent);
+  animation: ring-pulse 1.8s var(--out) infinite; transition: opacity .4s; }
+.tap-ring.gone { opacity: 0 !important; animation: none; }
+@keyframes ring-pulse { 0% { transform: scale(.7); opacity: .95; } 70% { transform: scale(1.5); opacity: 0; } 100% { opacity: 0; } }
+@media (max-width: 760px) { .explore-hint { justify-content: center; margin: 16px auto 0; font-size: 14px; padding: 9px 14px; gap: 6px 14px; } }
+@media (prefers-reduced-motion: reduce) { .eh-dot::after, .eh-arrow { animation: none; } .tap-ring { animation: none; opacity: .8; } }
+/* the ring always shows a solid core; only its halo pulses */
+.tap-ring { width: 26px; height: 26px; margin: -13px 0 0 -13px; animation: none; border: 2px solid #fff; background: var(--sky); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sky) 35%, transparent), 0 4px 14px rgb(0 0 0 / .35); }
+.tap-ring::after { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 2px solid var(--sky); animation: ring-pulse 1.8s var(--out) infinite; }
+@media (prefers-reduced-motion: reduce) { .tap-ring::after { animation: none; opacity: .5; } }

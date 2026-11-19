@@ -78,7 +78,7 @@ export function mount(view, _p, { reduced }) {
       <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
       <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
       <div class="actions"><a class="btn dark" href="#/me">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
-      <p class="scroll-cue mono" aria-hidden="true">Tap any part to see what it does · scroll to play</p>
+      <p class="explore-hint"><span class="eh-tap"><i class="eh-dot" aria-hidden="true"></i>Tap any part to see what it does</span><span class="eh-scroll"><i class="eh-arrow" aria-hidden="true">↓</i>Scroll to play</span></p>
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>Learn</p>
@@ -139,13 +139,27 @@ export function mount(view, _p, { reduced }) {
     else { pc.style.left = ''; pc.style.top = ''; }
     pc.querySelector('.pc-x').addEventListener('click', close);
   };
-  w?.onPick(open);
+  w?.onPick((id) => { if (id) dismissRing(); open(id); });
+  // the first hint, in the 3D itself: a ring pulsing on the Kafka topic until you tap a part or start scrolling
+  const ring = document.createElement('i'); ring.className = 'tap-ring'; ring.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(ring);
+  let ringRaf = 0, ringOn = !!w;
+  const dismissRing = () => { ringOn = false; ring.classList.add('gone'); };
+  const placeRing = () => {
+    ringRaf = 0;
+    if (!ringOn) return;
+    if (scrollY > innerHeight * 0.25) { dismissRing(); return; }
+    const xy = w.screenOf('topic'), c = stage.querySelector('canvas').getBoundingClientRect();
+    if (xy) { ring.style.left = `${c.left + xy[0]}px`; ring.style.top = `${c.top + xy[1] + 10}px`; ring.style.opacity = ''; }
+    ringRaf = requestAnimationFrame(placeRing);
+  };
+  if (w) ringRaf = requestAnimationFrame(placeRing); else ring.remove();
   root.querySelectorAll('[data-part-kind]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.partKind; open(k === 'laptop' ? 'users' : k === 'kafka' ? 'topic' : k === 'db' ? 'sql' : k === 'server' ? 'p1' : 'c1'); }));
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   const onScroll2 = () => { if (openId && Math.abs(scrollY - openY) > 80) close(); }; // scrolling moves the story on
   addEventListener('keydown', onKey); addEventListener('scroll', onScroll2, { passive: true });
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
-  return () => { pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
+  return () => { cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
 }
 
 export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim">Practice</a></nav></footer>`;
