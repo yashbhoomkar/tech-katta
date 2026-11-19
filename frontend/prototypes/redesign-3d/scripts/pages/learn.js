@@ -36,7 +36,7 @@ export function mount(view, [sectionId], { reduced }) {
     <section class="page learn" style="--acc: var(--${colour})">
       <header class="sec-head">
         <div>
-          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Learn</span></nav>
+          <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>${esc(sec.name)}</span></nav>
           <h1 class="headline"><span class="thin">${esc(sec.name)}</span><span class="heavy accent">${esc(HEAD[sec.id][0])}</span></h1>
           <p class="lead">${esc(HEAD[sec.id][1])}</p>
           <nav class="tabs" aria-label="Sections">${SECTIONS.map((s) => `<a href="#/learn/${s.id}" ${s.id === sec.id ? 'aria-current="page"' : ''}>${esc(s.name)}<span class="mono">${list.filter((a) => a.section === s.id).length}</span></a>`).join('')}</nav>
@@ -44,7 +44,7 @@ export function mount(view, [sectionId], { reduced }) {
         <div class="cprog">
           <b>${done} of ${mine.length} done</b>
           <span class="cbar"><i style="width:${mine.length ? (done / mine.length) * 100 : 0}%"></i></span>
-          ${next ? `<small>Next up: ${esc(splitTitle(next.title)[0])}</small><a class="btn dark sm" href="#/learn/${next.section}/${next.slug}">${done ? 'Continue' : 'Start'} →</a>` : '<small>All done here</small>'}
+          ${next ? `<small>Next up: ${esc(splitTitle(next.title)[0])}</small><a class="btn dark sm" href="#/learn/${next.section}/${next.slug}">${done ? 'Continue' : 'Start'}<span class="chip">→</span></a>` : '<small>All done here</small>'}
         </div>
       </header>
       ${levels.length ? `<div class="seg levels" role="group" aria-label="Filter by difficulty" style="--n:${levels.length + 1}">${['all', ...levels].map((l, i) => `<button type="button" data-level="${l}" data-i="${i}" aria-pressed="${l === 'all'}">${l === 'all' ? 'All' : l[0].toUpperCase() + l.slice(1)}</button>`).join('')}<i class="seg-pill" aria-hidden="true"></i></div>`
@@ -57,7 +57,7 @@ export function mount(view, [sectionId], { reduced }) {
               <ol class="lessons">
                 ${items.map((a, i) => { const [h, rest] = splitTitle(a.title), isRead = read[`${a.section}/${a.slug}`]; return `<li>
                   <a class="lesson${isRead ? ' done' : ''}" href="#/learn/${a.section}/${a.slug}" data-preview="${a.slug}">
-                    <span class="st" role="img" aria-label="${isRead ? 'Done' : 'Not started'}">${isRead ? '✓' : ''}</span>
+                    <span class="st" role="img" aria-label="${isRead ? 'Done' : 'Not started'}">${isRead ? '<i class="tk" aria-hidden="true"></i>' : ''}</span>
                     <span class="l-n mono">${String(i + 1).padStart(2, '0')}</span>
                     <span class="l-main"><b>${esc(h)}</b><span class="muted">${esc(rest || a.dek)}</span></span>
                     <span class="l-tag mono">${esc(tagText(a.tag))}</span>

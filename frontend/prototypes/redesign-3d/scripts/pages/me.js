@@ -1,5 +1,5 @@
 // Dashboard: your prep, on this device. The centre is one 3D system whose parts are the 21 concepts: a part turns
-// amber when you have started its concepts and green when you have read them all, so the system you can explain grows
+// amber when you have started its concepts and green when all are done, so the system you can explain grows
 // as you learn. Tap a part (or its row) to open its next concept. No streaks, no badges.
 import { createWorld } from '../world.js';
 import { INCIDENTS } from '../sim.js';
@@ -50,11 +50,11 @@ export function mount(view, _p, { reduced, go }) {
     <section class="dash">
       <div class="dash-stage" aria-hidden="true"><canvas></canvas><div class="overlay"></div></div>
       <div class="dash-copy">
-        <div class="dash-head"><p class="kicker"><span>Dashboard</span><i></i>On this device</p>
-        <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts read` : 'Grows as you learn'}</span></h1></div>
-        <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have read them all. Tap a part to open its next one.</p>
+        <div class="dash-head"><nav class="crumbs mono" aria-label="Breadcrumb"><span>Dashboard</span></nav>
+        <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
+        <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part, or pick a concept from the list below. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="#/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Play the story →</span></a>`
-          : `<a class="next-card" href="#/learn/components"><span class="mono">All concepts read</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>
+          : `<a class="next-card" href="#/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>
       </div>
     </section>
     <section class="page dash-more">
@@ -69,14 +69,14 @@ export function mount(view, _p, { reduced, go }) {
       <p class="deck-dots" aria-hidden="true">${PLACES.filter((p) => p.id !== 'me').map(() => '<i></i>').join('')}</p>
       <div class="dash-grid">
         <div>
-          <h2 class="sub-h">Recently read</h2>
+          <h2 class="sub-h">Recently completed</h2>
           ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="#/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
         </div>
         <div>
           <h2 class="sub-h">Parts and their concepts</h2>
           <ul class="parts-map">
             ${rowsIds.map((id) => { const { cs, r, tone } = partInfo(id); return `<li data-part="${id}" class="${tone}"><div class="pm-head">${pd(MAP[id].kind)}<b>${esc(MAP[id].name)}</b><span class="mono pm-v ${tone}">${r} / ${cs.length}</span></div>
-              <p>${cs.map((a) => `<a href="#/learn/concepts/${a.slug}" class="${isRead(a) ? 'done' : ''}">${isRead(a) ? '✓ ' : ''}${esc(splitTitle(a.title)[0])}</a>`).join('')}</p></li>`; }).join('')}
+              <p>${cs.map((a) => `<a href="#/learn/concepts/${a.slug}" class="${isRead(a) ? 'done' : ''}">${isRead(a) ? '<i class="tk" aria-hidden="true"></i>' : ''}${esc(splitTitle(a.title)[0])}</a>`).join('')}</p></li>`; }).join('')}
           </ul>
           <p><button type="button" class="btn light sm reset">Clear my progress</button></p>
         </div>
@@ -87,7 +87,13 @@ export function mount(view, _p, { reduced, go }) {
     const deck = view.querySelector('.deck'), dots = [...view.querySelectorAll('.deck-dots i')];
     const onDeck = () => { const w = deck.firstElementChild?.offsetWidth || 1; const k = Math.round(deck.scrollLeft / (w + 12)); dots.forEach((d, j) => d.classList.toggle('on', j === k)); };
     deck.addEventListener('scroll', onDeck, { passive: true }); onDeck();
-    view.querySelector('.reset').addEventListener('click', () => { if (confirm('Clear what you have read and run on this device?')) { store.reset(); draw(list); } });
+    const resetBtn = view.querySelector('.reset');
+    let armTimer = 0;
+    resetBtn.addEventListener('click', () => {
+      if (resetBtn.dataset.armed) { clearTimeout(armTimer); store.reset(); draw(list); return; }
+      resetBtn.dataset.armed = '1'; resetBtn.textContent = 'Tap again to clear what you have done';
+      armTimer = setTimeout(() => { delete resetBtn.dataset.armed; resetBtn.textContent = 'Clear my progress'; }, 4000);
+    });
     const stage = view.querySelector('.dash-stage');
     world?.destroy(); world = null;
     try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced }); } catch { world = null; }

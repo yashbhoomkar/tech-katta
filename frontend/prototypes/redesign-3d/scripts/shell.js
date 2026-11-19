@@ -1,5 +1,5 @@
 // The app's frame for everything past the landing: a left sidebar on wide screens (after tech.katta.cc's own: the Dashboard,
-// then Learn by section with how much is read, the open section's articles under it, then Practise; the active row's
+// then Learn by section with how much is read, the open section's articles under it, then Practice; the active row's
 // fill slides between rows; "[" folds it to a rail of icons) and the glass bottom bar on phones. The landing keeps
 // its own top bar; this frame is for working in the app.
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
@@ -14,7 +14,7 @@ export const PLACES = [
   { id: 'components', href: '#/learn/components', name: 'Components', colour: 'peach', section: true, blurb: 'The tools interviewers name, and when to pick them' },
   { id: 'interview-questions', href: '#/learn/interview-questions', name: 'Interview questions', colour: 'mint', section: true, blurb: 'Asked in real interviews, answered out loud' },
   { id: 'real-systems', href: '#/learn/real-systems', name: 'Real systems', colour: 'rose', section: true, blurb: 'How apps you use are built, part by part' },
-  { id: 'practice', href: '#/sim/ind-vs-pak', name: 'Practice', colour: 'lemon', icon: 'play', blurb: 'Design a system and watch it survive an evening' },
+  { id: 'practice', href: '#/sim', name: 'Practice', colour: 'lemon', icon: 'play', blurb: 'Design a system and watch it survive an evening' },
 ];
 const ICONS = {
   home: '<path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/>',
@@ -32,7 +32,7 @@ export function tally(id, list = listNow()) {
 }
 
 const RAIL_KEY = 'tk-r3d-side';
-let side = null, railSaved = false, here = { nav: '', path: '' };
+let side = null, railSaved = false, here = { nav: '', path: '' }, openHere = false;
 try { railSaved = localStorage.getItem(RAIL_KEY) === 'rail'; } catch { /* storage blocked */ }
 
 function draw() {
@@ -46,15 +46,15 @@ function draw() {
     return `<div class="side-sub lbl">${list.filter((a) => a.section === id).map((a) => `<a href="#/learn/${a.section}/${a.slug}" class="${a.slug === slug ? 'on' : ''}${read[`${a.section}/${a.slug}`] ? ' done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(a.title)[0])}</a>`).join('')}</div>`; };
   side.innerHTML = `
     <div class="side-top"><a class="logo" href="#/" aria-label="tech katta, the landing page"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span><span class="lbl">tech katta</span></a>
-      <button type="button" class="side-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>
+      <button type="button" class="side-btn icon-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>
     <nav class="side-nav" aria-label="App"><i class="side-mark" aria-hidden="true"></i>
       ${row(PLACES[0])}
       <p class="side-head lbl">Learn</p>
       ${PLACES.filter((p) => p.section).map((p) => row(p) + sub(p.id)).join('')}
-      <p class="side-head lbl">Practise</p>
+      <p class="side-head lbl">Practice</p>
       ${row(PLACES[5])}
     </nav>
-    <div class="side-foot"><button class="theme" type="button" data-theme-btn>Dark</button></div>`;
+    <div class="side-foot"><button class="theme" type="button" data-theme-btn></button></div>`;
   side.querySelector('[data-rail]').addEventListener('click', toggleRail);
   document.dispatchEvent(new CustomEvent('tk-theme-buttons'));
   requestAnimationFrame(placeMark);
@@ -68,11 +68,16 @@ function placeMark() {
   mark.style.transform = `translateY(${on.offsetTop}px)`; mark.style.height = `${on.offsetHeight}px`;
   if (side.dataset.prev !== on.getAttribute('href')) { side.dataset.prev = on.getAttribute('href'); on.scrollIntoView({ block: 'nearest' }); }
 }
-function applyRail() { document.documentElement.toggleAttribute('data-rail', railSaved || here.nav === 'sim'); setTimeout(placeMark, 260); }
-function toggleRail() { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } applyRail(); }
+// the simulator folds the sidebar to a rail for width (without touching your saved choice); touch screens never fold it,
+// because a rail shows names only as tooltips
+const focusPage = () => here.nav === 'sim' && /^\/sim\/[\w-]+/.test(here.path);
+const touchOnly = () => matchMedia('(hover: none)').matches;
+function applyRail() { const rail = !touchOnly() && (focusPage() ? !openHere : railSaved); document.documentElement.toggleAttribute('data-rail', rail); setTimeout(placeMark, 260); }
+function toggleRail() { if (touchOnly()) return; if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
 
 /** called by the router on every page: shows the frame on app pages, marks where you are */
 export function updateShell(nav, path) {
+  if (path !== here.path) openHere = false;
   here = { nav, path };
   const app = nav && nav !== 'home';
   document.body.classList.toggle('in-app', !!app);

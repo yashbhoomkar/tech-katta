@@ -79,14 +79,20 @@ export function mount(view, _p, { reduced }) {
     <div class="step" data-step="2">
       <p class="kicker"><span>02</span><i></i>Interview</p>
       <h2 class="headline"><span class="thin">29 questions interviewers ask</span><span class="heavy accent">And 6 real systems, explained</span></h2>
-      <p class="lead">Each answer walks through what to clarify, the numbers to estimate, the design and the trade-offs to say out loud. Real systems show how apps you use are built at Indian scale.</p>
+      <p class="lead">Each answer walks through what to clarify, the numbers to estimate, the design and the trade-offs to say out loud. For example, on this pipeline:</p>
+      <ul class="qs">
+        <li>${pd("server")}What if a server crashes mid-publish?</li>
+        <li>${pd("kafka")}Why a topic, not direct writes?</li>
+        <li>${pd("consumer")}How many consumers per partition?</li>
+        <li>${pd("db")}Batch writes or row by row?</li>
+      </ul>
       <div class="actions"><a class="btn light" href="#/learn/interview-questions">Browse the questions<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="3">
       <p class="kicker"><span>03</span><i></i>Practice</p>
       <h2 class="headline"><span class="thin">22 problems, 8 challenges</span><span class="heavy accent">A judge tells you if it holds</span></h2>
       <p class="lead">Draw your design. A judge sends an evening of traffic through it, crashes a server and checks the bill, then tells you what broke and why. Free: sign in with Google and everything opens.</p>
-      <div class="actions"><a class="btn violet" href="#/me">Start preparing, free<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
+      <div class="actions"><a class="btn violet" href="#/me">Start preparing<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
     </div>
   </section>
 
@@ -99,4 +105,4 @@ export function mount(view, _p, { reduced }) {
   return () => story.destroy();
 }
 
-export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">System design you can watch. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim/ind-vs-pak">Practice</a></nav></footer>`;
+export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim">Practice</a></nav></footer>`;

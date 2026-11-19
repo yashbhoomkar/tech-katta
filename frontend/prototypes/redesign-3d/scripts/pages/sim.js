@@ -21,8 +21,8 @@ export function mount(view, [id], { reduced, go }) {
   <section class="sim">
     <div class="sim-stage"><canvas></canvas><div class="overlay"></div></div>
     <aside class="brief glass">
-      <a class="back mono" href="#/">← HOME</a>
-      <p class="kicker"><span>INC-${inc.no}</span><i></i>${inc.level.toUpperCase()} · ${inc.system.toUpperCase()}</p>
+      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/sim">Practice</a></nav>
+      <p class="kicker"><span>Scenario ${Number(inc.no)}</span><i></i>${inc.level} · ${inc.system}</p>
       <h1>${inc.title}</h1>
       <p class="muted">${inc.brief}</p>
       <div class="chart">${sparkline(inc, { w: 300, h: 92 })}<div class="chart-axis mono"><span>${clock(0)}</span><span>${clock(inc.length - 1)}</span></div></div>
@@ -47,7 +47,7 @@ export function mount(view, [id], { reduced, go }) {
         </div>`).join('')}</div>
       <div class="dock-right">
         <span class="cost"><small>Cost a month</small><b class="c-val">—</b></span>
-        <button class="btn violet run" type="button">Run the evening<span class="chip">▶</span></button>
+        <button class="btn dark run" type="button">Run the evening<span class="chip">→</span></button>
       </div>
     </div>
     <div class="tip glass" hidden></div>
@@ -190,10 +190,10 @@ export function mount(view, [id], { reduced, go }) {
     const r = result;
     const nextInc = INCIDENTS[INCIDENTS.indexOf(inc) + 1];
     verdict.innerHTML = `
-      <p class="kicker"><span>${r.passed ? 'SURVIVED' : 'IT BROKE'}</span><i></i>SCORE ${r.score} / 100</p>
-      <h2 class="${r.passed ? 'ok' : 'alert'}">${r.passed ? 'The evening held.' : 'The evening did not hold.'}</h2>
+      <p class="kicker"><span>${r.passed ? 'Survived' : 'It broke'}</span><i></i>Score ${r.score} of 100</p>
+      <h2 class="${r.passed ? 'ok' : 'alert'}">${r.passed ? 'The evening held' : 'The evening did not hold'}</h2>
       <ul class="checks">${r.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}"><i></i>${c.label}<b>${c.value}</b></li>`).join('')}</ul>
-      ${r.why.length ? `<div class="why"><p class="mono">WHAT HAPPENED</p>${r.why.map((w) => `<p>${w.text}${w.lesson && READ[w.lesson] ? ` <a href="#/learn/concepts/${READ[w.lesson][0]}">Read: ${READ[w.lesson][1]} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job.</p></div>'}
+      ${r.why.length ? `<div class="why"><p class="mono">What happened</p>${r.why.map((w) => `<p>${w.text}${w.lesson && READ[w.lesson] ? ` <a href="#/learn/concepts/${READ[w.lesson][0]}">Read: ${READ[w.lesson][1]} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job</p></div>'}
       <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="#/sim/${nextInc.id}">Next scenario<span class="chip">→</span></a>` : ''}<button type="button" class="btn light v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button></div>`;
     verdict.hidden = false;
     view.querySelector('.brief').style.visibility = 'hidden';

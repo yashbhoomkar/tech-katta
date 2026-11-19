@@ -136,3 +136,8 @@ a chat app → your turn.
   camera no longer moves closer then back for every chapter (`cam.hold` in story.js). It travels: the whole
   pipeline → a low dolly onto the slowing SQL database (Learn) → an orbit round the Kafka topic (Interview) → a crane
   up over the whole pipeline (Practice).
+
+## 2026-11-19: audit fixes
+All 32 findings in `AUDIT.md` are addressed (status table at the top). New `#/sim` Practice page; Home/Practise/read wording
+unified; one scale for heading sizes, radii, button heights, label size, text colours and card hover (last block of
+app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rules removed.

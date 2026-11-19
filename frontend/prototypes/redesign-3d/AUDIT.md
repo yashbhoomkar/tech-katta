@@ -6,7 +6,46 @@ question, Practice, 404) loaded in a browser at three widths (phone 412 px light
 small-label sizes, headline sizes, text colours, page width, script errors), then screenshots read by eye and the
 code read where needed. No script errors and no sideways scroll on any page at any width.
 
-Nothing below has been fixed yet. Ranked by how much it hurts someone using the site.
+The original findings, ranked by how much it hurts someone using the site.
+
+## Status: all 32 addressed (2026-11-19)
+
+| # | What was done |
+|---|---|
+| 1 | Below 1000 px the glass bottom bar is the navigation (it used to stop at 760 px); the top bar's links and button are hidden in the app there. Checked at 900 px. |
+| 2 | New Practice page (`#/sim`): all five scenarios with level, budget, best score, a status tick and a live 3D preview. Sidebar, Dashboard card, phone bar and footer open it. |
+| 3 | Scenario page: breadcrumbs "Dashboard / Practice" instead of "← HOME". |
+| 4 | One label, "Start preparing", in the top bar and the hero. |
+| 5 | 404 uses the app frame, sentence case, no full stop, "Go to the Dashboard". Article not-found/offline pages match. |
+| 6 | "Done" everywhere ("2 of 21 done", "Recently completed", "All concepts done"); "Mark complete" stays as the action. |
+| 7 | "Learn" dropped from the trail: "Dashboard / Concepts / Core / Caching". |
+| 8 | The Interview chapter's four questions are now a list in the words (with part colour dots). |
+| 9 | Scenario page: sentence case, no full stops, the one glass recipe, no blue links, 12 px labels, chart text 12 px. |
+| 10 | Two heading sizes: `--h-hero` (landing and article story, 69 px) and `--h-app` (every app page, 56 px). |
+| 11 | Radii 10 / 16 / 24 plus pills (8 only for the inner pill of a segmented control). |
+| 12 | Button heights 36 (chips and icons) / 40 / 48. |
+| 13 | One label size, 12 px (code keeps its own size). |
+| 14 | One pure black / white for text and one secondary grey per theme, set once on `:root`. |
+| 15 | Primary buttons carry the arrow chip everywhere; links keep a text arrow. |
+| 16 | Breadcrumbs on every app page; tags only on the landing and article stories. |
+| 17 | One separator (·) in every tag. |
+| 18 | "Practice" everywhere. |
+| 19 | The reader no longer repeats the title; it opens with breadcrumbs, read time and tools. |
+| 20 | Footer carries the hero's line. |
+| 21 | One card hover (2 px lift, firmer edge); rows tint. |
+| 22 | The worked-example card is a plain card, not glass. |
+| 23 | The article hero is framed for the narrower page next to the sidebar. |
+| 24 | One drawn tick for done (section rows, Dashboard, sidebar, rail, the Completed chip). |
+| 25 | "Clear my progress" asks again on the button ("Tap again…") instead of the browser dialog. |
+| 26 | Theme button is an icon with a tooltip, and "Theme: Dark" in the sidebar. |
+| 27 | "Scroll to play" sits under the hero buttons. |
+| 28 | Touch screens never fold the sidebar to the rail; the fold button shows only where there is a mouse. |
+| 29 | Wording now points to the list of concepts below the 3D ("Tap a part, or pick a concept from the list below"). The 3D parts themselves are still not reachable by keyboard; the list is. |
+| 30 | `[` on a scenario page opens the sidebar for that page only; it no longer changes the saved choice. |
+| 31 | 83 unused rules deleted. The stylesheet is still layered: a final block sets the shared sizes and wins over the older ones with `!important`. Merging all layers into one is not done. |
+| 32 | The article loading page has the same frame as the others (breadcrumbs, title, skeleton lines). |
+
+Also found while fixing: a stray blue line across the Practice and 404 pages (the page container's focus outline).
 
 ## High: confusing or broken
 

@@ -53,12 +53,12 @@ export function mount(view, [section, slug], { reduced }) {
   let alive = true, story = null, aside = null, io = null;
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
-  view.innerHTML = `<section class="page narrow reader-wait"><p class="kicker"><span>${esc(sec.name)}</span><i></i>Loading</p><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead muted">${esc(head?.dek || '')}</p></section>`;
+  view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
 
   getArticle(slug).then(async (a) => {
     if (!alive) return;
-    if (!a && !head) { view.innerHTML = `<section class="page narrow missing"><p class="kicker"><span>${esc(sec.name)}</span><i></i>Not found</p><h1 class="headline"><span class="thin">No article at this address</span><span class="heavy">It may have moved</span></h1><p><a class="btn dark" href="#/learn/${esc(sec.id)}">See all ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
-    if (!a) { view.innerHTML = `<section class="page narrow missing"><p class="kicker"><span>${esc(sec.name)}</span><i></i>Offline</p><h1 class="headline"><span class="thin">This article could not load</span><span class="heavy">Check your connection and try again</span></h1><p><a class="btn dark" href="#/learn/${esc(section)}">Back to ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
+    if (!a && !head) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">No article at this address</span><span class="heavy">It may have moved</span></h1><p><a class="btn dark" href="#/learn/${esc(sec.id)}">See all ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
+    if (!a) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Offline</span></nav><h1 class="headline"><span class="thin">This article could not load</span><span class="heavy">Check your connection and try again</span></h1><p><a class="btn dark" href="#/learn/${esc(section)}">Back to ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
     const list = await listArticles();
     if (!alive) return;
     const mine = list.filter((x) => x.section === a.section), at = mine.findIndex((x) => x.slug === a.slug);
@@ -82,7 +82,7 @@ export function mount(view, [section, slug], { reduced }) {
       if (text.length > 260) { const cut = text.slice(0, 260), end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? ')); text = end > 80 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`; }
       return { ...step, words: [step.words?.[0] || a.body[k].x, step.words?.[1] || ''], text: text || step.text };
     };
-    const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
+    const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: innerWidth >= 1000 ? 0.7 : 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system) * (innerWidth >= 1000 ? 1.14 : 1), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
       : phone ? { ...s, cam: { ...(s.cam || {}), side: false, phoneSy: 0.3, phoneZoom: 1.75 } } : s));
     const h2s = a.body.filter((b) => b.t === 'h2');
     // topics for the Cards view: each h2 section, with its first line as a lede (tech.katta.cc's "Cards")
@@ -103,7 +103,7 @@ export function mount(view, [section, slug], { reduced }) {
         <p class="kicker"><span>${esc(sec.name.replace(/s$/, ''))} ${numOf(a.no)}</span><i></i>${esc(groupName)}</p>
         <h1 class="headline"><span class="thin">${esc(t1)}</span>${t2 ? `<span class="heavy accent">${esc(t2)}</span>` : ''}</h1>
         <p class="lead">${inline(a.dek)}</p>
-        <p class="meta mono">${minutes(a)} min read · ${esc(a.date || '')}${store.get().read[id] ? ' · <span class="ok">read</span>' : ''}</p>
+        <p class="meta mono">${minutes(a)} min read · ${esc(a.date || '')}${store.get().read[id] ? ' · <span class="ok">done</span>' : ''}</p>
         <div class="actions"><button class="btn dark" type="button" data-next>Play the story<span class="chip">↓</span></button><button class="btn light" type="button" data-skip>Skip to the article</button></div>
       </div>
       ${steps.slice(1).map((s, i) => `<div class="step" data-step="${i + 1}">
@@ -118,10 +118,8 @@ export function mount(view, [section, slug], { reduced }) {
       <div class="reader-grid">
         <div class="prose">
           <header class="prose-head">
-            <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/learn">Learn</a><span>/</span><a href="#/learn/${a.section}">${esc(sec.name)}</a>${groupName ? `<span>/</span><span>${esc(groupName)}</span>` : ''}</nav>
-            <p class="mono rd-no">${esc(sentenceNo(a.no))}${a.tag ? ` · ${esc(sentenceNo(a.tag))}` : ''}</p>
-            <h2 class="rd-title">${esc(a.title)}</h2>
-            <p class="rd-meta"><span>${topics.length > 1 ? `${topics.length} topics · ` : ''}${minutes(a)} min read${withDetails > minutes(a) ? ` · ${withDetails} with details` : ''}</span><span class="done-chip" ${isDone ? '' : 'hidden'}>✓ Completed</span></p>
+            <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/learn/${a.section}">${esc(sec.name)}</a>${groupName ? `<span>/</span><span>${esc(groupName)}</span>` : ''}<span>/</span><span>${esc(t1)}</span></nav>
+            <p class="rd-meta"><span>${topics.length > 1 ? `${topics.length} topics · ` : ''}${minutes(a)} min read${withDetails > minutes(a) ? ` · ${withDetails} with details` : ''}</span><span class="done-chip" ${isDone ? '' : 'hidden'}><i class="tk" aria-hidden="true"></i> Completed</span></p>
             <div class="rd-tools">
               ${topics.length > 1 ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
               <button type="button" class="tool-btn" data-share>Share</button>
@@ -146,7 +144,7 @@ export function mount(view, [section, slug], { reduced }) {
         <aside class="reader-rail" aria-label="Lesson navigation">
           <div class="fig-card" aria-hidden="true"><canvas></canvas><div class="overlay"></div><p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div>
           ${h2s.length > 1 ? `<nav class="rail-toc" aria-label="On this page"><p class="mono">On this page</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></nav>` : ''}
-          ${isProblem || lab ? `<a class="rail-cta" href="#/sim/ind-vs-pak"><small class="mono">${isProblem ? 'Practise' : 'Try it'}</small><b>${isProblem ? 'Run a design in the simulator' : esc(lab.go || 'Open the challenge')} →</b></a>` : ''}
+          ${isProblem || lab ? `<a class="rail-cta" href="#/sim"><small class="mono">${isProblem ? 'Practice' : 'Try it'}</small><b>${isProblem ? 'Run a design in the simulator' : esc(lab.go || 'Open the challenge')} →</b></a>` : ''}
           <nav class="rail-group" aria-label="Lessons in ${esc(groupName || sec.name)}"><p class="mono">${esc(groupName || sec.name)}</p><ol>
             ${mine.filter((x) => x.group === a.group).map((x) => `<li><a href="#/learn/${x.section}/${x.slug}" ${x.slug === a.slug ? 'aria-current="page"' : ''} class="${store.get().read[`${x.section}/${x.slug}`] ? 'done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(x.title)[0])}</a></li>`).join('')}
           </ol></nav>
