@@ -2,7 +2,7 @@
 const KEY = 'tk-r3d-progress';
 let mem = { read: {}, best: {} };
 try { mem = { ...mem, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { /* storage blocked */ }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch { /* storage blocked */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch { /* storage blocked */ } dispatchEvent(new Event('tk-progress')); };
 export const store = {
   get: () => mem,
   markRead(id) { if (!mem.read[id] || mem.read[id] === true) { mem.read[id] = Date.now(); save(); } },

@@ -105,3 +105,16 @@ a chat app → your turn.
   questions show their high-level design, then two deep dives. A chapter that names a section (`h2`) takes its words
   from that section at run time. The reader also renders the API's option cards (`type`: first try, better, what
   you'd ship) and analogies, which had been skipped.
+
+## 2026-11-19: the app frame, and words that rise
+- **Landing words** were popping in: hidden until the chapter pinned, then fully opaque within ~8% of a screen while
+  moving 10–24 px (and the outgoing card slid down). Now the incoming card rises from the bottom over ~0.4 screen of
+  scroll, eased (`--t`), and the outgoing one fades only as it scrolls off the top (`--o`).
+- **App frame** (`scripts/shell.js`), after tech.katta.cc's own: a left sidebar on wide screens (Home, Dashboard,
+  Learn by section with read counts and the open section's articles, Practise; the active fill slides between rows;
+  `[` folds it to an icon rail; the simulator folds it automatically). Phones keep the glass bottom bar, now
+  Home · Learn · Practice · Dashboard. The landing keeps its own top bar.
+- **Home** (`#/home`): a live 3D figure of what to read next, then one card per sidebar place (same names, colours,
+  icons) with progress and what is next; cards slide up in turn; on phones a sideways-swipe deck with dots.
+- **Motion**: sideways page slides between app pages (view transitions, direction from the sidebar order); on phones,
+  swipe the Learn list to change tab (it follows the finger, rubber-bands at the ends).

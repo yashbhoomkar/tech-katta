@@ -85,6 +85,27 @@ export function mount(view, [sectionId], { reduced }) {
     addEventListener('scroll', onScroll, { passive: true });
     cleanup.push(() => removeEventListener('scroll', onScroll));
     preview(rows[0]?.dataset.preview);
+    // phones: swipe sideways to move between the tabs; the list follows the finger, then goes or springs back
+    const learnEl = view.querySelector('.learn'), at = SECTIONS.findIndex((x) => x.id === sec.id);
+    let x0 = 0, y0 = 0, dx = 0, horiz = null;
+    const start = (e) => { if (innerWidth > 900 || e.touches.length !== 1 || e.target.closest('.tabs')) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; horiz = null; learnEl.style.transition = 'none'; };
+    const move = (e) => {
+      if (!x0) return;
+      const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+      if (horiz === null && Math.hypot(mx, my) > 10) horiz = Math.abs(mx) > Math.abs(my) * 1.4;
+      if (!horiz) return;
+      const edge = (mx > 0 && at === 0) || (mx < 0 && at === SECTIONS.length - 1);
+      dx = edge ? mx * 0.25 : mx; // a rubber band at the first and last tab
+      learnEl.style.transform = `translateX(${dx * 0.6}px)`; learnEl.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / 900));
+    };
+    const end = () => {
+      if (!x0) return; x0 = 0;
+      const to = horiz && Math.abs(dx) > 70 ? at + (dx < 0 ? 1 : -1) : at;
+      learnEl.style.transition = 'transform .3s var(--out), opacity .3s'; learnEl.style.transform = ''; learnEl.style.opacity = '';
+      if (to !== at && SECTIONS[to]) { document.documentElement.dataset.dirHint = dx < 0 ? 'fwd' : 'back'; location.hash = `#/learn/${SECTIONS[to].id}`; }
+    };
+    learnEl.addEventListener('touchstart', start, { passive: true }); learnEl.addEventListener('touchmove', move, { passive: true }); learnEl.addEventListener('touchend', end);
+    cleanup.push(() => { learnEl.removeEventListener('touchstart', start); learnEl.removeEventListener('touchmove', move); learnEl.removeEventListener('touchend', end); });
   };
   const first = listNow();
   draw(first);

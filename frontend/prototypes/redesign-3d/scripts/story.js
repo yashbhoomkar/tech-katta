@@ -65,13 +65,20 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
     let i = 0, a = 1, t = 1;
     for (let k = 1; k < els.length; k++) {
       const r = els[k].getBoundingClientRect();
-      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 1.0)); t = clamp((vh * 0.06 - r.top) / (vh * 0.3)); }
+      if (r.top < vh) { i = k; a = clamp((vh - r.top) / (vh * 1.0)); t = clamp((vh * 0.22 - r.top) / (vh * 0.42)); }
     }
     root.classList.toggle('at-hero', i === 0);
     world?.setLabelBand?.(0.94); // labels fade out with --read once the words come in
     if (i === 0) { a = 1; t = 1; if (introRaf && lastStep <= 0) { lastStep = 0; onStep?.(0, 0, 1); return; } }
     // the words: hidden while the scene animates, then in
-    els.forEach((el, k) => { if (k > 0) { const v = k === i ? t : k === i - 1 && i > 0 ? 1 - clamp(a * 1.6) : 0; el.style.setProperty('--t', v.toFixed(3)); el.classList.toggle('live', k === i && t > 0.5); } });
+    // the incoming words rise from the bottom of the screen as you scroll (eased, --t); the outgoing words lift away
+    // and fade (--o) while the next chapter's scene plays. Both follow the scroll, both ways.
+    els.forEach((el, k) => {
+      if (k === 0) return;
+      const tin = k === i ? ease(t) : k < i ? 1 : 0, out = k === i - 1 ? clamp((a - 0.35) * 2.4) : k < i - 1 ? 1 : 0;
+      el.style.setProperty('--t', tin.toFixed(3)); el.style.setProperty('--o', out.toFixed(3));
+      el.classList.toggle('live', k === i && t > 0.5);
+    });
     if (world) {
       const cur = steps[i], prev = steps[Math.max(0, i - 1)];
       if (i > 0 && a < 1) {

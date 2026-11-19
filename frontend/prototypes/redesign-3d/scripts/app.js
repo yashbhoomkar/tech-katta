@@ -6,6 +6,8 @@ import * as learn from './pages/learn.js';
 import * as article from './pages/article.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
+import * as home from './pages/home.js';
+import { updateShell } from './shell.js';
 import { applyPaletteVars } from './palette.js';
 
 applyPaletteVars();
@@ -17,10 +19,10 @@ const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/(
 // the retired sample lessons, and bare slugs, go to the real article
 const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
-  [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
+  [/^\/?$/, landing, 'home'], [/^\/home\/?$/, home, 'start'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
   [/^\/sim\/([\w-]+)$/, sim, 'sim'], [/^\/sim\/?$/, sim, 'sim'], [/^\/(?:me|dashboard)\/?$/, me, 'me'],
 ];
-let cleanup = null, token = 0;
+let cleanup = null, token = 0, prevPath = '';
 
 function route() {
   const path = location.hash.replace(/^#/, '') || '/';
@@ -34,6 +36,7 @@ function route() {
     cleanup = null;
     document.querySelectorAll('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === nav));
     document.body.dataset.page = nav || 'missing';
+    updateShell(nav, path);
     view.replaceChildren();
     scrollTo(0, 0);
     if (!mod) { view.innerHTML = `<section class="page narrow missing"><p class="kicker"><span>404</span><i></i>NOT FOUND</p><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy accent">at this address.</span></h1><p><a class="btn dark" href="#/">Go home<span class="chip">→</span></a></p></section>`; }
@@ -41,7 +44,14 @@ function route() {
     view.classList.remove('leaving');
     view.focus({ preventScroll: true });
   };
-  if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
+  const rank = { start: 0, me: 1, learn: 2, sim: 3 }, was = document.body.dataset.page;
+  const inApp = (n) => n in rank;
+  if (cleanup && !reduced && inApp(was) && inApp(nav) && document.startViewTransition) {
+    const hint = document.documentElement.dataset.dirHint; delete document.documentElement.dataset.dirHint;
+    document.documentElement.dataset.dir = hint || rank[nav] < rank[was] || (nav === was && path.split('/').length < prevPath.split('/').length) ? 'back' : 'fwd';
+    document.startViewTransition(swap);
+  } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
+  prevPath = path;
 }
 addEventListener('hashchange', route);
 route();
@@ -57,15 +67,19 @@ addEventListener('hashchange', () => document.body.classList.remove('bar-away'))
 
 
 // theme: System / Light / Dark, the same key as the other prototypes (boot-theme.js sets it before paint)
-const themeBtn = document.getElementById('theme');
+// every theme button (the landing's top bar and the sidebar) shows and changes the same setting
+const themeBtns = () => [document.getElementById('theme'), ...document.querySelectorAll('[data-theme-btn]')].filter(Boolean);
 const order = ['dark', 'light', 'system'], label = { system: 'System', light: 'Light', dark: 'Dark' };
 let pref = 'dark'; // dark is the default for everyone
 try { pref = localStorage.getItem('tk-r3d-theme') || 'dark'; } catch { /* storage blocked */ }
 function applyTheme() {
   const dark = pref === 'dark' || (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-  themeBtn.textContent = label[pref]; themeBtn.setAttribute('aria-label', `Theme: ${label[pref]}`);
+  themeBtns().forEach((b) => { b.textContent = label[pref]; b.setAttribute('aria-label', `Theme: ${label[pref]}`); });
 }
-themeBtn.addEventListener('click', () => { pref = order[(order.indexOf(pref) + 1) % 3]; try { localStorage.setItem('tk-r3d-theme', pref); } catch { /* blocked */ } applyTheme(); });
+const cycle = () => { pref = order[(order.indexOf(pref) + 1) % 3]; try { localStorage.setItem('tk-r3d-theme', pref); } catch { /* blocked */ } applyTheme(); };
+const wire = () => themeBtns().forEach((b) => { if (!b._wired) { b._wired = true; b.addEventListener('click', cycle); } applyTheme(); });
+document.addEventListener('tk-theme-buttons', wire);
+wire();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 applyTheme();
