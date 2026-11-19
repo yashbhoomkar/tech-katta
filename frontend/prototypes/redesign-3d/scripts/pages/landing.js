@@ -3,6 +3,7 @@
 // pastels as everywhere else (palette.js); the "meet the parts" chapter introduces them.
 import { mountStory, stageHtml } from '../story.js';
 import { KIND_PASTEL } from '../palette.js';
+import { runTour, offerTour } from '../tour.js';
 
 /** the parts of this page's system, for the colour key (colours from palette.js) */
 const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
@@ -78,7 +79,7 @@ export function mount(view, _p, { reduced }) {
       <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
       <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
       <div class="actions"><a class="btn dark" href="#/me">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
-      <p class="explore-hint"><span class="eh-tap"><i class="eh-dot" aria-hidden="true"></i>Tap any part to see what it does</span><span class="eh-scroll"><i class="eh-arrow" aria-hidden="true">↓</i>Scroll to play</span></p>
+      <p class="explore-hint"><span class="eh-tap"><i class="eh-dot" aria-hidden="true"></i>Tap any part to see what it does</span><span class="eh-scroll"><i class="eh-arrow" aria-hidden="true">↓</i>Scroll to play</span><button type="button" class="eh-tour" data-tour>Take the tour</button></p>
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>Learn</p>
@@ -139,7 +140,7 @@ export function mount(view, _p, { reduced }) {
     else { pc.style.left = ''; pc.style.top = ''; }
     pc.querySelector('.pc-x').addEventListener('click', close);
   };
-  w?.onPick((id) => { if (id) dismissRing(); open(id); });
+  w?.onPick((id) => { if (id) dismissRing(); open(id); if (id && tour?.waiting) setTimeout(() => tour?.next(), 450); });
   // the first hint, in the 3D itself: a ring pulsing on the Kafka topic until you tap a part or start scrolling
   const ring = document.createElement('i'); ring.className = 'tap-ring'; ring.setAttribute('aria-hidden', 'true');
   document.body.appendChild(ring);
@@ -158,8 +159,47 @@ export function mount(view, _p, { reduced }) {
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   const onScroll2 = () => { if (openId && Math.abs(scrollY - openY) > 80) close(); }; // scrolling moves the story on
   addEventListener('keydown', onKey); addEventListener('scroll', onScroll2, { passive: true });
+  // the tour: offered once on a first visit, and always one tap away in the hint under the hero
+  let tour = null;
+  const canvas = () => stage.querySelector('canvas').getBoundingClientRect();
+  const pad = (r, p) => r && ({ x: r.left - p, y: r.top - p, w: r.width + p * 2, h: r.height + p * 2 });
+  const el = (sel) => { const e = root.querySelector(sel); const r = e?.getBoundingClientRect(); return r && r.bottom > 0 && r.top < innerHeight ? pad(r, 12) : null; };
+  // a box round some parts of the 3D, from where the camera draws them this frame
+  const parts = (list, min = 96) => {
+    if (!w) return null;
+    const c = canvas(), pts = list.map((id) => w.screenOf(id)).filter(Boolean).map(([x, y]) => [c.left + x, c.top + y]);
+    if (!pts.length) return null;
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const grow = (a, b) => (b - a < min ? [(a + b) / 2 - min / 2, (a + b) / 2 + min / 2] : [a - 36, b + 36]);
+    [x0, x1] = grow(x0, x1); [y0, y1] = grow(y0, y1); y1 += 14;
+    x0 = Math.max(x0, c.left + 4); x1 = Math.min(x1, c.right - 4); y0 = Math.max(y0, 4); y1 = Math.min(y1, innerHeight - 4);
+    return x1 - x0 > 20 && y1 - y0 > 20 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, round: list.length === 1 } : null;
+  };
+  const toStep = (k) => { const s = root.querySelector(`[data-step="${k}"]`); scrollTo({ top: k ? s.offsetTop + innerHeight * 0.28 : 0, behavior: reduced ? 'auto' : 'smooth' }); };
+  const TOUR = [
+    { title: 'This is a real backend', body: `Fans tap in, ${pd('server')}app servers send each prediction to ${pd('kafka')}Kafka, and ${pd('consumer')}consumers write them to a ${pd('db')}database. All of it is live.`,
+      enter: () => { close(); toStep(0); }, at: () => parts(['users', 'p0', 'p2', 'topic', 'c0', 'c2', 'sql']) },
+    { title: 'Every part is clickable', body: `Tap the yellow ${pd('kafka')}Kafka topic now. Any part works.`, wait: true,
+      enter: () => { close(); }, show: () => { open('topic'); setTimeout(() => tour?.next(), 450); }, at: () => parts(['topic']) },
+    { title: 'Each part explains itself', body: 'What it does in this app, and a link to the lesson that teaches it. Tap any other part later the same way.',
+      enter: () => { if (!openId) open('topic'); }, at: () => (pc.hidden ? null : pad(pc.getBoundingClientRect(), 8)) },
+    { title: 'Scroll and the story plays', body: `Each chapter changes the system. Here the ${pd('db')}database slows down and messages pile up in the ${pd('kafka')}topic.`,
+      enter: () => { close(); toStep(1); }, at: () => parts(['sql'], 150) },
+    { title: 'The questions interviewers ask', body: 'Every question and real system has a full answer: what to clarify, the numbers, the design and the trade-offs.',
+      enter: () => { close(); toStep(2); }, at: () => el('[data-step="2"] .qs') },
+    { title: 'Then design it yourself', body: 'Draw a design and a judge runs real traffic through it, then tells you what broke and why.',
+      enter: () => { close(); toStep(3); }, at: () => el('[data-step="3"] .actions'), cta: { href: '#/me', label: 'Start preparing' } },
+  ];
+  const startTour = () => {
+    if (tour) return;
+    dismissRing(); stopOffer();
+    tour = runTour(TOUR, { reduced, onEnd: () => { tour = null; } });
+  };
+  const stopOffer = offerTour({ start: startTour });
+  root.querySelector('[data-tour]').addEventListener('click', startTour);
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
-  return () => { cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
+  return () => { tour?.end(); stopOffer(); cancelAnimationFrame(ringRaf); ring.remove(); pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
 }
 
 export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim">Practice</a></nav></footer>`;
