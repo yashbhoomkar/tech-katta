@@ -9,8 +9,11 @@ const KEY = 'tk-r3d-tour';
 export const tourSeen = () => { try { return localStorage.getItem(KEY) === 'seen'; } catch { return false; } };
 export const markTourSeen = () => { try { localStorage.setItem(KEY, 'seen'); } catch { /* storage blocked */ } };
 
+/** how much of the bottom of the screen the tab bar takes (it shows below 1000px wide, phones in landscape included) */
+const barRoom = () => { const t = document.querySelector('.tabbar'); return t && getComputedStyle(t).display !== 'none' ? innerHeight - t.getBoundingClientRect().top + 10 : 16; };
+
 export function runTour(steps, { reduced = false, onEnd = () => {}, onShow } = {}) {
-  let i = -1, raf = 0, done = false;
+  let i = -1, raf = 0, done = false, fullH = 0;
   const spot = document.createElement('div'); spot.className = 'tour-spot'; spot.setAttribute('aria-hidden', 'true');
   const card = document.createElement('div'); card.className = 'tour-card'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Tour of this page');
   if (reduced) { spot.classList.add('still'); card.classList.add('still'); }
@@ -29,7 +32,7 @@ export function runTour(steps, { reduced = false, onEnd = () => {}, onShow } = {
           : last && s.cta ? `<a class="btn dark sm" href="${s.cta.href}" data-t="cta">${s.cta.label}<span class="chip">→</span></a>`
           : `<button type="button" class="btn dark sm" data-t="next">${last ? 'Done' : 'Next'}</button>`}
       </div>`;
-    card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
+    card.classList.remove('in', 'compact'); fullH = card.offsetHeight; card.classList.add('in');
     card.querySelector('.tour-act .btn:last-child, .tour-act a')?.focus({ preventScroll: true });
   };
   const go = (k) => {
@@ -73,21 +76,32 @@ export function runTour(steps, { reduced = false, onEnd = () => {}, onShow } = {
       Object.assign(spot.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px`, borderRadius: r.round ? '999px' : '18px' });
       spot.classList.add('on');
     } else spot.classList.remove('on');
-    const cw = card.offsetWidth, ch = card.offsetHeight, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const cw = card.offsetWidth, ch = card.offsetHeight, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), foot = barRoom();
     if (phone) {
-      // a sheet: at the bottom above the tab bar, or at the top when what it points at (or the part card) is low
-      const low = (r && r.y + r.h / 2 > innerHeight * 0.5) || document.querySelector('.part-card.sheet:not([hidden])');
-      card.classList.toggle('at-top', !!low);
+      // a sheet at the top or the bottom, on whichever side of the lit thing has more room (the part card, when open,
+      // takes the bottom); when even that is too short, the card drops its body and keeps the title and buttons
+      const pcEl = document.querySelector('.part-card.sheet:not([hidden])'), pcTop = pcEl ? pcEl.getBoundingClientRect().top : innerHeight - foot;
+      const above = r ? r.y - 12 : innerHeight, below = r ? Math.min(pcTop, innerHeight - foot) - (r.y + r.h) - 12 : 0;
+      const top = !!pcEl || above > below;
+      card.classList.toggle('at-top', top);
+      card.classList.toggle('compact', fullH > (top ? above : below) - 8 && innerHeight < 760);
       card.style.left = ''; card.style.top = '';
       return;
     }
     card.classList.remove('at-top');
-    let x, y;
-    if (!r) { x = innerWidth - cw - 24; y = innerHeight - ch - 24; }
-    else if (r.x + r.w + 24 + cw < innerWidth - 16) { x = r.x + r.w + 24; y = clamp(r.y + r.h / 2 - ch / 2, 84, innerHeight - ch - 16); }
-    else if (r.x - 24 - cw > 16) { x = r.x - 24 - cw; y = clamp(r.y + r.h / 2 - ch / 2, 84, innerHeight - ch - 16); }
-    else if (r.y + r.h + 20 + ch < innerHeight - 16) { x = clamp(r.x + r.w / 2 - cw / 2, 16, innerWidth - cw - 16); y = r.y + r.h + 20; }
-    else { x = clamp(r.x + r.w / 2 - cw / 2, 16, innerWidth - cw - 16); y = Math.max(84, r.y - ch - 20); }
+    const maxY = (h) => innerHeight - h - foot, minY = innerHeight < 600 ? 12 : 72;
+    const spotAt = (h) => {
+      if (!r) return [innerWidth - cw - 24, maxY(h)];
+      if (r.x + r.w + 24 + cw < innerWidth - 16) return [r.x + r.w + 24, clamp(r.y + r.h / 2 - h / 2, minY, maxY(h))];
+      if (r.x - 24 - cw > 16) return [r.x - 24 - cw, clamp(r.y + r.h / 2 - h / 2, minY, maxY(h))];
+      const cx = clamp(r.x + r.w / 2 - cw / 2, 16, innerWidth - cw - 16);
+      if (r.y + r.h + 20 + h < innerHeight - foot) return [cx, r.y + r.h + 20];
+      return [cx, Math.max(minY, r.y - h - 20)];
+    };
+    // short screens (a phone on its side): when the whole card would sit on the lit thing, keep only title and buttons
+    const [fx, fy] = spotAt(fullH);
+    card.classList.toggle('compact', !!r && innerHeight < 600 && !(fx + cw <= r.x || fx >= r.x + r.w || fy + fullH <= r.y || fy >= r.y + r.h));
+    const [x, y] = spotAt(ch);
     card.style.left = `${Math.round(x)}px`; card.style.top = `${Math.round(y)}px`;
   };
   raf = requestAnimationFrame(place);
@@ -111,6 +125,9 @@ export function offerTour({ start, delay = 1500 }) {
   const t = setTimeout(() => {
     if (tourSeen() || document.querySelector('.tour-card') || scrollY > innerHeight * 0.35) return;
     document.body.appendChild(el); shown = true; addEventListener('scroll', onScroll, { passive: true });
+    // never on top of the hint under the hero (it says the same thing): move to the top of the screen instead
+    const hint = document.querySelector('.explore-hint')?.getBoundingClientRect(), o = el.getBoundingClientRect();
+    if (hint && !(o.bottom <= hint.top || o.top >= hint.bottom || o.right <= hint.left || o.left >= hint.right)) el.classList.add('at-top');
   }, delay);
   return () => { clearTimeout(t); hide(false); el.remove(); };
 }

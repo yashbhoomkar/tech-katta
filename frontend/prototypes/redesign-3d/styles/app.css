@@ -1312,3 +1312,20 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 html.lite { --glass-blur: none; --glass-bg: rgb(255 255 255 / .92); }
 html.lite[data-theme="dark"] { --glass-bg: rgb(22 21 30 / .92); }
 html.lite .top, html.lite .fact, html.lite .p3, html.lite .glass, html.lite .tabbar, html.lite .tour-card, html.lite .tour-offer, html.lite .part-card, html.lite .explore-hint { backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* the tour on small and sideways phones */
+.tour-card.compact .tour-p { display: none; }
+.tour-card.compact .tour-h { margin-bottom: 12px; }
+.tour-offer.at-top { top: calc(max(12px, env(safe-area-inset-top)) + 60px); bottom: auto; }
+@media (max-width: 999px) { .tour-offer:not(.at-top) { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 84px); } }
+@media (max-height: 480px) { .tour-p { font-size: 13.5px; margin-bottom: 10px; } .tour-h { font-size: 16px; } .tour-top { margin-bottom: 4px; } }
+/* phones, the tour's first steps: the hero's words step back so the 3D under them can be seen and tapped */
+.landing-story.tour-clear .step.hero > * { opacity: .1; pointer-events: none; transition: opacity .35s; }
+/* landscape phones: a chapter's words must fit in one short screen (they overflowed onto the footer and under the top) */
+@media (max-height: 500px) and (max-width: 999px) {
+  .landing-story .step.scrub > .pin { justify-content: center; padding: 64px var(--gut) 60px; }
+  .landing-story .step.scrub .headline { font-size: clamp(24px, 6.4vh, 30px); }
+  .landing-story .step.scrub .lead { font-size: 14.5px; line-height: 1.45; margin-top: 8px; }
+  .landing-story .step.scrub .kicker { margin-bottom: 6px; }
+  .landing-story .step.scrub .actions { margin-top: 12px; }
+  .landing-story .qs li { padding: 2px 0; }
+}

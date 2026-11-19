@@ -163,7 +163,15 @@ export function mount(view, _p, { reduced }) {
   let tour = null;
   const canvas = () => stage.querySelector('canvas').getBoundingClientRect();
   const pad = (r, p) => r && ({ x: r.left - p, y: r.top - p, w: r.width + p * 2, h: r.height + p * 2 });
-  const el = (sel) => { const e = root.querySelector(sel); const r = e?.getBoundingClientRect(); return r && r.bottom > 0 && r.top < innerHeight ? pad(r, 12) : null; };
+  // a box round some words: round what they actually fill (their children), not the full width of their column
+  const el = (sel) => {
+    const e = root.querySelector(sel); if (!e) return null;
+    const rs = [...e.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width);
+    if (!rs.length) return null;
+    const r = { left: Math.min(...rs.map((x) => x.left)), right: Math.max(...rs.map((x) => x.right)), top: Math.min(...rs.map((x) => x.top)), bottom: Math.max(...rs.map((x) => x.bottom)) };
+    r.width = r.right - r.left; r.height = r.bottom - r.top;
+    return r.bottom > 0 && r.top < innerHeight ? pad(r, 12) : null;
+  };
   // a box round some parts of the 3D, from where the camera draws them this frame
   const parts = (list, min = 96) => {
     if (!w) return null;
@@ -176,25 +184,36 @@ export function mount(view, _p, { reduced }) {
     x0 = Math.max(x0, c.left + 4); x1 = Math.min(x1, c.right - 4); y0 = Math.max(y0, 4); y1 = Math.min(y1, innerHeight - 4);
     return x1 - x0 > 20 && y1 - y0 > 20 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, round: list.length === 1 } : null;
   };
-  const toStep = (k) => { const s = root.querySelector(`[data-step="${k}"]`); scrollTo({ top: k ? s.offsetTop + innerHeight * 0.28 : 0, behavior: reduced ? 'auto' : 'smooth' }); };
+  const how = reduced ? 'auto' : 'smooth';
+  // the opening steps: on phones the hero's words sit over the 3D, so they fade back and let taps through to the parts
+  // (scrolling them away would start chapter one); wide screens have the 3D beside the words
+  const clear = (on) => root.classList.toggle('tour-clear', on && innerWidth <= 760);
+  const toHero = () => { clear(true); scrollTo({ top: 0, behavior: how }); };
+  const toStep = (k) => { clear(false); const s = root.querySelector(`[data-step="${k}"]`); scrollTo({ top: s.offsetTop + innerHeight * 0.28, behavior: how }); };
+  // a step about words in a chapter: bring them on screen, low on phones (the card takes the top), centred elsewhere
+  const toEl = (k, sel) => {
+    clear(false); const e = root.querySelector(`[data-step="${k}"] ${sel}`), s = root.querySelector(`[data-step="${k}"]`);
+    const r = e.getBoundingClientRect(), want = innerWidth <= 760 ? innerHeight * 0.62 : innerHeight / 2;
+    scrollTo({ top: Math.max(s.offsetTop, scrollY + r.top + r.height / 2 - want), behavior: how });
+  };
   const TOUR = [
     { title: 'This is a real backend', body: `Fans tap in, ${pd('server')}app servers send each prediction to ${pd('kafka')}Kafka, and ${pd('consumer')}consumers write them to a ${pd('db')}database. All of it is live.`,
-      enter: () => { close(); toStep(0); }, at: () => parts(['users', 'p0', 'p2', 'topic', 'c0', 'c2', 'sql']) },
+      enter: () => { close(); toHero(); }, at: () => parts(['users', 'p0', 'p2', 'topic', 'c0', 'c2', 'sql']) },
     { title: 'Every part is clickable', body: `Tap the yellow ${pd('kafka')}Kafka topic now. Any part works.`, wait: true,
-      enter: () => { close(); }, show: () => { open('topic'); setTimeout(() => tour?.next(), 450); }, at: () => parts(['topic']) },
+      enter: () => { close(); toHero(); }, show: () => { open('topic'); setTimeout(() => tour?.next(), 450); }, at: () => parts(['topic']) },
     { title: 'Each part explains itself', body: 'What it does in this app, and a link to the lesson that teaches it. Tap any other part later the same way.',
-      enter: () => { if (!openId) open('topic'); }, at: () => (pc.hidden ? null : pad(pc.getBoundingClientRect(), 8)) },
+      enter: () => { clear(true); if (!openId) open('topic'); }, at: () => (pc.hidden ? null : pad(pc.getBoundingClientRect(), 8)) },
     { title: 'Scroll and the story plays', body: `Each chapter changes the system. Here the ${pd('db')}database slows down and messages pile up in the ${pd('kafka')}topic.`,
       enter: () => { close(); toStep(1); }, at: () => parts(['sql'], 150) },
     { title: 'The questions interviewers ask', body: 'Every question and real system has a full answer: what to clarify, the numbers, the design and the trade-offs.',
-      enter: () => { close(); toStep(2); }, at: () => el('[data-step="2"] .qs') },
+      enter: () => { close(); toEl(2, '.qs'); }, at: () => el('[data-step="2"] .qs') },
     { title: 'Then design it yourself', body: 'Draw a design and a judge runs real traffic through it, then tells you what broke and why.',
-      enter: () => { close(); toStep(3); }, at: () => el('[data-step="3"] .actions'), cta: { href: '#/me', label: 'Start preparing' } },
+      enter: () => { close(); toEl(3, '.actions'); }, at: () => el('[data-step="3"] .actions'), cta: { href: '#/me', label: 'Start preparing' } },
   ];
   const startTour = () => {
     if (tour) return;
     dismissRing(); stopOffer();
-    tour = runTour(TOUR, { reduced, onEnd: () => { tour = null; } });
+    tour = runTour(TOUR, { reduced, onEnd: () => { tour = null; clear(false); } });
   };
   const stopOffer = offerTour({ start: startTour });
   root.querySelector('[data-tour]').addEventListener('click', startTour);
