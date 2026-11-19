@@ -48,7 +48,9 @@ function geo(key, make) { return GEO[key] || (GEO[key] = make()); }
 
 // Quality (owner: "Our website loads slow on other people's phone who have a bit slow processor"). Three levels:
 //   0 full: soft shadows on a 2048 map, antialiasing, up to 2x pixels
-//   1 light: hard shadows on a 1024 map, 1x pixels, no antialiasing, no frosted-glass blur on the page
+//   1 light: hard shadows on a 1024 map, no frosted-glass blur on the page
+// Sharpness is never traded (owner: "The animations are just too blur"): every level keeps phones at 1.5x pixels and
+// smooth edges, which phone GPUs do cheaply; the savings come from shadows, the frame rate and the glass blur.
 //   2 lighter: no shadows, and the 3D draws at 30 fps
 // A phone with few cores or little memory (or Data Saver on) starts light; any device that cannot hold about 45 fps
 // steps down by itself, and remembers it, so the next page and the next visit start where it settled.
@@ -69,7 +71,7 @@ function stepDown() {
 
 export function createWorld(canvas, overlay, { reduced = false, still = false } = {}) {
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: quality === 0, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
   if (!renderer.getContext()) return null;
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -269,7 +271,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false } 
   let W = 1, H = 1;
   function resize() {
     W = canvas.clientWidth || 1; H = canvas.clientHeight || 1;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality >= 1 ? 1 : W <= 760 ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, W <= 760 ? 1.5 : quality >= 1 ? 1.5 : 2));
     renderer.setSize(W, H, false); camera.aspect = W / H;
   }
   addEventListener('resize', resize);
