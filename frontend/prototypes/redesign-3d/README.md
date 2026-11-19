@@ -143,3 +143,8 @@ unified; one scale for heading sizes, radii, button heights, label size, text co
 app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rules removed.
 
 - Third audit pass: Dashboard 3D follows list focus/hover; the shared scale no longer uses `!important` (older label rules fixed at the source, verified element by element).
+- **The landing's 3D is clickable** (an industry leader took it for something to click and did not scroll): click or tap
+  any part for a glass card with what it does in this pipeline, what is happening to it in the current chapter (or the
+  question interviewers ask about it), and the article that teaches it. The colour key in Learn is a row of buttons
+  that open the same cards. Scrolling still works over the 3D and closes the card; Esc and × close it too. The hero
+  says "Tap any part to see what it does · scroll to play". Phones get the card as a sheet above the bottom bar.

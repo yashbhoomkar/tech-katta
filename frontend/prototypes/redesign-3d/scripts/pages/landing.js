@@ -57,6 +57,17 @@ function chatApp() {
 const CHAT = chatApp();
 void ({ system: CHAT.system, cam: { zoom: 1.0, el: 36, az: 44 }, state: { labels: CHAT.labels, parts: { ws1: 'ok', ws2: 'ok', ws3: 'ok', queue: 'warn' }, speed: 1.4 } });
 const NAMES = ['Start', 'Learn', 'Interview', 'Practice'];
+/** a click on a part: what it does here, and the article that teaches it (owner: an industry leader took the 3D for
+ *  something clickable, so it is) */
+const PART_INFO = {
+  laptop: { name: 'Users', what: 'Fans predicting the score during IND vs PAK. Every tap is one request.', read: ['concepts', 'networking-essentials', 'Networking essentials'] },
+  server: { name: 'App server', what: 'Checks each prediction and publishes it to Kafka, instead of writing to the database while the user waits.', read: ['concepts', 'scaling-writes', 'Scaling writes'] },
+  kafka: { name: 'Kafka topic', what: 'An ordered log split into partitions. It holds every prediction until a consumer takes it, so a spike waits here instead of failing.', read: ['components', 'kafka-in-practice', 'Kafka in practice'] },
+  consumer: { name: 'Consumer', what: 'Reads one partition at a time and writes predictions to the database in batches. More consumers, up to one per partition, read faster.', read: ['concepts', 'long-jobs', 'Jobs that run for minutes'] },
+  db: { name: 'SQL database', what: 'The source of truth for every prediction. Batched writes keep it inside what one machine can take.', read: ['components', 'postgresql', 'PostgreSQL'] },
+};
+const KIND_OF = (id) => (id === 'users' ? 'laptop' : id === 'topic' ? 'kafka' : id === 'sql' ? 'db' : id[0] === 'p' ? 'server' : 'consumer');
+const STATE_WORD = { ok: 'healthy', warn: 'busy', alert: 'failing', dim: 'idle' };
 
 export function mount(view, _p, { reduced }) {
   const sim = '#/sim/ind-vs-pak';
@@ -67,13 +78,13 @@ export function mount(view, _p, { reduced }) {
       <h1 class="headline"><span class="thin">Your system design interview</span><span class="heavy accent">Everything for it, in one place</span></h1>
       <p class="lead">Learn the concepts and components, see how real apps are built, answer the questions interviewers ask, then design systems and get them judged. Free.</p>
       <div class="actions"><a class="btn dark" href="#/me">Start preparing<span class="chip">→</span></a><button class="btn light" type="button" data-next>See what is inside<span class="chip violet">↓</span></button></div>
-      <p class="scroll-cue mono" aria-hidden="true">Scroll to play</p>
+      <p class="scroll-cue mono" aria-hidden="true">Tap any part to see what it does · scroll to play</p>
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>Learn</p>
       <h2 class="headline"><span class="thin">21 concepts, 10 components</span><span class="heavy accent">Lessons you watch, not read</span></h2>
       <p class="lead">Caching, sharding, CAP, ${pd("kafka")}Kafka, Redis, PostgreSQL. Every idea is a short story where the system changes as you scroll: here the ${pd("db")}database slows and messages pile up in the ${pd("kafka")}topic.</p>
-      <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</li>`).join('')}</ul>
+      <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><button type="button" data-part-kind="${kind}"><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</button></li>`).join('')}</ul>
       <div class="actions"><a class="btn light" href="#/learn/concepts">See the lessons<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="2">
@@ -100,9 +111,41 @@ export function mount(view, _p, { reduced }) {
 
   const root = view.querySelector('.story');
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
-  const story = mountStory(root, STEPS, { reduced, intro: true, onStep: (i) => { n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+  let cur = 0;
+  const story = mountStory(root, STEPS, { reduced, intro: true, onStep: (i, frac = 0) => { cur = Math.max(0, Math.min(STEPS.length - 1, Math.round(frac))); n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+  // click (or tap) a part: a card beside it says what it does, what is happening to it now, and where to learn it
+  let openId = null, openY = 0;
+  const stage = root.querySelector('.stage'), w = story.world;
+  const pc = document.createElement('div'); pc.className = 'part-card'; pc.hidden = true; pc.setAttribute('role', 'dialog'); pc.setAttribute('aria-live', 'polite');
+  document.body.appendChild(pc); // above the words and the bars, not inside the 3D layer beneath them
+  const close = () => { pc.hidden = true; openId = null; };
+  const open = (id) => {
+    if (!id) return close();
+    const kind = KIND_OF(id), info = PART_INFO[kind], st = STEPS[cur].state, now = st.labels?.[id], tone = st.parts?.[id];
+    const ask = now && now[2] && /\?$/.test(now[2]) ? now[2] : '';
+    // the opening screen's labels are names (the topic, the table), not a state, so they get no Now line
+    const nowText = ask || cur === 0 ? '' : now && now[0] ? now[0] : tone ? STATE_WORD[tone] : '';
+    pc.innerHTML = `<button type="button" class="pc-x" aria-label="Close">×</button>
+      <p class="pc-name">${pd(kind)}${info.name}</p>
+      <p class="pc-what">${info.what}</p>
+      ${nowText ? `<p class="pc-now ${tone || ''}"><span class="mono">Now</span>${nowText}</p>` : ''}
+      ${ask ? `<p class="pc-now"><span class="mono">Interviewers ask</span>${ask}</p>` : ''}
+      <a class="pc-go" href="#/learn/${info.read[0]}/${info.read[1]}">Learn it: ${info.read[2]} →</a>`;
+    pc.hidden = false; openId = id; openY = scrollY;
+    // wide screens: beside the part; phones: a sheet that rises above the bottom bar
+    const xy = w?.screenOf(id), r = stage.querySelector('canvas').getBoundingClientRect();
+    pc.classList.toggle('sheet', innerWidth <= 760 || !xy);
+    if (!pc.classList.contains('sheet')) { const x = Math.min(Math.max(r.left + xy[0] + 24, 16), innerWidth - 316), y = Math.min(Math.max(r.top + xy[1] - 60, 16), innerHeight - 280); pc.style.left = `${x}px`; pc.style.top = `${y}px`; }
+    else { pc.style.left = ''; pc.style.top = ''; }
+    pc.querySelector('.pc-x').addEventListener('click', close);
+  };
+  w?.onPick(open);
+  root.querySelectorAll('[data-part-kind]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.partKind; open(k === 'laptop' ? 'users' : k === 'kafka' ? 'topic' : k === 'db' ? 'sql' : k === 'server' ? 'p1' : 'c1'); }));
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const onScroll2 = () => { if (openId && Math.abs(scrollY - openY) > 80) close(); }; // scrolling moves the story on
+  addEventListener('keydown', onKey); addEventListener('scroll', onScroll2, { passive: true });
   root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); scrollTo({ top: el.offsetTop + innerHeight * 0.28, behavior: reduced ? 'auto' : 'smooth' }); });
-  return () => story.destroy();
+  return () => { pc.remove(); removeEventListener('keydown', onKey); removeEventListener('scroll', onScroll2); story.destroy(); };
 }
 
 export const footer = () => `<footer class="foot page"><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span>tech katta</div><p class="muted">Everything for your system design interview, in one place. A prototype at prototype.katta.cc: sample data, nothing is saved but on this device.</p><nav><a href="#/me">Dashboard</a><a href="#/learn">Learn</a><a href="#/sim">Practice</a></nav></footer>`;

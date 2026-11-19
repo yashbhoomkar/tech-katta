@@ -1174,3 +1174,32 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
   .step.scrub > .pin { padding-bottom: 64px; } .foot { padding-bottom: 80px; }
 }
 @media (max-width: 999px) { .dock .parts { -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); } }
+
+/* ---- the landing's 3D is clickable (an industry leader took it for something to click, so it is) ----
+   Clicks pass through the words' layers to the 3D everywhere except on the words, buttons and panels themselves;
+   scrolling still works over the 3D (no touch handling is taken from it). */
+.landing-story .stage canvas { pointer-events: auto; }
+.landing-story .step, .landing-story .step .pin { pointer-events: none; }
+.landing-story .step.hero > *, .landing-story .card, .landing-story .card *, .landing-story .part-card, .landing-story .part-card * { pointer-events: auto; }
+.part-card { position: absolute; z-index: 6; max-width: calc(100% - 24px); padding: 16px 18px 14px; border-radius: var(--r-m);
+  background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  animation: pc-in .28s var(--out) both; }
+@keyframes pc-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.pc-x { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink-2); font-size: 20px; line-height: 1; }
+.pc-x:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.pc-name { display: flex; align-items: center; font-size: 17px; font-weight: 650; color: var(--word); margin: 0 36px 6px 0; }
+.pc-what { font-size: 14.5px; line-height: 1.5; color: var(--word); margin: 0 0 10px; }
+.pc-now { display: flex; flex-direction: column; gap: 2px; margin: 0 0 10px; padding: 8px 10px; border-radius: var(--r-s); background: color-mix(in srgb, var(--ink) 6%, transparent); font-size: 14px; font-weight: 600; color: var(--word); }
+.pc-now .mono { font-weight: 500; color: var(--word-2); }
+.pc-now.alert { color: var(--alert); } .pc-now.warn { color: var(--warn); } .pc-now.ok { color: var(--ok); }
+.pc-go { display: inline-block; font-size: 14.5px; font-weight: 650; color: var(--word); }
+/* the colour key is a row of buttons that open the same cards */
+.legend button { display: inline-flex; align-items: center; gap: 9px; padding: 4px 8px 4px 4px; margin: -4px -8px -4px -4px; border: 0; border-radius: var(--r-s); background: none; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.legend button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+@media (prefers-reduced-motion: reduce) { .part-card { animation: none; } }
+/* the part card floats above everything: beside the part on wide screens, a sheet above the bottom bar on phones */
+.part-card { position: fixed; z-index: 45; width: 300px; }
+.part-card.sheet { left: 12px; right: 12px; width: auto; top: auto; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 84px); max-width: none; animation-name: pc-up; }
+@keyframes pc-up { from { opacity: 0; transform: translateY(24px); } }
+@media (min-width: 1000px) { .part-card.sheet { bottom: 24px; left: auto; right: 24px; width: 340px; } }
+@media (max-width: 760px) { .step.hero .scroll-cue { display: block; margin-top: 14px; text-align: center; color: var(--word-2); } }
