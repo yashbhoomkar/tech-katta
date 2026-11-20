@@ -26,11 +26,11 @@ function frameOf(step) {
   return { t: [(x0 + x1) / 2, (z0 + z1) / 2], dist: span * 2.2 + 12 };
 }
 
-export function mountStory(root, steps, { reduced, onStep, intro = false } = {}) {
+export function mountStory(root, steps, { reduced, onStep, intro = false, label = '' } = {}) {
   const stage = root.querySelector('.stage');
   const canvas = stage.querySelector('canvas'), overlay = stage.querySelector('.overlay');
   let world = null;
-  try { world = createWorld(canvas, overlay, { reduced }); } catch { world = null; }
+  try { world = createWorld(canvas, overlay, { reduced, label }); } catch { world = null; }
   root.classList.toggle('flat', !world);
   const els = [...root.querySelectorAll('[data-step]')];
   // every step after the opening: pin its words so they can wait for the animation
@@ -136,4 +136,4 @@ export function mountStory(root, steps, { reduced, onStep, intro = false } = {})
 }
 
 /** the stage markup (sticky, spans the story) */
-export const stageHtml = (extra = '') => `<div class="stage-wrap" aria-hidden="true"><div class="stage"><canvas></canvas><div class="overlay"></div>${extra}</div></div>`;
+export const stageHtml = (extra = '') => `<div class="stage-wrap"><div class="stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div><div style="display:contents" aria-hidden="true">${extra}</div></div></div>`;

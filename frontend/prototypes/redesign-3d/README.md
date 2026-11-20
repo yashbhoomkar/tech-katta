@@ -51,15 +51,22 @@ with the IND vs PAK scenario.
 ## Files
 | File | Role |
 |---|---|
-| `scripts/world.js` | the 3D engine (three.js, vendored): systems as data, parts rise in and sink out, states, labels, camera, picking |
+| `scripts/world.js` | the 3D engine (three.js, vendored): systems as data, parts rise in and sink out, states, labels (free or edge callouts), camera, picking, adaptive quality, accessible names |
+| `scripts/story.js` | a scroll story: steps over a sticky 3D stage (landing, article stories) |
+| `scripts/tour.js` | the guided tour: first-visit offer, coral spotlight that follows its target, step card placed clear of it |
+| `scripts/figures.js` | a 3D recipe for every one of the 66 articles, and the section previews |
+| `scripts/articles.js` | the live article API with a bundled fallback; section groups, component groups, interview questions' second lines |
+| `scripts/data/articles.js` | the fallback snapshot of the article list |
+| `scripts/sim.js` | the traffic model, prices, the layout of a design, the five practice problems |
+| `scripts/shell.js` | the app frame: sidebar (with a windowed article list), rail mode, places |
+| `scripts/app.js` | hash router, page titles, scroll restore, view transitions, theme |
+| `scripts/store.js` | progress on this device (articles done, best practice scores) |
 | `scripts/palette.js` | the pastels: one per kind of part, for the 3D models and the page |
-| `scripts/vendor/RoomEnvironment.js` | three.js 0.170 add-on (soft studio lighting for the matte pastels) |
-| `scripts/sim.js` | the traffic model, prices, the layout of a design, the incidents (tuned: each start design fails; several designs pass) |
-| `scripts/content.js` | tracks and lessons (four written: load balancing, caching, read replicas, queues) |
-| `scripts/story.js` | a scroll story: steps over a sticky 3D stage (landing, lessons) |
-| `scripts/app.js` | hash router, top bar, theme |
-| `scripts/pages/*.js` | one module per page; each returns a cleanup that frees its 3D context |
-| `styles/app.css` | every colour as a token, light and dark |
+| `scripts/boot-theme.js` · `scripts/ui.js` | theme before first paint · small shared helpers |
+| `scripts/pages/*.js` | one module per page (landing, me, learn, article, practice, sim); each returns a cleanup that frees its 3D context |
+| `scripts/vendor/` | three.js 0.170 and its RoomEnvironment add-on |
+| `styles/app.css` | every colour as a token, light and dark; the shared scale is in its later blocks |
+| `AUDIT.md` | every UI/UX audit (five passes, 75 findings) and what was done about each |
 
 ## The model (sim.js)
 App server 10k req/s · cache node 80k, holds 1/n of the keys, re-warms over 5 s after a node dies · database 6k
@@ -154,3 +161,50 @@ app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rul
 - **Dashboard, "Everything here"** (owner: "why do we have Parts and their concepts … the cards should be listed vertically
   for mobile, and for desktop think for it"): "Parts and their concepts" is gone (the 3D and Learn already carry it).
   The places are progress rows: one column on phones, two on tablets, and one row of five cards on wide screens.
+
+## 2026-11-20: explore hint, tour, speed on slow phones, sixth consistency pass
+
+- **The explore hint is a pill** (owner: "make the sentence … either highlighted or do something that it will be visible a
+  lot"): a glass pill under the hero buttons, "Tap any part to see what it does" with a pulsing dot and "Scroll to play"
+  with a bobbing arrow, plus "Take the tour". A ring pulses on the Kafka topic until the first tap or a scroll past a
+  quarter of the screen.
+- **One "look here" colour** (owner: "Change the blue ring colour to something that will catch attention"): hot coral
+  `--beacon` (#ff4a3d), a hue the 3D never uses, for the tap ring, the hint dot, the tour's spotlight and step dots.
+- **A guided tour** (owner: "There should be a popup given to the user on the landing page to take a tour"):
+  `scripts/tour.js`. On a first visit a small card (not a modal) offers "Take a 40-second tour" after 1.5 s; any answer
+  or scrolling on counts as seen (`tk-r3d-tour`). Six steps move the real page: the whole system, tap the Kafka topic
+  (the step waits for the tap, or "Show me"), the part card, a chapter playing as the camera flies to the slowing
+  database, the interview questions, practice, ending on "Start preparing". The spotlight dims the rest of the page but
+  never blocks taps; the card sits beside it on wide screens and at whichever end of a phone has more room, dropping its
+  body on short screens. Back / Next / Skip, arrow keys, Esc, swipe.
+- **The tour on every phone** (owner: "Is the tour good for mobile view as well"): tested at 320, 360, 390, 430 px and on
+  a sideways phone. On small phones the hero's words fade back and let taps through in the first steps (scrolling them
+  away would start chapter one); the offer moves to the top rather than cover the hint; sideways, cards clear the tab
+  bar and the spotlight hugs the words. Also fixed: on sideways phones the chapter text was taller than the screen.
+- **Adaptive 3D quality** (owner: "Our website loads slow on other people's phone who have a bit slow processor"): the
+  download was never the problem (310 KB, first text at 1.2 s); every frame was. Three levels in `world.js`: full (soft
+  shadows on a 2048 map), light (hard shadows on a 1024 map, solid glass instead of blur via `html.lite`), lighter (no
+  shadows, 30 fps). Phones with 4 or fewer cores, 4 GB or less, or Data Saver start light; a watchdog times about 2 s of
+  frames and steps down after two slow windows in a row, live, and remembers it (`tk-r3d-q`).
+- **Sharpness is never traded** (owner: "The animations are just too blur"): the first version of the light levels drew
+  at 1x pixels without antialiasing, which a 2-3x phone screen stretched. Every level now keeps phones at 1.5x with smooth
+  edges; only shadows, frame rate and glass blur change.
+- **Sixth consistency pass**: all of the fifth audit's findings (items 51-75 in `AUDIT.md`; item 50 was a false alarm).
+  Decisions taken:
+  - *Text is pure white / pure black everywhere* (the owner's rule); the two greys are gone from text, hierarchy is size
+    and weight. Non-text greys (dividers, leader lines, hollow dots) keep `--mute`.
+  - *One type scale*: 12 / 14 / 16 / 18 / 22 / 28 px for text, 40 px for chapter and reader headings, `--h-app` (56 px)
+    for every page title including articles; weights 400 / 600 / 700. Desktop went from 44 size/weight pairs to 17; the only non-black/white text left is status green and red, text on inverted buttons, and code on its always-dark block.
+  - *One noun for practice*: "problem" (Practice list, scenario page, landing, article call to action). The landing says
+    the real count (5).
+  - *Components have real groups*: Data stores and search · Streams and workflows · Gateways and coordination (the API
+    files them all under the section's tagline; `articles.js` regroups, reorders and renumbers them).
+  - *Every interview question has a second line* in its title (`SECOND` in `articles.js`), like every other article.
+  - *Articles open with breadcrumbs*, left-aligned on phones; the right rail no longer repeats the sidebar's list; the
+    sidebar's article list is a window of nine with "All 29"; contents lists are never numbered.
+  - *Controls*: tabs, chips and filters are 40 px; a chip that scrolls the page wears "↓"; tap areas of breadcrumbs and
+    small switches extend to 40 px without changing their look; steppers and the theme button are 40 px.
+  - *Tablets* stack the Dashboard figure under the words; an article hero keeps its words narrow with the figure further
+    right and back. `#/learn` opens Concepts. Wide tables and code fade at the edge that has more. The landing, Dashboard
+    and article 3D have accessible names; preview figures that repeat the text beside them stay hidden from screen
+    readers.

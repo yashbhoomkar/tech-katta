@@ -1,5 +1,5 @@
-// Practice: every scenario in one list, like a section page (progress card, rows with a status tick, a live 3D preview
-// of the design you start from). Each row opens the simulator for that scenario.
+// Practice: every problem in one list, like a section page (progress card, rows with a status tick, a live 3D preview
+// of the design you start from). Each row opens the simulator for that problem.
 import { createWorld } from '../world.js';
 import { INCIDENTS, layout, rupees } from '../sim.js';
 import { store } from '../store.js';
@@ -17,7 +17,7 @@ export function mount(view, _p, { reduced }) {
       <div>
         <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><span>Practice</span></nav>
         <h1 class="headline"><span class="thin">Practice</span><span class="heavy accent">Design it, then watch it survive an evening</span></h1>
-        <p class="lead">Pick a scenario. Choose your servers, caches and replicas within a budget, then a judge sends the evening's traffic through your design and tells you what broke and why.</p>
+        <p class="lead">Pick a problem. Choose your servers, caches and replicas within a budget, then a judge sends the evening's traffic through your design and tells you what broke and why.</p>
       </div>
       <div class="cprog">
         <b>${passed} of ${INCIDENTS.length} done</b>
@@ -28,14 +28,14 @@ export function mount(view, _p, { reduced }) {
     <div class="learn-cols">
       <div class="learn-list">
         <section class="track-block">
-          <div class="track-head"><h2>Scenarios</h2><span class="chip-done mono">${passed} of ${INCIDENTS.length} done</span></div>
+          <div class="track-head"><h2>Problems</h2><span class="chip-done mono">${passed} of ${INCIDENTS.length} done</span></div>
           <ol class="lessons">
             ${INCIDENTS.map((i) => { const b = best[i.id]; return `<li>
               <a class="lesson${b?.passed ? ' done' : ''}" href="#/sim/${i.id}" data-preview="${i.id}">
                 <span class="st" role="img" aria-label="${b?.passed ? 'Done' : 'Not started'}">${b?.passed ? '<i class="tk" aria-hidden="true"></i>' : ''}</span>
                 <span class="l-n mono">${i.no}</span>
-                <span class="l-main"><b>${esc(i.title)}</b><span class="muted">${esc(i.system)} · ${esc(i.level)}${b ? ` · best score ${b.score}` : ''} · budget ${rupees(i.budget)} a month</span></span>
-                <span class="l-tag mono">${esc(i.level)}</span>
+                <span class="l-main"><b>${esc(i.title)}</b><span class="muted">${esc(i.level)}${b ? ` · best score ${b.score}` : ''} · budget ${rupees(i.budget)} a month</span></span>
+                <span class="l-tag mono">${esc(i.system)}</span>
               </a></li>`; }).join('')}
           </ol>
         </section>

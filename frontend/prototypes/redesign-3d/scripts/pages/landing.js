@@ -4,6 +4,7 @@
 import { mountStory, stageHtml } from '../story.js';
 import { KIND_PASTEL } from '../palette.js';
 import { runTour, offerTour } from '../tour.js';
+import { INCIDENTS } from '../sim.js';
 
 /** the parts of this page's system, for the colour key (colours from palette.js) */
 const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
@@ -31,7 +32,7 @@ const OK6 = { ...all(ids('p', 3), 'ok'), ...all(ids('c', 6), 'ok'), topic: 'ok',
 // Four sections (owner: "Maximum 4 sections"): the promise, learn, interview, practice; one 3D pipeline throughout.
 const STEPS = [
   { system: PIPE, cam: { side: false, cx: 0.7, sy: 0.56, zoom: 1.0, el: 30, phoneSy: 0.76, phoneZoom: 1.3 }, state: { labels: { topic: ['match-events'], sql: ['predictions'] }, speed: 0.7 } },
-  // learn: lessons you watch; the database slows and the lag piles up in the topic
+  // learn: concepts you watch; the database slows and the lag piles up in the topic
   // the camera dollies in low onto the database that is slowing down
   { system: PIPE, cam: { hold: true, t: [12.4, 0.2], dist: 17, az: 22, el: 20, phoneZoom: 1.35, phoneSy: 0.34 }, state: { parts: { ...all(ids('p', 3), 'ok'), ...all(ids('c', 3), 'warn'), topic: 'warn', sql: 'alert' }, paths: { 'c0-s': 'alert', 'c1-s': 'alert', 'c2-s': 'alert' }, fill: { topic: 0.88 }, labels: { topic: ['lag 2.1M messages', 'warn'], c1: ['falling behind', 'warn'], sql: ['writes take 900 ms', 'alert'] }, speed: 1.4 } },
   // interview: the questions an interviewer asks, pinned to the parts they are about
@@ -83,10 +84,10 @@ export function mount(view, _p, { reduced }) {
     </div>
     <div class="step" data-step="1">
       <p class="kicker"><span>01</span><i></i>Learn</p>
-      <h2 class="headline"><span class="thin">21 concepts, 10 components</span><span class="heavy accent">Lessons you watch, not read</span></h2>
+      <h2 class="headline"><span class="thin">21 concepts, 10 components</span><span class="heavy accent">Concepts you watch, not read</span></h2>
       <p class="lead">Caching, sharding, CAP, ${pd("kafka")}Kafka, Redis, PostgreSQL. Every idea is a short story where the system changes as you scroll: here the ${pd("db")}database slows and messages pile up in the ${pd("kafka")}topic.</p>
       <ul class="legend">${LEGEND.map(([kind, name, pastel]) => `<li><button type="button" data-part-kind="${kind}"><i style="background:var(--${pastel});border-color:var(--${pastel}-edge)"></i>${name}</button></li>`).join('')}</ul>
-      <div class="actions"><a class="btn light" href="#/learn/concepts">See the lessons<span class="chip violet">→</span></a></div>
+      <div class="actions"><a class="btn light" href="#/learn/concepts">See the concepts<span class="chip violet">→</span></a></div>
     </div>
     <div class="step" data-step="2">
       <p class="kicker"><span>02</span><i></i>Interview</p>
@@ -102,7 +103,7 @@ export function mount(view, _p, { reduced }) {
     </div>
     <div class="step" data-step="3">
       <p class="kicker"><span>03</span><i></i>Practice</p>
-      <h2 class="headline"><span class="thin">22 problems, 8 challenges</span><span class="heavy accent">A judge tells you if it holds</span></h2>
+      <h2 class="headline"><span class="thin">${INCIDENTS.length} problems to design</span><span class="heavy accent">A judge tells you if it holds</span></h2>
       <p class="lead">Draw your design. A judge sends an evening of traffic through it, crashes a server and checks the bill, then tells you what broke and why. Free: sign in with Google and everything opens.</p>
       <div class="actions"><a class="btn violet" href="#/me">Start preparing<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
     </div>
@@ -113,7 +114,7 @@ export function mount(view, _p, { reduced }) {
   const root = view.querySelector('.story');
   const n = root.querySelector('.progress .n'), name = root.querySelector('.progress .name'), segs = [...root.querySelectorAll('.segs i')];
   let cur = 0;
-  const story = mountStory(root, STEPS, { reduced, intro: true, onStep: (i, frac = 0) => { cur = Math.max(0, Math.min(STEPS.length - 1, Math.round(frac))); n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+  const story = mountStory(root, STEPS, { reduced, intro: true, label: 'A system in 3D: users, app servers, a Kafka topic, consumers and a database. Tap a part to learn what it does; the colour key in the first chapter does the same.', onStep: (i, frac = 0) => { cur = Math.max(0, Math.min(STEPS.length - 1, Math.round(frac))); n.textContent = `0${i} / 0${STEPS.length - 1}`; name.textContent = NAMES[i]; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
   // click (or tap) a part: a card beside it says what it does, what is happening to it now, and where to learn it
   let openId = null, openY = 0;
   const stage = root.querySelector('.stage'), w = story.world;
@@ -201,7 +202,7 @@ export function mount(view, _p, { reduced }) {
       enter: () => { close(); toHero(); }, at: () => parts(['users', 'p0', 'p2', 'topic', 'c0', 'c2', 'sql']) },
     { title: 'Every part is clickable', body: `Tap the yellow ${pd('kafka')}Kafka topic now. Any part works.`, wait: true,
       enter: () => { close(); toHero(); }, show: () => { open('topic'); setTimeout(() => tour?.next(), 450); }, at: () => parts(['topic']) },
-    { title: 'Each part explains itself', body: 'What it does in this app, and a link to the lesson that teaches it. Tap any other part later the same way.',
+    { title: 'Each part explains itself', body: 'What it does in this app, and a link to the article that teaches it. Tap any other part later the same way.',
       enter: () => { clear(true); if (!openId) open('topic'); }, at: () => (pc.hidden ? null : pad(pc.getBoundingClientRect(), 8)) },
     { title: 'Scroll and the story plays', body: `Each chapter changes the system. Here the ${pd('db')}database slows down and messages pile up in the ${pd('kafka')}topic.`,
       enter: () => { close(); toStep(1); }, at: () => parts(['sql'], 150) },

@@ -69,7 +69,8 @@ function stepDown() {
   worlds.forEach((f) => f());
 }
 
-export function createWorld(canvas, overlay, { reduced = false, still = false } = {}) {
+export function createWorld(canvas, overlay, { reduced = false, still = false, label = '' } = {}) {
+  if (label) { canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', label); }
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
   if (!renderer.getContext()) return null;

@@ -203,6 +203,42 @@ page titles, back and forward, links versus history.
 | 48 | Part labels on the 320 px Dashboard overlapped ("API gateway" under "App servers"), because the label layout always reserved 76 px at the top for the landing's top bar. | That margin is now a setting: 10 px on the Dashboard, section previews, Practice and article figures. Counts are left off the 3D pills on 320 px phones (they are in the list). |
 | 49 | The simulator's parts strip scrolls sideways on phones with no hint. | A fade on the right edge. |
 
+## Status of the fifth pass: all addressed (2026-11-20, sixth pass)
+
+Owner: "Fix everything. Take decisions yourself". Each item was checked after the fix with a targeted browser test
+(desktop 1440 px and phone 390 px), the full scan re-run at four sizes, all 66 articles swept at 320 / 390 / 900 /
+1440 px (no sideways scroll, every hero has breadcrumbs and a group), and the tour's phone checks re-run. No script
+errors.
+
+| # | What was done |
+|---|---|
+| 50 | **Not a bug.** Loaded fresh, the tablet simulator has no bottom bar; the audit's screenshot caught the screen halfway through the slide between pages. While checking, the slide's "skipped transition" (from a quick second tap) was found to raise an unhandled error; it is now caught. |
+| 51 | Tablets (761–999 px) stack the Dashboard's figure under the words, with edge callout labels as on phones. An article's hero keeps its words to 400 px with the figure further right and further back. Checked at 800 and 900 px. |
+| 52 | The landing says "5 problems to design", from the real count. |
+| 53 | One noun, "problem": Practice list ("Problems", "Pick a problem"), scenario page ("Problem 1", "Next problem"), the article call to action ("Try a practice problem"), and the API's "challenge" links are reworded on the page. |
+| 54 | `#/learn` redirects to `#/learn/concepts` (title "Concepts · Tech Katta"). |
+| 55 | Every interview question has a second, heavier title line (e.g. "Design a URL shortener / Short codes and fast redirects"), kept in `SECOND` in `articles.js`. |
+| 56 | Components have three groups: Data stores and search (Redis, Elasticsearch, Cassandra, DynamoDB, PostgreSQL), Streams and workflows (Kafka, Flink, Temporal), Gateways and coordination (API gateways, ZooKeeper). The list, numbering, chip above the title, breadcrumbs and next/previous follow the new order. |
+| 57 | Tabs, group chips and filters are all 40 px; group chips (which scroll the page) start with "↓" so they no longer look like the section tabs. |
+| 58 | Practice rows show difficulty once (in the meta line) and the business type on the right, like the category on the other lists. **Correction:** interview question rows do show difficulty (the right-hand tag reads Easy/Medium/Hard); the audit misread them. |
+| 59 | Article heroes open with "Dashboard / Section" breadcrumbs above the chip. |
+| 60 | Article heroes are left-aligned on phones. |
+| 61 | From 1000 px (where the sidebar shows) the right rail keeps only "On this page". |
+| 62 | The sidebar's article list is a window of nine round the current article, plus "All 29"; Practice stays in view (checked on the 29-question section). |
+| 63 | Contents lists are never numbered (the five steps keep their numbers in the text itself). |
+| 64 | Breadcrumbs in the simulator's brief are plain, underlined on hover only. |
+| 65 | Article titles use the page-title size (56 px, the same as section pages); chapter headings and the reader's headings are 40 px. |
+| 66 | One scale: 12 / 14 / 16 / 18 / 22 / 28 px, headings 40 and 56 px, weights 400 / 600 / 700. Desktop went from 44 size/weight pairs to 17. Inline and block code are 14 px; hero lead text 18 px. |
+| 67 | **Decision: the owner's rule stands.** All text is pure white (dark) or pure black (light); the two greys are gone from text. Hierarchy comes from size and weight. Greys survive only where they are not text (dividers, leader lines, hollow dots) as `--mute`. Text colours left after the fix: white, black, status green and red, text on inverted buttons, code on its dark block. |
+| 68 | Tables and code blocks that scroll sideways fade at the edge that has more, updated as you scroll (16 of 16 scrollable blocks on the API design article on a phone). |
+| 69 | The "Say it" bar is neutral (the text colour at 40%). |
+| 70 | Theme button and simulator steppers are 40 px; "← All …" is 40 px tall; breadcrumbs and the Full text / Cards and difficulty switches keep their look but their tap areas extend to 40 px (checked by tapping just outside the visible box); the simulator's theme label is 12 px. |
+| 71 | The landing, Dashboard and article-story 3D have accessible names that say what they show and where the same thing is in text. Section previews and the rail figure repeat the words beside them, so they stay hidden from screen readers on purpose. |
+| 72 | The not-found and loading pages start at the same left edge as other app pages (286 px at 1440). |
+| 73 | "Start" opens the next item on the Dashboard and the section cards; "Play the story" is only inside an article. |
+| 74 | The Dashboard has no self-breadcrumb, and its headline starts at the same height as a section's (97 px). |
+| 75 | "Lessons" is gone from the landing ("Concepts you watch, not read", "See the concepts"). |
+
 ## Fifth pass (2026-11-20): every tab, in depth
 
 Owner: "dive deep into every tab like concepts components etc and find ui ux inconsistencies and note them down".

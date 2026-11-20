@@ -45,6 +45,7 @@ let cleanup = null, token = 0, prevPath = '';
 function route() {
   const path = location.hash.replace(/^#/, '') || '/';
   if (/^\/home\/?$/.test(path)) { location.replace('#/me'); return; } // one page: the Dashboard is home
+  if (/^\/learn\/?$/.test(path)) { location.replace('#/learn/concepts'); return; } // the Learn tab opens its first section
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path)) { location.replace(`#/learn/concepts/${OLD[old[1]] || old[1]}`); return; }
   const [re, mod, nav] = ROUTES.find(([r]) => r.test(path)) || [null, null, null];
@@ -73,7 +74,8 @@ function route() {
   if (cleanup && !reduced && inApp(was) && inApp(nav) && document.startViewTransition) {
     const hint = document.documentElement.dataset.dirHint; delete document.documentElement.dataset.dirHint;
     document.documentElement.dataset.dir = hint || rank[nav] < rank[was] || (nav === was && path.split('/').length < prevPath.split('/').length) ? 'back' : 'fwd';
-    document.startViewTransition(swap);
+    const vt = document.startViewTransition(swap); // a skipped transition (a quick second tap) is not an error
+    for (const k of ['ready', 'finished', 'updateCallbackDone']) vt[k]?.catch?.(() => {});
   } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
   prevPath = path;
 }

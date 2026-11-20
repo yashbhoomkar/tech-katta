@@ -48,12 +48,12 @@ export function mount(view, _p, { reduced, go }) {
     const rowsIds = Object.keys(MAP).filter((id) => MAP[id].concepts.length);
     view.innerHTML = `
     <section class="dash">
-      <div class="dash-stage" aria-hidden="true"><canvas></canvas><div class="overlay"></div></div>
+      <div class="dash-stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
       <div class="dash-copy">
-        <div class="dash-head"><nav class="crumbs mono" aria-label="Breadcrumb"><span>Dashboard</span></nav>
+        <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
         <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
-        ${nextConcept ? `<a class="next-card" href="#/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Play the story →</span></a>`
+        ${nextConcept ? `<a class="next-card" href="#/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Start →</span></a>`
           : `<a class="next-card" href="#/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>
       </div>
     </section>
@@ -84,11 +84,11 @@ export function mount(view, _p, { reduced, go }) {
     });
     const stage = view.querySelector('.dash-stage');
     world?.destroy(); world = null;
-    try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced }); } catch { world = null; }
+    try { world = createWorld(stage.querySelector('canvas'), stage.querySelector('.overlay'), { reduced, label: 'Your system, part by part. Tap a part to open its next concept; the list under it does the same.' }); } catch { world = null; }
     stage.classList.toggle('flat', !world);
     if (!world) return;
     world.setSystem(SYSTEM);
-    const f = world.frame(), phone = innerWidth <= 760;
+    const f = world.frame(), phone = innerWidth < 1000; // tablets stack the figure under the words, like phones
     world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
     world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10); world.setLabelMode(phone ? 'edge' : 'free');
     const parts = {}, labels = {};

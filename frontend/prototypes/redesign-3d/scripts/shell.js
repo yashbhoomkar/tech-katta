@@ -43,7 +43,11 @@ function draw() {
   const row = (p) => { const t = p.section || p.id === 'practice' ? tally(p.id, list) : null;
     return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(p.name)}" ${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(p.name)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
   const sub = (id) => { if (id !== sec || !slug) return ''; const read = store.get().read;
-    return `<div class="side-sub lbl">${list.filter((a) => a.section === id).map((a) => `<a href="#/learn/${a.section}/${a.slug}" class="${a.slug === slug ? 'on' : ''}${read[`${a.section}/${a.slug}`] ? ' done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(a.title)[0])}</a>`).join('')}</div>`; };
+    // a long section (29 questions) would push Practice off screen, so the list is a window round where you are, plus "All"
+    const all = list.filter((a) => a.section === id), at = all.findIndex((a) => a.slug === slug), WIN = 9;
+    const from = all.length > WIN + 3 ? Math.max(0, Math.min(at - 4, all.length - WIN)) : 0, shown = all.length > WIN + 3 ? all.slice(from, from + WIN) : all;
+    const more = shown.length < all.length ? `<a href="#/learn/${id}" class="all">All ${all.length}<i aria-hidden="true"></i></a>` : '';
+    return `<div class="side-sub lbl">${shown.map((a) => `<a href="#/learn/${a.section}/${a.slug}" class="${a.slug === slug ? 'on' : ''}${read[`${a.section}/${a.slug}`] ? ' done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(a.title)[0])}</a>`).join('')}${more}</div>`; };
   side.innerHTML = `
     <div class="side-top"><a class="logo" href="#/" aria-label="tech katta, the landing page"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span><span class="lbl">tech katta</span></a>
       <button type="button" class="side-btn icon-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>

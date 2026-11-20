@@ -2,7 +2,7 @@
 // API, every block type rendered. On wide screens a 3D figure stays beside the text and follows its sections.
 import { mountStory, stageHtml } from '../story.js';
 import { createWorld } from '../world.js';
-import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS } from '../articles.js';
+import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS, SECOND } from '../articles.js';
 import { recipeFor } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
@@ -18,6 +18,8 @@ const sentenceNo = (t = '') => sentence(t.replace(/\s*\/\/\s*/, ' '));
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** running text: escaped, with `code` spans */
 const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+// the contents list never numbers: the walkthrough's five steps are numbered in the text, the extra sections after them are not
+const NUM = /^\d+\.\s*/;
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const numOf = (no = '') => (no.match(/(\d+)/) || [])[1] || '';
 // option labels arrive in capitals ("SQS, RABBITMQ"): sentence case, with names and acronyms restored
@@ -50,7 +52,7 @@ function block(b, a) {
 }
 
 export function mount(view, [section, slug], { reduced }) {
-  let alive = true, story = null, aside = null, io = null;
+  let alive = true, story = null, aside = null, io = null; const ac = new AbortController();
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
   view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
@@ -62,9 +64,10 @@ export function mount(view, [section, slug], { reduced }) {
     const list = await listArticles();
     if (!alive) return;
     const mine = list.filter((x) => x.section === a.section), at = mine.findIndex((x) => x.slug === a.slug);
+    if (at >= 0) { a.group = mine[at].group; a.no = mine[at].no; } // the list carries the real group and number
     const next = mine[at + 1], prev = mine[at - 1];
     const id = `${a.section}/${a.slug}`, groupName = (sec.groups.find(([g]) => g === a.group) || [])[1] || '';
-    const [t1, t2] = splitTitle(a.title);
+    const [t1, t2a] = splitTitle(a.title), t2 = t2a || SECOND[a.slug] || '';
     const phone = innerWidth <= 760;
     // phones: every chapter keeps its system centred in the top part of the screen, above the glass panel of words
     const span = (sy) => { const ps = Object.values(sy.parts), xs = ps.map((q) => q.x), zs = ps.map((q) => q.z); return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)); };
@@ -82,7 +85,7 @@ export function mount(view, [section, slug], { reduced }) {
       if (text.length > 260) { const cut = text.slice(0, 260), end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? ')); text = end > 80 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`; }
       return { ...step, words: [step.words?.[0] || a.body[k].x, step.words?.[1] || ''], text: text || step.text };
     };
-    const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: innerWidth >= 1000 ? 0.7 : 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system) * (innerWidth >= 1000 ? 1.14 : 1), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
+    const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: innerWidth >= 1000 ? 0.7 : innerWidth > 760 ? 0.8 : 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system) * (innerWidth >= 1000 ? 1.14 : innerWidth > 760 ? 1.3 : 1), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
       : phone ? { ...s, cam: { ...(s.cam || {}), side: false, phoneSy: 0.3, phoneZoom: 1.75 } } : s));
     const h2s = a.body.filter((b) => b.t === 'h2');
     // topics for the Cards view: each h2 section, with its first line as a lede (tech.katta.cc's "Cards")
@@ -100,6 +103,7 @@ export function mount(view, [section, slug], { reduced }) {
     <section class="story landing-story article-story">
       ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${steps.length - 1}</span><span class="segs">${steps.slice(1).map(() => '<i></i>').join('')}</span></div>`)}
       <div class="step hero" data-step="0">
+        <nav class="crumbs mono" aria-label="Breadcrumb"><a href="#/me">Dashboard</a><span>/</span><a href="#/learn/${a.section}">${esc(sec.name)}</a></nav>
         <p class="kicker"><span>${esc(sec.name.replace(/s$/, ''))} ${numOf(a.no)}</span><i></i>${esc(groupName)}</p>
         <h1 class="headline"><span class="thin">${esc(t1)}</span>${t2 ? `<span class="heavy accent">${esc(t2)}</span>` : ''}</h1>
         <p class="lead">${inline(a.dek)}</p>
@@ -124,7 +128,7 @@ export function mount(view, [section, slug], { reduced }) {
               ${topics.length > 1 ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
               <button type="button" class="tool-btn" data-share>Share</button>
             </div>
-            ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></details>` : ''}
+            ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></details>` : ''}
           </header>
           <div class="rd-full">${a.body.map((b) => block(b, a)).join('')}</div>
           <div class="rd-cards" hidden>
@@ -143,8 +147,8 @@ export function mount(view, [section, slug], { reduced }) {
         </div>
         <aside class="reader-rail" aria-label="Lesson navigation">
           <div class="fig-card" aria-hidden="true"><canvas></canvas><div class="overlay"></div><p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div>
-          ${h2s.length > 1 ? `<nav class="rail-toc" aria-label="On this page"><p class="mono">On this page</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x)}</a></li>`).join('')}</ol></nav>` : ''}
-          ${isProblem || lab ? `<a class="rail-cta" href="#/sim"><small class="mono">${isProblem ? 'Practice' : 'Try it'}</small><b>${isProblem ? 'Run a design in the simulator' : esc(lab.go || 'Open the challenge')} →</b></a>` : ''}
+          ${h2s.length > 1 ? `<nav class="rail-toc" aria-label="On this page"><p class="mono">On this page</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></nav>` : ''}
+          ${isProblem || lab ? `<a class="rail-cta" href="#/sim"><small class="mono">${isProblem ? 'Practice' : 'Try it'}</small><b>${isProblem ? 'Try a practice problem' : esc((lab.go || 'Open the problem').replace(/challenge/i, 'problem'))} →</b></a>` : ''}
           <nav class="rail-group" aria-label="Lessons in ${esc(groupName || sec.name)}"><p class="mono">${esc(groupName || sec.name)}</p><ol>
             ${mine.filter((x) => x.group === a.group).map((x) => `<li><a href="#/learn/${x.section}/${x.slug}" ${x.slug === a.slug ? 'aria-current="page"' : ''} class="${store.get().read[`${x.section}/${x.slug}`] ? 'done' : ''}"><i aria-hidden="true"></i>${esc(splitTitle(x.title)[0])}</a></li>`).join('')}
           </ol></nav>
@@ -155,7 +159,7 @@ export function mount(view, [section, slug], { reduced }) {
 
     const root = view.querySelector('.story');
     const n = root.querySelector('.progress .n'), segs = [...root.querySelectorAll('.segs i')];
-    story = mountStory(root, steps, { reduced, intro: true, onStep: (i) => { n.textContent = `0${i} / 0${steps.length - 1}`; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+    story = mountStory(root, steps, { reduced, intro: true, label: `${t1}, as a 3D system that changes as you scroll. The words beside it say the same.`, onStep: (i) => { n.textContent = `0${i} / 0${steps.length - 1}`; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
     const go = (top) => scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
     root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); go(el.offsetTop + innerHeight * 0.28); });
     view.querySelectorAll('[data-skip]').forEach((b) => b.addEventListener('click', () => go(view.querySelector('#read').offsetTop - 20)));
@@ -183,6 +187,10 @@ export function mount(view, [section, slug], { reduced }) {
     };
     showSection(0);
     // which section you are in: the 3D figure and the contents list follow it; the line at the top shows how far
+    // 68: tables and code that scroll sideways fade at the edge that has more
+    const fades = [...view.querySelectorAll('.tbl-scroll, .code pre')];
+    const setFades = () => fades.forEach((e) => { e.classList.toggle('fade-r', e.scrollLeft + e.clientWidth < e.scrollWidth - 2); e.classList.toggle('fade-l', e.scrollLeft > 2); });
+    fades.forEach((e) => e.addEventListener('scroll', setFades, { passive: true })); addEventListener('resize', setFades, { signal: ac.signal }); requestAnimationFrame(setFades);
     const toc = [...view.querySelectorAll('.rail-toc a')], line = view.querySelector('.read-line'), readEl = view.querySelector('#read');
     const onScroll = () => {
       let k = 0; heads.forEach((h, i) => { if (h.offsetParent && h.getBoundingClientRect().top < innerHeight * 0.45) k = i; });
@@ -239,5 +247,5 @@ export function mount(view, [section, slug], { reduced }) {
     });
     io = { disconnect() {}, _off: () => removeEventListener('scroll', onScroll) };
   });
-  return () => { alive = false; story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
+  return () => { alive = false; ac.abort(); story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
 }
