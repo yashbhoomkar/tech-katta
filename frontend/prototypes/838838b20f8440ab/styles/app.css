@@ -181,7 +181,7 @@ a.lesson:hover b { color: var(--accent-ink); }
 .tag.hard, .tag.failed { background: var(--alert-soft); color: var(--alert); }
 
 /* ---------- simulator ---------- */
-body[data-page="sim"] { overflow: hidden; }
+body.focus-page { overflow: hidden; } /* only the full-screen simulator; the Practice list scrolls like any page */
 .sim { position: fixed; inset: 0; }
 .sim-stage { position: absolute; inset: 0; }
 .glass { background: var(--glass); backdrop-filter: saturate(1.4) blur(16px); -webkit-backdrop-filter: saturate(1.4) blur(16px); border: 1px solid var(--line); box-shadow: var(--shadow); }
@@ -1487,3 +1487,6 @@ body.in-app .page.narrow.missing, body.in-app .page.narrow.reader-wait { margin-
   .tl-btn { white-space: nowrap; }
 }
 @media (max-width: 760px) and (max-height: 700px) { .p-what { display: none; } .dock .part { padding-block: 6px; } }
+/* while pages slide, the browser lays a snapshot over the page that swallows taps (a quick tap on the bottom bar was
+   lost, worst on slow phones where the slide runs long); taps go through to the live page underneath */
+::view-transition { pointer-events: none; }

@@ -76,6 +76,9 @@ function route() {
     document.documentElement.dataset.dir = hint || rank[nav] < rank[was] || (nav === was && path.split('/').length < prevPath.split('/').length) ? 'back' : 'fwd';
     const vt = document.startViewTransition(swap); // a skipped transition (a quick second tap) is not an error
     for (const k of ['ready', 'finished', 'updateCallbackDone']) vt[k]?.catch?.(() => {});
+    // while a slide runs, taps cannot reach the page; a new page building its 3D can stall the slide on a slow phone
+    // (the bottom bar's buttons stopped answering), so a slide that has not finished in 0.6 s is skipped
+    const cap = setTimeout(() => vt.skipTransition?.(), 600); vt.finished?.finally?.(() => clearTimeout(cap));
   } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
   prevPath = path;
 }
