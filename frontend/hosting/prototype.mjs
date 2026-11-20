@@ -39,12 +39,15 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 // each prototype names itself: <title>, <meta name="prototype:type"> and <meta name="prototype:summary">
 const meta = (html, name) => (html.match(new RegExp(`<meta name="${name}" content="([^"]*)"`)) || [])[1] || "";
 const items = pages.map((f) => { const h = fs.readFileSync(srcOf(f), "utf8");
-  return { slug: f.replace(/\.html$/, ""), title: (h.match(/<title>([^<]*)<\/title>/) || [])[1] || f, type: meta(h, "prototype:type") || "Other", summary: meta(h, "prototype:summary") }; });
-const types = [...new Set(items.map((i) => i.type))];
+  return { slug: f.replace(/\.html$/, ""), title: (h.match(/<title>([^<]*)<\/title>/) || [])[1] || f, type: meta(h, "prototype:type") || "Other", summary: meta(h, "prototype:summary"), unlisted: meta(h, "prototype:unlisted") === "true" }; });
+// a prototype marked <meta name="prototype:unlisted" content="true"> is served at its address but left off this index
+// (owner, 2026-11-20: a prototype's address had leaked and was moved to one that is shared directly)
+const listed = items.filter((i) => !i.unlisted);
+const types = [...new Set(listed.map((i) => i.type))];
 fs.writeFileSync(path.join(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Prototypes · Tech Katta</title>
 <style>body{margin:0;font:16px/1.6 system-ui,sans-serif;background:#F6F5F1;color:#17161A}main{max-width:760px;margin:0 auto;padding:48px 20px}h1{letter-spacing:-.02em}h2{margin-top:32px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6B6963}a.card{display:block;background:#fff;border:1px solid #E4E2DC;border-radius:16px;padding:16px 18px;margin:10px 0;color:inherit;text-decoration:none}a.card:hover{border-color:#17161A}a.card b{font-size:18px}a.card span{display:block;color:#4A4844;font-size:14.5px;margin-top:4px}code{background:#EEEDE8;border-radius:4px;padding:1px 5px}</style></head>
 <body><main><h1>Prototypes</h1><p>The app itself, built from the <code>prototype</code> branch, reading live content from tech-api.katta.cc, signed out: <a href="/">landing</a> · <a href="/dashboard/">dashboard</a>. The new frontend (the production beta's code): <a href="/p/next/">/p/next/</a>, the same app in the neo-brutalism look: <a href="/p/neo-brutalism/">/p/neo-brutalism/</a>, and in the soft 3D look (rca.gg-like, with the 3D story on the landing): <a href="/p/soft-3d/">/p/soft-3d/</a>. Below, design ideas before they are built into the app.</p>
-${types.map((t) => `<h2>${esc(t)}</h2>` + items.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
+${types.map((t) => `<h2>${esc(t)}</h2>` + listed.filter((i) => i.type === t).map((i) => `<a class="card" href="/p/${esc(i.slug)}/"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></a>`).join("")).join("") || "<p>None yet.</p>"}
 </main></body></html>`);
 fs.writeFileSync(path.join(dist, "robots.txt"), "User-agent: *\nDisallow: /\n");
 // The new frontend is copied to dist/p/next and dist/p/neo-brutalism by prototype-next.mjs (run before this script);

@@ -1,6 +1,6 @@
 # redesign-3d: Tech Katta rebuilt around a live 3D system
 
-**Live:** https://prototype.katta.cc/p/redesign-3d/ (branch `prototype`). Owner, 2026-11-18: "You don't need to follow
+**Live:** at an unlisted address on prototype.katta.cc that the owner shares directly (branch `prototype`). It used to be /p/redesign-3d/; that address leaked and was retired on 2026-11-20. Do not write the new address in the repository, commit messages or docs, and do not add a redirect from the old one. Owner, 2026-11-18: "You don't need to follow
 tech katta UI UX and widget placements for the new prototype. You can think and redesign everything."
 
 ## The idea
