@@ -208,3 +208,29 @@ app.css); drawn tick; icon theme button; tablets get the bottom bar; 83 dead rul
     right and back. `#/learn` opens Concepts. Wide tables and code fade at the edge that has more. The landing, Dashboard
     and article 3D have accessible names; preview figures that repeat the text beside them stay hidden from screen
     readers.
+
+## 2026-11-20: the simulator, rebuilt for portrait
+
+Owner: "The simulator, rebuilt for portrait" (from the plan for practising on phones: drawing and long typing do not
+fit a phone, but a design here is a handful of counts, which fits steppers and a thumb). Phones (up to 760 px wide)
+go through stages, one thing on screen at a time, set as `data-phase` on `.sim`; wide screens are unchanged.
+
+- **Brief**: the whole problem as a card anchored low: story, the evening's traffic chart, "To pass, by the end of the
+  evening" and the three targets, with "Start building" (or "Back to your design") under the thumb. The system shows
+  above it.
+- **Build**: a slim bar at the top (the problem's title, "Brief" to reopen it, and the three targets as chips that fill
+  in: the budget live as you build). A bottom sheet of parts as rows: name, price a month, one line on what it does
+  (dropped on screens under 700 px tall), a 40 px stepper. The cost "of ₹55,000" and "Run the evening" stay at the very
+  bottom. The sheet's handle folds the parts away to show the system; the list fades at the bottom while it scrolls.
+- **Run**: the system full screen; time, traffic, errors and p99 at the top; failures as toasts (at most two);
+  the evening as a timeline at the bottom with "Skip to the end".
+- **Done**: the verdict as a bottom sheet (what broke, the article that explains the fix, "Change the design",
+  "Next problem", "Replay the evening").
+- **Replay**: drag along the timeline (or tap anywhere on it) to see any moment of the evening again: the 3D, the
+  numbers (errors counted from the start to that moment) and the chart's marker follow. "Back to the verdict".
+- **The camera follows the free space**: on phones the system is centred, and drawn smaller when needed, in the band
+  between the bar at the top and whatever panel is at the bottom, measured from the page each time a stage changes,
+  so no part sits behind a panel. Labels start below the top bar.
+- Checked at 390 × 844 (dark) and 320 × 568 (light) through every stage, including folding the sheet, reopening the
+  brief, skipping, replaying and scrubbing; no panel overlaps another or the top bar, nothing off screen, every control
+  40 px or more, no script errors; the desktop run and verdict unchanged.

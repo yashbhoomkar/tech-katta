@@ -1373,3 +1373,117 @@ body.in-app .page.narrow.missing, body.in-app .page.narrow.reader-wait { margin-
 /* 51  tablet: an article's hero keeps its words narrow and the figure to the right and further back */
 @media (min-width: 761px) and (max-width: 999px) { .article-story .step.hero > * { max-width: 400px; } }
 .jump a { display: inline-flex; align-items: center; }
+
+/* ======== the simulator, rebuilt for portrait (owner: "The simulator, rebuilt for portrait") ========
+   Phones go brief → build → run → done (→ replay), one thing on screen at a time, all within thumb reach. Wide screens
+   keep the brief, dock and numbers on screen together and never see the phone-only pieces. */
+.mhead, .timeline, .brief-go, .sheet-handle, .p-what, .v-replay { display: none; }
+.brief-k { margin: 6px 0 -2px; color: var(--word); }
+.c-of { display: none; }
+@media (max-width: 760px) {
+  .sim .brief, .sim .mhead, .sim .hud, .sim .dock, .sim .timeline, .sim .verdict, .sim .alerts { display: none; }
+  .sim .brief, .sim .dock, .sim .verdict, .sim .timeline { animation: pc-up .32s var(--out) both; }
+  @media (prefers-reduced-motion: reduce) { .sim .brief, .sim .dock, .sim .verdict, .sim .timeline { animation: none; } }
+
+  /* brief: the whole problem, anchored low so "Start building" is under the thumb; the system shows above it */
+  .sim[data-phase="brief"] .brief { display: flex; left: 12px; right: 12px; top: auto; bottom: max(12px, env(safe-area-inset-bottom)); width: auto;
+    max-height: calc(100svh - 150px); overflow-y: auto; padding: 18px 18px 0; gap: 10px; }
+  .sim[data-phase="brief"] .brief .muted, .sim[data-phase="brief"] .brief .chart { display: block; }
+  .sim .brief h1 { font-size: 22px; }
+  .sim .brief .muted { font-size: 16px; }
+  .sim .targets li { font-size: 14px; }
+  .brief-go { display: flex; justify-content: center; position: sticky; bottom: 0; margin: 6px -18px 0; min-height: 52px; border-radius: 0 0 var(--r-l) var(--r-l); }
+
+  /* the slim bar at the top: which problem, the three targets, tap to read the brief again */
+  .sim[data-phase="build"] .mhead, .sim[data-phase="done"] .mhead { display: flex; }
+  .mhead { position: absolute; left: 12px; right: 12px; top: 66px; z-index: 3; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--r-m); }
+  .mh-open { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 40px; padding: 0; border: 0; background: none; color: var(--word); text-align: left; }
+  .mh-open b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .mh-open b::after { content: "  ·  brief"; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; }
+  .mh-open .mono { font-size: 12px; }
+  .mh-targets { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .mh-targets li { flex: 1; display: grid; grid-template-columns: 10px 1fr; column-gap: 6px; align-items: center; padding: 6px 8px; border-radius: var(--r-s); background: color-mix(in srgb, var(--ink) 6%, transparent); font-size: 12px; }
+  .mh-targets i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--line-2); }
+  .mh-targets b { grid-column: 2; font: 600 12px var(--mono); }
+  .mh-targets .ok i { background: var(--ok-fill); border-color: var(--ok-fill); } .mh-targets .bad i { background: var(--alert-fill); border-color: var(--alert-fill); }
+  .mh-targets .ok b { color: var(--ok); } .mh-targets .bad b { color: var(--alert); }
+
+  /* build: the parts as a bottom sheet of rows, the cost against the budget and Run at the very bottom */
+  .sim[data-phase="build"] .dock { display: flex; }
+  .dock { left: 0; right: 0; bottom: 0; translate: none; width: auto; flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 4px 12px max(12px, env(safe-area-inset-bottom)); border-radius: var(--r-l) var(--r-l) 0 0; border-bottom: 0; }
+  .sheet-handle { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 40px; border: 0; background: none; color: var(--word); }
+  .sheet-handle i { width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); }
+  .sheet-handle .mono { font-size: 12px; }
+  .dock .parts { flex-direction: column; gap: 6px; max-height: 38svh; overflow-x: hidden; overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+  .sim.sheet-min .dock .parts { display: none; }
+  .dock .part { justify-content: space-between; gap: 12px; padding: 10px 8px 10px 14px; }
+  .dock .p-name { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: baseline; min-width: 0; }
+  .dock .p-name b { font-size: 16px; }
+  .dock .p-name small { justify-self: start; }
+  .p-what { display: block; grid-column: 1 / -1; margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--word); }
+  .dock .stepper { flex: none; gap: 4px; }
+  .dock .stepper output { min-width: 26px; font-size: 18px; }
+  .dock-right { gap: 12px; }
+  .dock .cost { display: flex; flex-direction: column; flex: none; }
+  .c-of { display: block; margin: 2px 0 0; }
+  .dock .btn.run { flex: 1; justify-content: center; min-height: 52px; }
+
+  /* run and replay: the system full screen, the numbers at the top, the evening along the bottom */
+  .sim[data-phase="run"] .hud, .sim[data-phase="replay"] .hud { display: flex; }
+  .sim .hud { left: 12px; right: 12px; top: 66px; bottom: auto; justify-content: space-between; gap: 8px; padding: 10px 14px; }
+  .sim[data-phase="run"] .alerts { display: flex; }
+  .sim .alerts { left: 12px; right: 12px; top: auto; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 150px); align-items: stretch; }
+  .sim[data-phase="run"] .timeline, .sim[data-phase="replay"] .timeline { display: block; }
+  .timeline { position: absolute; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); padding: 12px 12px 6px; border-radius: var(--r-l); }
+  .tl-chart { height: 56px; }
+  .tl-chart .spark { height: 56px; }
+  .spark.tl .ev text { display: none; }
+  .spark.tl .head { stroke-width: 2.4; }
+  .tl-range { position: absolute; left: 12px; right: 12px; top: 6px; width: calc(100% - 24px); height: 68px; margin: 0; opacity: 0; cursor: ew-resize; }
+  .tl-range:disabled { pointer-events: none; }
+  .tl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+  .tl-row .mono { font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tl-btn { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r-s); background: none; color: var(--word); font-size: 14px; font-weight: 600; }
+  .sim[data-phase="replay"] .tl-row::before { content: "Drag along the evening"; position: absolute; left: 50%; top: -18px; translate: -50% 0; font-size: 12px; color: var(--word); }
+  .sim[data-phase="replay"] .tl-row { position: relative; }
+  .sim[data-phase="replay"] .timeline { box-shadow: 0 0 0 2px var(--beacon), var(--glass-shadow); }
+
+  /* done: the verdict as a bottom sheet; the bar at the top shows the targets as they ended */
+  .sim[data-phase="done"] .verdict:not([hidden]) { display: flex; }
+  .sim .verdict { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 64svh; overflow-y: auto; padding: 22px 18px max(16px, env(safe-area-inset-bottom)); border-radius: var(--r-l) var(--r-l) 0 0; }
+  .sim .verdict h2 { font-size: 22px; }
+  .v-replay { display: inline-flex; }
+  .sim .v-actions { flex-direction: column; align-items: stretch; }
+  .sim .v-actions .btn { justify-content: center; min-height: 48px; }
+
+  /* a part's card sits under the bar at the top, clear of the sheet */
+  .sim .tip { top: 186px; bottom: auto; }
+}
+@media (max-width: 760px) {
+  .mhead, .sim .hud { top: 78px; }
+  .sim .tip { top: 206px; }
+  .sim .why a { display: block; padding: 10px 0; margin-bottom: -6px; }
+}
+@media (max-width: 760px) {
+  /* the replay hint floats above the timeline instead of on the chart */
+  .sim[data-phase="replay"] .tl-row::before { content: none; }
+  .sim[data-phase="replay"] .timeline::before { content: "Drag along the evening"; position: absolute; left: 50%; top: -10px; translate: -50% -100%; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+    background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); font-size: 12px; font-weight: 600; color: var(--word); }
+  /* the parts list fades at the bottom while there is more to scroll */
+  .dock .parts { padding-bottom: 18px; -webkit-mask-image: linear-gradient(#000 calc(100% - 22px), transparent); mask-image: linear-gradient(#000 calc(100% - 22px), transparent); max-height: 30svh; }
+  /* the bar at the top: one line for the problem, one row of targets */
+  .mh-open { flex-direction: row; align-items: center; gap: 8px; }
+  .mh-open .mono { flex: none; }
+  .mh-open b { flex: 1; min-width: 0; }
+  .mh-open b::after { content: none; }
+  .mh-open::after { content: "Brief"; flex: none; font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .mh-open .mono { display: none; }
+  /* the verdict never climbs under the bar at the top */
+  .sim .verdict { max-height: calc(100svh - 200px); }
+}
+@media (max-width: 760px) {
+  .sim[data-phase="done"] .mh-targets { display: none; } /* the verdict lists the same three checks */
+  .tl-btn { white-space: nowrap; }
+}
+@media (max-width: 760px) and (max-height: 700px) { .p-what { display: none; } .dock .part { padding-block: 6px; } }
