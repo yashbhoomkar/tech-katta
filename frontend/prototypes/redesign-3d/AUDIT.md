@@ -202,3 +202,70 @@ page titles, back and forward, links versus history.
 | 47 | At 1920 px the Dashboard headline touched the 3D. | The figure moves right on very wide screens. |
 | 48 | Part labels on the 320 px Dashboard overlapped ("API gateway" under "App servers"), because the label layout always reserved 76 px at the top for the landing's top bar. | That margin is now a setting: 10 px on the Dashboard, section previews, Practice and article figures. Counts are left off the 3D pills on 320 px phones (they are in the list). |
 | 49 | The simulator's parts strip scrolls sideways on phones with no hint. | A fade on the right edge. |
+
+## Fifth pass (2026-11-20): every tab, in depth
+
+Owner: "dive deep into every tab like concepts components etc and find ui ux inconsistencies and note them down".
+Noted only, nothing fixed yet.
+
+How this was checked:
+- **Pages:** Dashboard, `#/learn`, the four section pages, one article from each section, Practice, a scenario, the 404 and the landing.
+- **Sizes:** desktop 1440 px dark, tablet 900 px dark, phone 390 px light and dark.
+- **What the automated scan recorded:** every visible element's type size and weight, button heights and radii, text colours, tap targets, missing names, full stops and capitals, and sideways overflow.
+- **All 66 articles:** checked for header structure, breadcrumb groups, reading time and contents numbering.
+- **Keyboard:** pressed Tab through six pages to check focus is visible.
+- **By eye:** screenshots read for every page, plus five points down three articles (story, reader start, a table, an example, code, the end).
+
+**What was fine:**
+- No script errors and no sideways scroll on any page.
+- Keyboard focus is visible everywhere.
+- Reading times match between each article's hero and its reader on all 66 articles.
+- The section pages line up: same left edge, the progress card on the right, and lists starting at the same edge.
+
+### Must fix
+
+| # | Where | What is wrong | Suggested fix |
+|---|---|---|---|
+| 50 | Practice scenario, tablet (900 px) | The bottom bar sits on top of the build controls (the App server and Cache node steppers and "Run the evening"), so the simulator is hard to use on a tablet. The rule that hides the bar on the simulator only applies on phones. | Hide the bar on the simulator at every width where it shows (below 1000 px). |
+| 51 | Dashboard and article heroes, tablet (900 px) | The 3D runs into the words: Dashboard part labels ("API gateway 0/1", "Database 0/2") sit on the intro paragraph, and an article's servers overlap its lead text. | Between 761 and 999 px, stack the figure under the words as on phones, or narrow the text column. |
+| 52 | Landing vs Practice | The landing says "22 problems, 8 challenges", but Practice has 5 scenarios (and the sidebar says 0/5). | Use the real count on the landing, or label it as coming soon. |
+| 53 | Everywhere Practice is mentioned | The same thing has five names: "scenario" (Practice list, "Scenario 1" chip), "problem" ("Try a problem", "Try the first problem"), "challenge" ("Try the SMS link challenge"), "simulator" ("Run a design in the simulator") and "Practice". | Pick one noun, probably "problem" or "scenario", and use it in every button and label. |
+| 54 | `#/learn` (the bottom bar's Learn link) | It shows the Concepts page, but the browser tab says "Not found · Tech Katta", and the address stays `#/learn`. | Redirect `#/learn` to `#/learn/concepts` (or give it a title). |
+
+### Should fix
+
+| # | Where | What is wrong | Suggested fix |
+|---|---|---|---|
+| 55 | Interview question articles | 27 of the 29 have a one-line thin title with no heavy second line. Every concept, component and real system has the two-line title, and so do 2 of the interview questions. So one section has two header styles. | Give every interview question a second line, such as its difficulty and what it tests ("Easy · short codes and fast redirects"). |
+| 56 | Components: list, breadcrumbs, the chip above each title | The only group in Components is named "The tools interviewers name", which is the section's tagline. It shows up as "Component 01 · The tools interviewers name" and in the breadcrumbs. Other sections use real group names ("Core", "Start here", "Case studies"). | Name real groups (Storage, Messaging, Search, Coordination), or show no group when there is only one. |
+| 57 | Section pages | Three different filter and navigation controls: the phone section tabs (dark filled pill when selected), the Concepts group chips (outlined pills, 38 px, jump down the page) and the interview questions difficulty switch (segmented, 32 px, 8 px corners). On phones the section tabs and group chips look the same but one changes page and the other scrolls. | One style for "jump within this page" and a clearly different one for "go to another section"; both 40 px. |
+| 58 | Interview questions and Practice lists | Interview questions can be filtered by Easy, Medium or Hard, but the rows don't show difficulty. Practice rows show difficulty twice (in the meta line and the right-hand tag). The right-hand tag means category on four lists and difficulty on Practice. | Show difficulty in the interview question rows. On Practice, put the business type in the right-hand tag and keep difficulty in the meta line. |
+| 59 | Article pages | No breadcrumbs at the top. Every other app page opens with them, but articles open with the chip above the title, and the breadcrumbs appear only where the reader starts, 4,000–5,000 px down after the 3D story. | Put the breadcrumbs above the chip in the hero, and keep the reader's copy. |
+| 60 | Article hero, phones | Centred text, while every other phone page is left-aligned. | Left-align it like the rest. |
+| 61 | Article pages, desktop | The left sidebar expands the section's article list, and the right rail repeats the same group list under "On this page". | Keep "On this page" in the rail and drop the group list there (the sidebar has it). |
+| 62 | Sidebar on article pages | The expanded list (29 interview questions, 21 concepts) pushes Real systems and Practice out of view, so you have to scroll the sidebar to reach another section. Section pages don't expand the list. | Cap the expanded list (current item ±5, then "All 29 →"), or keep the section rows pinned. |
+| 63 | Interview question articles, "On this page" | The contents mix numbered and unnumbered items: "1. Requirements … 5. Deep dives", then "Making short codes", "Fast redirects at 3.5 lakh a second". This happens in all 23 question walkthroughs. | Number all of them, or none (and show the five steps as a group label). |
+| 64 | Scenario page breadcrumbs | Underlined, because the rule for links in the simulator's brief catches them. Breadcrumbs everywhere else are plain until hovered. | Leave breadcrumbs out of that rule. |
+| 65 | Heading sizes | A chapter heading inside an article's story is 56 px, the same as a section page title (Concepts, Practice), and article titles are 69 px against 56 px for section titles. A chapter heading reads as a page title. | Chapter headings one step down (about 40 px); article titles at the same size as section titles. |
+| 66 | Type scale | 44 size and weight combinations on desktop. Body text alone comes in 13.5, 14, 14.5, 15, 15.05, 15.5, 16, 16.5, 17 and 17.5 px. Weights are 400, 500, 600, 650, 700 and 800, with 800 only on some 18–19 px labels. Some sizes are fractional (13.76, 15.05, 16.5). | Set a scale of 12 / 14 / 16 / 18 / 22 px plus headline sizes, and weights of 400, 600 and 700 only. |
+| 67 | Text colour | The house rule is pure white text in dark mode and pure black in light mode. About a third of all text uses two greys instead: light mode #3A3846 and #5C5869, dark mode #D9D5E6 and #ABA6BC. They are on meta lines, list descriptions, breadcrumbs and captions. | Owner's call: either allow one secondary tone and write that into the rule, or make all text pure white or black. |
+| 68 | Tables and code in articles, phones | They scroll sideways but are cut off with no hint ("Cassandra / about 4 TB or…"). The simulator's parts strip got a fade for the same problem (item 49). | The same right-edge fade on tables and code blocks. |
+| 69 | "Say it" callouts in articles | They use a sky-blue side bar, the last blue accent left after item 34 removed blue. | Use the line colour, or the section's colour dot as on the example card. |
+| 70 | Tap targets, phones | Several are under 40 px: breadcrumb links (20 px tall), "← All concepts" (25 px), the Full text / Cards buttons (32 px), the difficulty buttons (32 px), the Concepts group chips (38 px), the theme button (36 px) and the simulator steppers (36 px). The simulator's theme label is also 10 px, against 12 px everywhere else. | Pad each to 40 px tall; theme label at 12 px. |
+| 71 | 3D figures | Only the simulator's 3D has an accessible name. The Dashboard, section previews, the Practice preview and article figures and stories have none. | Name each after what it shows ("Caching: the app reads from a cache before the database"). |
+
+### Polish
+
+| # | Where | What is wrong | Suggested fix |
+|---|---|---|---|
+| 72 | 404, desktop | The words start 500 px from the left; every other app page starts at 286 px. | Same left edge as the other pages. |
+| 73 | The "what next" button | One action has three labels: the Dashboard card says "Play the story →", section cards say "Start →", and the article hero says "Play the story ↓". | One label for opening the next item (e.g. "Start"), and "Play the story" only inside an article. |
+| 74 | Dashboard header | Its breadcrumb is just "Dashboard" (a crumb for itself), and the headline sits about 100 px lower than on other pages, so the header jumps when you switch between the Dashboard and a section. | Drop the self-crumb and align the headline's top with the sections'. |
+| 75 | Landing vs app | The landing calls them "lessons"; inside the app they are concepts, articles or stories. | "Lessons" nowhere, or "lessons" everywhere. |
+
+### Suggested order
+
+1. **The tablet overlaps and Practice naming and counts:** items 50, 51, 52, 53 and 54, all small and visible.
+2. **Making sections behave the same:** items 55–64.
+3. **The type scale and colour:** items 65–67. Item 67 first needs the owner's decision on grey text.
+4. **The rest:** items 68–75.
