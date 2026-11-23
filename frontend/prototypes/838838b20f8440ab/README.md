@@ -234,3 +234,18 @@ go through stages, one thing on screen at a time, set as `data-phase` on `.sim`;
 - Checked at 390 × 844 (dark) and 320 × 568 (light) through every stage, including folding the sheet, reopening the
   brief, skipping, replaying and scrubbing; no panel overlaps another or the top bar, nothing off screen, every control
   40 px or more, no script errors; the desktop run and verdict unchanged.
+
+## 2026-11-20 to 23: moved, Practice tab fixed, docs checked
+
+- **Unlisted address.** The first address leaked, so this folder was renamed to a random name (the old address returns 404
+  with no redirect) and carries `<meta name="prototype:unlisted" content="true">`, which `frontend/hosting/prototype.mjs`
+  uses to leave it off the `/p/` list. The address is shared by the owner directly and is not written anywhere in the
+  repository. The repository is public, so this is not privacy: see `ui-prototypes/README.md` §3.9 in the context
+  repository.
+- **Practice tab on phones** (owner: "The practice tab in the bottom bar does not work"): the Practice list could not
+  scroll because the simulator's "no page scroll" rule was keyed to the page type, which the list shares (now `body.focus-page`,
+  the simulator only); and a page slide that stalled while the next page built its 3D swallowed taps on the bottom bar
+  (slides longer than 0.6 s are skipped and the slide's snapshot lets taps through).
+- **AUDIT.md** has five audit passes (75 findings) and the status of each; item 50 was a false alarm and the first half of
+  item 58 a misreading, both corrected there.
+- **Docs checked 2026-11-23:** every commit of the `prototype` branch has a ledger row (115 checked, one missing row added).
