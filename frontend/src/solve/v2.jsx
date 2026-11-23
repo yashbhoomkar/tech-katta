@@ -1,4 +1,5 @@
 import React,{useEffect,useState}from"react";import{fmt,pct,clockOf}from"./format.js";
+import{ViewToggle}from"./replay3d.jsx";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";import{troubleAt,whyPart}from"./why.js";
 // ---- v2 problems (tech-katta-context/evaluator.md §12.1): what the system must do, findings, how the design was
 // read, and a test replayed on the canvas ----
@@ -33,13 +34,13 @@ export function breakOptions(parts,hasCache){return[...parts.map(p=>({id:"crash:
  {id:"x2",label:"Traffic doubles for 15 minutes",fault:m=>({minute:m,kind:"spike",factor:2,minutes:15,mark:true})},
  {id:"x5",label:"Traffic jumps 5× for 15 minutes",fault:m=>({minute:m,kind:"spike",factor:5,minutes:15,mark:true})},
  ...(hasCache?[{id:"flush",label:"The cache empties",fault:m=>({minute:m,kind:"cacheFlush"})}]:[])]}
-export function ReplayBar({rep,set,P,nameOf,parts,onBreak,compOf}){const[whyId,setWhyId]=useState(null);const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
+export function ReplayBar({rep,set,P,nameOf,parts,onBreak,compOf,view,setView,three}){const[whyId,setWhyId]=useState(null);const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
 useEffect(()=>{if(!play)return;if(last){set(x=>x&&{...x,play:false});return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,n-1)}),180);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
 useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null)};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
 const t0=i*tl.tickMinutes,ev=(r.events||[]).filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes*3).slice(-3);
 return <section className="sv-console sv-player" aria-label={`Replay of ${r.test.name}`}>
 <header className={"sv-v "+(r.ok?"good":"bad")}><div><b>▶ Replay: {r.test.name}</b><small>{clockOf((r.test.startHour||0)*60+t0)} · minute {t0} of {fmt(r.test.hours*60)}</small></div>
-<span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
+<span className="sv-vbtns">{three&&<ViewToggle view={view} set={setView}/>}<button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
 <div className="sv-scrubw"><input type="range" className="sv-scrub" min={0} max={n-1} value={i} onChange={e=>set(x=>({...x,play:false,i:+e.target.value}))} aria-label="Minute of the test"/>
 <div className="sv-ticks">{marks(r.events,tl.tickMinutes,n).map(m=>{const words=m.evs.map(e=>eventWords(e,nameOf)).join(" ");return <button key={m.i} type="button" className={"sv-tick "+m.level} style={{left:`${100*m.i/Math.max(1,n-1)}%`}} title={words} aria-label={`Go to minute ${m.i*tl.tickMinutes}: ${words}`} onClick={()=>set(x=>({...x,play:false,i:m.i}))}/>})}</div></div>
 {tl.spend&&(()=>{const from=rep.from??CREDIT,spent=tl.spend.slice(0,i+1).reduce((a,b)=>a+b,0),ph=(tl.spend[i]||0)*60/tl.tickMinutes;return <CreditMeter ms={160} from={from-tl.spend.slice(0,Math.max(0,i)).reduce((a,b)=>a+b,0)} to={Math.max(0,from-spent)} label={`This test has spent ${money(spent)} so far · burning ${money(ph)}/hour now`} note={`at this rate the credit lasts ${lasts(ph)}`}/>})()}
