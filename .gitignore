@@ -1,3 +1,4 @@
 backend/node_modules/
 .wrangler/
 backend/ai-evals/results/
+site3d-dist/

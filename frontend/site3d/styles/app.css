@@ -1507,3 +1507,25 @@ html, body { overflow-x: clip; }
 .lesson .l-tag.stars { color: var(--lemon); letter-spacing: .1em; } .lesson .l-tag.stars .off { color: var(--line-2); }
 .learn .lesson .l-tag { white-space: nowrap; }
 @media (max-width: 760px) { .learn .lesson .l-tag:not(.stars) { display: none; } }
+
+/* ---- sign-in sheet and the content lock (phase 0 of 49) ---- */
+.signin-back { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgb(0 0 0 / .5); }
+.signin { width: min(440px, 100%); padding: 22px; border-radius: 24px; display: flex; flex-direction: column; gap: 12px; background-color: var(--card); background-image: linear-gradient(rgb(255 255 255 / .09), transparent 40%); }
+.signin h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.signin .si-text { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.signin .si-body { display: flex; flex-direction: column; gap: 12px; min-height: 48px; }
+.signin .si-terms { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.signin .si-terms input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--ink); }
+.signin .si-terms a { text-decoration: underline; }
+.signin .si-g { min-height: 44px; }
+.signin .si-note { font-size: 14px; } .signin .si-err { font-size: 14px; color: var(--alert); }
+.signin .si-close { align-self: flex-start; }
+body.modal-open { overflow: hidden; }
+.lock-card { margin: 28px 0 8px; padding: 22px; border-radius: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; background: var(--glass); background-image: linear-gradient(rgb(255 255 255 / .09), transparent 40%); border: 1px solid var(--line-2); box-shadow: var(--shadow); }
+.lock-card h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.lock-card p { font-size: 16px; line-height: 1.55; margin: 0; max-width: 56ch; color: var(--ink-2); }
+.lock-card.big { margin: 96px auto; max-width: 520px; }
+.preview-fade { position: relative; }
+.preview-fade::after { content: ''; position: absolute; inset: auto 0 0 0; height: 120px; pointer-events: none; background: linear-gradient(transparent, var(--page)); }
+@media (prefers-reduced-motion: no-preference) { .signin { animation: si-in .3s var(--out); } @keyframes si-in { from { opacity: 0; transform: translateY(12px); } } }
+button.side-row { width: 100%; border: 0; background: none; font-family: inherit; text-align: left; cursor: pointer; }

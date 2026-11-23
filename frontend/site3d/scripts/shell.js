@@ -5,6 +5,8 @@
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { INCIDENTS } from './sim.js';
 import { store } from './store.js';
+import { accountState, onAccount } from './account.js';
+import { openSignIn } from './signin.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** each place in the app has one colour, shared by its sidebar row, its home card and its icon */
@@ -48,13 +50,19 @@ const RAIL_KEY = 'tk-r3d-side';
 let side = null, railSaved = false, here = { nav: '', path: '' }, openHere = false;
 try { railSaved = localStorage.getItem(RAIL_KEY) === 'rail'; } catch { /* storage blocked */ }
 
+/** "Sign in" while signed out and sign-in is available (it opens the sheet); once signed in the You row carries the name */
+function accountRow() {
+  const a = accountState();
+  return a.ready && a.enabled && !a.user ? `<button type="button" class="side-row" data-signin title="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4.5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H14"/><path d="M4 12h10M10.5 8.5 14 12l-3.5 3.5"/></svg><span class="lbl">Sign in</span></button>` : '';
+}
+
 function draw() {
   const list = listNow(), { nav, path } = here;
   const sec = (path.match(/^\/learn\/([\w-]+)/) || [])[1] || (nav === 'learn' ? 'concepts' : '');
   const slug = (path.match(/^\/learn\/[\w-]+\/([\w-]+)/) || [])[1];
   const active = nav === 'learn' ? sec : nav === 'sim' ? 'practice' : nav;
-  const row = (p) => { const t = p.section || p.id === 'practice' || p.id === 'problems' ? tally(p.id, list) : null;
-    return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(p.name)}" ${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(p.name)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
+  const row = (p, label = p.name) => { const t = p.section || p.id === 'practice' || p.id === 'problems' ? tally(p.id, list) : null;
+    return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(label)}" ${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(label)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
   const sub = (id) => { if (id !== sec || !slug) return ''; const read = store.get().read;
     // a long section (29 questions) would push Practice off screen, so the list is a window round where you are, plus "All"
     const all = list.filter((a) => a.section === id), at = all.findIndex((a) => a.slug === slug), WIN = 9;
@@ -73,10 +81,12 @@ function draw() {
       ${row(PLACES.find((p) => p.id === 'problems'))}
       ${row(PLACES.find((p) => p.id === 'practice'))}
       <p class="side-head lbl">Account</p>
-      ${row(PLACES.find((p) => p.id === 'you'))}
+      ${accountRow()}
+      ${row(PLACES.find((p) => p.id === 'you'), accountState().user?.name || accountState().user?.email)}
     </nav>
     <div class="side-foot"><button class="theme" type="button" data-theme-btn></button></div>`;
   side.querySelector('[data-rail]').addEventListener('click', toggleRail);
+  side.querySelector('[data-signin]')?.addEventListener('click', () => openSignIn());
   document.dispatchEvent(new CustomEvent('tk-theme-buttons'));
   requestAnimationFrame(placeMark);
 }
@@ -110,6 +120,7 @@ export function updateShell(nav, path) {
     addEventListener('resize', placeMark);
     addEventListener('tk-progress', () => side && document.body.classList.contains('in-app') && draw());
     listArticles().then(() => side && draw());
+    onAccount(() => side && document.body.classList.contains('in-app') && draw());
   }
   if (app) { draw(); applyRail(); }
 }
