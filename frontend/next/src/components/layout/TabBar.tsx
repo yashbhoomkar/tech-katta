@@ -2,11 +2,12 @@ import { NavLink } from "react-router-dom";
 import { useCommandPalette } from "@/components/CommandPalette";
 import { Icon, type IconName } from "@/components/Icon";
 import { paths } from "@/content/sections";
+import { HOME_NAME } from "@/lib/site3d";
 import s from "./layout.module.css";
 
 // Phones only: five tabs in thumb reach. Search is a tab because a phone has no ⌘K.
 const TABS: [IconName, string, string][] = [
-  ["home", "Home", paths.home],
+  ["home", HOME_NAME, paths.home],
   ["learn", "Learn", paths.learn],
   ["problems", "Problems", paths.problems],
 ];

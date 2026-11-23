@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build && npm run build:next && node hosting/switch.mjs",
-    "build:next": "npm ci --prefix next --no-audit --no-fund && BASE_PATH=/ VITE_STYLE=neo-brutalism VITE_SITE3D=1 npm run build --prefix next",
+    "build:next": "npm ci --prefix next --no-audit --no-fund && BASE_PATH=/ VITE_STYLE=3d VITE_SITE3D=1 npm run build --prefix next",
     "check:next": "npm ci --prefix next --no-audit --no-fund && npm run check --prefix next",
     "build:cloudflare": "VITE_HOST_ANALYTICS=none vite build && npm run build:next && node hosting/switch.mjs && node hosting/emit.mjs cloudflare dist",
     "hosting:vercel": "node hosting/emit.mjs vercel",

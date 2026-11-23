@@ -13,7 +13,7 @@
 //   5. any SVG definitions it needs in DEFS below;
 //   6. a build and copy in frontend's build:prototype scripts (hosting/prototype-copies.mjs COPIES).
 
-export const LOOKS = ["", "neo-brutalism"] as const;
+export const LOOKS = ["", "neo-brutalism", "3d"] as const;
 export type Look = (typeof LOOKS)[number];
 
 const isKnown = (v: unknown): v is Look => typeof v === "string" && (LOOKS as readonly string[]).includes(v);

@@ -2,7 +2,8 @@
 // another theme with the switch keeps it (its own key, so a choice made on another prototype does not carry over).
 (function () {
   var p = "dark";
-  try { p = localStorage.getItem("tk-r3d-theme") || "dark"; } catch (e) { /* storage blocked */ }
+  // one setting for the whole site: the React app's key (next/public/boot-theme.js), or the prototype's older one
+  try { p = localStorage.getItem("tk-theme") || localStorage.getItem("tk-r3d-theme") || "dark"; } catch (e) { /* storage blocked */ }
   var dark = p === "dark" || (p === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
 })();
