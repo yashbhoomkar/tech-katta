@@ -19,7 +19,7 @@ export function Replay3D({design,nameOf,at,hop,minute,label,onFail}){
 const cv=useRef(null),ov=useRef(null),w=useRef(null),ex=useRef(null),last=useRef(-1);const[ready,setReady]=useState(false);
 useEffect(()=>{let alive=true,world=null;
 load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;world=m.createWorld(cv.current,ov.current,{reduced,still:false});if(!world){onFail?.();return}
- world.setSystem(m.systemOf(design,nameOf),{instant:true});const f=world.frame();world.setCamera({t:f.t,dist:f.dist*1.05,az:42,el:32,sx:.5,sy:.27},{instant:true});w.current={world,m};setReady(true)}).catch(()=>onFail?.());
+ world.setSystem(m.systemOf(design,nameOf),{instant:true});const f=world.frame();world.setCamera({t:f.t,dist:f.dist*(innerWidth<760?1.5:1.05),az:42,el:32,sx:.5,sy:innerWidth<760?.14:.27},{instant:true});w.current={world,m};setReady(true)}).catch(()=>onFail?.());
 return()=>{alive=false;clearTimeout(ex.current);w.current=null;try{world?.destroy()}catch{}}},[]);// eslint-disable-line
 useEffect(()=>{const c=w.current;if(!ready||!c)return;const{world,m}=c;
  // the picture follows the minute: no timer of its own, it moves when the replay's clock does
