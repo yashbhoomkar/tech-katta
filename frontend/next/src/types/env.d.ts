@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
   /** the look to build (lib/look.ts LOOKS; unset is the default look) */
   readonly VITE_STYLE?: string;
+  /** "1" in the production build: the 3D site owns the landing, /home and Learn (app/router.tsx) */
+  readonly VITE_SITE3D?: string;
   /** "none" leaves out the host's analytics script (builds for hosts other than Vercel) */
   readonly VITE_HOST_ANALYTICS?: string;
   readonly BASE_URL: string;

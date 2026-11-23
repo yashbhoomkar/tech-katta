@@ -7,6 +7,11 @@
 // 3. Every article, section and policy page gets what the old article pages had for search engines (seo.js): its
 //    title and description, canonical address, link-preview tags, JSON-LD and a crawlable preview of the text inside
 //    <div id="root"> (the app replaces it when it starts). The landing gets the site's JSON-LD and home summary.
+// 5. The 3D site (site3d/, 2026-11-23, tech-katta-context 48) takes the landing, /home, the four Learn sections and
+//    their articles, and /simulator: its files go to dist/3d/, and its page shell replaces the React page at each of
+//    those addresses, carrying the same search-engine text in <div id="root"> (the 3D app replaces it when it
+//    starts). The React app keeps the problems, /practice, /me, Quick Notes and the policies, and with VITE_SITE3D=1
+//    reloads the 3D addresses as whole pages (next/src/app/router.tsx).
 // 4. sitemap.xml and llms.txt list the new addresses. /dashboard/… addresses redirect to them (hosting/routes.json);
 //    /dashboard/ itself (and /dashboard/#key links) opens the app, whose /dashboard route sends each to its new home.
 import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, mkdirSync } from "node:fs";
@@ -18,6 +23,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(here, "..", "dist");
 const next = path.resolve(here, "..", "next", "dist");
 const contentDir = path.resolve(here, "..", "..", "content");
+const site3d = path.resolve(here, "..", "site3d");
+// the addresses the 3D site answers (keep in step with site3d/scripts/app.js OWN and next/src/app/router.tsx)
+const OWNED_BY_3D = /^\/(?:|home|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
 
 if (!existsSync(path.join(next, "index.html"))) {
   console.error("switch: next/dist is missing: build the new frontend first (npm run build:next)");
@@ -45,6 +53,11 @@ for (const f of htmlFiles) {
   writeFileSync(f, html);
 }
 
+// the 3D site's files, and its page shell
+rmSync(path.join(dist, "3d"), { recursive: true, force: true });
+for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
+const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
+
 // 3. search-engine pages, from the content folder (the build sees the whole repository)
 const read = (...p) => JSON.parse(readFileSync(path.join(contentDir, ...p), "utf8"));
 const site = read("site.json");
@@ -56,13 +69,20 @@ let written = 0;
 for (const p of pages) {
   const file = path.join(dist, ...nextPath(p.key).split("/").filter(Boolean), "index.html");
   // start from the page the app prerendered (it may carry a preload for the lesson's data), else the plain shell
-  const base = existsSync(file) ? readFileSync(file, "utf8") : shell;
+  const base = OWNED_BY_3D.test(nextPath(p.key)) ? shell3d : existsSync(file) ? readFileSync(file, "utf8") : shell;
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, render(base, p));
   written += 1;
 }
 const home = path.join(dist, "index.html");
-writeFileSync(home, renderHome(readFileSync(home, "utf8"), site, articles).replace("</head>", `<link rel="canonical" href="${SITE}/"/></head>`));
+writeFileSync(home, renderHome(shell3d, site, articles).replace("</head>", `<link rel="canonical" href="${SITE}/"/></head>`));
+
+// the 3D pages with no search-engine page of their own: /learn (it opens Concepts) and the simulator (/simulator/<id>
+// is a rewrite to this file, hosting/routes.json)
+for (const [dir, title] of [["learn", "Learn · Tech Katta"], ["simulator", "Simulator · Tech Katta"]]) {
+  mkdirSync(path.join(dist, dir), { recursive: true });
+  writeFileSync(path.join(dist, dir, "index.html"), shell3d.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`).replace("</head>", `<link rel="canonical" href="${SITE}/${dir === "learn" ? "learn/concepts" : dir}"/></head>`));
+}
 
 // /dashboard/ (and /dashboard/#key links): the app, which sends each old address to its new home
 mkdirSync(path.join(dist, "dashboard"), { recursive: true });
@@ -71,4 +91,4 @@ writeFileSync(path.join(dist, "dashboard", "index.html"), shell.replace(/<title>
 // 4. the sitemap and the content map for AI assistants
 writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
 writeFileSync(path.join(dist, "llms.txt"), llmsTxt(site, pages));
-console.log(`switch: the new frontend is the site; ${written} search-engine pages, the home page, sitemap.xml and llms.txt for the new addresses`);
+console.log(`switch: the 3D site answers at /, /home, Learn and /simulator; the new frontend at the rest; ${written} search-engine pages, the home page, sitemap.xml and llms.txt for the new addresses`);

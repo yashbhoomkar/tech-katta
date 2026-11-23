@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, type ComponentType, type ReactNode } from "react";
-import { createBrowserRouter, Outlet, ScrollRestoration } from "react-router-dom";
+import { createBrowserRouter, Outlet, ScrollRestoration, useLocation } from "react-router-dom";
 import { NotFoundPage } from "@/pages/NotFound";
 import { RouteError } from "./RouteError";
 import { AppShell } from "@/components/layout/AppShell";
@@ -86,22 +86,48 @@ function Landing() {
 
 const gated = (el: ReactNode) => <ContentGate><Loading>{el}</Loading></ContentGate>;
 
+// The 3D site (frontend/site3d) answers at tech.katta.cc's landing, /home, and the four Learn sections and their
+// articles (hosting/switch.mjs). A production build says so with VITE_SITE3D=1: then this app leaves those addresses
+// to it with a whole page load, so a link from the problem workspace to Learn opens the 3D page, not this app's old
+// one. Quick Notes, the problems, /me and the policies stay here. Other builds (tests, the e2e looks) keep every page.
+export const SITE3D = import.meta.env.VITE_SITE3D === "1";
+const OWNED_BY_3D = /^\/(?:|home|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?)\/?$/;
+export const ownedBy3d = (path: string) => SITE3D && OWNED_BY_3D.test(path);
+const AWAY_KEY = "tk-3d-away";
+/** Load the address again as a whole page (the host serves the 3D site there). If that already happened for this
+ *  address (the host had no 3D page for it, say a mistyped article), show not found instead of reloading forever. */
+function ToSite3d({ fallback, path }: { fallback: ReactNode; path: string }) {
+  let again = false;
+  try { again = sessionStorage.getItem(AWAY_KEY) === path; } catch { /* storage blocked */ }
+  useEffect(() => {
+    if (again) { try { sessionStorage.removeItem(AWAY_KEY); } catch { /* blocked */ } return; }
+    try { sessionStorage.setItem(AWAY_KEY, path); } catch { /* blocked */ }
+    location.replace(location.href);
+  }, [again, path]);
+  return again ? <>{fallback}</> : <div aria-busy="true" style={{ minHeight: "70vh" }} />;
+}
+/** this app's page, or (in a 3D build, on an address the 3D site owns) a whole page load to it */
+function Own({ el }: { el: ReactNode }) {
+  const { pathname } = useLocation();
+  return ownedBy3d(pathname) ? <ToSite3d key={pathname} path={pathname} fallback={<NotFoundPage />} /> : <>{el}</>;
+}
+
 export const routes = [
   {
     element: <Root />,
     // any error a page throws while rendering shows a friendly page instead of a blank screen (RouteError)
     errorElement: <RouteError />,
     children: [
-      { path: "/", element: <Landing /> },
+      { path: "/", element: <Own el={<Landing />} /> },
       {
         element: <AppShell />,
         // inside the shell: the sidebar and tabs stay, so the reader can move on
         errorElement: <RouteError />,
         children: [
-          { path: "home", element: gated(<HomePage />) },
-          { path: "learn", element: gated(<LearnPage />) },
-          { path: "learn/:section", element: gated(<SectionPage />) },
-          { path: "learn/:section/:slug", element: gated(<ReaderPage />) },
+          { path: "home", element: <Own el={gated(<HomePage />)} /> },
+          { path: "learn", element: <Own el={gated(<LearnPage />)} /> },
+          { path: "learn/:section", element: <Own el={gated(<SectionPage />)} /> },
+          { path: "learn/:section/:slug", element: <Own el={gated(<ReaderPage />)} /> },
           { path: "problems", element: gated(<ProblemsPage />) },
           { path: "problems/challenge/:id", element: gated(<ChallengePage />) },
           { path: "problems/sandbox", element: gated(<SandboxPage />) },
