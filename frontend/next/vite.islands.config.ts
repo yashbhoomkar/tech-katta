@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import figManifest from "../figs-manifest.js";
-import { onlyLook } from "./scripts/look.mjs";
 import { islandScope } from "./scripts/island-scope.mjs";
 
 // The islands: the React parts of tech.katta.cc (the workspace, challenges, sandbox, shared designs, practice) that the
@@ -30,8 +29,8 @@ export default defineConfig({
   publicDir: false,
   define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   plugins: [sharedWithPage, react(), figManifest(`${legacy}/figs`)],
-  // only the 3d look's rules; and nothing from the base CSS reaches outside .tk-island (scripts/island-scope.mjs)
-  css: { postcss: { plugins: [onlyLook("3d"), islandScope()] } },
+  // nothing from the base CSS reaches outside .tk-island (scripts/island-scope.mjs)
+  css: { postcss: { plugins: [islandScope()] } },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@legacy": legacy, "@look": fileURLToPath(new URL("./src/styles/looks/3d", import.meta.url)) },
     dedupe: ["react", "react-dom"],

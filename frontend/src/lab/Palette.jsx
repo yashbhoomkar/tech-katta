@@ -1,6 +1,6 @@
 // The component palette beside the canvas.
 import React,{useState}from"react";
-import{Glyph}from"./shared.jsx";
+import{Glyph}from"./shared.jsx";import{Thumb}from"./thumb.jsx";
 // Palette items are dragged with pointer events (mouse, trackpad, touch, pen) rather than HTML5
 // drag-and-drop, which Firefox does not start from buttons and touch screens do not support.
 // A press that moves less than 6 px is a tap/click and adds the component at a free spot; a drag
@@ -16,6 +16,6 @@ return <aside className="lab-pal" aria-label="Components"><div className="lab-h"
 {!narrow&&<input className="lab-pal-search" type="search" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&comps[0]){e.preventDefault();onAdd(comps[0].type);setQ("")}else if(e.key==="Escape")setQ("")}} placeholder="Search parts" aria-label="Search components"/>}{!comps.length&&<p className="lab-tip">No part matches “{q}”.</p>}
 {groups.map(g=><div key={g}><div className="lab-g">{g}</div>{comps.filter(c=>c.group===g).map(c=>
 <button key={c.type} type="button" className="lab-item" onPointerDown={e=>press(e,c)} onClick={e=>{if(e.detail===0)onAdd(c.type)}} title={`${c.name}. ${c.desc} Drag onto the canvas, or tap to add.`} aria-label={c.name}>
-<Glyph kind={c.type}/><span>{c.name}</span></button>)}</div>)}
-{ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Glyph kind={ghost.c.type}/>{ghost.c.name}</div>}
+<Thumb kind={c.type} size={32}/><span>{c.name}</span></button>)}</div>)}
+{ghost&&<div className="lab-ghost" style={{left:ghost.x,top:ghost.y}} aria-hidden="true"><Thumb kind={ghost.c.type} size={32}/>{ghost.c.name}</div>}
 <p className="lab-tip">Drag a component onto the canvas, or tap it to add it. Connect two components by dragging from a dot on the edge of one to the other. Select a component or an arrow to change it; Delete removes it. F fits the design to the screen. Prices are approximate AWS on-demand list prices for Mumbai, for learning only.</p></aside>}

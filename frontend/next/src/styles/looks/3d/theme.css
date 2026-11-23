@@ -1,6 +1,6 @@
 /* The 3D look (2026-11-23, tech-katta-context 48): the React app in the 3D site's colours, so moving from the 3D
    pages (landing, Dashboard, Learn, Simulator) into the problems feels like one site. Switched on by
-   data-style="3d" on <html> (VITE_STYLE=3d, the production build). Component styling is the default look's (soft
+   data-style="3d" (the islands build rewrites it to .tk-island, scripts/island-scope.mjs). Component styling is the default look's (soft
    cards, round corners, Instrument Sans); only the tokens change. Values are frontend/site3d/styles/app.css and
    scripts/palette.js:
    - dark is the default (boot-theme.js, lib/theme.ts), on the 3D site's near-black violet-grey (#121218);

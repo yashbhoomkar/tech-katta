@@ -5,6 +5,8 @@
 const KIND = { client: 'laptop', cdn: 'globe', lb: 'lb', apigw: 'lb', server: 'server', processor: 'server', realtime: 'server', scheduler: 'server',
   cache: 'cache', database: 'db', coord: 'db', queue: 'queue', stream: 'kafka', pubsub: 'kafka', external: 'small' };
 export const kindOf = (type) => KIND[type] || 'small';
+/** every kind of 3D part the engine draws for a design (thumbnails are made for each) */
+export const KINDS = [...new Set(Object.values(KIND))];
 /** world units per 60 canvas units: a design of 5-12 parts fills the view like the simulator's systems */
 export const SCALE = 60;
 

@@ -73,7 +73,7 @@ function draw() {
     <div class="side-top"><a class="logo" href="/" aria-label="tech katta, the landing page"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span><span class="lbl">tech katta</span></a>
       <button type="button" class="side-btn icon-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>
     <nav class="side-nav" aria-label="App"><i class="side-mark" aria-hidden="true"></i>
-      <button type="button" class="side-row" data-search title="Search" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="lbl">Search</span><small class="lbl">⌘K</small></button>
+      <button type="button" class="side-row" data-search title="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="lbl">Search</span><small class="lbl">⌘K</small></button>
       ${row(PLACES[0])}
       <p class="side-head lbl">Learn</p>
       ${PLACES.filter((p) => p.section).map((p) => row(p) + sub(p.id)).join('')}

@@ -269,3 +269,17 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .lab-ins { position: fixed; z-index: 15; left: 8px; right: 8px; bottom: calc(var(--ws-bottom, 0px) + 8px); margin: 0; max-height: 52%; border-radius: 24px; }
   .tk-island .tk-legacy .lab-ins.idle { display: none; }
 }
+
+/* the design canvas in 3D (src/lab/design3d.jsx): the engine's canvas fills the canvas area over the 2D canvas, which stays underneath for its geometry */
+.tk-island .tk-legacy .lab-canvas.d3on > .react-flow { visibility: hidden; }
+.tk-island .tk-legacy .d3 { position: absolute; inset: 0; z-index: 3; touch-action: none; background: var(--page); }
+.tk-island .tk-legacy .d3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.tk-island .tk-legacy .d3.connecting canvas { cursor: crosshair; }
+.tk-island .tk-legacy .d3-tools { position: absolute; z-index: 4; top: 12px; left: 12px; display: flex; gap: 6px; padding: 6px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
+.tk-island .tk-legacy .d3-tools button { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--card); color: var(--ink); font: 600 14px var(--font); cursor: pointer; }
+.tk-island .tk-legacy .d3-tools button.on { background: var(--ink); color: var(--page); }
+.tk-island .tk-legacy .d3-hint { position: absolute; z-index: 4; left: 12px; bottom: 12px; margin: 0; padding: 8px 14px; border: 1px solid var(--glass-edge); border-radius: 999px; background: var(--glass-bg); font: 400 12px var(--mono); color: var(--ink); pointer-events: none; }
+.tk-island .tk-legacy .lab-thumb { display: block; width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 4px 6px rgb(0 0 0 / .25)); }
+.tk-island .tk-legacy .lab-item .lab-thumb { flex: none; }
+.tk-island .tk-legacy .ln-tile .lab-thumb { width: 26px; height: 26px; }
+.tk-island .tk-legacy .lab-view { margin-right: 4px; }

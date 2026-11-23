@@ -13,10 +13,10 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // providers export their hook next to them (useContent, useCommandPalette): fine for fast refresh in practice
+      // providers export their hook next to them (useContent): fine for fast refresh in practice
       "react-refresh/only-export-components": "off",
       "@typescript-eslint/consistent-type-imports": "error",
     },
   },
-  { files: ["scripts/**/*.mjs", "public/**/*.js"], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
+  { files: ["scripts/**/*.mjs"], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
 );

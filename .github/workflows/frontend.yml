@@ -35,13 +35,13 @@ jobs:
         run: npm ci
       - name: Lab engine tests
         run: npm test
-      - name: New frontend (next/, served at /next/) - typecheck, lint, tests
-        run: npm run check:next
+      - name: Islands (next/: the canvas, judge and practice) - typecheck, lint, tests
+        run: npm run check:islands
       - name: Production build
         run: npm run build
 
   e2e:
-    name: New frontend end-to-end (every look)
+    name: The real site end to end (desktop and phone)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,5 +61,5 @@ jobs:
         run: npm ci --prefix .. && npm ci
       - name: Install the browser
         run: npx playwright install --with-deps chromium
-      - name: End-to-end tests (default and neo-brutalism builds, against tech-api.katta.cc)
+      - name: End-to-end tests (the whole build, served the way the host serves it, against tech-api.katta.cc)
         run: npm run e2e
