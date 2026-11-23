@@ -24,8 +24,9 @@ const dist = path.resolve(here, "..", "dist");
 const next = path.resolve(here, "..", "next", "dist");
 const contentDir = path.resolve(here, "..", "..", "content");
 const site3d = path.resolve(here, "..", "site3d");
-// the addresses the 3D site answers (keep in step with site3d/scripts/app.js OWN and next/src/app/router.tsx)
-const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
+// the addresses the 3D site answers (keep in step with site3d/scripts/app.js OWN and next/src/app/router.tsx); the workspace pages
+// (a problem, challenge, sandbox, shared design, practice) are the canvas island inside a 3D page (site3d/scripts/pages/workspace.js)
+const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?|problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/;
 
 if (!existsSync(path.join(next, "index.html"))) {
   console.error("switch: next/dist is missing: build the new frontend first (npm run build:next)");
@@ -59,7 +60,22 @@ for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(di
 // sign-in, account sync and usage events: the current app's modules built as one file for the 3D pages (npm run build:site3d)
 if (!existsSync(path.join(here, "..", "site3d-dist", "legacy.js"))) { console.error("switch: site3d-dist/legacy.js is missing: run npm run build:site3d first"); process.exit(1); }
 cpSync(path.join(here, "..", "site3d-dist"), path.join(dist, "3d", "legacy"), { recursive: true });
+// the islands (the canvas, judge and practice, React): next/dist-islands, built by npm run build:islands
+if (!existsSync(path.join(next, "..", "dist-islands", "islands.js"))) { console.error("switch: next/dist-islands is missing: run npm run build:islands first"); process.exit(1); }
+cpSync(path.join(next, "..", "dist-islands"), path.join(dist, "3d", "islands"), { recursive: true });
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
+
+// the workspace pages (a problem, the sandbox, a shared design, a challenge, a practice problem): the 3D shell, with the
+// title and description the new frontend prerendered for each (next/scripts/postbuild.mjs)
+for (const f of htmlFiles) {
+  const addr = "/" + path.relative(dist, path.dirname(f)).split(path.sep).join("/");
+  if (!/^\/(?:problems\/|practice)/.test(addr) || !OWNED_BY_3D.test(addr)) continue;
+  const old = readFileSync(f, "utf8"), title = old.match(/<title>[^<]*<\/title>/)?.[0], desc = old.match(/<meta name="description"[^>]*>/)?.[0];
+  let html = shell3d;
+  if (title) html = html.replace(/<title>[^<]*<\/title>/, title);
+  if (desc) html = html.replace(/<meta name="description"[^>]*>/, "").replace("</head>", `${desc}</head>`);
+  writeFileSync(f, html);
+}
 
 // 3. search-engine pages, from the content folder (the build sees the whole repository)
 const read = (...p) => JSON.parse(readFileSync(path.join(contentDir, ...p), "utf8"));
@@ -86,6 +102,14 @@ writeFileSync(home, renderHome(shell3d, site, articles).replace("</head>", `<lin
 for (const [dir, title, canon] of [["learn", "Learn · Tech Katta", "learn/concepts"], ["simulator", "Simulator · Tech Katta", "simulator"], ["home", "Dashboard · Tech Katta", "home"]]) {
   mkdirSync(path.join(dist, dir), { recursive: true });
   writeFileSync(path.join(dist, dir, "index.html"), shell3d.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`).replace("</head>", `<link rel="canonical" href="${SITE}/${canon}"/></head>`));
+}
+
+// the base pages the rewrites for /problems/challenge/<id> and /practice/<slug> serve: a plain 3D shell, not indexed
+for (const [dir, title] of [["problems/challenge", "Challenge · Problems · Tech Katta"], ["practice", "Practice · Tech Katta"]]) {
+  const f = path.join(dist, dir, "index.html");
+  if (existsSync(f)) continue;
+  mkdirSync(path.dirname(f), { recursive: true });
+  writeFileSync(f, shell3d.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`).replace("</head>", '<meta name="robots" content="noindex"/></head>'));
 }
 
 // /dashboard/ (and /dashboard/#key links): the app, which sends each old address to its new home

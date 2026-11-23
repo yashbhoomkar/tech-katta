@@ -45,7 +45,7 @@ function block(b, a) {
     case 'more': return `<details class="more"><summary>${inline(b.label)}</summary><div>${(b.body || []).map((x) => block(x, a)).join('')}</div></details>`;
     case 'example': { const e = a.example; if (!e) return ''; return `<aside class="example"><p class="ex-kind mono">${esc(e.kind.charAt(0) + e.kind.slice(1).toLowerCase())}</p><h3>${esc(e.name)}</h3><p>${inline(e.text)}</p>
       ${e.parts?.length ? `<dl>${e.parts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${inline(v)}</dd></div>`).join('')}</dl>` : ''}</aside>`; }
-    case 'lab': return `<aside class="lab"><p>${inline(b.x)}</p><a class="btn light sm" href="/simulator/ind-vs-pak">${esc(b.go || 'Try it')}<span class="chip violet">→</span></a></aside>`;
+    case 'lab': return `<aside class="try-lab"><p>${inline(b.x)}</p><a class="btn light sm" href="/simulator/ind-vs-pak">${esc(b.go || 'Try it')}<span class="chip violet">→</span></a></aside>`;
     case 'type': return `<article class="opt"><p class="opt-head">${b.name ? `<span class="mono">${esc(b.name)}</span>` : ''}<b>${esc(sentence(b.kind || ''))}</b></p>
       ${b.what ? `<p>${inline(b.what)}</p>` : ''}
       <dl>${[['Good for', b.use], ['Watch out', b.avoid], ['Example', b.ex], ['Like', b.like]].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${inline(v)}</dd></div>`).join('')}</dl>
@@ -58,7 +58,7 @@ function block(b, a) {
 /** the sign-in card under an article's opening (account.previewLock in the site copy) */
 function lockCard() {
   const c = accountCopy()?.previewLock; if (!c) return '';
-  return `<aside class="lock-card"><p class="kicker"><span>${esc(c.eyebrow || '')}</span></p><h2>${esc(c.title)}</h2><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></aside>`;
+  return `<aside class="gate-card"><p class="kicker"><span>${esc(c.eyebrow || '')}</span></p><h2>${esc(c.title)}</h2><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></aside>`;
 }
 
 export function mount(view, [section, slug], { reduced }) {

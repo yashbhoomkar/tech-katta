@@ -101,7 +101,9 @@ function placeMark() {
 }
 // the simulator folds the sidebar to a rail for width (without touching your saved choice); touch screens never fold it,
 // because a rail shows names only as tooltips
-const focusPage = () => here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path);
+/** the workspace pages (the canvas island): a problem, challenge, sandbox, shared design or practice */
+export const WS = /^\/(?:problems\/[\w-]+(?:\/[\w-]+)?|practice(?:\/[\w-]+)?)\/?$/;
+const focusPage = () => (here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path)) || WS.test(here.path);
 const touchOnly = () => matchMedia('(hover: none)').matches;
 function applyRail() { const rail = !touchOnly() && (focusPage() ? !openHere : railSaved); document.documentElement.toggleAttribute('data-rail', rail); setTimeout(placeMark, 260); }
 function toggleRail() { if (touchOnly()) return; if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
@@ -113,6 +115,7 @@ export function updateShell(nav, path) {
   const app = nav && nav !== 'home';
   document.body.classList.toggle('in-app', !!app);
   document.body.classList.toggle('focus-page', /^\/simulator\/[\w-]+/.test(path)); // the full-screen simulator
+  document.body.classList.toggle('ws-page', WS.test(path)); // the workspace pages: no page scroll, the island fills the area
   if (!side) {
     side = document.createElement('aside'); side.className = 'side'; side.setAttribute('aria-label', 'Sidebar');
     document.body.prepend(side);

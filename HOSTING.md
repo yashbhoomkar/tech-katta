@@ -114,3 +114,16 @@ process that judges submissions on worker threads and keeps its rate limits in m
 `status-page/api/status.js` is a Vercel serverless function. Everything above its last 10 lines is plain `fetch`
 code; on another host only the handler at the end changes (for a Cloudflare Worker: `export default { fetch }`
 returning the same JSON).
+
+## The 3D site and its islands (2026-11-23)
+
+`npm run build` (in `frontend/`) builds four things and `hosting/switch.mjs` puts them together:
+- `vite build`: the old app, kept for `/analytics` and `/health`;
+- `build:next`: the React app (`frontend/next`), still the answer for the addresses the 3D site does not draw yet;
+- `build:site3d`: `site3d/legacy/entry.js` (the account and usage-event modules) as `dist/3d/legacy/legacy.js`;
+- `build:islands`: the canvas, judge and practice (React) as `dist/3d/islands/islands.js` plus hashed chunks under
+  `dist/3d/islands/assets/` (cached for a year, like `/assets/*`; `islands.js` itself has no hash and is not).
+`switch.mjs` also copies `site3d/scripts` and `site3d/styles` to `dist/3d/` and writes the 3D page shell at every address the 3D
+site draws. `/problems/challenge/<id>` and `/practice/<slug>` are rewrites to one shell each (`hosting/routes.json`, which gives
+`vercel.json` and, on Cloudflare, a `404.html` copy). `node hosting/serve-local.mjs dist 5199 hosting/routes.json` serves a build the
+way the host does (no redirects or headers).

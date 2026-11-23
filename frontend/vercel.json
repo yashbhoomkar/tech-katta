@@ -23,6 +23,14 @@
     {
       "source": "/simulator/(.*)",
       "destination": "/simulator/index.html"
+    },
+    {
+      "source": "/problems/challenge/(.*)",
+      "destination": "/problems/challenge/index.html"
+    },
+    {
+      "source": "/practice/(.*)",
+      "destination": "/practice/index.html"
     }
   ],
   "headers": [
@@ -61,6 +69,15 @@
     },
     {
       "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/3d/islands/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

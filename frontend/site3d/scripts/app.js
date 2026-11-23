@@ -9,11 +9,13 @@ import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import * as practice from './pages/practice.js';
 import * as problems from './pages/problems.js';
+import * as workspace from './pages/workspace.js';
 import { updateShell } from './shell.js';
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
 import { startGate } from './gating.js';
+import { hashTarget } from './legacy-hash.js';
 import { pageView, hostAnalytics } from './analytics.js';
 
 /** the browser tab and history say where you are */
@@ -21,7 +23,7 @@ function titleFor(path, nav) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Dashboard · ${brand}`;
-  if (nav === 'problems') return `Problems · ${brand}`;
+  if (nav === 'problems') return workspace.titleOf(path) || `Problems · ${brand}`;
   if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Simulator'} · ${inc ? 'Simulator · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
@@ -34,7 +36,7 @@ addEventListener('scroll', () => { if (curPath) positions[curPath] = scrollY; },
 document.addEventListener('click', (e) => { if (e.target.closest('a[href^="/"], [data-next], [data-skip]')) linkClick = true; }, true);
 
 // which addresses this app draws; the rest are the React app's (a whole page load)
-const OWN = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
+const OWN = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?|problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/;
 export const owns = (path) => OWN.test(path);
 /** go to an address: inside the app without a reload, anywhere else with one */
 export function go(to, { replace = false } = {}) {
@@ -71,10 +73,12 @@ const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-wr
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
   [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/simulator\/?$/, practice, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
+  [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
 ];
-let cleanup = null, token = 0, prevPath = '';
+let cleanup = null, token = 0, prevPath = '', lastLoc = '';
 
 function route() {
+  lastLoc = location.pathname + location.search;
   // an old prototype link (#/learn/…, #/me, #/sim/…) becomes its real address
   if (location.hash.startsWith('#/')) { const h = location.hash.slice(1).replace(/^\/me\b/, '/home').replace(/^\/sim\b/, '/simulator'); history.replaceState(null, '', h); }
   const path = location.pathname.replace(/(.)\/$/, '$1') || '/';
@@ -120,7 +124,13 @@ function route() {
   } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
   prevPath = path;
 }
-addEventListener('popstate', route);
+// a change of the #fragment alone (the workspace's tabs set one, the way the canvas's code always did) is not a new page
+addEventListener('popstate', () => { if (location.pathname + location.search === lastLoc && !location.hash.startsWith('#/')) return; route(); });
+// the canvas's code sets a #fragment to move to another page: that entry becomes the page itself (one Back returns)
+addEventListener('hashchange', () => {
+  const to = hashTarget(location.hash, location.pathname.replace(/(.)\/$/, '$1'));
+  if (to && owns(to)) { history.replaceState(null, '', to); route(); }
+});
 startGate(); // who is signed in, and the site's lock copy: articles wait on both
 hostAnalytics(); // Vercel Web Analytics, once per page load
 route();

@@ -92,7 +92,7 @@ const gated = (el: ReactNode) => <ContentGate><Loading>{el}</Loading></ContentGa
 // to it with a whole page load, so a link from the problem workspace to Learn opens the 3D page, not this app's old
 // one. Quick Notes, the problems, /me and the policies stay here. Other builds (tests, the e2e looks) keep every page.
 export { SITE3D };
-const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?)\/?$/;
+const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?|problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/;
 export const ownedBy3d = (path: string) => SITE3D && OWNED_BY_3D.test(path);
 const AWAY_KEY = "tk-3d-away";
 /** Load the address again as a whole page (the host serves the 3D site there). If that already happened for this
