@@ -15,7 +15,8 @@ export const PLACES = [
   { id: 'interview-questions', href: '/learn/interview-questions', name: 'Interview questions', colour: 'mint', section: true, blurb: 'Asked in real interviews, answered out loud' },
   { id: 'real-systems', href: '/learn/real-systems', name: 'Real systems', colour: 'rose', section: true, blurb: 'How apps you use are built, part by part' },
   { id: 'practice', href: '/simulator', name: 'Simulator', colour: 'lemon', icon: 'play', blurb: 'Pick the parts and watch them survive an evening' },
-  // the React app's places (a whole page load): the canvas problems with the judge, Quick Notes, your account
+  // the canvas problems (this site's list; each problem's workspace is the React app's), Quick Notes and your account
+  // (the React app: a whole page load)
   { id: 'problems', href: '/problems', name: 'Problems', colour: 'sky', icon: 'canvas', blurb: 'Draw the design on the canvas; the judge runs every test' },
   { id: 'quick-notes', href: '/learn/quick-notes', name: 'Quick Notes', colour: 'mist', icon: 'note', blurb: 'Short notes on one system each' },
   { id: 'you', href: '/me', name: 'You', colour: 'mist', icon: 'you', blurb: 'Sign in, your account and settings' },
@@ -33,6 +34,11 @@ export const icon = (p) => (p.icon ? `<svg viewBox="0 0 24 24" aria-hidden="true
 /** read and total for a place */
 export function tally(id, list = listNow()) {
   const read = store.get().read;
+  if (id === 'problems') { // the canvas's own record (pages/problems.js reads the same)
+    let steps = {}; try { steps = JSON.parse(localStorage.getItem('tk-progress-v1') || '{}')?.steps || {}; } catch { /* blocked */ }
+    const probs = list.filter((a) => a.section === 'interview-questions' && a.group !== 'start');
+    return { done: probs.filter((a) => steps[`solved:${a.slug}`] === true).length, total: probs.length };
+  }
   if (id === 'practice') { const best = store.get().best; return { done: INCIDENTS.filter((i) => best[i.id]?.passed).length, total: INCIDENTS.length }; }
   const mine = list.filter((a) => a.section === id);
   return { done: mine.filter((a) => read[`${a.section}/${a.slug}`]).length, total: mine.length };
@@ -47,7 +53,7 @@ function draw() {
   const sec = (path.match(/^\/learn\/([\w-]+)/) || [])[1] || (nav === 'learn' ? 'concepts' : '');
   const slug = (path.match(/^\/learn\/[\w-]+\/([\w-]+)/) || [])[1];
   const active = nav === 'learn' ? sec : nav === 'sim' ? 'practice' : nav;
-  const row = (p) => { const t = p.section || p.id === 'practice' ? tally(p.id, list) : null;
+  const row = (p) => { const t = p.section || p.id === 'practice' || p.id === 'problems' ? tally(p.id, list) : null;
     return `<a class="side-row${p.id === active ? ' on' : ''}" href="${p.href}" title="${esc(p.name)}" ${p.id === active ? 'aria-current="page"' : ''}>${icon(p)}<span class="lbl">${esc(p.name)}</span>${t ? `<small class="lbl">${t.done}/${t.total}</small>` : ''}</a>`; };
   const sub = (id) => { if (id !== sec || !slug) return ''; const read = store.get().read;
     // a long section (29 questions) would push Practice off screen, so the list is a window round where you are, plus "All"
