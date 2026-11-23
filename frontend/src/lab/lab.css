@@ -287,3 +287,9 @@
 
 /* Sharing (context 36, step 11) */
 .lab-import{display:block;padding:7px 10px;cursor:pointer;font:500 13px var(--font);color:var(--ink)}.lab-import:hover{background:var(--surface-2)}.lab-import input{display:none}
+
+/* Several cards selected: a bar of actions at the top of the canvas */
+.lab-multi{position:absolute;top:10px;left:12px;max-width:calc(100% - 24px);overflow-x:auto;z-index:6;display:flex;align-items:center;gap:4px;padding:5px 6px 5px 12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-2);font:500 13px var(--font);color:var(--ink);white-space:nowrap}
+.lab-multi b{margin-right:6px;font-weight:600}
+.lab-multi button{padding:5px 9px;border:0;border-radius:6px;background:none;color:var(--ink);font:inherit;cursor:pointer}
+.lab-multi button:hover,.lab-multi button:focus-visible{background:var(--surface-2);outline:none}

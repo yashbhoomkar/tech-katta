@@ -16,7 +16,14 @@ export const newId=p=>`${p}-${Math.random().toString(36).slice(2,8)}`;
 export const Ctx=createContext(null);
 
 // Designs live in localStorage (store.js); what is read back is checked and repaired first.
-export const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}return readStore(raw,lab)};
+// A saved store that cannot be read whole (broken JSON, or designs the repair had to drop) is first copied aside,
+// once, under SET_ASIDE_KEY, so the next save cannot overwrite it; the Export menu offers it as a download.
+export const SET_ASIDE_KEY=STORE_KEY+"-unreadable";
+export const setAside=()=>{try{return localStorage.getItem(SET_ASIDE_KEY)}catch{return null}};
+export const load=lab=>{let raw=null;try{raw=localStorage.getItem(STORE_KEY)}catch{}const st=readStore(raw,lab);
+if(raw){let n=-1;try{const o=JSON.parse(raw);n=o&&typeof o==="object"&&o.designs&&typeof o.designs==="object"?Object.keys(o.designs).length:-1}catch{}
+if(n<0||n>Object.keys(st.designs).length)try{if(!localStorage.getItem(SET_ASIDE_KEY))localStorage.setItem(SET_ASIDE_KEY,raw)}catch{}}
+return st};
 export const save=s=>{try{localStorage.setItem(STORE_KEY,JSON.stringify({...s,version:STORE_VERSION}))}catch{}try{dispatchEvent(new Event("tk-lab-saved"))}catch{}};// a signed-in user's account syncs after saves (account.js)
 // Add a new design to what is stored now (and make it the one the full Lab opens, unless current is null).
 export const persistNew=(lab,d,current)=>{const latest=load(lab);latest.designs[d.id]=d;if(current)latest.current=current;save(latest)};
