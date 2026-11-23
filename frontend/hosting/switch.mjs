@@ -25,7 +25,7 @@ const next = path.resolve(here, "..", "next", "dist");
 const contentDir = path.resolve(here, "..", "..", "content");
 const site3d = path.resolve(here, "..", "site3d");
 // the addresses the 3D site answers (keep in step with site3d/scripts/app.js OWN and next/src/app/router.tsx)
-const OWNED_BY_3D = /^\/(?:|home|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
+const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
 
 if (!existsSync(path.join(next, "index.html"))) {
   console.error("switch: next/dist is missing: build the new frontend first (npm run build:next)");

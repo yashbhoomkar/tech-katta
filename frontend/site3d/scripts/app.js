@@ -1,13 +1,14 @@
 // The shell: routes, the top bar, the theme, page transitions. Each page module exports mount(view, params, ctx)
 // and returns a cleanup function. Routes (real paths since the 3D site took tech.katta.cc's root): / · /learn[/<section>] ·
-// /learn/<section>/<slug> · /simulator[/<scenario>] · /home. Every other address (/problems, /practice, /me, /quick-notes,
-// the policies) belongs to the React app and loads as a whole page. Old #/… links from the prototype still work.
+// /learn/<section>/<slug> · /simulator[/<scenario>] · /home · /problems (the list). Every other address (a problem's
+// canvas /problems/<slug>, /practice, /me, /quick-notes, the policies) belongs to the React app and loads as a whole page. Old #/… links from the prototype still work.
 import * as landing from './pages/landing.js';
 import * as learn from './pages/learn.js';
 import * as article from './pages/article.js';
 import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import * as practice from './pages/practice.js';
+import * as problems from './pages/problems.js';
 import { updateShell } from './shell.js';
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
@@ -18,6 +19,7 @@ function titleFor(path, nav) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Dashboard · ${brand}`;
+  if (nav === 'problems') return `Problems · ${brand}`;
   if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Simulator'} · ${inc ? 'Simulator · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
@@ -30,7 +32,7 @@ addEventListener('scroll', () => { if (curPath) positions[curPath] = scrollY; },
 document.addEventListener('click', (e) => { if (e.target.closest('a[href^="/"], [data-next], [data-skip]')) linkClick = true; }, true);
 
 // which addresses this app draws; the rest are the React app's (a whole page load)
-const OWN = /^\/(?:|home|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
+const OWN = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
 export const owns = (path) => OWN.test(path);
 /** go to an address: inside the app without a reload, anywhere else with one */
 export function go(to, { replace = false } = {}) {
@@ -63,7 +65,7 @@ const ART = /^\/learn\/(concepts|components|interview-questions|real-systems)\/(
 const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-writes', 'load-balancing': 'networking-essentials', cdn: 'big-files' };
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
-  [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/simulator\/?$/, practice, 'sim'], [/^\/home\/?$/, me, 'me'],
+  [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/simulator\/?$/, practice, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
 ];
 let cleanup = null, token = 0, prevPath = '';
 
@@ -98,7 +100,7 @@ function route() {
     // restore after the content has its height (articles load their text a moment later)
     if (back) { let n = 0; const t = setInterval(() => { scrollTo(0, back); if (Math.abs(scrollY - back) < 4 || ++n > 12) clearInterval(t); }, 120); }
   };
-  const rank = { me: 0, learn: 1, sim: 2 }, was = document.body.dataset.page;
+  const rank = { me: 0, learn: 1, problems: 2, sim: 3 }, was = document.body.dataset.page;
   const inApp = (n) => n in rank;
   if (cleanup && !reduced && inApp(was) && inApp(nav) && document.startViewTransition) {
     const hint = document.documentElement.dataset.dirHint; delete document.documentElement.dataset.dirHint;

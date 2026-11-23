@@ -2,7 +2,7 @@
 // once and kept in memory and sessionStorage; if the API cannot be reached, the list falls back to a bundled snapshot.
 import { ARTICLES_FALLBACK } from './data/articles.js';
 
-const API = 'https://tech-api.katta.cc';
+export const API = 'https://tech-api.katta.cc';
 export const SECTIONS = [
   { id: 'concepts', name: 'Concepts', groups: [['core', 'Core'], ['patterns', 'Patterns'], ['specialised', 'Specialised data']] },
   { id: 'components', name: 'Components', groups: [['data', 'Data stores and search'], ['streams', 'Streams and workflows'], ['edge', 'Gateways and coordination']] },

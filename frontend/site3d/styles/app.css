@@ -1501,3 +1501,9 @@ body.in-app .page.narrow.missing, body.in-app .page.narrow.reader-wait { margin-
 .foot nav { flex-wrap: wrap; row-gap: 8px; }
 /* nothing (a 3D label placed before the layout settles, say) may widen the page sideways; clip keeps sticky stages working */
 html, body { overflow-x: clip; }
+
+/* Problems (/problems): a started problem's half disc, a challenge's stars, the canvas call to action on each row */
+.lesson .st .half { display: block; width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(90deg, var(--acc) 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px var(--acc); }
+.lesson .l-tag.stars { color: var(--lemon); letter-spacing: .1em; } .lesson .l-tag.stars .off { color: var(--line-2); }
+.learn .lesson .l-tag { white-space: nowrap; }
+@media (max-width: 760px) { .learn .lesson .l-tag:not(.stars) { display: none; } }

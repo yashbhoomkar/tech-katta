@@ -6,9 +6,16 @@ site does not have yet.
 
 | Address | Served by |
 |---|---|
-| `/` (landing), `/home` (Dashboard), `/learn`, `/learn/{concepts,components,interview-questions,real-systems}[/<slug>]` | 3D site |
+| `/` (landing), `/home` (Dashboard), `/learn`, `/learn/{concepts,components,interview-questions,real-systems}[/<slug>]`, `/problems` (the list) | 3D site |
 | `/simulator`, `/simulator/<id>` (pick the parts, watch one evening) | 3D site |
-| `/problems…` (the canvas, the judge, Replay, the AWS credit), `/practice…`, `/me` (sign-in, account), `/learn/quick-notes…`, `/privacy`, `/terms`, `/dashboard…` (old links) | React app |
+| `/problems/<slug>`, `/problems/sandbox`, `/problems/challenge/<id>` (the canvas, the judge, Replay, the AWS credit; the 3d look), `/practice…`, `/me` (sign-in, account), `/learn/quick-notes…`, `/privacy`, `/terms`, `/dashboard…` (old links) | React app |
+
+## Problems
+
+`/problems` is `scripts/pages/problems.js`: the 22 canvas problems in the prototype's list layout, with a 3D preview of
+each problem's design (its article's 3D story), then Sandbox, the Simulator and the Challenges. It reads the canvas's
+own record in this browser (solved and started in `tk-progress-v1`, scores in `tk-subs-v1`, stars) and writes nothing.
+Each row opens the canvas workspace, which is the React app in its 3d look (`next/src/styles/looks/3d`).
 
 ## How it is put together
 
