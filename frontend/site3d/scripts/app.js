@@ -13,6 +13,8 @@ import { updateShell } from './shell.js';
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
+import { startGate } from './gating.js';
+import { pageView, hostAnalytics } from './analytics.js';
 
 /** the browser tab and history say where you are */
 function titleFor(path, nav) {
@@ -42,6 +44,9 @@ export function go(to, { replace = false } = {}) {
   route();
 }
 window.tkGo = go;
+// draw the current page again without a history entry or a page view (the sign-in state changed under a lock)
+let refreshing = false;
+window.tkRefresh = () => { refreshing = true; route(); };
 // the React app reloads an address once to reach this site (next/src/app/router.tsx); arriving here ends that
 try { sessionStorage.removeItem('tk-3d-away'); } catch { /* storage blocked */ }
 // plain left clicks on links to the app's own addresses stay in the app
@@ -88,6 +93,8 @@ function route() {
     document.querySelectorAll('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === nav));
     document.body.dataset.page = nav || 'missing';
     updateShell(nav || 'missing', path);
+    if (!refreshing) pageView(path);
+    refreshing = false;
     view.replaceChildren();
     document.title = titleFor(path, nav || 'missing');
     const back = !linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0; linkClick = false; window.tkFresh = false; curPath = '';
@@ -102,7 +109,7 @@ function route() {
   };
   const rank = { me: 0, learn: 1, problems: 2, sim: 3 }, was = document.body.dataset.page;
   const inApp = (n) => n in rank;
-  if (cleanup && !reduced && inApp(was) && inApp(nav) && document.startViewTransition) {
+  if (cleanup && !reduced && !refreshing && inApp(was) && inApp(nav) && document.startViewTransition) {
     const hint = document.documentElement.dataset.dirHint; delete document.documentElement.dataset.dirHint;
     document.documentElement.dataset.dir = hint || rank[nav] < rank[was] || (nav === was && path.split('/').length < prevPath.split('/').length) ? 'back' : 'fwd';
     const vt = document.startViewTransition(swap); // a skipped transition (a quick second tap) is not an error
@@ -114,6 +121,8 @@ function route() {
   prevPath = path;
 }
 addEventListener('popstate', route);
+startGate(); // who is signed in, and the site's lock copy: articles wait on both
+hostAnalytics(); // Vercel Web Analytics, once per page load
 route();
 // articles finished in the React app count here too (store.js)
 listArticles().then(() => store.syncFrom(listNow())).catch(() => {});

@@ -7,6 +7,10 @@ import { recipeFor } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
 import { PLACES } from '../shell.js';
+import { accountCopy, gateNow, watchGate } from '../gating.js';
+import { openSignIn } from '../signin.js';
+import { previewCut } from '../preview.js';
+import { readArticle as trackReading } from '../analytics.js';
 
 /** a small note that slides up from the bottom and goes */
 function toast(msg) {
@@ -51,8 +55,14 @@ function block(b, a) {
   }
 }
 
+/** the sign-in card under an article's opening (account.previewLock in the site copy) */
+function lockCard() {
+  const c = accountCopy()?.previewLock; if (!c) return '';
+  return `<aside class="lock-card"><p class="kicker"><span>${esc(c.eyebrow || '')}</span></p><h2>${esc(c.title)}</h2><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></aside>`;
+}
+
 export function mount(view, [section, slug], { reduced }) {
-  let alive = true, story = null, aside = null, io = null; const ac = new AbortController();
+  let alive = true, story = null, aside = null, io = null, offGate = null, stopReading = null; const ac = new AbortController();
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
   view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
@@ -63,6 +73,11 @@ export function mount(view, [section, slug], { reduced }) {
     if (!a) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Offline</span></nav><h1 class="headline"><span class="thin">This article could not load</span><span class="heavy">Check your connection and try again</span></h1><p><a class="btn dark" href="/learn/${esc(section)}">Back to ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
     const list = await listArticles();
     if (!alive) return;
+    // the content lock (gate.js): signed out, the opening and a sign-in card; the story at the top stays open
+    const g = gateNow('article'), cut = g === 'preview' || g === 'wait';
+    const visible = cut ? a.body.slice(0, previewCut(a.body)) : a.body;
+    offGate = watchGate('article', () => window.tkRefresh?.());
+    if (!cut) stopReading = trackReading(a.section, a.slug);
     const mine = list.filter((x) => x.section === a.section), at = mine.findIndex((x) => x.slug === a.slug);
     if (at >= 0) { a.group = mine[at].group; a.no = mine[at].no; } // the list carries the real group and number
     const next = mine[at + 1], prev = mine[at - 1];
@@ -87,10 +102,10 @@ export function mount(view, [section, slug], { reduced }) {
     };
     const steps = recipeFor(a).map(fromBody).map((s, i) => (i === 0 ? { ...s, cam: { side: false, cx: innerWidth >= 1000 ? 0.7 : innerWidth > 760 ? 0.8 : 0.75, sy: 0.56, el: 30, zoom: heroZoom(s.system) * (innerWidth >= 1000 ? 1.14 : innerWidth > 760 ? 1.3 : 1), phoneSy: 0.74, phoneZoom: 1.06, ...(s.cam || {}) } }
       : phone ? { ...s, cam: { ...(s.cam || {}), side: false, phoneSy: 0.3, phoneZoom: 1.75 } } : s));
-    const h2s = a.body.filter((b) => b.t === 'h2');
+    const h2s = visible.filter((b) => b.t === 'h2');
     // topics for the Cards view: each h2 section, with its first line as a lede (tech.katta.cc's "Cards")
     const topics = [], introBlocks = [];
-    for (const b of a.body) { if (b.t === 'h2') topics.push({ title: b.x, blocks: [] }); else (topics.length ? topics[topics.length - 1].blocks : introBlocks).push(b); }
+    for (const b of visible) { if (b.t === 'h2') topics.push({ title: b.x, blocks: [] }); else (topics.length ? topics[topics.length - 1].blocks : introBlocks).push(b); }
     topics.forEach((t) => { const p = t.blocks.find((b) => b.t === 'p') || t.blocks.find((b) => b.t === 'list'); const x = p ? (p.x || p.items[0]) : ''; t.lede = x.replace(/`/g, '').slice(0, 120) + (x.length > 120 ? '…' : ''); });
     const intro = introBlocks.map((b) => block(b, a)).join('');
     const words = (bs) => JSON.stringify(bs).split(/\s+/).length;
@@ -98,7 +113,7 @@ export function mount(view, [section, slug], { reduced }) {
     const colour = (PLACES.find((p) => p.id === a.section) || PLACES[2]).colour;
     const isDone = !!store.get().read[id], isProblem = a.section === 'interview-questions' && a.group !== 'start';
     const lab = a.body.find((b) => b.t === 'lab');
-    let mode = 'full'; try { mode = localStorage.getItem('tk-r3d-reader') === 'cards' ? 'cards' : 'full'; } catch { /* blocked */ }
+    let mode = 'full'; try { mode = !cut && localStorage.getItem('tk-r3d-reader') === 'cards' ? 'cards' : 'full'; } catch { /* blocked */ }
     view.innerHTML = `
     <section class="story landing-story article-story">
       ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${steps.length - 1}</span><span class="segs">${steps.slice(1).map(() => '<i></i>').join('')}</span></div>`)}
@@ -125,19 +140,20 @@ export function mount(view, [section, slug], { reduced }) {
             <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${a.section}">${esc(sec.name)}</a>${groupName ? `<span>/</span><span>${esc(groupName)}</span>` : ''}<span>/</span><span>${esc(t1)}</span></nav>
             <p class="rd-meta"><span>${topics.length > 1 ? `${topics.length} topics · ` : ''}${minutes(a)} min read${withDetails > minutes(a) ? ` · ${withDetails} with details` : ''}</span><span class="done-chip" ${isDone ? '' : 'hidden'}><i class="tk" aria-hidden="true"></i> Completed</span></p>
             <div class="rd-tools">
-              ${topics.length > 1 ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
+              ${topics.length > 1 && !cut ? `<div class="seg" role="radiogroup" aria-label="Read as"><button type="button" role="radio" data-mode="full" aria-checked="${mode === 'full'}">Full text</button><button type="button" role="radio" data-mode="cards" aria-checked="${mode === 'cards'}">Cards</button><i class="seg-pill" aria-hidden="true"></i></div>` : ''}
               <button type="button" class="tool-btn" data-share>Share</button>
             </div>
             ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></details>` : ''}
           </header>
-          <div class="rd-full">${a.body.map((b) => block(b, a)).join('')}</div>
+          <div class="rd-full${cut ? ' preview-fade' : ''}">${visible.map((b) => block(b, a)).join('')}</div>
+          ${g === 'preview' ? lockCard() : ''}
           <div class="rd-cards" hidden>
             ${intro ? `<div class="rd-intro">${intro}</div>` : ''}
             <div class="topic-grid">${topics.map((t, i) => `<button type="button" class="topic-card" data-topic="${i}" style="--i:${i}"><span class="mono">${String(i + 1).padStart(2, '0')}</span><b>${inline(t.title)}</b><span class="muted">${esc(t.lede)}</span></button>`).join('')}</div>
             <div class="topic-open" hidden></div>
           </div>
           <footer class="rd-foot">
-            <div class="complete-wrap"><button type="button" class="btn dark complete" data-complete>${isDone ? 'Next' : 'Mark complete'}${next ? ' & next' : ''}<span class="chip">→</span></button><span class="burst" aria-hidden="true"></span></div>
+            <div class="complete-wrap" ${cut ? 'hidden' : ''}><button type="button" class="btn dark complete" data-complete>${isDone ? 'Next' : 'Mark complete'}${next ? ' & next' : ''}<span class="chip">→</span></button><span class="burst" aria-hidden="true"></span></div>
             <div class="pager">
               ${prev ? `<a class="page-link" href="/learn/${a.section}/${prev.slug}"><small>Previous</small><span>${esc(prev.title)}</span></a>` : '<span></span>'}
               ${next ? `<a class="page-link next" href="/learn/${a.section}/${next.slug}"><small>Next</small><span>${esc(next.title)}</span></a>` : `<a class="page-link next" href="/learn/${a.section}"><small>Done</small><span>Back to ${esc(sec.name.toLowerCase())}</span></a>`}
@@ -229,7 +245,8 @@ export function mount(view, [section, slug], { reduced }) {
     open.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
     open.addEventListener('touchend', (e) => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) showTopic(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); });
     view.querySelectorAll('.seg [data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
-    if (topics.length > 1) setMode(mode);
+    if (topics.length > 1 && !cut) setMode(mode);
+    view.querySelector('[data-signin]')?.addEventListener('click', () => openSignIn('preview'));
 
     // share: the phone's share sheet, or copy the link
     view.querySelector('[data-share]').addEventListener('click', async () => {
@@ -247,5 +264,5 @@ export function mount(view, [section, slug], { reduced }) {
     });
     io = { disconnect() {}, _off: () => removeEventListener('scroll', onScroll) };
   });
-  return () => { alive = false; ac.abort(); story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
+  return () => { alive = false; offGate?.(); stopReading?.(); ac.abort(); story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
 }

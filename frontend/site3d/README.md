@@ -34,3 +34,18 @@ Each row opens the canvas workspace, which is the React app in its 3d look (`nex
   `next/src/app/router.tsx`.
 - Progress here (articles read, simulator bests) is kept on the device (`scripts/store.js`), separately from the
   React app's progress and account sync. Joining the two is still to do.
+
+
+## Sign-in, the content lock and analytics (2026-11-23, phase 0 of tech-katta-context 49)
+
+- `scripts/account.js`, `scripts/analytics.js`: thin wrappers over the current app's `src/account.js` and `src/analytics.js`,
+  which `npm run build:site3d` (`vite.site3d.config.js`, entry `legacy/entry.js`) builds into one file, `dist/3d/legacy/legacy.js`
+  (about 10 KB gzipped; no React: `legacy/mode.js` stands in for the theme hook). One copy of the account code, so the 3D
+  pages and the React islands share a session. A local run without that build treats sign-in as unavailable: nothing is locked.
+- `scripts/gate.js` (pure, tested) and `scripts/gating.js` (the account plus the site copy from `GET /v1/site`): signed out,
+  lists are open, an article shows its opening (`scripts/preview.js`, a copy of `src/preview.js` with a test that both cut in
+  the same place) then the `previewLock` card, the workspace will show `pageLock`; the 3D story at the top stays open. The page
+  redraws itself (`window.tkRefresh`) when the answer changes.
+- `scripts/signin.js`: the glass sign-in sheet (terms box, Google button), opened from the sidebar's Account group and the lock cards.
+- Usage events: one `page_view` per route change with the React app's `{section, slug}` shape (`pageOf`), reading time and depth per
+  article (`readArticle`), and Vercel Web Analytics once per page load, with the same opt-outs.

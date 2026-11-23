@@ -56,6 +56,9 @@ for (const f of htmlFiles) {
 // the 3D site's files, and its page shell
 rmSync(path.join(dist, "3d"), { recursive: true, force: true });
 for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
+// sign-in, account sync and usage events: the current app's modules built as one file for the 3D pages (npm run build:site3d)
+if (!existsSync(path.join(here, "..", "site3d-dist", "legacy.js"))) { console.error("switch: site3d-dist/legacy.js is missing: run npm run build:site3d first"); process.exit(1); }
+cpSync(path.join(here, "..", "site3d-dist"), path.join(dist, "3d", "legacy"), { recursive: true });
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
 
 // 3. search-engine pages, from the content folder (the build sees the whole repository)
