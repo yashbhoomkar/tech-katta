@@ -28,6 +28,10 @@
     {
       "from": "/analytics",
       "to": "/analytics/index.html"
+    },
+    {
+      "from": "/simulator/*",
+      "to": "/simulator/index.html"
     }
   ],
   "headers": [
