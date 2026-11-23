@@ -31,7 +31,7 @@ test("Cloudflare: redirects keep Vercel's codes, a folder rewrite becomes its 40
   // never a "/dashboard/* … 200" rule: Cloudflare would apply it over the article pages the build writes
   assert.ok(!/\*\s+\S+\s+200/.test(c.redirects));
   // /dashboard/ (old in-app links with a #key) opens the new frontend's shell, which sends each to its new address
-  assert.deepEqual(c.copies, [["dashboard/index.html", "dashboard/404.html"]]);
+  assert.deepEqual(c.copies, [["dashboard/index.html", "dashboard/404.html"], ["simulator/index.html", "simulator/404.html"]]);
   assert.equal(c.manual.length, 1);
   assert.match(c.manual[0], /analytics\.katta\.cc/);
   const csp = routes.headers[0].headers["Content-Security-Policy"];

@@ -4,7 +4,6 @@
 import { mountStory, stageHtml } from '../story.js';
 import { KIND_PASTEL } from '../palette.js';
 import { runTour, offerTour } from '../tour.js';
-import { INCIDENTS } from '../sim.js';
 
 /** the parts of this page's system, for the colour key (colours from palette.js) */
 const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
@@ -103,9 +102,9 @@ export function mount(view, _p, { reduced }) {
     </div>
     <div class="step" data-step="3">
       <p class="kicker"><span>03</span><i></i>Practice</p>
-      <h2 class="headline"><span class="thin">${INCIDENTS.length} problems to design</span><span class="heavy accent">A judge tells you if it holds</span></h2>
+      <h2 class="headline"><span class="thin">Problems to design</span><span class="heavy accent">A judge tells you if it holds</span></h2>
       <p class="lead">Draw your design. A judge sends an evening of traffic through it, crashes a server and checks the bill, then tells you what broke and why. Free: sign in with Google and everything opens.</p>
-      <div class="actions"><a class="btn violet" href="/home">Start preparing<span class="chip">→</span></a><a class="btn light" href="${sim}">Try a problem</a></div>
+      <div class="actions"><a class="btn violet" href="/problems">Open the problems<span class="chip">→</span></a><a class="btn light" href="${sim}">Or play one evening in the simulator</a></div>
     </div>
   </section>
 

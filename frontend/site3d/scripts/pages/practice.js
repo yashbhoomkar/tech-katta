@@ -15,8 +15,8 @@ export function mount(view, _p, { reduced }) {
   <section class="page learn" style="--acc: var(--lemon)">
     <header class="sec-head">
       <div>
-        <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Practice</span></nav>
-        <h1 class="headline"><span class="thin">Practice</span><span class="heavy accent">Design it, then watch it survive an evening</span></h1>
+        <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Simulator</span></nav>
+        <h1 class="headline"><span class="thin">Simulator</span><span class="heavy accent">Design it, then watch it survive an evening</span></h1>
         <p class="lead">Pick a problem. Choose your servers, caches and replicas within a budget, then a judge sends the evening's traffic through your design and tells you what broke and why.</p>
       </div>
       <div class="cprog">

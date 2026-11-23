@@ -79,9 +79,10 @@ writeFileSync(home, renderHome(shell3d, site, articles).replace("</head>", `<lin
 
 // the 3D pages with no search-engine page of their own: /learn (it opens Concepts) and the simulator (/simulator/<id>
 // is a rewrite to this file, hosting/routes.json)
-for (const [dir, title] of [["learn", "Learn · Tech Katta"], ["simulator", "Simulator · Tech Katta"]]) {
+// and the Dashboard (/home), which is not a search-engine page
+for (const [dir, title, canon] of [["learn", "Learn · Tech Katta", "learn/concepts"], ["simulator", "Simulator · Tech Katta", "simulator"], ["home", "Dashboard · Tech Katta", "home"]]) {
   mkdirSync(path.join(dist, dir), { recursive: true });
-  writeFileSync(path.join(dist, dir, "index.html"), shell3d.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`).replace("</head>", `<link rel="canonical" href="${SITE}/${dir === "learn" ? "learn/concepts" : dir}"/></head>`));
+  writeFileSync(path.join(dist, dir, "index.html"), shell3d.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`).replace("</head>", `<link rel="canonical" href="${SITE}/${canon}"/></head>`));
 }
 
 // /dashboard/ (and /dashboard/#key links): the app, which sends each old address to its new home

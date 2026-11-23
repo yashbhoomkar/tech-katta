@@ -1490,3 +1490,14 @@ body.in-app .page.narrow.missing, body.in-app .page.narrow.reader-wait { margin-
 /* while pages slide, the browser lays a snapshot over the page that swallows taps (a quick tap on the bottom bar was
    lost, worst on slow phones where the slide runs long); taps go through to the live page underneath */
 ::view-transition { pointer-events: none; }
+
+/* 2026-11-23, the site at tech.katta.cc: the bottom bar has four places (Dashboard, Learn, Problems, Simulator), so each
+   is narrower, and the bar never runs wider than the screen (it fits a 320 px phone) */
+@media (max-width: 760px) {
+  .tabbar { max-width: calc(100vw - 16px); box-sizing: border-box; }
+  .tabbar a { min-width: 0; flex: 1 1 0; width: 76px; padding: 8px 4px 6px; }
+}
+@media (max-width: 359px) { .tabbar a { width: 66px; font-size: 11px; } }
+.foot nav { flex-wrap: wrap; row-gap: 8px; }
+/* nothing (a 3D label placed before the layout settles, say) may widen the page sideways; clip keeps sticky stages working */
+html, body { overflow-x: clip; }

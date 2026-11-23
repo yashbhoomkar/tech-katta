@@ -30,7 +30,7 @@ export function mount(view, [id], { reduced, go }) {
   <section class="sim" data-phase="brief">
     <div class="sim-stage"><canvas role="img" aria-label="Your system in 3D: users, load balancer, app servers, cache and database"></canvas><div class="overlay"></div></div>
     <aside class="brief glass" aria-label="The problem">
-      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/simulator">Practice</a></nav>
+      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/simulator">Simulator</a></nav>
       <p class="kicker"><span>Problem ${Number(inc.no)}</span><i></i>${inc.level} · ${inc.system}</p>
       <h1>${inc.title}</h1>
       <p class="muted">${inc.brief}</p>

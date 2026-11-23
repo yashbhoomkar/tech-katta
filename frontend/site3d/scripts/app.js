@@ -9,7 +9,8 @@ import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import * as practice from './pages/practice.js';
 import { updateShell } from './shell.js';
-import { listNow, splitTitle, SECTIONS } from './articles.js';
+import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
+import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
 
 /** the browser tab and history say where you are */
@@ -17,7 +18,7 @@ function titleFor(path, nav) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Dashboard · ${brand}`;
-  if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Practice'} · ${inc ? 'Practice · ' : ''}${brand}`; }
+  if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Simulator'} · ${inc ? 'Simulator · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
   return `Not found · ${brand}`;
@@ -70,6 +71,9 @@ function route() {
   // an old prototype link (#/learn/…, #/me, #/sim/…) becomes its real address
   if (location.hash.startsWith('#/')) { const h = location.hash.slice(1).replace(/^\/me\b/, '/home').replace(/^\/sim\b/, '/simulator'); history.replaceState(null, '', h); }
   const path = location.pathname.replace(/(.)\/$/, '$1') || '/';
+  // Back or Forward onto an address of the React app (it handed over with a whole page load, so the browser keeps its
+  // entries in this page's history): load that page for real
+  if (!owns(path)) { location.reload(); return; }
   if (/^\/learn\/?$/.test(path)) { go('/learn/concepts', { replace: true }); return; } // the Learn tab opens its first section
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path) && old[1] in OLD) { go(`/learn/concepts/${OLD[old[1]] || old[1]}`, { replace: true }); return; }
@@ -109,6 +113,8 @@ function route() {
 }
 addEventListener('popstate', route);
 route();
+// articles finished in the React app count here too (store.js)
+listArticles().then(() => store.syncFrom(listNow())).catch(() => {});
 
 // top bar: solid once you scroll (phones navigate with the floating bar at the bottom)
 const top = document.getElementById('top');
