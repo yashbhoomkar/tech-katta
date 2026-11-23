@@ -12,5 +12,10 @@ The page calls `/api/status`, a Vercel serverless function that checks both publ
 ## Deploy
 This directory is intended as the root directory of the Vercel project `tech-katta-status`, connected to `yashbhoomkar/tech-katta`. Assign the custom domain `status.katta.cc`.
 
+Automatic Git deployments are off (`vercel.json`): every push to any branch of this repository used to create a
+`tech-katta-status` deployment (skipped, but still counted against Vercel's 100 deployments a day, which blocked the
+site's own deploys on 2026-11-14). After changing this folder, deploy it by hand: Vercel → tech-katta-status →
+Deployments → Redeploy, or `vercel deploy --prod` from this folder.
+
 ## Limitations
 This is live polling, not historical uptime monitoring. It does not claim to show past incidents or 90-day uptime percentages because those checks are not persisted yet.
