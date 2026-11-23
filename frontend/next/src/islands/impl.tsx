@@ -2,6 +2,7 @@ import "@/styles/tokens.css";
 import "@/styles/global.css";
 import "@look";
 import "./island.css";
+import "@legacy/theme/look-3d.css";
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, useLocation } from "react-router-dom";
