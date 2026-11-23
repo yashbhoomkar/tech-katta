@@ -1,0 +1,71 @@
+/* The 3D look (2026-11-23, tech-katta-context 48): the React app in the 3D site's colours, so moving from the 3D
+   pages (landing, Dashboard, Learn, Simulator) into the problems feels like one site. Switched on by
+   data-style="3d" on <html> (VITE_STYLE=3d, the production build). Component styling is the default look's (soft
+   cards, round corners, Instrument Sans); only the tokens change. Values are frontend/site3d/styles/app.css and
+   scripts/palette.js:
+   - dark is the default (boot-theme.js, lib/theme.ts), on the 3D site's near-black violet-grey (#121218);
+   - text is pure white on dark and pure black on light (the 3D site's rule), hierarchy by size and weight;
+   - each section has the colour its row has in the 3D sidebar: Concepts lilac, Components peach, Interview
+     questions mint, Real systems rose, Problems sky, Quick Notes lemon;
+   - failure is coral red, success green, as on the 3D models. */
+
+:root[data-style="3d"] {
+  color-scheme: light;
+  --page: #FAF8F5;
+  --surface: #FFFFFF;
+  --raised: #FFFFFF;
+  --sunken: #F1EEF4;
+  --ink: #000000; --ink-2: #3A3846; --muted: #5C5869;
+  --line: #E6E4EA; --line-strong: #CBC8D3;
+  --btn: #000000; --on-btn: #FFFFFF;
+  --marigold: #FFC233; --on-marigold: #17161A;
+  --link: #2F4BB3; --focus: #2F4BB3;
+  --pass: #17794A; --fail: #B42323; --warn: #9C4A00; --star: #E8A308;
+  --video: #121218; --on-video: #FAF8F5;
+  --scrim: rgb(18 18 24 / .45);
+  --shadow: 0 1px 2px rgb(18 18 24 / .05), 0 12px 32px -14px rgb(18 18 24 / .2);
+  --shadow-pop: 0 30px 60px -20px rgb(0 0 0 / .4);
+  --hl: inset 0 0 0 0 transparent;
+  --band-strong: #121218; --on-band-strong: #FFFFFF;
+  --selection: rgb(201 139 255 / .3);
+
+  --c-concepts: #C98BFF;   --a-concepts: #C98BFF;   --t-concepts: #F5EBFF;
+  --c-components: #FFA24D; --a-components: #FFA24D; --t-components: #FFF0E2;
+  --c-interview: #3DDC97;  --a-interview: #3DDC97;  --t-interview: #E3F9EF;
+  --c-problems: #3DB5FF;   --a-problems: #3DB5FF;   --t-problems: #E2F3FF;
+  --c-real: #FF7AC6;       --a-real: #FF7AC6;       --t-real: #FFE8F4;
+  --c-notes: #FFD43B;      --a-notes: #FFD43B;      --t-notes: #FFF7DA;
+  --on-c: #000000; --on-c-2: rgb(0 0 0 / .78);
+  --track-on-c: rgb(255 255 255 / .55); --fill-on-c: #000000;
+  --preview: #FFFFFF; --on-preview: #000000;
+}
+
+:root[data-style="3d"][data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121218;
+  --surface: #1C1B24;
+  --raised: #24232E;
+  --sunken: #26242F;
+  --ink: #FFFFFF; --ink-2: #D9D5E6; --muted: #ABA6BC;
+  --line: #2A2933; --line-strong: #3E3C4A;
+  --btn: #FFFFFF; --on-btn: #121218;
+  --marigold: #FFC233; --on-marigold: #17161A;
+  --link: #A9BCFF; --focus: #A9BCFF;
+  --pass: #75D079; --fail: #FF8A8A; --warn: #FFAA5C; --star: #FFC233;
+  --video: #000000; --on-video: #FFFFFF;
+  --scrim: rgb(0 0 0 / .62);
+  --shadow: 0 0 0 1px #2A2933;
+  --shadow-pop: 0 0 0 1px #34323F, 0 30px 60px -20px rgb(0 0 0 / .7);
+  --hl: inset 0 1px 0 rgb(255 255 255 / .05);
+  --band-strong: #1C1B24; --on-band-strong: #FFFFFF;
+  --selection: rgb(201 139 255 / .35);
+
+  --t-concepts: #221F2B; --t-components: #221F2B; --t-interview: #221F2B; --t-problems: #221F2B; --t-real: #221F2B; --t-notes: #221F2B;
+  --on-c: #120E1E; --on-c-2: rgb(18 14 30 / .76);
+  --track-on-c: rgb(0 0 0 / .18); --fill-on-c: #120E1E;
+  --preview: #121218; --on-preview: #FFFFFF;
+}
+
+/* the lesson figures and the canvas sit on this page's paper (their own tokens: features/reader/figureTokens.module.css) */
+:root[data-style="3d"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #FAF8F5; }
+:root[data-style="3d"][data-theme="dark"] :is(.tk-legacy, body > .ts, body > .fs, body > .zoom) { --page: #121218; }

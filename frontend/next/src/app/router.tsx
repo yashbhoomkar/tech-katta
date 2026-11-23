@@ -8,6 +8,7 @@ import { ContentGate } from "@/content/ContentGate";
 import { Providers } from "./Providers";
 import { HostAnalytics } from "@legacy/hostanalytics.jsx";
 import { usePageViews } from "@/lib/analytics";
+import { SITE3D } from "@/lib/site3d";
 
 // Routes. The landing page has its own chrome; every other page sits in the app shell. Paths mirror the
 // full-site prototype (/learn/<section>/<slug>, /problems/<slug>, /me) without its hash.
@@ -90,7 +91,7 @@ const gated = (el: ReactNode) => <ContentGate><Loading>{el}</Loading></ContentGa
 // articles (hosting/switch.mjs). A production build says so with VITE_SITE3D=1: then this app leaves those addresses
 // to it with a whole page load, so a link from the problem workspace to Learn opens the 3D page, not this app's old
 // one. Quick Notes, the problems, /me and the policies stay here. Other builds (tests, the e2e looks) keep every page.
-export const SITE3D = import.meta.env.VITE_SITE3D === "1";
+export { SITE3D };
 const OWNED_BY_3D = /^\/(?:|home|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?)\/?$/;
 export const ownedBy3d = (path: string) => SITE3D && OWNED_BY_3D.test(path);
 const AWAY_KEY = "tk-3d-away";

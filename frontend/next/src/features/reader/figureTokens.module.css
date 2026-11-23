@@ -199,3 +199,32 @@
 .tokens :global(.tc-fig svg) { height: auto; }
 /* the phone hint under a figure ("swipe sideways") reads at 4.5:1 */
 .tokens :global(.a-fig-hint) { color: var(--ink-3); }
+
+/* ---------- the 3D look (VITE_STYLE=3d, the production build since 2026-11-23) ----------
+   The canvas and the lesson figures in the 3D site's colours (frontend/site3d): its paper, cards, lines and text,
+   and the part colours of its 3D models (scripts/palette.js) for the canvas's five tints: servers sky (teal), load
+   balancers and clients lilac (violet), databases mint (green), caches peach (amber), queues and streams rose
+   (pink; the 3D site's queue is lemon, but lemon text does not read on light paper). Light uses a deep ink of each
+   hue for lines and text; dark uses the pastel itself. Last in the file, so they win over the default look's. */
+:global(:root[data-style="3d"]) :is(.tokens.tokens, :global(html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom))) {
+  --page: #FAF8F5; --bg: #FFFFFF; --surface: #F1EEF4; --surface-2: #FBFAFC; --hover: #ECE9F1;
+  --inverse: #121218; --on-inverse: #FAF8F5;
+  --ink: #000000; --ink-2: #2E2C38; --ink-3: #3A3846; --muted: #5C5869; --muted-2: #66627A; --faint: #7A768C;
+  --disabled: #CBC8D3; --line-strong: #B4B0C0; --line: #E6E4EA; --line-soft: #DBD8E2; --grid: #EFEDF2;
+  --accent: #2F4BB3; --accent-strong: #263F99; --accent-mid: #6B80D6; --accent-line: #C3CCF2; --accent-soft: #E3E9FB;
+  --accent-tint-2: #E9EDFC; --accent-tint: #F1F4FE; --on-accent: #FFFFFF;
+  --danger: #B42323; --red: #EF4E4E; --danger-line: #F5C4C4; --danger-soft: #FDE3E2; --danger-tint: #FFF3F2;
+  --success: #17794A; --success-line: #B5E0C6; --success-tint: #E2F5EA;
+  --cat-teal: #0B6FB8; --cat-violet: #7E3FC2; --cat-green: #12895A; --cat-amber: #C2620F; --cat-pink: #C2338A;
+}
+:global(:root[data-style="3d"][data-theme="dark"]) :is(.tokens.tokens, :global(html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom))) {
+  --page: #121218; --bg: #1C1B24; --surface: #24232E; --surface-2: #19181F; --hover: #2A2935;
+  --inverse: #FFFFFF; --on-inverse: #121218;
+  --ink: #FFFFFF; --ink-2: #E6E3EF; --ink-3: #D9D5E6; --muted: #ABA6BC; --muted-2: #9F9AB1; --faint: #8A8599;
+  --disabled: #4A4856; --line-strong: #4E4C5C; --line: #2E2D38; --line-soft: #383644; --grid: #1F1E27;
+  --accent: #A9BCFF; --accent-strong: #C2D0FF; --accent-mid: #7C90D8; --accent-line: #3A4570; --accent-soft: #232A45;
+  --accent-tint-2: #222840; --accent-tint: #1C2134; --on-accent: #121218;
+  --danger: #FF8A8A; --red: #FF6B6B; --danger-line: #6B2B2B; --danger-soft: #3A1B1E; --danger-tint: #2A1618;
+  --success: #75D079; --success-line: #24502E; --success-tint: #17301F;
+  --cat-teal: #3DB5FF; --cat-violet: #C98BFF; --cat-green: #3DDC97; --cat-amber: #FFA24D; --cat-pink: #FF7AC6;
+}

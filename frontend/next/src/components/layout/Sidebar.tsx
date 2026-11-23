@@ -13,6 +13,7 @@ import { Logo } from "./Logo";
 import { Icon as SectionMark } from "@legacy/dashboard/icons.jsx";
 import { ThemeSwitch } from "@/components/ui";
 import s from "./layout.module.css";
+import { HOME_NAME, SITE3D } from "@/lib/site3d";
 
 // Desktop navigation. Full (264 px) or a 72 px rail of icons and colour dots; "[" or the panel button toggles it
 // and the choice is remembered. Each section shows how much of it has been read, so the sidebar doubles as a
@@ -116,9 +117,9 @@ export function Sidebar() {
       </button>
       <nav aria-label="Main" className={s.nav} ref={navRef}>
         {mark && <i className={s.sideMark} style={{ transform: `translate(${mark.x}px, ${mark.y}px)`, width: mark.w, height: mark.h }} aria-hidden="true" />}
-        <NavLink viewTransition to={paths.home} className={navClass} title="Home">
+        <NavLink viewTransition to={paths.home} className={navClass} title={HOME_NAME}>
           <Icon name="home" />
-          <span className={s.label}>Home</span>
+          <span className={s.label}>{HOME_NAME}</span>
         </NavLink>
         <p className={`${s.navHead} ${s.label}`}>Learn</p>
         {SECTIONS.map((sec) => {
@@ -144,6 +145,13 @@ export function Sidebar() {
           <span className={s.label}>Problems</span>
           {data && <small className={s.label}>{tally(problemsOf(data.articles), progress).done}/{problemsOf(data.articles).length}</small>}
         </NavLink>
+        {/* the 3D site's simulator (a whole page load: it is the other app) */}
+        {SITE3D && (
+          <a href="/simulator" className={s.navItem} title="Simulator">
+            <Icon name="play" />
+            <span className={s.label}>Simulator</span>
+          </a>
+        )}
       </nav>
       <nav className={`${s.policyLinks} ${s.label}`} aria-label="Policies">
         <Link to="/privacy">{data?.site.account?.privacy ?? "Privacy"}</Link>
