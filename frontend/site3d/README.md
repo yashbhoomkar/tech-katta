@@ -1,7 +1,7 @@
 # site3d: the 3D site at tech.katta.cc
 
 Since 2026-11-23 the 3D redesign (built as a prototype on the `prototype` branch; its notes are in
-`PROTOTYPE-NOTES.md`) is the site at the root. The neo-brutalism React app (`frontend/next`) keeps the parts the 3D
+`PROTOTYPE-NOTES.md`) is the site at the root. The React app (`frontend/next`, in its 3d look since #375) keeps the parts the 3D
 site does not have yet.
 
 | Address | Served by |
