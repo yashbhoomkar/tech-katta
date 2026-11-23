@@ -3,7 +3,7 @@
 // returns unmount(). This entry stays tiny: React, the canvas and the judge load with the first mount (./impl).
 
 export interface IslandOptions { slug?: string; id?: string }
-type Kind = "problem" | "challenge" | "sandbox" | "shared" | "practice";
+type Kind = "problem" | "challenge" | "sandbox" | "shared" | "practice" | "numbers";
 
 function mount(kind: Kind, el: HTMLElement, opts: IslandOptions): () => void {
   let stop: (() => void) | null = null;
@@ -22,3 +22,4 @@ export const mountChallenge = (el: HTMLElement, o: { id: string }) => mount("cha
 export const mountSandbox = (el: HTMLElement) => mount("sandbox", el, {});
 export const mountShared = (el: HTMLElement) => mount("shared", el, {});
 export const mountPractice = (el: HTMLElement, o: { slug?: string } = {}) => mount("practice", el, o);
+export const mountNumbers = (el: HTMLElement) => mount("numbers", el, {});

@@ -9,6 +9,8 @@ import { vercelGate } from "../../src/analytics.js";
 // run time instead of bundling their own copies, so a page and its island share one signed-in user and one event queue.
 export * from "../../src/account.js";
 export * from "../../src/analytics.js";
+// the old Lab address names, for the /dashboard redirects (site3d/scripts/legacy.js)
+export { fromLab } from "../../src/routes.js";
 
 // Vercel Web Analytics, once per page load, with the same opt-out as the current app (src/hostanalytics.jsx):
 // nothing from browsers that ask not to be tracked or from automated ones. VITE_HOST_ANALYTICS=none turns it off.

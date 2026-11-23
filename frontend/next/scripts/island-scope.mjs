@@ -3,7 +3,7 @@
 // sits inside a 3D page, so none of that may reach the page around it. Here those files are rewritten to apply only
 // under .tk-island, and every other file's `:root[data-style="3d"]` (the look's blocks in the CSS modules) becomes
 // .tk-island too. The theme stays shared: data-theme on <html> is read by both apps.
-const BASE = /[\\/]src[\\/]styles[\\/](?:tokens\.css|global\.css|looks[\\/]3d[\\/](?:theme|motion)\.css)$/;
+const BASE = /(?:[\\/]src[\\/]styles[\\/](?:tokens\.css|global\.css|looks[\\/]3d[\\/](?:theme|motion)\.css)|[\\/]frontend[\\/]src[\\/](?:styles|status)\.css)$/;
 const ISLAND = ".tk-island";
 
 /** `:root[data-style="3d"][data-theme="dark"] X` → `:root[data-theme="dark"] .tk-island X`; `:root[data-style="3d"] X` → `.tk-island X` */

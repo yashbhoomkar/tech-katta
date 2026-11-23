@@ -10,6 +10,9 @@ import { ContentProvider, useContent } from "@/content/ContentProvider";
 import { ContentGate } from "@/content/ContentGate";
 import { Skeleton } from "@/components/ui";
 import { Challenge, Frame, Practice, Sandbox, Workspace } from "@/features/workspace/Workspace";
+import Numbers from "@legacy/numbers.jsx";
+import tokens from "@/features/reader/figureTokens.module.css";
+import "@/features/workspace/legacy-scope.css";
 import type { IslandOptions } from "./index";
 
 // What the island pages render: one component each, inside the content (site copy and article list, which the legacy
@@ -49,11 +52,18 @@ function Shared() {
 }
 
 const pathOf = (kind: string, o: IslandOptions) =>
-  kind === "problem" ? `/problems/${o.slug}` : kind === "challenge" ? `/problems/challenge/${o.id}` : kind === "sandbox" ? "/problems/sandbox"
+  kind === "numbers" ? "/learn/quick-notes" : kind === "problem" ? `/problems/${o.slug}` : kind === "challenge" ? `/problems/challenge/${o.id}` : kind === "sandbox" ? "/problems/sandbox"
     : kind === "shared" ? "/problems/shared" : o.slug ? `/practice/${o.slug}` : "/practice";
+
+/** "Numbers worth knowing" (Quick Notes): the canvas code's chart and estimation shortcuts, on the site's numbers */
+function NumbersView() {
+  const { site } = useContent();
+  return <div className={`tk-legacy ${tokens.tokens}`}><Numbers n={site.numbers} /></div>;
+}
 
 function view(kind: string, o: IslandOptions): ReactNode {
   switch (kind) {
+    case "numbers": return <NumbersView />;
     case "problem": return <Workspace slug={o.slug ?? ""} />;
     case "challenge": return <Challenge id={o.id ?? ""} />;
     case "sandbox": return <Sandbox />;

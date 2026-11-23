@@ -24,9 +24,9 @@ const dist = path.resolve(here, "..", "dist");
 const next = path.resolve(here, "..", "next", "dist");
 const contentDir = path.resolve(here, "..", "..", "content");
 const site3d = path.resolve(here, "..", "site3d");
-// the addresses the 3D site answers (keep in step with site3d/scripts/app.js OWN and next/src/app/router.tsx); the workspace pages
+// the addresses the 3D site answers: every page (keep in step with site3d/scripts/app.js OWN); the workspace pages
 // (a problem, challenge, sandbox, shared design, practice) are the canvas island inside a 3D page (site3d/scripts/pages/workspace.js)
-const OWNED_BY_3D = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?|problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/;
+const OWNED_BY_3D = /^\/(?!(?:analytics|health|3d|_vercel)(?:\/|$))(?!.*\.[A-Za-z0-9]+$).*$/;
 
 if (!existsSync(path.join(next, "index.html"))) {
   console.error("switch: next/dist is missing: build the new frontend first (npm run build:next)");
@@ -65,17 +65,18 @@ if (!existsSync(path.join(next, "..", "dist-islands", "islands.js"))) { console.
 cpSync(path.join(next, "..", "dist-islands"), path.join(dist, "3d", "islands"), { recursive: true });
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
 
-// the workspace pages (a problem, the sandbox, a shared design, a challenge, a practice problem): the 3D shell, with the
-// title and description the new frontend prerendered for each (next/scripts/postbuild.mjs)
+// every page the new frontend prerendered (a problem, the sandbox, a shared design, a challenge, a practice problem, You, the policies, Quick Notes,
+// the dashboard shell): the 3D shell, with the title and description prerendered for each (next/scripts/postbuild.mjs)
 for (const f of htmlFiles) {
-  const addr = "/" + path.relative(dist, path.dirname(f)).split(path.sep).join("/");
-  if (!/^\/(?:problems\/|practice)/.test(addr) || !OWNED_BY_3D.test(addr)) continue;
+  if (path.basename(f) === "404.html") continue;
   const old = readFileSync(f, "utf8"), title = old.match(/<title>[^<]*<\/title>/)?.[0], desc = old.match(/<meta name="description"[^>]*>/)?.[0];
   let html = shell3d;
   if (title) html = html.replace(/<title>[^<]*<\/title>/, title);
   if (desc) html = html.replace(/<meta name="description"[^>]*>/, "").replace("</head>", `${desc}</head>`);
   writeFileSync(f, html);
 }
+// an address nothing answers: the host serves this with status 404, and the 3D router draws "Nothing runs at this address"
+writeFileSync(path.join(dist, "404.html"), shell3d.replace(/<title>[^<]*<\/title>/, "<title>Not found · Tech Katta</title>").replace("</head>", '<meta name="robots" content="noindex"/></head>'));
 
 // 3. search-engine pages, from the content folder (the build sees the whole repository)
 const read = (...p) => JSON.parse(readFileSync(path.join(contentDir, ...p), "utf8"));
@@ -114,7 +115,7 @@ for (const [dir, title] of [["problems/challenge", "Challenge · Problems · Tec
 
 // /dashboard/ (and /dashboard/#key links): the app, which sends each old address to its new home
 mkdirSync(path.join(dist, "dashboard"), { recursive: true });
-writeFileSync(path.join(dist, "dashboard", "index.html"), shell.replace(/<title>[^<]*<\/title>/, "<title>Tech Katta</title>").replace("</head>", '<meta name="robots" content="noindex"/></head>'));
+writeFileSync(path.join(dist, "dashboard", "index.html"), shell3d.replace(/<title>[^<]*<\/title>/, "<title>Tech Katta</title>").replace("</head>", '<meta name="robots" content="noindex"/></head>'));
 
 // 4. the sitemap and the content map for AI assistants
 writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
