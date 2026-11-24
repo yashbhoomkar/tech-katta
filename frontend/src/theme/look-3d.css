@@ -234,7 +234,7 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .sv-tabs button:last-child { position: sticky; right: 0; margin-left: auto; background: var(--ink); color: var(--page); box-shadow: -12px 0 12px -4px var(--card); }
   /* build: the slim bar */
   .tk-island .tk-legacy .sv-pbar { position: absolute; z-index: 10; left: 8px; right: 8px; top: 8px; display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 6px 8px 6px 14px; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
-  .tk-island .tk-legacy .sv-ptitle { flex: 1; min-width: 0; font: 600 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tk-island .tk-legacy .sv-ptitle { flex: 1; min-width: 0; margin: 0; letter-spacing: normal; font: 600 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tk-island .tk-legacy .sv-pb { min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 600 14px var(--font); }
   .tk-island .tk-legacy .sv-pbar .sv-run, .tk-island .tk-legacy .sv-pbar .sv-submit { padding: 0 12px; }
   .tk-island .tk-legacy .sv-pmore { position: relative; }
