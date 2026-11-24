@@ -50,11 +50,10 @@ const RAIL_KEY = 'tk-r3d-side';
 let side = null, railSaved = false, here = { nav: '', path: '' }, openHere = false;
 try { railSaved = localStorage.getItem(RAIL_KEY) === 'rail'; } catch { /* storage blocked */ }
 
-/** The account slot above You is always drawn, so nothing moves when the sign-in check answers: "Sign in" while signed out or not yet known, "Sign out" once signed in
- *  (the You row carries the name). Only where sign-in is switched off is there no slot. */
+/** The account slot above You is always drawn, so nothing moves when the sign-in check answers: "Sign in" while signed out or not yet known (also when sign-in
+ *  is unavailable: its card then says so), "Sign out" once signed in (the You row carries the name). */
 function accountRow() {
   const a = accountState();
-  if (a.ready && !a.enabled) return '';
   const inn = !!a.user;
   return `<button type="button" class="side-row" ${inn ? 'data-signout title="Sign out"' : 'data-signin title="Sign in"'}><svg viewBox="0 0 24 24" aria-hidden="true">${inn ? '<path d="M10 4H5.5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1H10"/><path d="M20 12H10M16.5 8.5 20 12l-3.5 3.5"/>' : '<path d="M14 4h4.5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H14"/><path d="M4 12h10M10.5 8.5 14 12l-3.5 3.5"/>'}</svg><span class="lbl">${inn ? 'Sign out' : 'Sign in'}</span></button>`;
 }
@@ -132,6 +131,9 @@ export function updateShell(nav, path) {
     addEventListener('tk-progress', () => side && document.body.classList.contains('in-app') && draw());
     listArticles().then(() => side && draw());
     onAccount(() => side && document.body.classList.contains('in-app') && draw());
+    // the top bar's "Sign in" (phones, and the landing on wide screens): always there while signed out
+    const topIn = document.querySelector('.top-signin');
+    if (topIn) { topIn.addEventListener('click', () => openSignIn()); const sync = () => { topIn.hidden = !!accountState().user; }; sync(); onAccount(sync); }
   }
   if (app) { draw(); applyRail(); }
 }

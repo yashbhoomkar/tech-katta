@@ -1634,3 +1634,35 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 @media (min-width: 1000px) { html.rail-anim body.in-app main { transition: padding-left .25s var(--out); } html.rail-anim body.in-app .side { transition: width .25s var(--out); } }
 /* breadcrumbs: links with a taller hit area (the workspace's own are 40 px) and the slash and current page share one centre line on every screen */
 .crumbs { align-items: center; }
+
+/* Sign-in gating (tech-katta-context 52): the public part of a locked page, the locked headings, the inline card, the top bar's Sign in */
+.public-article .prose { margin-top: 8px; }
+.public-prose p { font-size: 18px; line-height: 1.65; margin: 0 0 1em; color: var(--ink); max-width: 66ch; }
+.public-prose.preview-fade { margin-bottom: 0; }
+.public-prose.preview-fade::after { height: 120px; }
+.public-problem .public-prose { margin-top: 12px; }
+.public-article .actions { margin: 18px 0 8px; }
+.public-article .actions .btn .lock { margin-left: 8px; opacity: .8; }
+.locked-heads { list-style: none; margin: 0 0 8px; padding: 0; display: grid; }
+.locked-head { display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-top: 1px solid var(--line); font-size: 18px; font-weight: 600; letter-spacing: -.01em; color: var(--ink-3, var(--muted)); opacity: .62; cursor: default; user-select: none; }
+.locked-head:last-child { border-bottom: 1px solid var(--line); }
+.locked-head .lock { flex: none; }
+.public-article .complete-wrap { margin: 20px 0 0; }
+.si-card { gap: 12px; }
+.si-card .si-body { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.si-card .si-terms { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; color: var(--ink); max-width: 56ch; }
+.si-card .si-terms input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--ink); }
+.si-card .si-terms a { text-decoration: underline; text-underline-offset: 3px; }
+.si-card .si-g { min-height: 44px; transition: opacity .2s; }
+.si-card .si-g.is-off { opacity: .4; filter: grayscale(.4); }
+.si-card .si-hint, .si-card .si-unavailable { font-size: 14px; margin: 0; }
+.si-card .si-err { font-size: 14px; color: var(--alert); margin: 0; }
+.si-card .si-unavailable { color: var(--ink); padding: 12px 14px; border-radius: var(--r-s); background: var(--sunken); }
+.signin .gate-card { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.signin .gate-card h2 { font-size: 22px; }
+.locked-wrap .locked-card { width: 100%; max-width: 520px; }
+.locked-wrap .locked-card .kicker { margin-bottom: 8px; }
+.top-signin { margin-left: 8px; white-space: nowrap; }
+.top-signin[hidden] { display: none !important; }
+@media (max-width: 760px) { .top-signin { min-height: 36px; padding: 0 12px; font-size: 14px; margin-left: 6px; } }
+@media (max-width: 379px) { .top .logo { font-size: 16px; } .top-signin { padding: 0 10px; margin-left: 4px; } }

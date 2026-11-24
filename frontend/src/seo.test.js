@@ -46,33 +46,35 @@ test('the API gives the same pages as the content folder', async () => {
   assert.deepEqual(pagesOf(site, list), pagesFrom(content));
 });
 
-test('an article page holds its public preview, never the locked text, and Article markup', async () => {
-  const { previewCut } = await import('./preview.js');
+test('an article page holds its public part (2 paragraphs, section names), never the locked text, and Article markup without paywall data', async () => {
+  const { publicParagraphs } = await import('../../backend/src/content/public.js');
   const fs = await import('node:fs');
   const a = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'concepts', 'consistent-hashing.json'), 'utf8'));
   const page = pagesFrom(content).find((p) => p.key === 'concepts/consistent-hashing');
   const html = render('<html><head><title>x</title><script type="module" src="/a.js"></script></head><body><div id="root"><p style="x">Loading…</p></div></body></html>', page);
   assert.match(html, /<div id="root"><div class="tk-static"><main>/);
   assert.match(html, /<h1>Consistent hashing/);
-  assert.match(html, /class="tk-locked"/);
-  assert.match(html, /"isAccessibleForFree":false/);
-  assert.match(html, /"cssSelector":".tk-locked"/);
-  const cut = previewCut(a.body);
-  assert.ok(cut > 0 && cut < a.body.length);
-  const firstP = a.body.slice(0, cut).find((b) => b.t === 'p' && !/`/.test(b.x));
-  assert.ok(firstP && html.includes(firstP.x.slice(0, 40).replace(/&/g, '&amp;')));
-  // nothing after the cut (paragraphs only, long enough to be unique)
-  for (const b of a.body.slice(cut)) if (b.t === 'p' && b.x.length > 60 && !/`/.test(b.x)) assert.ok(!html.includes(b.x.slice(0, 60).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')), b.x.slice(0, 60));
+  assert.doesNotMatch(html, /tk-locked/);
+  assert.doesNotMatch(html, /isAccessibleForFree/);
+  const shown = publicParagraphs(a.body);
+  assert.equal(shown.length, 2);
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  for (const b of shown) if (!/`/.test(b.x)) assert.ok(html.includes(esc(b.x.slice(0, 40))), 'a public paragraph is in the HTML');
+  // the section names are listed; no paragraph after the second is in the page
+  for (const b of a.body.filter((x) => x.t === 'h2')) assert.ok(html.includes(esc(b.x)), `section name ${b.x}`);
+  const later = a.body.filter((b) => b.t === 'p').slice(2);
+  assert.ok(later.length > 0);
+  for (const b of later) if (b.x.length > 60 && !/`/.test(b.x)) assert.ok(!html.includes(esc(b.x.slice(0, 60))), 'locked text must not be in the HTML');
 });
 
-test('every article preview stops before the end and shows some text', async () => {
-  const { previewCut } = await import('./preview.js');
+test('every article page shows at most 2 paragraphs and about 150 words of its body', async () => {
   const fs = await import('node:fs');
   const refs = JSON.parse(fs.readFileSync(path.join(content, 'articles', 'index.json'), 'utf8')).articles;
+  const pages = pagesFrom(content);
   for (const r of refs) {
-    const a = JSON.parse(fs.readFileSync(path.join(content, 'articles', r + '.json'), 'utf8'));
-    const cut = previewCut(a.body);
-    assert.ok(cut >= 1 && cut < a.body.length, r);
+    const page = pages.find((p) => p.key === r); assert.ok(page && page.body, r);
+    const paragraphs = (page.body.match(/<article>.*<\/article>/s)?.[0].match(/<p>/g) || []).length;
+    assert.ok(paragraphs <= 2 + 3, `${r}: ${paragraphs} <p> in the article (label, subtitle, date, 2 paragraphs)`);
   }
 });
 

@@ -15,12 +15,28 @@ import { sparkline, esc } from '../ui.js';
 // what to read when a part fails: the simulator's lesson ids → the real concept articles
 const READ = { caching: ['caching', 'Caching'], replicas: ['scaling-reads', 'Scaling reads'], queues: ['scaling-writes', 'Scaling writes'], 'load-balancing': ['networking-essentials', 'Networking essentials'] };
 import { store } from '../store.js';
+import { gateNow, watchGate } from '../gating.js';
+import { problemPublicHtml, wirePublic } from './public.js';
+import { syncRail } from '../shell.js';
 
 const KEYS = ['apps', 'cache', 'replicas', 'queue', 'cdn'];
 const clock = (t) => { const s = 14 * 60 + t * 5; return `20:${String(Math.floor(s / 60) - 0).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
 const TARGETS = (inc) => [['errors', 'Errors under 1 %', 'Errors'], ['p99', `p99 under ${inc.p99} ms`, 'p99'], ['budget', `Within ${rupees(inc.budget)} a month`, 'Budget']];
 
-export function mount(view, [id], { reduced, go }) {
+/** a scenario: signed in, the simulator; signed out, its public part (title, level, the first lines of the brief) and the sign-in card */
+export function mount(view, params, ctx) {
+  const g = gateNow('problem'), off = watchGate('problem', () => window.tkRefresh?.());
+  if (g === 'open') { const inner = play(view, params, ctx); return () => { off(); inner?.(); }; }
+  const inc = INCIDENTS.find((x) => x.id === params[0]) || INCIDENTS[0];
+  document.body.classList.remove('focus-page'); syncRail(); // the full-screen simulator is for signed-in readers: here the sidebar stays
+  if (g === 'wait') { view.innerHTML = '<section class="page narrow"><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>'; return off; }
+  const crumbs = '<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/simulator">Simulator</a></nav>';
+  view.innerHTML = problemPublicHtml({ title: inc.title, difficulty: `${inc.level} · ${inc.system}`, brief: inc.brief }, { crumbs, kicker: `Problem ${Number(inc.no)}` });
+  const offPublic = wirePublic(view);
+  return () => { off(); offPublic(); };
+}
+
+function play(view, [id], { reduced, go }) {
   const inc = INCIDENTS.find((x) => x.id === id) || INCIDENTS[0];
   const saved = store.get().best[inc.id];
   let design = { ...(saved?.design || inc.start) };

@@ -28,5 +28,7 @@ test('the preloads match what the app fetches first', async () => {
   assert.ok(main.includes('getJSON("/v1/site")'));
   assert.ok(dash.includes('Promise.all([getJSON("/v1/site"),getJSON("/v1/articles")])'));
   const api = fs.readFileSync(new URL('./api.js', import.meta.url), 'utf8');
-  assert.ok(api.includes('await fetch(API+path,{signal:ctl.signal})'), 'a plain GET without credentials or headers, which is what crossorigin="anonymous" preloads');
+  // /v1/site and /v1/articles are not behind the sign-in (api.js GATED), so they stay a plain GET without credentials or headers, which is what crossorigin="anonymous" preloads
+  assert.ok(api.includes('await fetchApi(path,{signal:ctl.signal})') && api.includes('return fetch(API+path,init)'), 'the ungated paths are fetched plainly');
+  assert.ok(!/GATED=\/[^\n]*(site|articles\\\/?\))/.test(api) || api.includes('articles\\/[^?]+'), 'only article bodies, not the list, carry credentials');
 });

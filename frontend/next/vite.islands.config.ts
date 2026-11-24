@@ -24,11 +24,28 @@ const sharedWithPage = {
   },
 };
 
+// The article figures (src/figs: about 260 SVG components with their captions and descriptions) are article text. They are lazy chunks, but
+// every chunk is a public file, so the islands do not carry them (tech-katta-context 52): the drawing of a figure is a no-op here, and a
+// figure block is its caption. (The 3D article page already shows figures as captions and the 3D story.)
+const noFigures = {
+  name: "tk-no-figures",
+  enforce: "pre" as const,
+  async resolveId(this: { resolve: (id: string, from?: string, o?: object) => Promise<{ id: string } | null> }, id: string, importer?: string) {
+    if (id === "\0tk-no-figures") return id;
+    if (!/figs\/index\.js$/.test(id)) return null;
+    const r = await this.resolve(id, importer, { skipSelf: true });
+    return r && /[\\/]frontend[\\/]src[\\/]figs[\\/]index\.js$/.test(r.id) ? "\0tk-no-figures" : null;
+  },
+  load(id: string) {
+    return id === "\0tk-no-figures" ? "export const knownFig=()=>false;export const figOf=()=>undefined;export const loadFigs=()=>Promise.resolve();export const prefetchFigs=()=>{};" : null;
+  },
+};
+
 export default defineConfig({
   base: "/3d/islands/",
   publicDir: false,
   define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
-  plugins: [sharedWithPage, react(), figManifest(`${legacy}/figs`)],
+  plugins: [sharedWithPage, noFigures, react(), figManifest(`${legacy}/figs`)],
   // nothing from the base CSS reaches outside .tk-island (scripts/island-scope.mjs)
   css: { postcss: { plugins: [islandScope()] } },
   resolve: {

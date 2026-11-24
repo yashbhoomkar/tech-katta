@@ -10,7 +10,7 @@
 //    - 404.html, which the host serves with status 404 for any other address: the router draws "Nothing runs at this address".
 // 3. sitemap.xml and llms.txt list the addresses. /dashboard/… addresses redirect to them (hosting/routes.json); /dashboard/ itself (and /dashboard/#key
 //    links) opens the shell, whose router sends each old address to its new home (site3d/scripts/legacy.js).
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pagesOf, renderHome, render, sitemap, llmsTxt, useAddresses, nextPath, SITE, OG_IMAGE } from "../seo.js";
@@ -28,6 +28,23 @@ for (const [file, hint] of [[path.join(dist, "analytics", "index.html"), "vite b
 
 // 1. the old app's pages
 for (const p of ["index.html", "dashboard", "next", "llms.txt", "sitemap.xml"]) rmSync(path.join(dist, p), { recursive: true, force: true });
+// The old app's lazy chunks (its article pages, figures, Lab) are no longer reached by any page, but they were still public files holding the
+// text of its figures. Only what the analytics and health pages load is kept (tech-katta-context 52: the locked text is not in any file a
+// signed-out browser can fetch).
+{
+  const assets = path.join(dist, "assets");
+  if (existsSync(assets)) {
+    const names = new Set(readdirSync(assets));
+    const keep = new Set(), todo = [];
+    const scan = (text) => { for (const m of text.matchAll(/[A-Za-z0-9_.-]+\.(?:js|css|woff2|png|svg|webp|ico)/g)) if (names.has(m[0]) && !keep.has(m[0])) { keep.add(m[0]); todo.push(m[0]); } };
+    for (const html of [path.join(dist, "analytics", "index.html"), path.join(dist, "health.html")]) if (existsSync(html)) scan(readFileSync(html, "utf8"));
+    for (const js of readdirSync(dist).filter((f) => /^health.*\.js$/.test(f))) scan(readFileSync(path.join(dist, js), "utf8"));
+    while (todo.length) { const n = todo.pop(); if (/\.(?:js|css)$/.test(n)) scan(readFileSync(path.join(assets, n), "utf8")); }
+    let removed = 0;
+    for (const n of names) if (!keep.has(n)) { rmSync(path.join(assets, n), { force: true }); removed += 1; }
+    console.log(`switch: kept ${keep.size} old-app asset files for analytics and health, removed ${removed} unused ones`);
+  }
+}
 
 // 2. the 3D site's files, and its page shell
 rmSync(path.join(dist, "3d"), { recursive: true, force: true });

@@ -5,12 +5,13 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadContent, buildBodies } from './content/store.js';
 import { authConfig, googleVerifier, openAccounts } from './auth/index.js';
-import { accountRoutes, ACCOUNT_PATHS, JSON_CSP } from './auth/routes.js';
+import { accountRoutes, ACCOUNT_PATHS, JSON_CSP, COOKIE } from './auth/routes.js';
 import { judgePool } from './auth/judge-pool.js';
 import { practiceRoutes } from './practice/routes.js';
 import { openPractice } from './practice/store.js';
 import { aiConfig, configProblems, createClient } from './ai/client.js';
 import { openAiStore } from './ai/store.js';
+import { OPEN_CONTENT } from './content/public.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -87,6 +88,47 @@ function sendContentError(request, response, statusCode, error) {
   response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ status: 'error', error }));
 }
 
+// The text behind the sign-in (tech-katta-context 52). A full article, the Lab catalogue, a problem's solution and its wrong
+// designs go only to a request with a valid session cookie; anyone else gets the public part (content/public.js) or a 401.
+// These responses depend on who asks, so they are private, vary on the cookie, and name the site as the only origin
+// allowed to read them with credentials. OPEN_CONTENT=1 opens everything for local development; it is ignored when
+// NODE_ENV=production and is never set on the VPS.
+if (process.env.OPEN_CONTENT === '1') console.error(OPEN_CONTENT ? 'WARNING: OPEN_CONTENT=1: every text is served without sign-in (local development only).' : 'OPEN_CONTENT is ignored because NODE_ENV=production.');
+const tokenOf = (request) => {
+  for (const part of String(request.headers.cookie || '').split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k === COOKIE) return v.join('=');
+  }
+  return null;
+};
+/** true when the request carries a valid session (or the development flag is on); a database error counts as signed out */
+async function signedIn(request) {
+  if (OPEN_CONTENT) return true;
+  const token = tokenOf(request);
+  if (!token || !accounts) return false;
+  try { return !!(await accounts.userFor(token)); } catch { return false; }
+}
+const gatedHeaders = (request) => ({
+  'Cache-Control': 'private, no-cache', Vary: 'Origin, Cookie',
+  ...(request.headers.origin === allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin, 'Access-Control-Allow-Credentials': 'true' } : { 'Access-Control-Allow-Origin': '*' }),
+});
+function sendGated(request, response, body) {
+  let entry = etagCache.get(body);
+  if (!entry) {
+    const json = JSON.stringify(body);
+    entry = { json, etag: `"${createHash('sha1').update(json).digest('base64url')}"` };
+    etagCache.set(body, entry);
+  }
+  const headers = { ...contentHeaders, ...gatedHeaders(request), ETag: entry.etag };
+  if (request.headers['if-none-match'] === entry.etag) { response.writeHead(304, headers); response.end(); return; }
+  response.writeHead(200, headers);
+  response.end(request.method === 'HEAD' ? undefined : entry.json);
+}
+function sendSignedOut(request, response) {
+  response.writeHead(401, { ...contentHeaders, ...gatedHeaders(request), 'Cache-Control': 'no-store' });
+  response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ status: 'error', error: 'signed_out' }));
+}
+
 // Content is JSON on disk (repo content/ locally; /var/lib/tech-katta/content/current on the VPS).
 // It is validated and loaded at startup; the process refuses to start on invalid content.
 // `kill -HUP` reloads it in place, and keeps serving the last good release if the new one is invalid.
@@ -146,14 +188,15 @@ console.log(auth.enabled ? `Sign-in: on (database ${auth.dbName})` : `Sign-in: o
 // indexes are made at startup, so the first visitor doesn't wait for them; then the first health check
 accounts?.warmUp().then(() => accounts.health());
 
-function handleContent(request, response, pathname, searchParams) {
+async function handleContent(request, response, pathname, searchParams) {
   if (!['GET', 'HEAD'].includes(request.method || '')) {
     response.setHeader('Allow', 'GET, HEAD, OPTIONS');
     sendContentError(request, response, 405, 'method_not_allowed');
     return;
   }
   if (pathname === '/v1/site') return sendContent(request, response, bodies.site);
-  if (pathname === '/v1/lab') return sendContent(request, response, bodies.lab);
+  if (pathname === '/v1/stories') return (await signedIn(request)) ? sendGated(request, response, bodies.stories) : sendSignedOut(request, response);
+  if (pathname === '/v1/lab') return sendGated(request, response, (await signedIn(request)) ? bodies.lab : bodies.publicLab);
   if (pathname === '/v1/articles') {
     const section = searchParams.get('section') || '';
     if (section && !SLUG.test(section)) return sendContentError(request, response, 400, 'bad_section');
@@ -165,12 +208,13 @@ function handleContent(request, response, pathname, searchParams) {
   const slug = solution ? rest.slice(0, -'/solution'.length) : wrong ? rest.slice(0, -'/wrong'.length) : rest;
   if (!SLUG.test(slug)) return sendContentError(request, response, 404, 'not_found');
   if (solution || wrong) {
+    if (!(await signedIn(request))) return sendSignedOut(request, response);
     const body = solution ? bodies.solution(slug) : bodies.wrong(slug);
-    return body ? sendContent(request, response, body) : sendContentError(request, response, 404, 'not_found');
+    return body ? sendGated(request, response, body) : sendContentError(request, response, 404, 'not_found');
   }
-  const article = bodies.article(slug);
+  const article = (await signedIn(request)) ? bodies.article(slug) : bodies.publicArticle(slug);
   if (!article) return sendContentError(request, response, 404, 'not_found');
-  return sendContent(request, response, article);
+  return sendGated(request, response, article);
 }
 
 // Every request: content, accounts, health, or 404.
@@ -181,13 +225,13 @@ function route(request, response) {
   try { url = new URL(request.url || '/', 'http://localhost'); } catch { return sendJson(request, response, 400, { status: 'error', error: 'bad_request' }); }
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
-  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
+  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/stories' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'If-None-Match', 'Access-Control-Max-Age': '600' });
       response.end();
       return;
     }
-    handleContent(request, response, pathname, url.searchParams);
+    handleContent(request, response, pathname, url.searchParams).catch((error) => { console.error('Content request failed:', error?.message || error); if (!response.headersSent) sendContentError(request, response, 500, 'internal_error'); else response.end(); });
     return;
   }
 

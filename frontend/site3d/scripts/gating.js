@@ -1,5 +1,6 @@
-// The gate for the page being shown: the site's account copy (GET /v1/site → account: pageLock, previewLock, the terms
-// wording) and the account's state, put through gate.js.
+// The gate for the page being shown: the account's state put through gate.js, and the wording of the sign-in card.
+// The wording comes from the site copy (GET /v1/site → account) where it has it; the sign-in card never depends on it, so it
+// still reads right when the API cannot be reached.
 import { accountState, onAccount, startAccount } from './account.js';
 import { API } from './articles.js';
 import { gateFor } from './gate.js';
@@ -15,17 +16,27 @@ function loadCopy() {
 }
 /** ask for the account and the copy (the router does this once, at start) */
 export function startGate() { loadCopy(); startAccount(); }
-/** "open" | "wait" | "preview" | "locked" for a kind of page ("open", "list", "article", "workspace") */
-export function gateNow(kind) {
-  if (kind === 'open') return 'open';
-  loadCopy();
-  if (state === 'failed') return 'open';
-  return state === 'ready' ? gateFor(kind, accountState(), copy) : 'wait';
-}
-/** calls cb(gate) whenever the answer for this kind changes (the copy or the account arrived, or someone signed in or out) */
+
+/** local development only: `localStorage.setItem('tk-dev-open', '1')` on localhost opens every page (the API still decides what text it sends) */
+export function devOpen() { try { return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && localStorage.getItem('tk-dev-open') === '1'; } catch { return false; } }
+
+/** "open" | "wait" | "preview" | "locked" for a kind of page (see gate.js) */
+export function gateNow(kind) { loadCopy(); return gateFor(kind, accountState(), { devOpen: devOpen() }); }
+/** calls cb(gate) whenever the answer for this kind changes (the account arrived, or someone signed in or out) */
 export function watchGate(kind, cb) {
   let last = gateNow(kind);
   const check = () => { const g = gateNow(kind); if (g !== last) { last = g; cb(g); } };
   const off = onAccount(check); document.addEventListener('tk-gate', check);
   return () => { off(); document.removeEventListener('tk-gate', check); };
 }
+
+/** the wording of the sign-in card: "article" | "problem" | "page" */
+export const CARD = {
+  article: { title: 'Sign in to keep reading', text: 'Free with a Google account. Sign in once and everything opens, on every device.' },
+  problem: { title: 'Sign in to design this', text: 'Free with a Google account. Sign in once and everything opens, on every device.' },
+  page: { title: 'Sign in to open this', text: 'Free with a Google account. Sign in once and everything opens, on every device.' },
+  dashboard: { title: 'Sign in to see your progress', text: 'Free with a Google account. Sign in once and everything opens, on every device.' },
+  action: { title: 'Sign in to continue', text: 'Free with a Google account. Sign in once and everything opens, on every device.' },
+};
+export const UNAVAILABLE = 'Sign-in is unavailable right now. Please try again in a few minutes.';
+export const NOT_NOW = 'Not now';

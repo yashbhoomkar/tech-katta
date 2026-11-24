@@ -2,15 +2,15 @@
 // (/dashboard/<section>/<slug>/), title, description and link preview, plus a sitemap listing them all.
 // Each page is the built dashboard page with its head filled in; the app then reads the address
 // (src/routes.js).
-// For search engines (owner, 2026-11-13: "Preview only", like fanout.sh) each page's <div id="root"> also
-// holds plain HTML the app replaces when it starts: an article's title, summary and public preview (the same
-// cut signed-out readers see, src/preview.js), the list of its sections, links to its neighbours and to every
-// section; a section's list of articles; on the home page every section and article. Never the locked text.
-// Plus structured data (JSON-LD): the site, breadcrumbs and, for an article, Article marked as not free with
-// the locked part named (.tk-locked), Google's markup for content behind a sign-in.
+// For search engines (tech-katta-context 52) each page's <div id="root"> also holds plain HTML the app replaces when it
+// starts: an article's title, summary and public part (its first 2 paragraphs and the names of its sections: the same
+// part the API gives a signed-out reader, backend/src/content/public.js), a problem's title, difficulty and the first lines
+// of its brief, links to its neighbours and to every section; a section's list of articles; on the home page every section
+// and article. Never the locked text: it is not in this file's input to the page at all. Plus structured data (JSON-LD):
+// the site, breadcrumbs and an Article. No paywall markup: the locked text is genuinely absent from the page.
 import fs from "node:fs";
 import path from "node:path";
-import { previewCut } from "./src/preview.js";
+import { publicParagraphs, sectionNames, briefLines } from "../backend/src/content/public.js";
 
 export const SITE = "https://tech.katta.cc";
 export const OG_IMAGE = SITE + "/og-2026-11.png";
@@ -45,20 +45,10 @@ export function isoDate(s) {
   return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
 }
 
-// The opening of an article as HTML: the blocks before previewCut, figures and widgets left out.
-export function previewHtml(body) {
-  const out = [];
-  for (const b of body.slice(0, previewCut(body))) {
-    if (b.t === "h2") out.push(`<h2>${inl(b.x)}</h2>`);
-    else if (b.t === "h3") out.push(`<h3>${inl(b.x)}</h3>`);
-    else if (b.t === "p" || b.t === "analogy") out.push(`<p>${inl(b.x)}</p>`);
-    else if (b.t === "list") out.push(`<ul>${b.items.map((x) => `<li>${inl(x)}</li>`).join("")}</ul>`);
-    else if (b.t === "code") out.push(`<pre><code>${esc(b.x)}</code></pre>`);
-    else if (b.t === "table") out.push(`<table>${b.label ? `<caption>${inl(b.label)}</caption>` : ""}<tr>${b.head.map((h) => `<th>${inl(h)}</th>`).join("")}</tr>${b.rows.map((r) => `<tr>${r.map((x) => `<td>${inl(x)}</td>`).join("")}</tr>`).join("")}</table>`);
-    else if (b.t === "type") out.push(`<p><b>${inl(b.name)}</b>${b.kind ? ` (${inl(b.kind)})` : ""}: ${inl(b.what)}</p>`);
-    else if (b.t === "fig" && b.cap) out.push(`<p><i>${inl(b.cap)}</i></p>`);
-  }
-  return out.join("");
+// The public part of an article as HTML: its first 2 paragraphs (about 100-150 words); of a problem, the first lines of its brief.
+export function publicHtml(a) {
+  if (a.practice) return `<p>${inl(briefLines(a.practice.brief || a.dek))}</p>`;
+  return publicParagraphs(a.body).map((b) => `<p>${inl(b.x)}</p>`).join("");
 }
 
 const ld = (data) => `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
@@ -103,16 +93,15 @@ export function pagesOf(site, articles) {
     const title = a.section === "interview-questions" && /^Design /.test(a.title) ? `${a.title}: System Design Interview | Tech Katta` : `${a.title} | Tech Katta`;
     const page = { key, title, description, date };
     if (a.body) {
-      const heads = a.body.filter((b) => b.t === "h2").map((b) => b.x);
+      const heads = a.practice ? [] : sectionNames(a.body);
       const sib = ok.filter((x) => x.section === a.section && x.slug !== a.slug && x.group === a.group).slice(0, 12);
       page.body = `<main><nav aria-label="Breadcrumb"><a href="${SITE}/">Tech Katta</a> / <a href="${esc(urlOf(a.section))}">${esc(label)}</a></nav>`
         + `<article><p>${esc(a.no || "")}${a.tag ? ` · ${esc(a.tag)}` : ""}</p><h1>${esc(a.title)}</h1><p>${esc(description)}</p>${a.date ? `<p><time datetime="${date || ""}">${esc(a.date)}</time></p>` : ""}`
-        + previewHtml(a.body)
-        + `<div class="tk-locked"><p><b>Continue reading.</b> The rest of this article, its diagrams and read-aloud are free with a Google account: <a href="${esc(url)}">sign in to read it</a>.</p></div>`
+        + publicHtml(a)
         + (heads.length ? `<h2>In this article</h2><ol>${heads.map((h) => `<li>${inl(h)}</li>`).join("")}</ol>` : "")
         + `</article>${sib.length ? `<nav aria-label="More in ${esc(label)}"><h2>More in ${esc(label)}</h2><ul>${sib.map((x) => `<li>${link(x)}</li>`).join("")}</ul></nav>` : ""}</main>${nav}`;
       page.ld = [{ "@context": "https://schema.org", "@graph": [ORG, WEBSITE,
-        { "@type": a.section === "interview-questions" || a.section === "concepts" || a.section === "components" ? "TechArticle" : "Article", "@id": url + "#article", headline: a.title.slice(0, 110), description, url, mainEntityOfPage: url, image: OG_IMAGE, inLanguage: "en", ...(date ? { datePublished: date, dateModified: date } : {}), author: { "@id": SITE + "/#org" }, publisher: { "@id": SITE + "/#org" }, isPartOf: { "@id": SITE + "/#website" }, articleSection: label, isAccessibleForFree: false, hasPart: { "@type": "WebPageElement", isAccessibleForFree: false, cssSelector: ".tk-locked" } },
+        { "@type": a.section === "interview-questions" || a.section === "concepts" || a.section === "components" ? "TechArticle" : "Article", "@id": url + "#article", headline: a.title.slice(0, 110), description, url, mainEntityOfPage: url, image: OG_IMAGE, inLanguage: "en", ...(date ? { datePublished: date, dateModified: date } : {}), author: { "@id": SITE + "/#org" }, publisher: { "@id": SITE + "/#org" }, isPartOf: { "@id": SITE + "/#website" }, articleSection: label },
         crumbs([["Tech Katta", SITE + "/"], [label, urlOf(a.section)], [a.title, url]])] }];
     }
     pages.push(page);

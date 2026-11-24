@@ -4,6 +4,8 @@
 import { createWorld } from '../world.js';
 import { listArticles, listNow, splitTitle, SECTIONS } from '../articles.js';
 import { recipeFor, RECIPES, PREVIEW } from '../figures.js';
+import { ensureStories } from '../articles.js';
+import { accountState } from '../account.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
 import { PLACES } from '../shell.js';
@@ -19,6 +21,7 @@ const HEAD = {
 };
 
 export function mount(view, [sectionId], { reduced }) {
+  ensureStories(!!accountState().user); // signed in: the 3D previews get their words (never sent to anyone else)
   const sec = SECTIONS.find((s) => s.id === sectionId) || SECTIONS[0];
   let world = null, alive = true, cleanup = [];
   const draw = (list) => {
