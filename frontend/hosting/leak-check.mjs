@@ -27,7 +27,7 @@ function publicBlob() {
 /** probe lines: [label, text] where text is 40-70 characters taken from the middle of a long sentence (not one that is public anyway) */
 export function probes() {
   const out = [], pub = publicBlob();
-  const take = (label, s) => { const t = String(s || "").replace(/\s+/g, " ").trim(); if (t.length < 90) return; const probe = t.slice(30, 85); if (!pub.includes(probe)) out.push([label, probe]); };
+  const take = (label, s) => { const t = String(s || "").replace(/\s+/g, " ").trim(); if (t.length < (label.endsWith("story") ? 70 : 90)) return; const probe = t.slice(30, 85); if (!pub.includes(probe)) out.push([label, probe]); };
   const index = read("articles", "index.json").articles;
   for (const ref of index) {
     const a = read("articles", `${ref}.json`);
@@ -47,6 +47,8 @@ export function probes() {
     take(`${p.slug} editorial`, p.editorial);
   }
   for (const c of read("lab.json").challenges) { take(`${c.id} hint`, c.hint); }
+  // the 3D stories' sentences (content/stories.json)
+  for (const [slug, steps] of Object.entries(read("stories.json"))) for (const st of steps) if (st?.text) take(`${slug} story`, st.text);
   return out;
 }
 

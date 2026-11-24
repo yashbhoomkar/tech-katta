@@ -30,7 +30,7 @@ test('both questions are asked at once, and startAccount waits for those answers
   assert.equal(a.account().ready, false, 'not ready until both are known');
   calls[0].answer(200, { enabled: true, clientId: 'cid' });
   await started;
-  assert.deepEqual(a.account(), { ready: true, enabled: true, user: null, clientId: 'cid', syncing: false, error: null });
+  assert.deepEqual(a.account(), { ready: true, enabled: true, unavailable: false, user: null, clientId: 'cid', syncing: false, error: null });
 });
 
 test('signed in: the user from /v1/me', async () => {
