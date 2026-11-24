@@ -11,7 +11,7 @@ export const saveMode3d=on=>{try{localStorage.setItem("tk-design-view",on?"3d":"
 export const host3d=()=>typeof window!=="undefined"&&typeof window.tkGo==="function";
 
 export function Design3D({nodes,edges,names,api,onMove,onSelect,onConnect,onRemove,onFail}){
-const cv=useRef(null),ov=useRef(null),eng=useRef(null),origin=useRef(null),fitted=useRef(false),live=useRef({});const[ready,setReady]=useState(false),[connect,setConnect]=useState(false),[from,setFrom]=useState(null);
+const cv=useRef(null),ov=useRef(null),eng=useRef(null),origin=useRef(null),fitted=useRef(false),live=useRef({});const[ready,setReady]=useState(false),[connect,setConnect]=useState(false),[from,setFrom]=useState(null),[note,setNote]=useState("");
 live.current={nodes,onMove,onSelect,onConnect,onRemove,connect,from};
 const centre=n=>({x:n.position.x+W/2,y:n.position.y+H/2});
 useEffect(()=>{let alive=true,world=null,cleanup=()=>{};
@@ -25,7 +25,7 @@ load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-moti
  const down=e=>{el.setPointerCapture?.(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);const L=live.current;
   if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a[0]-b[0],a[1]-b[1]);drag=null;return}
   const id=world.pickAt(e.clientX,e.clientY);
-  if(L.connect&&id){if(!L.from){setFrom(id)}else if(L.from!==id){L.onConnect(L.from,id);setFrom(null);setConnect(false)}return}
+  if(L.connect&&id){if(!L.from){setFrom(id)}else if(L.from!==id){const ok=L.onConnect(L.from,id);setFrom(null);if(ok===false){setNote("That arrow is not allowed there: see the line at the top for what a part can send to.");setTimeout(()=>setNote(""),3500)}else setConnect(false)}return}
   const g=world.groundAt(e.clientX,e.clientY);
   if(id){const n=L.nodes.find(x=>x.id===id);L.onSelect([id]);if(n&&g)drag={kind:"part",id,g0:g,c0:centre(n),moved:false}}
   else if(g)drag={kind:"pan",g0:g,t0:world.getCamera().t,moved:false,x:e.clientX,y:e.clientY}};
@@ -52,5 +52,5 @@ useEffect(()=>{const k=e=>{if(e.key==="Escape"){setConnect(false);setFrom(null)}
 return <div className={"d3"+(connect?" connecting":"")} role="application" aria-label="Your design in 3D. Drag a part to move it, drag the floor to move around, scroll to zoom.">
 <canvas ref={cv}/><div ref={ov} className="overlay d3-ov"/>
 <div className="d3-tools" role="toolbar" aria-label="3D view"><button type="button" className={connect?"on":""} aria-pressed={connect} onClick={()=>{setConnect(c=>!c);setFrom(null)}} title="Join two parts with an arrow: click one, then the other">Connect</button><button type="button" onClick={()=>api.current?.fit()} title="Fit the design to the screen">Fit</button></div>
-<p className="d3-hint" role="status">{!ready?"Building the 3D view…":connect?(from?"Now click the part it sends to":"Click the part the arrow starts at"):nodes.length?"Drag a part to move it · drag the floor to pan · scroll to zoom":"Drag a component from the left onto the floor"}</p>
+<p className="d3-hint" role="status">{note?note:!ready?"Building the 3D view…":connect?(from?"Now click the part it sends to":"Click the part the arrow starts at"):nodes.length?"Drag a part to move it · drag the floor to pan · scroll to zoom":"Drag a component from the left onto the floor"}</p>
 </div>}
