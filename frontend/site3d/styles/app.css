@@ -1600,3 +1600,22 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 @media (max-width: 760px) { .eh-tour { padding-left: 0; } .eh-tour::before { display: none; } }
 /* 11. the site's two families under their own names, for the islands (which draw their text from var(--font) and var(--mono)) */
 :root { --site-sans: var(--sans); --site-mono: var(--mono); }
+
+/* UI/UX audit 12-15 */
+/* 12  phones: links and chips that were 20-34 px tall get a 44 px hit area (padding, not a new look) */
+@media (max-width: 760px) {
+  .foot nav a, .legend button, .eh-tour, .tour-skip { display: inline-flex; align-items: center; min-height: 44px; }
+  .foot nav a { padding: 0 6px; }
+  .foot nav { row-gap: 0; }
+  .crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+  .crumbs a::after { inset: 0 -4px; }
+}
+/* 13  an empty 3D preview panel says what it waits for, quietly */
+.preview-card.flat::after, .preview-card:has(.cap-t:empty)::after { content: "Hover a row to see its design here"; position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; font-size: var(--label); color: var(--ink-3, var(--muted)); pointer-events: none; }
+@media (max-width: 760px) { .preview-card.flat::after, .preview-card:has(.cap-t:empty)::after { content: "Scroll the list to see its design here"; } }
+.preview-card.flat .preview-cap, .preview-card:has(.cap-t:empty) .preview-cap { display: none; }
+/* 14  the article's loading header is the size of the finished one: two title lines, then the dek */
+.reader-wait .headline { min-height: calc(2 * 1.05em); }
+/* 15  the Dashboard intro stops before the 3D laptop on wide screens */
+.dash .dash-body > .lead { max-width: 560px; }
+@media (max-width: 1100px) { .dash .dash-body > .lead { max-width: none; } }

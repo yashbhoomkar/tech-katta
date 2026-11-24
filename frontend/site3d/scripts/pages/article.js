@@ -65,7 +65,7 @@ export function mount(view, [section, slug], { reduced }) {
   let alive = true, story = null, aside = null, io = null, offGate = null, stopReading = null; const ac = new AbortController();
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
-  view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
+  view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span>${head && splitTitle(head.title)[1] ? `<span class="heavy accent">${esc(splitTitle(head.title)[1])}</span>` : ''}</h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
 
   getArticle(slug).then(async (a) => {
     if (!alive) return;
