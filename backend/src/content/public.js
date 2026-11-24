@@ -56,7 +56,8 @@ export function publicArticle(a) {
   if (a.practice) {
     return { ...head, kind: 'problem', difficulty: a.group, brief: briefLines(a.practice.brief || a.dek), body: [], headings: [], locked: true };
   }
-  return { ...head, kind: 'article', body: publicParagraphs(a.body), headings: sectionNames(a.body), locked: true };
+  // minutes: the read time of the whole article (the same count the site draws), so the public header can show it
+  return { ...head, kind: 'article', minutes: Math.max(3, Math.round(JSON.stringify(a.body || []).split(/\s+/).length / 230)), body: publicParagraphs(a.body), headings: sectionNames(a.body), locked: true };
 }
 
 /** a Lab challenge's public part: id, title, level and the first lines of its brief */

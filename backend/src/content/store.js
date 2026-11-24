@@ -29,14 +29,29 @@ export async function loadContent(dir) {
   // catalogue as lab.eval, so the frontend and the judge worker get it with everything else they already read.
   const evalPath = path.join(dir, 'eval.json');
   const evalCat = existsSync(evalPath) ? await readJson(evalPath) : undefined;
+  // the 3D stories' words and sentences (content/stories.json, optional): served only to a signed-in session (GET /v1/stories)
+  const storiesPath = path.join(dir, 'stories.json');
+  const stories = existsSync(storiesPath) ? await readJson(storiesPath) : {};
   // practice problems (content/problems2/, optional): shape and calibration checked like the rest
   const practice = await loadProblems(dir);
-  const problems = [...validateContent({ site, examples, articles, lab, evalCat }), ...practice.errors];
+  const problems = [...validateContent({ site, examples, articles, lab, evalCat }), ...practice.errors, ...storyErrors(stories, articles)];
   if (problems.length) throw new Error(`Invalid content in ${dir}:\n- ${problems.join('\n- ')}`);
   let release = path.basename(dir);
   try { release = path.basename(realpathSync(dir)); } catch {}
   if (evalCat !== undefined) lab = { ...lab, eval: evalCat };
-  return { site, examples, articles, lab, release, practice: practice.problems };
+  return { site, examples, articles, lab, release, practice: practice.problems, stories };
+}
+
+/** stories.json: { <article slug>: [ null | { words?: [string|null, string|null], text?: string } per step ] } */
+function storyErrors(stories, articles) {
+  const errors = [], slugs = new Set(articles.map((a) => a.slug));
+  if (!stories || typeof stories !== 'object' || Array.isArray(stories)) return ['stories.json must be an object'];
+  for (const [slug, steps] of Object.entries(stories)) {
+    if (!slugs.has(slug)) errors.push(`stories.json: ${slug} is not an article`);
+    if (!Array.isArray(steps)) { errors.push(`stories.json ${slug}: steps must be a list`); continue; }
+    steps.forEach((s, i) => { if (s !== null && (typeof s !== 'object' || (s.text !== undefined && typeof s.text !== 'string') || (s.words !== undefined && !(Array.isArray(s.words) && s.words.every((w) => w === null || typeof w === 'string'))))) errors.push(`stories.json ${slug}[${i}]: bad step`); });
+  }
+  return errors;
 }
 
 const SUMMARY_FIELDS = ['section', 'slug', 'group', 'no', 'tag', 'access', 'date', 'title', 'dek', 'audio'];
@@ -53,7 +68,7 @@ const figOf = (a) => (a.body || []).find((b) => b && b.t === 'fig' && typeof b.i
 const summary = (a) => pick({ ...a, lab: labOf(a), tests: a.practice?.tests?.length, fig: figOf(a) }, [...SUMMARY_FIELDS, 'lab', 'tests', 'fig']);
 
 // Response bodies for one loaded release; objects are reused so their ETags stay stable.
-export function buildBodies({ site, examples, articles, lab }) {
+export function buildBodies({ site, examples, articles, lab, stories = {} }) {
   const example = examples[site.example];
   const lists = new Map();
   // A problem's reference and wrong designs calibrate its tests (frontend judge.test.js). They aren't in
@@ -77,6 +92,7 @@ export function buildBodies({ site, examples, articles, lab }) {
     lab,
     // what a signed-out visitor gets instead of the full Lab catalogue and the full articles (tech-katta-context 52)
     publicLab: publicLab(lab),
+    stories: { stories },
     publicArticle: (slug) => publics.get(slug) || null,
     list(section) {
       if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map(summary) });

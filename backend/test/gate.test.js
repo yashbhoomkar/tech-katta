@@ -134,3 +134,18 @@ test('with sign-in not configured the API still serves only the public part; OPE
     } finally { off.kill('SIGTERM'); }
   }
 });
+
+test('the 3D stories (their words and sentences) are for a signed-in session only', async () => {
+  const stories = JSON.parse(readFileSync(new URL('../../content/stories.json', import.meta.url), 'utf8'));
+  assert.equal((await get('/v1/stories')).status, 401);
+  const cookie = await signIn('3002');
+  const r = await get('/v1/stories', cookie); assert.equal(r.status, 200);
+  const body = await r.json(); assert.deepEqual(Object.keys(body.stories).sort(), Object.keys(stories).sort());
+  assert.ok(body.stories.caching.some((s) => s?.text));
+  // no story sentence is in any signed-out response
+  const some = Object.values(stories).flat().filter((s) => s?.text).slice(0, 20).map((s) => s.text.slice(20, 70));
+  for (const path of ['/v1/site', '/v1/lab', '/v1/articles', '/v1/articles/caching', '/v1/articles/networking-essentials']) {
+    const t = await (await get(path)).text();
+    for (const line of some) assert.ok(!t.includes(line), `${path} carries a story sentence`);
+  }
+});

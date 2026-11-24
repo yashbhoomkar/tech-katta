@@ -1,0 +1,1484 @@
+{
+ "networking-essentials": [
+  null,
+  {
+   "words": [
+    "One tap",
+    "Becomes one request"
+   ],
+   "text": "The phone asks DNS for the address, then sends the request to a load balancer, which passes it to one app server. The server reads the database and the answer travels back the same way."
+  },
+  {
+   "words": [
+    "Distance costs time",
+    "Serve from close by"
+   ],
+   "text": "Every round trip pays for distance. Images and pages that rarely change are served from a CDN near the user, so most of the bytes never cross the country."
+  },
+  {
+   "words": [
+    "Calls fail",
+    "Retry, but carefully"
+   ],
+   "text": "A server can stop answering at any moment. The load balancer stops sending to it, and clients retry with a growing wait, so a hiccup does not turn into a flood."
+  }
+ ],
+ "caching": [
+  null,
+  {
+   "words": [
+    "Every read",
+    "Goes to the database"
+   ],
+   "text": "Zotato’s menus are read thousands of times a second at dinner and changed a few times a day. Without a cache, each read is a database query of tens of milliseconds."
+  },
+  {
+   "words": [
+    "Keep the answer in memory",
+    "Most reads stop at the cache"
+   ],
+   "text": "The app asks the cache first and goes to the database only on a miss. With 90% of reads answered from memory, the database sees a tenth of the traffic."
+  },
+  {
+   "words": [
+    "When the cache is full",
+    "Something has to go"
+   ],
+   "text": "Memory is small. An eviction policy decides what leaves: usually the entry used least recently, because what was read a minute ago will probably be read again."
+  },
+  {
+   "words": [
+    "A hot key expires",
+    "Everyone misses at once"
+   ],
+   "text": "When a popular entry expires, every request misses together and hits the database in the same second. Refresh it a little early, or let one request rebuild it while the rest wait."
+  }
+ ],
+ "sharding": [
+  null,
+  {
+   "words": [
+    "One database",
+    "Runs out of room"
+   ],
+   "text": "First prove you need it: one machine can hold a lot. Shard only when the data or the writes outgrow the biggest machine you can buy."
+  },
+  {
+   "words": [
+    "Split the rows by a key",
+    "Each shard holds a part"
+   ],
+   "text": "A shard key decides where each row lives. The router reads the key and sends the request to the one shard that holds it."
+  },
+  {
+   "words": [
+    "A bad key",
+    "Makes one shard hot"
+   ],
+   "text": "Shard by city, and Mumbai lands on one machine while the others idle. A good key spreads both data and traffic evenly."
+  },
+  {
+   "words": [
+    "What sharding breaks",
+    "Queries across shards"
+   ],
+   "text": "A query that needs rows from every shard asks all of them and waits for the slowest. Choose the key so the common queries stay on one shard."
+  }
+ ],
+ "consistent-hashing": [
+  null,
+  {
+   "words": [
+    "Hash, then mod N",
+    "Fine until N changes"
+   ],
+   "text": "Send each key to hash(key) mod 3 and the load is even. Add a fourth server and the answer changes for almost every key: most of the cache is suddenly in the wrong place."
+  },
+  {
+   "words": [
+    "Put servers on a ring",
+    "A key goes to the next one"
+   ],
+   "text": "Hash servers and keys onto the same circle. Each key belongs to the first server clockwise from it."
+  },
+  {
+   "words": [
+    "Add a server",
+    "Only its neighbour’s keys move"
+   ],
+   "text": "A new node takes over one arc. Only the keys on that arc move; every other key stays where it was."
+  }
+ ],
+ "cap-theorem": [
+  null,
+  {
+   "words": [
+    "Two copies",
+    "That agree"
+   ],
+   "text": "The same data lives in two cities so either can answer. Every write reaches both copies over the link between them."
+  },
+  {
+   "words": [
+    "The link breaks",
+    "Now you must choose"
+   ],
+   "text": "Networks fail. While the copies cannot talk, a write in Mumbai cannot reach Delhi. Each copy can either refuse, or answer with what it has."
+  },
+  {
+   "words": [
+    "Choose consistency",
+    "Refuse rather than be wrong"
+   ],
+   "text": "For a bank balance or the last seat on a flight, the cut-off copy refuses until the link is back. Some users get an error, nobody gets a wrong answer."
+  },
+  {
+   "words": [
+    "Or availability",
+    "Answer, maybe a little old"
+   ],
+   "text": "For a like count or a menu, both copies keep answering and catch up later. Everyone gets an answer, some see an older one for a while."
+  }
+ ],
+ "api-design": [
+  null,
+  {
+   "words": [
+    "One request",
+    "Three places for input"
+   ],
+   "text": "The path says which resource, the query says how to narrow or shape the answer, and the body carries the data being created or changed."
+  },
+  {
+   "words": [
+    "A retry sends it twice",
+    "An idempotency key stops a double order"
+   ],
+   "text": "Only POST, and some PATCHes, change the outcome when sent twice. Placing an order carries a key, so the second copy returns the first answer."
+  },
+  {
+   "words": [
+    "50 orders and their restaurants",
+    "51 queries, or 2"
+   ],
+   "text": "One query for the list and one per order makes 51. A batching loader collects the 50 restaurant ids and fetches them together: 2 in all."
+  }
+ ],
+ "data-modelling": [
+  null,
+  {
+   "words": [
+    "Start from the screens",
+    "Tables, keys and links"
+   ],
+   "text": "List what each main screen reads and writes, then draw the tables, their keys and how they link. The shape decides which reads are one lookup."
+  },
+  {
+   "words": [
+    "Index what the screens read",
+    "Then decide how far to normalise"
+   ],
+   "text": "Add the indexes that serve the main screens, and keep each fact in one place unless a hot read needs a copy."
+  },
+  {
+   "words": [
+    "When one database isn’t enough",
+    "A key-value store for hot reads"
+   ],
+   "text": "The relational database stays the source of truth; a key-value store in front of it serves the hot reads. A change updates the database and removes the cached copy."
+  }
+ ],
+ "database-indexing": [
+  null,
+  {
+   "words": [
+    "Without an index",
+    "Page after page"
+   ],
+   "text": "To find one phone number, the database reads the table page by page until it finds the row."
+  },
+  {
+   "words": [
+    "A B-tree",
+    "Three page reads"
+   ],
+   "text": "Looking up id 350: the root says between 300 and 600, an internal page narrows it to 340 to 360, and the leaf points to the row. The top levels stay in memory."
+  },
+  {
+   "words": [
+    "Every index costs a write",
+    "One order, four writes"
+   ],
+   "text": "A new order updates the table and each of its three indexes before the insert is done. Index what you read, not everything."
+  }
+ ],
+ "numbers-to-know": [
+  null,
+  {
+   "words": [
+    "One machine",
+    "Does more than old figures say"
+   ],
+   "text": "A single cloud machine today has many cores, terabytes of memory when optimised for it, tens of terabytes of local SSD and a fast network."
+  },
+  {
+   "words": [
+    "Each hop costs more",
+    "About ten times the one before"
+   ],
+   "text": "Memory, SSD, a call in the same zone, another zone, another region: each step is roughly ten times slower than the one before."
+  },
+  {
+   "words": [
+    "Most features fit",
+    "Shard when the numbers say so"
+   ],
+   "text": "Zotato’s users and a year of orders fit on one large database many times over. Sharding makes sense only for many years of history or far higher write rates."
+  }
+ ],
+ "real-time-updates": [
+  null,
+  {
+   "words": [
+    "Asking on a timer",
+    "Up to one interval late"
+   ],
+   "text": "Polling asks again and again and learns of a message up to one interval late. Long polling keeps the request waiting so the answer leaves the moment the message arrives."
+  },
+  {
+   "words": [
+    "A message takes two hops",
+    "Service, then connection"
+   ],
+   "text": "From the chat service to the connection server holding Ravi’s open connection, then down that connection to his phone."
+  },
+  {
+   "words": [
+    "Keep the connection open",
+    "Send the moment it happens"
+   ],
+   "text": "Server-sent events push down one open response and resume from the last id after a cut. A WebSocket lets either side send whenever it has something."
+  }
+ ],
+ "contention": [
+  null,
+  {
+   "words": [
+    "Two buyers, one seat",
+    "Read then write leaves a gap"
+   ],
+   "text": "Both requests read “1 left”, both write “sold”. In the gap between the read and the write, another request read the same value."
+  },
+  {
+   "words": [
+    "Let the database decide",
+    "One conditional update"
+   ],
+   "text": "Update the row only if the seat is still free. The database applies it one request at a time, so exactly one buyer wins and the other is told no."
+  },
+  {
+   "words": [
+    "Hold it, then sell it",
+    "A hold ends by itself"
+   ],
+   "text": "A hold with an expiry needs nobody to release it, so an app that crashes mid-payment can’t keep the seat forever."
+  }
+ ],
+ "workflows": [
+  null,
+  {
+   "words": [
+    "Many steps, many services",
+    "One request can’t do it all"
+   ],
+   "text": "Payment, the restaurant and dispatch each take their own time and can fail on their own. One request that waits for all of them breaks halfway."
+  },
+  {
+   "words": [
+    "One state, a few allowed moves",
+    "Impossible moves are ruled out"
+   ],
+   "text": "Every order is in exactly one state. The table of allowed moves rules out the impossible ones, like accepting an order that was already cancelled."
+  },
+  {
+   "words": [
+    "Durable workflows",
+    "A crash replays the history"
+   ],
+   "text": "The engine records each finished step. When a worker dies, a new one replays the history to learn which steps are done and what they returned."
+  }
+ ],
+ "scaling-reads": [
+  null,
+  {
+   "words": [
+    "Count first",
+    "Fix the cheap things"
+   ],
+   "text": "Find out how many reads there really are and which ones. A missing index or an extra query often costs more than any new layer."
+  },
+  {
+   "words": [
+    "Layers, from the user inwards",
+    "400 of 1 lakh reach the primary"
+   ],
+   "text": "Each layer answers what it can and passes on the rest. Of 1 lakh reads a second, 400 reach the primary database."
+  },
+  {
+   "words": [
+    "One key everyone wants",
+    "Coalesce the misses"
+   ],
+   "text": "A hot key turns one expired entry into a flood. Coalescing sends one request to the database, and a short copy in each server spreads the reads."
+  }
+ ],
+ "scaling-writes": [
+  null,
+  {
+   "words": [
+    "Writes are different",
+    "Every one lands on the primary"
+   ],
+   "text": "Reads can be copied and cached; writes can’t. Each one must reach the one primary that owns the row."
+  },
+  {
+   "words": [
+    "Absorb the spike",
+    "A queue keeps the pace steady"
+   ],
+   "text": "The queue turns a 10-minute spike into a 34-minute stretch of steady writing. Nothing is lost, and the database never goes past what it can take."
+  },
+  {
+   "words": [
+    "One counter everyone updates",
+    "Split it into parts"
+   ],
+   "text": "Ten parts on five shards turn one overloaded key into ten easy ones. A read adds ten numbers instead of reading one."
+  }
+ ],
+ "big-files": [
+  null,
+  {
+   "words": [
+    "Bytes through your servers",
+    "The slow way"
+   ],
+   "text": "A 1.6 GB video sent through the API ties up an app server for the whole upload, and one dropped connection means starting again."
+  },
+  {
+   "words": [
+    "Upload straight to storage",
+    "In 100 MB parts"
+   ],
+   "text": "The server only signs the upload. The phone sends parts straight to storage, so a dropped connection costs one 100 MB part, not the whole 1.6 GB."
+  },
+  {
+   "words": [
+    "The row is the truth",
+    "Downloads come from a CDN"
+   ],
+   "text": "Storage holds the bytes, but only the database row says whether a file is safe to show. Downloads are served from a CDN near the user."
+  }
+ ],
+ "long-jobs": [
+  null,
+  {
+   "words": [
+    "From request to job",
+    "Answer now, work later"
+   ],
+   "text": "The API records the job, puts it on a queue and answers at once with an id. Workers take jobs from the queue at their own pace."
+  },
+  {
+   "words": [
+    "Leases",
+    "Silence hands the job on"
+   ],
+   "text": "A lease is a promise with an expiry. Renewals keep it while the worker is healthy; if it goes quiet, the job goes to someone else."
+  },
+  {
+   "words": [
+    "Retries, then a dead letter",
+    "Growing waits between tries"
+   ],
+   "text": "Growing waits give a struggling service room to recover, and after the last try the dead-letter queue takes the job out of the way."
+  }
+ ],
+ "nearby-search": [
+  null,
+  {
+   "words": [
+    "An ordinary index struggles",
+    "Two ranges, one circle"
+   ],
+   "text": "An index on latitude finds a long strip, an index on longitude another. Near me is neither: the database still filters a lot of rows."
+  },
+  {
+   "words": [
+    "Geohash",
+    "Cells with names"
+   ],
+   "text": "The map is cut into cells with short names. Every extra character divides a cell into 32, so the length you index decides how many cells a search touches."
+  },
+  {
+   "words": [
+    "A quadtree",
+    "Splits only where it is busy"
+   ],
+   "text": "A fixed grid wastes cells on empty land and overloads the busy centre. A quadtree splits only where the restaurants are."
+  }
+ ],
+ "vector-search": [
+  null,
+  {
+   "words": [
+    "From words to points",
+    "Close in meaning, close in space"
+   ],
+   "text": "An embedding turns text into a point. Keyword search needs shared words; embeddings need shared meaning. That is why cottage cheese finds paneer."
+  },
+  {
+   "words": [
+    "Find the nearest, fast",
+    "A few hundred checked, not crores"
+   ],
+   "text": "An approximate index trades a little accuracy for a huge saving: it checks a few hundred vectors instead of crores."
+  }
+ ],
+ "time-series": [
+  null,
+  {
+   "words": [
+    "Data that arrives by the clock",
+    "Always appended, read in ranges"
+   ],
+   "text": "Rider locations, metrics and prices arrive every few seconds, almost never change, and are read as “the last hour”."
+  },
+  {
+   "words": [
+    "Store what changed",
+    "About ten times smaller"
+   ],
+   "text": "Points from one series are similar to their neighbours, so storing only what changed shrinks them about tenfold."
+  },
+  {
+   "words": [
+    "Keep less detail as it ages",
+    "Summaries for last year"
+   ],
+   "text": "Dashboards rarely need ten-second detail from last year. Summaries keep the shape of old data at a fraction of the cost."
+  }
+ ],
+ "sketches": [
+  null,
+  {
+   "words": [
+    "Exact counts get expensive",
+    "Every id, kept forever"
+   ],
+   "text": "Counting distinct users exactly means remembering every id you have seen. At crores of users a day, that set is huge."
+  },
+  {
+   "words": [
+    "HyperLogLog",
+    "Distinct counts in a small fixed space"
+   ],
+   "text": "The longest run of zeros in a hash is a noisy clue to how many distinct items were hashed; averaging thousands of such clues makes it precise."
+  },
+  {
+   "words": [
+    "Count-Min",
+    "The smallest counter is closest"
+   ],
+   "text": "Collisions can only add to a counter, never subtract, so the smallest of an item’s counters is the closest to the truth."
+  }
+ ],
+ "change-capture": [
+  null,
+  {
+   "words": [
+    "Why not just write twice",
+    "One of the writes will fail"
+   ],
+   "text": "The service writes the database, then the search index and the cache. When the second write fails, they disagree and nothing notices."
+  },
+  {
+   "words": [
+    "Read the database’s own log",
+    "One more reader"
+   ],
+   "text": "The log already has every committed change, in order, and is how replicas stay in step. CDC reads it and publishes each change to a stream."
+  },
+  {
+   "words": [
+    "A snapshot, then the log",
+    "Nothing missed"
+   ],
+   "text": "A snapshot gives a new consumer the present, and the log position taken with it makes sure every change after that is delivered."
+  }
+ ],
+ "redis": [
+  null,
+  {
+   "words": [
+    "One command at a time",
+    "No locks in your code"
+   ],
+   "text": "Strings, hashes, lists, sets and sorted sets. Every command changes one structure in one step, so a cart, a ranking or a rate limit needs no locks."
+  },
+  {
+   "words": [
+    "Keeping data across a restart",
+    "Snapshots and a log"
+   ],
+   "text": "Memory is lost on a restart. Redis can save snapshots and an append-only log to disk; how often decides how much you can lose."
+  },
+  {
+   "words": [
+    "Redis Cluster",
+    "Keys split by slot"
+   ],
+   "text": "The client knows which node owns each slot, so a request takes one hop; a MOVED reply corrects it after slots change hands."
+  }
+ ],
+ "elasticsearch": [
+  null,
+  {
+   "words": [
+    "An index of words",
+    "Each search reads its own lists"
+   ],
+   "text": "The index is built once per change; every search then reads only the lists for its own words. That is why searching crores of dishes takes milliseconds."
+  },
+  {
+   "words": [
+    "Keep it in step",
+    "One source of truth, a stream of changes"
+   ],
+   "text": "Never write the database and the index from the same request and hope both succeed. Feed the index from a stream of the database’s changes."
+  },
+  {
+   "words": [
+    "Shards, replicas, refresh",
+    "Searchable after a short delay"
+   ],
+   "text": "An index is split into shards with replicas. New documents become searchable after the next refresh, so search is a little behind the database."
+  }
+ ],
+ "kafka-in-practice": [
+  null,
+  {
+   "words": [
+    "Keys and partitions",
+    "Same key, same partition, in order"
+   ],
+   "text": "An order’s events carry its id as the key, so they land on one partition and stay in order. Order holds within a partition, not across the topic."
+  },
+  {
+   "words": [
+    "Consumer groups",
+    "Up to one consumer per partition"
+   ],
+   "text": "The group decides who reads what. Adding a consumer is how you scale reading, up to one per partition: a fourth consumer on three partitions sits idle."
+  },
+  {
+   "words": [
+    "When consumers fall behind",
+    "Lag grows, nothing is lost"
+   ],
+   "text": "Events wait in the log while consumers catch up. Watch the lag, add consumers up to the partition count, and make each one faster."
+  }
+ ],
+ "temporal": [
+  null,
+  {
+   "words": [
+    "The service is the memory",
+    "Workers are the hands"
+   ],
+   "text": "Workers run your code and report each step. The service records it, so losing a worker loses nothing."
+  },
+  {
+   "words": [
+    "A worker dies",
+    "Another carries on"
+   ],
+   "text": "The history tells the next worker which steps are done and what they returned. The workflow continues as if nothing happened."
+  },
+  {
+   "words": [
+    "Waiting a day",
+    "Costs a row, not a thread"
+   ],
+   "text": "Timers and signals are stored in the service, not in a sleeping thread. A workflow waiting a day for a refund costs a row in a database."
+  }
+ ],
+ "api-gateways": [
+  null,
+  {
+   "words": [
+    "Every request, four checks",
+    "Then routed to its service"
+   ],
+   "text": "The gateway checks who is calling, whether they may, whether they are within their limit, and where the request goes. A customer’s order passes and reaches Orders."
+  },
+  {
+   "words": [
+    "Rate limiting",
+    "Too many requests stop here"
+   ],
+   "text": "A restaurant’s billing system that sends too many requests is stopped at the limit check and told to slow down, before it reaches any service."
+  },
+  {
+   "words": [
+    "Release safely",
+    "Split traffic, undo the split"
+   ],
+   "text": "Every request passes the gateway, so it is the natural place to send a small share to a new version and to undo that if it misbehaves."
+  }
+ ],
+ "cassandra": [
+  null,
+  {
+   "words": [
+    "The partition key is the address",
+    "Three nodes hold each row"
+   ],
+   "text": "A query that gives the partition key goes to the three nodes that own it. There is no leader: any node can take the request."
+  },
+  {
+   "words": [
+    "No key in the query",
+    "Every node is asked"
+   ],
+   "text": "A query that doesn’t give the partition key goes to all of them. Model one table per question so every query has its key."
+  },
+  {
+   "words": [
+    "Deletes leave tombstones",
+    "Or old rows come back"
+   ],
+   "text": "Without a leader, a delete must be remembered for a while, or a replica that missed it would bring the row back. That memory is the tombstone."
+  }
+ ],
+ "dynamodb": [
+  null,
+  {
+   "words": [
+    "Keys from the questions",
+    "The table answers one"
+   ],
+   "text": "Design the keys from the questions: partition key customer, sort key time, and “my recent orders” is one query."
+  },
+  {
+   "words": [
+    "Each index answers another",
+    "No matching key means a scan"
+   ],
+   "text": "An index keyed by restaurant answers “this kitchen’s orders”. A question with no matching key is a scan."
+  },
+  {
+   "words": [
+    "A hot partition",
+    "Fixed in the key, not with capacity"
+   ],
+   "text": "The table’s total capacity hides a per-partition limit. A key everyone writes to is throttled; the fix is in the key design."
+  }
+ ],
+ "postgresql": [
+  null,
+  {
+   "words": [
+    "Row versions instead of locks",
+    "Readers see a snapshot"
+   ],
+   "text": "A long report and a stream of price changes don’t wait for each other. The price is old versions that vacuum has to clean up."
+  },
+  {
+   "words": [
+    "Connections",
+    "A few dozen busy, not thousands idle"
+   ],
+   "text": "PostgreSQL wants a few dozen busy connections. A pooler is the usual answer once there are many app servers."
+  },
+  {
+   "words": [
+    "Replication and failover",
+    "A replica takes over"
+   ],
+   "text": "Replicas follow the primary’s log and serve reads. If the primary fails, one is promoted and the app reconnects to it."
+  }
+ ],
+ "flink": [
+  null,
+  {
+   "words": [
+    "Count by event time",
+    "Not by arrival"
+   ],
+   "text": "Arrival order is an accident of the network. Counting by when events happened, with a watermark to decide when to stop waiting, gives the same answer every time."
+  },
+  {
+   "words": [
+    "State and checkpoints",
+    "Saved at one moment"
+   ],
+   "text": "Saving every task’s state and the input positions at the same logical moment is what makes a replay consistent."
+  },
+  {
+   "words": [
+    "A task fails",
+    "Restart from the checkpoint"
+   ],
+   "text": "The job reloads the last checkpoint and rereads the input from the saved positions. The counts come out the same."
+  }
+ ],
+ "zookeeper": [
+  null,
+  {
+   "words": [
+    "A write needs a majority",
+    "Five servers survive two failures"
+   ],
+   "text": "A write is safe once a majority has it. Reads are local and fast, which is why they can lag a little."
+  },
+  {
+   "words": [
+    "Leader election",
+    "Watch only your predecessor"
+   ],
+   "text": "Each candidate watches the one just before it. A leader’s death wakes one waiting worker, not all of them."
+  }
+ ],
+ "shopify-reservations": [
+  null,
+  {
+   "words": [
+    "Two systems",
+    "No shared transaction"
+   ],
+   "text": "Holds lived in Redis and stock in MySQL. With no transaction across the two, a failure between them could leave a hold without stock or stock without a hold."
+  },
+  {
+   "words": [
+    "One row per unit",
+    "SKIP LOCKED shares them out"
+   ],
+   "text": "Each row is one unit for sale. A checkout locks the rows it takes, and SKIP LOCKED makes the next checkout pass over them to free ones instead of waiting."
+  },
+  {
+   "words": [
+    "The slowdown",
+    "Connections, not queries"
+   ],
+   "text": "When checkouts slowed, the queries were fine. The time went on getting a database connection, so the fix was in connection handling."
+  }
+ ],
+ "discord-messages": [
+  null,
+  {
+   "words": [
+    "177 Cassandra nodes",
+    "Paging the on-call team"
+   ],
+   "text": "The message store kept growing, and hot channels made some nodes fall behind. Running it took more and more of the team."
+  },
+  {
+   "words": [
+    "A service in front",
+    "Identical reads merged"
+   ],
+   "text": "Requests for one channel go to the same data service instance. The first starts one query and the rest wait for its answer, so a burst becomes one read."
+  },
+  {
+   "words": [
+    "Moved to ScyllaDB",
+    "Trillions of messages in nine days"
+   ],
+   "text": "With the data service in place, the messages were copied to ScyllaDB in nine days and the cluster became far calmer to run."
+  }
+ ],
+ "slack-job-queue": [
+  null,
+  {
+   "words": [
+    "Redis filled up",
+    "Nothing could be queued"
+   ],
+   "text": "During an outage the queue grew until Redis ran out of memory. Then nothing could be queued, or even taken off the queue."
+  },
+  {
+   "words": [
+    "Kafka in front, not instead",
+    "A buffer on disk"
+   ],
+   "text": "Kafka takes jobs as fast as the web app sends them and keeps the backlog on disk. A relay feeds Redis only as fast as its rate limit allows."
+  }
+ ],
+ "figma-multiplayer": [
+  null,
+  {
+   "words": [
+    "The server decides the order",
+    "So it can stay simple"
+   ],
+   "text": "Figma skipped operational transforms. Every change goes through one server, which decides the order everyone sees."
+  },
+  {
+   "words": [
+    "Per property",
+    "The last write wins"
+   ],
+   "text": "Changes to different properties never conflict. When two edits change the same property, the one that reaches the server last wins."
+  }
+ ],
+ "spotify-data-lake": [
+  null,
+  {
+   "words": [
+    "One user’s history",
+    "A chain of reads per file"
+   ],
+   "text": "Without an index, every file needs a chain of reads, each waiting for the last, so a lookup by key in the lake is slow."
+  },
+  {
+   "words": [
+    "Look the key up first",
+    "A few small reads, all at once"
+   ],
+   "text": "Random Access Parquet keeps an index from each key to its files and rows; the ranged reads then go out together, without copying data into a key-value store."
+  }
+ ],
+ "meta-zgateway": [
+  null,
+  {
+   "words": [
+    "A mesh of connections",
+    "Every client to every host"
+   ],
+   "text": "More than a million client hosts connected straight to the database hosts they needed, so each host’s connections grew with the number of clients."
+  },
+  {
+   "words": [
+    "A stateless proxy tier",
+    "About 97% fewer connections"
+   ],
+   "text": "Clients connect to their regional ZGateway, and database hosts see only the gateways. It is also one place to batch, merge duplicate reads and shed load."
+  }
+ ],
+ "url-shortener": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The write path"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Answered from the cache"
+   ]
+  }
+ ],
+ "file-sync": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Parts straight to storage"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Changes reach every device"
+   ]
+  }
+ ],
+ "restaurants-near-me": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A geo index answers first"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The cache takes the peak"
+   ]
+  }
+ ],
+ "grocery-delivery": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Two orders, one unit"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Read from a fast copy"
+   ]
+  }
+ ],
+ "ticket-booking": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The database decides"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A waiting room lets fans in"
+   ]
+  }
+ ],
+ "photo-sharing": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The CDN carries the images"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "One hot counter"
+   ]
+  }
+ ],
+ "news-feed": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Lists written ahead"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Short lists in the cache"
+   ]
+  }
+ ],
+ "dating-swipes": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Check the other side’s swipe"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Built ahead by workers"
+   ]
+  }
+ ],
+ "coding-judge": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Each run in its own sandbox"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The queue absorbs the rush"
+   ]
+  }
+ ],
+ "chat-app": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Down an open connection"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Stored, in order, per chat"
+   ]
+  }
+ ],
+ "notifications": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Urgent messages skip the queue"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "One send per id"
+   ]
+  }
+ ],
+ "payments": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "One key per payment"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Ask the provider before retrying"
+   ]
+  }
+ ],
+ "job-scheduler": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Due jobs, found by time"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Its lease runs out"
+   ]
+  }
+ ],
+ "web-crawler": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A few requests per site"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Check before fetching"
+   ]
+  }
+ ],
+ "leaderboard": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A sorted set in memory"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Ask the sorted set"
+   ]
+  }
+ ],
+ "ad-clicks": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Counted in the stream"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "By when the click happened"
+   ]
+  }
+ ],
+ "key-value-store": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Consistent hashing on a ring"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Agree enough to answer"
+   ]
+  }
+ ],
+ "shared-editor": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The server orders the edits"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Shown on your screen first"
+   ]
+  }
+ ],
+ "rider-dispatch": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Pings into a fast store"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A rider is claimed once"
+   ]
+  }
+ ],
+ "video-streaming": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Chunks transcoded in parallel"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Viewers stream from the edge"
+   ]
+  }
+ ],
+ "menu-search": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "An index of words"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Changes stream into the index"
+   ]
+  }
+ ],
+ "ind-vs-pak": [
+  null,
+  {
+   "words": [
+    null,
+    "The parts and how they connect"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The CDN takes the crowd"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Lower quality, never down"
+   ]
+  }
+ ],
+ "system-design-interviews": [
+  null,
+  {
+   "words": [
+    null,
+    "You design, out loud"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The reasons, not the boxes"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Deeper on the hard part"
+   ]
+  }
+ ],
+ "how-to-prepare": [
+  null,
+  {
+   "words": [
+    null,
+    "Learn the parts"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Whole designs, worked"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Practise under pressure"
+   ]
+  }
+ ],
+ "how-to-answer": [
+  null,
+  {
+   "words": [
+    null,
+    "What it must do"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Only the numbers that change the design"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Every part, one sentence each"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Two or three hard parts"
+   ]
+  }
+ ],
+ "core-concepts-guide": [
+  null,
+  {
+   "words": [
+    null,
+    "How a request travels"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Answers kept in memory"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Data split across machines"
+   ]
+  }
+ ],
+ "technologies-guide": [
+  null,
+  {
+   "words": [
+    null,
+    "In memory, very fast"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "A log many can read"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "The default database"
+   ]
+  }
+ ],
+ "patterns-guide": [
+  null,
+  {
+   "words": [
+    null,
+    "From one event to every screen"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Layers that take the load"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Queued for workers"
+   ]
+  }
+ ],
+ "questions-guide": [
+  null,
+  {
+   "words": [
+    null,
+    "Few parts, one hard idea"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "More parts, more trade-offs"
+   ]
+  },
+  {
+   "words": [
+    null,
+    "Easy first, then build up"
+   ]
+  }
+ ]
+}

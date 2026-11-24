@@ -195,6 +195,7 @@ async function handleContent(request, response, pathname, searchParams) {
     return;
   }
   if (pathname === '/v1/site') return sendContent(request, response, bodies.site);
+  if (pathname === '/v1/stories') return (await signedIn(request)) ? sendGated(request, response, bodies.stories) : sendSignedOut(request, response);
   if (pathname === '/v1/lab') return sendGated(request, response, (await signedIn(request)) ? bodies.lab : bodies.publicLab);
   if (pathname === '/v1/articles') {
     const section = searchParams.get('section') || '';
@@ -224,7 +225,7 @@ function route(request, response) {
   try { url = new URL(request.url || '/', 'http://localhost'); } catch { return sendJson(request, response, 400, { status: 'error', error: 'bad_request' }); }
   const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
 
-  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
+  if (pathname === '/v1/site' || pathname === '/v1/lab' || pathname === '/v1/stories' || pathname === '/v1/articles' || pathname.startsWith('/v1/articles/')) {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'If-None-Match', 'Access-Control-Max-Age': '600' });
       response.end();
