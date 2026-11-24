@@ -68,7 +68,7 @@ main.leaving { opacity: 0; }
 .lead { margin: 0 0 18px; color: var(--ink-2); font-size: 18px; line-height: 1.65; max-width: 36em; }
 .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
 .page { padding: 140px var(--gut) 80px; }
-.page.narrow { max-width: 760px; margin: 0 auto; }
+.page.narrow { max-width: 760px; margin: 0 auto 0 0; } /* reading pages start at the same left edge as the others (the page's own gutter), 760 px wide at most */
 .missing { min-height: 80vh; }
 
 /* ---------- scroll story (landing, lessons) ---------- */
@@ -1586,3 +1586,17 @@ body.ws-page.ws-locked { overflow: auto; }
 
 /* 7. on a phone the first-visit offer sits in the hero's flow, under the hint, instead of floating over the hero */
 .tour-offer.inline { position: relative; left: auto; right: auto; bottom: auto; top: auto; width: auto; margin: 12px 16px 0; z-index: 1; animation: none; }
+
+/* 8. every page starts at the left edge; reading pages (You, Privacy, Terms, lessons' loading state) are 760 px wide at most */
+body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
+/* 9. labels above titles and status tags are in normal case (the text itself is normalised where it is drawn: site3d/scripts/case.js) */
+.kicker, .l-tag, .tour-kick { text-transform: none; }
+/* 10. one corner radius for controls: --r-s (10 px). A segmented control keeps its buttons and pill at --r-s and its frame at --r-s plus its 4 px padding. */
+.seg { border-radius: calc(var(--r-s) + 4px); }
+.seg button, .seg-pill { border-radius: var(--r-s); }
+.tour-skip, .eh-tour { border-radius: var(--r-s); }
+.eh-tour { position: relative; border-left: 0; padding-left: 16px; }
+.eh-tour::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--glass-line, var(--line)); }
+@media (max-width: 760px) { .eh-tour { padding-left: 0; } .eh-tour::before { display: none; } }
+/* 11. the site's two families under their own names, for the islands (which draw their text from var(--font) and var(--mono)) */
+:root { --site-sans: var(--sans); --site-mono: var(--mono); }

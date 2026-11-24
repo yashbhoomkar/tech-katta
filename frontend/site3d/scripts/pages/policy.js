@@ -1,6 +1,7 @@
 // Privacy and Terms: reading pages from the site copy (GET /v1/site → privacy, terms). Always open, no story.
 import { API } from '../articles.js';
 import { footer } from './landing.js';
+import { normalCase } from '../case.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let site = null;
@@ -16,7 +17,7 @@ export function mount(view, [which]) {
     if (!p) { view.innerHTML = `<section class="page narrow missing"><h1 class="headline"><span class="thin">This page could not load</span><span class="heavy">Check your connection and try again</span></h1></section>${footer()}`; return; }
     document.title = `${p.title} · Tech Katta`;
     view.innerHTML = `<article class="page narrow policy"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>${esc(policyTitle(which))}</span></nav>
-      <p class="kicker"><span>${esc(p.eyebrow)}</span></p><h1 class="headline"><span class="thin">${esc(p.title)}</span></h1><p class="muted">${esc(p.updated)}</p>
+      <p class="kicker"><span>${esc(normalCase(p.eyebrow))}</span></p><h1 class="headline"><span class="thin">${esc(p.title)}</span></h1><p class="muted">${esc(p.updated)}</p>
       <div class="prose">${p.sections.map(([h, text]) => `<h2>${esc(h)}</h2>${String(text).split(/\n\n+/).map((para) => `<p>${esc(para)}</p>`).join('')}`).join('')}</div></article>${footer()}`;
   });
   return () => { alive = false; };

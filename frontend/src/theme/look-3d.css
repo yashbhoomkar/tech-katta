@@ -46,6 +46,8 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   --warn-tint: color-mix(in srgb, var(--amber-fill) 12%, var(--card));
   --cat-green: var(--mint); --cat-amber: var(--peach); --cat-violet: var(--lilac); --cat-teal: var(--sky); --cat-pink: var(--rose);
   /* type: Instrument Sans for everything, Geist Mono for labels and numbers; no serif */
+  /* the site's own two families (app.css :root --site-sans, --site-mono), not the legacy "... Variable" names */
+  --font: var(--site-sans, "Instrument Sans", ui-sans-serif, system-ui, sans-serif); --mono: var(--site-mono, "Geist Mono", ui-monospace, monospace);
   --font-display: var(--font);
   /* shape: buttons are 10 px, cards 14 px, not pills */
   --radius: 10px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 24px; --r-btn: 10px;
