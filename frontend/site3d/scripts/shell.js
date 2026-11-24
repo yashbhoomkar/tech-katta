@@ -5,7 +5,7 @@
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { INCIDENTS } from './sim.js';
 import { store } from './store.js';
-import { accountState, onAccount } from './account.js';
+import { accountState, onAccount, signOut } from './account.js';
 import { openSignIn } from './signin.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -50,10 +50,13 @@ const RAIL_KEY = 'tk-r3d-side';
 let side = null, railSaved = false, here = { nav: '', path: '' }, openHere = false;
 try { railSaved = localStorage.getItem(RAIL_KEY) === 'rail'; } catch { /* storage blocked */ }
 
-/** "Sign in" while signed out and sign-in is available (it opens the sheet); once signed in the You row carries the name */
+/** The account slot above You is always drawn, so nothing moves when the sign-in check answers: "Sign in" while signed out or not yet known, "Sign out" once signed in
+ *  (the You row carries the name). Only where sign-in is switched off is there no slot. */
 function accountRow() {
   const a = accountState();
-  return a.ready && a.enabled && !a.user ? `<button type="button" class="side-row" data-signin title="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4.5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H14"/><path d="M4 12h10M10.5 8.5 14 12l-3.5 3.5"/></svg><span class="lbl">Sign in</span></button>` : '';
+  if (a.ready && !a.enabled) return '';
+  const inn = !!a.user;
+  return `<button type="button" class="side-row" ${inn ? 'data-signout title="Sign out"' : 'data-signin title="Sign in"'}><svg viewBox="0 0 24 24" aria-hidden="true">${inn ? '<path d="M10 4H5.5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1H10"/><path d="M20 12H10M16.5 8.5 20 12l-3.5 3.5"/>' : '<path d="M14 4h4.5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H14"/><path d="M4 12h10M10.5 8.5 14 12l-3.5 3.5"/>'}</svg><span class="lbl">${inn ? 'Sign out' : 'Sign in'}</span></button>`;
 }
 
 function draw() {
@@ -88,6 +91,7 @@ function draw() {
     <div class="side-foot"><button class="theme" type="button" data-theme-btn></button></div>`;
   side.querySelector('[data-rail]').addEventListener('click', toggleRail);
   side.querySelector('[data-signin]')?.addEventListener('click', () => openSignIn());
+  side.querySelector('[data-signout]')?.addEventListener('click', () => signOut());
   document.dispatchEvent(new CustomEvent('tk-theme-buttons'));
   requestAnimationFrame(placeMark);
 }
@@ -104,9 +108,12 @@ function placeMark() {
 // because a rail shows names only as tooltips
 /** the workspace pages (the canvas island): a problem, challenge, sandbox, shared design or practice */
 export const WS = /^\/(?:problems\/[\w-]+(?:\/[\w-]+)?|practice(?:\/[\w-]+)?)\/?$/;
-const focusPage = () => (here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path)) || WS.test(here.path);
+// (a workspace address that shows the lock card, or is still waiting for the account, is an ordinary page: the sidebar stays open; pages/workspace.js sets body.ws-locked)
+const focusPage = () => (here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path)) || (WS.test(here.path) && !document.body.classList.contains('ws-locked'));
 const touchOnly = () => matchMedia('(hover: none)').matches;
 function applyRail() { const rail = !touchOnly() && (focusPage() ? !openHere : railSaved); document.documentElement.toggleAttribute('data-rail', rail); setTimeout(placeMark, 260); }
+/** fold or open the sidebar again after the page changed what kind of page it is */
+export function syncRail() { applyRail(); }
 function toggleRail() { if (touchOnly()) return; if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
 
 /** called by the router on every page: shows the frame on app pages, marks where you are */
