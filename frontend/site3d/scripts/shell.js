@@ -114,7 +114,7 @@ const touchOnly = () => matchMedia('(hover: none)').matches;
 function applyRail() { const rail = !touchOnly() && (focusPage() ? !openHere : railSaved); document.documentElement.toggleAttribute('data-rail', rail); setTimeout(placeMark, 260); }
 /** fold or open the sidebar again after the page changed what kind of page it is */
 export function syncRail() { applyRail(); }
-function toggleRail() { if (touchOnly()) return; if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
+function toggleRail() { if (touchOnly()) return; document.documentElement.classList.add('rail-anim'); setTimeout(() => document.documentElement.classList.remove('rail-anim'), 400); if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
 
 /** called by the router on every page: shows the frame on app pages, marks where you are */
 export function updateShell(nav, path) {

@@ -852,9 +852,9 @@ html[data-rail] { --side-w: 72px; }
 .side { display: none; }
 @media (min-width: 1000px) {
   body.in-app .side { display: flex; flex-direction: column; position: fixed; z-index: 35; inset: 0 auto 0 0; width: var(--side-w); padding: 14px 10px 12px;
-    background: var(--page); border-right: 1px solid var(--line); transition: width .25s var(--out); view-transition-name: side; }
+    background: var(--page); border-right: 1px solid var(--line); view-transition-name: side; }
   body.in-app .top { display: none; }
-  body.in-app main { padding-left: var(--side-w); transition: padding-left .25s var(--out); --gut: max(28px, calc((100vw - var(--side-w) - 1120px) / 2)); }
+  body.in-app main { padding-left: var(--side-w); --gut: max(28px, calc((100vw - var(--side-w) - 1120px) / 2)); }
   body.in-app .page { padding-top: 64px; }
   body.in-app .sim { left: var(--side-w); }
   body.in-app .ws { left: var(--side-w); }
@@ -1607,7 +1607,9 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
   .foot nav a, .legend button, .eh-tour, .tour-skip { display: inline-flex; align-items: center; min-height: 44px; }
   .foot nav a { padding: 0 6px; }
   .foot nav { row-gap: 0; }
-  .crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+  /* every item of the breadcrumb is 44 px tall and centred, so the links and the slash and current page share one baseline */
+  .crumbs { align-items: center; margin-bottom: 0; }
+  .crumbs > a, .crumbs > span { display: inline-flex; align-items: center; min-height: 44px; }
   .crumbs a::after { inset: 0 -4px; }
 }
 /* 13  an empty 3D preview panel says what it waits for, quietly */
@@ -1619,3 +1621,16 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 /* 15  the Dashboard intro stops before the 3D laptop on wide screens */
 .dash .dash-body > .lead { max-width: 560px; }
 @media (max-width: 1100px) { .dash .dash-body > .lead { max-width: none; } }
+
+/* UI/UX audit follow-up: the article's loading header is the finished header's own layout; its meta line is a quiet shimmer bar */
+.reader-wait .skel-meta { position: relative; color: transparent; }
+.reader-wait .skel-meta::after { content: ""; position: absolute; left: 50%; top: 50%; width: 180px; height: 10px; margin: -5px 0 0 -90px; border-radius: 5px; background: var(--sunken); opacity: .8; }
+.reader-wait .actions .btn { pointer-events: none; opacity: .55; }
+@media (prefers-reduced-motion: no-preference) { .reader-wait .skel-meta::after { animation: skel-pulse 1.4s ease-in-out infinite; } }
+@keyframes skel-pulse { 50% { opacity: .35; } }
+.wait-lead { min-height: 2lh; }
+
+/* the sidebar and the page beside it slide only when someone folds or opens it (the class is set for that moment), never while a page first appears: the sliding counted as layout shift */
+@media (min-width: 1000px) { html.rail-anim body.in-app main { transition: padding-left .25s var(--out); } html.rail-anim body.in-app .side { transition: width .25s var(--out); } }
+/* breadcrumbs: links with a taller hit area (the workspace's own are 40 px) and the slash and current page share one centre line on every screen */
+.crumbs { align-items: center; }

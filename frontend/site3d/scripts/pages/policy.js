@@ -10,7 +10,8 @@ const getSite = () => (site ||= fetch(`${API}/v1/site`, { headers: { accept: 'ap
 export const policyTitle = (which) => (which === 'terms' ? 'Terms and conditions' : 'Privacy');
 export function mount(view, [which]) {
   let alive = true;
-  view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>${esc(policyTitle(which))}</span></nav><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
+  // the loading page has the finished page's layout (crumbs, label, title, date line), so nothing moves when the text arrives
+  view.innerHTML = `<article class="page narrow policy reader-wait" aria-busy="true"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>${esc(policyTitle(which))}</span></nav><p class="kicker"><span>&nbsp;</span></p><h1 class="headline"><span class="thin">${esc(policyTitle(which))}</span></h1><p class="muted">&nbsp;</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></article>`;
   getSite().then((s) => {
     if (!alive) return;
     const p = s?.[which];
