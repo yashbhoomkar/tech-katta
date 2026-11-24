@@ -9,17 +9,49 @@ async function signedIn(page: Page) {
   await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
   await page.route(`${API}/v1/me/**`, (r) => r.fulfill({ status: 204, headers: CORS }));
 }
-/** the screen point under a part: its label sits above it */
+/** the screen point under a part: its label sits above it. The labels glide to their place (and the 3D scene keeps easing for a moment after a move), so this waits until the point has not moved for several frames: on a slow machine the point measured at once is a few frames old, and a click there misses the part */
 const partAt = (page: Page, name: string) =>
-  page.evaluate((n) => { const p = Array.from(document.querySelectorAll(".d3 .p3")).find((e) => (e as HTMLElement).innerText.trim().startsWith(n)); if (!p) throw new Error(`no part named ${n}`); const r = p.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom + 28 }; }, name);
+  page.evaluate(
+    (n) =>
+      new Promise<{ x: number; y: number }>((resolve, reject) => {
+        const read = () => {
+          const p = Array.from(document.querySelectorAll(".d3 .p3")).find((e) => (e as HTMLElement).innerText.trim().startsWith(n));
+          if (!p) return null;
+          const r = p.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.bottom + 28 };
+        };
+        let last = read(), still = 0;
+        const t0 = performance.now();
+        const tick = () => {
+          const now = read();
+          if (!now) return performance.now() - t0 > 10_000 ? reject(new Error(`no part named ${n}`)) : requestAnimationFrame(tick);
+          still = last && Math.abs(now.x - last.x) < 0.5 && Math.abs(now.y - last.y) < 0.5 ? still + 1 : 0;
+          last = now;
+          if (still >= 5) return resolve(now);
+          if (performance.now() - t0 > 10_000) return resolve(now);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    name,
+  );
 const count = (page: Page, sel: string) => page.locator(sel).count();
+/** the number of elements once it has stopped changing for a while: the sandbox's starting parts arrive a moment after the canvas is drawn (later on a slow machine), and a count taken before they are in makes every later count look off by that many */
+async function settled(page: Page, sel: string) {
+  let last = await count(page, sel), since = Date.now();
+  for (let i = 0; i < 120; i++) {
+    await page.waitForTimeout(250);
+    const now = await count(page, sel);
+    if (now !== last) { last = now; since = Date.now(); } else if (Date.now() - since >= 1500) return now;
+  }
+  return last;
+}
 
 test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({ page }) => {
   await signedIn(page);
   await page.goto("/problems/sandbox");
   await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(1500);
-  const n0 = await count(page, ".react-flow__node"), e0 = await count(page, ".react-flow__edge");
+  const n0 = await settled(page, ".react-flow__node"), e0 = await settled(page, ".react-flow__edge");
   // put two parts down from the palette (a tap adds one in the middle)
   await page.locator(".lab-item", { hasText: "Clients" }).first().focus();
   await page.keyboard.press("Enter");
