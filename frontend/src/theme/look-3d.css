@@ -248,7 +248,7 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .sv-pbrief { position: fixed; z-index: 20; left: 10px; right: 10px; bottom: calc(var(--ws-bottom, 0px) + 10px); display: grid; gap: 10px; padding: 20px; border: 1px solid var(--glass-edge); border-radius: 24px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow), 0 0 0 100vmax rgb(0 0 0 / .35); }
   .tk-island .tk-legacy .sv-pbrief { max-height: calc(100dvh - var(--ws-top, 0px) - var(--ws-bottom, 0px) - 20px); overflow-y: auto; }
   .tk-island .tk-legacy .lab-checks button, .tk-island .tk-legacy .lab-check { min-height: 40px; }
-  .tk-island .tk-legacy .sv-pbrief h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  .tk-island .tk-legacy .sv-pbrief h2 { font-size: 22px; font-weight: 600; margin: 0; }
   .tk-island .tk-legacy .sv-pbrief p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
   .tk-island .tk-legacy .sv-pk { justify-self: start; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: 6px; font: 400 12px var(--mono); }
   .tk-island .tk-legacy .sv-pchips { display: flex; gap: 8px; flex-wrap: wrap; }
