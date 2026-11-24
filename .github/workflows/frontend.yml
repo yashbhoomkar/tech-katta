@@ -35,7 +35,7 @@ jobs:
         run: npm ci
       - name: Lab engine tests
         run: npm test
-      - name: Islands (next/: the canvas, judge and practice) - typecheck, lint, tests
+      - name: "Islands (next/, the canvas, judge and practice): typecheck, lint, tests"
         run: npm run check:islands
       - name: Production build
         run: npm run build
