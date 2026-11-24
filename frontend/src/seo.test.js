@@ -53,6 +53,8 @@ test('an article page holds its public part (2 paragraphs, section names), never
   const page = pagesFrom(content).find((p) => p.key === 'concepts/consistent-hashing');
   const html = render('<html><head><title>x</title><script type="module" src="/a.js"></script></head><body><div id="root"><p style="x">Loading…</p></div></body></html>', page);
   assert.match(html, /<div id="root"><div class="tk-static"><main>/);
+  // hidden while JavaScript runs (site3d/scripts/boot-theme.js adds tk-js), so it never flashes before the app draws
+  assert.match(html, /html\.tk-js #root>\.tk-static\{display:none\}/);
   assert.match(html, /<h1>Consistent hashing/);
   assert.doesNotMatch(html, /tk-locked/);
   assert.doesNotMatch(html, /isAccessibleForFree/);

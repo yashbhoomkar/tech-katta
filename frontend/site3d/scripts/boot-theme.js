@@ -7,3 +7,11 @@
   var dark = p === "dark" || (p === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
 })();
+// The search copy of the page (seo.js writes it inside #root for search engines and readers without JavaScript) is
+// hidden while JavaScript runs, so it never flashes before the app draws (owner, 2026-11-24). If the app has not
+// replaced it after 6 s (a failed or very slow load), it shows again rather than leaving the page blank.
+(function () {
+  var root = document.documentElement;
+  root.classList.add("tk-js");
+  setTimeout(function () { root.classList.remove("tk-js"); }, 6000);
+})();
