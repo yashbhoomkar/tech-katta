@@ -89,11 +89,13 @@ export function mount(view, _p, { reduced, go }) {
     if (!world) return;
     world.setSystem(SYSTEM);
     const f = world.frame(), phone = innerWidth < 1000; // tablets stack the figure under the words, like phones
-    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
+    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.74 : 0.7), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
     world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10); world.setLabelMode(phone ? 'edge' : 'free');
     const parts = {}, labels = {};
     for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [innerWidth < 380 ? '' : `${r}/${cs.length}`, tone]; /* 320 px phones: counts live in the list below, so the pills stay short */ }
     parts.a2 = parts.a1;
+    // wide screens: every label stays, but none may sit left of the intro text's right edge (the laptop's "Users" pill shifts right instead of over the words)
+    world.setLabelMinX(phone ? 0 : (view.querySelector('.dash-body')?.getBoundingClientRect().right || 0) + 8 - stage.getBoundingClientRect().left); // overlay coordinates start at the stage's left edge
     world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
     world.onPick((id) => {
       const key = id === 'a2' ? 'a1' : id;

@@ -43,3 +43,12 @@ test("sends unknown keys home and unknown problems to the list", () => {
   assert.equal(to("/dashboard/nothing/"), "/home");
   assert.equal(to("/dashboard/problems/no-such-problem/"), "/problems");
 });
+
+test("new-style paths under /dashboard land on the same path without it", () => {
+  assert.equal(to("/dashboard/learn/concepts/caching"), "/learn/concepts/caching");
+  assert.equal(to("/dashboard/learn/real-systems/shopify-reservations"), "/learn/real-systems/shopify-reservations");
+  assert.equal(to("/dashboard/learn"), "/learn/concepts");
+  assert.equal(to("/dashboard/simulator/ind-vs-pak"), "/simulator/ind-vs-pak");
+  assert.equal(to("/dashboard/me"), "/me");
+  assert.equal(to("/dashboard"), "/home");
+});

@@ -58,7 +58,10 @@ const pathOf = (kind: string, o: IslandOptions) =>
 /** "Numbers worth knowing" (Quick Notes): the canvas code's chart and estimation shortcuts, on the site's numbers */
 function NumbersView() {
   const { site } = useContent();
-  return <div className={`tk-legacy ${tokens.tokens}`}><Numbers n={site.numbers} /></div>;
+  // the labels above the title are in normal case, as everywhere else on the site (the content's are in capitals)
+  const n = site.numbers as Record<string, unknown>;
+  const norm = (v: unknown) => (typeof v === "string" && v === v.toUpperCase() && /[A-Z]/.test(v) ? v.toLowerCase().replace(/(^|[\s—–-])([a-z])/g, (_m, a: string, b: string) => a + b.toUpperCase()) : v);
+  return <div className={`tk-legacy ${tokens.tokens}`}><Numbers n={{ ...n, eyebrow: norm(n.eyebrow), figure: norm(n.figure) } as never} /></div>;
 }
 
 function view(kind: string, o: IslandOptions): ReactNode {

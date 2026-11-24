@@ -6,7 +6,8 @@
     "Paths: '*' matches the rest of a path; ':splat' in 'to' puts that part back.",
     "rewrites: serve 'to' when no file exists at 'from' (the address bar keeps 'from').",
     "redirects: send the browser to 'to'; permanent is 308, otherwise 307; 'host' limits a rule to one domain.",
-    "headers: added to every response whose path matches."
+    "headers: added to every response whose path matches.",
+    "No global trailingSlash setting: Vercel's trailingSlash:false redirects /x/ to /x BEFORE our own redirects, so /learn/ took two hops (/learn, then /learn/concepts). Each address that moves is listed with and without the slash, so it moves in one hop; pages without a rule answer at both addresses and the page itself sets its canonical link and drops the slash from the address bar."
   ],
   "rewrites": [
     {
@@ -77,28 +78,48 @@
   ],
   "redirects": [
     {
+      "from": "/learn",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/learn/",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/problems",
+      "to": "/problems",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/problems/",
+      "to": "/problems",
+      "permanent": true
+    },
+    {
       "from": "/dashboard/lab",
-      "to": "/dashboard/problems/",
+      "to": "/problems",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/",
-      "to": "/dashboard/problems/",
+      "to": "/problems",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/ind-vs-pak",
-      "to": "/dashboard/problems/ind-vs-pak/",
+      "to": "/problems/ind-vs-pak",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/ind-vs-pak/",
-      "to": "/dashboard/problems/ind-vs-pak/",
+      "to": "/problems/ind-vs-pak",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/*",
-      "to": "/dashboard/problems/challenge/:splat",
+      "to": "/problems/challenge/:splat",
       "permanent": true
     },
     {
@@ -1099,6 +1120,56 @@
     {
       "from": "/dashboard/terms/",
       "to": "/terms",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/learn",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/learn/",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/learn/*",
+      "to": "/learn/:splat",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/simulator",
+      "to": "/simulator",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/simulator/",
+      "to": "/simulator",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/simulator/*",
+      "to": "/simulator/:splat",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/home",
+      "to": "/home",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/home/",
+      "to": "/home",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/me",
+      "to": "/me",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/me/",
+      "to": "/me",
       "permanent": true
     },
     {

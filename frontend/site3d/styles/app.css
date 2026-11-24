@@ -68,7 +68,7 @@ main.leaving { opacity: 0; }
 .lead { margin: 0 0 18px; color: var(--ink-2); font-size: 18px; line-height: 1.65; max-width: 36em; }
 .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
 .page { padding: 140px var(--gut) 80px; }
-.page.narrow { max-width: 760px; margin: 0 auto; }
+.page.narrow { max-width: 760px; margin: 0 auto 0 0; } /* reading pages start at the same left edge as the others (the page's own gutter), 760 px wide at most */
 .missing { min-height: 80vh; }
 
 /* ---------- scroll story (landing, lessons) ---------- */
@@ -852,9 +852,9 @@ html[data-rail] { --side-w: 72px; }
 .side { display: none; }
 @media (min-width: 1000px) {
   body.in-app .side { display: flex; flex-direction: column; position: fixed; z-index: 35; inset: 0 auto 0 0; width: var(--side-w); padding: 14px 10px 12px;
-    background: var(--page); border-right: 1px solid var(--line); transition: width .25s var(--out); view-transition-name: side; }
+    background: var(--page); border-right: 1px solid var(--line); view-transition-name: side; }
   body.in-app .top { display: none; }
-  body.in-app main { padding-left: var(--side-w); transition: padding-left .25s var(--out); --gut: max(28px, calc((100vw - var(--side-w) - 1120px) / 2)); }
+  body.in-app main { padding-left: var(--side-w); --gut: max(28px, calc((100vw - var(--side-w) - 1120px) / 2)); }
   body.in-app .page { padding-top: 64px; }
   body.in-app .sim { left: var(--side-w); }
   body.in-app .ws { left: var(--side-w); }
@@ -1257,7 +1257,9 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 @media (prefers-reduced-motion: reduce) { .tap-ring::after { animation: none; opacity: .5; } }
 
 /* Tap cue colour: hot coral, a hue the 3D scene never uses, so the ring and the hint dot read as one call to action */
-:root { --beacon: #ff4a3d; }
+:root { --beacon: #ff4a3d; --beacon-ink: #ff4a3d; }
+/* the beacon red as text on the light page is 3.3:1; this one is 4.5:1 or more (the dot, ring and outline keep --beacon) */
+[data-theme="light"] { --beacon-ink: #C0271D; }
 .eh-dot { background: var(--beacon); }
 .eh-dot::after { border-color: var(--beacon); }
 .tap-ring { background: var(--beacon); box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon) 35%, transparent), 0 0 18px color-mix(in srgb, var(--beacon) 60%, transparent), 0 4px 14px rgb(0 0 0 / .35); }
@@ -1293,9 +1295,9 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 .tour-offer { right: 24px; bottom: 24px; animation: pc-up .4s var(--out) both; }
 .tour-offer .pc-x { position: absolute; top: 8px; right: 8px; }
 .tour-offer.out { opacity: 0; transform: translateY(16px); transition: opacity .25s, transform .25s; }
-.tour-kick { display: flex; align-items: center; gap: 10px; margin: 0 40px 8px 0; font-size: var(--label); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--beacon); }
+.tour-kick { display: flex; align-items: center; gap: 10px; margin: 0 40px 8px 0; font-size: var(--label); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--beacon-ink); }
 /* "Take the tour" in the hint pill */
-.eh-tour { border: 0; border-left: 1px solid var(--glass-line, var(--line)); background: none; padding: 2px 0 2px 16px; font: inherit; font-weight: 600; color: var(--beacon); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.eh-tour { border: 0; border-left: 1px solid var(--glass-line, var(--line)); background: none; padding: 2px 0 2px 16px; font: inherit; font-weight: 600; color: var(--beacon-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .eh-tour:hover { text-decoration-thickness: 2px; }
 @media (max-width: 760px) {
   .tour-card, .tour-offer { left: 12px; right: 12px; width: auto; }
@@ -1523,7 +1525,7 @@ html, body { overflow-x: clip; }
 .signin .si-close { align-self: flex-start; }
 body.modal-open { overflow: hidden; }
 .gate-card { margin: 28px 0 8px; padding: 22px; border-radius: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; background: var(--glass); background-image: linear-gradient(rgb(255 255 255 / .09), transparent 40%); border: 1px solid var(--line-2); box-shadow: var(--shadow); }
-.gate-card h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.gate-card :is(h1, h2) { font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
 .gate-card p { font-size: 16px; line-height: 1.55; margin: 0; max-width: 56ch; color: var(--ink-2); }
 .gate-card.big { margin: 96px auto; max-width: 520px; }
 .preview-fade { position: relative; }
@@ -1569,3 +1571,66 @@ body.ws-page { overflow: hidden; }
 .tabbar button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 /* five items: they share the bar's width on a small phone (320 px) */
 @media (max-width: 430px) { .tabbar a, .tabbar button { min-width: 0; flex: 1 1 0; padding-left: 2px; padding-right: 2px; } .tabbar { width: calc(100vw - 20px); max-width: 420px; } }
+
+/* ---- UI/UX audit fixes, 2026-11-24 (tech-katta-context 51) ---- */
+/* 1. the phone tab bar is a solid surface in both themes (page text showed through its labels), and the page leaves room under it */
+@media (max-width: 999px) {
+  html[data-theme] .tabbar { background: var(--card); background-image: none; border: 1px solid var(--line-2); box-shadow: var(--shadow); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  main { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .foot { padding-bottom: 40px; }
+}
+/* 3. a workspace address that shows the lock card is an ordinary page: it scrolls, and the card sits in the middle of the main area */
+body.ws-page.ws-locked { overflow: auto; }
+.locked-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 24px 120px; box-sizing: border-box; }
+.locked-wrap .gate-card.big { margin: 0; width: 100%; max-width: 520px; }
+
+/* 7. on a phone the first-visit offer sits in the hero's flow, under the hint, instead of floating over the hero */
+.tour-offer.inline { position: relative; left: auto; right: auto; bottom: auto; top: auto; width: auto; margin: 12px 16px 0; z-index: 1; animation: none; }
+
+/* 8. every page starts at the left edge; reading pages (You, Privacy, Terms, lessons' loading state) are 760 px wide at most */
+body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
+/* 9. labels above titles and status tags are in normal case (the text itself is normalised where it is drawn: site3d/scripts/case.js) */
+.kicker, .l-tag, .tour-kick { text-transform: none; }
+/* 10. one corner radius for controls: --r-s (10 px). A segmented control keeps its buttons and pill at --r-s and its frame at --r-s plus its 4 px padding. */
+.seg { border-radius: calc(var(--r-s) + 4px); }
+.seg button, .seg-pill { border-radius: var(--r-s); }
+.tour-skip, .eh-tour { border-radius: var(--r-s); }
+.eh-tour { position: relative; border-left: 0; padding-left: 16px; }
+.eh-tour::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--glass-line, var(--line)); }
+@media (max-width: 760px) { .eh-tour { padding-left: 0; } .eh-tour::before { display: none; } }
+/* 11. the site's two families under their own names, for the islands (which draw their text from var(--font) and var(--mono)) */
+:root { --site-sans: var(--sans); --site-mono: var(--mono); }
+
+/* UI/UX audit 12-15 */
+/* 12  phones: links and chips that were 20-34 px tall get a 44 px hit area (padding, not a new look) */
+@media (max-width: 760px) {
+  .foot nav a, .legend button, .eh-tour, .tour-skip { display: inline-flex; align-items: center; min-height: 44px; }
+  .foot nav a { padding: 0 6px; }
+  .foot nav { row-gap: 0; }
+  /* every item of the breadcrumb is 44 px tall and centred, so the links and the slash and current page share one baseline */
+  .crumbs { align-items: center; margin-bottom: 0; }
+  .crumbs > a, .crumbs > span { display: inline-flex; align-items: center; min-height: 44px; }
+  .crumbs a::after { inset: 0 -4px; }
+}
+/* 13  an empty 3D preview panel says what it waits for, quietly */
+.preview-card.flat::after, .preview-card:has(.cap-t:empty)::after { content: "Hover a row to see its design here"; position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; font-size: var(--label); color: var(--ink-3, var(--muted)); pointer-events: none; }
+@media (max-width: 760px) { .preview-card.flat::after, .preview-card:has(.cap-t:empty)::after { content: "Scroll the list to see its design here"; } }
+.preview-card.flat .preview-cap, .preview-card:has(.cap-t:empty) .preview-cap { display: none; }
+/* 14  the article's loading header is the size of the finished one: two title lines, then the dek */
+.reader-wait .headline { min-height: calc(2 * 1.05em); }
+/* 15  the Dashboard intro stops before the 3D laptop on wide screens */
+.dash .dash-body > .lead { max-width: 560px; }
+@media (max-width: 1100px) { .dash .dash-body > .lead { max-width: none; } }
+
+/* UI/UX audit follow-up: the article's loading header is the finished header's own layout; its meta line is a quiet shimmer bar */
+.reader-wait .skel-meta { position: relative; color: transparent; }
+.reader-wait .skel-meta::after { content: ""; position: absolute; left: 50%; top: 50%; width: 180px; height: 10px; margin: -5px 0 0 -90px; border-radius: 5px; background: var(--sunken); opacity: .8; }
+.reader-wait .actions .btn { pointer-events: none; opacity: .55; }
+@media (prefers-reduced-motion: no-preference) { .reader-wait .skel-meta::after { animation: skel-pulse 1.4s ease-in-out infinite; } }
+@keyframes skel-pulse { 50% { opacity: .35; } }
+.wait-lead { min-height: 2lh; }
+
+/* the sidebar and the page beside it slide only when someone folds or opens it (the class is set for that moment), never while a page first appears: the sliding counted as layout shift */
+@media (min-width: 1000px) { html.rail-anim body.in-app main { transition: padding-left .25s var(--out); } html.rail-anim body.in-app .side { transition: width .25s var(--out); } }
+/* breadcrumbs: links with a taller hit area (the workspace's own are 40 px) and the slash and current page share one centre line on every screen */
+.crumbs { align-items: center; }

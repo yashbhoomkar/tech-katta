@@ -46,6 +46,8 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   --warn-tint: color-mix(in srgb, var(--amber-fill) 12%, var(--card));
   --cat-green: var(--mint); --cat-amber: var(--peach); --cat-violet: var(--lilac); --cat-teal: var(--sky); --cat-pink: var(--rose);
   /* type: Instrument Sans for everything, Geist Mono for labels and numbers; no serif */
+  /* the site's own two families (app.css :root --site-sans, --site-mono), not the legacy "... Variable" names */
+  --font: var(--site-sans, "Instrument Sans", ui-sans-serif, system-ui, sans-serif); --mono: var(--site-mono, "Geist Mono", ui-monospace, monospace);
   --font-display: var(--font);
   /* shape: buttons are 10 px, cards 14 px, not pills */
   --radius: 10px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 24px; --r-btn: 10px;
@@ -232,7 +234,7 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .sv-tabs button:last-child { position: sticky; right: 0; margin-left: auto; background: var(--ink); color: var(--page); box-shadow: -12px 0 12px -4px var(--card); }
   /* build: the slim bar */
   .tk-island .tk-legacy .sv-pbar { position: absolute; z-index: 10; left: 8px; right: 8px; top: 8px; display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 6px 8px 6px 14px; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
-  .tk-island .tk-legacy .sv-ptitle { flex: 1; min-width: 0; font: 600 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tk-island .tk-legacy .sv-ptitle { flex: 1; min-width: 0; margin: 0; letter-spacing: normal; font: 600 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tk-island .tk-legacy .sv-pb { min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 600 14px var(--font); }
   .tk-island .tk-legacy .sv-pbar .sv-run, .tk-island .tk-legacy .sv-pbar .sv-submit { padding: 0 12px; }
   .tk-island .tk-legacy .sv-pmore { position: relative; }
@@ -246,7 +248,7 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .sv-pbrief { position: fixed; z-index: 20; left: 10px; right: 10px; bottom: calc(var(--ws-bottom, 0px) + 10px); display: grid; gap: 10px; padding: 20px; border: 1px solid var(--glass-edge); border-radius: 24px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow), 0 0 0 100vmax rgb(0 0 0 / .35); }
   .tk-island .tk-legacy .sv-pbrief { max-height: calc(100dvh - var(--ws-top, 0px) - var(--ws-bottom, 0px) - 20px); overflow-y: auto; }
   .tk-island .tk-legacy .lab-checks button, .tk-island .tk-legacy .lab-check { min-height: 40px; }
-  .tk-island .tk-legacy .sv-pbrief h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  .tk-island .tk-legacy .sv-pbrief h2 { font-size: 22px; font-weight: 600; margin: 0; }
   .tk-island .tk-legacy .sv-pbrief p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
   .tk-island .tk-legacy .sv-pk { justify-self: start; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: 6px; font: 400 12px var(--mono); }
   .tk-island .tk-legacy .sv-pchips { display: flex; gap: 8px; flex-wrap: wrap; }

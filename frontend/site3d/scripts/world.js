@@ -337,7 +337,9 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
   // tries its own spot just above its part first, then spots further up and to either side; if it had to move, a thin
   // leader line ties it back to its part. Positions ease toward their target so labels do not jump.
   const queue = [];
-  let labelMaxY = 0.52, labelMinY = 76, labelMode = 'free'; // 'edge': callouts in two columns at the sides (small screens) // labels may not sit higher than labelMinY px (76 clears the landing's top bar)
+  // a label's size is measured once; when a web font arrives later the pills change width, so measure again (slow connections showed pills stacked over each other)
+  let fontGen = 0; try { document.fonts?.addEventListener?.('loadingdone', () => { fontGen += 1; }); document.fonts?.ready?.then(() => { fontGen += 1; }); } catch { /* old browser */ }
+  let labelMaxY = 0.52, labelMinY = 76, labelMinX = 8, labelMode = 'free'; // 'edge': callouts in two columns at the sides (small screens) // labels may not sit higher than labelMinY px (76 clears the landing's top bar)
   const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   leaders.setAttribute('class', 'p3-leaders'); overlay.appendChild(leaders);
   const lines = [];
@@ -364,7 +366,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
   /** callouts: labels stand in two columns at the left and right edges, each column in its parts' top-to-bottom order,
    *  with a thin line to the part, so on a narrow screen they never pile onto the parts or each other */
   function layoutEdge() {
-    const size = (el) => { if (el._wh?.h0 !== el._h) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h }; return el._wh; };
+    const size = (el) => { if (el._wh?.h0 !== el._h || el._wh.g !== fontGen) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h, g: fontGen }; return el._wh; };
     const byX = [...queue].sort((a, b) => a.ax - b.ax), half = Math.ceil(byX.length / 2);
     const cols = [[byX.slice(0, half), true], [byX.slice(half), false]];
     const bottom = H * Math.min(labelMaxY, 1) - 8;
@@ -392,17 +394,17 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
     let used = 0;
     for (const q of queue) {
       const { el, ax, ay } = q;
-      if (el._wh?.h0 !== el._h) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h };
+      if (el._wh?.h0 !== el._h || el._wh.g !== fontGen) el._wh = { w: el.offsetWidth || 80, h: el.offsetHeight || 22, h0: el._h, g: fontGen };
       const w = el._wh.w, h = el._wh.h;
       const home = { x: ax - w / 2, y: ay - h - 6, w, h };
       let best = null;
       for (let k = 0; k < 7 && !best; k++) {
         for (const dx of k === 0 ? [0] : [0, -(w / 2 + 14), w / 2 + 14]) {
-          const b = { x: Math.max(8, Math.min(W - w - 8, home.x + dx)), y: Math.max(labelMinY, home.y - k * (h + 6)), w, h };
+          const b = { x: Math.max(labelMinX, Math.min(W - w - 8, home.x + dx)), y: Math.max(labelMinY, home.y - k * (h + 6)), w, h };
           if (!hit(b)) { best = b; break; }
         }
       }
-      best = best || home;
+      best = best || { ...home, x: Math.max(labelMinX, home.x) };
       boxes.push(best);
       // leader line when the label sits away from its part
       const cx = Math.max(best.x + 6, Math.min(best.x + w - 6, ax)), cy = best.y + h;
@@ -540,7 +542,7 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMode: (m) => { labelMode = m; },
+  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMinX: (px) => { labelMinX = Math.max(8, px); }, setLabelMode: (m) => { labelMode = m; },
     /** a part's position on the canvas in px (for a card beside it), or null */
     pickAt, groundAt, getCamera: () => ({ ...camGoal, t: [...camGoal.t] }),
     screenOf: (id) => { const p = parts.get(id); if (!p || p.gone) return null; const [x, y] = project(p.g.position.x, p.top + p.rise, p.g.position.z); return [x, y]; }, onPick: (cb) => { pickCb = cb; }, destroy };

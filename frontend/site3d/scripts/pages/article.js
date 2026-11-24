@@ -65,7 +65,16 @@ export function mount(view, [section, slug], { reduced }) {
   let alive = true, story = null, aside = null, io = null, offGate = null, stopReading = null; const ac = new AbortController();
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
-  view.innerHTML = `<section class="page narrow reader-wait"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav><h1 class="headline"><span class="thin">${esc(head ? splitTitle(head.title)[0] : 'One moment')}</span></h1><p class="lead">${esc(head?.dek || '')}</p><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>`;
+  // the loading header is the finished header's own layout (the same hero step, label, title, dek, meta line and buttons), so nothing moves when the text arrives
+  const hGroup = head ? ((sec.groups.find(([g]) => g === head.group) || [])[1] || '') : '', [h1a, h1b] = head ? splitTitle(head.title) : ['One moment', ''], h2b = h1b || (head ? SECOND[slug] : '') || '';
+  view.innerHTML = `<section class="story landing-story article-story reader-wait"><div class="step hero" data-step="0" aria-busy="true">
+    <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav>
+    <p class="kicker"><span>${esc(sec.name.replace(/s$/, ''))} ${head ? numOf(head.no) : ''}</span><i></i>${esc(hGroup)}</p>
+    <h1 class="headline"><span class="thin">${esc(h1a)}</span>${h2b ? `<span class="heavy accent">${esc(h2b)}</span>` : ''}</h1>
+    <p class="lead">${esc(head?.dek || '\u00a0')}</p>
+    <p class="meta mono skel-meta" role="status" aria-label="Loading">&nbsp;</p>
+    <div class="actions"><button class="btn dark" type="button" disabled>Play the story<span class="chip">↓</span></button><button class="btn light" type="button" disabled>Skip to the article</button></div>
+  </div></section>`;
 
   getArticle(slug).then(async (a) => {
     if (!alive) return;

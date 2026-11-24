@@ -3,9 +3,10 @@
 // its data in the #fragment) and /practice[/<slug>] (the practice problems, open to everyone). The island code
 // (frontend/next/src/islands, built into /3d/islands/islands.js) loads only here; the page around it (sidebar, bottom bar,
 // title, the content lock) is the 3D site's.
-import { listArticles, listNow } from '../articles.js';
+import { API, listArticles, listNow } from '../articles.js';
 import { gateNow, watchGate, accountCopy } from '../gating.js';
 import { openSignIn } from '../signin.js';
+import { syncRail } from '../shell.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const isProblem = (a) => a.section === 'interview-questions' && a.group !== 'start';
@@ -32,8 +33,12 @@ const wait = () => `<section class="ws"><div class="ws-wait glass" role="status"
 const missing = () => `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/problems">Problems</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/problems">See all problems<span class="chip">→</span></a></p></section>`;
 function locked(title) {
   const c = accountCopy()?.pageLock || { title: 'Sign in to open this', text: '' };
-  return `<section class="page narrow"><div class="gate-card big"><p class="kicker"><span>${esc(title)}</span></p><h2>${esc(c.title)}</h2><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></div></section>`;
+  return `<section class="locked-wrap"><div class="gate-card big"><p class="kicker"><span>${esc(title)}</span></p><h1>${esc(c.title)}</h1><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></div></section>`;
 }
+// a challenge's own name, for the tab title and the lock card (GET /v1/lab, once)
+let labP = null;
+const challengeName = (id) => (labP ||= fetch(`${API}/v1/lab`, { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null))
+  .then((l) => (l?.challenges || []).find((c) => c.id === id)?.title || null);
 
 export function mount(view, _params, ctx) {
   const path = location.pathname.replace(/(.)\/$/, '$1');
@@ -57,10 +62,13 @@ export function mount(view, _params, ctx) {
     stop();
     if (!alive) return;
     const g = target.kind === 'practice' ? 'open' : gateNow('workspace');
+    document.body.classList.toggle('ws-locked', g !== 'open'); syncRail();
     if (g === 'wait') { view.innerHTML = wait(); return; }
     if (g === 'locked') {
       const a = target.slug && listNow().find((x) => x.slug === target.slug);
-      view.innerHTML = locked(a ? a.title : { challenge: 'Challenge', sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem');
+      const name = target.kind === 'challenge' ? (await challengeName(target.id)) || 'Challenge' : a ? a.title : { sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem';
+      if (!alive) return;
+      view.innerHTML = locked(name);
       view.querySelector('[data-signin]').addEventListener('click', () => openSignIn('page'));
       return;
     }
@@ -89,8 +97,9 @@ export function mount(view, _params, ctx) {
     // a problem that does not exist: the same page as any unknown address
     if (target.kind === 'problem' && listNow().length && !listNow().some((a) => a.slug === target.slug && isProblem(a))) { view.innerHTML = missing(); return; }
     document.title = titleOf(path) || document.title;
+    if (target.kind === 'challenge') challengeName(target.id).then((n) => { if (alive && n) document.title = `${n} · Challenge · Tech Katta`; });
     draw();
   })();
   const off = target.kind === 'practice' ? null : watchGate('workspace', () => { if (alive) draw(); });
-  return () => { alive = false; off?.(); stop(); };
+  return () => { alive = false; off?.(); stop(); document.body.classList.remove('ws-locked'); };
 }
