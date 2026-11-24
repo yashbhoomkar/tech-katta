@@ -150,7 +150,7 @@ const setMeta = (html, attr, name, value) => {
 };
 
 // The static HTML inside <div id="root"> (the app replaces it when it starts). Styled just enough to read.
-const STATIC_CSS = `<style>.tk-static{max-width:720px;margin:0 auto;padding:32px 16px 64px;font:16px/1.7 system-ui,sans-serif;color:#1d1b16}.tk-static h1{font-size:30px;line-height:1.2}.tk-static a{color:#94600a}.tk-static table{border-collapse:collapse;font-size:14px}.tk-static td,.tk-static th{border:1px solid #e6e0d1;padding:4px 8px}.tk-static pre{overflow:auto;background:#f3efe5;padding:12px}html[data-theme=dark] .tk-static{color:#ece7da}</style>`;
+const STATIC_CSS = `<style>.tk-static{max-width:720px;margin:0 auto;padding:32px 16px 64px;font:16px/1.7 system-ui,sans-serif;color:#1d1b16}.tk-static h1{font-size:30px;line-height:1.2}.tk-static a{color:#94600a}.tk-static table{border-collapse:collapse;font-size:14px}.tk-static td,.tk-static th{border:1px solid #e6e0d1;padding:4px 8px}.tk-static pre{overflow:auto;background:#f3efe5;padding:12px}html[data-theme=dark] .tk-static{color:#ece7da}html.tk-js #root>.tk-static{display:none}</style>`;
 export function withBody(html, body) {
   if (!body) return html;
   return html.replace(/<div id="root">(?:<p[^>]*>[^<]*<\/p>)?<\/div>/, `<div id="root"><div class="tk-static">${body}</div></div>`).replace("</head>", STATIC_CSS + "</head>");
