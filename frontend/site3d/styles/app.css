@@ -1257,7 +1257,9 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 @media (prefers-reduced-motion: reduce) { .tap-ring::after { animation: none; opacity: .5; } }
 
 /* Tap cue colour: hot coral, a hue the 3D scene never uses, so the ring and the hint dot read as one call to action */
-:root { --beacon: #ff4a3d; }
+:root { --beacon: #ff4a3d; --beacon-ink: #ff4a3d; }
+/* the beacon red as text on the light page is 3.3:1; this one is 4.5:1 or more (the dot, ring and outline keep --beacon) */
+[data-theme="light"] { --beacon-ink: #C0271D; }
 .eh-dot { background: var(--beacon); }
 .eh-dot::after { border-color: var(--beacon); }
 .tap-ring { background: var(--beacon); box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon) 35%, transparent), 0 0 18px color-mix(in srgb, var(--beacon) 60%, transparent), 0 4px 14px rgb(0 0 0 / .35); }
@@ -1293,9 +1295,9 @@ main:focus, main:focus-visible, #view:focus-visible { outline: none; }
 .tour-offer { right: 24px; bottom: 24px; animation: pc-up .4s var(--out) both; }
 .tour-offer .pc-x { position: absolute; top: 8px; right: 8px; }
 .tour-offer.out { opacity: 0; transform: translateY(16px); transition: opacity .25s, transform .25s; }
-.tour-kick { display: flex; align-items: center; gap: 10px; margin: 0 40px 8px 0; font-size: var(--label); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--beacon); }
+.tour-kick { display: flex; align-items: center; gap: 10px; margin: 0 40px 8px 0; font-size: var(--label); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--beacon-ink); }
 /* "Take the tour" in the hint pill */
-.eh-tour { border: 0; border-left: 1px solid var(--glass-line, var(--line)); background: none; padding: 2px 0 2px 16px; font: inherit; font-weight: 600; color: var(--beacon); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.eh-tour { border: 0; border-left: 1px solid var(--glass-line, var(--line)); background: none; padding: 2px 0 2px 16px; font: inherit; font-weight: 600; color: var(--beacon-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .eh-tour:hover { text-decoration-thickness: 2px; }
 @media (max-width: 760px) {
   .tour-card, .tour-offer { left: 12px; right: 12px; width: auto; }
@@ -1581,3 +1583,6 @@ body.ws-page { overflow: hidden; }
 body.ws-page.ws-locked { overflow: auto; }
 .locked-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 24px 120px; box-sizing: border-box; }
 .locked-wrap .gate-card.big { margin: 0; width: 100%; max-width: 520px; }
+
+/* 7. on a phone the first-visit offer sits in the hero's flow, under the hint, instead of floating over the hero */
+.tour-offer.inline { position: relative; left: auto; right: auto; bottom: auto; top: auto; width: auto; margin: 12px 16px 0; z-index: 1; animation: none; }

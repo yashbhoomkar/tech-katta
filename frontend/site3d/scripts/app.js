@@ -85,6 +85,13 @@ const ROUTES = [
   [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
   [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
 ];
+/** one address per page: the canonical link follows the route (no trailing slash; /learn is /learn/concepts); none on the not-found page */
+function setCanonical(path, missing) {
+  let l = document.head.querySelector('link[rel="canonical"]');
+  if (missing) { l?.remove(); return; }
+  if (!l) { l = document.createElement('link'); l.rel = 'canonical'; document.head.appendChild(l); }
+  l.href = `${location.origin}${path === '/learn' ? '/learn/concepts' : path === '/' ? '/' : path}`;
+}
 let cleanup = null, token = 0, prevPath = '', lastLoc = '';
 async function legacyRedirect(path) {
   const key = legacyKey(path, location.hash);
@@ -99,6 +106,8 @@ function route() {
   // an old prototype link (#/learn/…, #/me, #/sim/…) becomes its real address
   if (location.hash.startsWith('#/')) { const h = location.hash.slice(1).replace(/^\/me\b/, '/home').replace(/^\/sim\b/, '/simulator'); history.replaceState(null, '', h); }
   const path = location.pathname.replace(/(.)\/$/, '$1') || '/';
+  // one address per page: /x/ is shown as /x (the host redirects too; this covers the ones that do not)
+  if (path !== location.pathname && !/^\/dashboard(?:\/|$)/.test(path)) history.replaceState(null, '', path + location.search + location.hash);
   // Back or Forward onto an address of the React app (it handed over with a whole page load, so the browser keeps its
   // entries in this page's history): load that page for real
   if (!owns(path)) { location.reload(); return; }
@@ -120,6 +129,7 @@ function route() {
     refreshing = false;
     view.replaceChildren();
     document.title = titleFor(path, nav || 'missing');
+    setCanonical(path, !mod);
     const back = !linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0; linkClick = false; window.tkFresh = false; curPath = '';
     scrollTo(0, 0);
     if (!mod) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/home">Go to the Dashboard<span class="chip">→</span></a></p></section>`; }

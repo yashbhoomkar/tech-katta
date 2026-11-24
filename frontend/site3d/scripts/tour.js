@@ -124,10 +124,13 @@ export function offerTour({ start, delay = 1500 }) {
   el.addEventListener('click', (e) => { const o = e.target.closest('[data-o]')?.dataset.o; if (!o) return; hide(); if (o === 'yes') start(); });
   const t = setTimeout(() => {
     if (tourSeen() || document.querySelector('.tour-card') || scrollY > innerHeight * 0.35) return;
-    document.body.appendChild(el); shown = true; addEventListener('scroll', onScroll, { passive: true });
+    // phones: in the hero's flow, under the hint, so it never covers the headline, the buttons or the hint itself
+    const hintEl = document.querySelector('.explore-hint');
+    if (hintEl && matchMedia('(max-width: 760px)').matches) { el.classList.add('inline'); hintEl.after(el); } else document.body.appendChild(el);
+    shown = true; addEventListener('scroll', onScroll, { passive: true });
     // never on top of the hint under the hero (it says the same thing): move to the top of the screen instead
     const hint = document.querySelector('.explore-hint')?.getBoundingClientRect(), o = el.getBoundingClientRect();
-    if (hint && !(o.bottom <= hint.top || o.top >= hint.bottom || o.right <= hint.left || o.left >= hint.right)) el.classList.add('at-top');
+    if (!el.classList.contains('inline') && hint && !(o.bottom <= hint.top || o.top >= hint.bottom || o.right <= hint.left || o.left >= hint.right)) el.classList.add('at-top');
   }, delay);
   return () => { clearTimeout(t); hide(false); el.remove(); };
 }

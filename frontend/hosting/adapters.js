@@ -21,6 +21,7 @@ export function vercelConfig(routes) {
   const path = (p) => (star(p) ? p.slice(0, -1) + "(.*)" : p);
   const to = (t) => t.replace(":splat", "$1");
   return {
+    ...(routes.trailingSlash === false ? { trailingSlash: false } : {}),
     rewrites: routes.rewrites.map((r) => ({ source: path(r.from), destination: to(r.to) })),
     headers: routes.headers.map((h) => ({ source: path(h.path), headers: Object.entries(h.headers).map(([key, value]) => ({ key, value })) })),
     redirects: routes.redirects.map((r) => ({ source: path(r.from), ...(r.host ? { has: [{ type: "host", value: r.host }] } : {}), destination: to(r.to), permanent: !!r.permanent })),

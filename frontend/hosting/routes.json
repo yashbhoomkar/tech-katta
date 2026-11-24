@@ -6,8 +6,10 @@
     "Paths: '*' matches the rest of a path; ':splat' in 'to' puts that part back.",
     "rewrites: serve 'to' when no file exists at 'from' (the address bar keeps 'from').",
     "redirects: send the browser to 'to'; permanent is 308, otherwise 307; 'host' limits a rule to one domain.",
-    "headers: added to every response whose path matches."
+    "headers: added to every response whose path matches.",
+    "trailingSlash: false makes Vercel redirect /x/ to /x everywhere (one address per page); other hosts do it themselves for pages."
   ],
+  "trailingSlash": false,
   "rewrites": [
     {
       "from": "/health",
@@ -77,28 +79,48 @@
   ],
   "redirects": [
     {
+      "from": "/learn",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/learn/",
+      "to": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/problems",
+      "to": "/problems",
+      "permanent": true
+    },
+    {
+      "from": "/dashboard/problems/",
+      "to": "/problems",
+      "permanent": true
+    },
+    {
       "from": "/dashboard/lab",
-      "to": "/dashboard/problems/",
+      "to": "/problems",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/",
-      "to": "/dashboard/problems/",
+      "to": "/problems",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/ind-vs-pak",
-      "to": "/dashboard/problems/ind-vs-pak/",
+      "to": "/problems/ind-vs-pak",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/ind-vs-pak/",
-      "to": "/dashboard/problems/ind-vs-pak/",
+      "to": "/problems/ind-vs-pak",
       "permanent": true
     },
     {
       "from": "/dashboard/lab/*",
-      "to": "/dashboard/problems/challenge/:splat",
+      "to": "/problems/challenge/:splat",
       "permanent": true
     },
     {

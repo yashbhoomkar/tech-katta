@@ -51,7 +51,7 @@ const put = (route, html) => { const dir = path.join(dist, ...route.split("/").f
 // the workspace pages, You, Quick Notes and the policies: the shell with each page's title and description. A shared design (data in the #fragment)
 // and the base pages that /problems/challenge/<id> and /practice/<slug> are rewritten to (hosting/routes.json) are not indexed.
 let workspace = 0;
-for (const [route, [title, desc]] of await workspacePages()) { put(route, shellFor(title, { desc, noindex: route === "problems/shared" })); workspace += 1; }
+for (const [route, [title, desc]] of await workspacePages()) { put(route, shellFor(title, { desc, canon: route, noindex: route === "problems/shared" })); workspace += 1; }
 put("problems/challenge", shellFor("Challenge · Problems", { noindex: true }));
 // an address nothing answers: the host serves this with status 404
 writeFileSync(path.join(dist, "404.html"), shellFor("Not found", { noindex: true }));
