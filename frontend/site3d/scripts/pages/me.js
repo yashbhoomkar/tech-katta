@@ -89,12 +89,14 @@ export function mount(view, _p, { reduced, go }) {
     if (!world) return;
     world.setSystem(SYSTEM);
     const f = world.frame(), phone = innerWidth < 1000; // tablets stack the figure under the words, like phones
-    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.72 : 0.66), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
+    world.setCamera({ t: f.t, dist: f.dist * (phone ? (innerWidth < 380 ? 0.86 : 0.78) : 0.9), az: 40, el: 34, sx: phone ? 0.5 : (innerWidth >= 1700 ? 0.74 : 0.7), sy: phone ? 0.4 : 0.54, phoneSy: 0.47 }, { instant: true });
     world.setLabelBand(phone ? 0.98 : 0.94); world.setLabelTop(10); world.setLabelMode(phone ? 'edge' : 'free');
     const parts = {}, labels = {};
     for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [innerWidth < 380 ? '' : `${r}/${cs.length}`, tone]; /* 320 px phones: counts live in the list below, so the pills stay short */ }
     parts.a2 = parts.a1;
-    world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
+    // on wide screens no label may sit over the intro text: labels stay right of the text column (avoid is a share of the width)
+    const avoid = phone ? 0 : Math.min(0.7, ((view.querySelector('.dash-body')?.getBoundingClientRect().right || 0) + 16) / innerWidth);
+    world.setState({ parts, labels, avoid, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
     world.onPick((id) => {
       const key = id === 'a2' ? 'a1' : id;
       if (!key || !MAP[key]?.concepts.length) return;
