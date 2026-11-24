@@ -45,12 +45,13 @@ useEffect(()=>{if(loaded.current===store.current&&nodes.length)return;loaded.cur
 const moved=useRef(false);const traceRef=useRef(trace);traceRef.current=trace;
 const fitVisible=useCallback((duration=0)=>{const el=wrap.current;const ns=rf.getNodes();if(!el||!ns.length)return;const fr=el.getBoundingClientRect();if(fr.width<80||fr.height<80)return;
 const cover=[...document.querySelectorAll(".sv-console,.sv-player")].map(x=>x.getBoundingClientRect()).filter(r=>r.height>0&&r.top>fr.top+60&&r.top<fr.bottom);
-const visH=(cover.length?Math.min(...cover.map(r=>r.top)):fr.bottom)-fr.top,b=rf.getNodesBounds(ns),pad=Math.min(48,fr.width*.06);
-const zoom=Math.max(.25,Math.min(1,(fr.width-2*pad)/Math.max(b.width,1),(visH-2*pad)/Math.max(b.height,1)));
-rf.setViewport({x:(fr.width-b.width*zoom)/2-b.x*zoom,y:(visH-b.height*zoom)/2-b.y*zoom,zoom},{duration})},[rf]);
+// what floats over the canvas on its left (the problem card, the parts column) is not free room either
+const lx=Math.max(0,...[".sv-q",".sv-tabs",".lab-pal"].map(q=>{const e=document.querySelector(q);const r=e&&e.getBoundingClientRect();return r&&r.width>0&&r.height>0&&r.right>fr.left&&r.left<fr.left+fr.width/2?r.right-fr.left+8:0})); const visH=(cover.length?Math.min(...cover.map(r=>r.top)):fr.bottom)-fr.top,b=rf.getNodesBounds(ns),pad=Math.min(48,fr.width*.06),visW=fr.width-lx;
+const zoom=Math.max(.25,Math.min(1,(visW-2*pad)/Math.max(b.width,1),(visH-2*pad)/Math.max(b.height,1)));
+rf.setViewport({x:lx+(visW-b.width*zoom)/2-b.x*zoom,y:(visH-b.height*zoom)/2-b.y*zoom,zoom},{duration})},[rf]);
 const inited=useNodesInitialized();useEffect(()=>{if(inited&&!moved.current&&!traceRef.current)fitVisible()},[inited]);// eslint-disable-line
 useEffect(()=>{const el=wrap.current;if(!el||typeof ResizeObserver==="undefined")return;let t=0;const again=()=>{clearTimeout(t);t=setTimeout(()=>{if(!moved.current&&!traceRef.current)fitVisible()},90)};
-const ro=new ResizeObserver(again);ro.observe(el);let watched=null;const host=el.closest(".sv-lab");
+const ro=new ResizeObserver(again);ro.observe(el);[el.closest(".solve")?.querySelector(".sv-q"),el.closest(".lab")?.querySelector(".lab-pal")].forEach(x=>x&&ro.observe(x));let watched=null;const host=el.closest(".sv-lab");
 const look=()=>{const c=host?.querySelector(".sv-console,.sv-player")||null;if(c===watched)return;if(watched)ro.unobserve(watched);watched=c;if(c)ro.observe(c);again()};
 const mo=host?new MutationObserver(look):null;mo?.observe(host,{childList:true,subtree:true});look();return()=>{clearTimeout(t);ro.disconnect();mo?.disconnect()}},[fitVisible]);
 useEffect(()=>{moved.current=false},[!!replay]);// eslint-disable-line
@@ -168,7 +169,7 @@ const[dragging,setDragging]=useState(false);
 const[narrow,setNarrowState]=useState(()=>{try{const v=localStorage.getItem("tk-pal-narrow");if(v!==null)return v==="1"}catch{}return!!problem&&typeof innerWidth==="number"&&innerWidth<1700});
 const setNarrow=v=>{setNarrowState(v);try{localStorage.setItem("tk-pal-narrow",v?"1":"0")}catch{}track("palette_narrow",{on:v?1:0})};
 // Drop from the palette: only when released over the canvas.
-const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;if(show3d&&d3.current){const g=d3.current.groundAt(x,y);if(g)add(kind,d3.current.toFlow(g));return}add(kind,rf.screenToFlowPosition({x,y}))};
+const dropAt=(kind,x,y)=>{const r=wrap.current?.getBoundingClientRect();if(!cat[kind]||!r||x<r.left||x>r.right||y<r.top||y>r.bottom)return;if(document.elementFromPoint(x,y)?.closest(".sv-q,.sv-tabs,.lab-pal"))return;if(show3d&&d3.current){const g=d3.current.groundAt(x,y);if(g)add(kind,d3.current.toFlow(g));return}add(kind,rf.screenToFlowPosition({x,y}))};
 const pick=id=>{writeDesign(loaded.current);setStore(s=>({...s,current:id}));if(!embedded){const latest=load(lab);if(latest.designs[id]){latest.current=id;save(latest)}}};
 const create=(src)=>{const id=newId("design");const d={id,name:src?src.name:"Untitled design",updated:Date.now(),nodes:src?structuredClone(src.nodes):[],edges:src?structuredClone(src.edges):[],...(src?.challenge?{challenge:src.challenge}:{}),...(src?.v===2?{v:2}:{})};writeDesign(loaded.current);persistNew(lab,d,embedded?null:id);setStore(s=>({...s,current:id,designs:{...s.designs,[id]:d}}))};
 // Start a challenge: reopen this browser's latest design for it, or start one from its starting design.

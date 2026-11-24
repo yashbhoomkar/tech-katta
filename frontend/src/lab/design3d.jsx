@@ -5,6 +5,8 @@ import React,{useEffect,useRef,useState}from"react";import{W,H}from"./shared.jsx
 // Only on the 3D site (the engine is the page's: /3d/scripts/world.js) and with WebGL; otherwise Canvas.jsx keeps the 2D canvas.
 const BASE="/3d/scripts/";
 let engine=null;const load=()=>engine||=Promise.all([import(/* @vite-ignore */BASE+"world.js"),import(/* @vite-ignore */BASE+"replay3d.js")]).then(([w,r])=>({createWorld:w.createWorld,...r}));
+/** how much of the canvas's left the problem card and the parts column cover, as the screen fraction where the design should be centred */
+const sxOf=el=>{const r=el.getBoundingClientRect();if(r.width<50)return .5;const lx=Math.max(0,...[".sv-q",".sv-tabs",".lab-pal"].map(q=>{const e=document.querySelector(q),b=e&&e.getBoundingClientRect();return b&&b.width>0&&b.height>0&&b.right>r.left&&b.left<r.left+r.width/2?b.right-r.left+8:0}));return (lx+(r.width-lx)/2)/r.width};
 // a card's size (shared.jsx): the centre of a part is its card's centre
 export const mode3dWanted=()=>{try{return localStorage.getItem("tk-design-view")!=="2d"}catch{return true}};
 export const saveMode3d=on=>{try{localStorage.setItem("tk-design-view",on?"3d":"2d")}catch{}};
@@ -19,7 +21,7 @@ load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-moti
  const ns=live.current.nodes;let ox=0,oy=0;if(ns.length){const cs=ns.map(centre);ox=(Math.min(...cs.map(c=>c.x))+Math.max(...cs.map(c=>c.x)))/2;oy=(Math.min(...cs.map(c=>c.y))+Math.max(...cs.map(c=>c.y)))/2}origin.current=[ox,oy];
  eng.current={world,m};
  const toWorld=n=>{const c=centre(n);return[(c.x-ox)/m.SCALE,(c.y-oy)/m.SCALE]};
- api.current={groundAt:(x,y)=>world.groundAt(x,y),toFlow:g=>({x:g[0]*m.SCALE+ox,y:g[1]*m.SCALE+oy}),centerFlow:()=>{const t=world.getCamera().t;return{x:t[0]*m.SCALE+ox,y:t[1]*m.SCALE+oy}},fit:()=>{const f=world.frame();world.setCamera({t:f.t,dist:f.dist*.95,az:42,el:32,sx:.5,sy:.52})}};
+ api.current={groundAt:(x,y)=>world.groundAt(x,y),toFlow:g=>({x:g[0]*m.SCALE+ox,y:g[1]*m.SCALE+oy}),centerFlow:()=>{const t=world.getCamera().t;return{x:t[0]*m.SCALE+ox,y:t[1]*m.SCALE+oy}},fit:()=>{const f=world.frame();world.setCamera({t:f.t,dist:f.dist*.95,az:42,el:32,sx:sxOf(cv.current),sy:.52})}};
  // pointer: drag a part, pan the floor, pinch and wheel to zoom
  const el=cv.current,ptrs=new Map();let drag=null,pinch=0;
  const down=e=>{el.setPointerCapture?.(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);const L=live.current;
@@ -46,8 +48,8 @@ useEffect(()=>{const c=eng.current;if(!ready||!c)return;const{world,m}=c,[ox,oy]
  nodes.forEach(n=>{const cc=centre(n);parts[n.id]={kind:m.kindOf(n.data?.kind),x:(cc.x-ox)/m.SCALE,z:(cc.y-oy)/m.SCALE,name:n.data?.name||names[n.data?.kind]||n.data?.kind,...(n.data?.kind==="database"&&n.data?.config?.replicas?{layers:2}:{})};st[n.id]=n.id===from?"ok":n.selected?"warn":"";labels[n.id]=["",""]});
  edges.forEach((e,i)=>{if(parts[e.source]&&parts[e.target])paths["e"+i]=[e.source,e.target]});
  world.setSystem({parts,paths});world.setState({parts:st,paths:{},labels,speed:.5});
- if(!fitted.current&&nodes.length){fitted.current=true;const f=world.frame();world.setCamera({t:f.t,dist:f.dist*.95,az:42,el:32,sx:.5,sy:.52},{instant:true})}
- else if(!fitted.current){world.setCamera({t:[0,0],dist:16,az:42,el:32,sx:.5,sy:.52},{instant:true})}},[ready,nodes,edges,from,names]);
+ if(!fitted.current&&nodes.length){fitted.current=true;const f=world.frame();world.setCamera({t:f.t,dist:f.dist*.95,az:42,el:32,sx:sxOf(cv.current),sy:.52},{instant:true})}
+ else if(!fitted.current){world.setCamera({t:[0,0],dist:16,az:42,el:32,sx:sxOf(cv.current),sy:.52},{instant:true})}},[ready,nodes,edges,from,names]);
 useEffect(()=>{const k=e=>{if(e.key==="Escape"){setConnect(false);setFrom(null)}else if((e.key==="Delete"||e.key==="Backspace")&&!/^(input|textarea|select)$/i.test(document.activeElement?.tagName||"")){const sel=live.current.nodes.filter(n=>n.selected).map(n=>n.id);if(sel.length){e.preventDefault();live.current.onRemove(sel)}}};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[]);
 return <div className={"d3"+(connect?" connecting":"")} role="application" aria-label="Your design in 3D. Drag a part to move it, drag the floor to move around, scroll to zoom.">
 <canvas ref={cv}/><div ref={ov} className="overlay d3-ov"/>

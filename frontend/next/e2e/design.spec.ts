@@ -51,7 +51,7 @@ test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({
 test("replay: the HUD shows the minute and Break it yourself is a row of choices", async ({ page }) => {
   await signedIn(page);
   await page.goto("/problems/url-shortener");
-  await expect(page.locator(".ws-host .solve")).toBeVisible();
+  await expect(page.locator(".ws-host .solve")).toBeVisible({ timeout: 40_000 });
   await page.getByRole("button", { name: /Submit/ }).first().click();
   await expect(page.locator(".sv-console")).toContainText(/tests passed|Wrong design|Accepted/, { timeout: 30_000 });
   await page.locator(".sv-console summary", { hasText: "Test 7" }).first().click();

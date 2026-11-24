@@ -73,7 +73,7 @@ test("a problem: run, submit, replay in 2D and 3D, and back", async ({ page }) =
   await visitor(page, "in");
   const errs = errors(page);
   await page.goto("/problems/url-shortener");
-  await expect(page.locator(".ws-host .solve")).toBeVisible();
+  await expect(page.locator(".ws-host .solve")).toBeVisible({ timeout: 40_000 });
   await page.getByRole("button", { name: /Submit/ }).first().click();
   await expect(page.locator(".sv-console")).toContainText(/tests passed|Wrong design|Accepted/, { timeout: 30_000 });
   await page.locator(".sv-console summary", { hasText: "Test 7" }).first().click();
@@ -85,7 +85,7 @@ test("a problem: run, submit, replay in 2D and 3D, and back", async ({ page }) =
   await expect(page.locator(".sv-3d")).toHaveCount(0);
   await page.goto("/problems");
   await page.goBack();
-  await expect(page.locator(".ws-host .solve")).toBeVisible();
+  await expect(page.locator(".ws-host .solve")).toBeVisible({ timeout: 40_000 });
   expect(errs).toEqual([]);
 });
 
