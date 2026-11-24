@@ -3,9 +3,10 @@
 // its data in the #fragment) and /practice[/<slug>] (the practice problems, open to everyone). The island code
 // (frontend/next/src/islands, built into /3d/islands/islands.js) loads only here; the page around it (sidebar, bottom bar,
 // title, the content lock) is the 3D site's.
-import { API, listArticles, listNow } from '../articles.js';
-import { gateNow, watchGate, accountCopy } from '../gating.js';
-import { openSignIn } from '../signin.js';
+import { API, apiFetch, getArticle, listArticles, listNow, SECTIONS } from '../articles.js';
+import { gateNow, watchGate } from '../gating.js';
+import { signInCard, wireSignInCard } from '../signin.js';
+import { problemPublicHtml, wirePublic } from './public.js';
 import { syncRail } from '../shell.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -31,19 +32,31 @@ export function titleOf(path) {
 
 const wait = () => `<section class="ws"><div class="ws-wait glass" role="status" aria-label="Loading"><div class="skel"><i></i><i></i><i></i></div></div></section>`;
 const missing = () => `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/problems">Problems</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/problems">See all problems<span class="chip">→</span></a></p></section>`;
+/** a page that has no public part (the sandbox, a shared design): only the sign-in card */
 function locked(title) {
-  const c = accountCopy()?.pageLock || { title: 'Sign in to open this', text: '' };
-  return `<section class="locked-wrap"><div class="gate-card big"><p class="kicker"><span>${esc(title)}</span></p><h1>${esc(c.title)}</h1><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></div></section>`;
+  return `<section class="locked-wrap"><div class="locked-card"><p class="kicker"><span>${esc(title)}</span></p><h1 class="sr">${esc(title)}</h1>${signInCard('page')}</div></section>`;
 }
 // a challenge's own name, for the tab title and the lock card (GET /v1/lab, once)
 let labP = null;
-const challengeName = (id) => (labP ||= fetch(`${API}/v1/lab`, { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null))
-  .then((l) => (l?.challenges || []).find((c) => c.id === id)?.title || null);
+const getLab = () => (labP ||= apiFetch('/v1/lab', { headers: { accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+addEventListener('tk-account', () => { labP = null; });
+const challengeName = (id) => getLab().then((l) => (l?.challenges || []).find((c) => c.id === id)?.title || null);
 
 export function mount(view, _params, ctx) {
   const path = location.pathname.replace(/(.)\/$/, '$1');
   const target = kindOf(path);
-  let alive = true, unmount = null, island = null, ro = null;
+  let alive = true, unmount = null, island = null, ro = null, offPublic = null;
+  /** which kind of gate this address has: a problem, a challenge or a practice problem shows its public part; the sandbox and shared designs only the card; the practice list is open */
+  const gateKind = () => (target.kind === 'practice' ? (target.slug ? 'problem' : null) : target.kind === 'problem' || target.kind === 'challenge' ? 'problem' : 'workspace');
+  /** the public part of this address: { title, difficulty, brief } or null */
+  const publicData = async () => {
+    try {
+      if (target.kind === 'problem') { let a = await getArticle(target.slug); if (!a) { const h = listNow().find((x) => x.slug === target.slug); a = h && { title: h.title, group: h.group, brief: h.dek }; } if (!a) return null; const names = Object.fromEntries((SECTIONS.find((x) => x.id === 'interview-questions')?.groups || [])); return { title: a.title, difficulty: names[a.difficulty || a.group] || a.difficulty || '', brief: a.brief || a.dek }; }
+      if (target.kind === 'challenge') { const l = await getLab(); const c = (l?.challenges || []).find((x) => x.id === target.id); return c ? { title: c.title, difficulty: l.levels?.[c.level] ?? c.level, brief: c.brief } : null; }
+      if (target.kind === 'practice') { const r = await apiFetch(`/v1/practice/problems/${encodeURIComponent(target.slug)}`, { headers: { accept: 'application/json' } }); if (!r.ok) return null; const p = await r.json(); return { title: p.title, difficulty: p.difficulty ? p.difficulty[0].toUpperCase() + p.difficulty.slice(1) : '', brief: p.brief }; }
+    } catch { /* offline: the card alone */ }
+    return null;
+  };
   const stop = () => { try { unmount?.(); } catch (e) { console.warn(e); } unmount = null; ro?.disconnect(); ro = null; document.documentElement.style.removeProperty('--ws-bottom'); document.documentElement.style.removeProperty('--ws-top'); };
 
   /** the bottom bar floats over the page on phones: the island ends above it */
@@ -61,15 +74,17 @@ export function mount(view, _params, ctx) {
   async function draw() {
     stop();
     if (!alive) return;
-    const g = target.kind === 'practice' ? 'open' : gateNow('workspace');
+    const g = gateKind() ? gateNow(gateKind()) : 'open';
     document.body.classList.toggle('ws-locked', g !== 'open'); syncRail();
     if (g === 'wait') { view.innerHTML = wait(); return; }
-    if (g === 'locked') {
-      const a = target.slug && listNow().find((x) => x.slug === target.slug);
-      const name = target.kind === 'challenge' ? (await challengeName(target.id)) || 'Challenge' : a ? a.title : { sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem';
+    if (g === 'preview' || g === 'locked') {
+      // signed out: the public part of a problem or challenge (title, difficulty, the first lines of the brief) and the card; nothing else exists in the page
+      const label = target.kind === 'challenge' ? 'Challenge' : target.kind === 'practice' ? 'Practice' : target.kind === 'problem' ? 'Problem' : { sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem';
+      const crumbs = `<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="${target.kind === 'practice' ? '/practice' : '/problems'}">${target.kind === 'practice' ? 'Practice' : 'Problems'}</a><span>/</span><span>${esc(label)}</span></nav>`;
+      const data = g === 'preview' ? await publicData() : null;
       if (!alive) return;
-      view.innerHTML = locked(name);
-      view.querySelector('[data-signin]').addEventListener('click', () => openSignIn('page'));
+      if (data) { view.innerHTML = problemPublicHtml(data, { crumbs, kicker: label }); offPublic = wirePublic(view); }
+      else { view.innerHTML = locked({ sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || label); offPublic = wireSignInCard(view); }
       return;
     }
     view.innerHTML = `<section class="ws"><div class="ws-host"></div></section>`;
@@ -100,6 +115,6 @@ export function mount(view, _params, ctx) {
     if (target.kind === 'challenge') challengeName(target.id).then((n) => { if (alive && n) document.title = `${n} · Challenge · Tech Katta`; });
     draw();
   })();
-  const off = target.kind === 'practice' ? null : watchGate('workspace', () => { if (alive) draw(); });
-  return () => { alive = false; off?.(); stop(); document.body.classList.remove('ws-locked'); };
+  const off = gateKind() ? watchGate(gateKind(), () => { if (alive) window.tkRefresh?.(); }) : null;
+  return () => { alive = false; off?.(); offPublic?.(); stop(); document.body.classList.remove('ws-locked'); };
 }

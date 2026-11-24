@@ -8,6 +8,8 @@ import { store } from '../store.js';
 import { KIND_PASTEL } from '../palette.js';
 import { footer } from './landing.js';
 import { PLACES, icon, tally } from '../shell.js';
+import { gateNow, watchGate } from '../gating.js';
+import { signInCard, wireSignInCard } from '../signin.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const P = (kind, x, z, name, concepts, extra = {}) => ({ kind, x, z, name, concepts, ...extra });
@@ -34,9 +36,12 @@ const SYSTEM = {
 const pd = (kind) => `<i class="pdot" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
 export function mount(view, _p, { reduced, go }) {
-  let world = null, alive = true;
+  let world = null, alive = true, offWire = null, offGate = null;
+  // signed out (or not known yet): no progress, no recent work, no counts; the sign-in card stands in their place
   const draw = (list) => {
-    const { read, best } = store.get();
+    const locked = gateNow('personal') !== 'open';
+    offWire?.(); offWire = null;
+    const { read, best } = locked ? { read: {}, best: {} } : store.get();
     const isRead = (a) => !!read[`${a.section}/${a.slug}`];
     const bySlug = Object.fromEntries(list.filter((a) => a.section === 'concepts').map((a) => [a.slug, a]));
     const concepts = list.filter((a) => a.section === 'concepts');
@@ -52,12 +57,12 @@ export function mount(view, _p, { reduced, go }) {
       <div class="dash-copy">
         <div class="dash-head">
         <h1 class="headline"><span class="thin">The system you can explain</span><span class="heavy accent">${conceptsRead ? `${conceptsRead} of ${concepts.length} concepts done` : 'Grows as you learn'}</span></h1></div>
-        <div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
+        ${locked ? `<div class="dash-body"><p class="lead">Every part here is taught by a concept. Sign in and it turns amber as you start its concepts and green when you have finished them all.</p>${signInCard('dashboard')}</div>` : `<div class="dash-body"><p class="lead">Every part here is taught by a concept. It turns amber when you start its concepts and green when you have finished them all. Tap a part to open its next concept. Progress is saved on this device.</p>
         ${nextConcept ? `<a class="next-card" href="/learn/concepts/${nextConcept.slug}"><span class="mono">${conceptsRead ? 'Continue' : 'Start here'} · Concept ${(nextConcept.no.match(/\d+/) || [''])[0]}</span><b>${esc(splitTitle(nextConcept.title)[0])}</b><span class="muted">${esc(nextConcept.dek)}</span><span class="go">Start →</span></a>`
-          : `<a class="next-card" href="/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>
+          : `<a class="next-card" href="/learn/components"><span class="mono">All concepts done</span><b>Components next</b><span class="muted">The tools interviewers name, and when to pick each.</span><span class="go">Open →</span></a>`}</div>`}
       </div>
     </section>
-    <section class="page dash-more">
+    ${locked ? '' : `<section class="page dash-more">
       <h2 class="sub-h">Everything here</h2>
       <ul class="places">
         ${PLACES.filter((p) => p.section || p.id === 'practice').map((p, i) => { const t = tally(p.id, list), n = p.id === 'practice' ? INCIDENTS.find((x) => !best[x.id]?.passed) : list.find((a) => a.section === p.id && !isRead(a));
@@ -72,12 +77,13 @@ export function mount(view, _p, { reduced, go }) {
         ${recent.length ? `<ol class="recent">${recent.map((a) => `<li><a href="/learn/${a.section}/${a.slug}"><span class="mono">${esc(SECTIONS.find((s) => s.id === a.section)?.name || '')}</span><b>${esc(splitTitle(a.title)[0])}</b></a></li>`).join('')}</ol>` : '<p class="muted empty">Nothing yet. Articles count once you mark them complete at the end.</p>'}
         <p><button type="button" class="btn light sm reset">Clear my progress</button></p>
       </div>
-    </section>
+    </section>`}
     ${footer()}`;
+    if (locked) offWire = wireSignInCard(view);
 
     const resetBtn = view.querySelector('.reset');
     let armTimer = 0;
-    resetBtn.addEventListener('click', () => {
+    resetBtn?.addEventListener('click', () => {
       if (resetBtn.dataset.armed) { clearTimeout(armTimer); store.reset(); draw(list); return; }
       resetBtn.dataset.armed = '1'; resetBtn.textContent = 'Tap again to clear what you have done';
       armTimer = setTimeout(() => { delete resetBtn.dataset.armed; resetBtn.textContent = 'Clear my progress'; }, 4000);
@@ -108,5 +114,6 @@ export function mount(view, _p, { reduced, go }) {
   const first = listNow();
   draw(first);
   listArticles().then((l) => { if (alive && JSON.stringify(l) !== JSON.stringify(first)) draw(l); });
-  return () => { alive = false; world?.destroy(); };
+  offGate = watchGate('personal', () => { if (alive) window.tkRefresh?.(); });
+  return () => { alive = false; offGate?.(); offWire?.(); world?.destroy(); };
 }

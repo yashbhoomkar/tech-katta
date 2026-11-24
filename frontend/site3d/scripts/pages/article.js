@@ -2,14 +2,13 @@
 // API, every block type rendered. On wide screens a 3D figure stays beside the text and follows its sections.
 import { mountStory, stageHtml } from '../story.js';
 import { createWorld } from '../world.js';
-import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS, SECOND } from '../articles.js';
+import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS, SECOND, ensureStories } from '../articles.js';
 import { recipeFor } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
 import { PLACES } from '../shell.js';
-import { accountCopy, gateNow, watchGate } from '../gating.js';
-import { openSignIn } from '../signin.js';
-import { previewCut } from '../preview.js';
+import { watchGate } from '../gating.js';
+import { articlePublicHtml, problemPublicHtml, wirePublic } from './public.js';
 import { readArticle as trackReading } from '../analytics.js';
 
 /** a small note that slides up from the bottom and goes */
@@ -55,14 +54,22 @@ function block(b, a) {
   }
 }
 
-/** the sign-in card under an article's opening (account.previewLock in the site copy) */
-function lockCard() {
-  const c = accountCopy()?.previewLock; if (!c) return '';
-  return `<aside class="gate-card"><p class="kicker"><span>${esc(c.eyebrow || '')}</span></p><h2>${esc(c.title)}</h2><p>${esc(c.text)}</p><button type="button" class="btn dark" data-signin>Sign in<span class="chip">→</span></button></aside>`;
+/** the public part the server put in the page's HTML for search engines (frontend/seo.js): what is shown when the API cannot be reached on the first load */
+function fromPrerender(slug) {
+  try {
+    const kept = window.__tkPre;
+    if (!kept || kept.path !== location.pathname.replace(/(.)\/$/, '$1')) return null;
+    const art = kept.node.querySelector('article');
+    if (!art) return null;
+    const h1 = art.querySelector('h1'), ps = [...art.querySelectorAll(':scope > p')].filter((p) => !p.querySelector('time'));
+    if (!h1 || ps.length < 2) return null;
+    return { section: '', slug, title: h1.textContent, dek: ps[1].textContent, body: ps.slice(2).map((p) => ({ t: 'p', x: p.textContent })), headings: [...art.querySelectorAll(':scope > ol li')].map((li) => li.textContent), kind: 'article', locked: true };
+  } catch { return null; }
 }
 
 export function mount(view, [section, slug], { reduced }) {
-  let alive = true, story = null, aside = null, io = null, offGate = null, stopReading = null; const ac = new AbortController();
+  const pre = fromPrerender(slug);
+  let alive = true, story = null, aside = null, io = null, offGate = null, stopReading = null, offPublic = null; const ac = new AbortController();
   const head = listNow().find((x) => x.slug === slug && x.section === section);
   const sec = SECTIONS.find((s) => s.id === section) || SECTIONS[0];
   // the loading header is the finished header's own layout (the same hero step, label, title, dek, meta line and buttons), so nothing moves when the text arrives
@@ -78,14 +85,32 @@ export function mount(view, [section, slug], { reduced }) {
 
   getArticle(slug).then(async (a) => {
     if (!alive) return;
+    // the API cannot be reached: the public part from the page's own HTML (first load) or from the list's header; never the locked text
+    if (!a && pre && pre.title) a = { ...pre, section, no: head?.no, group: head?.group, date: head?.date };
+    if (!a && head) a = { section, slug, title: head.title, dek: head.dek, no: head.no, group: head.group, date: head.date, body: [], headings: [], kind: 'article', locked: true };
     if (!a && !head) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">No article at this address</span><span class="heavy">It may have moved</span></h1><p><a class="btn dark" href="/learn/${esc(sec.id)}">See all ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
     if (!a) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Offline</span></nav><h1 class="headline"><span class="thin">This article could not load</span><span class="heavy">Check your connection and try again</span></h1><p><a class="btn dark" href="/learn/${esc(section)}">Back to ${esc(sec.name.toLowerCase())}<span class="chip">→</span></a></p></section>${footer()}`; return; }
     const list = await listArticles();
     if (!alive) return;
-    // the content lock (gate.js): signed out, the opening and a sign-in card; the story at the top stays open
-    const g = gateNow('article'), cut = g === 'preview' || g === 'wait';
-    const visible = cut ? a.body.slice(0, previewCut(a.body)) : a.body;
     offGate = watchGate('article', () => window.tkRefresh?.());
+    // signed out (or sign-in unavailable): the API sends only the public part (header, first 2 paragraphs, section names; for a
+    // problem its title, difficulty and brief). That is all there is to draw: the page below never sees the rest.
+    if (a.locked) {
+      const crumbs = `<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/learn/${esc(sec.id)}">${esc(sec.name)}</a></nav>`;
+      const groupName = (sec.groups.find(([g]) => g === (head?.group || a.group)) || [])[1] || '';
+      const [t1, t2a] = splitTitle(a.title), t2 = t2a || SECOND[a.slug] || '';
+      view.innerHTML = (a.kind === 'problem'
+        ? problemPublicHtml({ title: a.title, difficulty: groupName || a.difficulty, brief: a.brief }, { crumbs, kicker: `${sec.name.replace(/s$/, '')} ${numOf(head?.no || a.no)}` })
+        : articlePublicHtml(a, { crumbs, kicker: [`${sec.name.replace(/s$/, '')} ${numOf(head?.no || a.no)}`, groupName], t1, t2 })) + footer();
+      document.title = `${a.title} · Tech Katta`;
+      offPublic = wirePublic(view);
+      return;
+    }
+    // the content lock (gate.js): signed in, everything
+    const cut = false;
+    await ensureStories(true); // the 3D story's words and sentences come from the API, for signed-in readers
+    if (!alive) return;
+    const visible = a.body;
     if (!cut) stopReading = trackReading(a.section, a.slug);
     const mine = list.filter((x) => x.section === a.section), at = mine.findIndex((x) => x.slug === a.slug);
     if (at >= 0) { a.group = mine[at].group; a.no = mine[at].no; } // the list carries the real group and number
@@ -155,7 +180,6 @@ export function mount(view, [section, slug], { reduced }) {
             ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></details>` : ''}
           </header>
           <div class="rd-full${cut ? ' preview-fade' : ''}">${visible.map((b) => block(b, a)).join('')}</div>
-          ${g === 'preview' ? lockCard() : ''}
           <div class="rd-cards" hidden>
             ${intro ? `<div class="rd-intro">${intro}</div>` : ''}
             <div class="topic-grid">${topics.map((t, i) => `<button type="button" class="topic-card" data-topic="${i}" style="--i:${i}"><span class="mono">${String(i + 1).padStart(2, '0')}</span><b>${inline(t.title)}</b><span class="muted">${esc(t.lede)}</span></button>`).join('')}</div>
@@ -255,7 +279,6 @@ export function mount(view, [section, slug], { reduced }) {
     open.addEventListener('touchend', (e) => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) showTopic(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); });
     view.querySelectorAll('.seg [data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
     if (topics.length > 1 && !cut) setMode(mode);
-    view.querySelector('[data-signin]')?.addEventListener('click', () => openSignIn('preview'));
 
     // share: the phone's share sheet, or copy the link
     view.querySelector('[data-share]').addEventListener('click', async () => {
@@ -273,5 +296,5 @@ export function mount(view, [section, slug], { reduced }) {
     });
     io = { disconnect() {}, _off: () => removeEventListener('scroll', onScroll) };
   });
-  return () => { alive = false; offGate?.(); stopReading?.(); ac.abort(); story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
+  return () => { alive = false; offGate?.(); offPublic?.(); stopReading?.(); ac.abort(); story?.destroy(); aside?.destroy(); io?.disconnect(); io?._off?.(); };
 }

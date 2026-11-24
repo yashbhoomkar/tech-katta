@@ -55,9 +55,13 @@ export function go(to, { replace = false } = {}) {
   route();
 }
 window.tkGo = go;
+// the HTML the server sent for this address (the public part, for search engines): kept for the first page, so it can still be shown if the API cannot be reached
+try { const pre = document.querySelector('#root .tk-static'); window.__tkPre = pre ? { path: location.pathname.replace(/(.)\/$/, '$1'), node: pre.cloneNode(true) } : null; } catch { window.__tkPre = null; }
 // draw the current page again without a history entry or a page view (the sign-in state changed under a lock)
 let refreshing = false;
-window.tkRefresh = () => { refreshing = true; route(); };
+// the reader stays where they were: after signing in under a locked page the same page opens in full at the same scroll position
+let keepY = 0;
+window.tkRefresh = () => { refreshing = true; keepY = scrollY; route(); };
 // the React app reloads an address once to reach this site (next/src/app/router.tsx); arriving here ends that
 try { sessionStorage.removeItem('tk-3d-away'); } catch { /* storage blocked */ }
 // plain left clicks on links to the app's own addresses stay in the app
@@ -126,11 +130,11 @@ function route() {
     document.body.dataset.page = nav || 'missing';
     updateShell(nav || 'missing', path);
     if (!refreshing) pageView(path);
-    refreshing = false;
+    const keep = refreshing ? keepY : 0; refreshing = false; keepY = 0;
     view.replaceChildren();
     document.title = titleFor(path, nav || 'missing');
     setCanonical(path, !mod);
-    const back = !linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0; linkClick = false; window.tkFresh = false; curPath = '';
+    const back = keep || (!linkClick && !window.tkFresh && positions[path] > 0 ? positions[path] : 0); linkClick = false; window.tkFresh = false; curPath = '';
     scrollTo(0, 0);
     if (!mod) { view.innerHTML = `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/home">Go to the Dashboard<span class="chip">→</span></a></p></section>`; }
     else cleanup = mod.mount(view, (path.match(re) || []).slice(1), { reduced, go: (h) => { window.tkFresh = true; go(h); } }) || null;

@@ -7,8 +7,10 @@
 // started marks in tk-progress-v1 ("solved:<slug>", "practice:<slug>", a challenge's stars), submissions in
 // tk-subs-v1 (the best score, ignoring copied solutions). Nothing here writes to them.
 import { createWorld } from '../world.js';
-import { listArticles, listNow, splitTitle, API } from '../articles.js';
+import { listArticles, listNow, splitTitle, apiFetch } from '../articles.js';
 import { recipeFor, PREVIEW } from '../figures.js';
+import { ensureStories } from '../articles.js';
+import { accountState } from '../account.js';
 import { footer } from './landing.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -26,11 +28,12 @@ function record(slug, prog, subs) {
 let labCache = null;
 async function lab() {
   if (labCache) return labCache;
-  try { const r = await fetch(`${API}/v1/lab`, { headers: { accept: 'application/json' } }); if (r.ok) labCache = await r.json(); } catch { /* offline: no challenges */ }
+  try { const r = await apiFetch('/v1/lab', { headers: { accept: 'application/json' } }); if (r.ok) labCache = await r.json(); } catch { /* offline: no challenges */ }
   return labCache;
 }
 
 export function mount(view, _p, { reduced }) {
+  ensureStories(!!accountState().user); // signed in: the 3D previews get their words (never sent to anyone else)
   let world = null, alive = true, cleanup = [];
   const draw = (list, labData) => {
     cleanup.forEach((f) => f()); cleanup = [];
