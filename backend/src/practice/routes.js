@@ -22,6 +22,7 @@ import { JudgeError } from '../auth/judge-pool.js';
 import { MIN_COMPARE } from './store.js';
 import { buildEvidence, redact } from '../../../frontend/src/v3/evidence.js';
 import { runReview } from '../ai/jobs/review.js';
+import { OPEN_CONTENT, publicPracticeProblem } from '../content/public.js';
 
 // Until payments exist every signed-in visitor is treated as paid (section 14).
 export const PRACTICE_ALL_PAID = true;
@@ -157,7 +158,10 @@ export function practiceRoutes({ problems, accounts, store, judge, evidence, ai,
         const what = parts[2];
         if (parts.length === 2) {
           if (!read) return fail(request, response, 405, 'method_not_allowed', { Allow: 'GET, HEAD, OPTIONS' });
-          return send(request, response, 200, publicProblem(problem), { 'Cache-Control': 'public, max-age=60' });
+          // the statement, constraints, tests and hints are for signed-in visitors; anyone else gets the title, difficulty and the first lines of the statement
+          const user = OPEN_CONTENT ? {} : await me(request).catch(() => null);
+          if (!user) return send(request, response, 200, publicPracticeProblem(problem), { 'Cache-Control': 'private, no-cache', Vary: 'Cookie' });
+          return send(request, response, 200, publicProblem(problem), { 'Cache-Control': 'private, no-cache', Vary: 'Cookie' });
         }
         if (parts.length !== 3) return fail(request, response, 404, 'not_found');
         if (what === 'submit') { if (method !== 'POST') return fail(request, response, 405, 'method_not_allowed', { Allow: 'POST, OPTIONS' }); return await submit(request, response, problem); }

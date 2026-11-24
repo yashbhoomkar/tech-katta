@@ -44,11 +44,12 @@ async function startServer(env = {}) {
 }
 
 let running;
-test.before(async () => { running = await startServer(); });
+// these tests check the full shape of each response, so the shared server runs with the development flag that opens every text; the gate itself (public part, 401) is tested in gate.test.js without it
+test.before(async () => { running = await startServer({ OPEN_CONTENT: '1' }); });
 test.after(() => running.server.kill('SIGTERM'));
 const get = (path, init) => fetch(running.baseUrl + path, init);
 
-test('GET /v1/site returns all site copy plus the example system, publicly cacheable', async () => {
+test('GET /v1/site returns all site copy (not the example system, which is article text), publicly cacheable', async () => {
   const response = await get('/v1/site');
   const counted = await (await get('/v1/site')).json();
   assert.deepEqual(counted.counts, { questions: allArticles.filter(a => a.section === 'interview-questions' && a.group !== 'start').length, concepts: allArticles.filter(a => a.section === 'concepts').length, components: allArticles.filter(a => a.section === 'components').length, challenges: lab.challenges.length });
@@ -58,8 +59,8 @@ test('GET /v1/site returns all site copy plus the example system, publicly cache
   assert.match(response.headers.get('cache-control') || '', /^public, max-age=60/);
   assert.ok(response.headers.get('etag'));
   const body = await response.json();
-  for (const key of ['brand', 'nav', 'hero', 'topics', 'notes', 'numbers', 'dashboard', 'footer', 'example']) assert.ok(body[key], key);
-  assert.equal(body.example.name, 'Zotato');
+  for (const key of ['brand', 'nav', 'hero', 'topics', 'notes', 'numbers', 'dashboard', 'footer']) assert.ok(body[key], key);
+  assert.ok(!('example' in body), 'the worked example is article text: it travels inside the full article');
   assert.equal(body.hero.title, site.hero.title);
 });
 
@@ -535,7 +536,7 @@ test('eval.json is loaded, valid, and served inside the Lab catalogue', async ()
   assert.deepEqual(validateContent({ site, examples, articles: allArticles, lab: labOnly }), [
     ...labOnly.challenges.map((c, i) => `lab.json challenges[${i}]: v 2 needs content/eval.json`),
     ...allArticles.filter((a) => a.practice?.v === 2).map((a) => `articles/${a.section}/${a.slug}.json practice: v 2 needs content/eval.json`)]);
-  const { server, baseUrl } = await startServer();
+  const { server, baseUrl } = await startServer({ OPEN_CONTENT: '1' });
   try { const body = await (await fetch(baseUrl + '/v1/lab')).json(); assert.equal(body.eval.v, 2); assert.equal(body.eval.components.length, lab.eval.components.length); }
   finally { server.kill(); }
 });

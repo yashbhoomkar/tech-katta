@@ -7,6 +7,7 @@ import path from 'node:path';
 import { validateContent } from './validate.js';
 import { existsSync } from 'node:fs';
 import { loadProblems } from '../practice/problems.js';
+import { publicArticle, publicLab } from './public.js';
 
 const readJson = async (file) => {
   try { return JSON.parse(await readFile(file, 'utf8')); }
@@ -62,16 +63,21 @@ export function buildBodies({ site, examples, articles, lab }) {
   const full = new Map(articles.map((a) => [a.slug, { ...served(a), example }]));
   // A problem's wrong designs, for the gallery in the Solution tab (context 36, step 13): GET /v1/articles/<slug>/wrong.
   const wrongs = new Map(articles.filter((a) => a.practice?.wrong?.length).map((a) => [a.slug, { slug: a.slug, designs: a.practice.wrong.map((w) => ({ name: w.name, why: w.why, fails: w.fails, nodes: w.nodes, edges: w.edges })) }]));
+  const publics = new Map(articles.map((a) => [a.slug, publicArticle(a)]));
   const solutions = new Map(articles.filter((a) => a.practice?.reference).map((a) => [a.slug, { slug: a.slug, nodes: a.practice.reference.nodes, edges: a.practice.reference.edges }]));
   return {
     // How much there is, for the landing page ("10 Interview Questions"): counted from the release, never typed by hand.
-    site: { ...site, example, counts: {
+    // `example` (the worked example inside articles) is article text: it travels inside the full article, never in the site copy
+    site: { ...(({ example: _example, ...rest }) => rest)(site), counts: {
       questions: articles.filter((a) => a.section === 'interview-questions' && a.group !== 'start').length,
       concepts: articles.filter((a) => a.section === 'concepts').length,
       components: articles.filter((a) => a.section === 'components').length,
       challenges: (lab?.challenges || []).length,
     } },
     lab,
+    // what a signed-out visitor gets instead of the full Lab catalogue and the full articles (tech-katta-context 52)
+    publicLab: publicLab(lab),
+    publicArticle: (slug) => publics.get(slug) || null,
     list(section) {
       if (!lists.has(section)) lists.set(section, { articles: articles.filter((a) => !section || a.section === section).map(summary) });
       return lists.get(section);

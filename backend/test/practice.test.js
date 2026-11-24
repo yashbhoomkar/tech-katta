@@ -51,7 +51,16 @@ test('the list and the problem are public; hidden numbers, the reference, wrong 
   assert.equal(list.problems.length, COUNT);
   assert.deepEqual([list.problems[0]].map((p) => [p.id, p.slug, p.difficulty, p.acceptance, 'status' in p]), [[1, 'url-shortener', 'easy', null, false]]);
   assert.deepEqual(list.problems.map((p) => p.id), list.problems.map((_, i) => i + 1));
-  const r = await call('/v1/practice/problems/url-shortener', { origin: null });
+  // signed out: only the title, difficulty and the first lines of the statement (tech-katta-context 52)
+  const open = await call('/v1/practice/problems/url-shortener', { origin: null });
+  assert.equal(open.status, 200);
+  const publicText = await open.text(), pub = JSON.parse(publicText);
+  assert.deepEqual(Object.keys(pub).sort(), ['brief', 'difficulty', 'free', 'id', 'locked', 'slug', 'title', 'topics']);
+  assert.equal(pub.locked, true);
+  assert.ok(pub.brief.length > 0 && pub.brief.length <= problem.statement.length);
+  for (const k of ['"tests"', '"hints"', '"template"', '"constraints"', '"requests"', '"reference"', '"wrong"', '"editorial"']) assert.ok(!publicText.includes(k), `signed out: ${k}`);
+  const cookieIn = await signIn('1999');
+  const r = await call('/v1/practice/problems/url-shortener', { origin: null, cookie: cookieIn });
   assert.equal(r.status, 200);
   const text = await r.text(), p = JSON.parse(text);
   for (const k of ['"reference"', '"wrong"', '"editorial"', 'kill_role']) assert.ok(!text.includes(k), k);
