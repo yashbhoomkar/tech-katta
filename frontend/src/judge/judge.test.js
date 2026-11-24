@@ -37,13 +37,15 @@ test("gradeAnswer: key decisions are right only when the chosen option is the an
   assert.deepEqual(g.dec.map(x=>x.ok),[true,false]);assert.equal(g.parts.dec,0.5);assert.equal(g.dec[1].chosen,2);
   assert.equal(gradeAnswer({},rubric).parts.dec,0);assert.equal(gradeAnswer({decisions:{a:"1"}},rubric).dec[0].ok,true);
 });
-test("sameDesign: the solution copied unchanged is the same design; moved or renamed still is; any real change isn't",()=>{
+test("sameDesign: the solution copied unchanged is the same design; moved or renamed still is; a real change isn't",()=>{
   for(const a of problems){const ref=cleanDesign(a.practice.reference,lab,"r");
     const moved={...ref,nodes:ref.nodes.map(n=>({...n,x:n.x+40,y:n.y-20,name:"Mine"}))};
     assert.ok(sameDesign(ref,cleanDesign(structuredClone(a.practice.reference),lab,"c")),a.slug);
     assert.ok(sameDesign(ref,moved),a.slug+" moved");
-    const srv=ref.nodes.find(n=>n.type==="server");const changed={...ref,nodes:ref.nodes.map(n=>n===srv?{...n,config:{...n.config,count:(n.config.count||1)+1}}:n)};
-    assert.ok(!sameDesign(ref,changed),a.slug+" changed");
+    const srv=ref.nodes.find(n=>n.type==="server");const by=k=>({...ref,nodes:ref.nodes.map(n=>n===srv?{...n,config:{...n.config,count:(n.config.count||1)+k}}:n)});
+    // one more instance is a near copy (see judge/copy.test.js); three more is a change of the learner's own
+    assert.ok(sameDesign(ref,by(1),lab),a.slug+" +1 is a near copy");
+    assert.ok(!sameDesign(ref,by(3),lab),a.slug+" changed");
     assert.ok(!sameDesign(ref,{...ref,edges:ref.edges.slice(1)}),a.slug+" an arrow less");
     assert.ok(!sameDesign(ref,cleanDesign(a.practice.start,lab,"s")),a.slug+" start");}
   assert.ok(!sameDesign(null,null));

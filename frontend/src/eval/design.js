@@ -127,14 +127,18 @@ export function capsOf(node, lab) {
 // for arrows that carry only some operations. Order of nodes and edges is kept.
 export function cleanDesign2(design, lab, opIds = []) {
   const cat = evalCatalogue(lab), max = lab?.eval?.limits?.nodes || 200;
-  const nodes = [], seen = new Set();
+  const nodes = [], seen = new Set(), clamped = [];
   for (const n of obj(design) && Array.isArray(design.nodes) ? design.nodes : []) {
     if (nodes.length >= max) break;
     if (!obj(n) || typeof n.id !== 'string' || !ID.test(n.id) || seen.has(n.id) || !own(cat, n.type)) continue;
     const comp = cat[n.type], src = obj(n.config) ? n.config : {}, config = {};
     // the engine is checked first: which sizes are valid depends on it
     for (const s of comp.settings) if (s.kind === 'engine' && own(src, s.key)) { const v = validValue(s, src[s.key], comp, config); if (v !== undefined) config[s.key] = v; }
-    for (const s of comp.settings) if (s.kind !== 'engine' && own(src, s.key)) { const v = validValue(s, src[s.key], comp, config); if (v !== undefined) config[s.key] = v; }
+    for (const s of comp.settings) if (s.kind !== 'engine' && own(src, s.key)) {
+      const v = validValue(s, src[s.key], comp, config); if (v !== undefined) config[s.key] = v;
+      // a number outside the part's range (or not a number) is judged as the nearest value the part allows: say so
+      if (s.kind === 'number' && (!fin(src[s.key]) || src[s.key] < s.min || src[s.key] > s.max)) clamped.push({ node: n.id, part: typeof n.name === 'string' && n.name.trim() ? n.name.trim().slice(0, NAME_MAX) : comp.name || n.type, field: s.label || s.key, key: s.key, sent: typeof src[s.key] === 'number' || typeof src[s.key] === 'string' ? src[s.key] : String(src[s.key]), used: v ?? s.default ?? s.min, min: s.min, max: s.max });
+    }
     seen.add(n.id);
     const name = typeof n.name === 'string' ? n.name.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX) : '';
     nodes.push({ id: n.id, type: n.type, x: fin(n.x) && Math.abs(n.x) < 1e6 ? n.x : 0, y: fin(n.y) && Math.abs(n.y) < 1e6 ? n.y : 0, ...(name ? { name } : {}), config });
@@ -153,5 +157,8 @@ export function cleanDesign2(design, lab, opIds = []) {
     }
     edges.push(edge);
   }
-  return { nodes, edges };
+  // what was changed to fit the part's range (kept when a design is cleaned twice, as on the server and again in the judge)
+  const earlier = obj(design) && Array.isArray(design.clamped) ? design.clamped.filter((c) => obj(c) && typeof c.part === 'string' && typeof c.field === 'string' && fin(c.used) && byId.has(c.node)).slice(0, 40).map((c) => ({ node: c.node, part: c.part.slice(0, NAME_MAX), field: c.field.slice(0, 60), key: typeof c.key === 'string' ? c.key.slice(0, 40) : '', sent: typeof c.sent === 'number' ? c.sent : String(c.sent).slice(0, 40), used: c.used, min: fin(c.min) ? c.min : 0, max: fin(c.max) ? c.max : c.used })) : [];
+  const all = [...earlier, ...clamped.filter((c) => !earlier.some((e) => e.node === c.node && e.key === c.key))];
+  return { nodes, edges, ...(all.length ? { clamped: all.slice(0, 40) } : {}) };
 }

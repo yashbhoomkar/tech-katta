@@ -222,7 +222,9 @@ export function evaluate(design, lab, practice, { sample = false } = {}) {
     passed, total: results.length, results, first,
     metrics: load.length ? { availability: Math.min(...load.map((r) => r.metrics.availability)), p99: Math.max(...load.map((r) => r.metrics.p99)), avgMonthly: Math.max(...load.map((r) => r.metrics.avgMonthly)) } : null,
     designPoints: designPoints(results),
-    findings: findings.slice(0, MAX_FINDINGS), allFindings: findings.length,
+    // the clamps always show, whatever else there is to say: the learner judged is not the design they sent
+    findings: [...findings.filter((f) => f.code !== 'F_CLAMPED').slice(0, MAX_FINDINGS), ...findings.filter((f) => f.code === 'F_CLAMPED')], allFindings: findings.length,
+    ...(compiled.design.clamped?.length ? { clamped: compiled.design.clamped } : {}),
     plans: plansOut,
   };
 }

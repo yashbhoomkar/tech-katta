@@ -1988,12 +1988,10 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb",
       "engine:db:cassandra"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "The company's services may call the API group directly in this model.",
       "engine:db:dynamodb": "DynamoDB is an equally good store for delivery records.",
       "engine:db:cassandra": "Cassandra is an equally good store for delivery records."
     },

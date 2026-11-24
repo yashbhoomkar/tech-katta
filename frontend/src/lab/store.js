@@ -29,7 +29,8 @@ export function cleanDesign(d,lab,id){
   const look=new Map();for(const e of Array.isArray(d.edges)?d.edges:[])if(obj(e)&&!look.has(e.from+"→"+e.to))look.set(e.from+"→"+e.to,cleanArrowLook(e));
   // a part's note (context 36, step 8): the learner's own words, for presenting the design; drawing only, like the look
   const notes=new Map();for(const n of Array.isArray(d.nodes)?d.nodes:[]){const t=obj(n)&&text(n.id)?cleanNote(n.note):"";if(t&&!notes.has(n.id))notes.set(n.id,t)}
-  if(v2){const ids=(Array.isArray(d.edges)?d.edges:[]).flatMap(e=>obj(e)&&Array.isArray(e.carries)?e.carries:[]);const c=cleanDesign2(d,lab,ids);d={...d,nodes:c.nodes,edges:c.edges}}
+  let clamped=null;
+  if(v2){const ids=(Array.isArray(d.edges)?d.edges:[]).flatMap(e=>obj(e)&&Array.isArray(e.carries)?e.carries:[]);const c=cleanDesign2(d,lab,ids);d={...d,nodes:c.nodes,edges:c.edges};clamped=c.clamped||null}
   const cat=Object.fromEntries((lab.components||[]).map(c=>[c.type,c]));
   const nodes=[],seen=new Set();
   for(const n of Array.isArray(d.nodes)?d.nodes:[]){
@@ -58,7 +59,7 @@ export function cleanDesign(d,lab,id){
   const challenge=text(d.challenge)&&(lab.challenges||[]).some(c=>c&&c.id===d.challenge)?{challenge:d.challenge}:{};
   // a design opened from Problems remembers the question (its article slug)
   const problem=typeof d.problem==="string"&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.problem)?{problem:d.problem}:{};
-  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{})};
+  return{id,name:text(d.name)?d.name.slice(0,120):"Untitled design",updated:fin(d.updated)?d.updated:Date.now(),nodes,edges,...challenge,...problem,...(d.v===2?{v:2}:{}),...(clamped?{clamped}:{})};
 }
 
 // A note: plain text, at most 280 characters, control characters turned into spaces.
@@ -71,7 +72,7 @@ export function readStore(raw,lab){
   // own keys only: ids like "__proto__" or "constructor" must neither vanish nor match inherited properties
   const designs=Object.create(null);
   // Version 1 is the first versioned format; unversioned data from before has the same shape.
-  if(obj(s)&&obj(s.designs))for(const[id,d]of Object.entries(s.designs)){const c=cleanDesign(d,lab,id);if(c)designs[id]=c}
+  if(obj(s)&&obj(s.designs))for(const[id,d]of Object.entries(s.designs)){const c=cleanDesign(d,lab,id);if(c){delete c.clamped;designs[id]=c}}
   const current=obj(s)&&has(designs,s.current)?s.current:Object.keys(designs)[0];
   return{version:STORE_VERSION,current,designs};
 }

@@ -60,8 +60,8 @@ const CLICK = (sink) => ({ id: 'click', name: 'Count a click', kind: 'write', sh
 const INCR = { op: 'incr', entity: 'counts', by: { ad_id: 'a1', minute: '10:00' }, field: 'clicks' };
 const UPSERT = { op: 'put', entity: 'counts', values: { ad_id: 'a1', minute: '10:00', clicks: 4 } };
 const COUNTS = { tables: [{ name: 'counts', fields: F('ad_id minute clicks:int'), key: ['ad_id', 'minute'] }] };
-const proc = (pcfg = {}, partitions = 8) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 20 }), N('st', 'stream', { partitions }), N('p', 'processor', pcfg), N('db', 'database', { engine: 'cassandra', schema: COUNTS })],
-  edges: E(['c', 'app'], ['app', 'st'], ['st', 'p'], ['p', 'db']) });
+const proc = (pcfg = {}, partitions = 8) => ({ nodes: [N('c', 'client'), N('lb', 'lb'), N('app', 'server', { size: 'c5.2xlarge', count: 20 }), N('st', 'stream', { partitions }), N('p', 'processor', pcfg), N('db', 'database', { engine: 'cassandra', schema: COUNTS })],
+  edges: E(['c', 'lb'], ['lb', 'app'], ['app', 'st'], ['st', 'p'], ['p', 'db']) });
 
 test('a stream processor reads a stream and writes results; its capacity stops at the partitions', () => {
   const p = { v: 2, entities: clicks, operations: [CLICK(UPSERT)] };

@@ -1980,14 +1980,12 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:cache",
       "engine:db:dynamodb",
       "engine:db:cassandra",
       "cut:app-db"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "The Clients may call a group of Service instances directly in this model.",
       "ttl:cache": "Writers clear the cache, so a longer TTL changes nothing.",
       "engine:db:dynamodb": "DynamoDB is an equally good store for links.",
       "engine:db:cassandra": "Cassandra is an equally good store for links.",

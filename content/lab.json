@@ -1141,7 +1141,7 @@
       "level": "beginner",
       "title": "Too much for one server",
       "brief": "Zotato's order API runs on one server, and 2,000 requests a second are arriving. Keep orders flowing for six hours.",
-      "hint": "One server handles about 600 requests a second. Add instances, and check that the database can take the queries they send.",
+      "hint": "One server handles about 600 requests a second. Add instances, put a load balancer in front so the calls spread over all of them, and check that the database can take the queries they send.",
       "v": 2,
       "hours": 6,
       "startHour": 12,

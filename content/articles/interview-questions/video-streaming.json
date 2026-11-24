@@ -2124,13 +2124,11 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:cache",
       "engine:db:dynamodb",
       "engine:db:mongodb"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "The CDN may reach the API group directly in this model.",
       "ttl:cache": "How long video details stay cached only changes how soon a new title shows; no test asks for that.",
       "engine:db:dynamodb": "DynamoDB is an equally good store for video details keyed by video.",
       "engine:db:mongodb": "MongoDB is an equally good store for video details keyed by video."

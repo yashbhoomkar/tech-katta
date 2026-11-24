@@ -24,7 +24,7 @@ import { canvasEvidence, canvasProblem } from '../../../frontend/src/v3/adapters
 import { runReview } from '../ai/jobs/review.js';
 import { mergeLab } from '../../../frontend/src/lab/merge.js';
 import { cleanDesign } from '../../../frontend/src/lab/store.js';
-import { judge, gradeAnswer, score, sameDesign } from '../../../frontend/src/judge/judge.js';
+import { judge, gradeAnswer, score, copyOf } from '../../../frontend/src/judge/judge.js';
 import { AuthError, SESSION_DAYS, errorKind } from './index.js';
 import { cleanBatch } from './events.js';
 import { audienceCsv } from './audience.js';
@@ -84,7 +84,7 @@ export const ACCOUNT_PATHS = new Set(['/v1/admin/summary', '/v1/admin/audience.c
 // A canvas design's evidence pack built in place, for callers without a pool (judge-worker.js task "evidence").
 const evidenceInline = async ({ design, lab, practice, article }) => ({ judged: canvasEvidence(judge(design, lab, practice), article) });
 // A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
-const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.v === 2 ? { ...practice.reference, v: 2 } : practice.reference, lab, 'reference')) });
+const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: copyOf(design, practice.reference, lab, practice) });
 
 export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, articleFor = () => null, judgeDesign = judgeInline, judgeEvidence = evidenceInline, ai = null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();

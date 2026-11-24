@@ -241,18 +241,20 @@ export function simulateTest(compiled, lab, practice, test) {
         }
       }
       const cap = capacityNow(id), down = isDown(id);
+      // a hop with no load balancer in front: its calls all reach one instance, which has 1/k of the group's capacity
+      const oneInstance = (r) => (r.hop.nolb && n.type === 'server' ? Math.max(1, instancesNow(id)) : 1);
       let sync = 0, pull = 0, R = 0, Wr = 0, calls = 0;
       const free = (r) => n.type === 'cache' && down && (r.hop.kind === 'cache' || r.hop.kind === 'invalidate') && n.cfg.onDown !== 'fail';
       for (const r of list) {
         calls += r.in;
         if (free(r)) continue;
-        const u = r.in * r.hop.work * (r.hop.kind === 'consume' ? poisonOf(r).work : 1);
+        const u = r.in * r.hop.work * (r.hop.kind === 'consume' ? poisonOf(r).work : 1) * oneInstance(r);
         if (r.hop.kind === 'consume') pull += u; else { sync += u; if (r.hop.write) Wr += u; else R += u; }
       }
       let phiR = 1, phiW = 1, phiPull = 1, rr = 0;
       if (n.type === 'realtime') {
         let conns = 0, msgs = 0;
-        for (const r of list) { if (r.hop.kind === 'deliver') msgs += r.in; else if (r.hop.kind === 'handle') conns += r.in * (r.op.sessionSec || 600); }
+        for (const r of list) { if (r.hop.kind === 'deliver') msgs += r.in; else if (r.hop.kind === 'handle') conns += r.in * (r.op.sessionSec || 600) * (r.hop.nolb ? Math.max(1, instancesNow(id)) : 1); }
         const k = down ? 0 : instancesNow(id), capC = (n.size?.connections || 0) * k, capM = (n.size?.messagesPerSec || 0) * k;
         const rc = capC > 0 ? conns / capC : conns > 0 ? Infinity : 0, rm = capM > 0 ? msgs / capM : msgs > 0 ? Infinity : 0;
         rr = Math.max(rc, rm);

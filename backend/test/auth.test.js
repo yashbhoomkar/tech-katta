@@ -481,8 +481,12 @@ test('a problem submitted while signed in is judged again on the server and coun
   assert.equal(j.verdict, 'accepted'); assert.equal(j.passed, j.total); assert.equal(j.score, 10 + 15 + 50 - 3); // functional requirements, key decisions, design, one hint
   // that was the Solution tab's design, unchanged: stored and judged, but kept out of the stats
   assert.equal(j.copied, true); assert.equal(j.submissions, 1); assert.equal(j.accepted, 0); assert.equal(j.cheaperThan, null);
-  // the visitor's own design (one more server than the solution's) counts
-  const own = structuredClone(a.practice.reference); own.nodes.find((n) => n.id === 'app').config.count += 1;
+  // one more server than the solution's is a near copy: kept out of the stats too
+  const near = structuredClone(a.practice.reference); near.nodes.find((n) => n.id === 'app').config.count += 1;
+  j = await (await submit({ slug: 'url-shortener', design: near, answer: {} })).json();
+  assert.equal(j.copied, true); assert.equal(j.submissions, 1); assert.equal(j.accepted, 0);
+  // the visitor's own design (four more servers than the solution's) counts
+  const own = structuredClone(a.practice.reference); own.nodes.find((n) => n.id === 'app').config.count += 4;
   j = await (await submit({ slug: 'url-shortener', design: own, answer: {} })).json();
   assert.equal(j.verdict, 'accepted'); assert.equal(j.copied, undefined); assert.equal(j.submissions, 2); assert.equal(j.accepted, 1); assert.equal(j.cheaperThan, null);
   // a pricier accepted design: the own one is now cheaper than 100% of the others
@@ -493,8 +497,8 @@ test('a problem submitted while signed in is judged again on the server and coun
   assert.equal(j.cheaperThan, 50);
   // stored without the design or the answer; the copied one is marked
   const docs = await client.db('tk_test').collection('submissions').find({ slug: 'url-shortener' }).sort({ at: 1 }).toArray();
-  assert.equal(docs.length, 5); assert.equal(docs[0].design, undefined); assert.equal(docs[0].answer, undefined);
-  assert.deepEqual(docs.map((d) => !!d.copied), [false, true, false, false, false]);
+  assert.equal(docs.length, 6); assert.equal(docs[0].design, undefined); assert.equal(docs[0].answer, undefined);
+  assert.deepEqual(docs.map((d) => !!d.copied), [false, true, true, false, false, false]);
   // public stats per problem
   const stats = await (await call('/v1/problems/stats', { origin: null })).json();
   assert.deepEqual(stats.problems['url-shortener'], { submissions: 4, accepted: 3, solvers: 1 });
@@ -508,7 +512,7 @@ test('a problem submitted while signed in is judged again on the server and coun
   const ops = await signIn({ sub: '7002', email: 'ops@example.com' });
   const sum = await (await call('/v1/admin/summary?days=7', { cookie: ops.cookie })).json();
   const row = sum.problems.find((x) => x.slug === 'url-shortener');
-  assert.equal(row.submissions, 5); assert.equal(row.accepted, 4); assert.equal(row.copied, 1); assert.equal(row.people, 1);
+  assert.equal(row.submissions, 6); assert.equal(row.accepted, 5); assert.equal(row.copied, 2); assert.equal(row.people, 1);
   // deleting the account deletes its submissions
   assert.equal((await call('/v1/me', { method: 'DELETE', cookie })).status, 200);
   assert.equal(await client.db('tk_test').collection('submissions').countDocuments({ slug: 'url-shortener' }), 0);

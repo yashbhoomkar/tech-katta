@@ -13,6 +13,7 @@ import { PLAN, cap1 } from './words.js';
 import { monthlyCost } from '../lab/engine.js';
 
 const PASS = new Set(['cdn', 'apigw', 'lb']);
+const SPREAD = new Set(['lb', 'apigw']);   // parts that spread calls over the instances of a group behind them
 const MAX_SERVICES = 4, MAX_QUEUES = 3;
 
 export function prefer(op) {
@@ -403,11 +404,11 @@ export function compile(design, lab, practice) {
       if (copies.length) plan.steps[step.id].copies = copies;
     };
 
-    const buildKids = (parentHop, kids) => {
+    const buildKids = (parentHop, kids, spread = false) => {
       for (const k of kids) {
         let share = splitShare(kids.length, k.weight, parentHop, k.node);
         if (type(parentHop.node) === 'cdn') share = share === 1 ? { kind: 'cdnMiss' } : { ...share, cdnMiss: true };
-        if (k.next) { const hop = mk(k.node, 'pass', { work: W.pass, share }); parentHop.children.push(hop); buildKids(hop, k.next); }
+        if (k.next) { const hop = mk(k.node, 'pass', { work: W.pass, share }); parentHop.children.push(hop); buildKids(hop, k.next, spread || SPREAD.has(type(k.node))); }
         else if (k.store) {
           const b = k.store, hop = mk(k.node, 'store', { step: b.step.id, work: b.a.work, write: b.step.mode === 'put', share, per: b.step.times || 1, entity: b.step.entity, how: b.a.how, rows: b.a.rows, bytes: b.step.bytes });
           parentHop.children.push(hop);
@@ -415,7 +416,9 @@ export function compile(design, lab, practice) {
           if (b.step.mode === 'put') writers.push({ entity: b.step.entity, store: k.node, table: b.table.name, kind: 'primary', op: op.id, step: b.step });
           else plan.bindings.push({ step: b.step.id, entity: b.step.entity, store: k.node, table: b.table.name, viaCache: null });
         } else {
-          const hop = mk(k.node, 'handle', { work: W.handle, share, cpuMs: 0 });
+          // calls that reach a group of instances with nothing in front to spread them (a load balancer or API gateway) all go to
+          // one instance: the simulator gives such a hop one instance's capacity (like Practice's W002)
+          const hop = mk(k.node, 'handle', { work: W.handle, share, cpuMs: 0, ...(!spread && op.source !== 'schedule' && (type(k.node) === 'server' || type(k.node) === 'realtime') ? { nolb: true } : {}) });
           parentHop.children.push(hop);
           for (const b of bindAll(op, k.node).bindings) addStep(hop, k.node, b);
         }

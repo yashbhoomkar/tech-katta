@@ -1735,11 +1735,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:cache"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Phones may reach the API group directly in this model.",
       "ttl:cache": "How long a post stays cached only changes how soon an edited post shows; no test asks for that."
     },
     "rubric": {

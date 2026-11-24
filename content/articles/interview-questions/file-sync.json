@@ -1952,11 +1952,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "engine:db:dynamodb": "DynamoDB saves a version only if it is new, and finds a user's changes by an index on owner and time, just as well."
     },
     "rubric": {

@@ -106,7 +106,7 @@ test('poison messages: retried for ever without a dead-letter queue, set aside w
 test('hot keys: one item lands on one shard; a cache in front absorbs it', () => {
   const read = { id: 'read', name: 'Read a post', kind: 'read', share: 1, keys: { entity: 'posts', skew: 'zipf', active: 1e6 }, steps: [{ id: 's1', op: 'get', entity: 'posts', by: { id: 'p1' } }], respond: { status: 200, body: {} } };
   const p = P(read);
-  const shards = (k) => ({ nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 8 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.large', shards: k, schema: POSTS() })], edges: E(['c', 'app'], ['app', 'db']) });
+  const shards = (k) => ({ nodes: [N('c', 'client'), N('lb', 'lb'), N('app', 'server', { size: 'c5.2xlarge', count: 8 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.large', shards: k, schema: POSTS() })], edges: E(['c', 'lb'], ['lb', 'app'], ['app', 'db']) });
   const hot = { faults: [{ minute: 10, kind: 'hotKey', op: 'read', share: 0.4, minutes: 20 }], traffic: { rps: 6000, pattern: 'steady' } };
   const calm = sim(shards(4), p, { traffic: hot.traffic }).s, h = sim(shards(4), p, hot).s;
   assert.equal(calm.ops.read.availability, 100, 'spread evenly, four shards take it');

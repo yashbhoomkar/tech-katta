@@ -12,6 +12,7 @@
 // (same components, settings and arrows; where they sit and what they are called don't count), so a
 // copied solution isn't counted as solved.
 import { evaluate } from '../eval/index.js';
+import { cleanDesign } from '../lab/store.js';
 
 // Runs the sample tests (Run) or all of them (Submit). Stops nothing early: every result is shown.
 export function judge(design, lab, problem, { sample = false } = {}) {
@@ -50,14 +51,76 @@ export function gradeAnswer(answer = {}, rubric = {}) {
 
 // Out of 100: requirements 15 (functional 10, non-functional 5), estimates 10, API 10, key decisions
 // 15, design 50 (share of all tests passed). Each hint opened takes 3 off, at most 15.
-// A design's shape: its components (id, type, settings) and arrows, in a fixed order.
-const shape = (d) => {
-  const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
-  const nodes = (d?.nodes || []).map((n) => ({ id: n.id, type: n.type, config: canon(n.config || {}) })).sort((a, b) => (a.id < b.id ? -1 : 1));
-  const edges = (d?.edges || []).map((e) => `${e.from}>${e.to}`).sort();
-  return JSON.stringify({ nodes, edges });
-};
-export const sameDesign = (a, b) => !!(a && b && a.nodes?.length && b.nodes?.length) && shape(a) === shape(b);
+// ---- Is this design the problem's own solution? (copy detection) ----------------------------------------------------
+// A design's structure, without ids, names or positions: every part gets a colour made of its type and its settings
+// other than capacity, then colours are mixed with those of its neighbours along the arrows for a few rounds (a hash
+// of the whole graph's shape, not its ids). Two designs rebuilt by hand, with fresh ids, have the same structure.
+// A near copy has the same structure and every capacity setting (instances, shards, replicas, partitions, size…)
+// within one step of the solution's. Pure and deterministic; the browser and the server both call copyOf().
+const CAPACITY = ['count', 'maxCount', 'nodes', 'shards', 'replicas', 'partitions', 'parallelism'];
+const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
+const hash = (str) => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
+const settingDefault = (lab, type, key) => { const st = (lab?.eval?.components || []).find((c) => c.type === type)?.settings?.find((x) => x.key === key); return st ? st.default : undefined; };
+const sizeIds = (lab, node) => { const comp = (lab?.components || []).find((c) => c.type === node.type); if (!comp) return []; const eng = comp.engines ? (comp.engines.find((e) => e.id === (node.config?.engine ?? comp.defaultEngine)) || comp.engines[0]) : null; return (eng?.sizes || comp.sizes || []).map((x) => x.id); };
+const capacityOf = (lab, n) => { const out = {}; for (const k of CAPACITY) { const v = n.config?.[k] ?? settingDefault(lab, n.type, k); if (typeof v === 'number') out[k] = v; } return out; };
+
+export function structureOf(d, lab) {
+  const nodes = (d?.nodes || []).map((n) => ({ id: n.id, type: n.type, config: n.config || {} }));
+  const by = new Map(nodes.map((n) => [n.id, n]));
+  const edges = (d?.edges || []).filter((e) => by.has(e.from) && by.has(e.to));
+  const inn = new Map(nodes.map((n) => [n.id, []])), out = new Map(nodes.map((n) => [n.id, []]));
+  for (const e of edges) { out.get(e.from).push(e.to); inn.get(e.to).push(e.from); }
+  let colour = new Map(nodes.map((n) => {
+    const rest = Object.fromEntries(Object.entries(n.config).filter(([k]) => !CAPACITY.includes(k) && k !== 'size'));
+    return [n.id, hash(`${n.type}|${JSON.stringify(canon(rest))}`)];
+  }));
+  for (let round = 0; round < 4; round++) {
+    const next = new Map();
+    for (const n of nodes) next.set(n.id, hash(`${colour.get(n.id)}<${inn.get(n.id).map((x) => colour.get(x)).sort().join(',')}>${out.get(n.id).map((x) => colour.get(x)).sort().join(',')}`));
+    colour = next;
+  }
+  const classes = new Map();
+  for (const n of nodes) { const c = colour.get(n.id); if (!classes.has(c)) classes.set(c, []); classes.get(c).push(n); }
+  const signature = hash([...colour.values()].sort().join(';') + '|' + edges.map((e) => `${colour.get(e.from)}>${colour.get(e.to)}`).sort().join(';'));
+  return { signature, classes, nodes, lab };
+}
+
+// is one part within one step of the other? (a size one up or down in the catalogue; a count one more or less)
+function withinOneStep(lab, a, b) {
+  const ca = capacityOf(lab, a), cb = capacityOf(lab, b);
+  for (const k of new Set([...Object.keys(ca), ...Object.keys(cb)])) if (Math.abs((ca[k] ?? 0) - (cb[k] ?? 0)) > 1 || (k in ca) !== (k in cb)) return false;
+  if ((a.config.size ?? undefined) !== (b.config.size ?? undefined)) {
+    const ids = sizeIds(lab, a), i = ids.indexOf(a.config.size), j = ids.indexOf(b.config.size);
+    if (i < 0 || j < 0 || Math.abs(i - j) > 1) return false;
+  }
+  return true;
+}
+const permutations = (xs) => (xs.length <= 1 ? [xs] : xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
+
+// Same parts and arrows (ids, names and positions don't count), every capacity setting within `step` of the other's.
+export function sameDesign(a, b, lab = null, step = 1) {
+  if (!(a && b && a.nodes?.length && b.nodes?.length)) return false;
+  const sa = structureOf(a, lab), sb = structureOf(b, lab);
+  if (sa.signature !== sb.signature) return false;
+  for (const [c, xs] of sa.classes) {
+    const ys = sb.classes.get(c) || [];
+    if (xs.length !== ys.length) return false;
+    const ok = (p, q) => (step === 0 ? JSON.stringify([capacityOf(lab, p), p.config.size]) === JSON.stringify([capacityOf(lab, q), q.config.size]) : withinOneStep(lab, p, q));
+    if (xs.length <= 6) { if (!permutations(ys).some((perm) => xs.every((x, i) => ok(x, perm[i])))) return false; }
+    else { const key = (n) => JSON.stringify(Object.values(capacityOf(lab, n))); const sx = [...xs].sort((p, q) => (key(p) < key(q) ? -1 : 1)), sy = [...ys].sort((p, q) => (key(p) < key(q) ? -1 : 1)); if (!sx.every((x, i) => ok(x, sy[i]))) return false; }
+  }
+  return true;
+}
+
+// The one place the browser and the server ask "did they hand in the problem's own solution?": both designs are
+// cleaned the same way (a v2 problem's designs keep their v2 settings; the Solution tab's design carries no mark of
+// its own), then compared by structure. design, solution: { nodes, edges }; practice: the problem's practice.
+export function copyOf(design, solution, lab, practice) {
+  if (!design || !solution) return false;
+  const v2 = practice?.v === 2;
+  const prep = (d) => cleanDesign(v2 ? { ...d, v: 2 } : d, lab, 'copy');
+  return sameDesign(prep(design), prep(solution), lab);
+}
 
 export const WEIGHTS = { fr: 10, nfr: 5, est: 10, api: 10, dec: 15, design: 50 };
 export function score(graded, judged, hints = 0) {

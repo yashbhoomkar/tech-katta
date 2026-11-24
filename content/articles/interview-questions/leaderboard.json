@@ -1113,11 +1113,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:board"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "ttl:board": "Scores kept in a structure of the cache are its data, not copies: how long copies are kept changes nothing here."
     },
     "rubric": {

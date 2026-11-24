@@ -2831,12 +2831,8 @@
         ]
       }
     ],
-    "mutantsAllowed": [
-      "remove:lb"
-    ],
-    "mutantsAllowedWhy": {
-      "remove:lb": "The phones and the provider may call the Service group directly in this model."
-    },
+    "mutantsAllowed": [],
+    "mutantsAllowedWhy": {},
     "rubric": {
       "fr": [
         {
