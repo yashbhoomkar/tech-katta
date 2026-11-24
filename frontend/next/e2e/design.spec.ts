@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { localApi } from "./api";
 
 // The design canvas in 3D (src/lab/design3d.jsx): move a part, join two, delete one, the 3D | 2D switch, the replay's HUD and Break it yourself.
 const API = "https://tech-api.katta.cc";
 const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
 async function signedIn(page: Page) {
+  await localApi(page, true);
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: true, clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => r.fulfill({ json: { user: { name: "Asha" } }, headers: CORS }));
   await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));

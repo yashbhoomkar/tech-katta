@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { localApi } from "./api";
 
 // The real site, end to end: every address opens the right page, the workspace runs, the lock holds, search, theme, phones.
 
@@ -6,6 +7,7 @@ const API = "https://tech-api.katta.cc";
 const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
 /** the visitor: sign-in off (nothing locked), signed out with sign-in on (the lock), or signed in */
 async function visitor(page: Page, who: "off" | "out" | "in") {
+  await localApi(page, who === "in");
   await page.route(`${API}/v1/auth/config`, (r) => r.fulfill({ json: { enabled: who !== "off", clientId: "test" }, headers: CORS }));
   await page.route(`${API}/v1/me`, (r) => (who === "in" ? r.fulfill({ json: { user: { name: "Asha", email: "asha@example.com" } }, headers: CORS }) : r.fulfill({ status: 401, json: {}, headers: CORS })));
   await page.route(`${API}/v1/events`, (r) => r.fulfill({ status: 204, headers: CORS }));
@@ -63,10 +65,15 @@ test("signed out: the workspace is locked and loads no island", async ({ page })
   const asked: string[] = [];
   page.on("request", (r) => asked.push(r.url()));
   await page.goto("/problems/url-shortener");
-  await expect(page.locator(".gate-card")).toBeVisible();
+  // signed out a problem is its title, difficulty and brief, then the sign-in card: no canvas, no judge, no island, no pop-up
+  await expect(page.locator(".public-problem .si-card")).toBeVisible();
+  await expect(page.locator(".signin")).toHaveCount(0);
   expect(asked.some((u) => u.includes("/3d/islands/"))).toBe(false);
-  await page.locator(".gate-card [data-signin]").click();
-  await expect(page.locator(".signin")).toBeVisible();
+  // a gated action (Run) opens the same card in a small dialog; "Not now" closes it
+  await page.locator('[data-gated="run"]').click();
+  await expect(page.locator(".signin .si-card")).toBeVisible();
+  await page.locator(".signin .si-close").click();
+  await expect(page.locator(".signin")).toHaveCount(0);
 });
 
 test("a problem: run, submit, replay in 2D and 3D, and back", async ({ page }) => {
