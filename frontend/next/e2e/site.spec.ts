@@ -50,14 +50,16 @@ test("old /dashboard links land on their pages", async ({ page }) => {
   await expect(page).toHaveURL(/\/problems\/url-shortener$/);
 });
 
-test("signed out: an article shows its opening and the sign-in card, a list and /home stay open", async ({ page }) => {
+test("signed out: an article shows its public part and the sign-in card, a list stays open, /home shows the card in place of its personal content", async ({ page }) => {
   await visitor(page, "out");
   await page.goto("/learn/concepts/caching");
   await expect(page.locator(".gate-card")).toBeVisible();
   await page.goto("/learn/concepts");
   await expect(page.locator(".gate-card")).toHaveCount(0);
+  // the Dashboard is personal (progress, next concept): signed out, the card stands in its place (the owner's rule, 2026-11-24; it used to stay open)
   await page.goto("/home");
-  await expect(page.locator(".gate-card")).toHaveCount(0);
+  await expect(page.locator(".dash .si-card")).toBeVisible();
+  await expect(page.locator(".next-card, .dash-more")).toHaveCount(0);
 });
 
 test("signed out: the workspace is locked and loads no island", async ({ page }) => {
