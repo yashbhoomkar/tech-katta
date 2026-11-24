@@ -29,7 +29,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 600_000,
     },
-    { command: "cd ../backend && PORT=5112 FRONTEND_ORIGIN=http://localhost:4173 node src/server.js", url: "http://127.0.0.1:5112/health", reuseExistingServer: !process.env.CI, timeout: 60_000 },
-    { command: "cd ../backend && PORT=5111 OPEN_CONTENT=1 FRONTEND_ORIGIN=http://localhost:4173 node src/server.js", url: "http://127.0.0.1:5111/health", reuseExistingServer: !process.env.CI, timeout: 60_000 },
+    { command: "cd ../../backend && PORT=5112 FRONTEND_ORIGIN=http://localhost:4173 node src/server.js", url: "http://127.0.0.1:5112/health", reuseExistingServer: !process.env.CI, timeout: 60_000 },
+    { command: "cd ../../backend && PORT=5111 OPEN_CONTENT=1 FRONTEND_ORIGIN=http://localhost:4173 node src/server.js", url: "http://127.0.0.1:5111/health", reuseExistingServer: !process.env.CI, timeout: 60_000 },
   ],
 });
