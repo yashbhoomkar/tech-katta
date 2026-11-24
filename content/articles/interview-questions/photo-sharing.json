@@ -709,7 +709,7 @@
           "name": "Photo API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 3,
+            "count": 4,
             "zones": 3
           }
         },
@@ -829,7 +829,7 @@
           "name": "Thumbnail workers",
           "config": {
             "size": "c5.2xlarge",
-            "count": 4,
+            "count": 5,
             "zones": 2
           }
         }

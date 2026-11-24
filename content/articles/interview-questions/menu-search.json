@@ -588,7 +588,7 @@
           "name": "Search API",
           "config": {
             "size": "m5.xlarge",
-            "count": 4,
+            "count": 5,
             "zones": 2,
             "timeoutMs": 300
           }
@@ -616,7 +616,7 @@
             "engine": "opensearch",
             "size": "r6g.2xlarge.search",
             "multiAz": true,
-            "shards": 3,
+            "shards": 2,
             "schema": {
               "tables": [
                 {

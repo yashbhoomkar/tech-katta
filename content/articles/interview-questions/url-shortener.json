@@ -830,7 +830,7 @@
           "name": "Link service",
           "config": {
             "size": "c5.2xlarge",
-            "count": 32,
+            "count": 35,
             "zones": 3
           }
         },

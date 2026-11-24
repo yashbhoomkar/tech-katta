@@ -89,6 +89,16 @@
       "x": "The swipe is a PUT on the person you swiped: sending it twice (a retry on a bad network) changes nothing the second time."
     },
     {
+      "t": "p",
+      "x": "The matches list is read the same way as the deck:"
+    },
+    {
+      "t": "code",
+      "label": "Matches",
+      "x": "GET /matches   → 200 { \"matches\": [ { \"with\": \"u_42\", \"since\": \"2026-11-20\" }, … ] }",
+      "say": "Get my matches: the people who said yes to me after I said yes to them."
+    },
+    {
       "t": "h2",
       "x": "4. High-level design"
     },
@@ -622,7 +632,7 @@
           "name": "Swipe API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 24,
+            "count": 26,
             "zones": 3
           }
         },
@@ -636,7 +646,7 @@
             "engine": "postgres",
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "shards": 12,
+            "shards": 14,
             "schema": {
               "tables": [
                 {

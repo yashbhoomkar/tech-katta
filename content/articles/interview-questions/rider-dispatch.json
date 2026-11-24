@@ -675,7 +675,7 @@
           "name": "Ping API A",
           "config": {
             "size": "c5.2xlarge",
-            "count": 30,
+            "count": 33,
             "zones": 3
           }
         },
@@ -687,7 +687,7 @@
           "name": "Ping API B",
           "config": {
             "size": "c5.2xlarge",
-            "count": 30,
+            "count": 33,
             "zones": 3
           }
         },
@@ -717,7 +717,6 @@
             "structures": [
               {
                 "name": "riders",
-                "kind": "geo",
                 "fields": [
                   {
                     "name": "rider_id",
@@ -738,7 +737,8 @@
                 ],
                 "key": [
                   "rider_id"
-                ]
+                ],
+                "kind": "geo"
               }
             ]
           }
@@ -780,7 +780,8 @@
                   ]
                 }
               ]
-            }
+            },
+            "shards": 2
           }
         },
         {
@@ -799,7 +800,7 @@
           "name": "Matchers",
           "config": {
             "size": "t3.medium",
-            "count": 8,
+            "count": 9,
             "zones": 2
           }
         },
@@ -2376,12 +2377,18 @@
     "mutantsAllowed": [
       "ttl:map",
       "engine:db:dynamodb",
-      "engine:db:cassandra"
+      "engine:db:cassandra",
+      "half:db:shards",
+      "smaller:db",
+      "engine:db:mongodb"
     ],
     "mutantsAllowedWhy": {
       "ttl:map": "Positions kept in a structure of the cache are its data, not copies: how long copies are kept changes nothing here.",
       "engine:db:dynamodb": "DynamoDB saves an order and offers it only if no rider has it yet just as well.",
-      "engine:db:cassandra": "Cassandra offers an order only if no rider has it yet with a lightweight transaction: fine at this rate."
+      "engine:db:cassandra": "Cassandra offers an order only if no rider has it yet with a lightweight transaction: fine at this rate.",
+      "half:db:shards": "With about a third spare capacity, the orders database still takes the busiest hour on half the shards.",
+      "smaller:db": "With about a third spare capacity, the orders database still takes the busiest hour one size smaller.",
+      "engine:db:mongodb": "MongoDB saves an order and offers it only if no rider has it yet just as well, at this rate."
     },
     "rubric": {
       "fr": [

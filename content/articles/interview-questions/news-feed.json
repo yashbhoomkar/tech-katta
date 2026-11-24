@@ -90,11 +90,11 @@
     {
       "t": "fig",
       "id": "feed-fanout",
-      "cap": "Posting writes the post and puts a message on a queue. Fan-out workers look up the author's followers and add the post id to each one's feed list in Redis. Opening the app reads one list and fetches the posts from a cache."
+      "cap": "Posting writes the post and puts a message on a queue. Fan-out workers look up the author's followers and add the post id to each one's feed list in Redis. Opening the app reads one list and fetches the posts from a cache of eight nodes, sized so that one very popular post cannot overload the node that holds it."
     },
     {
       "t": "p",
-      "x": "Posting stays fast because the fan-out happens after: the post is saved, the author sees it at once, and workers spread it to followers' lists over the next seconds. Reading is one lookup for a list of ids, then one batch fetch of the posts, most of them from a cache."
+      "x": "Posting stays fast because the fan-out happens after: the post is saved, the author sees it at once, and workers spread it to followers' lists over the next seconds. Reading is one lookup for a list of ids, then one batch fetch of the posts, most of them from a cache. One post that everyone opens, a celebrity's, is read far more than any other, and the single cache node that holds it takes all of those reads while the other nodes sit idle. So the cache has enough nodes, each big enough, that its busiest node still has room. A further step is to keep a copy of the hottest posts in each Feed API server's memory for a few seconds, so those reads never reach the cache."
     },
     {
       "t": "h2",
@@ -653,7 +653,7 @@
           "name": "Post cache",
           "config": {
             "size": "cache.m5.large",
-            "nodes": 6,
+            "nodes": 8,
             "ttlSec": 300,
             "replica": true
           }
@@ -668,8 +668,8 @@
             "engine": "postgres",
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "shards": 4,
-            "replicas": 1,
+            "shards": 6,
+            "replicas": 0,
             "schema": {
               "tables": [
                 {
