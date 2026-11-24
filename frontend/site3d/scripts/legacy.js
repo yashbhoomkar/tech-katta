@@ -17,6 +17,10 @@ export function legacyTarget(key, problems, sections, fromLab = (k) => k) {
   const [sec = '', slug, more, ...rest] = k.split('/').filter(Boolean);
   const seg = encodeURIComponent;
   if (!sec) return '/home';
+  // /dashboard/learn/<section>/<slug> and the other new-style paths under /dashboard: the same path without /dashboard
+  if (sec === 'learn') return slug ? legacyTarget(k.split('/').filter(Boolean).slice(1).join('/'), problems, sections, (x) => x) : '/learn/concepts';
+  if (sec === 'simulator') return slug ? `/simulator/${seg(slug)}` : '/simulator';
+  if (sec === 'home' || sec === 'me') return `/${sec}`;
   if (sec === 'privacy' || sec === 'terms') return `/${sec}`;
   if (sec === 'practice') return slug ? `/practice/${seg(slug)}` : '/practice';
   if (sec === 'problems') {

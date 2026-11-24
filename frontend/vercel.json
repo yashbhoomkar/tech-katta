@@ -1,5 +1,4 @@
 {
-  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/health",
@@ -1144,6 +1143,56 @@
     {
       "source": "/dashboard/terms/",
       "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/learn",
+      "destination": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/learn/",
+      "destination": "/learn/concepts",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/learn/(.*)",
+      "destination": "/learn/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/simulator",
+      "destination": "/simulator",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/simulator/",
+      "destination": "/simulator",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/simulator/(.*)",
+      "destination": "/simulator/$1",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/home",
+      "destination": "/home",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/home/",
+      "destination": "/home",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/me",
+      "destination": "/me",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/me/",
+      "destination": "/me",
       "permanent": true
     },
     {
