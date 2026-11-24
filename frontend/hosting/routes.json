@@ -32,6 +32,14 @@
     {
       "from": "/simulator/*",
       "to": "/simulator/index.html"
+    },
+    {
+      "from": "/problems/challenge/*",
+      "to": "/problems/challenge/index.html"
+    },
+    {
+      "from": "/practice/*",
+      "to": "/practice/index.html"
     }
   ],
   "headers": [
@@ -49,6 +57,12 @@
     },
     {
       "path": "/assets/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "path": "/3d/islands/assets/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
       }

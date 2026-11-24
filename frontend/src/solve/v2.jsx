@@ -1,4 +1,5 @@
 import React,{useEffect,useState}from"react";import{fmt,pct,clockOf}from"./format.js";
+import{ViewToggle}from"./replay3d.jsx";
 import{CreditMeter,CREDIT,money,lasts}from"./credit.jsx";import{troubleAt,whyPart}from"./why.js";
 // ---- v2 problems (tech-katta-context/evaluator.md §12.1): what the system must do, findings, how the design was
 // read, and a test replayed on the canvas ----
@@ -33,13 +34,13 @@ export function breakOptions(parts,hasCache){return[...parts.map(p=>({id:"crash:
  {id:"x2",label:"Traffic doubles for 15 minutes",fault:m=>({minute:m,kind:"spike",factor:2,minutes:15,mark:true})},
  {id:"x5",label:"Traffic jumps 5× for 15 minutes",fault:m=>({minute:m,kind:"spike",factor:5,minutes:15,mark:true})},
  ...(hasCache?[{id:"flush",label:"The cache empties",fault:m=>({minute:m,kind:"cacheFlush"})}]:[])]}
-export function ReplayBar({rep,set,P,nameOf,parts,onBreak,compOf}){const[whyId,setWhyId]=useState(null);const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
+export function ReplayBar({rep,set,P,nameOf,parts,onBreak,compOf,view,setView,three}){const[whyId,setWhyId]=useState(null);const{r,i,play}=rep,tl=r.timeline,n=Object.values(tl.ops)[0]?.rate.length||1,last=i>=n-1;
 useEffect(()=>{if(!play)return;if(last){set(x=>x&&{...x,play:false});return}const t=setTimeout(()=>set(x=>x&&{...x,i:Math.min(x.i+1,n-1)}),180);return()=>clearTimeout(t)},[play,i,last]);// eslint-disable-line
 useEffect(()=>{const k=e=>{if(e.key==="Escape")set(null)};addEventListener("keydown",k);return()=>removeEventListener("keydown",k)},[set]);
 const t0=i*tl.tickMinutes,ev=(r.events||[]).filter(e=>e.t<=t0&&e.t>t0-tl.tickMinutes*3).slice(-3);
 return <section className="sv-console sv-player" aria-label={`Replay of ${r.test.name}`}>
 <header className={"sv-v "+(r.ok?"good":"bad")}><div><b>▶ Replay: {r.test.name}</b><small>{clockOf((r.test.startHour||0)*60+t0)} · minute {t0} of {fmt(r.test.hours*60)}</small></div>
-<span className="sv-vbtns"><button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
+<span className="sv-vbtns">{three&&<ViewToggle view={view} set={setView}/>}<button type="button" onClick={()=>set(x=>({...x,play:!x.play,i:last?0:x.i}))} aria-label={play?"Pause":"Play"}>{play?"❚❚":"▶"}</button><button type="button" onClick={()=>set(null)} aria-label="Close the replay">✕</button></span></header>
 <div className="sv-scrubw"><input type="range" className="sv-scrub" min={0} max={n-1} value={i} onChange={e=>set(x=>({...x,play:false,i:+e.target.value}))} aria-label="Minute of the test"/>
 <div className="sv-ticks">{marks(r.events,tl.tickMinutes,n).map(m=>{const words=m.evs.map(e=>eventWords(e,nameOf)).join(" ");return <button key={m.i} type="button" className={"sv-tick "+m.level} style={{left:`${100*m.i/Math.max(1,n-1)}%`}} title={words} aria-label={`Go to minute ${m.i*tl.tickMinutes}: ${words}`} onClick={()=>set(x=>({...x,play:false,i:m.i}))}/>})}</div></div>
 {tl.spend&&(()=>{const from=rep.from??CREDIT,spent=tl.spend.slice(0,i+1).reduce((a,b)=>a+b,0),ph=(tl.spend[i]||0)*60/tl.tickMinutes;return <CreditMeter ms={160} from={from-tl.spend.slice(0,Math.max(0,i)).reduce((a,b)=>a+b,0)} to={Math.max(0,from-spent)} label={`This test has spent ${money(spent)} so far · burning ${money(ph)}/hour now`} note={`at this rate the credit lasts ${lasts(ph)}`}/>})()}
@@ -47,8 +48,13 @@ return <section className="sv-console sv-player" aria-label={`Replay of ${r.test
 {ev.length>0&&<ul className="sv-why">{ev.map((e,k)=><li key={k}>{eventWords(e,nameOf)}</li>)}</ul>}
 <WhyParts r={r} i={i} whyId={whyId} setWhyId={setWhyId} nameOf={nameOf} compOf={compOf}/>
 {onBreak&&<BreakIt t0={t0} opts={breakOptions(parts||[],Object.values(r.timeline.nodes||{}).length&&(parts||[]).some(p=>p.type==="cache"))} onBreak={onBreak} done={rep.whatIf}/>}</section>}
-function BreakIt({t0,opts,onBreak,done}){const[pick,setPick]=useState(opts[0]?.id||"");const o=opts.find(x=>x.id===pick)||opts[0];if(!o)return null;
-return <details className="sv-break" open={!!done}><summary>⚡ Break it yourself</summary>{done&&<p className="sv-break-done">Now showing: {done.join(", then ")}. Nothing here is scored.</p>}<div className="sv-break-row"><select value={o.id} onChange={e=>setPick(e.target.value)} aria-label="What goes wrong">{opts.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select><button type="button" className="sv-watch" onClick={()=>onBreak(o.fault(t0),o.label)}>Break it at minute {t0}</button></div><p className="sv-tdesc">The test runs again on the same design with this added from minute {t0}, and the replay carries on from there. Move the scrubber to choose another minute.</p></details>}
+function BreakIt({t0,opts,onBreak,done}){if(!opts.length)return null;
+// a row of choices, one tap each: the test runs again on the same design with that fault added from the minute on the scrubber
+return <section className="sv-break" aria-label="Break it yourself"><p className="sv-break-h"><b>⚡ Break it yourself</b><small>at minute {t0}: move the scrubber to choose another</small></p>{done&&<p className="sv-break-done">Now showing: {done.join(", then ")}. Nothing here is scored.</p>}<div className="sv-break-row">{opts.map(x=><button key={x.id} type="button" className="sv-fault" onClick={()=>onBreak(x.fault(t0),x.label)}>{x.label}</button>)}</div></section>}
+/** The numbers of the minute on the scrubber, as a small dock at the top right of the canvas (the simulator's run HUD): time, traffic, errors, p99. */
+export function ReplayHud({rep}){const{r,i}=rep,tl=r.timeline,ops=Object.values(tl.ops||{});if(!ops.length)return null;
+const rate=ops.reduce((a,o)=>a+(o.rate[i]??0),0),ok=ops.reduce((a,o)=>a+(o.rate[i]??0)*(o.ok[i]??1),0),err=rate>0?100*(1-ok/rate):0,p99=Math.max(0,...ops.map(o=>o.p99[i]??0));
+return <dl className="sv-hud" aria-label="This minute of the test"><div><dt>Time</dt><dd>{clockOf((r.test.startHour||0)*60+i*tl.tickMinutes)}</dd></div><div><dt>Traffic</dt><dd>{fmt(rate)}/s</dd></div><div className={err>1?"bad":""}><dt>Errors</dt><dd>{pct(err)}</dd></div><div><dt>p99</dt><dd>{fmt(p99)} ms</dd></div></dl>}
 // Scrubber marks: red for trouble, green for recovery, teal for scaling (spec 33 §1.5).
 const TICK={spike:"bad",crashed:"bad",writesLost:"bad",cold:"bad",backlog:"bad",hotPart:"bad",zoneDown:"bad",poison:"bad",hotKey:"bad",abuse:"bad",recovered:"good",failover:"good",warm:"good",drained:"good",zoneBack:"good",scaledOut:"info",scaledIn:"info"};
 // One mark per tick that has events, in the most serious colour among them (several events often share a minute).

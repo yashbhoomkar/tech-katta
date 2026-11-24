@@ -9,7 +9,7 @@ import { runTour, offerTour } from '../tour.js';
 const LEGEND = [['laptop', 'Users', 'mist'], ['server', 'App server', 'sky'], ['kafka', 'Kafka topic', 'lemon'], ['consumer', 'Consumer', 'lime'], ['db', 'SQL database', 'mint']];
 
 /** the signature: a part named in the text carries its colour dot, the same as its 3D label */
-const pd = (kind) => `<i class="pd" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
+const pd = (kind) => `<i class="pdot" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
 /** The landing's system (owner: "servers producing to Kafka, then a Kafka consumer consuming that and putting it in an
  *  SQL db"): users → app servers (producers) → a Kafka topic (partitions) → a consumer group → an SQL database. */

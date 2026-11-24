@@ -316,6 +316,16 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
     const all = [...parts.values()].filter((p) => !p.gone).flatMap((p) => p.hits);
     return ray.intersectObjects(all, false)[0]?.object.userData.part || null;
   }
+  /** the id of the part under a point of the screen (clientX, clientY), or null */
+  const pickAt = (x, y) => hit({ clientX: x, clientY: y });
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), onFloor = new THREE.Vector3();
+  /** where the point of the screen meets the floor, as [x, z] in world units, or null */
+  function groundAt(x, y) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.ray.intersectPlane(plane, onFloor) ? [onFloor.x, onFloor.z] : null;
+  }
   const onClick = (ev) => { if (pickCb) pickCb(hit(ev)); };
   const onMove = (ev) => { if (!pickCb) return; const h = hit(ev); hoverId = h; canvas.style.cursor = h ? 'pointer' : ''; };
   canvas.addEventListener('click', onClick); canvas.addEventListener('pointermove', onMove);
@@ -532,5 +542,6 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
   }
   return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMode: (m) => { labelMode = m; },
     /** a part's position on the canvas in px (for a card beside it), or null */
+    pickAt, groundAt, getCamera: () => ({ ...camGoal, t: [...camGoal.t] }),
     screenOf: (id) => { const p = parts.get(id); if (!p || p.gone) return null; const [x, y] = project(p.g.position.x, p.top + p.rise, p.g.position.z); return [x, y]; }, onPick: (cb) => { pickCb = cb; }, destroy };
 }

@@ -6,11 +6,12 @@ let mod = null, loading = null;
 const load = () => (loading ||= import('/3d/legacy/legacy.js').then((m) => (mod = m)).catch(() => { loading = null; return null; }));
 const OFF = { ready: true, enabled: false, user: null };
 let started = false;
-/** ask who is signed in (once; the answer arrives as a "tk-account" event) */
+/** ask who is signed in (once; the answer arrives as a "tk-account" event), and start syncing the canvas's designs and stars to the account
+ *  a few seconds after each change (what the current app did at start-up: wireSync, startAccount) */
 export function startAccount() {
   if (started) return load();
   started = true;
-  return load().then((m) => { if (m) return m.startAccount(); mod = null; document.dispatchEvent(new Event('tk-account')); });
+  return load().then((m) => { if (m) { m.wireSync(); return m.startAccount(); } mod = null; document.dispatchEvent(new Event('tk-account')); });
 }
 /** { ready, enabled, user, error }: ready is false until the API has answered */
 export function accountState() { return mod ? mod.account() : (started && loading ? { ready: false, enabled: false, user: null } : OFF); }

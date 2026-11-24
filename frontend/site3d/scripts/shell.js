@@ -73,6 +73,7 @@ function draw() {
     <div class="side-top"><a class="logo" href="/" aria-label="tech katta, the landing page"><span class="logo-mark" aria-hidden="true"><i></i><i></i></span><span class="lbl">tech katta</span></a>
       <button type="button" class="side-btn icon-btn" data-rail aria-label="Fold the sidebar" title="Fold the sidebar  [">${`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.rail}</svg>`}</button></div>
     <nav class="side-nav" aria-label="App"><i class="side-mark" aria-hidden="true"></i>
+      <button type="button" class="side-row" data-search title="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span class="lbl">Search</span><small class="lbl">⌘K</small></button>
       ${row(PLACES[0])}
       <p class="side-head lbl">Learn</p>
       ${PLACES.filter((p) => p.section).map((p) => row(p) + sub(p.id)).join('')}
@@ -101,7 +102,9 @@ function placeMark() {
 }
 // the simulator folds the sidebar to a rail for width (without touching your saved choice); touch screens never fold it,
 // because a rail shows names only as tooltips
-const focusPage = () => here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path);
+/** the workspace pages (the canvas island): a problem, challenge, sandbox, shared design or practice */
+export const WS = /^\/(?:problems\/[\w-]+(?:\/[\w-]+)?|practice(?:\/[\w-]+)?)\/?$/;
+const focusPage = () => (here.nav === 'sim' && /^\/simulator\/[\w-]+/.test(here.path)) || WS.test(here.path);
 const touchOnly = () => matchMedia('(hover: none)').matches;
 function applyRail() { const rail = !touchOnly() && (focusPage() ? !openHere : railSaved); document.documentElement.toggleAttribute('data-rail', rail); setTimeout(placeMark, 260); }
 function toggleRail() { if (touchOnly()) return; if (focusPage()) openHere = !openHere; else { railSaved = !railSaved; try { localStorage.setItem(RAIL_KEY, railSaved ? 'rail' : 'full'); } catch { /* blocked */ } } applyRail(); }
@@ -113,6 +116,7 @@ export function updateShell(nav, path) {
   const app = nav && nav !== 'home';
   document.body.classList.toggle('in-app', !!app);
   document.body.classList.toggle('focus-page', /^\/simulator\/[\w-]+/.test(path)); // the full-screen simulator
+  document.body.classList.toggle('ws-page', WS.test(path)); // the workspace pages: no page scroll, the island fills the area
   if (!side) {
     side = document.createElement('aside'); side.className = 'side'; side.setAttribute('aria-label', 'Sidebar');
     document.body.prepend(side);

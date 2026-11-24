@@ -1,0 +1,11 @@
+/* The island fills the page area the 3D page gives it (frontend/site3d: .ws-host, set by pages/workspace.js from the top and
+   bottom bars) instead of a screen of its own. The legacy layouts size themselves as 100vh minus --head; here --head is
+   what the 3D page keeps for itself above and below the island, so the same sums give the island's height. */
+.tk-island { --frame-min: 100%; height: 100%; min-height: 0; overflow: hidden; background: var(--page); }
+.tk-island .tk-legacy { --head: calc(var(--ws-top, 0px) + var(--ws-bottom, 0px)); }
+.tk-island > [role="status"] { max-width: none; }
+/* below 900 px the legacy layouts are one tall column that scrolls (phase 4 of tech-katta-context 49 redoes this for phones) */
+@media (max-width: 900px) {
+  .tk-island { overflow-y: auto; }
+  .tk-island .tk-legacy { --head: var(--ws-top, 0px); }
+}

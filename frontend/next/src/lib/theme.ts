@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
 import { readString, writeString } from "./storage";
-import { LOOK } from "./look";
 
 // Light / dark. The viewer picks System, Light or Dark; System follows the device and changes live.
 // public/boot-theme.js sets the first value before paint (same key, same attribute); this keeps it in step.
@@ -14,8 +13,8 @@ const darkQuery = typeof matchMedia === "function" ? matchMedia("(prefers-color-
 
 const isPref = (v: string | null): v is ThemePref => v === "system" || v === "light" || v === "dark";
 
-/** With no choice made: dark in the 3D look (the 3D site at tech.katta.cc is dark by default), else the device's. */
-const DEFAULT_PREF: ThemePref = LOOK === "3d" ? "dark" : "system";
+/** With no choice made: dark (the 3D site at tech.katta.cc is dark by default). */
+const DEFAULT_PREF: ThemePref = "dark";
 
 export function getPref(): ThemePref {
   const v = readString(KEY);

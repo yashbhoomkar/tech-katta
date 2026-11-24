@@ -114,3 +114,15 @@ process that judges submissions on worker threads and keeps its rate limits in m
 `status-page/api/status.js` is a Vercel serverless function. Everything above its last 10 lines is plain `fetch`
 code; on another host only the handler at the end changes (for a Cloudflare Worker: `export default { fetch }`
 returning the same JSON).
+
+## The site is the 3D site (2026-11-23)
+
+`npm run build` (in `frontend/`) builds three things and `hosting/switch.mjs` puts them together:
+- `vite build`: the old app, kept only for `/analytics` and `/health`;
+- `build:site3d`: `site3d/legacy/entry.js` (the account and usage-event modules) as `dist/3d/legacy/legacy.js`;
+- `build:islands`: the canvas, judge, practice and Numbers (React, `frontend/next`) as `dist/3d/islands/islands.js` plus hashed chunks under
+  `dist/3d/islands/assets/` (cached for a year, like `/assets/*`; `islands.js` has no hash and is not).
+`switch.mjs` copies `site3d/scripts` and `site3d/styles` to `dist/3d/` and writes the 3D page shell at every address (search-engine text from `seo.js` and
+`hosting/pages.mjs`), and as `404.html`, which the host serves with status 404. `/problems/challenge/<id>` and `/practice/<slug>` are rewrites to one shell
+each (`hosting/routes.json`, which gives `vercel.json` and, on Cloudflare, a `404.html` copy). `node hosting/serve-local.mjs dist 5199 hosting/routes.json`
+serves a build the way the host does (no redirects or headers); the end-to-end suite (`frontend/next/e2e`) uses it.

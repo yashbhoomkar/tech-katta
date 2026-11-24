@@ -9,11 +9,18 @@ import * as sim from './pages/sim.js';
 import * as me from './pages/me.js';
 import * as practice from './pages/practice.js';
 import * as problems from './pages/problems.js';
+import * as workspace from './pages/workspace.js';
+import * as you from './pages/you.js';
+import * as notes from './pages/notes.js';
+import * as policy from './pages/policy.js';
+import { legacyKey, legacyTarget } from './legacy.js';
+import { wireSearch } from './search.js';
 import { updateShell } from './shell.js';
 import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
 import { startGate } from './gating.js';
+import { hashTarget } from './legacy-hash.js';
 import { pageView, hostAnalytics } from './analytics.js';
 
 /** the browser tab and history say where you are */
@@ -21,7 +28,10 @@ function titleFor(path, nav) {
   const brand = 'Tech Katta';
   if (nav === 'home') return `${brand}: everything for your system design interview`;
   if (nav === 'me') return `Dashboard · ${brand}`;
-  if (nav === 'problems') return `Problems · ${brand}`;
+  if (nav === 'you') return `You · ${brand}`;
+  if (nav === 'legal') return `${policy.policyTitle(path.replace(/\W/g, ''))} · ${brand}`;
+  if (nav === 'notes') return `Quick Notes · ${brand}`;
+  if (nav === 'problems') return workspace.titleOf(path) || `Problems · ${brand}`;
   if (nav === 'sim') { const inc = INCIDENTS.find((i) => path.endsWith(`/${i.id}`)); return `${inc ? inc.title : 'Simulator'} · ${inc ? 'Simulator · ' : ''}${brand}`; }
   const m = path.match(/^\/learn\/([\w-]+)(?:\/([\w-]+))?/);
   if (m) { const sec = SECTIONS.find((s) => s.id === m[1]); const a = m[2] && listNow().find((x) => x.slug === m[2] && x.section === m[1]); return a ? `${splitTitle(a.title)[0]} · ${sec.name} · ${brand}` : `${sec ? sec.name : 'Learn'} · ${brand}`; }
@@ -33,8 +43,9 @@ const positions = {}; let linkClick = false, curPath = '';
 addEventListener('scroll', () => { if (curPath) positions[curPath] = scrollY; }, { passive: true });
 document.addEventListener('click', (e) => { if (e.target.closest('a[href^="/"], [data-next], [data-skip]')) linkClick = true; }, true);
 
-// which addresses this app draws; the rest are the React app's (a whole page load)
-const OWN = /^\/(?:|home|problems|learn(?:\/(?:concepts|components|interview-questions|real-systems)(?:\/[\w-]+)?)?|simulator(?:\/[\w-]+)?)\/?$/;
+// which addresses this app draws: every page of the site. What it does not draw are files (a path with an extension), /3d (its own files), /analytics and /health
+// (the owner's pages) and /_vercel; any other address it does not know is its "Nothing runs at this address" page (the host answers those with 404.html: this shell)
+const OWN = /^\/(?!(?:analytics|health|3d|_vercel)(?:\/|$))(?!.*\.[A-Za-z0-9]+$).*$/;
 export const owns = (path) => OWN.test(path);
 /** go to an address: inside the app without a reload, anywhere else with one */
 export function go(to, { replace = false } = {}) {
@@ -71,16 +82,28 @@ const OLD = { caching: 'caching', replicas: 'scaling-reads', queues: 'scaling-wr
 const ROUTES = [
   [/^\/?$/, landing, 'home'], [/^\/learn\/?$/, learn, 'learn'], [SEC, learn, 'learn'], [ART, article, 'learn'],
   [/^\/simulator\/([\w-]+)$/, sim, 'sim'], [/^\/simulator\/?$/, practice, 'sim'], [/^\/home\/?$/, me, 'me'], [/^\/problems\/?$/, problems, 'problems'],
+  [/^\/me\/?$/, you, 'you'], [/^\/(privacy|terms)\/?$/, policy, 'legal'], [/^\/learn\/quick-notes\/?$/, notes, 'notes'],
+  [/^\/(?:problems\/(?:challenge\/[\w-]+|[\w-]+)|practice(?:\/[\w-]+)?)\/?$/, workspace, 'problems'],
 ];
-let cleanup = null, token = 0, prevPath = '';
+let cleanup = null, token = 0, prevPath = '', lastLoc = '';
+async function legacyRedirect(path) {
+  const key = legacyKey(path, location.hash);
+  let fromLab; try { fromLab = (await import('/3d/legacy/legacy.js')).fromLab; } catch { /* the bridge did not load: the key is used as it is */ }
+  await listArticles().catch(() => {});
+  const problems = listNow().filter((a) => a.section === 'interview-questions' && a.group !== 'start').map((a) => a.slug);
+  go(legacyTarget(key, problems, [...SECTIONS.map((x) => x.id), 'quick-notes'], fromLab), { replace: true });
+}
 
 function route() {
+  lastLoc = location.pathname + location.search;
   // an old prototype link (#/learn/…, #/me, #/sim/…) becomes its real address
   if (location.hash.startsWith('#/')) { const h = location.hash.slice(1).replace(/^\/me\b/, '/home').replace(/^\/sim\b/, '/simulator'); history.replaceState(null, '', h); }
   const path = location.pathname.replace(/(.)\/$/, '$1') || '/';
   // Back or Forward onto an address of the React app (it handed over with a whole page load, so the browser keeps its
   // entries in this page's history): load that page for real
   if (!owns(path)) { location.reload(); return; }
+  // tech.katta.cc's old addresses (/dashboard/…, and /dashboard/#<key>: the #fragment never reaches the host, so this cannot be a host rule)
+  if (/^\/dashboard(?:\/|$)/.test(path)) { legacyRedirect(path); return; }
   if (/^\/learn\/?$/.test(path)) { go('/learn/concepts', { replace: true }); return; } // the Learn tab opens its first section
   const old = path.match(/^\/learn\/([\w-]+)\/?$/);
   if (old && !SEC.test(path) && old[1] in OLD) { go(`/learn/concepts/${OLD[old[1]] || old[1]}`, { replace: true }); return; }
@@ -120,7 +143,14 @@ function route() {
   } else if (cleanup && !reduced) { view.classList.add('leaving'); setTimeout(swap, 140); } else swap();
   prevPath = path;
 }
-addEventListener('popstate', route);
+// a change of the #fragment alone (the workspace's tabs set one, the way the canvas's code always did) is not a new page
+addEventListener('popstate', () => { if (location.pathname + location.search === lastLoc && !location.hash.startsWith('#/')) return; route(); });
+// the canvas's code sets a #fragment to move to another page: that entry becomes the page itself (one Back returns)
+addEventListener('hashchange', () => {
+  const to = hashTarget(location.hash, location.pathname.replace(/(.)\/$/, '$1'));
+  if (to && owns(to)) { history.replaceState(null, '', to); route(); }
+});
+wireSearch(); // ⌘K, "/" and every [data-search] button
 startGate(); // who is signed in, and the site's lock copy: articles wait on both
 hostAnalytics(); // Vercel Web Analytics, once per page load
 route();
@@ -151,6 +181,8 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   themeBtns().forEach((b) => { b.innerHTML = `${ICON[pref]}<span class="lbl lbl-t">Theme: ${label[pref]}</span>`; b.setAttribute('aria-label', `Theme: ${label[pref]}. Press to change`); b.title = `Theme: ${label[pref]}. Press to change`; });
 }
+window.tkThemePref = () => pref;
+window.tkSetTheme = (v) => { if (!order.includes(v)) return; pref = v; try { localStorage.setItem('tk-theme', pref); } catch { /* blocked */ } applyTheme(); };
 const cycle = () => { pref = order[(order.indexOf(pref) + 1) % 3]; try { localStorage.setItem('tk-theme', pref); } catch { /* blocked */ } applyTheme(); };
 const wire = () => themeBtns().forEach((b) => { if (!b._wired) { b._wired = true; b.addEventListener('click', cycle); } applyTheme(); });
 document.addEventListener('tk-theme-buttons', wire);

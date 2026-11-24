@@ -3,11 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "The new Tech Katta frontend (React + TypeScript). Built into the site at /next/ by frontend's npm run build (beta beside the current app).",
+  "description": "The islands of tech.katta.cc: the React parts (the canvas, judge, practice and Numbers) that the 3D site's pages mount (frontend/site3d). Built by npm run build:islands into dist/3d/islands/.",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/postbuild.mjs",
-    "preview": "vite preview",
+    "build:islands": "vite build -c vite.islands.config.ts",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

@@ -1,0 +1,353 @@
+/* The workspace in the 3D design language (tech-katta-context 49, phase 2). Imported only by the islands (next/src/islands), so it
+   changes nothing in the current app or the React app's own pages. Every rule is under .tk-island (the 3D page's island frame) or,
+   for the overlays the canvas code draws straight into <body> (.ts, .fs, .zoom), under html > body.
+
+   Values are the 3D site's (frontend/site3d/styles/app.css, measured on production 2026-11-23): near-black violet-grey in dark,
+   warm white in light, text pure white or pure black, Instrument Sans and Geist Mono, 10 px buttons, 14 px cards, glass panels. The
+   legacy names (--bg, --surface, --brand, --accent …) are mapped onto them here, so solve.css, lab.css and practice.css stay as they
+   are and the same code still draws everything. */
+
+/* ---- the 3D site's own names, for the island ---- */
+.tk-island {
+  --card: #FFFFFF; --sunken: #F1EEF4; --line-2: rgba(27, 26, 34, .2);
+  --alert: #B42323; --alert-fill: #EF4E4E; --ok: #17794A; --ok-fill: #2FA36B; --amber: #9C4A00; --amber-fill: #FFA24D;
+  --sky: #0B6FB8; --lilac: #7E3FC2; --mint: #12895A; --peach: #C2620F; --rose: #C2338A; --sky-fill: #3DB5FF;
+  --glass-bg: rgb(255 255 255 / .92); --glass-edge: rgb(255 255 255 / .75); --glass-hl: linear-gradient(rgb(255 255 255 / .55), transparent 40%);
+  --glass-shadow: 0 20px 50px -24px rgb(30 25 60 / .35);
+  --out: cubic-bezier(.2, .8, .2, 1);
+}
+:root[data-theme="dark"] .tk-island {
+  --card: #1C1B24; --sunken: #26242F; --line-2: rgba(237, 234, 245, .22);
+  --alert: #FF8A8A; --alert-fill: #EF4E4E; --ok: #75D079; --ok-fill: #2FA36B; --amber: #FFA24D; --amber-fill: #FFA24D;
+  --sky: #3DB5FF; --lilac: #C98BFF; --mint: #3DDC97; --peach: #FFA24D; --rose: #FF7AC6; --sky-fill: #3DB5FF;
+  --glass-bg: rgb(22 21 30 / .92); --glass-edge: rgb(255 255 255 / .14); --glass-hl: linear-gradient(rgb(255 255 255 / .09), transparent 40%);
+  --glass-shadow: 0 24px 60px -20px rgb(0 0 0 / .75);
+}
+
+/* ---- the legacy token names, mapped (the doubled class outranks legacy-scope.css and figureTokens' .tokens.tokens) ---- */
+.tk-island .tk-legacy.tk-legacy,
+html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
+  --bg: var(--card); --surface: var(--sunken); --surface-2: var(--card);
+  --hover: color-mix(in srgb, var(--ink) 7%, transparent);
+  --inverse: var(--ink); --on-inverse: var(--page);
+  --ink-2: var(--ink); --ink-3: var(--ink); --muted: var(--ink); --muted-2: var(--ink); --faint: var(--ink);
+  --disabled: color-mix(in srgb, var(--ink) 28%, transparent);
+  --line-strong: var(--line-2); --line-soft: var(--line); --grid: var(--line-2);
+  /* the 3D primary button is ink on page, not marigold; marigold stays for stars only (--star) */
+  --brand: var(--ink); --brand-strong: var(--ink); --brand-edge: var(--ink); --brand-ink: var(--ink); --on-brand: var(--page);
+  --brand-line: var(--line-2); --brand-tint: var(--sunken); --mark: transparent;
+  --accent: var(--sky); --accent-strong: var(--ink); --accent-mid: var(--sky-fill); --accent-line: var(--line-2);
+  --accent-soft: color-mix(in srgb, var(--sky-fill) 22%, var(--card)); --accent-tint-2: color-mix(in srgb, var(--sky-fill) 14%, var(--card));
+  --accent-tint: color-mix(in srgb, var(--sky-fill) 9%, var(--card)); --on-accent: var(--page);
+  --danger: var(--alert); --red: var(--alert-fill); --danger-line: color-mix(in srgb, var(--alert-fill) 40%, transparent);
+  --danger-soft: color-mix(in srgb, var(--alert-fill) 20%, var(--card)); --danger-tint: color-mix(in srgb, var(--alert-fill) 10%, var(--card));
+  --success: var(--ok); --success-line: color-mix(in srgb, var(--ok-fill) 40%, transparent); --success-tint: color-mix(in srgb, var(--ok-fill) 12%, var(--card));
+  --warn: var(--amber); --warn-strong: var(--amber); --warn-mid: var(--amber-fill); --warn-line: color-mix(in srgb, var(--amber-fill) 45%, transparent);
+  --warn-tint: color-mix(in srgb, var(--amber-fill) 12%, var(--card));
+  --cat-green: var(--mint); --cat-amber: var(--peach); --cat-violet: var(--lilac); --cat-teal: var(--sky); --cat-pink: var(--rose);
+  /* type: Instrument Sans for everything, Geist Mono for labels and numbers; no serif */
+  --font-display: var(--font);
+  /* shape: buttons are 10 px, cards 14 px, not pills */
+  --radius: 10px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 24px; --r-btn: 10px;
+  --shadow-1: none; --shadow-2: var(--glass-shadow); --shadow-3: var(--glass-shadow); --card-shadow: none; --lift-shadow: none; --glow-brand: none;
+  --scrim: rgb(0 0 0 / .5); --glass: var(--glass-bg);
+  --ease: var(--out); --ease-in-out: var(--out); --ease-spring: var(--out);
+  --dur-fast: .15s; --dur: .25s;
+  --ink-rgb: 0 0 0; --bg-rgb: 255 255 255; --page-rgb: 250 248 245; --accent-rgb: 11 111 184;
+}
+:root[data-theme="dark"] .tk-island .tk-legacy.tk-legacy,
+:root[data-theme="dark"] > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
+  --ink-rgb: 237 234 245; --bg-rgb: 28 27 36; --page-rgb: 18 18 24; --accent-rgb: 61 181 255;
+}
+.tk-island .tk-legacy { background: var(--page); color: var(--ink); font-family: var(--font); }
+
+/* ---- type: no serif, no italics; sizes 12 / 14 / 16 / 18 / 22 / 28 ---- */
+.tk-island .tk-legacy :is(h1, h2, h3, h4, .sv-q h1, .d-article h1, .d-article h2) { font-family: var(--font); font-style: normal; letter-spacing: -.02em; }
+.tk-island .tk-legacy em, .tk-island .tk-legacy i.it { font-style: normal; }
+.tk-island .tk-legacy .sv-q h1 { font-size: 22px; font-weight: 600; line-height: 1.2; }
+.tk-island .tk-legacy .sv-q > label {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: 6px;
+  font: 400 12px var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink);
+}
+.tk-island .tk-legacy .sv-dek { font-size: 16px; line-height: 1.5; color: var(--ink); }
+.tk-island .tk-legacy .sv-body :is(p, ul, li) { font-size: 16px; line-height: 1.55; }
+.tk-island .tk-legacy .sv-body h2 { font-size: 18px; font-weight: 600; border-top-color: var(--line); }
+.tk-island .tk-legacy .sv-body :is(code, pre) { font-family: var(--mono); }
+.tk-island .tk-legacy .sv-how { border-left: 0; border-radius: 16px; background: var(--sunken); font-size: 14px; }
+
+/* ---- buttons: 10 px, Instrument Sans 600 14 px, ink primary / card secondary, a press ---- */
+.tk-island .tk-legacy .sv-run, .tk-island .tk-legacy .sv-submit, .tk-island .tk-legacy .lab-btn, .tk-island .tk-legacy .sv-toggle, .tk-island .tk-legacy .sv-linkbtn.btn,
+.tk-island .tk-legacy :is(.pr-btn, .pb-btn, .sd-copy, .sd-btn) {
+  min-height: 40px; height: auto; padding: 0 16px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--card); color: var(--ink);
+  font: 600 14px var(--font); letter-spacing: 0; text-transform: none;
+  transition: transform .15s var(--out), background-color .15s var(--out), border-color .15s var(--out);
+}
+.tk-island .tk-legacy :is(.sv-run, .sv-toggle, .lab-btn.ghost):hover { background: var(--sunken); border-color: var(--line-2); color: var(--ink); }
+.tk-island .tk-legacy :is(.sv-submit, .lab-btn:not(.ghost), .sd-copy) { background: var(--ink); border-color: var(--ink); color: var(--page); }
+.tk-island .tk-legacy :is(.sv-submit, .lab-btn:not(.ghost), .sd-copy):hover { background: var(--ink); border-color: var(--ink); color: var(--page); opacity: .88; }
+.tk-island .tk-legacy :is(.sv-run, .sv-submit, .lab-btn, .sv-toggle, .sd-copy):active { transform: scale(.97); }
+.tk-island .tk-legacy :is(.sv-run, .sv-submit, .lab-btn, .sv-toggle):disabled { opacity: .5; }
+.tk-island .tk-legacy :focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+
+/* ---- the problem card: a glass panel beside the canvas, tabs as a segmented control ---- */
+.tk-island .tk-legacy .solve { gap: 0; background: var(--page); padding: 12px 12px 12px 12px; grid-template-columns: var(--qw, 400px) 12px minmax(0, 1fr); height: calc(100vh - var(--head)); }
+.tk-island .tk-legacy .solve.hide { padding-left: 0; }
+.tk-island .tk-legacy .sv-tabs {
+  gap: 4px; padding: 8px 8px 0; border: 1px solid var(--glass-edge); border-bottom: 0; border-radius: 24px 24px 0 0;
+  background: var(--glass-bg); background-image: var(--glass-hl);
+}
+.tk-island .tk-legacy .sv-tabs a, .tk-island .tk-legacy .sv-tabs button {
+  min-height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 10px; font: 600 14px var(--font); letter-spacing: 0; text-transform: none; color: var(--ink);
+}
+.tk-island .tk-legacy .sv-tabs a:hover, .tk-island .tk-legacy .sv-tabs button:hover { background: var(--hover); color: var(--ink); }
+.tk-island .tk-legacy .sv-tabs .on { background: var(--ink); color: var(--page); box-shadow: none; }
+.tk-island .tk-legacy .sv-q { border: 1px solid var(--glass-edge); border-top: 0; border-radius: 0 0 24px 24px; background: var(--glass-bg); box-shadow: var(--glass-shadow); padding: 18px 22px 32px; }
+.tk-island .tk-legacy .sv-split { background: transparent; border: 0; position: relative; }
+.tk-island .tk-legacy .sv-split::after { content: ""; position: absolute; inset: 40% 4px; border-radius: 3px; background: var(--line-2); }
+.tk-island .tk-legacy .sv-split:hover::after, .tk-island .tk-legacy .sv-split:focus-visible::after { background: var(--sky); }
+
+/* ---- the bar above the canvas: wraps instead of overflowing ---- */
+.tk-island .tk-legacy .sv-bar { height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; padding: 8px 12px; border-bottom: 0; background: transparent; }
+.tk-island .tk-legacy .solve .lab-wrap { height: calc(100vh - var(--head) - 24px - 56px); }
+.tk-island .tk-legacy .sv-lab { border: 1px solid var(--line); border-radius: 24px; background: var(--page); }
+
+/* the bar's own controls: the same 40 px buttons, line icons instead of emoji */
+.tk-island .tk-legacy .sv-ic { flex: none; }
+.tk-island .tk-legacy :is(.sv-clock, .sv-reset, .sv-mock-btn, .sv-guide-btn, .sv-ask, .sv-mark, .lab-keys-btn, .lab-export-btn) {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; height: auto; margin: 0; padding: 0 14px;
+  border: 1px solid var(--line-2); border-radius: 10px; background: var(--card); color: var(--ink); font: 600 14px var(--font); letter-spacing: 0;
+  transition: transform .15s var(--out), background-color .15s var(--out);
+}
+.tk-island .tk-legacy .sv-mark { width: 40px; padding: 0; }
+.tk-island .tk-legacy .sv-mark.on { color: var(--star); border-color: var(--star); }
+.tk-island .tk-legacy :is(.sv-clock, .sv-reset, .sv-mock-btn, .sv-guide-btn, .sv-ask, .sv-mark):hover { background: var(--sunken); color: var(--ink); border-color: var(--line-2); }
+.tk-island .tk-legacy :is(.sv-clock, .sv-reset, .sv-mock-btn, .sv-guide-btn, .sv-ask, .sv-mark):active { transform: scale(.97); }
+.tk-island .tk-legacy :is(.sv-clock.on, .sv-guide-btn.on) { background: var(--sunken); color: var(--ink); border-color: var(--ink); }
+.tk-island .tk-legacy .sv-nav a, .tk-island .tk-legacy .sv-nav span { width: 40px; height: 40px; border-radius: 10px; color: var(--ink); font-size: 22px; }
+.tk-island .tk-legacy .sv-nav a:hover { background: var(--hover); }
+.tk-island .tk-legacy .sv-bl { font: inherit; }
+
+/* the canvas: full-bleed, the 3D dot grid (React Flow's own Background), panels as glass */
+.tk-island .tk-legacy .lab-canvas, .tk-island .tk-legacy .lab { background: var(--page); }
+.tk-island .tk-legacy .lab-top { border-bottom: 0; padding: 4px 12px; }
+.tk-island .tk-legacy .lab-status {
+  margin: 0 12px; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 999px; font: 400 12px var(--mono);
+  background: var(--glass-bg); background-image: var(--glass-hl);
+}
+.tk-island .tk-legacy .lab-pal, .tk-island .tk-legacy .lab-ins {
+  margin: 8px 0 12px 12px; padding: 12px; border: 1px solid var(--line-2); border-radius: 18px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow);
+}
+.tk-island .tk-legacy .lab-ins { margin: 8px 12px 12px 0; }
+.tk-island .tk-legacy .lab-h, .tk-island .tk-legacy .lab-g { font: 400 12px var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.tk-island .tk-legacy .lab-item { min-height: 44px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--card); font: 600 14px var(--font); }
+.tk-island .tk-legacy .lab-item:hover { border-color: var(--ink); color: var(--ink); }
+.tk-island .tk-legacy :is(.lab-name, .lab-pal-search, .lab-f input, .lab-f select, .lab-f textarea, .lab-ins :is(input, select, textarea)) {
+  min-height: 40px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--sunken); color: var(--ink); font: 400 14px var(--font);
+}
+.tk-island .tk-legacy .lab-name { font-size: 16px; font-weight: 600; }
+.tk-island .tk-legacy .lab-meter, .tk-island .tk-legacy .ln-bar { border-radius: 2px; }
+.tk-island .tk-legacy .lab-pill { padding: 2px 8px; border: 1px solid var(--glass-edge); border-radius: 999px; background: var(--glass-bg); font: 600 11px var(--font); color: var(--ink); }
+.tk-island .tk-legacy .lab-menu, .tk-island .tk-legacy .lab-export-menu, .tk-island .tk-legacy .lab-tip { border: 1px solid var(--line-2); border-radius: 14px; background: var(--glass-bg); box-shadow: var(--glass-shadow); }
+.tk-island .tk-legacy .react-flow__minimap { border: 1px solid var(--line-2); border-radius: 14px; background: var(--glass-bg); overflow: hidden; }
+.tk-island .tk-legacy .react-flow__controls { border: 1px solid var(--line-2); border-radius: 14px; box-shadow: none; overflow: hidden; }
+.tk-island .tk-legacy .react-flow__controls-button { min-width: 40px; min-height: 40px; border-bottom-color: var(--line); background: var(--card); color: var(--ink); fill: currentColor; }
+.tk-island .tk-legacy .react-flow__attribution { display: none; }
+
+/* cards on the canvas: the replay states in the 3D models' colours (healthy keeps its colour with a green halo, busy amber, down coral and pulsing) */
+.tk-island .tk-legacy .ln-rp.ok { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-fill) 35%, transparent); }
+.tk-island .tk-legacy .ln-rp.warn { box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber-fill) 45%, transparent); }
+.tk-island .tk-legacy .ln-rp:is(.over, .down) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--alert-fill) 55%, transparent); animation: tk3d-pulse 1.2s var(--out) infinite; }
+.tk-island .tk-legacy .ln-rp.down { border-style: dashed; }
+@keyframes tk3d-pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--alert-fill) 10%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .tk-island .tk-legacy .ln-rp:is(.over, .down) { animation: none; } }
+
+/* results: a glass sheet at the bottom of the canvas; the verdict as a kicker, the score at 28 px, tests as list rows */
+.tk-island .tk-legacy .sv-console {
+  left: 12px; right: 12px; bottom: 12px; border: 1px solid var(--glass-edge); border-radius: 24px; background: var(--glass-bg); background-image: var(--glass-hl);
+  box-shadow: var(--glass-shadow); max-height: 46%;
+}
+.tk-island .tk-legacy .sv-v { border-radius: 24px 24px 0 0; background: transparent; border-bottom: 1px solid var(--line); padding: 14px 20px; }
+.tk-island .tk-legacy .sv-v b { display: inline-block; padding: 2px 8px; border: 1px solid currentColor; border-radius: 6px; font: 400 12px var(--mono); letter-spacing: 0; text-transform: uppercase; }
+.tk-island .tk-legacy .sv-v small { font: 400 12px var(--mono); color: var(--ink); }
+.tk-island .tk-legacy .sv-v button { min-width: 40px; min-height: 40px; border-radius: 10px; font-size: 18px; color: var(--ink); }
+.tk-island .tk-legacy .sv-v button:hover { background: var(--hover); }
+.tk-island .tk-legacy .sv-score { background: transparent; padding: 12px 20px; }
+.tk-island .tk-legacy .sv-score > b { font-size: 28px; font-weight: 700; }
+.tk-island .tk-legacy .sv-score ul { font: 400 12px var(--mono); color: var(--ink); }
+.tk-island .tk-legacy .sv-results > li { border-bottom-color: var(--line); }
+.tk-island .tk-legacy .sv-results summary { grid-template-columns: 24px minmax(0, 1fr) auto; min-height: 44px; padding: 10px 20px; font-size: 16px; }
+.tk-island .tk-legacy .sv-results summary:hover { background: var(--hover); }
+.tk-island .tk-legacy .sv-findings, .tk-island .tk-legacy .sv-why-card, .tk-island .tk-legacy .sv-probe, .tk-island .tk-legacy .sv-follow, .tk-island .tk-legacy .sv-defend { border: 1px solid var(--line-2); border-radius: 16px; background: var(--sunken); }
+
+/* the AWS credit: the 3D progress card's pattern, a thin bar that turns amber then coral as it runs down */
+.tk-island .tk-legacy .sv-credit { margin: 12px 20px 0; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--card); }
+.tk-island .tk-legacy .sv-credit-k { font: 400 12px var(--mono); letter-spacing: 0; color: var(--ink); }
+.tk-island .tk-legacy .sv-credit-v { font-size: 22px; font-weight: 600; }
+.tk-island .tk-legacy .sv-credit-of { font-size: 12px; color: var(--ink); }
+.tk-island .tk-legacy .sv-credit-bar { height: 4px; border-radius: 2px; }
+
+/* replay: the scrubber's marks are 8 px discs, the controls 40 px */
+.tk-island .tk-legacy .sv-tick { width: 8px; height: 8px; box-shadow: none; }
+.tk-island .tk-legacy .sv-tick.bad { background: var(--alert-fill); } .tk-island .tk-legacy .sv-tick.good { background: var(--ok-fill); }
+.tk-island .tk-legacy .sv-scrub { accent-color: var(--ink); }
+
+/* fixes after the first look at it */
+.tk-island .tk-legacy :is(.sv-run, .sv-submit, .sv-toggle) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.tk-island .tk-legacy .sv-v b { background: none; box-shadow: none; text-decoration: none; }
+.tk-island .tk-legacy .sv-v.good b { color: var(--ok); } .tk-island .tk-legacy .sv-v.bad b { color: var(--alert); }
+.tk-island .tk-legacy .sv-v b::after, .tk-island .tk-legacy .sv-v b::before { display: none; }
+
+/* every control that takes a tap is at least 40 px tall */
+.tk-island .tk-legacy .sv-tabs :is(a, button) { min-height: 40px; }
+.tk-island .tk-legacy :is(.lab-menu, .lab-export-menu) button { min-height: 40px; }
+.tk-island .tk-legacy :is(.lab-pal-toggle, .sv-linkbtn) { min-height: 40px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; }
+.tk-island .tk-legacy .sv-q > nav a, .tk-island .tk-legacy .sv-q a[href^="#problems"] { display: inline-flex; align-items: center; min-height: 40px; }
+.tk-island .tk-legacy :is(.sv-results, .sv-tests, .sv-hops) button { min-height: 40px; }
+
+/* the replay in 3D: the engine's canvas fills the canvas area (under the results sheet), the 2D | 3D choice is a small segmented control */
+.tk-island .tk-legacy .sv-3d { position: absolute; inset: 56px 0 0 0; z-index: 5; background: var(--page); border-radius: 0 0 24px 24px; overflow: hidden; }
+.tk-island .tk-legacy .sv-3d canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tk-island .tk-legacy .sv-3d-wait { position: absolute; inset: 0; display: grid; place-items: center; font: 400 12px var(--mono); color: var(--ink); }
+.tk-island .tk-legacy .sv-seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--sunken); }
+.tk-island .tk-legacy .sv-seg button { min-width: 44px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: 600 14px var(--font); cursor: pointer; }
+.tk-island .tk-legacy .sv-seg button.on { background: var(--ink); color: var(--page); }
+.tk-island .tk-legacy .sv-seg button:disabled { opacity: .45; cursor: not-allowed; }
+/* the problem steps aside while a replay plays: this must outrank the layout rule above */
+.tk-island .tk-legacy .solve.hide { grid-template-columns: minmax(0, 1fr); padding-left: 12px; }
+
+/* ---- phones (up to 900 px): the canvas is the page, one thing at a time (tech-katta-context 49, phase 4) ----
+   brief: a card at the bottom · build: a slim bar at the top, the canvas, the parts strip · run: the results as a sheet · replay: the canvas or 3D
+   with the timeline · answer, hints, submissions, solution, description: a full-height sheet with a Done button. Nothing covers the 3D bar. */
+@media (max-width: 900px) {
+  .tk-island { overflow: hidden; }
+  .tk-island > .tk-legacy, .tk-island > .tk-legacy > div { height: 100%; min-height: 0; }
+  .tk-island .tk-legacy .solve { position: relative; display: block; height: 100%; padding: 0; background: var(--page); }
+  .tk-island .tk-legacy .solve .sv-lab, .tk-island .tk-legacy .solve:not(.v-canvas) .sv-lab { display: flex; position: absolute; inset: 0; border: 0; border-radius: 0; }
+  .tk-island .tk-legacy .solve .lab-wrap { height: 100%; }
+  .tk-island .tk-legacy .solve .lab { flex: 1; min-height: 0; }
+  /* the sheets: the problem's pane and its tabs, over the canvas, under the 3D bottom bar */
+  .tk-island .tk-legacy .solve:not(.v-canvas) .sv-tabs { position: fixed; z-index: 30; left: 0; right: 0; top: var(--ws-top, 0px); height: 56px; padding: 8px 10px 0; border-radius: 0; border-left: 0; border-right: 0; background: var(--card); }
+  .tk-island .tk-legacy .solve:not(.v-canvas) .sv-q { position: fixed; z-index: 30; left: 0; right: 0; top: calc(var(--ws-top, 0px) + 56px); bottom: var(--ws-bottom, 0px); border-radius: 0; border-left: 0; border-right: 0; background: var(--card); box-shadow: none; padding: 16px 16px 96px; overflow: auto; }
+  .tk-island .tk-legacy .solve.v-canvas .sv-tabs, .tk-island .tk-legacy .solve.v-canvas .sv-q { display: none; }
+  .tk-island .tk-legacy .sv-tabs button:last-child { position: sticky; right: 0; margin-left: auto; background: var(--ink); color: var(--page); box-shadow: -12px 0 12px -4px var(--card); }
+  /* build: the slim bar */
+  .tk-island .tk-legacy .sv-pbar { position: absolute; z-index: 10; left: 8px; right: 8px; top: 8px; display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 6px 8px 6px 14px; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
+  .tk-island .tk-legacy .sv-ptitle { flex: 1; min-width: 0; font: 600 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tk-island .tk-legacy .sv-pb { min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 600 14px var(--font); }
+  .tk-island .tk-legacy .sv-pbar .sv-run, .tk-island .tk-legacy .sv-pbar .sv-submit { padding: 0 12px; }
+  .tk-island .tk-legacy .sv-pmore { position: relative; }
+  .tk-island .tk-legacy .sv-pmore summary { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; font-size: 22px; list-style: none; cursor: pointer; }
+  .tk-island .tk-legacy .sv-pmore summary::-webkit-details-marker { display: none; }
+  .tk-island .tk-legacy .sv-pmenu { position: absolute; z-index: 12; right: 0; top: 46px; display: grid; gap: 4px; min-width: 200px; padding: 8px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--card); box-shadow: var(--glass-shadow); }
+  .tk-island .tk-legacy .sv-pmenu button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 600 14px var(--font); text-align: left; justify-content: flex-start; }
+  .tk-island .tk-legacy .sv-pmenu button:hover { background: var(--hover); }
+  .tk-island .tk-legacy .sv-lab > .lab-wrap { padding-top: 68px; }
+  /* brief: a card over the dimmed canvas */
+  .tk-island .tk-legacy .sv-pbrief { position: fixed; z-index: 20; left: 10px; right: 10px; bottom: calc(var(--ws-bottom, 0px) + 10px); display: grid; gap: 10px; padding: 20px; border: 1px solid var(--glass-edge); border-radius: 24px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow), 0 0 0 100vmax rgb(0 0 0 / .35); }
+  .tk-island .tk-legacy .sv-pbrief { max-height: calc(100dvh - var(--ws-top, 0px) - var(--ws-bottom, 0px) - 20px); overflow-y: auto; }
+  .tk-island .tk-legacy .lab-checks button, .tk-island .tk-legacy .lab-check { min-height: 40px; }
+  .tk-island .tk-legacy .sv-pbrief h1 { font-size: 22px; font-weight: 600; margin: 0; }
+  .tk-island .tk-legacy .sv-pbrief p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
+  .tk-island .tk-legacy .sv-pk { justify-self: start; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: 6px; font: 400 12px var(--mono); }
+  .tk-island .tk-legacy .sv-pchips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tk-island .tk-legacy .sv-pchips span { padding: 4px 10px; border: 1px solid var(--line-2); border-radius: 999px; font: 400 12px var(--mono); }
+  .tk-island .tk-legacy .sv-pbrief .sv-submit, .tk-island .tk-legacy .sv-pbrief .sv-run { width: 100%; min-height: 48px; }
+  /* run and replay: the sheet over the canvas */
+  .tk-island .tk-legacy .sv-console { left: 8px; right: 8px; bottom: calc(var(--ws-bottom, 0px) * 0 + 8px); max-height: 58%; border-radius: 24px; }
+  .tk-island .tk-legacy .sv-3d { inset: 0; border-radius: 0; }
+  /* the canvas page: top bar of names, the status line, the canvas, the parts as a strip you scroll sideways; the inspector opens as a sheet */
+  .tk-island .tk-legacy .lab-small { display: none; }
+  .tk-island .tk-legacy .lab { display: flex; flex-direction: column; }
+  .tk-island .tk-legacy .lab-top { order: 1; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 10px; scrollbar-width: none; }
+  .tk-island .tk-legacy .lab-top > * { flex: none; }
+  .tk-island .tk-legacy .lab-status { order: 2; margin: 0 10px; overflow-x: auto; white-space: nowrap; flex: none; }
+  .tk-island .tk-legacy .lab-canvas { order: 3; flex: 1 1 0; min-height: 0; }
+  .tk-island .tk-legacy .lab-pal { order: 4; flex: none; display: flex; flex-direction: row; align-items: center; gap: 8px; overflow-x: auto; overflow-y: hidden; margin: 0; padding: 8px 10px; border-radius: 0; border-width: 1px 0 0; box-shadow: none; max-height: 66px; }
+  .tk-island .tk-legacy .lab-pal > :not(.lab-item) { display: contents; }
+  .tk-island .tk-legacy .lab-pal :is(.lab-h, .lab-g, .lab-pal-search, .lab-pal-toggle) { display: none; }
+  .tk-island .tk-legacy .lab-pal .lab-item { width: auto; flex: none; margin: 0; white-space: nowrap; }
+  .tk-island .tk-legacy .lab-ins { position: fixed; z-index: 15; left: 8px; right: 8px; bottom: calc(var(--ws-bottom, 0px) + 8px); margin: 0; max-height: 52%; border-radius: 24px; }
+  .tk-island .tk-legacy .lab-ins.idle { display: none; }
+}
+
+/* the design canvas in 3D (src/lab/design3d.jsx): the engine's canvas fills the canvas area over the 2D canvas, which stays underneath for its geometry */
+.tk-island .tk-legacy .lab-canvas.d3on > .react-flow { visibility: hidden; }
+.tk-island .tk-legacy .d3 { position: absolute; inset: 0; z-index: 3; touch-action: none; background: var(--page); }
+.tk-island .tk-legacy .d3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.tk-island .tk-legacy .d3.connecting canvas { cursor: crosshair; }
+.tk-island .tk-legacy .d3-tools { position: absolute; z-index: 4; top: 12px; left: 12px; display: flex; gap: 6px; padding: 6px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
+.tk-island .tk-legacy .d3-tools button { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--card); color: var(--ink); font: 600 14px var(--font); cursor: pointer; }
+.tk-island .tk-legacy .d3-tools button.on { background: var(--ink); color: var(--page); }
+.tk-island .tk-legacy .d3-hint { position: absolute; z-index: 4; left: 12px; bottom: 12px; margin: 0; padding: 8px 14px; border: 1px solid var(--glass-edge); border-radius: 999px; background: var(--glass-bg); font: 400 12px var(--mono); color: var(--ink); pointer-events: none; }
+.tk-island .tk-legacy .lab-thumb { display: block; width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 4px 6px rgb(0 0 0 / .25)); }
+.tk-island .tk-legacy .lab-item .lab-thumb { flex: none; }
+.tk-island .tk-legacy .ln-tile .lab-thumb { width: 26px; height: 26px; }
+.tk-island .tk-legacy .lab-view { margin-right: 4px; }
+
+/* Break it yourself: a row of fault choices, one tap each */
+.tk-island .tk-legacy .sv-break { margin: 12px 20px 0; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--card); }
+.tk-island .tk-legacy .sv-break-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 10px; }
+.tk-island .tk-legacy .sv-break-h b { font: 600 16px var(--font); } .tk-island .tk-legacy .sv-break-h small { font: 400 12px var(--mono); color: var(--ink); }
+.tk-island .tk-legacy .sv-break-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.tk-island .tk-legacy .sv-fault { min-height: 40px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--card); color: var(--ink); font: 600 14px var(--font); cursor: pointer; transition: transform .15s var(--out), background-color .15s var(--out); }
+.tk-island .tk-legacy .sv-fault:hover { background: var(--sunken); } .tk-island .tk-legacy .sv-fault:active { transform: scale(.97); }
+
+/* the replay's HUD: the numbers of the minute, top right of the canvas */
+.tk-island .tk-legacy .sv-hud { position: absolute; z-index: 8; top: 176px; right: 12px; display: flex; gap: 18px; margin: 0; padding: 12px 20px; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-bg); background-image: var(--glass-hl); box-shadow: var(--glass-shadow); }
+.tk-island .tk-legacy .sv-hud div { display: grid; gap: 2px; }
+.tk-island .tk-legacy .sv-hud dt { font: 400 12px var(--mono); }
+.tk-island .tk-legacy .sv-hud dd { margin: 0; font: 600 18px var(--mono); font-variant-numeric: tabular-nums; }
+.tk-island .tk-legacy .sv-hud .bad dd { color: var(--alert); }
+@media (max-width: 900px) { .tk-island .tk-legacy .sv-hud { top: 176px; left: 8px; right: 8px; justify-content: space-between; gap: 8px; padding: 10px 14px; } .tk-island .tk-legacy .sv-hud dd { font-size: 16px; } }
+
+/* the parts on a phone: a strip you scroll sideways, and a handle that opens it as a sheet of rows (tile, name, one line on what it is) */
+.tk-island .tk-legacy .lab-pal-handle, .tk-island .tk-legacy .lab-desc { display: none; }
+.tk-island .tk-legacy .lab-desc { font: 400 14px var(--font); }
+@media (max-width: 900px) {
+  .tk-island .tk-legacy .lab-pal-handle { display: flex; flex: none; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 600 14px var(--font); cursor: pointer; }
+  .tk-island .tk-legacy .lab-pal-handle i { width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); }
+  .tk-island .tk-legacy .lab-pal.sheet-open { position: fixed; z-index: 16; left: 0; right: 0; bottom: var(--ws-bottom, 0px); max-height: 62%; flex-direction: column; align-items: stretch; overflow-x: hidden; overflow-y: auto; padding: 8px 12px 16px; border-width: 1px 0 0; border-radius: 24px 24px 0 0; background-color: var(--card); box-shadow: var(--glass-shadow); }
+  .tk-island .tk-legacy .lab-pal.sheet-open .lab-pal-handle { position: sticky; top: 0; z-index: 1; background: var(--card); justify-content: center; }
+  .tk-island .tk-legacy .lab-pal.sheet-open :is(.lab-g) { display: block; margin: 10px 4px 2px; }
+  .tk-island .tk-legacy .lab-pal.sheet-open .lab-item { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; width: 100%; white-space: normal; min-height: 56px; text-align: left; }
+  .tk-island .tk-legacy .lab-pal.sheet-open .lab-item .lab-thumb, .tk-island .tk-legacy .lab-pal.sheet-open .lab-item svg { grid-row: 1 / 3; width: 40px; height: 40px; }
+  .tk-island .tk-legacy .lab-pal.sheet-open .lab-item > span { grid-column: 2; }
+  .tk-island .tk-legacy .lab-pal.sheet-open .lab-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; grid-column: 2; font-weight: 400; }
+}
+/* the problem card floats on the canvas's dot grid */
+.tk-island .tk-legacy .solve { background-image: radial-gradient(var(--line-2) 1px, transparent 1px); background-size: 22px 22px; }
+@media (max-width: 900px) { .tk-island .tk-legacy .solve { background-image: none; } }
+
+/* ---- wide screens: the problem card floats over the canvas, which fills the whole area under it (the parts column sits to the card's right) ---- */
+@media (min-width: 901px) {
+  .tk-island .tk-legacy .solve { --cardw: calc(var(--qw, 400px) + 12px); position: relative; display: block; }
+  .tk-island .tk-legacy .solve.hide { --cardw: 0px; }
+  .tk-island .tk-legacy .sv-lab { position: absolute; inset: 12px; width: auto; border: 0; border-radius: 24px; background: transparent; }
+  .tk-island .tk-legacy .solve:not(.hide) .sv-tabs { position: absolute; z-index: 7; left: 12px; top: 12px; width: var(--qw, 400px); height: 56px; }
+  .tk-island .tk-legacy .solve:not(.hide) .sv-q { position: absolute; z-index: 7; left: 12px; top: 68px; bottom: 12px; width: var(--qw, 400px); }
+  .tk-island .tk-legacy .solve:not(.hide) .sv-split { position: absolute; z-index: 8; left: calc(12px + var(--qw, 400px) - 6px); top: 12px; bottom: 12px; width: 12px; }
+  .tk-island .tk-legacy .solve .sv-bar { margin-left: var(--cardw); }
+  .tk-island .tk-legacy .solve .lab-top, .tk-island .tk-legacy .solve .lab-status { margin-left: var(--cardw); }
+  .tk-island .tk-legacy .solve .lab-status { margin-right: 12px; }
+  .tk-island .tk-legacy .solve .lab { grid-template-columns: calc(var(--cardw) + var(--palw, 64px) + 12px) minmax(0, 1fr); }
+  .tk-island .tk-legacy .solve .lab-canvas { grid-column: 1 / -1; grid-row: 3; border-radius: 24px; }
+  .tk-island .tk-legacy .solve .lab-pal { grid-column: 1; grid-row: 3; z-index: 3; margin-left: var(--cardw); margin-top: 8px; margin-bottom: 12px; align-self: stretch; }
+  .tk-island .tk-legacy .solve .lab-ins { z-index: 3; }
+  .tk-island .tk-legacy .solve .lab-wrap { height: calc(100vh - var(--head) - 24px); }
+  .tk-island .tk-legacy .solve .sv-3d, .tk-island .tk-legacy .solve .d3 { left: 0; }
+}
+@media (min-width: 901px) {
+  .tk-island .tk-legacy .solve .lab-pal { z-index: 6; }
+  .tk-island .tk-legacy .solve .d3-tools { left: calc(var(--cardw) + var(--palw, 64px) + 24px); }
+  .tk-island .tk-legacy .solve .d3-hint { left: calc(var(--cardw) + var(--palw, 64px) + 24px); }
+}
+
+/* the replay's scrubber is pinned along the bottom of the sheet, whatever is above it */
+.tk-island .tk-legacy .sv-player { display: flex; flex-direction: column; }
+.tk-island .tk-legacy .sv-player .sv-scrubw { order: 50; position: sticky; bottom: 0; z-index: 2; margin: 0; padding: 14px 20px 14px; border-top: 1px solid var(--line); background: var(--card); }
+.tk-island .tk-legacy .sv-player .sv-ticks { top: 2px; }
+@media (min-width: 901px) {
+  /* results and replay sit beside the problem card, not under it */
+  .tk-island .tk-legacy .solve .sv-console { left: calc(var(--cardw) + 8px); }
+  .tk-island .tk-legacy .solve .sv-hud { right: 12px; }
+}

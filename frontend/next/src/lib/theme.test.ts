@@ -7,9 +7,9 @@ describe("theme", () => {
     expect(resolveTheme("system", false)).toBe("light");
     expect(resolveTheme("light", true)).toBe("light");
   });
-  it("defaults to system and ignores junk in storage", () => {
-    expect(getPref()).toBe("system");
+  it("defaults to dark (the 3D site's default) and ignores junk in storage", () => {
+    expect(getPref()).toBe("dark");
     localStorage.setItem("tk-theme", "purple");
-    expect(getPref()).toBe("system");
+    expect(getPref()).toBe("dark");
   });
 });

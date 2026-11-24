@@ -1,4 +1,4 @@
-import { Component, Suspense, lazy, useEffect, type ReactNode } from "react";
+import { Component, Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { setShareBase } from "@legacy/lab/share.js";
 import { useNavigate } from "react-router-dom";
 import { Block } from "@legacy/dashboard/blocks.jsx";
@@ -23,13 +23,15 @@ const PracticeApp = lazy(() => import("@legacy/practice/index.jsx"));
 const SandboxCanvas = lazy(() => import("@legacy/sandbox/Sandbox.jsx"));
 
 /** "#problems/url-shortener" → /problems/url-shortener, "#problems/challenge/x" → /problems/challenge/x, "#concepts/caching" → the lesson. */
-function useHashRoutes() {
+function useHashRoutes(slug?: string) {
   const navigate = useNavigate();
   useEffect(() => {
     const onHash = () => {
       const h = decodeURIComponent(window.location.hash.slice(1)).replace(/^\/+/, "");
       if (!h) return;
       const [head, ...rest] = h.split("/");
+      // a problem's own Description and Solution tabs stay on the page (see Workspace)
+      if (slug && rest.length === 1 && rest[0] === slug && (head === "problems" || head === "interview-questions")) return;
       let to: string | null = null;
       if (head === "practice") to = rest.length ? `/practice/${rest.join("/")}` : "/practice";
       else if (head === "problems") to = rest.length ? `/problems/${rest.join("/")}` : paths.problems;
@@ -38,16 +40,17 @@ function useHashRoutes() {
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [navigate]);
+  }, [navigate, slug]);
 }
 
 // share links made here open here: /problems/shared#problems/shared/<data> (pages/Legacy.tsx); the current app's
 // default form still works through the /dashboard route
-setShareBase(`${import.meta.env.BASE_URL}problems/shared#problems/shared/`);
+// (an island is built with a base of its own, /3d/islands/; the page it sits in is at the site root)
+setShareBase(`${import.meta.env.BASE_URL.startsWith("/3d/islands") ? "/" : import.meta.env.BASE_URL}problems/shared#problems/shared/`);
 
-export function Frame({ children }: { children: ReactNode }) {
+export function Frame({ children, slug }: { children: ReactNode; slug?: string }) {
   const theme = useDocTheme();
-  useHashRoutes();
+  useHashRoutes(slug);
   return (
     <div className={`tk-legacy ${tokens.tokens} ${s.frame}`}>
       <LegacyBoundary>
@@ -60,12 +63,23 @@ export function Frame({ children }: { children: ReactNode }) {
   );
 }
 
+/** The problem's tab from the address: "#interview-questions/<slug>" is the Solution (its design with Copy to my canvas, then the
+ *  article), anything else the Description. The current app's tabs set these hashes, so links, Back and the tabs agree. */
+const tabOf = (hash: string, slug: string) => (decodeURIComponent(hash.slice(1)).replace(/^\/+/, "") === `interview-questions/${slug}` ? "a" : "q");
+
 export function Workspace({ slug }: { slug: string }) {
   const site = useLegacySite();
   const { articles } = useContent();
+  const [tab, setTab] = useState(() => tabOf(window.location.hash, slug));
+  useEffect(() => {
+    const on = () => setTab(tabOf(window.location.hash, slug));
+    on();
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, [slug]);
   return (
-    <Frame>
-      <Solve slug={slug} tab="q" s={site.problems?.solve} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab} />
+    <Frame slug={slug}>
+      <Solve slug={slug} tab={tab} s={site.problems?.solve} articles={articles} Block={Block} Article={Article} prep={withFigs} Lab={Lab} />
     </Frame>
   );
 }

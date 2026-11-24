@@ -31,7 +31,7 @@ const SYSTEM = {
   paths: { u1: ['users', 'cdn'], u2: ['users', 'gw'], g1: ['gw', 'a1'], g2: ['gw', 'a2'], c1: ['a1', 'cache'], d1: ['a1', 'db'], d2: ['a2', 'db'],
     s: ['db', 'shards'], r: ['db', 'rep'], k: ['a2', 'kafka'], w: ['kafka', 'workers'], x: ['workers', 'special'] },
 };
-const pd = (kind) => `<i class="pd" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
+const pd = (kind) => `<i class="pdot" style="--c:var(--${KIND_PASTEL[kind]})" aria-hidden="true"></i>`;
 
 export function mount(view, _p, { reduced, go }) {
   let world = null, alive = true;

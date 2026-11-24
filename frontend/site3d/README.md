@@ -27,11 +27,12 @@ Each row opens the canvas workspace, which is the React app in its 3d look (`nex
 - `scripts/app.js` routes by path (`history.pushState`). A link to one of its own addresses stays in the page; any
   other address loads as a whole page, and Back or Forward onto one reloads. Old `#/…` links from the prototype are
   turned into their real address.
-- The React app is built with `VITE_SITE3D=1` in production only (`npm run build:next`): its routes for the 3D
-  addresses then load the page again as a whole page, once (`next/src/app/router.tsx`), so its links into Learn
-  reach this site. The end-to-end builds leave it off and keep every React page.
-- The three lists of 3D addresses must agree: `OWN` in `scripts/app.js`, `OWNED_BY_3D` in `hosting/switch.mjs` and in
-  `next/src/app/router.tsx`.
+- Since phase 6 of tech-katta-context 49 this is the whole site. `OWN` in `scripts/app.js` matches every path except files (an extension), `/3d`,
+  `/analytics`, `/health` and `/_vercel`; `hosting/switch.mjs` has the same pattern and writes the shell at every address and as `404.html` (status 404,
+  "Nothing runs at this address"). The React app is gone; its canvas, judge and practice run as islands (`../next`, built by `npm run build:islands`).
+- The pages: `pages/{landing, me (the Dashboard), you, learn, article, notes, policy, problems, workspace, sim, practice}.js`; `/dashboard…` is redirected
+  in the router (`legacy.js`); search is `search.js` (Ctrl or Cmd K); sign-in, the lock and analytics are `account.js`, `gate.js`, `gating.js`,
+  `signin.js`, `analytics.js` (phase 0).
 - Progress here (articles read, simulator bests) is kept on the device (`scripts/store.js`), separately from the
   React app's progress and account sync. Joining the two is still to do.
 
