@@ -94,9 +94,9 @@ export function mount(view, _p, { reduced, go }) {
     const parts = {}, labels = {};
     for (const id of rowsIds) { const { cs, r, tone } = partInfo(id); parts[id] = tone; labels[id] = [innerWidth < 380 ? '' : `${r}/${cs.length}`, tone]; /* 320 px phones: counts live in the list below, so the pills stay short */ }
     parts.a2 = parts.a1;
-    // on wide screens no label may sit over the intro text: labels stay right of the text column (avoid is a share of the width)
-    const avoid = phone ? 0 : Math.min(0.7, ((view.querySelector('.dash-body')?.getBoundingClientRect().right || 0) + 16) / innerWidth);
-    world.setState({ parts, labels, avoid, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
+    // wide screens: every label stays, but none may sit left of the intro text's right edge (the laptop's "Users" pill shifts right instead of over the words)
+    world.setLabelMinX(phone ? 0 : (view.querySelector('.dash-body')?.getBoundingClientRect().right || 0) + 8 - stage.getBoundingClientRect().left); // overlay coordinates start at the stage's left edge
+    world.setState({ parts, labels, speed: 0.6 + (conceptsRead / Math.max(1, concepts.length)) * 1.4 });
     world.onPick((id) => {
       const key = id === 'a2' ? 'a1' : id;
       if (!key || !MAP[key]?.concepts.length) return;
