@@ -1489,11 +1489,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "onezone:cache"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "onezone:cache": "The index can take every search of the dinner peak for the 15 minutes the cache is gone: the replica only saves warming it up again."
     },
     "rubric": {

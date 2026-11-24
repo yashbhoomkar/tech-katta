@@ -229,6 +229,24 @@ export function analyse(compiled, practice, lab, sims = []) {
     }
   }
 
+  // ---- settings outside the part's range, changed to fit (info: the judge used another design from the one sent) ----
+  for (const c of compiled.design.clamped || []) push({ code: 'F_CLAMPED', severity: 'info', nodes: [c.node], ...FIND.clamped(c) });
+
+  // ---- a group of instances nothing spreads calls over (no load balancer or API gateway in front) -----------------------
+  {
+    const seenL = new Set();
+    for (const [opId, plan] of Object.entries(compiled.plans)) {
+      const walk = (h) => {
+        if (h.nolb && !seenL.has(h.node) && (cfg(h.node).count || 1) > 1) {
+          seenL.add(h.node);
+          push({ code: 'F_NO_LB', severity: 'warn', op: opId, nodes: [h.node], ...FIND.noLb(name(h.node), cfg(h.node).count), concept: 'load-balancing' });
+        }
+        (h.children || []).forEach(walk);
+      };
+      for (const r of plan.roots || []) walk(r);
+    }
+  }
+
   // ---- §10.9 hot spots ----------------------------------------------------------------------------------------------------
   const seenH = new Set();
   for (const { sim } of sims) for (const h of [...(sim.hotParts || [])].sort((a, b) => b.rhoHot - a.rhoHot)) {

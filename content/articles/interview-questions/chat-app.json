@@ -1758,11 +1758,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Phones may reach the API group and the gateways directly in this model.",
       "engine:db:dynamodb": "DynamoDB is an equally good store for messages keyed by chat."
     },
     "rubric": {

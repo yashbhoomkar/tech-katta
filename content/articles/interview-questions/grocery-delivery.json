@@ -1394,14 +1394,12 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:cache",
       "onezone:cache",
       "engine:db:dynamodb",
       "half:db:shards"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "ttl:cache": "How long an item stays cached only changes how soon a change shows; no test asks for that.",
       "onezone:cache": "The database can take every stock check for the 15 minutes the cache is gone: the replica only saves warming it up again.",
       "engine:db:dynamodb": "DynamoDB has transactions and conditional writes too: an equally good store here.",

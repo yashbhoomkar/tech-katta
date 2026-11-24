@@ -1,9 +1,7 @@
 // Runs on a worker thread (judge-pool.js): judges one submitted design and says whether it is the
 // problem's own reference design, copied unchanged. Only plain data goes back to the API thread.
 import { parentPort } from 'node:worker_threads';
-import { cleanDesign } from '../../../frontend/src/lab/store.js';
-import { judge, sameDesign } from '../../../frontend/src/judge/judge.js';
-import { cleanDesign2 } from '../../../frontend/src/eval/design.js';
+import { judge, copyOf } from '../../../frontend/src/judge/judge.js';
 import { canvasEvidence } from '../../../frontend/src/v3/adapters/eval.js';
 
 parentPort.on('message', ({ id, task, design, lab, practice, article }) => {
@@ -11,9 +9,8 @@ parentPort.on('message', ({ id, task, design, lab, practice, article }) => {
     const j = judge(design, lab, practice);
     // task "evidence": the interviewer's evidence pack of this design (v3/adapters/eval.js), built here from the full result
     if (task === 'evidence') { parentPort.postMessage({ id, ok: true, judged: canvasEvidence(j, article) }); return; }
-    // a v2 problem's designs keep v2 settings when cleaned (evaluator.md §12.1 point 5)
-    const clean = (d) => (practice.v === 2 ? { ...cleanDesign2(d, lab), v: 2 } : cleanDesign(d, lab, 'reference'));
-    const copied = sameDesign(practice.v === 2 ? clean(design) : design, practice.reference && clean(practice.reference));
+    // the same helper the browser uses: both designs cleaned the same way, then compared by structure
+    const copied = copyOf(design, practice.reference, lab, practice);
     const metrics = j.metrics ? { avgMonthly: j.metrics.avgMonthly, p99: j.metrics.p99 } : null;
     // a v2 problem's design score (evaluator.md §11.3); the timeline and the rest stay on this thread
     const designPoints = Number.isFinite(j.designPoints) ? { designPoints: j.designPoints } : {};

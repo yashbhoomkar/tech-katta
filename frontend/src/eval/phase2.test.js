@@ -39,7 +39,7 @@ test('simulate: the flow pass and latency vectors of §8.4 and §8.8', () => {
 
 test('simulate: queues fill and drain (§8.7 vector)', () => {
   const p = P({ id: 'send', kind: 'write', share: 1, steps: [{ id: 's1', op: 'put', entity: 'items', values: { id: 'c', v: '3' }, timing: 'defer', withinSec: 60 }], respond: { status: 202, body: {} } });
-  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 4 }), N('q', 'queue'), N('w', 'server', { size: 't3.medium', count: 8 }), N('db', 'database', { engine: 'dynamodb', schema: TABLE() })], edges: E(['c', 'app'], ['app', 'q'], ['q', 'w'], ['w', 'db']) };
+  const d = { nodes: [N('c', 'client'), N('lb', 'lb'), N('app', 'server', { size: 'c5.2xlarge', count: 4 }), N('q', 'queue'), N('w', 'server', { size: 't3.medium', count: 8 }), N('db', 'database', { engine: 'dynamodb', schema: TABLE() })], edges: E(['c', 'lb'], ['lb', 'app'], ['app', 'q'], ['q', 'w'], ['w', 'db']) };
   const s = run(d, p, { hours: 2, startHour: 0, traffic: { rps: 500, pattern: 'steady' }, faults: [{ minute: 0, kind: 'spike', factor: 6, minutes: 30 }] });
   const bl = s.timeline.nodes.q.backlog;
   assert.equal(Math.max(...bl), 3240000);
@@ -96,7 +96,7 @@ test('simulate: a lost zone takes 1/zones of the instances (all of them with one
 });
 
 test('simulate: a cache flush sends the misses to the database while it warms up', () => {
-  const d = { nodes: [N('c', 'client'), N('app', 'server', { size: 'c5.2xlarge', count: 4 }), N('cache', 'cache', { size: 'cache.m5.large', ttlSec: 3600 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: TABLE() })], edges: E(['c', 'app'], ['app', 'cache'], ['cache', 'db'], ['app', 'db']) };
+  const d = { nodes: [N('c', 'client'), N('lb', 'lb'), N('app', 'server', { size: 'c5.2xlarge', count: 4 }), N('cache', 'cache', { size: 'cache.m5.large', ttlSec: 3600 }), N('db', 'database', { engine: 'postgres', size: 'db.r5.2xlarge', schema: TABLE() })], edges: E(['c', 'lb'], ['lb', 'app'], ['app', 'cache'], ['cache', 'db'], ['app', 'db']) };
   const p = P({ ...READ, keys: { entity: 'items', skew: 'zipf' } }, WRITE);
   const s = run(d, p, { traffic: { rps: 5000, pattern: 'steady' }, faults: [{ minute: 20, kind: 'cacheFlush' }] });
   const rho = s.timeline.nodes.db.rho;

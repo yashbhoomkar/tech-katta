@@ -1573,13 +1573,11 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb",
       "engine:db:cassandra",
       "onezone:w"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "engine:db:dynamodb": "DynamoDB stores submissions by id just as well.",
       "engine:db:cassandra": "Cassandra stores submissions by id just as well.",
       "onezone:w": "Judges take their runs from a queue and the zone test allows a delay: with a third spare capacity, the backlog from a lost zone is cleared in time."

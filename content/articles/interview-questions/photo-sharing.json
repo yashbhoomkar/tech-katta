@@ -2157,12 +2157,10 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "ttl:cache",
       "engine:db:dynamodb"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "The CDN may reach the API group directly in this model.",
       "ttl:cache": "How long a page stays cached only changes how soon a new photo shows; no test asks for that.",
       "engine:db:dynamodb": "DynamoDB is an equally good store for photo details, keyed by photo with an index by restaurant."
     },

@@ -2015,11 +2015,9 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "Clients may reach the Service group directly in this model.",
       "engine:db:dynamodb": "DynamoDB has conditional writes and an index on the due time too: an equally good store for jobs."
     },
     "rubric": {

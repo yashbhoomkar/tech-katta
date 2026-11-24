@@ -1856,12 +1856,10 @@
       }
     ],
     "mutantsAllowed": [
-      "remove:lb",
       "engine:db:dynamodb",
       "engine:db:cassandra"
     ],
     "mutantsAllowedWhy": {
-      "remove:lb": "The CDN may reach the Service group directly in this model.",
       "engine:db:dynamodb": "DynamoDB has conditional writes: holding a seat only if it is free works the same.",
       "engine:db:cassandra": "Cassandra holds a seat only if it is free with a lightweight transaction: as good for 5,000 holds a second."
     },

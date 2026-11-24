@@ -6,8 +6,11 @@
 //   canvasProblem(article)          → { id, slug, title, statement, constraints, requests } for the prompt's
 //                                     problem block (backend/src/ai/prompt.js), from what the problem page shows
 import { REASON_WORDS } from '../words.js';
+import { normalMonth } from '../../solve/cost.js';
 
-export const CANVAS_EVIDENCE_VERSION = 1;
+// 2: the bill is the budget test's month at normal traffic (it was the dearest test priced as a whole month, which
+// told the interviewer that accepted designs were over budget); the peak's rate is a note; clamped settings are facts
+export const CANVAS_EVIDENCE_VERSION = 2;
 const usd = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const q = (s) => `'${s}'`;
 const MAX_FINDINGS = 4, MAX_ADVICE = 4;
@@ -58,25 +61,34 @@ export function canvasEvidence(judged, article) {
       say: r.error || why.slice(0, 2).join(' ') || `${q(r.test?.name || r.id)} failed: ${REASON_WORDS[kind] || kind}.` });
   }
 
-  // the bill, and the budget when a test states one
-  const monthly = judged?.metrics?.avgMonthly;
-  if (Number.isFinite(monthly) && !(judged?.verdict === 'error')) {
-    const cap = results.flatMap((r) => r.checks || []).find((c) => c.kind === 'cost' && Number.isFinite(c.max));
-    const over = cap && monthly > cap.max;
-    add({ id: 'cost:total', kind: 'cost', tone: over ? 'fail' : 'note', n: { usd: monthly, ...(cap ? { budget: cap.max } : {}) },
-      f: { usd: usd(monthly), ...(cap ? { budget: usd(cap.max) } : {}) },
-      say: cap ? `This design costs about ${usd(monthly)} a month; the budget is ${usd(cap.max)}.` : `This design costs about ${usd(monthly)} a month.` });
+  // the bill: the month the problem budgets (its budget test, else the test called normal), against its cap; tone fail only
+  // when that cost check failed. The dearest test's figure is the rate during a peak, said as such.
+  const month = normalMonth(judged), peak = judged?.metrics?.avgMonthly;
+  if (!(judged?.verdict === 'error')) {
+    if (month) {
+      add({ id: 'cost:total', kind: 'cost', tone: month.ok ? 'note' : 'fail', n: { usd: month.cost, ...(month.budget ? { budget: month.budget } : {}) },
+        f: { usd: usd(month.cost), ...(month.budget ? { budget: usd(month.budget) } : {}) },
+        say: month.budget ? `This design costs about ${usd(month.cost)} a month at normal traffic; the budget is ${usd(month.budget)}.` : `This design costs about ${usd(month.cost)} a month at normal traffic.` });
+      if (Number.isFinite(peak) && peak > month.cost * 1.5) add({ id: 'cost:peak', kind: 'cost', tone: 'note', n: { usd: peak }, f: { usd: usd(peak) },
+        say: `During its busiest test the spend runs at a rate of about ${usd(peak)} a month. That is the rate for a short peak, not a month's bill.` });
+    } else if (Number.isFinite(peak)) add({ id: 'cost:total', kind: 'cost', tone: 'note', n: { usd: peak }, f: { usd: usd(peak) }, say: `At its busiest test this design spends at a rate of about ${usd(peak)} a month.` });
+  }
+
+  // settings the judge changed to fit the part's range: the design it judged is not quite the one that was sent
+  for (const c of (judged?.clamped || []).slice(0, MAX_ADVICE)) {
+    const x = (judged?.findings || []).find((f) => f.code === 'F_CLAMPED' && f.nodes?.[0] === c.node && f.title?.includes(c.field));
+    add({ id: `input:clamped:${c.node}:${c.key || c.field}`, kind: 'advice', tone: 'note', about: { part: c.node }, say: (x?.title || `${c.part}: ${c.field} ${c.sent} is outside what the part allows; judged as ${c.used}`) + '.' });
   }
 
   // the judge's advice about the design (oversized parts, missing spares…), as risks or notes
-  for (const x of (judged?.findings || []).slice(0, MAX_ADVICE)) {
+  for (const x of (judged?.findings || []).filter((f) => f.code !== 'F_CLAMPED').slice(0, MAX_ADVICE)) {
     const part = x.nodes?.[0];
     add({ id: `advice:${x.code}:${part || 'design'}`, kind: 'advice', tone: SEVERITY_TONE[x.severity] || 'note', about: part ? { part } : {},
       say: [x.title, x.story].filter(Boolean).join('. ').replace(/\.\./g, '.') + (/[.!?]$/.test(x.story || x.title || '') ? '' : '.') });
   }
 
   // one next step the judge itself suggests: the fix of its first piece of advice
-  const fix = (judged?.findings || []).find((x) => x.fix);
+  const fix = (judged?.findings || []).find((x) => x.fix && x.code !== 'F_CLAMPED');
   if (fix && !accepted) add({ id: 'repair:1', kind: 'repair', tone: 'note', about: fix.nodes?.[0] ? { part: fix.nodes[0] } : {}, say: fix.fix });
   return pack;
 }

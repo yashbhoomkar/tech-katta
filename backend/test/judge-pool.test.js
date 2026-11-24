@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { judgePool, JudgeError } from '../src/auth/judge-pool.js';
 import { loadContent } from '../src/content/store.js';
 import { cleanDesign } from '../../frontend/src/lab/store.js';
-import { judge, sameDesign } from '../../frontend/src/judge/judge.js';
+import { judge, copyOf } from '../../frontend/src/judge/judge.js';
 
 const content = await loadContent(new URL('../../content', import.meta.url).pathname);
 const lab = content.lab;
@@ -27,7 +27,7 @@ test('a worker judges exactly like the API used to, for every problem and its re
       for (const design of [a.practice.reference, a.practice.wrong[0]]) {
         const j = job(design, a), got = await pool.run(j), want = judge(j.design, lab, j.practice);
         assert.deepEqual(got.judged, { verdict: want.verdict, passed: want.passed, total: want.total, metrics: want.metrics ? { avgMonthly: want.metrics.avgMonthly, p99: want.metrics.p99 } : null, ...(Number.isFinite(want.designPoints) ? { designPoints: want.designPoints } : {}) }, a.slug);
-        assert.equal(got.copied, sameDesign(j.design, cleanDesign(v2(a.practice.reference), lab, 'reference')), a.slug);
+        assert.equal(got.copied, copyOf(j.design, a.practice.reference, lab, a.practice), a.slug);
       }
     }
   } finally { pool.close(); }
