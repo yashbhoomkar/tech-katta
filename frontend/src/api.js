@@ -8,10 +8,17 @@ const cache=new Map();
 try{addEventListener("vite:preloadError",e=>{let last=0;try{last=Number(sessionStorage.getItem("tk-reloaded"))||0}catch{}
 if(Date.now()-last<60000)return;e.preventDefault();try{sessionStorage.setItem("tk-reloaded",String(Date.now()))}catch{}location.reload()})}catch{}
 // GET a JSON path once per page load; retries once on network errors and 5xx, gives up after 8 s.
+// The text behind the sign-in (a full article, the Lab catalogue, a solution, the 3D stories) depends on who asks: it is fetched with
+// the session cookie. If the browser refuses the credentialed request (a site the API doesn't list, such as a preview), the same
+// request is made without it and returns the public part. After anyone signs in or out these are forgotten and asked again.
+export const GATED=/^\/v1\/(lab|stories|articles\/[^?]+)$/;
+export const forgetGated=()=>{for(const k of [...cache.keys()])if(GATED.test(k))cache.delete(k)};
+try{addEventListener("tk-account",forgetGated)}catch{}
+export async function fetchApi(path,init={}){if(GATED.test(path)){try{return await fetch(API+path,{...init,credentials:"include"})}catch(e){if(e?.name==="AbortError")throw e}}return fetch(API+path,init)}
 export function getJSON(path,{timeout=8000,retries=1}={}){
 if(cache.has(path))return cache.get(path);
 const p=(async()=>{let err;for(let i=0;i<=retries;i++){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),timeout);
-try{const r=await fetch(API+path,{signal:ctl.signal});if(r.ok)return await r.json();err=Object.assign(new Error(`HTTP ${r.status}`),{status:r.status});if(r.status<500)break}
+try{const r=await fetchApi(path,{signal:ctl.signal});if(r.ok)return await r.json();err=Object.assign(new Error(`HTTP ${r.status}`),{status:r.status});if(r.status<500)break}
 catch(e){err=e}finally{clearTimeout(t)}if(i<retries)await new Promise(res=>setTimeout(res,600))}
 cache.delete(path);throw err})();
 cache.set(path,p);return p}

@@ -1,6 +1,7 @@
 // The real articles, from the live API (public; the site's CSP allows it). The list and each article are fetched
 // once and kept in memory and sessionStorage; if the API cannot be reached, the list falls back to a bundled snapshot.
 import { ARTICLES_FALLBACK } from './data/articles.js';
+import { accountState } from './account.js';
 
 export const API = 'https://tech-api.katta.cc';
 export const SECTIONS = [
@@ -33,11 +34,21 @@ export const SECOND = {
 const mem = new Map();
 const ss = { get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* full or blocked */ } } };
 
+// The text behind the sign-in (a full article, the Lab catalogue, the 3D stories) is fetched with the session cookie. If the browser
+// refuses the credentialed request (a site the API doesn't list, such as a preview), the same request is made without it and
+// returns the public part. These answers depend on who asks, so they live in memory only and are forgotten when anyone signs in or out.
+const GATED = /^\/v1\/(lab|stories|articles\/[^?]+)$/;
+export async function apiFetch(path, init = {}) {
+  if (GATED.test(path)) { try { return await fetch(API + path, { ...init, credentials: 'include' }); } catch (e) { if (e?.name === 'AbortError') throw e; } }
+  return fetch(API + path, init);
+}
 async function getJson(path) {
-  const r = await fetch(API + path, { headers: { accept: 'application/json' } });
-  if (!r.ok) throw new Error(`${path}: ${r.status}`);
+  const r = await apiFetch(path, { headers: { accept: 'application/json' } });
+  if (!r.ok) { const e = new Error(`${path}: ${r.status}`); e.status = r.status; throw e; }
   return r.json();
 }
+const forgetGated = () => { for (const k of [...mem.keys()]) if (k !== 'list') mem.delete(k); try { for (const k of Object.keys(sessionStorage)) if (k.startsWith('tk-r3d-a:')) sessionStorage.removeItem(k); } catch { /* blocked */ } };
+try { addEventListener('tk-account', forgetGated); document.addEventListener('tk-account', forgetGated); } catch { /* no window */ }
 
 /** every article's header (section, slug, group, no, tag, title, dek), live or the snapshot */
 export async function listArticles() {
@@ -55,11 +66,20 @@ export const listNow = () => mem.get('list') || tidy(ss.get('tk-r3d-articles') |
 export async function getArticle(slug) {
   const k = `a:${slug}`;
   if (mem.has(k)) return mem.get(k);
-  let a = ss.get(`tk-r3d-${k}`);
-  if (!a) { try { a = await getJson(`/v1/articles/${encodeURIComponent(slug)}`); ss.set(`tk-r3d-${k}`, a); } catch { a = null; } }
+  let a = null;
+  try { a = await getJson(`/v1/articles/${encodeURIComponent(slug)}`); } catch { a = null; }
   if (a) mem.set(k, a);
   return a;
 }
+
+/** the 3D stories' words and sentences (signed-in readers only), put back into the figures; true when they are in */
+let storiesP = null;
+export function ensureStories(signedIn) {
+  if (!signedIn) return Promise.resolve(false);
+  return (storiesP ||= getJson('/v1/stories').then(async (r) => { (await import('./figures.js')).applyStories(r.stories); return true; }).catch(() => { storiesP = null; return false; }));
+}
+export async function forgetStories() { storiesP = null; try { (await import('./figures.js')).clearStories(); } catch { /* not loaded */ } }
+try { addEventListener('tk-account', () => { storiesP = null; if (!accountState().user) forgetStories(); }); } catch { /* no window */ }
 
 /** "Caching: when to add a cache" → ["Caching", "when to add a cache"] */
 export function splitTitle(t) {
