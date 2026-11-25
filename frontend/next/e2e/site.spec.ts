@@ -79,6 +79,9 @@ test("signed out: the workspace is locked and loads no island", async ({ page })
 });
 
 test("a problem: run, submit, replay in 2D and 3D, and back", async ({ page }) => {
+  // Submit judges every test in the browser (9–14 s) and opening a replay re-runs one (11–18 s): about 40 s on 2 cores before the 3D replay,
+  // the page load and the way back. A longer time budget for this test only; every check stays as it is.
+  test.setTimeout(150_000);
   await visitor(page, "in");
   const errs = errors(page);
   await page.goto("/problems/url-shortener");

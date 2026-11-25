@@ -50,6 +50,9 @@ async function settled(page: Page, sel: string) {
 }
 
 test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({ page }) => {
+  // the scene is drawn in software (swiftshader) and every click waits for the labels to settle: about 35 s on a 4-core machine, over 60 s on CI's 2 cores
+  // next to the other 3D spec. A longer time budget for this test only; every check stays as it is.
+  test.setTimeout(150_000);
   await signedIn(page);
   await page.goto("/problems/sandbox");
   await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
@@ -57,10 +60,16 @@ test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({
   // put two parts down from the palette (a tap adds one in the middle)
   await page.locator(".lab-item", { hasText: "Clients" }).first().focus();
   await page.keyboard.press("Enter");
+  await expect.poll(() => count(page, ".react-flow__node")).toBe(n0 + 1);
+  // a part added while another is selected is joined to it (Canvas.jsx, add): clear the selection first, so the only arrow is the one this test draws
+  await page.locator(".lab-view button", { hasText: "3D" }).focus();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => count(page, ".react-flow__node.selected")).toBe(0);
   await page.locator(".lab-item", { hasText: "Load Balancer" }).first().focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".d3 canvas")).toBeVisible();
   await expect.poll(() => count(page, ".react-flow__node")).toBe(n0 + 2);
+  expect(await count(page, ".react-flow__edge")).toBe(e0);
   // move one: its card's position changes
   const before = await page.locator(".react-flow__node").first().evaluate((n) => (n as HTMLElement).style.transform);
   const p = await partAt(page, "Load Balancer");
@@ -83,6 +92,7 @@ test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({
 });
 
 test("replay: the HUD shows the minute and Break it yourself is a row of choices", async ({ page }) => {
+  test.setTimeout(150_000); // judging every test in the browser and opening a replay take 25–40 s of CPU on CI; see the canvas test above
   await signedIn(page);
   await page.goto("/problems/url-shortener");
   await expect(page.locator(".ws-host .solve")).toBeVisible({ timeout: 40_000 });
