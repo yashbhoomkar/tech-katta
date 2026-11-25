@@ -754,8 +754,8 @@
           "y": 0,
           "name": "Video API",
           "config": {
-            "size": "m5.xlarge",
-            "count": 3,
+            "size": "c5.2xlarge",
+            "count": 2,
             "zones": 3
           }
         },
@@ -889,7 +889,7 @@
           "name": "Transcoders",
           "config": {
             "size": "c5.2xlarge",
-            "count": 9,
+            "count": 6,
             "zones": 3
           }
         }

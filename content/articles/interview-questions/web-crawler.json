@@ -83,6 +83,16 @@
       "say": "Add links (only new ones go in). Ask for the next URL that's polite to fetch now. Report the result, which decides when that site and that page come round again."
     },
     {
+      "t": "p",
+      "x": "The frontier is reached over HTTP by the fetchers, so it can be a separate service that scales and fails on its own. The calls behind the internal interface above:"
+    },
+    {
+      "t": "code",
+      "label": "Over HTTP",
+      "x": "POST /v1/frontier            { \"urls\": [\"https://chennai-eats.example/idli-guide\"] }   → 202 { \"added\": 1 }\nGET  /v1/frontier/next?fetcher=f_12   → 200 { \"url\": \"https://chennai-eats.example/idli-guide\", \"host\": \"chennai-eats.example\" }",
+      "say": "Two calls. Post new links to the frontier; only the ones never seen are added. And get the next URL for a fetcher, one that is polite to fetch now."
+    },
+    {
       "t": "h2",
       "x": "4. High-level design"
     },

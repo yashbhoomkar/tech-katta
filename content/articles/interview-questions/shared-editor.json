@@ -84,6 +84,16 @@
       "say": "Open a document and get its text and number. Send an edit with the version you made it on; get back its number. Receive others' edits in order. Share your cursor."
     },
     {
+      "t": "p",
+      "x": "The open connection carries the live edits. A phone or laptop also uses plain HTTP calls when it opens a document, to get the latest snapshot and its number, and as a fallback to send an edit when the connection is down."
+    },
+    {
+      "t": "code",
+      "label": "Over HTTP (open and fallback)",
+      "x": "GET  /v1/docs/menu_214            → 200 { \"seq\": 40, \"text\": \"Tikka ₹220…\" }\nPOST /v1/docs/menu_214/edits      { \"id\": \"e_77\", \"base\": 40, \"ops\": [ { \"replace\": { \"at\": 7, \"len\": 3, \"with\": \"240\" } } ] }   → 200 { \"seq\": 41 }",
+      "say": "Two plain calls beside the open connection. Open a document: get its latest snapshot and its number. Send an edit: post it with the number it was based on, and the server answers with the number it gave it."
+    },
+    {
       "t": "h2",
       "x": "4. High-level design"
     },
@@ -603,7 +613,7 @@
           "name": "Edit API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 44,
+            "count": 48,
             "zones": 3
           }
         },
@@ -614,7 +624,7 @@
           "y": 0,
           "name": "Edit log",
           "config": {
-            "partitions": 16,
+            "partitions": 19,
             "keyField": [
               "doc_id"
             ]
@@ -642,7 +652,7 @@
             "engine": "postgres",
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "shards": 10,
+            "shards": 11,
             "schema": {
               "tables": [
                 {

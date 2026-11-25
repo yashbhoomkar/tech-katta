@@ -692,7 +692,7 @@
           "name": "Origin A",
           "config": {
             "size": "c5.2xlarge",
-            "count": 27,
+            "count": 24,
             "zones": 3,
             "timeoutMs": 300
           }
@@ -705,7 +705,7 @@
           "name": "Origin B",
           "config": {
             "size": "c5.2xlarge",
-            "count": 27,
+            "count": 24,
             "zones": 3,
             "timeoutMs": 300
           }
@@ -718,7 +718,7 @@
           "name": "Segment cache",
           "config": {
             "size": "cache.m5.large",
-            "nodes": 5,
+            "nodes": 4,
             "ttlSec": 4,
             "replica": true
           }

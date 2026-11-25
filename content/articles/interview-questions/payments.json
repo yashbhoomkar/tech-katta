@@ -838,7 +838,7 @@
           "name": "Payments service",
           "config": {
             "size": "c5.2xlarge",
-            "count": 3,
+            "count": 4,
             "zones": 3
           }
         },

@@ -820,7 +820,7 @@
           "name": "OTP senders",
           "config": {
             "size": "m5.large",
-            "count": 20,
+            "count": 15,
             "zones": 2,
             "timeoutMs": 3000
           }

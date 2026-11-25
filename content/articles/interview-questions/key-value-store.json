@@ -548,7 +548,7 @@
           "name": "KV API A",
           "config": {
             "size": "c5.2xlarge",
-            "count": 30,
+            "count": 40,
             "zones": 3
           }
         },
@@ -560,7 +560,7 @@
           "name": "KV API B",
           "config": {
             "size": "c5.2xlarge",
-            "count": 30,
+            "count": 36,
             "zones": 3
           }
         },
@@ -572,7 +572,7 @@
           "name": "Hot keys",
           "config": {
             "size": "cache.m5.large",
-            "nodes": 3,
+            "nodes": 4,
             "ttlSec": 300,
             "replica": true
           }
@@ -1635,11 +1635,15 @@
     ],
     "mutantsAllowed": [
       "ttl:cache",
-      "onezone:cache"
+      "onezone:cache",
+      "onezone:app1",
+      "onezone:app2"
     ],
     "mutantsAllowedWhy": {
       "ttl:cache": "How long an item stays cached only changes how soon a change shows; no test asks for that.",
-      "onezone:cache": "Six storage nodes can take every read for the 15 minutes the cache is gone: the replica only saves warming it up again."
+      "onezone:cache": "Six storage nodes can take every read for the 15 minutes the cache is gone: the replica only saves warming it up again.",
+      "onezone:app1": "The API group has a third more instances than the busiest test needs, so the zone test still passes with them in one zone.",
+      "onezone:app2": "The API group has a third more instances than the busiest test needs, so the zone test still passes with them in one zone."
     },
     "rubric": {
       "fr": [

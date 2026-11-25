@@ -149,7 +149,7 @@
       "t": "list",
       "items": [
         "Let customers choose a block and a count, and pick the seats for them. Thousands choosing \"the best seat\" by hand all collide; assigning from the block spreads them out. Pick candidate seats with `FOR UPDATE SKIP LOCKED`, so buyers who arrive together take different seats instead of failing each other.",
-        "Shard nothing for one match: 1 lakh seats is a small table. Spread events across databases, and keep each event's seats together.",
+        "One match's 1 lakh seats are a small table, so storage is no reason to shard; the noon rush of holds is. Two shards give those writes room, and each block of seats stays together on one shard. Spread events across databases, and keep each event's seats together.",
         "Show seats left per block from a cache refreshed every second or so. It's always a little behind; the hold is the truth."
       ]
     },
@@ -569,7 +569,7 @@
           },
           {
             "kind": "cost",
-            "max": 23200
+            "max": 24000
           }
         ]
       }
@@ -643,7 +643,7 @@
           "name": "Booking API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 12,
+            "count": 9,
             "zones": 3
           }
         },
@@ -662,8 +662,8 @@
           "y": 0,
           "name": "Seat holders",
           "config": {
-            "size": "m5.large",
-            "count": 6,
+            "size": "m5.xlarge",
+            "count": 4,
             "zones": 2
           }
         },
@@ -677,7 +677,7 @@
             "engine": "postgres",
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "shards": 1,
+            "shards": 2,
             "schema": {
               "tables": [
                 {

@@ -591,7 +591,7 @@
           "name": "Contest API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 3,
+            "count": 4,
             "zones": 3
           }
         },
@@ -659,7 +659,7 @@
           "name": "Judges",
           "config": {
             "size": "c5.2xlarge",
-            "count": 14,
+            "count": 17,
             "zones": 2,
             "sandbox": true
           }
@@ -1575,12 +1575,14 @@
     "mutantsAllowed": [
       "remove:lb",
       "engine:db:dynamodb",
-      "engine:db:cassandra"
+      "engine:db:cassandra",
+      "onezone:w"
     ],
     "mutantsAllowedWhy": {
       "remove:lb": "Clients may reach the Service group directly in this model.",
       "engine:db:dynamodb": "DynamoDB stores submissions by id just as well.",
-      "engine:db:cassandra": "Cassandra stores submissions by id just as well."
+      "engine:db:cassandra": "Cassandra stores submissions by id just as well.",
+      "onezone:w": "Judges take their runs from a queue and the zone test allows a delay: with a third spare capacity, the backlog from a lost zone is cleared in time."
     },
     "rubric": {
       "fr": [

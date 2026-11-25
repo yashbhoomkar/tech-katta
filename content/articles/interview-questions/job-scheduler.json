@@ -789,7 +789,7 @@
           "name": "Workers",
           "config": {
             "size": "c5.2xlarge",
-            "count": 6,
+            "count": 4,
             "zones": 2
           }
         }

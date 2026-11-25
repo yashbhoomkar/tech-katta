@@ -542,7 +542,7 @@
           "name": "Quiz API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 40,
+            "count": 44,
             "zones": 3
           }
         },
@@ -561,7 +561,6 @@
             "structures": [
               {
                 "name": "scores",
-                "kind": "zset",
                 "fields": [
                   {
                     "name": "player_id",
@@ -578,7 +577,8 @@
                 ],
                 "key": [
                   "player_id"
-                ]
+                ],
+                "kind": "zset"
               }
             ]
           }

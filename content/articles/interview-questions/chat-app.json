@@ -84,6 +84,16 @@
       "say": "Send a message and get back its number. Receive messages as they arrive. Say how far you've read. After reconnecting, ask for everything after the last number you have."
     },
     {
+      "t": "p",
+      "x": "The open connection carries the live traffic. A phone also needs plain HTTP calls: to send when it has no connection yet, and to fetch what it missed when it opens the app or reconnects, by asking for everything after the last number it holds."
+    },
+    {
+      "t": "code",
+      "label": "Over HTTP (history and fallback)",
+      "x": "POST /v1/conversations/c_7/messages            { \"client_id\": \"m_ab12\", \"text\": \"8 pm?\" }   → 201 { \"seq\": 45 }\nGET  /v1/conversations/c_7/messages?after=44   → 200 { \"messages\": [ { \"seq\": 45, \"from\": \"u_42\", \"text\": \"8 pm?\" }, … ] }",
+      "say": "Two plain calls beside the open connection. Post a message to a conversation, with the phone's own id so a retry is safe; the answer is its number. And get the messages after the last number the phone holds, which is how it catches up."
+    },
+    {
       "t": "h2",
       "x": "4. High-level design"
     },
@@ -593,7 +603,7 @@
           "name": "Chat API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 12,
+            "count": 14,
             "zones": 3
           }
         },
@@ -618,7 +628,7 @@
           "name": "Save workers",
           "config": {
             "size": "c5.2xlarge",
-            "count": 12,
+            "count": 14,
             "zones": 3
           }
         },
@@ -673,7 +683,7 @@
           "name": "Chat gateways",
           "config": {
             "size": "c5.2xlarge",
-            "count": 15,
+            "count": 18,
             "zones": 3
           }
         }

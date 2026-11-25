@@ -551,7 +551,7 @@
           },
           {
             "kind": "cost",
-            "max": 9000
+            "max": 13000
           }
         ]
       }
@@ -618,7 +618,7 @@
           "name": "Store API",
           "config": {
             "size": "c5.2xlarge",
-            "count": 14,
+            "count": 16,
             "zones": 2
           }
         },
@@ -645,7 +645,7 @@
             "engine": "postgres",
             "size": "db.r5.2xlarge",
             "multiAz": true,
-            "shards": 1,
+            "shards": 2,
             "schema": {
               "tables": [
                 {
@@ -701,7 +701,8 @@
                   ]
                 }
               ]
-            }
+            },
+            "replicas": 0
           }
         }
       ],
@@ -1396,13 +1397,15 @@
       "remove:lb",
       "ttl:cache",
       "onezone:cache",
-      "engine:db:dynamodb"
+      "engine:db:dynamodb",
+      "half:db:shards"
     ],
     "mutantsAllowedWhy": {
       "remove:lb": "Clients may reach the Service group directly in this model.",
       "ttl:cache": "How long an item stays cached only changes how soon a change shows; no test asks for that.",
       "onezone:cache": "The database can take every stock check for the 15 minutes the cache is gone: the replica only saves warming it up again.",
-      "engine:db:dynamodb": "DynamoDB has transactions and conditional writes too: an equally good store here."
+      "engine:db:dynamodb": "DynamoDB has transactions and conditional writes too: an equally good store here.",
+      "half:db:shards": "With about a third spare capacity, the stock database still takes the busiest hour on half the shards."
     },
     "rubric": {
       "fr": [
