@@ -11,7 +11,7 @@ import { practiceRoutes } from './practice/routes.js';
 import { openPractice } from './practice/store.js';
 import { aiConfig, configProblems, createClient } from './ai/client.js';
 import { openAiStore } from './ai/store.js';
-import { OPEN_CONTENT } from './content/public.js';
+import { CONTENT_OPEN, OPEN_CONTENT, SIGNIN_REQUIRED } from './content/public.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -93,6 +93,7 @@ function sendContentError(request, response, statusCode, error) {
 // These responses depend on who asks, so they are private, vary on the cookie, and name the site as the only origin
 // allowed to read them with credentials. OPEN_CONTENT=1 opens everything for local development; it is ignored when
 // NODE_ENV=production and is never set on the VPS.
+if (!SIGNIN_REQUIRED) console.log('Sign-in required: no (SIGNIN_REQUIRED=0): every text is served without sign-in.');
 if (process.env.OPEN_CONTENT === '1') console.error(OPEN_CONTENT ? 'WARNING: OPEN_CONTENT=1: every text is served without sign-in (local development only).' : 'OPEN_CONTENT is ignored because NODE_ENV=production.');
 const tokenOf = (request) => {
   for (const part of String(request.headers.cookie || '').split(';')) {
@@ -103,7 +104,7 @@ const tokenOf = (request) => {
 };
 /** true when the request carries a valid session (or the development flag is on); a database error counts as signed out */
 async function signedIn(request) {
-  if (OPEN_CONTENT) return true;
+  if (CONTENT_OPEN) return true;
   const token = tokenOf(request);
   if (!token || !accounts) return false;
   try { return !!(await accounts.userFor(token)); } catch { return false; }
@@ -163,7 +164,7 @@ const aiProblems = configProblems(aiSettings);
 for (const problem of aiProblems) console.error(`Interviewer: ${problem}; every review falls back to the report.`);
 if (aiProblems.length) aiSettings.enabled = false;
 const handleAccount = accountRoutes({
-  enabled: auth.enabled, clientId: auth.clientId, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
+  enabled: auth.enabled, clientId: auth.clientId, signInRequired: SIGNIN_REQUIRED, accounts, labCatalogue: () => content.lab, allowedOrigin, secureCookie: auth.secureCookie,
   // a problem's tests and rubric, from the content release being served (with its calibration designs)
   practiceFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice)?.practice || null,
   articleFor: (slug) => content.articles.find((a) => a.slug === slug && a.practice) || null,

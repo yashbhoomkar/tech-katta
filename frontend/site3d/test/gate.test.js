@@ -34,3 +34,11 @@ test("only the local-development flag opens the pages", () => {
   for (const k of ["article", "problem", "personal", "workspace"]) { assert.equal(gateFor(k, out, { devOpen: true }), "open"); assert.equal(gateFor(k, unavailable, { devOpen: true }), "open"); }
   assert.equal(gateFor("article", out, { devOpen: false }), "preview");
 });
+test("the sign-in flag off (the API says required: false) opens every page, signed out or with sign-in unavailable, once the answer is in", () => {
+  for (const k of ["article", "problem", "personal", "workspace"]) {
+    assert.equal(gateFor(k, { ...out, required: false }), "open");
+    assert.equal(gateFor(k, { ...unavailable, required: false }), "open");
+    assert.equal(gateFor(k, { ...unknown, required: false }), "wait");
+    assert.equal(gateFor(k, { ...out, required: true }), k === "article" || k === "problem" ? "preview" : "locked");
+  }
+});

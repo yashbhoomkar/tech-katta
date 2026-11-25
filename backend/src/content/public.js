@@ -71,3 +71,8 @@ export const publicPracticeProblem = (p) => ({ id: p.id, slug: p.slug, title: p.
 
 /** OPEN_CONTENT=1 opens every text without sign-in, for local development only (never in production, never by default) */
 export const OPEN_CONTENT = process.env.OPEN_CONTENT === '1' && process.env.NODE_ENV !== 'production';
+/** The sign-in feature flag. SIGNIN_REQUIRED=0 serves every text to everyone, in production too, and tells the site (GET /v1/auth/config →
+ *  required: false) to show every page without a sign-in card. Sign-in itself still works (to keep progress on every device). Default: required. */
+export const SIGNIN_REQUIRED = process.env.SIGNIN_REQUIRED !== '0';
+/** every text is served to anyone: the sign-in flag is off, or the local-development flag is on */
+export const CONTENT_OPEN = OPEN_CONTENT || !SIGNIN_REQUIRED;

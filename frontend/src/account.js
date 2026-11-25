@@ -11,8 +11,9 @@ const call=async(path,{method="GET",body}={})=>{const r=await fetch(API+path,{me
 let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Object.assign(new Error(data?.error||`HTTP ${r.status}`),{status:r.status});return data};
 
 // --- account state, shared by every part of the page ("tk-account" event on change)
+// required: false when the API's sign-in flag is off (SIGNIN_REQUIRED=0): every page opens without signing in.
 // unavailable: sign-in cannot be used right now (the API cannot be reached or does not take sign-ins). The text stays locked then; nothing opens.
-let state={ready:false,enabled:false,unavailable:false,user:null,clientId:null,syncing:false,error:null};
+let state={ready:false,enabled:false,unavailable:false,required:true,user:null,clientId:null,syncing:false,error:null};
 const emit=()=>{try{dispatchEvent(new Event("tk-account"))}catch{}};
 const setState=p=>{state={...state,...p};emit()};
 export const account=()=>state;
@@ -23,8 +24,8 @@ export const account=()=>state;
 let early=null;const settle=p=>p.then(v=>({v}),e=>({e}));
 export function prefetchAccount(){if(!early){const cfg=settle(call("/v1/auth/config")),me=settle(call("/v1/me")),mine={cfg,me};early=mine;cfg.then(r=>{if(r.e&&early===mine)early=null})}return early}
 let started=null;
-export function startAccount(){return started||=(async()=>{const{cfg:c,me:m}=prefetchAccount(),cfg=await c;if(cfg.e||!cfg.v?.enabled){setState({ready:true,enabled:false,unavailable:true});return}
-setState({enabled:true,unavailable:false,clientId:cfg.v.clientId});const me=await m;setState({ready:true,user:me.e?null:me.v?.user??null});if(state.user)syncLab()})()}
+export function startAccount(){return started||=(async()=>{const{cfg:c,me:m}=prefetchAccount(),cfg=await c;const required=cfg.v?.required!==false;if(cfg.e||!cfg.v?.enabled){setState({ready:true,enabled:false,unavailable:true,required});return}
+setState({enabled:true,unavailable:false,required,clientId:cfg.v.clientId});const me=await m;setState({ready:true,user:me.e?null:me.v?.user??null});if(state.user)syncLab()})()}
 
 // --- Google Identity Services (loaded only when sign-in is on)
 let gis=null;
