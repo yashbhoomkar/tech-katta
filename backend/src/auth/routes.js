@@ -1,7 +1,7 @@
 // Sign-in and account endpoints. Only the site itself (FRONTEND_ORIGIN) may call them with
 // credentials; every request that changes something must come from that origin (CSRF guard on top
 // of the SameSite cookie).
-//   GET    /v1/auth/config    {enabled, clientId}         — whether to show "Sign in with Google"
+//   GET    /v1/auth/config    {enabled, clientId, required?} — whether to show "Sign in with Google"; required: false when the sign-in flag is off
 //   POST   /v1/auth/google    {credential, termsAccepted: true} → {user} — verify Google's ID token,
 //                             start a session; 400 terms_required unless the Terms box was ticked
 //   POST   /v1/auth/signout                               — end this session
@@ -86,7 +86,7 @@ const evidenceInline = async ({ design, lab, practice, article }) => ({ judged: 
 // A design judged in place: what judge-pool.js does on a worker thread, for callers without a pool (tests).
 const judgeInline = async ({ design, lab, practice }) => ({ judged: judge(design, lab, practice), copied: sameDesign(design, practice.reference && cleanDesign(practice.v === 2 ? { ...practice.reference, v: 2 } : practice.reference, lab, 'reference')) });
 
-export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogue, practiceFor = () => null, articleFor = () => null, judgeDesign = judgeInline, judgeEvidence = evidenceInline, ai = null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
+export function accountRoutes({ enabled, clientId, signInRequired = true, accounts, verify, labCatalogue, practiceFor = () => null, articleFor = () => null, judgeDesign = judgeInline, judgeEvidence = evidenceInline, ai = null, allowedOrigin, analyticsOrigin = '', secureCookie = true, log = console }) {
   const limiter = makeLimiter();
   const judging = new Set(); // accounts with a design being judged now
   const limited = (request, bucket, max, windowMs) => limiter(`${bucket}:${clientIp(request)}`, max, windowMs);
@@ -132,7 +132,7 @@ export function accountRoutes({ enabled, clientId, accounts, verify, labCatalogu
     }
     if (pathname === '/v1/auth/config') {
       if (method !== 'GET' && method !== 'HEAD') return send(request, response, 405, { error: 'method_not_allowed' }, { Allow: 'GET, HEAD, OPTIONS' });
-      return send(request, response, 200, enabled ? { enabled: true, clientId } : { enabled: false });
+      return send(request, response, 200, { ...(enabled ? { enabled: true, clientId } : { enabled: false }), ...(signInRequired ? {} : { required: false }) });
     }
     if (pathname === '/v1/problems/stats') {
       if (method !== 'GET' && method !== 'HEAD') return send(request, response, 405, { error: 'method_not_allowed' }, { Allow: 'GET, HEAD, OPTIONS' });

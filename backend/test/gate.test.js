@@ -149,3 +149,21 @@ test('the 3D stories (their words and sentences) are for a signed-in session onl
     for (const line of some) assert.ok(!t.includes(line), `${path} carries a story sentence`);
   }
 });
+
+test('the sign-in flag off (SIGNIN_REQUIRED=0) serves every text without sign-in, in production too, and says so in /v1/auth/config', async () => {
+  for (const [env, open] of [[{ SIGNIN_REQUIRED: '0', NODE_ENV: 'production' }, true], [{ SIGNIN_REQUIRED: '1', NODE_ENV: 'production' }, false]]) {
+    const port = await freePort();
+    const srv = spawn(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), GOOGLE_CLIENT_ID: '', MONGODB_URI: '', SESSION_SECRET: '', OPEN_CONTENT: '', ...env } });
+    try {
+      const url = `http://127.0.0.1:${port}`;
+      for (let i = 0; i < 100; i += 1) { try { if ((await fetch(url + '/health')).ok) break; } catch {} await new Promise((r) => setTimeout(r, 50)); }
+      const cfg = await (await fetch(`${url}/v1/auth/config`)).json();
+      assert.equal(cfg.required, open ? false : undefined, JSON.stringify(env));
+      const p = await (await fetch(`${url}/v1/articles/caching`)).json();
+      assert.equal(!!p.locked, !open, JSON.stringify(env));
+      assert.equal((await fetch(`${url}/v1/articles/${ARTICLES.find((x) => x.practice?.reference).slug}/solution`)).status, open ? 200 : 401);
+      assert.equal((await fetch(`${url}/v1/stories`)).status, open ? 200 : 401);
+    } finally { srv.kill('SIGTERM'); }
+  }
+});

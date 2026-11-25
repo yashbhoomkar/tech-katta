@@ -6,13 +6,15 @@
 //   "locked"  signed out: nothing personal; a sign-in card in place of the content (the Dashboard, You, a sandbox)
 //
 // Signing in being unavailable (the API cannot be reached or does not take sign-ins) never opens anything: the pages stay as
-// they are signed out and their card says sign-in is unavailable. Only a local-development flag (devOpen) opens the pages.
+// they are signed out and their card says sign-in is unavailable. Only the API's sign-in flag (required: false) or a local-development
+// flag (devOpen) opens the pages.
 //
 // kind: "open" | "list" | "article" | "workspace" | "problem" | "personal"
 export function gateFor(kind, acc, { devOpen = false } = {}) {
   if (kind === 'open' || kind === 'list') return 'open';
   if (devOpen) return 'open';
   if (!acc.ready) return 'wait';
+  if (acc.required === false) return 'open'; // the sign-in flag is off (the API's SIGNIN_REQUIRED=0): every page opens
   if (acc.user) return 'open';
   if (kind === 'article' || kind === 'problem') return 'preview';
   return 'locked'; // "personal" and "workspace" (the sandbox, a shared design)

@@ -4,7 +4,7 @@
 // locked and the sign-in card says so (nothing opens when sign-in cannot be reached).
 let mod = null, loading = null;
 const load = () => (loading ||= import('/3d/legacy/legacy.js').then((m) => (mod = m)).catch(() => { loading = null; return null; }));
-const OFF = { ready: true, enabled: false, unavailable: true, user: null };
+const OFF = { ready: true, enabled: false, unavailable: true, required: true, user: null };
 let started = false;
 /** ask who is signed in (once; the answer arrives as a "tk-account" event), and start syncing the canvas's designs and stars to the account
  *  a few seconds after each change (what the current app did at start-up: wireSync, startAccount) */
