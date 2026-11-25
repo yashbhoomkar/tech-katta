@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState}from"react";import{W,H}from"./shared.jsx";
+import React,{useEffect,useRef,useState}from"react";import{W,H}from"./shared.jsx";import{track}from"../analytics.js";
 // The design canvas in 3D: the learner's parts as the 3D site's models, standing on a floor. It edits the same design as the 2D canvas (Canvas.jsx owns the
 // nodes and arrows; this draws them and reports what the learner does): drag a part to move it, click to select (the inspector opens as usual), Connect to join
 // two parts, drag from the palette to put a new one down, drag the floor to pan, scroll or pinch to zoom, Delete removes the selected part.
@@ -8,7 +8,10 @@ let engine=null;const load=()=>engine||=Promise.all([import(/* @vite-ignore */BA
 /** how much of the canvas's left the problem card and the parts column cover, as the screen fraction where the design should be centred */
 const sxOf=el=>{const r=el.getBoundingClientRect();if(r.width<50)return .5;const lx=Math.max(0,...[".sv-q",".sv-tabs",".lab-pal"].map(q=>{const e=document.querySelector(q),b=e&&e.getBoundingClientRect();return b&&b.width>0&&b.height>0&&b.right>r.left&&b.left<r.left+r.width/2?b.right-r.left+8:0}));return (lx+(r.width-lx)/2)/r.width};
 // a card's size (shared.jsx): the centre of a part is its card's centre
-export const mode3dWanted=()=>{try{return localStorage.getItem("tk-design-view")!=="2d"}catch{return true}};
+// 3D unless the learner chose 2D; a phone with little memory (Chrome's navigator.deviceMemory, in GB, 4 or less) starts
+// in 2D, since the 3D canvas and its part models can run it out of graphics memory; the 3D | 2D switch still offers 3D
+export const lowMemory=()=>{try{const m=navigator.deviceMemory;return typeof m==="number"&&m<=4}catch{return false}};
+export const mode3dWanted=()=>{try{const v=localStorage.getItem("tk-design-view");return v?v!=="2d":!lowMemory()}catch{return !lowMemory()}};
 export const saveMode3d=on=>{try{localStorage.setItem("tk-design-view",on?"3d":"2d")}catch{}};
 export const host3d=()=>typeof window!=="undefined"&&typeof window.tkGo==="function";
 
@@ -17,7 +20,10 @@ const cv=useRef(null),ov=useRef(null),eng=useRef(null),origin=useRef(null),fitte
 live.current={nodes,onMove,onSelect,onConnect,onRemove,connect,from};
 const centre=n=>({x:n.position.x+W/2,y:n.position.y+H/2});
 useEffect(()=>{let alive=true,world=null,cleanup=()=>{};
-load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;world=m.createWorld(cv.current,ov.current,{reduced,still:false});if(!world){onFail?.();return}
+load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;world=m.createWorld(cv.current,ov.current,{reduced,still:false});if(!world){track("canvas_3d_lost",{why:"no-webgl"});onFail?.();return}
+ // the browser can take the scene's graphics context away (a phone short of graphics memory): the canvas would stay blank,
+ // so fall back to the 2D canvas (the same design) for the rest of this visit
+ const lost=e=>{e.preventDefault?.();if(!alive)return;track("canvas_3d_lost",{why:"context-lost"});onFail?.()};cv.current.addEventListener("webglcontextlost",lost);
  const ns=live.current.nodes;let ox=0,oy=0;if(ns.length){const cs=ns.map(centre);ox=(Math.min(...cs.map(c=>c.x))+Math.max(...cs.map(c=>c.x)))/2;oy=(Math.min(...cs.map(c=>c.y))+Math.max(...cs.map(c=>c.y)))/2}origin.current=[ox,oy];
  eng.current={world,m};
  const toWorld=n=>{const c=centre(n);return[(c.x-ox)/m.SCALE,(c.y-oy)/m.SCALE]};
@@ -39,7 +45,7 @@ load().then(m=>{if(!alive)return;const reduced=matchMedia("(prefers-reduced-moti
  const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;if(drag?.kind==="pan"&&!drag.moved)live.current.onSelect([]);drag=null};
  const wheel=e=>{e.preventDefault();const c=world.getCamera();world.setCamera({dist:Math.max(6,Math.min(80,c.dist*Math.exp(e.deltaY*.0012)))})};
  el.addEventListener("pointerdown",down);el.addEventListener("pointermove",move);el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);el.addEventListener("wheel",wheel,{passive:false});
- cleanup=()=>{el.removeEventListener("pointerdown",down);el.removeEventListener("pointermove",move);el.removeEventListener("pointerup",up);el.removeEventListener("pointercancel",up);el.removeEventListener("wheel",wheel)};
+ cleanup=()=>{el.removeEventListener("webglcontextlost",lost);el.removeEventListener("pointerdown",down);el.removeEventListener("pointermove",move);el.removeEventListener("pointerup",up);el.removeEventListener("pointercancel",up);el.removeEventListener("wheel",wheel)};
  setReady(true)}).catch(()=>onFail?.());
 return()=>{alive=false;cleanup();api.current=null;eng.current=null;try{world?.destroy()}catch{}}},[]);// eslint-disable-line
 // the design, as a system; selected parts glow amber, the part a connection starts from green

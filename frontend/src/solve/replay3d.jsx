@@ -5,7 +5,11 @@ import React,{useEffect,useRef,useState}from"react";
 // system and a state are the 3D site's (site3d/scripts/replay3d.js, tested there).
 const BASE="/3d/scripts/";
 let engine=null;const load=()=>engine||=Promise.all([import(/* @vite-ignore */BASE+"world.js"),import(/* @vite-ignore */BASE+"replay3d.js")]).then(([w,r])=>({createWorld:w.createWorld,...r}));
-export const webgl=()=>{try{const c=document.createElement("canvas");return !!(c.getContext("webgl2")||c.getContext("webgl"))}catch{return false}};
+// Whether the browser can draw WebGL, asked once per page: each probe is a real WebGL context, and this is called while
+// drawing (the canvas, the replay header), so probing every time leaked one context per redraw (23 on one problem page
+// and one Submit, owner's phone crash, 2026-11-25). The probe's context is given back at once.
+let glOk;
+export const webgl=()=>{if(glOk!==undefined)return glOk;try{const c=document.createElement("canvas"),g=c.getContext("webgl2")||c.getContext("webgl");glOk=!!g;try{g?.getExtension("WEBGL_lose_context")?.loseContext()}catch{}}catch{glOk=false}return glOk};
 /** this page has the 3D site's engine (it is the 3D site's page); whether the browser can draw it is webgl() */
 export const can3d=()=>typeof window!=="undefined"&&typeof window.tkGo==="function";
 /** 2D | 3D, in the replay's and the watch's header; 3D is off, with its reason, where there is no WebGL */

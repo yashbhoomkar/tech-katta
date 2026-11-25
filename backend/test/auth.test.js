@@ -243,6 +243,14 @@ test('usage events: allowlisted events and fields stored, signed-in ones tied to
     { name: 'practice_pane', props: { problem: 3, to: 'result', via: 'tap', text: 'design' } } ] });
   assert.deepEqual(fs.props, { fig: 'idx-scan', via: 'swipe' });
   assert.deepEqual(pp.props, { problem: 3, to: 'result', via: 'tap' });
+  // the workspace breaking: the error's text is kept only if it is plain (no markup), and only the listed fields
+  const [ce, bad, gl] = cleanBatch({ visitor, events: [
+    { name: 'canvas_error', props: { msg: 'TypeError: x is undefined', where: 'at Design3D', view: '3d', mem: 4, stack: 'secret' } },
+    { name: 'canvas_error', props: { msg: '<img src=x onerror=alert(1)>' } },
+    { name: 'canvas_3d_lost', props: { why: 'context-lost' } } ] });
+  assert.deepEqual(ce.props, { msg: 'TypeError: x is undefined', where: 'at Design3D', view: '3d', mem: 4 });
+  assert.deepEqual(bad.props, {});
+  assert.deepEqual(gl.props, { why: 'context-lost' });
 });
 
 test('sign-in needs the Terms ticked (recorded on the account); the ads opt-in is only the menu switch; names and country stored', async () => {
