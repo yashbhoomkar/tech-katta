@@ -1705,3 +1705,12 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 .lessons li.ans > .lesson { flex: 1; min-width: 0; }
 .lessons li.ans .solve-go { flex: none; }
 @media (max-width: 900px) { .lessons li.ans .l-tag { display: none; } }
+
+/* doc 53 phase 1: Home's solve card sits under the headline (phones: before the 3D picture); problem articles lead with Solve */
+.solve-card { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 6px; padding: 22px 24px; border-radius: var(--r-m); text-decoration: none; color: var(--ink); background: var(--glass-hl), var(--glass-bg); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform .25s var(--out), border-color .2s; }
+.solve-card .mono { font-size: var(--label); letter-spacing: 0; color: var(--ink-2); } .solve-card b { font-size: 22px; letter-spacing: -.02em; color: var(--ink); } .solve-card .muted { font-size: 14px; } .solve-card .go { font-weight: 600; color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { .solve-card:hover { transform: translateY(-2px); border-color: var(--mute); } }
+@media (max-width: 760px) { .dash .solve-card { order: 0; position: relative; z-index: 1; margin: 6px 0 14px; } .actions .skip-wide { display: none; } .track-head { flex-wrap: wrap; } .track-head .chip-done { white-space: normal; max-width: 100%; } }
+/* Home's "Everything here" rows on phones: they rise in with their row (li), not slide in sideways like the swipe deck's cards (the 40px start
+   offset made the page scroll sideways until they played) */
+@media (max-width: 760px) { .places .place { animation: none; } }

@@ -3,16 +3,10 @@
 // a challenge's stars), submissions in tk-subs-v1 (the best score, ignoring copied solutions). Nothing here writes to them.
 import { apiFetch } from './articles.js';
 
-export const readJson = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
+import { readJson, record } from './solving.js'; // the record itself is solving.js's (shared with Home and the article pages)
+export { readJson, record };
 /** the canvas problems of the article list (the interview questions that are not the "Start here" guides) */
 export const problemsOf = (list) => list.filter((a) => a.section === 'interview-questions' && a.group !== 'start');
-/** the canvas's record for one problem: solved, started, best score */
-export function record(slug, prog, subs) {
-  const list = Array.isArray(subs[slug]) ? subs[slug].filter((x) => x && typeof x.score === 'number') : [];
-  const own = list.filter((x) => !x.copied);
-  const steps = prog.steps && typeof prog.steps === 'object' ? prog.steps : {};
-  return { solved: steps[`solved:${slug}`] === true, started: steps[`practice:${slug}`] === true || list.length > 0, best: own.length ? Math.max(...own.map((x) => x.score)) : null };
-}
 let labCache = null;
 export const labNow = () => labCache;
 /** the challenges (GET /v1/lab), fetched once; null while offline */
