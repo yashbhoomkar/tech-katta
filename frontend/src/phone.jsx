@@ -14,7 +14,7 @@ open(name,close){if(active&&active.name!==name){const was=active;active={name,cl
 if(active){active.close=close;return}active={name,close};if(ignore)later=name;else push(name)},
 shut(name){if(!active||active.name!==name)return;active=null;later=null;if(history.state?.tkSheet){ignore++;setTimeout(()=>{if(ignore){ignore=0;later=null}},700);try{history.back()}catch{ignore--}}},
 has:()=>!!active};
-if(typeof addEventListener!=="undefined")addEventListener("popstate",()=>{if(ignore){ignore--;if(!ignore&&later){const n=later;later=null;if(active&&active.name===n)push(n)}return}if(active){const a=active;active=null;a.close()}});
+if(typeof addEventListener!=="undefined")addEventListener("popstate",()=>{if(ignore){ignore--;if(!ignore&&later){const n=later;later=null;if(active&&active.name===n)push(n)}return}if(active){const a=active;if(history.state?.tkSheet===a.name)return;/* the Report popup's own entry was popped: this sheet's is still there */active=null;a.close()}});
 /** a bottom sheet: a handle you drag (down closes, up opens it full), a visible ✕, a tap outside closes. height: "half" or "tall" (the parts) */
 export function Sheet({name,open,onClose,title,height="half",className="",children}){
 const close=useRef(onClose);close.current=onClose;const[dy,setDy]=useState(0),[full,setFull]=useState(false),g=useRef(null);

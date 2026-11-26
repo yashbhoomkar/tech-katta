@@ -1,0 +1,59 @@
+// A screenshot of what is on the screen, for the Report popup's Visual feedback tab. Loaded only when that tab opens.
+// html-to-image (vendor/html-to-image.esm.js) draws the page's DOM; it cannot see inside a WebGL canvas (the 3D world, the 3D design canvas, a replay: it
+// would draw them blank). So each visible canvas is read first, in the middle of a frame (the page's own drawing for that frame has run, the browser has
+// not yet cleared the buffer), and an <img> of it stands in the canvas's place for the length of the capture. The result is the visible window only,
+// at the screen's pixel ratio but at most 2, drawn at most 1600 px on its long side, as a JPEG under 4 MB.
+import { fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE } from './feedback-core.js';
+
+const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const onScreen = (r) => r.width > 4 && r.height > 4 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
+
+/** put an <img> of every visible canvas where the canvas is; returns the function that takes them away again */
+async function standIns() {
+  await frame();
+  const undo = [];
+  for (const c of Array.from(document.querySelectorAll('canvas'))) {
+    const r = c.getBoundingClientRect(), cs = getComputedStyle(c);
+    if (!onScreen(r) || cs.visibility === 'hidden' || cs.display === 'none') continue;
+    let url = ''; try { url = c.toDataURL('image/png'); } catch { continue; } // a tainted canvas cannot be read: left as it is
+    if (url.length < 200) continue;
+    const img = new Image(); img.src = url; img.alt = '';
+    img.style.cssText = `position:${cs.position === 'static' ? 'relative' : cs.position};inset:${cs.inset};left:${cs.left};top:${cs.top};width:${r.width}px;height:${r.height}px;margin:${cs.margin};transform:${cs.transform};z-index:${cs.zIndex};display:block;pointer-events:none`;
+    c.parentNode.insertBefore(img, c.nextSibling);
+    const was = c.style.visibility; c.style.visibility = 'hidden';
+    undo.push(() => { img.remove(); c.style.visibility = was; });
+  }
+  await Promise.all(Array.from(document.querySelectorAll('img[src^="data:"]')).map((i) => (i.decode ? i.decode().catch(() => {}) : null)));
+  return () => undo.forEach((f) => f());
+}
+
+/** { dataUrl, width, height, bytes }; throws an Error whose message says why when the page could not be drawn */
+export async function capturePage({ quality = 0.8, hide = [] } = {}) {
+  const { toCanvas } = await import('./vendor/html-to-image.esm.js');
+  const hidden = hide.map((el) => [el, el.style.visibility]); hidden.forEach(([el]) => { el.style.visibility = 'hidden'; });
+  let restore = () => {};
+  try {
+    restore = await standIns();
+    const pr = pixelRatioFor(devicePixelRatio), scrolled = scrollX || scrollY;
+    const opts = {
+      pixelRatio: pr, width: innerWidth, height: innerHeight, cacheBust: false,
+      backgroundColor: getComputedStyle(document.body).backgroundColor || undefined,
+      filter: (n) => !(n.classList && (n.classList.contains('tk-report') || n.classList.contains('tk-report-pop'))),
+      ...(scrolled ? { style: { transform: `translate(${-scrollX}px, ${-scrollY}px)`, transformOrigin: 'top left' } } : {}),
+    };
+    let canvas;
+    // the fonts are read from the page's stylesheets; one that cannot be read (a cross-origin sheet without CORS) must not cost the picture
+    try { canvas = await toCanvas(document.documentElement, opts); } catch (e) { canvas = await toCanvas(document.documentElement, { ...opts, skipFonts: true }).catch(() => { throw e; }); }
+    const { width, height } = fitSize(canvas.width, canvas.height, MAX_SIDE);
+    const out = document.createElement('canvas'); out.width = width; out.height = height;
+    const g = out.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, width, height); g.imageSmoothingQuality = 'high'; g.drawImage(canvas, 0, 0, width, height);
+    let q = quality, url = out.toDataURL('image/jpeg', q);
+    while (dataUrlBytes(url) > MAX_BYTES && q > 0.4) { q -= 0.1; url = out.toDataURL('image/jpeg', q); }
+    if (dataUrlBytes(url) > MAX_BYTES) throw new Error('the image is over 4 MB');
+    return { dataUrl: url, width, height, bytes: dataUrlBytes(url) };
+  } catch (e) {
+    throw new Error(String(e?.message || e?.type || e || 'unknown').slice(0, 160));
+  } finally {
+    restore(); hidden.forEach(([el, v]) => { el.style.visibility = v; });
+  }
+}

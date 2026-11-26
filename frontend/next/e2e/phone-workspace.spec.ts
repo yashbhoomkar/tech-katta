@@ -89,7 +89,7 @@ for (const [name, landscape] of [["Pixel 7", false], ["iPhone 13", false], ["Pix
       const d = phone(name);
       test.use({ ...d, viewport: landscape ? { width: d.viewport.height, height: d.viewport.width } : d.viewport });
       test(`layout: bars step aside, the canvas gets the screen, nothing is wider than it @phone`, async ({ page }) => {
-        await signedIn(page, theme, "3d");
+        await signedIn(page, theme, "2d"); // the layout does not need WebGL; the 3D canvas has its own test below (a shared runner crashed its browser with eight 3D pages at once)
         await page.goto("/problems/url-shortener");
         await expect(page.locator(".solve.ph.pv-problem")).toBeVisible({ timeout: 30_000 });
         // the site's bars are gone on the workspace and back on the list
