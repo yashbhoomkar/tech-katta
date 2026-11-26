@@ -12,19 +12,10 @@ import { recipeFor, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
 import { accountState } from '../account.js';
 import { footer } from './landing.js';
+import { readJson, record } from '../solving.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const LEVELS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']];
-const readJson = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
-
-/** the canvas's record for one problem: solved, started, best score */
-function record(slug, prog, subs) {
-  const list = Array.isArray(subs[slug]) ? subs[slug].filter((x) => x && typeof x.score === 'number') : [];
-  const own = list.filter((x) => !x.copied);
-  const steps = prog.steps && typeof prog.steps === 'object' ? prog.steps : {};
-  return { solved: steps[`solved:${slug}`] === true, started: steps[`practice:${slug}`] === true || list.length > 0, best: own.length ? Math.max(...own.map((x) => x.score)) : null };
-}
-
 let labCache = null;
 async function lab() {
   if (labCache) return labCache;
