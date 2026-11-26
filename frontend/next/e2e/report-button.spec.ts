@@ -44,7 +44,7 @@ for (const [label, path] of PAGES) {
 }
 // the same on a wide screen (the desktop project has no @phone tag), for one page of each kind: the phone run above has all eighteen, and every extra WebGL page
 // makes the shared CI runner's browser more likely to crash in the two slow 3D tests
-const WIDE = new Set(["/", "/home", "/problems", "/problems/url-shortener", "/problems/sandbox", "/privacy", "/no-such-page", "/health", "/analytics"]);
+const WIDE = new Set(["/", "/home", "/problems", "/problems/url-shortener", "/problems/sandbox", "/problems/challenge/one-server", "/simulator/ind-vs-pak", "/privacy", "/no-such-page", "/health", "/analytics"]);
 for (const [label, path] of PAGES.filter(([, p]) => WIDE.has(p))) {
   test(`on ${label} the Report button is there and nothing covers it`, async ({ page }) => {
     await visit(page);
