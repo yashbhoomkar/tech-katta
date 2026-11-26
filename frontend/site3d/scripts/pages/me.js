@@ -54,7 +54,7 @@ export function mount(view, _p, { reduced, go }) {
     const rowsIds = Object.keys(MAP).filter((id) => MAP[id].concepts.length);
     // the canvas is the heart of the site: Home always points at the problem to open next (signed out: the first one, no progress shown)
     const sv = locked ? solveState(list, {}, {}) : solveState(list);
-    const solveCard = sv.total ? `<a class="next-card solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
+    const solveCard = sv.total ? `<a class="solve-card" href="${sv.next ? `/problems/${esc(sv.next.slug)}` : '/problems'}"><span class="mono">${sv.next ? (sv.started ? 'Continue solving' : 'Solve your first problem') : 'Every problem solved'}${sv.solved ? ` · ${sv.solved} of ${sv.total} solved` : ` · ${sv.total} problems`}</span><b>${esc(sv.next ? splitTitle(sv.next.title)[0] : 'See all problems')}</b><span class="muted">Draw it on the canvas, run the traffic, get judged.</span><span class="go">${sv.next ? (sv.started ? 'Continue' : 'Start') : 'Open'} →</span></a>` : '';
     view.innerHTML = `
     <section class="dash">
       <div class="dash-stage"><canvas></canvas><div class="overlay" aria-hidden="true"></div></div>
