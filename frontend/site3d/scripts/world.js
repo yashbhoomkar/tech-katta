@@ -69,10 +69,16 @@ function stepDown() {
   worlds.forEach((f) => f());
 }
 
+// One frame as a PNG for the Report screenshot (feedback-capture.js): drawn again and read in the same task, so the browser has not yet cleared the buffer
+// and the renderer does not have to keep it (preserveDrawingBuffer costs a copy per frame on a tile-based phone GPU). Keyed by canvas: the 3D pages, the 3D
+// design canvas and a replay all draw through createWorld.
+const snaps = new WeakMap();
+export const snapshotOf = (canvas) => snaps.get(canvas)?.() ?? null;
+
 export function createWorld(canvas, overlay, { reduced = false, still = false, label = '' } = {}) {
   if (label) { canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', label); }
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }) /* the Report screenshot reads the picture (feedback-capture.js) */; } catch { return null; }
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
   if (!renderer.getContext()) return null;
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -542,7 +548,8 @@ export function createWorld(canvas, overlay, { reduced = false, still = false, l
     dots.material.dispose(); scene.environment?.dispose(); ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); grid.material.dispose();
     renderer.dispose(); renderer.forceContextLoss(); overlay.replaceChildren();
   }
-  return { setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMinX: (px) => { labelMinX = Math.max(8, px); }, setLabelMode: (m) => { labelMode = m; },
+  snaps.set(canvas, () => { if (dead) return null; try { renderer.render(scene, camera); return canvas.toDataURL('image/png'); } catch { return null; } });
+  return { snapshot: snaps.get(canvas), setSystem, setState, setCamera, frame, setLabelBand: (y) => { labelMaxY = y; }, setLabelTop: (px) => { labelMinY = px; }, setLabelMinX: (px) => { labelMinX = Math.max(8, px); }, setLabelMode: (m) => { labelMode = m; },
     /** a part's position on the canvas in px (for a card beside it), or null */
     pickAt, groundAt, getCamera: () => ({ ...camGoal, t: [...camGoal.t] }),
     screenOf: (id) => { const p = parts.get(id); if (!p || p.gone) return null; const [x, y] = project(p.g.position.x, p.top + p.rise, p.g.position.z); return [x, y]; }, onPick: (cb) => { pickCb = cb; }, destroy };

@@ -1,7 +1,7 @@
 // A screenshot of what is on the screen, for the Report popup's Visual feedback tab. Loaded only when that tab opens.
 // html-to-image (vendor/html-to-image.esm.js) draws the page's DOM; it cannot see inside a WebGL canvas (the 3D world, the 3D design canvas, a replay: it
-// would draw them blank). So each visible canvas is read first, in the middle of a frame (the page's own drawing for that frame has run, the browser has
-// not yet cleared the buffer), and an <img> of it stands in the canvas's place for the length of the capture. The result is the visible window only,
+// would draw them blank). So each visible canvas is read first (a world draws one frame again and reads it in the same task, world.js snapshotOf; any other
+// canvas is read as it is), and an <img> of it stands in the canvas's place for the length of the capture. The result is the visible window only,
 // at the screen's pixel ratio but at most 2, drawn at most 1600 px on its long side, as a PNG under 4 MB (the only format BugDrop's worker takes).
 import { fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE } from './feedback-core.js';
 
@@ -11,11 +11,14 @@ const onScreen = (r) => r.width > 4 && r.height > 4 && r.bottom > 0 && r.right >
 /** put an <img> of every visible canvas where the canvas is; returns the function that takes them away again */
 async function standIns() {
   await frame();
-  const undo = [];
-  for (const c of Array.from(document.querySelectorAll('canvas'))) {
+  const undo = [], canvases = Array.from(document.querySelectorAll('canvas'));
+  // the engine is already loaded on any page that has a world; a page with only flat canvases is not made to load it
+  const world = canvases.length ? await import('./world.js').catch(() => null) : null;
+  for (const c of canvases) {
     const r = c.getBoundingClientRect(), cs = getComputedStyle(c);
     if (!onScreen(r) || cs.visibility === 'hidden' || cs.display === 'none') continue;
-    let url = ''; try { url = c.toDataURL('image/png'); } catch { continue; } // a tainted canvas cannot be read: left as it is
+    let url = world?.snapshotOf(c) || ''; // a 3D canvas: one frame drawn again and read now
+    if (!url) { try { url = c.toDataURL('image/png'); } catch { continue; } } // a flat canvas; a tainted one cannot be read: left as it is
     if (url.length < 200) continue;
     const img = new Image(); img.src = url; img.alt = '';
     img.style.cssText = `position:${cs.position === 'static' ? 'relative' : cs.position};inset:${cs.inset};left:${cs.left};top:${cs.top};width:${r.width}px;height:${r.height}px;margin:${cs.margin};transform:${cs.transform};z-index:${cs.zIndex};display:block;pointer-events:none`;
