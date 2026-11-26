@@ -19,6 +19,7 @@ import { listNow, listArticles, splitTitle, SECTIONS } from './articles.js';
 import { store } from './store.js';
 import { INCIDENTS } from './sim.js';
 import { startGate } from './gating.js';
+import { startFeedback } from './feedback.js';
 import { hashTarget } from './legacy-hash.js';
 import { pageView, hostAnalytics } from './analytics.js';
 
@@ -165,6 +166,7 @@ addEventListener('hashchange', () => {
   if (to && owns(to)) { history.replaceState(null, '', to); route(); }
 });
 wireSearch(); // ⌘K, "/" and every [data-search] button
+startFeedback(); // testers only (?feedback=on)
 startGate(); // who is signed in, and the site's lock copy: articles wait on both
 hostAnalytics(); // Vercel Web Analytics, once per page load
 route();
