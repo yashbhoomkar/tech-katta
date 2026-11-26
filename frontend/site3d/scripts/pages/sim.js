@@ -30,8 +30,8 @@ export function mount(view, params, ctx) {
   const inc = INCIDENTS.find((x) => x.id === params[0]) || INCIDENTS[0];
   document.body.classList.remove('focus-page'); syncRail(); // the full-screen simulator is for signed-in readers: here the sidebar stays
   if (g === 'wait') { view.innerHTML = '<section class="page narrow"><div class="skel" role="status" aria-label="Loading"><i></i><i></i><i></i></div></section>'; return off; }
-  const crumbs = '<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/simulator">Simulator</a></nav>';
-  view.innerHTML = problemPublicHtml({ title: inc.title, difficulty: `${inc.level} · ${inc.system}`, brief: inc.brief }, { crumbs, kicker: `Problem ${Number(inc.no)}` });
+  const crumbs = '<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/problems#warm-ups">Warm-ups</a></nav>';
+  view.innerHTML = problemPublicHtml({ title: inc.title, difficulty: `${inc.level} · ${inc.system}`, brief: inc.brief }, { crumbs, kicker: `Warm-up ${Number(inc.no)}` });
   const offPublic = wirePublic(view);
   return () => { off(); offPublic(); };
 }
@@ -46,8 +46,8 @@ function play(view, [id], { reduced, go }) {
   <section class="sim" data-phase="brief">
     <div class="sim-stage"><canvas role="img" aria-label="Your system in 3D: users, load balancer, app servers, cache and database"></canvas><div class="overlay"></div></div>
     <aside class="brief glass" aria-label="The problem">
-      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/simulator">Simulator</a></nav>
-      <p class="kicker"><span>Problem ${Number(inc.no)}</span><i></i>${inc.level} · ${inc.system}</p>
+      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/problems#warm-ups">Warm-ups</a></nav>
+      <p class="kicker"><span>Warm-up ${Number(inc.no)}</span><i></i>${inc.level} · ${inc.system}</p>
       <h1>${inc.title}</h1>
       <p class="muted">${inc.brief}</p>
       <div class="chart">${sparkline(inc, { w: 300, h: 92 })}<div class="chart-axis mono"><span>${clock(0)}</span><span>${clock(inc.length - 1)}</span></div></div>
@@ -56,7 +56,7 @@ function play(view, [id], { reduced, go }) {
       <button type="button" class="btn dark brief-go">${saved ? 'Back to your design' : 'Start building'}<span class="chip">→</span></button>
     </aside>
     <div class="mhead glass">
-      <button type="button" class="mh-open" aria-label="Show the problem again"><span class="mono">Problem ${Number(inc.no)} · ${inc.level}</span><b>${esc(inc.title)}</b></button>
+      <button type="button" class="mh-open" aria-label="Show the problem again"><span class="mono">Warm-up ${Number(inc.no)} · ${inc.level}</span><b>${esc(inc.title)}</b></button>
       <ul class="mh-targets" aria-label="Targets">${TARGETS(inc).map(([k, , short]) => `<li data-check="${k}"><i></i>${short}<b>—</b></li>`).join('')}</ul>
     </div>
     <div class="hud glass" aria-live="polite">
@@ -267,7 +267,7 @@ function play(view, [id], { reduced, go }) {
       <h2 class="${r.passed ? 'ok' : 'alert'}">${r.passed ? 'The evening held' : 'The evening did not hold'}</h2>
       <ul class="checks">${r.checks.map((c) => `<li class="${c.ok ? 'ok' : 'bad'}"><i></i>${c.label}<b>${c.value}</b></li>`).join('')}</ul>
       ${r.why.length ? `<div class="why"><p class="mono">What happened</p>${r.why.map((w) => `<p>${w.text}${w.lesson && READ[w.lesson] ? ` <a href="/learn/concepts/${READ[w.lesson][0]}">Read: ${READ[w.lesson][1]} →</a>` : ''}</p>`).join('')}</div>` : '<div class="why"><p>Nothing failed, nothing was wasted. That is the whole job</p></div>'}
-      <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="/simulator/${nextInc.id}">Next problem<span class="chip">→</span></a>` : ''}<button type="button" class="btn ${r.passed && nextInc ? 'light' : 'dark'} v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button><button type="button" class="btn light v-replay">Replay the evening</button></div>`;
+      <div class="v-actions">${r.passed && nextInc ? `<a class="btn dark" href="/simulator/${nextInc.id}">Next warm-up<span class="chip">→</span></a>` : ''}<button type="button" class="btn ${r.passed && nextInc ? 'light' : 'dark'} v-close">${r.passed ? 'Look at the design' : 'Change the design'}</button><button type="button" class="btn light v-replay">Replay the evening</button></div>`;
     verdict.hidden = false; sim.classList.add('verdict-open');
     $('.brief').style.visibility = phone() ? '' : 'hidden';
     phase('done');

@@ -23,7 +23,7 @@ export function mount(view) {
     const probs = list.filter((x) => x.section === 'interview-questions' && x.group !== 'start'), solved = probs.filter((x) => steps[`solved:${x.slug}`] === true).length;
     const best = store.get().best, sims = INCIDENTS.filter((i) => best[i.id]?.passed).length, pref = window.tkThemePref?.() || 'dark';
     view.innerHTML = `<section class="page narrow you">
-      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><span>You</span></nav>
+      <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><span>You</span></nav>
       <h1 class="headline"><span class="thin">You</span><span class="heavy accent">Account and look</span></h1><p class="lead">Your account and how Tech Katta looks for you.</p>
       ${u ? `      <div class="you-card glass"><i class="avatar" aria-hidden="true">${u?.picture ? `<img src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer"/>` : esc((u?.name || '?')[0])}</i>
         <div><b>${u ? esc(u.name || 'Signed in') : 'Not signed in'}</b><small class="muted">${u ? `${esc(u.email || '')} · signed in with Google` : a.ready && a.enabled ? 'Your progress is kept in this browser.' : 'Sign-in is not available right now. Your progress is kept in this browser.'}</small></div>

@@ -1,10 +1,10 @@
-// Search (⌘K or Ctrl K, the search button in the top bar and the sidebar, and the phone bar's fifth item): a glass dialog over everything the site has:
-// lessons by title and summary, the problems, Quick Notes, and the places (Dashboard, Problems, Simulator, You). Arrow keys and Enter; Esc closes.
+// Search (⌘K or Ctrl K, the search button in the top bar and the sidebar, and the top bar's button): a glass dialog over everything the site has:
+// lessons by title and summary, the problems, Quick Notes, and the places (Home, Solve, Warm-ups, You). Arrow keys and Enter; Esc closes.
 import { listArticles, listNow, splitTitle, SECTIONS } from './articles.js';
 import { INCIDENTS } from './sim.js';
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const PLACES = [['Dashboard', '/home', 'Where you are, what is next'], ['Problems', '/problems', 'Draw the design, get judged'], ['Simulator', '/simulator', 'Watch parts survive an evening'], ['Sandbox', '/problems/sandbox', 'A free canvas'], ['You', '/me', 'Account, theme, progress'], ['Quick Notes', '/learn/quick-notes', 'Short notes on one system each'], ['Privacy', '/privacy', ''], ['Terms', '/terms', '']];
+const PLACES = [['Home', '/home', 'Where you are, what is next'], ['Solve', '/problems', 'Problems, challenges and warm-ups'], ['Warm-ups', '/problems#warm-ups', 'Watch parts survive an evening'], ['Sandbox', '/problems/sandbox', 'A free canvas'], ['You', '/me', 'Account, theme, progress'], ['Quick Notes', '/learn/quick-notes', 'Short notes on one system each'], ['Privacy', '/privacy', ''], ['Terms', '/terms', '']];
 
 /** every searchable thing: { title, sub, kind, href } */
 export function index(list = listNow()) {
@@ -13,7 +13,7 @@ export function index(list = listNow()) {
     ...PLACES.map(([title, href, sub]) => ({ title, sub, kind: 'Place', href })),
     ...list.map((a) => ({ title: splitTitle(a.title)[0], sub: a.dek || '', kind: a.section === 'interview-questions' && a.group !== 'start' ? 'Problem' : sec(a.section).replace(/s$/, ''), href: `/learn/${a.section}/${a.slug}`, alt: a.title })),
     ...list.filter((a) => a.section === 'interview-questions' && a.group !== 'start').map((a) => ({ title: splitTitle(a.title)[0], sub: 'Open the canvas', kind: 'Canvas', href: `/problems/${a.slug}`, alt: a.title })),
-    ...INCIDENTS.map((i) => ({ title: i.title, sub: 'Simulator scenario', kind: 'Simulator', href: `/simulator/${i.id}` })),
+    ...INCIDENTS.map((i) => ({ title: i.title, sub: 'Warm-up', kind: 'Warm-up', href: `/simulator/${i.id}` })),
   ];
 }
 /** the best matches for a query: all words must appear; a title match outranks a summary match */

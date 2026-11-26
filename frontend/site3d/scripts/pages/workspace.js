@@ -31,7 +31,7 @@ export function titleOf(path) {
 }
 
 const wait = () => `<section class="ws"><div class="ws-wait glass" role="status" aria-label="Loading"><div class="skel"><i></i><i></i><i></i></div></div></section>`;
-const missing = () => `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="/problems">Problems</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/problems">See all problems<span class="chip">→</span></a></p></section>`;
+const missing = () => `<section class="page narrow missing"><nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/problems">Problems</a><span>/</span><span>Not found</span></nav><h1 class="headline"><span class="thin">Nothing runs</span><span class="heavy">at this address</span></h1><p><a class="btn dark" href="/problems">See all problems<span class="chip">→</span></a></p></section>`;
 /** a page that has no public part (the sandbox, a shared design): only the sign-in card */
 function locked(title) {
   return `<section class="locked-wrap"><div class="locked-card"><p class="kicker"><span>${esc(title)}</span></p><h1 class="sr">${esc(title)}</h1>${signInCard('page')}</div></section>`;
@@ -80,7 +80,7 @@ export function mount(view, _params, ctx) {
     if (g === 'preview' || g === 'locked') {
       // signed out: the public part of a problem or challenge (title, difficulty, the first lines of the brief) and the card; nothing else exists in the page
       const label = target.kind === 'challenge' ? 'Challenge' : target.kind === 'practice' ? 'Practice' : target.kind === 'problem' ? 'Problem' : { sandbox: 'Sandbox', shared: 'Shared design' }[target.kind] || 'Problem';
-      const crumbs = `<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Dashboard</a><span>/</span><a href="${target.kind === 'practice' ? '/practice' : '/problems'}">${target.kind === 'practice' ? 'Practice' : 'Problems'}</a><span>/</span><span>${esc(label)}</span></nav>`;
+      const crumbs = `<nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="${target.kind === 'practice' ? '/practice' : '/problems'}">${target.kind === 'practice' ? 'Practice' : 'Problems'}</a><span>/</span><span>${esc(label)}</span></nav>`;
       const data = g === 'preview' ? await publicData() : null;
       if (!alive) return;
       if (data) { view.innerHTML = problemPublicHtml(data, { crumbs, kicker: label }); offPublic = wirePublic(view); }

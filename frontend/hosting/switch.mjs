@@ -92,7 +92,7 @@ writeFileSync(path.join(dist, "index.html"), renderHome(shell3d, site, articles)
 
 // the 3D pages with no search-engine page of their own: /learn (it opens Concepts), the simulator (/simulator/<id> is a rewrite to this file,
 // hosting/routes.json) and the Dashboard (/home)
-for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simulator", "Simulator", "simulator"], ["home", "Dashboard", "home"]]) put(dir, shellFor(title, { canon }));
+for (const [dir, title, canon] of [["learn", "Learn", "learn/concepts"], ["simulator", "Warm-ups", "simulator"], ["home", "Home", "home"]]) put(dir, shellFor(title, { canon }));
 
 // 4. the sitemap and the content map for AI assistants
 writeFileSync(path.join(dist, "sitemap.xml"), sitemap(pages.map((p) => ({ key: p.key, date: p.date }))));
