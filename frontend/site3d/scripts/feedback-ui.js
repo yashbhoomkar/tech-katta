@@ -2,6 +2,7 @@
 // Visual feedback (the page is photographed when the tab opens, with a note). Sending is a POST to BugDrop's hosted worker, which makes the GitHub issue in
 // yashbhoomkar/tech-katta-feedback. If that cannot be done (blocked, offline, refused) the popup offers a prefilled GitHub issue and Copy details.
 // Loaded the first time the Report button is pressed (feedback.js). The page's own sheets stay where they are: this one sits above them.
+import { createEditor } from './feedback-markup.js';
 import { ENDPOINT, REPO, GAP_MS, titleOf, categoryOf, descriptionOf, detailsText, payloadOf, canSend, cleanUrl, issueUrl } from './feedback-core.js';
 
 const TAB_KEY = 'tk-report-tab', LAST_KEY = 'tk-report-at';
@@ -28,6 +29,7 @@ export function openReport(opener) {
     <div class="tk-rp-body"></div></div>`;
   const box = root.querySelector('.tk-rp-box'), body = root.querySelector('.tk-rp-body');
   const state = { tab: store.get(TAB_KEY) === 'visual' ? 'visual' : 'quick', chip: 'bug', quick: '', note: '', shot: null, shotErr: '', capturing: false, view: 'form', busy: false, msg: '', sent: null, wait: 0 };
+  let ed = null; // the picture editor for state.shot (marks live in it)
 
   // ---- closing: ✕, Esc, a tap outside, a swipe down (phones), Back. A history entry is taken while the popup is open; the page's own sheets ignore a Back that only pops it
   let popped = false;
@@ -36,7 +38,7 @@ export function openReport(opener) {
     if (!popped && history.state?.tkReport) { try { history.back(); } catch { /* none */ } }
     try { (opener || prevFocus)?.focus?.({ preventScroll: true }); } catch { /* gone */ }
   };
-  const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); if (ed?.isFull()) ed.exitFull(); else close(); } };
   const pop = () => { popped = true; close(); };
   root.addEventListener('pointerdown', (e) => { if (e.target === root) close(); });
   root.querySelector('.tk-rp-x').addEventListener('click', close);
@@ -85,12 +87,13 @@ export function openReport(opener) {
     }
     // visual
     const shot = state.capturing ? '<div class="tk-rp-shot wait" role="status"><i class="tk-rp-spin" aria-hidden="true"></i>Taking a screenshot…</div>'
-      : state.shot ? `<div class="tk-rp-shot"><img alt="A screenshot of this page, to be sent with your report" src="${esc(state.shot.dataUrl)}"></div>`
+      : state.shot ? '<div data-editor></div>'
       : `<div class="tk-rp-shot fail" role="status">Couldn't take the screenshot on this ${innerWidth <= 900 ? 'phone' : 'browser'}. You can still send your note.${state.shotErr ? `<small>${esc(state.shotErr)}</small>` : ''}</div>`;
     body.innerHTML = `${shot}<label class="tk-rp-f"><span>Add a note (optional)</span><textarea rows="3" maxlength="2000" data-note placeholder="What should we look at?"></textarea></label>${hp}
-      <p class="tk-rp-small">The picture shows this page as it is now, and goes to a public GitHub page. Leave out anything private.</p>
+      <p class="tk-rp-small">The picture shows this page as it is now. Draw on it to point at the problem, and use Hide to cover anything private. It goes to a public GitHub page.</p>
       <div class="tk-rp-foot"><p class="tk-rp-note" role="status" aria-live="polite" data-status></p>
       <div class="tk-rp-two"><button type="button" class="tk-rp-act" data-retake ${state.capturing ? 'disabled' : ''}>Retake</button><button type="button" class="tk-rp-act main" data-send ${state.capturing || state.busy ? 'disabled' : ''}>Send</button></div></div>`;
+    if (state.shot) { if (!ed) ed = createEditor(state.shot); body.querySelector('[data-editor]').replaceWith(ed.el); }
     const note = body.querySelector('[data-note]'); note.value = state.note; note.addEventListener('input', () => { state.note = note.value; });
     body.querySelector('[data-retake]').addEventListener('click', () => capture());
     body.querySelector('[data-send]').addEventListener('click', () => send());
@@ -101,7 +104,7 @@ export function openReport(opener) {
   // ---- the screenshot: the popup and the button are hidden while the page is drawn
   let token = 0;
   async function capture() {
-    const mine = ++token; state.capturing = true; state.shot = null; state.shotErr = ''; state.msg = ''; paint();
+    const mine = ++token; state.capturing = true; state.shot = null; ed = null; state.shotErr = ''; state.msg = ''; paint();
     root.style.visibility = 'hidden'; const btn = document.querySelector('.tk-report'); if (btn) btn.style.visibility = 'hidden';
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // the page repaints without the popup
     try {
@@ -123,10 +126,12 @@ export function openReport(opener) {
     const meta = pageMeta(), title = titleOf(text, meta.url), category = visual ? 'bug' : categoryOf(state.chip);
     const description = descriptionOf({ text, meta, captureError: visual && !state.shot ? state.shotErr || 'unknown' : '' });
     const report = { title, description };
+    let shotUrl = null;
+    if (visual && state.shot) { shotUrl = state.shot.dataUrl; if (ed?.hasMarks()) { try { shotUrl = (await ed.flatten()).dataUrl; } catch { /* the plain picture goes */ } } }
     state.busy = true; state.msg = 'Sending…'; paint();
     try {
       const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20_000);
-      const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payloadOf({ title, description, category, screenshot: visual && state.shot ? state.shot.dataUrl : null, meta })), signal: ctrl.signal }).finally(() => clearTimeout(timer));
+      const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payloadOf({ title, description, category, screenshot: shotUrl, meta })), signal: ctrl.signal }).finally(() => clearTimeout(timer));
       const j = r.ok ? await r.json().catch(() => null) : null;
       if (!j || j.success !== true) throw new Error(r.ok ? 'the service did not accept it' : `the service answered ${r.status}`);
       store.set(LAST_KEY, String(Date.now())); state.busy = false; state.msg = ''; state.view = 'sent'; paint();
