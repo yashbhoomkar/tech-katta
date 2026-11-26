@@ -74,15 +74,15 @@ function StructuresBox({ cfg, set, title, suggest }) {
 }
 
 // The settings panel of one component in a v2 problem.
-export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName, locked, setNote }) {
+export function InspectorV2({ lab, node, update, rename, remove, conn, labelOf, fieldHints, H, Glyph, maxName, locked, setNote, done }) {
   const cat = evalCatalogue(lab), comp = cat[node.data.kind];
   if (!comp) return null;
   const raw = node.data.config || {}, cfg = configOf({ id: node.id, type: node.data.kind, config: raw }, lab), set = (patch) => update(node.id, { ...raw, ...patch });
   const title = node.data.name || comp.name, settings = settingsOf(comp.type, lab);
   // set by the problem (another company's service): shown, not changed
-  if (locked) return <aside className="lab-ins" tabIndex={0} aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H><p className="lab-desc">{comp.desc}</p><p className="lab-like"><b>SET BY THE PROBLEM</b>Not yours to change: you design around it.</p>
+  if (locked) return <aside className="lab-ins" tabIndex={0} aria-label="Component settings">{done}<div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H><p className="lab-desc">{comp.desc}</p><p className="lab-like"><b>SET BY THE PROBLEM</b>Not yours to change: you design around it.</p>
     <dl className="lab-kv">{settings.map((s) => <React.Fragment key={s.key}><dt>{s.label}</dt><dd>{s.kind === 'choice' ? s.options.find((o) => o.id === cfg[s.key])?.label : String(cfg[s.key] ?? '')}</dd></React.Fragment>)}</dl></aside>;
-  return <aside className="lab-ins" tabIndex={0} aria-label="Component settings"><div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H>
+  return <aside className="lab-ins" tabIndex={0} aria-label="Component settings">{done}<div className="lab-h">{comp.group.toUpperCase()}</div><H><Glyph kind={comp.type} />{title}</H>
     {node.data.name && <p className="lab-note lab-note-tight">{comp.name}</p>}
     <Field label="Name"><input type="text" maxLength={maxName} value={node.data.name || ''} placeholder={comp.name} onChange={(e) => rename(node.id, e.target.value.slice(0, maxName))} onBlur={(e) => { const v = e.target.value.replace(/\s+/g, ' ').trim(); if (v !== (node.data.name || '')) rename(node.id, v); }} /></Field>
     {comp.type === 'client' && <p className="lab-like"><b>SET BY THE TESTS</b>The tests send the traffic: how much, when, and which calls.</p>}
@@ -109,11 +109,11 @@ function Look({ edge, setLook, autoProto }) {
 }
 
 // What a selected arrow carries: every call, only reads, only writes, or the operations chosen.
-export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, autoProto, reverse, canReverse, H }) {
+export function ArrowV2({ edge, ops, labelOf, removeEdge, setCarries, setLook, autoProto, reverse, canReverse, H, done }) {
   const c = edge.data?.carries, mode = !c ? 'all' : c.length === 1 && c[0] === 'reads' ? 'reads' : c.length === 1 && c[0] === 'writes' ? 'writes' : 'some';
   const pick = (m) => setCarries(edge.id, m === 'all' ? undefined : m === 'reads' ? ['reads'] : m === 'writes' ? ['writes'] : ops.map((o) => o.id));
   const toggle = (id) => { const now = mode === 'some' ? c : []; const next = now.includes(id) ? now.filter((x) => x !== id) : [...now, id]; setCarries(edge.id, next.length ? ops.map((o) => o.id).filter((x) => next.includes(x)) : undefined); };
-  return <aside className="lab-ins" tabIndex={0} aria-label="Arrow"><div className="lab-h">ARROW</div><H>{labelOf(edge.source)} → {labelOf(edge.target)}</H>
+  return <aside className="lab-ins" tabIndex={0} aria-label="Arrow">{done}<div className="lab-h">ARROW</div><H>{labelOf(edge.source)} → {labelOf(edge.target)}</H>
     <Look edge={edge} setLook={setLook} autoProto={autoProto} />
     <p className="lab-desc">Calls flow this way. By default an arrow carries every call; choose fewer to send reads and writes, or each call, their own way.</p>
     <Field label="Carries"><select value={mode} onChange={(e) => pick(e.target.value)}><option value="all">Every call</option><option value="reads">Only reads</option><option value="writes">Only writes</option>{ops.length > 0 && <option value="some">Calls I choose…</option>}</select></Field>

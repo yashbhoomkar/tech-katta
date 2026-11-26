@@ -268,6 +268,9 @@ html > body > :is(.ts.ts, .ts-scrim.ts-scrim, .fs.fs, .zoom.zoom) {
   .tk-island .tk-legacy .lab-pal > :not(.lab-item) { display: contents; }
   .tk-island .tk-legacy .lab-pal :is(.lab-h, .lab-g, .lab-pal-search, .lab-pal-toggle) { display: none; }
   .tk-island .tk-legacy .lab-pal .lab-item { width: auto; flex: none; margin: 0; white-space: nowrap; }
+  /* the parts row scrolls sideways under a thumb (owner, 2026-11-26: "It is not slideable"): a sideways swipe pans the row, a tap adds, a drag up drops on the canvas */
+  .tk-island .tk-legacy .lab-pal { overscroll-behavior-x: contain; scrollbar-width: none; } .tk-island .tk-legacy .lab-pal .lab-item { touch-action: pan-x; }
+  .tk-island .tk-legacy .lab-done { min-height: 44px; }
   .tk-island .tk-legacy .lab-ins { position: fixed; z-index: 15; left: 8px; right: 8px; bottom: calc(var(--ws-bottom, 0px) + 8px); margin: 0; max-height: 52%; border-radius: 24px; }
   .tk-island .tk-legacy .lab-ins.idle { display: none; }
 }
