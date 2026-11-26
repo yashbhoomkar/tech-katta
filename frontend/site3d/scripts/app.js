@@ -51,7 +51,7 @@ export const owns = (path) => OWN.test(path);
 export function go(to, { replace = false } = {}) {
   const u = new URL(to, location.href);
   if (u.origin !== location.origin || !owns(u.pathname)) { if (replace) location.replace(u.href); else location.assign(u.href); return; }
-  if (replace) history.replaceState(null, '', u.pathname + u.search + u.hash); else history.pushState(null, '', u.pathname + u.search + u.hash);
+  if (replace) history.replaceState(null, '', u.pathname + u.search + u.hash); else { history.pushState(null, '', u.pathname + u.search + u.hash); window.tkSpa = (window.tkSpa || 0) + 1; } // tkSpa: pages of this site came before this one (the workspace's ← goes Back)
   route();
 }
 window.tkGo = go;

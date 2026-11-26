@@ -1,3 +1,4 @@
+.ph-prob{display:contents}
 .solve{display:grid;grid-template-columns:var(--qw,460px) 6px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:calc(100vh - var(--head));background:var(--bg)}
 .solve.hide{grid-template-columns:minmax(0,1fr)}.solve.hide .sv-tabs{display:none}
 .sv-tabs{grid-column:1;grid-row:1;display:flex;min-width:0;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);background:var(--surface)}.sv-tabs::-webkit-scrollbar{display:none}.sv-tabs>*{flex:0 0 auto;white-space:nowrap}.sv-tabs a,.sv-tabs button{display:flex;align-items:center;min-height:40px;padding:0 16px;border:0;border-right:1px solid var(--line);background:none;font:600 12px var(--mono);letter-spacing:.04em;color:var(--ink-2);text-decoration:none;cursor:pointer}
@@ -136,6 +137,7 @@
 .sv-tick:hover{transform:translateX(-50%) scale(1.3)}.sv-tick:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ===== Katta Paper skin ===== */
+.ph-prob{display:contents}
 .solve{background:var(--page)}
 .sv-tabs{background:var(--surface-2)}
 .sv-tabs a,.sv-tabs button{font:500 13.5px var(--font);letter-spacing:0;text-transform:none;color:var(--muted);transition:color var(--dur-fast) var(--ease)}
