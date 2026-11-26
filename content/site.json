@@ -877,7 +877,7 @@
   "privacy": {
     "eyebrow": "PRIVACY",
     "title": "What is kept when you sign in",
-    "updated": "Last updated 13 November 2026",
+    "updated": "Last updated 26 November 2026",
     "sections": [
       [
         "Signing in",
@@ -910,6 +910,10 @@
       [
         "Deleting it",
         "Use Delete my account in the account menu. Your account, designs, stars and the usage records linked to it are removed from the database straight away. The copy in your own browser stays until you clear it."
+      ],
+      [
+        "Tester feedback",
+        "Only people who turn it on, with a link the owner shares, see the Report button. When you send a report, your note, a screenshot of the page, the page address, your browser and screen size, and the browser's console messages go through BugDrop (bugdrop.dev) to a private GitHub repository the owner uses to fix problems. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
       ]
     ]
   },
