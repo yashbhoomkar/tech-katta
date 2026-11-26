@@ -2,7 +2,7 @@
 // html-to-image (vendor/html-to-image.esm.js) draws the page's DOM; it cannot see inside a WebGL canvas (the 3D world, the 3D design canvas, a replay: it
 // would draw them blank). So each visible canvas is read first, in the middle of a frame (the page's own drawing for that frame has run, the browser has
 // not yet cleared the buffer), and an <img> of it stands in the canvas's place for the length of the capture. The result is the visible window only,
-// at the screen's pixel ratio but at most 2, drawn at most 1600 px on its long side, as a JPEG under 4 MB.
+// at the screen's pixel ratio but at most 2, drawn at most 1600 px on its long side, as a PNG under 4 MB (the only format BugDrop's worker takes).
 import { fitSize, pixelRatioFor, dataUrlBytes, MAX_BYTES, MAX_SIDE } from './feedback-core.js';
 
 const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -28,7 +28,7 @@ async function standIns() {
 }
 
 /** { dataUrl, width, height, bytes }; throws an Error whose message says why when the page could not be drawn */
-export async function capturePage({ quality = 0.8, hide = [] } = {}) {
+export async function capturePage({ hide = [] } = {}) {
   const { toCanvas } = await import('./vendor/html-to-image.esm.js');
   const hidden = hide.map((el) => [el, el.style.visibility]); hidden.forEach(([el]) => { el.style.visibility = 'hidden'; });
   let restore = () => {};
@@ -47,10 +47,16 @@ export async function capturePage({ quality = 0.8, hide = [] } = {}) {
     const { width, height } = fitSize(canvas.width, canvas.height, MAX_SIDE);
     const out = document.createElement('canvas'); out.width = width; out.height = height;
     const g = out.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, width, height); g.imageSmoothingQuality = 'high'; g.drawImage(canvas, 0, 0, width, height);
-    let q = quality, url = out.toDataURL('image/jpeg', q);
-    while (dataUrlBytes(url) > MAX_BYTES && q > 0.4) { q -= 0.1; url = out.toDataURL('image/jpeg', q); }
+    // PNG: BugDrop's worker takes only a PNG data URL (it answers 400 INVALID_SCREENSHOT to a JPEG). PNG has no quality to lower,
+    // so a picture over the limit is drawn smaller until it fits
+    let w = width, h = height, url = out.toDataURL('image/png');
+    while (dataUrlBytes(url) > MAX_BYTES && w > 320) {
+      w = Math.round(w * 0.8); h = Math.round(h * 0.8);
+      const s = document.createElement('canvas'); s.width = w; s.height = h; const sg = s.getContext('2d'); sg.imageSmoothingQuality = 'high'; sg.drawImage(out, 0, 0, w, h);
+      url = s.toDataURL('image/png');
+    }
     if (dataUrlBytes(url) > MAX_BYTES) throw new Error('the image is over 4 MB');
-    return { dataUrl: url, width, height, bytes: dataUrlBytes(url) };
+    return { dataUrl: url, width: w, height: h, bytes: dataUrlBytes(url) };
   } catch (e) {
     throw new Error(String(e?.message || e?.type || e || 'unknown').slice(0, 160));
   } finally {

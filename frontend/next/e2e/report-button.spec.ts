@@ -68,7 +68,9 @@ type Sent = { repo: string; title: string; description: string; category: string
 async function worker(page: Page, status = 200) {
   const got: Sent[] = [];
   await page.route(WORKER, async (r) => {
-    got.push(JSON.parse(r.request().postData() ?? "{}"));
+    const body = JSON.parse(r.request().postData() ?? "{}"); got.push(body);
+    // like the real worker: a screenshot must be a PNG data URL (it answers 400 INVALID_SCREENSHOT to anything else)
+    if (body.screenshot != null && !String(body.screenshot).startsWith("data:image/png;base64,")) { await r.fulfill({ status: 400, json: { error: "Invalid screenshot format. Expected a PNG data URL.", code: "INVALID_SCREENSHOT" } }); return; }
     await (status === 200 ? r.fulfill({ json: { success: true, issueNumber: 9, issueUrl: "https://github.com/x/y/issues/9" } }) : r.fulfill({ status, json: { error: "no" } }));
   });
   return got;
@@ -88,7 +90,7 @@ async function analyse(page: Page, rect: { x: number; y: number; w: number; h: n
     if (!g) return null;
     g.drawImage(img, 0, 0);
     const count = (x: number, y: number, w: number, h: number) => { const d = g.getImageData(Math.max(0, Math.round(x)), Math.max(0, Math.round(y)), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))).data, seen = new Set<string>(); for (let i = 0; i < d.length; i += 4) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`); return seen.size; };
-    return { w: img.naturalWidth, h: img.naturalHeight, src: img.src.slice(0, 22), bytes: Math.floor(((img.src.split(",")[1] ?? "").length * 3) / 4), all: count(0, 0, c.width, c.height), region: r ? count(r.x * k, r.y * k, r.w * k, r.h * k) : -1 };
+    return { w: img.naturalWidth, h: img.naturalHeight, src: img.src.split(",")[0], bytes: Math.floor(((img.src.split(",")[1] ?? "").length * 3) / 4), all: count(0, 0, c.width, c.height), region: r ? count(r.x * k, r.y * k, r.w * k, r.h * k) : -1 };
   }, rect);
 }
 const popup = (page: Page) => page.locator(".tk-report-pop");
@@ -185,7 +187,7 @@ for (const theme of ["dark", "light"] as const) {
     await expect(popup(page)).toBeVisible();
     await expect(page.locator(".tk-report")).toBeVisible();
     const a = await analyse(page, rect);
-    expect(a?.src).toBe("data:image/jpeg;base64");
+    expect(a?.src).toBe("data:image/png;base64");
     expect(Math.max(a?.w ?? 0, a?.h ?? 0)).toBeLessThanOrEqual(1600);
     expect(a?.bytes ?? 0).toBeLessThan(4_000_000);
     expect(a?.all ?? 0, "the picture is not blank").toBeGreaterThan(12);
@@ -193,7 +195,7 @@ for (const theme of ["dark", "light"] as const) {
     await page.locator("[data-note]").fill("The part looks wrong");
     await page.locator("[data-send]").click();
     await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
-    expect(got[0].screenshot?.startsWith("data:image/jpeg;base64,")).toBe(true);
+    expect(got[0].screenshot?.startsWith("data:image/png;base64,")).toBe(true);
     expect(got[0].title).toBe("The part looks wrong");
     expect(got[0].description).toContain("The part looks wrong");
     expect(got[0].description).not.toContain("capture failed");
