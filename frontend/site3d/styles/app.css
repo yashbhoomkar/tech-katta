@@ -1666,3 +1666,42 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 .top-signin[hidden] { display: none !important; }
 @media (max-width: 760px) { .top-signin { min-height: 36px; padding: 0 12px; font-size: 14px; margin-left: 6px; } }
 @media (max-width: 379px) { .top .logo { font-size: 16px; } .top-signin { padding: 0 10px; margin-left: 4px; } }
+
+/* ---- Navigation, 2026-11-26 (tech-katta-context 53, phase 2): three places and You ---- */
+/* the phone bar: Home · Learn · Solve · You, four equal items, each well over 44 px; You shows the account's initial once signed in */
+.tabbar { gap: 2px; }
+.tabbar a { flex: 1 1 0; width: auto; min-width: 0; min-height: 52px; padding: 7px 4px 6px; justify-content: center; }
+@media (max-width: 999px) { .tabbar { width: min(340px, calc(100vw - 32px)); max-width: none; box-sizing: border-box; } }
+.tabbar [data-you] i { display: none; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--ink-2); color: var(--page); font: 700 12px/1 var(--sans); font-style: normal; }
+.tabbar [data-you] i::before { content: attr(data-i); }
+.tabbar [data-you].has-i i { display: grid; }
+.tabbar [data-you].has-i svg { display: none; }
+.tabbar [data-you][aria-current].has-i i { background: var(--ink); }
+/* Solve: one list, three filters; the 3D preview is for wide screens, the list is the page on a phone */
+.solve-seg { display: inline-grid; margin: 2px 0 20px; max-width: 100%; }
+.solve-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 18px; white-space: nowrap; }
+.solve-seg button span { font-size: 12px; font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.solve .pane-note { margin: 0 0 6px; font-size: 14px; }
+.solve .empty { padding: 24px 0; }
+.solve-more { margin: 28px 0 0; font-size: 14px; }
+.solve-more a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.solve [data-pane][hidden] { display: none; }
+@media (max-width: 900px) {
+  .solve .learn-preview { display: none; }
+  /* on a phone the list comes first: the title, one line of progress with Continue, the filter, then the first problem */
+  .solve.page { padding-top: 88px; }
+  .learn .sec-head { gap: 12px; margin-bottom: 14px; }
+  .learn .sec-head .crumbs, .learn .sec-head .lead, .solve .headline .heavy { display: none; }
+  .solve .headline { margin: 0; } .solve .headline .thin { font-size: 34px; line-height: 1.1; }
+  .learn .cprog { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 12px; padding: 14px 16px; }
+  .learn .cprog b { font-size: 16px; } .learn .cprog .cbar { grid-column: 1 / -1; grid-row: 2; }
+  .learn .cprog small { grid-column: 1; grid-row: 3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .learn .cprog .btn { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+  .solve-seg { display: grid; width: 100%; }
+  .solve-seg button { padding: 0 6px; }
+}
+/* Interview guides: each answer has its own Solve button beside the row that opens the written answer */
+.lessons li.ans { display: flex; align-items: center; gap: 10px; }
+.lessons li.ans > .lesson { flex: 1; min-width: 0; }
+.lessons li.ans .solve-go { flex: none; }
+@media (max-width: 900px) { .lessons li.ans .l-tag { display: none; } }
