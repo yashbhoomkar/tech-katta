@@ -46,7 +46,7 @@ test("the body carries the message and the details, and says when a screenshot f
 });
 
 test("the request is what the worker takes", () => {
-  const p = payloadOf({ title: "T", description: "D", category: "bug", screenshot: "data:image/jpeg;base64,AAAA", meta: { url: "u" } });
+  const p = payloadOf({ title: "T", description: "D", category: "bug", screenshot: "data:image/png;base64,AAAA", meta: { url: "u" } });
   assert.deepEqual(Object.keys(p).sort(), ["attachments", "category", "description", "metadata", "repo", "screenshot", "title"]);
   assert.equal(p.repo, REPO); assert.equal(p.repo, "yashbhoomkar/tech-katta-feedback");
   assert.deepEqual(p.attachments, []);
@@ -69,7 +69,7 @@ test("a screenshot is drawn at most 1600 px on its long side, at a pixel ratio o
   assert.deepEqual(fitSize(1080, 1958), { width: 883, height: 1600 });
   assert.deepEqual(fitSize(1, 100000), { width: 1, height: 1600 });
   assert.equal(pixelRatioFor(3.375), 2); assert.equal(pixelRatioFor(1), 1); assert.equal(pixelRatioFor(1.5), 1.5); assert.equal(pixelRatioFor(0), 1); assert.equal(pixelRatioFor(undefined), 1);
-  assert.equal(dataUrlBytes("data:image/jpeg;base64," + "A".repeat(4000)), 3000);
+  assert.equal(dataUrlBytes("data:image/png;base64," + "A".repeat(4000)), 3000);
   assert.equal(dataUrlBytes(""), 0);
 });
 
