@@ -912,8 +912,8 @@
         "Use Delete my account in the account menu. Your account, designs, stars and the usage records linked to it are removed from the database straight away. The copy in your own browser stays until you clear it."
       ],
       [
-        "Tester feedback",
-        "Only people who turn it on, with a link the owner shares, see the Report button. When you send a report, your note, a screenshot of the page, the page address, your browser and screen size, and the browser's console messages go through BugDrop (bugdrop.dev) to a private GitHub repository the owner uses to fix problems. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
+        "Feedback",
+        "The Report button on every page lets you tell us about a problem. When you send a report, your note, a screenshot of the page, the page address, your browser and screen size, and the browser's console messages go through BugDrop (bugdrop.dev) to a public GitHub repository the owner uses to fix problems, so anyone can read what you send: leave out anything private. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
       ]
     ]
   },
