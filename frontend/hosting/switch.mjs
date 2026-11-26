@@ -51,6 +51,11 @@ rmSync(path.join(dist, "3d"), { recursive: true, force: true });
 for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
 cpSync(path.join(frontend, "site3d-dist"), path.join(dist, "3d", "legacy"), { recursive: true });
 cpSync(path.join(frontend, "next", "dist-islands"), path.join(dist, "3d", "islands"), { recursive: true });
+// the Report button on the two pages the shell does not draw (it is on every other page through the shell's app.js)
+for (const html of [path.join(dist, "health.html"), path.join(dist, "analytics", "index.html")]) {
+  const text = readFileSync(html, "utf8");
+  if (!text.includes("feedback-boot.js")) writeFileSync(html, text.replace("</body>", '<script type="module" src="/3d/scripts/feedback-boot.js"></script></body>'));
+}
 const preview = `<meta property="og:site_name" content="Tech Katta"/><meta property="og:type" content="website"/><meta property="og:image" content="${OG_IMAGE}"/><meta name="twitter:card" content="summary_large_image"/>`;
 const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
 const NOINDEX = '<meta name="robots" content="noindex"/>';
