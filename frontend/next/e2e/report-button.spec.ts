@@ -3,7 +3,7 @@ import { localApi } from "./api";
 
 // The Report button (site3d/scripts/feedback.js): ours, on every page, and it does not depend on BugDrop's script to appear. Automated browsers are skipped
 // by the button (navigator.webdriver), so these tests say they are not one.
-const API = "https://tech-api.katta.cc", BUGDROP = "https://bugdrop.neonwatty.workers.dev/**";
+const API = "https://tech-api.katta.cc";
 const CORS = { "access-control-allow-origin": "http://localhost:4173", "access-control-allow-credentials": "true" };
 async function visit(page: Page) {
   await page.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); try { localStorage.setItem("tk-design-view", "2d"); } catch { /* blocked */ } });
@@ -62,46 +62,235 @@ test("?feedback=off hides it in this browser and ?feedback=on brings it back", a
   await expect(page.locator(".tk-report")).toBeVisible();
 });
 
-test("blocked: the button still shows, BugDrop is asked for only when it is pressed, and a sheet offers an issue and the details", async ({ page, context }) => {
+const WORKER = "https://bugdrop.neonwatty.workers.dev/api/feedback";
+type Sent = { repo: string; title: string; description: string; category: string; screenshot: string | null; attachments: unknown[]; metadata: { url: string; userAgent: string; viewport: { width: number; height: number }; timestamp: string; appVersion: string; devicePixelRatio: number; language: string } };
+/** the worker, mocked: no real issue is made in CI; every request it gets is kept */
+async function worker(page: Page, status = 200) {
+  const got: Sent[] = [];
+  await page.route(WORKER, async (r) => {
+    got.push(JSON.parse(r.request().postData() ?? "{}"));
+    await (status === 200 ? r.fulfill({ json: { success: true, issueNumber: 9, issueUrl: "https://github.com/x/y/issues/9" } }) : r.fulfill({ status, json: { error: "no" } }));
+  });
+  return got;
+}
+const setup = async (page: Page, theme: "dark" | "light", view: "2d" | "3d" = "2d") => {
   await visit(page);
+  await page.addInitScript(([t, v]) => { try { localStorage.setItem("tk-theme", t); localStorage.setItem("tk-design-view", v); } catch { /* blocked */ } }, [theme, view]);
+};
+/** the picture in the preview: its size, how many different colours it has, and how many in the part where the page's canvas was (from `rect`, in page pixels) */
+async function analyse(page: Page, rect: { x: number; y: number; w: number; h: number } | null) {
+  return page.evaluate(async (r) => {
+    const img = document.querySelector(".tk-rp-shot img") as HTMLImageElement | null;
+    if (!img) return null;
+    await img.decode();
+    const k = img.naturalWidth / innerWidth, c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext("2d");
+    if (!g) return null;
+    g.drawImage(img, 0, 0);
+    const count = (x: number, y: number, w: number, h: number) => { const d = g.getImageData(Math.max(0, Math.round(x)), Math.max(0, Math.round(y)), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))).data, seen = new Set<string>(); for (let i = 0; i < d.length; i += 4) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`); return seen.size; };
+    return { w: img.naturalWidth, h: img.naturalHeight, src: img.src.slice(0, 22), bytes: Math.floor(((img.src.split(",")[1] ?? "").length * 3) / 4), all: count(0, 0, c.width, c.height), region: r ? count(r.x * k, r.y * k, r.w * k, r.h * k) : -1 };
+  }, rect);
+}
+const popup = (page: Page) => page.locator(".tk-report-pop");
+
+for (const theme of ["dark", "light"] as const) {
+  test(`Quick feedback, ${theme}: Bug by default, text only, the title is the first line, the address has no query, then "Sent, thank you" @phone`, async ({ page }) => {
+    await setup(page, theme);
+    const got = await worker(page);
+    await page.goto("/home?x=secret&feedback=on#frag");
+    await page.locator(".tk-report").click();
+    await expect(popup(page)).toBeVisible();
+    await expect(page.locator(".tk-rp-tabs [role=tab]")).toHaveText(["Quick feedback", "Visual feedback"]);
+    await expect(page.locator(".tk-rp-tabs [aria-selected=true]")).toHaveText("Quick feedback");
+    await expect(page.locator("[data-chip=bug]")).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator("[data-send]")).toBeDisabled();
+    await page.locator("[data-msg]").fill("The Home page card does not open\nI tapped Start twice and nothing happened.");
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+    expect(got).toHaveLength(1);
+    expect(got[0].repo).toBe("yashbhoomkar/tech-katta-feedback");
+    expect(got[0].title).toBe("The Home page card does not open");
+    expect(got[0].category).toBe("bug");
+    expect(got[0].screenshot).toBeNull();
+    expect(got[0].description).toContain("I tapped Start twice");
+    expect(got[0].metadata.url).toMatch(/\/home$/);
+    expect(got[0].metadata.viewport.width).toBeGreaterThan(0);
+    expect(got[0].metadata.appVersion).not.toBe("");
+    await page.locator(".tk-rp-x").click();
+    await expect(popup(page)).toHaveCount(0);
+  });
+  test(`Quick feedback, ${theme}, on a wide screen: an Idea is a feature, Esc closes it`, async ({ page }) => {
+    await setup(page, theme);
+    const got = await worker(page);
+    await page.goto("/privacy");
+    await page.locator(".tk-report").click();
+    await page.locator("[data-chip=idea]").click();
+    await page.locator("[data-msg]").fill("x".repeat(200));
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toBeVisible();
+    expect(got[0].category).toBe("feature");
+    expect(got[0].title).toHaveLength(80);
+    await page.keyboard.press("Escape");
+    await expect(popup(page)).toHaveCount(0);
+  });
+}
+
+test("the tab you used last is the one that opens, BugDrop's script is never loaded, and Back closes the popup @phone", async ({ page }) => {
+  await setup(page, "dark");
+  await worker(page);
   const asked: string[] = [];
-  await page.route(BUGDROP, (r) => { asked.push(r.request().url()); return r.abort(); });
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => undefined);
-  await page.goto("/problems/url-shortener");
-  await expect(page.locator(".tk-report")).toBeVisible({ timeout: 30_000 });
-  expect(asked, "nothing is sent to BugDrop before the button is pressed").toEqual([]);
+  page.on("request", (r) => { if (r.url().includes("bugdrop") && r.url().endsWith(".js")) asked.push(r.url()); });
+  await page.goto("/privacy");
   await page.locator(".tk-report").click();
-  const sheet = page.locator(".tk-report-sheet");
-  await expect(sheet).toBeVisible({ timeout: 10_000 });
-  await expect(sheet).toContainText("Your browser blocked the report form.");
-  expect(asked.length).toBeGreaterThan(0);
-  const href = (await sheet.locator("a.main").getAttribute("href")) ?? "";
-  expect(href).toContain("https://github.com/yashbhoomkar/tech-katta-feedback/issues/new");
-  const body = new URL(href).searchParams.get("body") ?? "";
-  expect(body).toContain("/problems/url-shortener");
-  expect(body).toMatch(/Window: \d+×\d+/);
-  await sheet.getByRole("button", { name: "Copy details" }).click();
-  await expect(sheet.locator(".tk-report-note")).toContainText("Copied");
-  await sheet.getByRole("button", { name: "Close" }).click();
-  await expect(sheet).toHaveCount(0);
-  // pressed again: it tries again
-  const before = asked.length;
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-rp-shot img, .tk-rp-shot.fail")).toBeVisible({ timeout: 60_000 });
+  await page.locator(".tk-rp-x").click();
   await page.locator(".tk-report").click();
-  await expect(sheet).toBeVisible({ timeout: 10_000 });
-  expect(asked.length).toBeGreaterThan(before);
+  await expect(page.locator(".tk-rp-tabs [aria-selected=true]")).toHaveText("Visual feedback");
+  const url = page.url();
+  await page.goBack();
+  await expect(popup(page)).toHaveCount(0);
+  expect(page.url()).toBe(url);
+  expect(asked, "BugDrop's script is not loaded").toEqual([]);
 });
 
-test("not blocked: BugDrop is loaded with its own button off and opened through its API", async ({ page }) => {
-  await visit(page);
-  // a stand-in for the widget: what matters here is how it is loaded and that window.BugDrop.open() is what the button calls
-  await page.route(BUGDROP, (r) => r.fulfill({ contentType: "text/javascript", body: "window.BugDrop={open:()=>{document.body.dataset.bugdrop='open'}};" }));
-  await page.goto("/home");
-  await expect(page.locator(".tk-report")).toBeVisible();
-  await expect(page.locator("script[data-tk-feedback]")).toHaveCount(0);
+test("a swipe down on the handle closes the sheet @phone", async ({ page }) => {
+  await setup(page, "dark");
+  await page.goto("/privacy");
   await page.locator(".tk-report").click();
-  await expect(page.locator("body")).toHaveAttribute("data-bugdrop", "open");
-  await expect(page.locator("script[data-tk-feedback]")).toHaveAttribute("data-button", "false");
-  await expect(page.locator(".tk-report-sheet")).toHaveCount(0);
+  await expect(popup(page)).toBeVisible();
+  const g = await page.locator(".tk-rp-grab").boundingBox();
+  if (!g) throw new Error("no handle");
+  const cdp = await page.context().newCDPSession(page);
+  const send = (type: "touchStart" | "touchMove" | "touchEnd", y: number) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: g.x + g.width / 2, y, id: 0 }] });
+  await send("touchStart", g.y + 10);
+  for (let i = 1; i <= 8; i++) { await send("touchMove", g.y + 10 + i * 25); await page.waitForTimeout(16); }
+  await send("touchEnd", 0);
+  await expect(popup(page)).toHaveCount(0);
+});
+
+for (const theme of ["dark", "light"] as const) {
+  test(`Visual feedback, ${theme}: the page is photographed when the tab opens, with its 3D canvas, and sent with the note`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await setup(page, theme, "3d");
+    const got = await worker(page);
+    await page.goto("/problems/sandbox?feedback=on");
+    await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
+    await page.waitForTimeout(2500); // the part is drawn
+    const rect = await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+    await page.locator(".tk-report").click();
+    await page.locator("[data-tab=visual]").click();
+    await expect(page.locator(".tk-rp-shot img")).toBeVisible({ timeout: 60_000 });
+    // the popup and the button are back, and so is the canvas
+    await expect(popup(page)).toBeVisible();
+    await expect(page.locator(".tk-report")).toBeVisible();
+    const a = await analyse(page, rect);
+    expect(a?.src).toBe("data:image/jpeg;base64");
+    expect(Math.max(a?.w ?? 0, a?.h ?? 0)).toBeLessThanOrEqual(1600);
+    expect(a?.bytes ?? 0).toBeLessThan(4_000_000);
+    expect(a?.all ?? 0, "the picture is not blank").toBeGreaterThan(12);
+    expect(a?.region ?? 0, "the canvas area of the picture is not blank (a DOM-only capture draws a WebGL canvas empty)").toBeGreaterThan(5);
+    await page.locator("[data-note]").fill("The part looks wrong");
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+    expect(got[0].screenshot?.startsWith("data:image/jpeg;base64,")).toBe(true);
+    expect(got[0].title).toBe("The part looks wrong");
+    expect(got[0].description).toContain("The part looks wrong");
+    expect(got[0].description).not.toContain("capture failed");
+  });
+}
+
+test.describe("a low-end phone: 320×579 at 3.375x", () => {
+  test.use({ viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
+  test("Visual feedback takes a picture there, inside 1600 px, with the canvas @phone", async ({ page }) => {
+    test.setTimeout(120_000);
+    await setup(page, "dark", "3d");
+    const got = await worker(page);
+    await page.goto("/problems/sandbox");
+    await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
+    await page.waitForTimeout(2500);
+    const rect = await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+    await page.locator(".tk-report").click();
+    await page.locator("[data-tab=visual]").click();
+    await expect(page.locator(".tk-rp-shot img")).toBeVisible({ timeout: 60_000 });
+    const a = await analyse(page, rect);
+    expect(a?.w).toBe(640); // a pixel ratio of 2, not 3.375
+    expect(Math.max(a?.w ?? 0, a?.h ?? 0)).toBeLessThanOrEqual(1600);
+    expect(a?.all ?? 0).toBeGreaterThan(12);
+    expect(a?.region ?? 0).toBeGreaterThan(5);
+    await bigEnoughButtons(page);
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toBeVisible();
+    expect(got[0].metadata.devicePixelRatio).toBeCloseTo(3.375, 2);
+    expect(got[0].metadata.viewport).toEqual({ width: 320, height: 579 });
+  });
+});
+async function bigEnoughButtons(page: Page) {
+  // Retake and Send are on the screen of a small phone (the sheet scrolls, the actions stay at its foot)
+  const r = await page.evaluate(() => ["[data-retake]", "[data-send]"].map((q) => { const b = (document.querySelector(q) as HTMLElement).getBoundingClientRect(); return [b.top >= 0 && b.bottom <= innerHeight, b.height]; }));
+  for (const [inside, h] of r) { expect(inside, "the action is on the screen").toBe(true); expect(h).toBeGreaterThanOrEqual(44); }
+}
+
+test("Visual feedback when the picture cannot be taken: it says so, the note still goes, and the issue says why @phone", async ({ page }) => {
+  await setup(page, "dark");
+  const got = await worker(page);
+  await page.route("**/vendor/html-to-image.esm.js", (r) => r.abort());
+  await page.goto("/privacy");
+  await page.locator(".tk-report").click();
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-rp-shot.fail")).toContainText("Couldn't take the screenshot");
+  await page.locator("[data-note]").fill("Still want to tell you");
+  await page.locator("[data-send]").click();
+  await expect(page.locator(".tk-rp-done")).toBeVisible();
+  expect(got[0].screenshot).toBeNull();
+  expect(got[0].description).toMatch(/Screenshot: capture failed \(.+\)/);
+});
+
+test("when the worker refuses or cannot be reached: a prefilled GitHub issue and Copy details; the report is kept @phone", async ({ page, context }) => {
+  await setup(page, "dark");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => undefined);
+  await worker(page, 500);
+  await page.goto("/privacy");
+  await page.locator(".tk-report").click();
+  await page.locator("[data-msg]").fill("It broke on the policy page");
+  await page.locator("[data-send]").click();
+  const fall = page.locator(".tk-rp-done");
+  await expect(fall).toContainText("We could not send your report from here.");
+  const href = (await fall.locator("a.main").getAttribute("href")) ?? "";
+  expect(href).toContain("https://github.com/yashbhoomkar/tech-katta-feedback/issues/new");
+  const u = new URL(href);
+  expect(u.searchParams.get("title")).toBe("It broke on the policy page");
+  expect(u.searchParams.get("body")).toContain("/privacy");
+  await fall.getByRole("button", { name: "Copy details" }).click();
+  await expect(fall.locator(".tk-rp-note")).toContainText("Copied");
+  await fall.getByRole("button", { name: "Back to my report" }).click();
+  await expect(page.locator("[data-msg]")).toHaveValue("It broke on the policy page");
+  // the service blocked altogether (an ad blocker): the same way out
+  await page.unroute(WORKER);
+  await page.route(WORKER, (r) => r.abort());
+  await page.locator("[data-send]").click();
+  await expect(page.locator(".tk-rp-done")).toContainText("We could not send your report from here.");
+});
+
+test("one report per 30 seconds, and a bot that fills the hidden field is told it worked without anything being sent", async ({ page }) => {
+  await setup(page, "dark");
+  const got = await worker(page);
+  await page.goto("/privacy");
+  await page.locator(".tk-report").click();
+  await page.locator("[data-msg]").fill("first");
+  await page.locator("[data-send]").click();
+  await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+  await page.locator(".tk-rp-x").click();
+  await page.locator(".tk-report").click();
+  await page.locator("[data-msg]").fill("second, right away");
+  await page.locator("[data-send]").click();
+  await expect(page.locator("[data-status]")).toContainText(/Please wait \d+ s/);
+  expect(got).toHaveLength(1);
+  await page.evaluate(() => localStorage.removeItem("tk-report-at"));
+  await page.locator(".tk-rp-hp").evaluate((e) => { (e as HTMLInputElement).value = "http://spam"; });
+  await page.locator("[data-send]").click();
+  await expect(page.locator(".tk-rp-done")).toContainText("Sent, thank you");
+  expect(got).toHaveLength(1);
 });
 
 // the phone workspace: the tab stays clear of the header, Run, the switch and the corner buttons, and stays reachable over a sheet and in a replay

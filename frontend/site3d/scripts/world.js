@@ -72,7 +72,7 @@ function stepDown() {
 export function createWorld(canvas, overlay, { reduced = false, still = false, label = '' } = {}) {
   if (label) { canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', label); }
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }) /* the Report screenshot reads the picture (feedback-capture.js) */; } catch { return null; }
   if (!renderer.getContext()) return null;
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

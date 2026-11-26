@@ -913,7 +913,7 @@
       ],
       [
         "Feedback",
-        "The Report button on every page lets you tell us about a problem. When you send a report, your note, a screenshot of the page, the page address, your browser and screen size, and the browser's console messages go through BugDrop (bugdrop.dev) to a public GitHub repository the owner uses to fix problems, so anyone can read what you send: leave out anything private. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
+        "The Report button on every page lets you tell us about a problem or an idea. Quick feedback sends your note. Visual feedback also takes a screenshot of the page when you open that tab, shows it to you first, and sends it with your note. Either way the page address (without anything after a ? or #), your browser, screen size, language, the site's version and the time go with it. It is sent through BugDrop (bugdrop.dev) to a public GitHub repository the owner uses to fix problems, so anyone can read what you send, the screenshot included: leave out anything private. Nothing is sent until you press Send. To turn the button off, open any page with ?feedback=off."
       ]
     ]
   },

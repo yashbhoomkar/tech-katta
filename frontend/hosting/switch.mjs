@@ -12,6 +12,7 @@
 //    links) opens the shell, whose router sends each old address to its new home (site3d/scripts/legacy.js).
 import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { pagesOf, renderHome, render, sitemap, llmsTxt, useAddresses, nextPath, SITE, OG_IMAGE } from "../seo.js";
 import { workspacePages } from "./pages.mjs";
@@ -57,7 +58,13 @@ for (const html of [path.join(dist, "health.html"), path.join(dist, "analytics",
   if (!text.includes("feedback-boot.js")) writeFileSync(html, text.replace("</body>", '<script type="module" src="/3d/scripts/feedback-boot.js"></script></body>'));
 }
 const preview = `<meta property="og:site_name" content="Tech Katta"/><meta property="og:type" content="website"/><meta property="og:image" content="${OG_IMAGE}"/><meta name="twitter:card" content="summary_large_image"/>`;
-const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}</head>`);
+// which build this is, for the Report popup's "Version" line (the commit the host built, else this checkout's)
+const buildId = (() => {
+  let sha = (process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "").slice(0, 7);
+  if (!sha) { try { sha = execSync("git rev-parse --short HEAD", { cwd: frontend, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { sha = "local"; } }
+  return `${new Date().toISOString().slice(0, 10)}-${sha}`;
+})();
+const shell3d = readFileSync(path.join(site3d, "index.html"), "utf8").replace("</head>", `${preview}<meta name="tk-build" content="${buildId}"/></head>`);
 const NOINDEX = '<meta name="robots" content="noindex"/>';
 /** the shell with this title (and description, canonical address, noindex) */
 const shellFor = (title, { desc, canon, noindex } = {}) => {

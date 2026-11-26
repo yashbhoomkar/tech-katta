@@ -1,0 +1,5 @@
+html-to-image 1.11.13 (MIT, license in html-to-image.LICENSE.txt), https://github.com/bubkoo/html-to-image
+html-to-image.esm.js is its es/ build bundled into one file, so the page needs no build step (like three.module.min.js):
+  npm pack html-to-image@1.11.13 && tar xzf html-to-image-1.11.13.tgz
+  npx esbuild package/es/index.js --bundle --format=esm --minify --target=es2019 --outfile=html-to-image.esm.js
+Loaded only when the Report popup's Visual feedback tab opens (site3d/scripts/feedback-capture.js).
