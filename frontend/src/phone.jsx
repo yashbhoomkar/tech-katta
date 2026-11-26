@@ -2,7 +2,7 @@
 // One sheet is open at a time; opening another closes the first. Android's and the browser's Back closes the open sheet before it
 // leaves the page: a sheet takes one history entry (the site's router ignores an entry that keeps the address) and gives it back
 // when it closes by itself.
-import React,{useEffect,useRef,useState}from"react";
+import"./phone.css";import React,{useEffect,useRef,useState}from"react";import{useDrag}from"./theme/gesture.js";
 export const PHONE_Q="(max-width:900px)";
 export const isPhone=()=>typeof matchMedia!=="undefined"&&matchMedia(PHONE_Q).matches;
 export function usePhone(){const[p,set]=useState(isPhone);useEffect(()=>{if(typeof matchMedia==="undefined")return;const m=matchMedia(PHONE_Q),f=()=>set(m.matches);m.addEventListener("change",f);return()=>m.removeEventListener("change",f)},[]);return p}
@@ -28,3 +28,20 @@ return <div className="ph-back" onPointerDown={e=>{if(e.target===e.currentTarget
 <div className="ph-grab" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{g.current=null;setDy(0)}}><i aria-hidden="true"/></div>
 <div className="ph-sh-head"><b>{title}</b><button type="button" className="ph-x" onClick={()=>close.current()} aria-label={"Close "+title.toLowerCase()}>✕</button></div>
 <div className="ph-sh-body">{children}</div></div></div>}
+
+/** ← goes Back when pages of this site came before this one (app.js counts them), else to `to` */
+export const goBack=to=>{if(window.tkSpa>0)history.back();else if(window.tkGo)window.tkGo(to);else location.assign(to)};
+/** The focus screen the challenges and the sandbox share with the problem workspace (solve.jsx has its own copy of the same layout):
+ *  a header (back, title, the one primary action, ⋯), the views one at a time with a switch at the bottom, a replay in full screen.
+ *  views: the ids from "problem" · "design" · "results"; `problem` and `results` are what those views hold, `children` the canvas. */
+export function PhoneFrame({cls="",title,back="/problems",runLabel,onRun,runDisabled,busy,dot,views,view,setView,badge=0,replay,exitReplay,problem,start,results,menu,menuOpen,setMenuOpen,children}){
+const head=useRef(null),names={problem:"Problem",design:"Design",results:"Results"};
+useDrag(head,{axis:"x",on:true,onEnd:go=>{if(!go)return;const n=views[views.indexOf(view)-go];if(n)setView(n)}});
+return <div className={"solve ph "+cls+" pv-"+view+(replay?" pv-replay":"")}>
+<div className="ph-head sv-pbar" ref={head}><a className="ph-back-btn" href={back} aria-label="Back" onClick={e=>{e.preventDefault();goBack(back)}}>←</a><b className="sv-ptitle">{title}</b>
+{onRun&&<button type="button" className="sv-run ph-run" disabled={runDisabled||busy} onClick={onRun}>{busy?<i className="ph-spin" aria-hidden="true"/>:null}{runLabel}{dot&&!busy?<i className="ph-dot" aria-hidden="true"/>:null}</button>}
+<button type="button" className="ph-more" aria-label="More" onClick={()=>setMenuOpen(true)}>⋯</button></div>
+{problem&&<div className="ph-prob"><section className="sv-q" aria-label="The problem">{problem}</section>{start}</div>}
+<div className="sv-lab">{children}{results&&<div className="ph-resv">{results}</div>}{replay&&<button type="button" className="ph-rx" onClick={exitReplay} aria-label="Close the replay">✕</button>}</div>
+<nav className="ph-sw" aria-label="Workspace views">{views.map(id=><button key={id} type="button" aria-pressed={view===id} className={view===id?"on":""} onClick={()=>setView(id)}>{names[id]}{id==="results"&&badge>0&&<span className="ph-badge" aria-label={badge+" to fix"}>{badge}</span>}</button>)}</nav>
+<Sheet name="menu" open={menuOpen} onClose={()=>setMenuOpen(false)} title="More" height="half"><div className="ph-menu">{menu}</div></Sheet></div>}

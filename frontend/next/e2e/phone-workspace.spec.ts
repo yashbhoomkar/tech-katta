@@ -51,6 +51,38 @@ async function bigEnough(page: Page, sel: string) {
 }
 const phone = (name: "iPhone 13" | "Pixel 7") => { const d = { ...devices[name] } as Partial<(typeof devices)[string]>; delete d.defaultBrowserType; return d as Omit<(typeof devices)[string], "defaultBrowserType">; };
 
+/** the challenge and the sandbox use the same focus screen: the 5.6 checks on one of each profile and theme (the problem has all eight) */
+for (const [name, landscape, theme, path, first] of [
+  ["Pixel 7", false, "dark", "/problems/challenge/one-server", true], ["iPhone 13", false, "light", "/problems/challenge/one-server", true], ["Pixel 7", true, "light", "/problems/challenge/one-server", true], ["iPhone 13", true, "dark", "/problems/challenge/one-server", true],
+  ["Pixel 7", false, "light", "/problems/sandbox", false], ["iPhone 13", false, "dark", "/problems/sandbox", false], ["Pixel 7", true, "dark", "/problems/sandbox", false], ["iPhone 13", true, "light", "/problems/sandbox", false],
+] as const) {
+  test.describe(`${path} on ${name} ${landscape ? "landscape" : "portrait"} ${theme}`, () => {
+    const d = phone(name);
+    test.use({ ...d, viewport: landscape ? { width: d.viewport.height, height: d.viewport.width } : d.viewport });
+    test("layout: bars step aside, the canvas gets the screen, nothing is wider than it @phone", async ({ page }) => {
+      await signedIn(page, theme, "2d");
+      await page.goto(path);
+      await expect(page.locator(".solve.ph")).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator("#top")).toBeHidden(); await expect(page.locator(".tabbar")).toBeHidden();
+      const t = await touch(page);
+      // a challenge opens on its brief, the sandbox on its canvas; the sandbox has no Problem view
+      if (first) { await expect(page.locator(".solve.ph.pv-problem")).toBeVisible(); await tapOn(t, page.locator(".ph-start button")); }
+      await expect(page.locator(".solve.ph.pv-design")).toBeVisible();
+      await expect(page.locator(".lab-canvas")).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator(".ph-sw button")).toHaveText(first ? ["Problem", "Design", "Results"] : ["Design", "Results"]);
+      expect(await ratio(page), "canvas share of the screen").toBeGreaterThanOrEqual(landscape ? 0.75 : 0.7);
+      expect(await page.evaluate(() => document.body.scrollWidth <= innerWidth), "no sideways scroll").toBe(true);
+      const wide = await page.evaluate(() => Array.from(document.querySelectorAll(".ph-head, .ph-head *, .ph-sw, .ph-sw *")).filter((e) => e.getBoundingClientRect().right > innerWidth + 1).map((e) => e.className));
+      expect(wide).toEqual([]);
+      await bigEnough(page, ".ph-head :is(a, button), .ph-sw button, .ph-add, .ph-corner button");
+      for (const gone of [".lab-name", ".lab-view", ".d3-tools", ".lab-status", ".lab-top"]) await expect(page.locator(gone).first(), gone).toBeHidden();
+      await tapOn(t, page.locator(".ph-back-btn"));
+      await expect(page).toHaveURL(/\/problems(#challenges)?$/);
+      await expect(page.locator(".tabbar")).toBeVisible();
+    });
+  });
+}
+
 for (const [name, landscape] of [["Pixel 7", false], ["iPhone 13", false], ["Pixel 7", true], ["iPhone 13", true]] as const) {
   for (const theme of ["dark", "light"] as const) {
     test.describe(`${name} ${landscape ? "landscape" : "portrait"} ${theme}`, () => {
@@ -190,5 +222,45 @@ test.describe("3D canvas on a Pixel 7", () => {
     if (at) await t.tap(at.x, at.y);
     await expect(page.locator(".ph-selbar")).toBeVisible();
     expect(await ratio(page)).toBeGreaterThanOrEqual(0.7);
+  });
+});
+
+test.describe("challenge and sandbox on a Pixel 7", () => {
+  test.use({ ...phone("Pixel 7") });
+  test("a challenge: brief, design, score, stars in Results with the goals @phone", async ({ page }) => {
+    await signedIn(page, "dark", "2d");
+    await page.goto("/problems/challenge/one-server");
+    const t = await touch(page);
+    await expect(page.locator(".ph-prob .lab-goals li")).toHaveCount(3);
+    await tapOn(t, page.locator(".ph-start button"));
+    await expect(page.locator(".react-flow__node").first()).toBeVisible({ timeout: 30_000 });
+    await tapOn(t, page.locator(".ph-run"));
+    await expect(page.locator(".solve.ph.pv-results .ph-resv")).toBeVisible();
+    await expect(page.locator(".ph-resv .lab-score-stars")).toBeVisible();
+    await expect(page.locator(".ph-resv .lab-goals li")).toHaveCount(3);
+    await expect(page.locator(".lab-score-back")).toHaveCount(0); // the dialog is the Results view here
+    await bigEnough(page, ".ph-resv .ph-acts :is(button, a), .ph-sw button");
+    await tapOn(t, page.getByRole("button", { name: "Keep improving" }));
+    await expect(page.locator(".solve.ph.pv-design")).toBeVisible();
+    // ⋯ opens a sheet with a ✕, and Back closes it
+    await tapOn(t, page.locator(".ph-more"));
+    await expect(page.locator(".ph-sheet")).toBeVisible();
+    await page.goBack();
+    await expect(page.locator(".ph-sheet")).toHaveCount(0);
+  });
+  test("the sandbox: Run lands on Results, the traffic settings are a sheet @phone", async ({ page }) => {
+    await signedIn(page, "dark", "2d");
+    await page.goto("/problems/sandbox");
+    const t = await touch(page);
+    await expect(page.locator(".solve.ph.pv-design")).toBeVisible({ timeout: 30_000 });
+    await tapOn(t, page.locator(".ph-run"));
+    await expect(page.locator(".solve.ph.pv-results .ph-resv")).toBeVisible();
+    await expect(page.locator(".ph-resv .sv-console, .ph-resv .ph-empty").first()).toBeVisible();
+    await tapOn(t, page.locator(".ph-more"));
+    await tapOn(t, page.getByRole("button", { name: /Traffic and failures/ }));
+    await expect(page.locator(".ph-sheet .sb-side")).toBeVisible();
+    await bigEnough(page, ".ph-sheet .ph-x");
+    await tapOn(t, page.locator(".ph-x"));
+    await expect(page.locator(".ph-sheet")).toHaveCount(0);
   });
 });

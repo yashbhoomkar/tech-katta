@@ -88,7 +88,7 @@ export function mount(view, _params, ctx) {
       return;
     }
     view.innerHTML = `<section class="ws"><div class="ws-host"></div></section>`;
-    document.body.classList.toggle('ws-phone', target.kind === 'problem'); // phones: the problem is a focus screen, the site's bars step aside (styles/app.css)
+    document.body.classList.toggle('ws-phone', target.kind === 'problem' || target.kind === 'challenge' || target.kind === 'sandbox'); // phones: the problem is a focus screen, the site's bars step aside (styles/app.css)
     reserve();
     const host = view.querySelector('.ws-host');
     try {
