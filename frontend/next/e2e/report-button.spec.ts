@@ -82,15 +82,12 @@ const setup = async (page: Page, theme: "dark" | "light", view: "2d" | "3d" = "2
 /** the picture in the preview: its size, how many different colours it has, and how many in the part where the page's canvas was (from `rect`, in page pixels) */
 async function analyse(page: Page, rect: { x: number; y: number; w: number; h: number } | null) {
   return page.evaluate(async (r) => {
-    const img = document.querySelector(".tk-rp-shot img") as HTMLImageElement | null;
-    if (!img) return null;
-    await img.decode();
-    const k = img.naturalWidth / innerWidth, c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext("2d");
+    const c = document.querySelector(".tk-mk-stage canvas") as HTMLCanvasElement | null;
+    if (!c) return null;
+    const k = c.width / innerWidth, g = c.getContext("2d");
     if (!g) return null;
-    g.drawImage(img, 0, 0);
     const count = (x: number, y: number, w: number, h: number) => { const d = g.getImageData(Math.max(0, Math.round(x)), Math.max(0, Math.round(y)), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))).data, seen = new Set<string>(); for (let i = 0; i < d.length; i += 4) seen.add(`${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`); return seen.size; };
-    return { w: img.naturalWidth, h: img.naturalHeight, src: img.src.split(",")[0], bytes: Math.floor(((img.src.split(",")[1] ?? "").length * 3) / 4), all: count(0, 0, c.width, c.height), region: r ? count(r.x * k, r.y * k, r.w * k, r.h * k) : -1 };
+    return { w: c.width, h: c.height, src: c.toDataURL("image/png").split(",")[0], bytes: Math.floor(((c.toDataURL("image/png").split(",")[1] ?? "").length * 3) / 4), all: count(0, 0, c.width, c.height), region: r ? count(r.x * k, r.y * k, r.w * k, r.h * k) : -1 };
   }, rect);
 }
 const popup = (page: Page) => page.locator(".tk-report-pop");
@@ -145,7 +142,7 @@ test("the tab you used last is the one that opens, BugDrop's script is never loa
   await page.goto("/privacy");
   await page.locator(".tk-report").click();
   await page.locator("[data-tab=visual]").click();
-  await expect(page.locator(".tk-rp-shot img, .tk-rp-shot.fail")).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator(".tk-mk-stage canvas, .tk-rp-shot.fail")).toBeVisible({ timeout: 60_000 });
   await page.locator(".tk-rp-x").click();
   await page.locator(".tk-report").click();
   await expect(page.locator(".tk-rp-tabs [aria-selected=true]")).toHaveText("Visual feedback");
@@ -182,7 +179,7 @@ for (const theme of ["dark", "light"] as const) {
     const rect = await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
     await page.locator(".tk-report").click();
     await page.locator("[data-tab=visual]").click();
-    await expect(page.locator(".tk-rp-shot img")).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
     // the popup and the button are back, and so is the canvas
     await expect(popup(page)).toBeVisible();
     await expect(page.locator(".tk-report")).toBeVisible();
@@ -214,7 +211,7 @@ test.describe("a low-end phone: 320×579 at 3.375x", () => {
     const rect = await page.evaluate(() => { const r = (document.querySelector(".d3 canvas") as HTMLElement).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
     await page.locator(".tk-report").click();
     await page.locator("[data-tab=visual]").click();
-    await expect(page.locator(".tk-rp-shot img")).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
     const a = await analyse(page, rect);
     expect(a?.w).toBe(640); // a pixel ratio of 2, not 3.375
     expect(Math.max(a?.w ?? 0, a?.h ?? 0)).toBeLessThanOrEqual(1600);
@@ -338,3 +335,145 @@ for (const landscape of [false, true]) {
     });
   });
 }
+
+// ---- marking up the picture (site3d/scripts/feedback-markup.js)
+/** how many pixels differ between two PNG data URLs inside `box` (fractions of the picture), -1 when they are not the same size */
+async function differ(page: Page, a: string, b: string, box: { x: number; y: number; w: number; h: number }) {
+  return page.evaluate(async ([ua, ub, bx]) => {
+    const load = (u: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = u; });
+    const [ia, ib] = [await load(ua as string), await load(ub as string)];
+    if (ia.naturalWidth !== ib.naturalWidth || ia.naturalHeight !== ib.naturalHeight) return -1;
+    const w = ia.naturalWidth, h = ia.naturalHeight, r = bx as { x: number; y: number; w: number; h: number };
+    const px = (i: HTMLImageElement) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); if (!g) return new Uint8ClampedArray(0); g.drawImage(i, 0, 0); return g.getImageData(Math.round(r.x * w), Math.round(r.y * h), Math.max(1, Math.round(r.w * w)), Math.max(1, Math.round(r.h * h))).data; };
+    const [da, db] = [px(ia), px(ib)]; let n = 0;
+    for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) + Math.abs(da[i + 1] - db[i + 1]) + Math.abs(da[i + 2] - db[i + 2]) > 30) n++;
+    return n;
+  }, [a, b, box] as const);
+}
+const canvasUrl = (page: Page) => page.evaluate(() => (document.querySelector(".tk-mk-stage canvas") as HTMLCanvasElement).toDataURL("image/png"));
+const stageBox = async (page: Page) => { const b = await page.locator(".tk-mk-stage canvas").boundingBox(); if (!b) throw new Error("no picture"); return b; };
+async function openVisual(page: Page, path = "/privacy") {
+  await page.goto(path);
+  await page.locator(".tk-report").click();
+  await page.locator("[data-tab=visual]").click();
+  await expect(page.locator(".tk-mk-stage canvas")).toBeVisible({ timeout: 60_000 });
+  await page.waitForTimeout(300);
+}
+const FAR = { x: 0.0, y: 0.0, w: 0.12, h: 0.05 }; // a corner nothing is drawn in
+
+test.describe("markup on a low-end phone: 320×579 at 3.375x, real touch", () => {
+  test.use({ viewport: { width: 320, height: 579 }, deviceScaleFactor: 3.375, isMobile: true, hasTouch: true });
+  test("a stroke and a box drawn with a finger are in the picture that is sent, and the sheet stays open @phone", async ({ page }) => {
+    test.setTimeout(120_000);
+    await setup(page, "dark");
+    const got = await worker(page);
+    await openVisual(page);
+    const before = await canvasUrl(page), cb = await stageBox(page);
+    // the tools fit: one scrollable row, every target 44 px, nothing makes the page wider than the screen
+    const m = await page.evaluate(() => ({ small: Array.from(document.querySelectorAll(".tk-mk-bar button, .tk-mk-fs")).filter((b) => { const r = b.getBoundingClientRect(); return r.height < 44 || r.width < 44; }).map((b) => b.getAttribute("aria-label") ?? b.textContent), page: document.documentElement.scrollWidth, win: innerWidth, bar: (() => { const b = document.querySelector(".tk-mk-bar") as HTMLElement; return [b.scrollWidth, b.clientWidth, b.getBoundingClientRect().height]; })() }));
+    expect(m.small, "every tool is at least 44 px").toEqual([]);
+    expect(m.page).toBeLessThanOrEqual(m.win);
+    expect(m.bar[2], "one row").toBeLessThan(70);
+    const cdp = await page.context().newCDPSession(page);
+    let clock = 1000;
+    const touch = async (pts: [number, number][]) => {
+      const send = (type: "touchStart" | "touchMove" | "touchEnd", p?: [number, number]) => { clock += 16; return cdp.send("Input.dispatchTouchEvent", { type, touchPoints: p ? [{ x: p[0], y: p[1], id: 0 }] : [], timestamp: clock / 1000 }); };
+      await send("touchStart", pts[0]);
+      for (const p of pts.slice(1)) { await send("touchMove", p); await page.waitForTimeout(16); }
+      await send("touchEnd");
+    };
+    const at = (fx: number, fy: number): [number, number] => [cb.x + cb.width * fx, cb.y + cb.height * fy];
+    // 1) freehand, in blue
+    await page.locator("[data-color=blue]").click();
+    await touch([0.2, 0.3, 0.4, 0.55, 0.8].map((f, i) => at(f, 0.3 + i * 0.04)));
+    const d1 = await differ(page, before, await canvasUrl(page), { x: 0.15, y: 0.25, w: 0.7, h: 0.25 });
+    expect(d1, "the stroke is on the picture").toBeGreaterThan(20);
+    // 2) a box, in red
+    await page.locator("[data-color=red]").click();
+    await page.locator("[data-tool=box]").click();
+    await touch([at(0.2, 0.6), at(0.5, 0.75), at(0.8, 0.9)]);
+    const withBox = await canvasUrl(page);
+    expect(await differ(page, before, withBox, { x: 0.15, y: 0.58, w: 0.7, h: 0.36 })).toBeGreaterThan(20);
+    await expect(popup(page)).toBeVisible(); // drawing is not a swipe on the sheet
+    // undo takes the box away again
+    await page.locator("[data-undo]").click();
+    expect(await differ(page, before, await canvasUrl(page), { x: 0.15, y: 0.58, w: 0.7, h: 0.36 })).toBe(0);
+    await touch([at(0.2, 0.6), at(0.5, 0.75), at(0.8, 0.9)]);
+    // full screen: the picture is bigger, Done comes back
+    const small = (await stageBox(page)).height;
+    await page.locator("[data-fs]").click();
+    expect((await stageBox(page)).height, "bigger in full screen").toBeGreaterThan(small);
+    await page.locator("[data-fs]").click();
+    await expect(page.locator(".tk-mk-full")).toHaveCount(0);
+    await page.locator("[data-note]").fill("Look at the box");
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toBeVisible();
+    const sent = got[0].screenshot ?? "";
+    expect(sent.startsWith("data:image/png;base64,")).toBe(true);
+    expect(await differ(page, before, sent, { x: 0.15, y: 0.25, w: 0.7, h: 0.7 }), "what was sent has the stroke and the box").toBeGreaterThan(40);
+    expect(await differ(page, before, sent, FAR), "and is the same picture elsewhere").toBe(0);
+  });
+});
+
+for (const theme of ["dark", "light"] as const) {
+  test(`markup, ${theme}: arrow, highlight, hide and a text label are in what is sent; Esc leaves full screen first`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await setup(page, theme);
+    const got = await worker(page);
+    await openVisual(page, "/privacy?feedback=on");
+    const before = await canvasUrl(page);
+    await page.locator("[data-fs]").click(); // draw on the big one
+    const cb = await stageBox(page);
+    const at = (fx: number, fy: number) => ({ x: cb.x + cb.width * fx, y: cb.y + cb.height * fy });
+    const drag = async (a: { x: number; y: number }, b: { x: number; y: number }) => { await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 }); await page.mouse.move(b.x, b.y, { steps: 4 }); await page.mouse.up(); };
+    await page.locator("[data-tool=arrow]").click(); await drag(at(0.1, 0.2), at(0.4, 0.3));
+    await page.locator("[data-tool=hl]").click(); await drag(at(0.1, 0.4), at(0.7, 0.5));
+    await page.locator("[data-tool=hide]").click(); await drag(at(0.1, 0.6), at(0.5, 0.7));
+    await page.locator("[data-tool=text]").click(); await page.mouse.click(at(0.15, 0.8).x, at(0.15, 0.8).y);
+    await page.locator(".tk-mk-text").fill("here"); await page.keyboard.press("Enter");
+    const drawn = await canvasUrl(page);
+    for (const [name, r] of [["the arrow", { x: 0.08, y: 0.18, w: 0.35, h: 0.15 }], ["the highlight", { x: 0.1, y: 0.4, w: 0.6, h: 0.1 }], ["the hidden block", { x: 0.1, y: 0.6, w: 0.4, h: 0.1 }], ["the label", { x: 0.12, y: 0.78, w: 0.2, h: 0.1 }]] as const)
+      expect(await differ(page, before, drawn, r), name).toBeGreaterThan(20);
+    // the hidden block is solid: what is under it is gone
+    const solid = await page.evaluate(() => { const c = document.querySelector(".tk-mk-stage canvas") as HTMLCanvasElement, g = c.getContext("2d"); const d = g?.getImageData(Math.round(c.width * 0.25), Math.round(c.height * 0.65), 1, 1).data ?? []; return [d[0], d[1], d[2]]; });
+    expect(solid.every((v) => v < 40)).toBe(true);
+    await page.keyboard.press("Escape"); // leaves full screen, the popup stays
+    await expect(page.locator(".tk-mk-full")).toHaveCount(0);
+    await expect(popup(page)).toBeVisible();
+    await page.locator("[data-send]").click();
+    await expect(page.locator(".tk-rp-done")).toBeVisible();
+    expect(await differ(page, before, got[0].screenshot ?? "", { x: 0, y: 0, w: 1, h: 1 }), "the sent picture is the marked one").toBeGreaterThan(100);
+  });
+}
+
+test("Clear takes every mark away, and a picture with no marks is sent as it was taken", async ({ page }) => {
+  await setup(page, "light");
+  const got = await worker(page);
+  await openVisual(page);
+  const before = await canvasUrl(page), cb = await stageBox(page);
+  await page.mouse.move(cb.x + cb.width * 0.2, cb.y + cb.height * 0.3); await page.mouse.down(); await page.mouse.move(cb.x + cb.width * 0.7, cb.y + cb.height * 0.6, { steps: 6 }); await page.mouse.up();
+  await expect(page.locator("[data-clear]")).toBeEnabled();
+  await page.locator("[data-clear]").click();
+  await expect(page.locator("[data-clear]")).toBeDisabled();
+  await page.locator("[data-send]").click();
+  await expect(page.locator(".tk-rp-done")).toBeVisible();
+  expect(await differ(page, before, got[0].screenshot ?? "", { x: 0, y: 0, w: 1, h: 1 })).toBe(0);
+});
+
+test("the Report button and Send are the same accessible blue with white text, in dark and light", async ({ page }) => {
+  for (const theme of ["dark", "light"] as const) {
+    await setup(page, theme);
+    await page.goto("/privacy");
+    const rgb = async (q: string) => page.locator(q).evaluate((e) => { const s = getComputedStyle(e); return [s.backgroundColor, s.color]; });
+    const lum = (c: string) => { const [r, g, b] = (c.match(/[\d.]+/g) ?? []).slice(0, 3).map((v) => { const x = Number(v) / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+    const [bg, fg] = await rgb(".tk-report");
+    expect(bg, theme).toBe("rgb(29, 78, 216)");
+    expect(fg).toBe("rgb(255, 255, 255)");
+    expect(ratio(bg, fg)).toBeGreaterThanOrEqual(4.5);
+    await page.locator(".tk-report").click();
+    await page.locator("[data-msg]").fill("x");
+    expect((await rgb("[data-send]"))[0]).toBe(bg);
+    await page.locator(".tk-rp-x").click();
+  }
+});
