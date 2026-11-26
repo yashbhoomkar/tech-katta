@@ -127,7 +127,8 @@ test("phone: the workspace brief, no sideways scroll on the main pages @phone", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), `${path} scrolls sideways`).toBe(false);
   }
   await page.goto("/problems/menu-search");
-  await expect(page.locator(".sv-pbrief")).toBeVisible();
-  await page.locator(".sv-pbrief .sv-submit").click();
+  // the first visit opens on the problem, with a button to the canvas (phase 3 of context 53 replaced the brief card)
+  await expect(page.locator(".ph-start")).toBeVisible();
+  await page.locator(".ph-start .sv-submit").click();
   await expect(page.locator(".sv-pbar")).toBeVisible();
 });

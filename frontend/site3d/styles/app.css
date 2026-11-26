@@ -1714,3 +1714,6 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 /* Home's "Everything here" rows on phones: they rise in with their row (li), not slide in sideways like the swipe deck's cards (the 40px start
    offset made the page scroll sideways until they played) */
 @media (max-width: 760px) { .places .place { animation: none; } }
+
+/* doc 53 phase 3: a problem on a phone is a focus screen: the site's top and bottom bars step aside (the workspace has its own header and switch) */
+@media (max-width: 900px) { body.ws-phone .top, body.ws-phone .tabbar { display: none !important; } body.ws-phone main { padding-bottom: 0; } }

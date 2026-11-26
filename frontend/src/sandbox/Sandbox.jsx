@@ -8,7 +8,7 @@ import{getJSON}from"../api.js";import{Loading,LoadError}from"../status.jsx";impo
 import{judge}from"../judge/judge.js";import{evalCatalogue}from"../eval/design.js";
 import{fieldsOf,replayAt,ReplayBar,Findings,eventWords}from"../solve/v2.jsx";import{Bill}from"../solve/console.jsx";import{fmt,pct}from"../solve/format.js";
 import{sandboxPractice,cleanSettings,DEFAULTS,TEMPLATES,PATTERNS,hoursOf,tickOf}from"./practice.js";
-import"../solve.css";import"./sandbox.css";
+import"../solve.css";import"./sandbox.css";import{usePhone,PhoneFrame,Sheet}from"../phone.jsx";
 
 const KEY="tk-sandbox-v1";
 const readSettings=()=>{try{return cleanSettings(JSON.parse(localStorage.getItem(KEY)||"null")||DEFAULTS)}catch{return cleanSettings(DEFAULTS)}};
@@ -21,6 +21,8 @@ const set=patch=>setS(x=>cleanSettings({...x,...patch}));
 const P=useMemo(()=>sandboxPractice(s),[s]);
 const design=useRef(null);const[nodes,setNodes]=useState([]);const[gen,setGen]=useState(0),[pending,setPending]=useState(null);
 const[res,setRes]=useState(null),[rep,setRep]=useState(null),[busy,setBusy]=useState(false);
+// a phone: the focus screen of the problem workspace, with Design and Results only; the traffic and failures are a sheet in the ⋯ menu
+const phone=usePhone(),[pview,setPview]=useState("design"),[menu,setMenu]=useState(false),[traffic,setTraffic]=useState(false),[expo,setExpo]=useState(false);
 useEffect(()=>{track("sandbox_open",{});try{const raw=sessionStorage.getItem("tk-sandbox-import");if(raw){sessionStorage.removeItem("tk-sandbox-import");const d=JSON.parse(raw);if(Array.isArray(d.nodes)){setPending({nodes:d.nodes,edges:d.edges||[]});setGen(g=>g+1)}}}catch{}},[]);
 if(err)return <LoadError what="the canvas" retry={load}/>;if(!lab)return <Loading label="Loading the canvas"/>;
 const cat=evalCatalogue(lab),comp=t=>cat[t]||lab.components?.find(c=>c.type===t);
@@ -33,8 +35,7 @@ const breakIt=(fault,label)=>{if(!rep)return;const d=design.current||P.start,bas
 setRep(x=>({...x,r:r2,base,faults,play:true,whatIf:[...(x.whatIf||[]),`${label} at minute ${fault.minute}`]}))};
 const fault=(k,patch)=>set({faults:s.faults.map((f,i)=>i===k?{...f,...patch}:f)});
 const addFault=()=>set({faults:[...s.faults,parts[0]?{kind:"crash",type:parts[0].type,node:parts[0].id,minute:Math.min(10,hours*60-tick)}:{kind:"spike",factor:2,minutes:15,minute:Math.min(10,hours*60-tick)}]});
-return <div className="sb">
-<aside className="sb-side" aria-label="Traffic and failures">
+const sidebar=<aside className="sb-side" aria-label="Traffic and failures">
 <p className="sb-eyebrow">SANDBOX · <span className="sb-paid">Paid</span></p><h1>Design anything</h1>
 <p className="sb-lead">No problem, no tests: choose the traffic and what goes wrong, then Run. The report says how your design held up and what it costs. Nothing here is scored.</p>
 <label className="sb-f"><span>Start from</span><select value="" onChange={e=>{pickTemplate(e.target.value);e.target.value=""}}><option value="">Choose a starting design…</option>{TEMPLATES.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
@@ -55,8 +56,19 @@ return <div className="sb">
 <button type="button" className="sb-x" onClick={()=>set({faults:s.faults.filter((_,i)=>i!==k)})} aria-label="Remove this failure">✕</button></li>)}</ol>
 {s.faults.length<6&&<button type="button" className="sv-linkbtn" onClick={addFault}>+ Add a failure</button>}
 <button type="button" className="sv-run sb-run" disabled={busy} onClick={run}>{busy?"Running…":"▶ Run"}</button>
-</aside>
-<div className="sv-lab sb-lab"><Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={"sandbox:"+gen} problem={{id:"sandbox",name:"My sandbox design",start:P.start,fields:fieldsOf(P),v:2,ops:P.operations.map(o=>({id:o.id,name:o.name})),practice:P,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d;setNodes(d.nodes)}} replay={rep?replayAt(rep,P):null} flow={rep?0:undefined}/></Suspense>
+</aside>;
+const cmd=c=>{setMenu(false);setPview("design");setTimeout(()=>dispatchEvent(new CustomEvent("tk-canvas",{detail:{cmd:c}})),120)};
+const canvas=<Suspense fallback={<Loading label="Loading the canvas"/>}><Lab key={"sandbox:"+gen} problem={{id:"sandbox",name:"My sandbox design",start:P.start,fields:fieldsOf(P),v:2,ops:P.operations.map(o=>({id:o.id,name:o.name})),practice:P,load:pending,onLoaded:()=>setPending(null)}} onDesign={d=>{design.current=d;setNodes(d.nodes)}} replay={rep?replayAt(rep,P):null} flow={rep?0:undefined}/></Suspense>;
+if(phone)return <><PhoneFrame cls="ph-sb" title="Sandbox" runLabel="▶ Run" onRun={()=>{run();setPview("results")}} busy={busy} views={["design","results"]} view={pview} setView={setPview} replay={!!rep} exitReplay={()=>{setRep(null);setPview("results")}} menuOpen={menu} setMenuOpen={setMenu}
+results={rep?null:(busy||res)?<Report busy={busy} res={res} P={P} nameOf={nameOf} close={()=>setRes(null)} replay={r=>{setRep({r,i:0,play:false});setPview("design")}}/>:<div className="ph-empty"><b>No report yet</b><p>Run your traffic to see how the design held up and what it costs.</p><button type="button" className="sv-run" onClick={()=>{run();setPview("results")}}>▶ Run</button></div>}
+menu={<><button type="button" className="ph-item strong" onClick={()=>{setMenu(false);setTraffic(true)}}>Traffic and failures<small>{Number(s.rps).toLocaleString()}/s{s.faults.length?" · "+s.faults.length+" failure"+(s.faults.length>1?"s":""):""}</small></button>
+<button type="button" className="ph-item" onClick={()=>cmd("rename")}>Rename the design</button><button type="button" className="ph-item" onClick={()=>cmd("view")}>Switch between 3D and 2D</button>
+<button type="button" className="ph-item" aria-expanded={expo} onClick={()=>setExpo(v=>!v)}>Export<small>{expo?"▴":"▾"}</small></button>{expo&&<div className="ph-sub-list">{[["mermaid","Copy as Mermaid"],["svg","Download SVG"],["png","Download PNG"],["json","Download JSON"],["link","Copy share link"]].map(([c,t])=><button key={c} type="button" className="ph-item" onClick={()=>cmd(c)}>{t}</button>)}</div>}</>}>
+{canvas}{rep&&<ReplayBar rep={rep} set={setRep} P={P} nameOf={nameOf} parts={parts} onBreak={breakIt}/>}</PhoneFrame>
+<Sheet name="traffic" open={traffic} onClose={()=>setTraffic(false)} title="Traffic and failures" height="tall">{sidebar}</Sheet></>;
+return <div className="sb">
+{!phone&&sidebar}
+<div className="sv-lab sb-lab">{canvas}
 {rep?<ReplayBar rep={rep} set={setRep} P={P} nameOf={nameOf} parts={parts} onBreak={breakIt}/>:(busy||res)&&<Report busy={busy} res={res} P={P} nameOf={nameOf} close={()=>setRes(null)} replay={r=>setRep({r,i:0,play:false})}/>}</div>
 </div>}
 

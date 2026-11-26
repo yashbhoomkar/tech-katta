@@ -6,7 +6,7 @@ import React,{useEffect,useRef,useState}from"react";import{W,H}from"./shared.jsx
 const BASE="/3d/scripts/";
 let engine=null;const load=()=>engine||=Promise.all([import(/* @vite-ignore */BASE+"world.js"),import(/* @vite-ignore */BASE+"replay3d.js")]).then(([w,r])=>({createWorld:w.createWorld,...r}));
 /** how much of the canvas's left the problem card and the parts column cover, as the screen fraction where the design should be centred */
-const sxOf=el=>{const r=el.getBoundingClientRect();if(r.width<50)return .5;const lx=Math.max(0,...[".sv-q",".sv-tabs",".lab-pal"].map(q=>{const e=document.querySelector(q),b=e&&e.getBoundingClientRect();return b&&b.width>0&&b.height>0&&b.right>r.left&&b.left<r.left+r.width/2?b.right-r.left+8:0}));return (lx+(r.width-lx)/2)/r.width};
+const sxOf=el=>{const r=el.getBoundingClientRect();if(r.width<50)return .5;const lx=Math.max(0,...(document.querySelector(".solve.ph")?[]:[".sv-q",".sv-tabs",".lab-pal"]).map(q=>{const e=document.querySelector(q),b=e&&e.getBoundingClientRect();return b&&b.width>0&&b.height>0&&b.right>r.left&&b.left<r.left+r.width/2?b.right-r.left+8:0}));return (lx+(r.width-lx)/2)/r.width};
 // a card's size (shared.jsx): the centre of a part is its card's centre
 export const mode3dWanted=()=>{try{return localStorage.getItem("tk-design-view")!=="2d"}catch{return true}};
 export const saveMode3d=on=>{try{localStorage.setItem("tk-design-view",on?"3d":"2d")}catch{}};

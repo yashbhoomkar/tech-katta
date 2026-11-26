@@ -72,7 +72,7 @@ export function mount(view, _params, ctx) {
   };
 
   async function draw() {
-    stop();
+    stop(); document.body.classList.remove('ws-phone');
     if (!alive) return;
     const g = gateKind() ? gateNow(gateKind()) : 'open';
     document.body.classList.toggle('ws-locked', g !== 'open'); syncRail();
@@ -88,6 +88,7 @@ export function mount(view, _params, ctx) {
       return;
     }
     view.innerHTML = `<section class="ws"><div class="ws-host"></div></section>`;
+    document.body.classList.toggle('ws-phone', target.kind === 'problem' || target.kind === 'challenge' || target.kind === 'sandbox'); // phones: the problem is a focus screen, the site's bars step aside (styles/app.css)
     reserve();
     const host = view.querySelector('.ws-host');
     try {
@@ -116,5 +117,5 @@ export function mount(view, _params, ctx) {
     draw();
   })();
   const off = gateKind() ? watchGate(gateKind(), () => { if (alive) window.tkRefresh?.(); }) : null;
-  return () => { alive = false; off?.(); offPublic?.(); stop(); document.body.classList.remove('ws-locked'); };
+  return () => { alive = false; off?.(); offPublic?.(); stop(); document.body.classList.remove('ws-locked', 'ws-phone'); };
 }
