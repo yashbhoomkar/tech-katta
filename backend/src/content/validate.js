@@ -101,6 +101,8 @@ const EXAMPLE = { name: 'text', kind: 'text', text: 'text', parts: [{ tuple: ['t
 export function validateSite(site, examples, problems = []) {
   if (!site) { problems.push('site.json: missing'); return problems; }
   shape(site, SITE, 'site.json', problems);
+  // the public changelog (/changelog): dated, user-facing lines, newest first
+  if (site.changelog !== undefined) shape(site.changelog, [{ date: 'text', items: ['text'] }], 'site.json: changelog', problems);
   const sections = list(site.dashboard?.sections).map((s) => s && s[0]);
   if (new Set(sections).size !== sections.length) problems.push('site.json: dashboard.sections has a duplicate id');
   const cards = new Set(list(site.topics?.cards).map((c) => c && c.id));
@@ -346,6 +348,8 @@ export function validateContent({ site, examples, articles, lab, evalCat }) {
     // problem, in full, to everyone and to search engines); everything else is `paid`, behind the sign-in
     if (a.access !== 'free' && a.access !== 'paid') problems.push(`${at}: access must be "free" or "paid"`);
     checkBlocks(a.body, at, problems, targets);
+    // sources (optional): the real references an article cites, each a label and an https address
+    if (a.sources !== undefined) { if (!Array.isArray(a.sources) || !a.sources.length) problems.push(`${at}: sources must be a non-empty list`); else a.sources.forEach((x, i) => { if (!x || !isText(x.label) || typeof x.url !== 'string' || !/^https:\/\/[^\s]+$/.test(x.url)) problems.push(`${at}: sources[${i}] needs a label and an https url`); }); }
     // practice designs are checked against the Lab catalogue, so only when it is given
     if (a.practice !== undefined && lab) validatePractice(a.practice, evalCat ? { ...lab, eval: evalCat } : lab, `${at} practice`, problems);
   }

@@ -160,7 +160,7 @@ export function mount(view, [section, slug], { reduced }) {
         <p class="kicker"><span>${esc(sec.name.replace(/s$/, ''))} ${numOf(a.no)}</span><i></i>${esc(groupName)}</p>
         <h1 class="headline"><span class="thin">${esc(t1)}</span>${t2 ? `<span class="heavy accent">${esc(t2)}</span>` : ''}</h1>
         <p class="lead">${inline(a.dek)}</p>
-        <p class="meta mono">${minutes(a)} min read · ${esc(a.date || '')}${store.get().read[id] ? ' · <span class="ok">done</span>' : ''}</p>
+        <p class="meta mono">${minutes(a)} min read${a.date ? ` · Updated ${esc(a.date)}` : ''}${store.get().read[id] ? ' · <span class="ok">done</span>' : ''}</p>
         <div class="actions">${text ? (isProblem ? `<a class="btn dark" href="/problems/${esc(a.slug)}" data-solve>Solve it on the canvas<span class="chip">→</span></a>` : '') + readingControl('text') : isProblem ? `<a class="btn dark" href="/problems/${esc(a.slug)}" data-solve>Solve it on the canvas<span class="chip">→</span></a><button class="btn light" type="button" data-next>Play the story<span class="chip violet">↓</span></button><button class="btn light skip-wide" type="button" data-skip>Skip to the article</button>` : `<button class="btn dark" type="button" data-next>Play the story<span class="chip">↓</span></button><button class="btn light" type="button" data-skip>Skip to the article</button>`}${text ? '' : readingControl('story')}</div>
       </div>
       ${text ? '' : steps.slice(1).map((s, i) => `<div class="step" data-step="${i + 1}">
@@ -184,6 +184,7 @@ export function mount(view, [section, slug], { reduced }) {
             ${h2s.length > 2 ? `<details class="phone-toc"><summary>On this page</summary><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></details>` : ''}
           </header>
           <div class="rd-full${cut ? ' preview-fade' : ''}">${visible.map((b) => block(b, a)).join('')}</div>
+          ${!cut && Array.isArray(a.sources) && a.sources.length ? `<aside class="sources" aria-label="Sources"><h2 class="mono">Sources</h2><ul>${a.sources.filter((s) => s && /^https:\/\//.test(s.url)).map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.label)}</a></li>`).join('')}</ul></aside>` : ''}
           <div class="rd-cards" hidden>
             ${intro ? `<div class="rd-intro">${intro}</div>` : ''}
             <div class="topic-grid">${topics.map((t, i) => `<button type="button" class="topic-card" data-topic="${i}" style="--i:${i}"><span class="mono">${String(i + 1).padStart(2, '0')}</span><b>${inline(t.title)}</b><span class="muted">${esc(t.lede)}</span></button>`).join('')}</div>
