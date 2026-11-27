@@ -61,7 +61,7 @@
       "items": [
         "Uploads: 20 lakh a day ÷ 86,400 s ≈ 23 a second, maybe 100 at the dinner peak. Small for the database.",
         "Bytes in: about 3 MB per original is 6 TB a day, roughly 2 PB a year. Object storage, not a database.",
-        "Views: 1 crore people × 50 photos seen is 50 crore a day, about 6,000 a second and 25,000 at peak. At around 100 KB each that's 2.5 GB a second: a CDN's job.",
+        "Views: 1 crore people × 50 photos seen is 50 crore a day, about 6,000 a second and 25,000 at peak. At around 50 KB each (most views are the thumbnail or feed size, not the original) that's about 1.2 GB a second: a CDN's job.",
         "Details: 20 lakh rows a day × about 500 bytes is 1 GB a day, about 365 GB a year. One large database for a while, sharded later.",
         "Sizes: a 20 KB thumbnail, a 150 KB feed size and a 500 KB full screen add about 0.7 MB per photo, so storing them costs a quarter of the originals but saves every phone from downloading 3 MB."
       ]
@@ -121,7 +121,7 @@
       "kind": "SIZES MADE ON UPLOAD",
       "what": "A worker makes fixed sizes (320, 1080 and 2048 pixels wide) in a modern format, and the app asks for the one it needs.",
       "use": "A grid of thumbnails is about 250 KB, and the sizes are made once, not on every view.",
-      "avoid": "Served from your own servers, 2.5 GB a second at peak still needs a lot of machines and bandwidth.",
+      "avoid": "Served from your own servers, over a gigabyte a second at peak still needs a lot of machines and bandwidth.",
       "ex": "The restaurant grid uses 320-pixel thumbnails at about 20 KB each.",
       "like": "A printer making postcards, posters and stamps once, then handing out the right one."
     },

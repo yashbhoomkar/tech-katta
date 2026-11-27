@@ -229,7 +229,7 @@
   ],
   "practice": {
     "v": 2,
-    "brief": "Each test sends the crowd's requests: almost all of them are people in the line refreshing the waiting room or the \"sold out\" page, which is the same for everyone and may be five seconds old; one in two hundred is someone admitted from the line holding a seat. A hold is answered at once and must be done within a few minutes (half an hour when sales open at noon); two people must never hold the same seat, and no accepted hold may be lost.",
+    "brief": "Each test sends the crowd's requests: almost all of them are people in the line refreshing the waiting room or the \"sold out\" page, which is the same for everyone and may be five seconds old; one in two hundred is someone admitted from the line holding a seat. A hold is answered at once; the article treats it as one short transaction, but the tests only ask that it is done within a few minutes (half an hour when sales open at noon), a looser limit that keeps the canvas small; two people must never hold the same seat, and no accepted hold may be lost.",
     "entities": {
       "seats": {
         "rows": 10000000,
