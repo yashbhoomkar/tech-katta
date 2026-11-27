@@ -1,5 +1,6 @@
 import { devices, expect, test, type Page } from "@playwright/test";
 import { localApi } from "./api";
+import { expectTabClear } from "./report-tab";
 
 // The Report button (site3d/scripts/feedback.js): ours, on every page, and it does not depend on BugDrop's script to appear. Automated browsers are skipped
 // by the button (navigator.webdriver), so these tests say they are not one.
@@ -24,8 +25,10 @@ async function reachable(page: Page, what: string) {
   expect(r, `${what}: the Report button is drawn`).not.toBeNull();
   expect(r?.inside, `${what}: inside the screen`).toBe(true);
   expect(r?.hit, `${what}: not covered (something else is at its centre: ${r?.over})`).toBe(true);
-  expect(r?.w, `${what}: wide enough to press (it is 24 px so that it sits in the page margin and covers nothing; its target is taller instead)`).toBeGreaterThanOrEqual(24);
+  expect(r?.w, `${what}: wide enough to press (the owner's side tab is at most 20 px wide: it sits in the page margin; its target is taller instead)`).toBeGreaterThanOrEqual(16);
   expect(r?.h, `${what}: tall enough to press`).toBeGreaterThanOrEqual(44);
+  await page.waitForTimeout(700); // it finds its resting height a moment after the page is drawn
+  await expectTabClear(page, what); // the side tab covers no control and at most 4 px of any text, on every page
 }
 
 const PAGES: [string, string][] = [
