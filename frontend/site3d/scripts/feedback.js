@@ -17,7 +17,7 @@ const CSS = `
 /* the owner chose the blue tab on the right edge (tech-katta-feedback#11, #399): at most 20 px wide, so it sits in the 16 px page margin (a few px of a text box at most), flush to the edge, at about 57 % of the height:
    clear of the top bar and the tab bar. Its target grows up and down only, never further into the page. */
 .tk-report::before { content: ""; position: absolute; inset: -6px 0 -6px 0; }
-.tk-report { transition: top .2s; } @media (max-width: 760px) { .tk-report { width: 16px; font-size: 11px; } } /* the phones' page margin is 16 px: the tab is no wider */
+.tk-report { transition: top .2s; } @media (max-width: 760px), (max-height: 500px) { .tk-report { width: 16px; font-size: 11px; } } /* the phones (also on their side)' page margin is 16 px: the tab is no wider */
 @media (prefers-reduced-motion: reduce) { .tk-report { transition: none; } }
 .tk-report:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; } .tk-report[aria-busy] { opacity: .6; }
 .tk-report-pop { position: fixed; z-index: 2147483000; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: var(--scrim, rgb(0 0 0 / .45)); }
