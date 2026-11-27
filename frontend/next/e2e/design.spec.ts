@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { localApi } from "./api";
+import { lite3d } from "./lite3d";
 
 // The design canvas in 3D (src/lab/design3d.jsx): move a part, join two, delete one, the 3D | 2D switch, the replay's HUD and Break it yourself.
 const API = "https://tech-api.katta.cc";
@@ -49,18 +50,26 @@ async function settled(page: Page, sel: string) {
   return last;
 }
 
-test("3D design canvas: draw, move, connect, delete, and switch to 2D", async ({ page }) => {
+test("3D design canvas: draw, move, connect, delete, and switch to 2D @3d", async ({ page }) => {
+  test.slow(); // a software-drawn 3D scene and a label settle after every click: about 35 s of real work on 2 cores
   await signedIn(page);
+  await lite3d(page);
   await page.goto("/problems/sandbox");
   await expect(page.locator(".d3 canvas")).toBeVisible({ timeout: 30_000 });
   const n0 = await settled(page, ".react-flow__node"), e0 = await settled(page, ".react-flow__edge");
   // put two parts down from the palette (a tap adds one in the middle)
   await page.locator(".lab-item", { hasText: "Clients" }).first().focus();
   await page.keyboard.press("Enter");
+  await expect.poll(() => count(page, ".react-flow__node")).toBe(n0 + 1);
+  // a part added while another is selected is joined to it (Canvas.jsx, add): clear the selection first, so the only arrow is the one this test draws
+  await page.locator(".lab-view button", { hasText: "3D" }).focus();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => count(page, ".react-flow__node.selected")).toBe(0);
   await page.locator(".lab-item", { hasText: "Load Balancer" }).first().focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".d3 canvas")).toBeVisible();
   await expect.poll(() => count(page, ".react-flow__node")).toBe(n0 + 2);
+  expect(await count(page, ".react-flow__edge")).toBe(e0);
   // move one: its card's position changes
   const before = await page.locator(".react-flow__node").first().evaluate((n) => (n as HTMLElement).style.transform);
   const p = await partAt(page, "Load Balancer");
