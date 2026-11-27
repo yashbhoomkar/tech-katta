@@ -140,7 +140,7 @@
       "items": [
         "Reach for it for: Several services, outside partners or apps, per-client limits.",
         "A number to remember: Managed gateways cost about $1 to $3.50 per million requests; some cut requests off at about 30 seconds.",
-        "The catch: It adds a few milliseconds and, at high traffic, a real bill; uploads and long work go around it.",
+        "The catch: It adds a hop, a few milliseconds up to about 10 for a managed one, and, at high traffic, a real bill; uploads and long work go around it.",
         "Read: 'API gateways' in Components."
       ]
     },
