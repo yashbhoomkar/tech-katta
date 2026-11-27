@@ -49,7 +49,7 @@ for (const p of ["index.html", "dashboard", "next", "llms.txt", "sitemap.xml"]) 
 
 // 2. the 3D site's files, and its page shell
 rmSync(path.join(dist, "3d"), { recursive: true, force: true });
-for (const d of ["scripts", "styles"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
+for (const d of ["scripts", "styles", "posters"]) cpSync(path.join(site3d, d), path.join(dist, "3d", d), { recursive: true });
 cpSync(path.join(frontend, "site3d-dist"), path.join(dist, "3d", "legacy"), { recursive: true });
 cpSync(path.join(frontend, "next", "dist-islands"), path.join(dist, "3d", "islands"), { recursive: true });
 // the Report button on the two pages the shell does not draw (it is on every other page through the shell's app.js)

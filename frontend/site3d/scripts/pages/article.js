@@ -2,13 +2,15 @@
 // API, every block type rendered. On wide screens a 3D figure stays beside the text and follows its sections.
 import { labHref } from '../solving.js';
 import { mountStory, stageHtml } from '../story.js';
-import { createWorld } from '../world.js';
+import { createWorld } from '../world-lazy.js';
 import { getArticle, listNow, listArticles, splitTitle, minutes, SECTIONS, SECOND, ensureStories } from '../articles.js';
 import { recipeFor } from '../figures.js';
 import { store } from '../store.js';
 import { footer } from './landing.js';
 import { PLACES } from '../shell.js';
 import { watchGate } from '../gating.js';
+import { readingNow, setReading, readingControl } from '../reading.js';
+import { svgFigure } from '../figure2d.js';
 import { articlePublicHtml, problemPublicHtml, wirePublic } from './public.js';
 import { readArticle as trackReading } from '../analytics.js';
 
@@ -148,19 +150,20 @@ export function mount(view, [section, slug], { reduced }) {
     const colour = (PLACES.find((p) => p.id === a.section) || PLACES[2]).colour;
     const isDone = !!store.get().read[id], isProblem = a.section === 'interview-questions' && a.group !== 'start';
     const lab = a.body.find((b) => b.t === 'lab');
+    const text = readingNow() === 'text'; // Text: straight to the words, still figures, no 3D
     let mode = 'full'; try { mode = !cut && localStorage.getItem('tk-r3d-reader') === 'cards' ? 'cards' : 'full'; } catch { /* blocked */ }
     view.innerHTML = `
-    <section class="story landing-story article-story">
-      ${stageHtml(`<div class="progress"><span class="mono n">00 / 0${steps.length - 1}</span><span class="segs">${steps.slice(1).map(() => '<i></i>').join('')}</span></div>`)}
+    <section class="story landing-story article-story${text ? ' text-mode flat' : ''}">
+      ${text ? '' : stageHtml(`<div class="progress"><span class="mono n">00 / 0${steps.length - 1}</span><span class="segs">${steps.slice(1).map(() => '<i></i>').join('')}</span></div>`)}
       <div class="step hero" data-step="0">
         <nav class="crumbs mono" aria-label="Breadcrumb"><a href="/home">Home</a><span>/</span><a href="/learn/${a.section}">${esc(sec.name)}</a></nav>
         <p class="kicker"><span>${esc(sec.name.replace(/s$/, ''))} ${numOf(a.no)}</span><i></i>${esc(groupName)}</p>
         <h1 class="headline"><span class="thin">${esc(t1)}</span>${t2 ? `<span class="heavy accent">${esc(t2)}</span>` : ''}</h1>
         <p class="lead">${inline(a.dek)}</p>
         <p class="meta mono">${minutes(a)} min read · ${esc(a.date || '')}${store.get().read[id] ? ' · <span class="ok">done</span>' : ''}</p>
-        <div class="actions">${isProblem ? `<a class="btn dark" href="/problems/${esc(a.slug)}" data-solve>Solve it on the canvas<span class="chip">→</span></a><button class="btn light" type="button" data-next>Play the story<span class="chip violet">↓</span></button><button class="btn light skip-wide" type="button" data-skip>Skip to the article</button>` : `<button class="btn dark" type="button" data-next>Play the story<span class="chip">↓</span></button><button class="btn light" type="button" data-skip>Skip to the article</button>`}</div>
+        <div class="actions">${text ? (isProblem ? `<a class="btn dark" href="/problems/${esc(a.slug)}" data-solve>Solve it on the canvas<span class="chip">→</span></a>` : '') + readingControl('text') : isProblem ? `<a class="btn dark" href="/problems/${esc(a.slug)}" data-solve>Solve it on the canvas<span class="chip">→</span></a><button class="btn light" type="button" data-next>Play the story<span class="chip violet">↓</span></button><button class="btn light skip-wide" type="button" data-skip>Skip to the article</button>` : `<button class="btn dark" type="button" data-next>Play the story<span class="chip">↓</span></button><button class="btn light" type="button" data-skip>Skip to the article</button>`}${text ? '' : readingControl('story')}</div>
       </div>
-      ${steps.slice(1).map((s, i) => `<div class="step" data-step="${i + 1}">
+      ${text ? '' : steps.slice(1).map((s, i) => `<div class="step" data-step="${i + 1}">
         <p class="kicker"><span>0${i + 1}</span><i></i>${esc(t1)}</p>
         <h2 class="headline"><span class="thin">${esc(s.words?.[0] || '')}</span><span class="heavy accent">${esc(s.words?.[1] || '')}</span></h2>
         <p class="lead">${inline(s.text || '')}</p>
@@ -196,7 +199,7 @@ export function mount(view, [section, slug], { reduced }) {
           </footer>
         </div>
         <aside class="reader-rail" aria-label="Lesson navigation">
-          <div class="fig-card" aria-hidden="true"><canvas></canvas><div class="overlay"></div><p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div>
+          <div class="fig-card" aria-hidden="true">${text ? '<div class="fig-svg"></div>' : '<canvas></canvas><div class="overlay"></div>'}<p class="fig-cap mono"><span class="cap-n">01</span><span class="cap-t">${esc(h2s[0]?.x || t1)}</span></p></div>
           ${h2s.length > 1 ? `<nav class="rail-toc" aria-label="On this page"><p class="mono">On this page</p><ol>${h2s.map((h) => `<li><a href="#${slugify(h.x)}" data-jump>${inline(h.x.replace(NUM, ''))}</a></li>`).join('')}</ol></nav>` : ''}
           ${isProblem || lab ? `<a class="rail-cta" href="${isProblem ? `/problems/${esc(a.slug)}` : esc(labHref(lab))}"><small class="mono">${isProblem ? 'Solve' : 'Try it'}</small><b>${isProblem ? 'Solve it on the canvas' : esc(lab.go || 'Try it')} →</b></a>` : ''}
           <nav class="rail-group" aria-label="Lessons in ${esc(groupName || sec.name)}"><p class="mono">${esc(groupName || sec.name)}</p><ol>
@@ -209,19 +212,22 @@ export function mount(view, [section, slug], { reduced }) {
 
     const root = view.querySelector('.story');
     const n = root.querySelector('.progress .n'), segs = [...root.querySelectorAll('.segs i')];
-    story = mountStory(root, steps, { reduced, intro: true, label: `${t1}, as a 3D system that changes as you scroll. The words beside it say the same.`, onStep: (i) => { n.textContent = `0${i} / 0${steps.length - 1}`; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+    if (!text) story = mountStory(root, steps, { reduced, intro: true, label: `${t1}, as a 3D system that changes as you scroll. The words beside it say the same.`, onStep: (i) => { n.textContent = `0${i} / 0${steps.length - 1}`; segs.forEach((s, k) => s.classList.toggle('on', k < i)); } });
+    // Reading: Story | Text, remembered; the page is drawn again in the other mode
+    view.querySelectorAll('[data-reading]').forEach((b) => b.addEventListener('click', () => { if ((b.dataset.reading === 'text') === text) return; setReading(b.dataset.reading); window.tkRefresh?.(); scrollTo(0, 0); }));
     const go = (top) => scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
-    root.querySelector('[data-next]').addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); go(el.offsetTop + innerHeight * 0.28); });
+    root.querySelector('[data-next]')?.addEventListener('click', () => { const el = root.querySelector('[data-step="1"]'); go(el.offsetTop + innerHeight * 0.28); });
     view.querySelectorAll('[data-skip]').forEach((b) => b.addEventListener('click', () => go(view.querySelector('#read').offsetTop - 20)));
     view.querySelectorAll('[data-jump]').forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); const el = view.querySelector(l.getAttribute('href')); if (el) go(el.getBoundingClientRect().top + scrollY - 90); }));
 
     // beside the text (wide screens): the story's system, one step per section of the article
     const card = view.querySelector('.fig-card');
     const heads = [...view.querySelectorAll('[data-h2]')];
-    if (matchMedia('(min-width: 1100px)').matches && steps.length > 1) {
-      try { aside = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { aside = null; }
+    if (!text && matchMedia('(min-width: 1100px)').matches && steps.length > 1) {
+      try { aside = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true, start: 'visible', button: false, onFail: () => card.classList.add('flat') }); } catch { aside = null; }
     }
-    card.classList.toggle('flat', !aside);
+    card.classList.toggle('flat', !aside && !text);
+    if (text) card.classList.add('still-fig');
     aside?.setLabelBand(0.86); aside?.setLabelTop(10);
     let shown = -1;
     const capN = card.querySelector('.cap-n'), capT = card.querySelector('.cap-t');
@@ -229,6 +235,7 @@ export function mount(view, [section, slug], { reduced }) {
       if (k === shown) return; shown = k;
       const s = steps[Math.min(steps.length - 1, 1 + Math.floor((k * (steps.length - 1)) / Math.max(1, heads.length)))];
       capN.textContent = String(k + 1).padStart(2, '0'); capT.textContent = heads[k]?.textContent || t1;
+      if (text) { card.querySelector('.fig-svg').innerHTML = svgFigure(s.system, s.state); return; }
       if (!aside) return;
       aside.setSystem(s.system);
       const f = aside.frame();
@@ -257,7 +264,7 @@ export function mount(view, [section, slug], { reduced }) {
       mode = m; try { localStorage.setItem('tk-r3d-reader', m); } catch { /* blocked */ }
       full.hidden = m !== 'full'; cards.hidden = m !== 'cards';
       view.querySelectorAll('.seg [data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
-      view.querySelector('.seg')?.classList.toggle('right', m === 'cards');
+      view.querySelector('.seg:not(.reading)')?.classList.toggle('right', m === 'cards');
       view.querySelector('.rail-toc')?.toggleAttribute('hidden', m === 'cards');
       closeTopic();
     };

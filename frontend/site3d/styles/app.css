@@ -97,7 +97,7 @@ main.leaving { opacity: 0; }
 .segs { display: flex; gap: 4px; }
 .segs i { width: 18px; height: 2px; background: var(--line-2); transition: background-color .4s, width .4s; }
 .segs i.on { background: var(--accent); width: 26px; }
-.stage canvas { --side: 0; -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / calc(1 - var(--side))) 0 30%, #000 52%); mask-image: linear-gradient(90deg, rgb(0 0 0 / calc(1 - var(--side))) 0 30%, #000 52%); }
+.stage canvas, .stage .poster { --side: 0; -webkit-mask-image: linear-gradient(90deg, rgb(0 0 0 / calc(1 - var(--side))) 0 30%, #000 52%); mask-image: linear-gradient(90deg, rgb(0 0 0 / calc(1 - var(--side))) 0 30%, #000 52%); }
 .hint-note { margin-top: 18px; font-size: 12px; letter-spacing: 0; color: var(--ink-3); }
 .fact { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .fact .mono { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
@@ -265,7 +265,7 @@ body.focus-page { overflow: hidden; } /* only the full-screen simulator; the Pra
   .stage-wrap { z-index: 2; }
   .stage { height: 48vh; height: 48svh; }
   .stage::before { content: ""; position: absolute; inset: 0; background: var(--page); -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
-  .stage canvas { -webkit-mask-image: none; mask-image: none; }
+  .stage canvas, .stage .poster { -webkit-mask-image: none; mask-image: none; }
   .progress { display: none; }
   .step { min-height: 0; padding: 52svh 16px 64px; justify-content: flex-start; }
   .step.scrub { height: 200svh; padding: 0; }
@@ -468,11 +468,11 @@ body { background: var(--page); background-attachment: scroll; }
    chapter scrolls in, --read is 0 and the system is bright, close and labelled; once it settles, --read goes to 1
    and the system steps back (faded, labels hidden) so the words lead. story.js sets --read from the scroll. */
 .stage { --read: 0; }
-.stage canvas { opacity: calc(1 - var(--read) * .62); filter: saturate(calc(1 - var(--read) * .45)); }
+.stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .62); filter: saturate(calc(1 - var(--read) * .45)); }
 .stage .overlay { opacity: calc(1 - var(--read)); }
 .card > .headline { font-size: clamp(40px, 4.8vw, 70px); }
 .card > .lead { font-size: 18px; color: var(--ink); }
-@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .5); } .card > .lead { font-size: 16px; } }
+@media (max-width: 760px) { .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .5); } .card > .lead { font-size: 16px; } }
 
 /* shorter chapters (owner: "too much of scrolling … too much of gap between two scrolls"): 1.4 screens each, the
    change plays over the first 0.75 screen, the words arrive within the next 0.2 */
@@ -515,13 +515,13 @@ body { background: var(--page); background-attachment: scroll; }
   .step.scrub { height: 105svh; }
   .step.scrub > .pin { justify-content: flex-end; padding: 0 16px max(40px, env(safe-area-inset-bottom)); }
   .step.hero { min-height: 100svh; padding-top: 96px; }
-  .stage canvas { opacity: calc(1 - var(--read) * .25); }
+  .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .25); }
 }
 
 /* phones: once the words are in, the scene behind them fades well back (owner: "The text is not visible that much.
    Make the background colours a bit faded"); the fade under the words starts higher; headlines take fewer lines */
 @media (max-width: 760px) {
-  .stage canvas { opacity: calc(1 - var(--read) * .74); filter: saturate(calc(1 - var(--read) * .6)); }
+  .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .74); filter: saturate(calc(1 - var(--read) * .6)); }
   .stage::after { background: linear-gradient(transparent 22%, color-mix(in srgb, var(--page) 82%, transparent) 46%, var(--page) 68%); }
   .card > .headline { font-size: clamp(30px, 8.6vw, 40px); margin-bottom: 16px; }
   .card > .lead { font-size: 16px; }
@@ -547,7 +547,7 @@ body { background: var(--page); background-attachment: scroll; }
 /* brighter words (owner: "Make the text more bright") */
 .card > .lead, .step.hero .lead { color: var(--ink); }
 .headline .thin { color: var(--ink-2); }
-@media (max-width: 760px) { .stage canvas { opacity: calc(1 - var(--read) * .8); } }
+@media (max-width: 760px) { .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .8); } }
 
 /* the top bar hides while scrolling down (owner: "once scrolled down do we really need the upper bar") */
 .top { transition: background-color .3s, border-color .3s, transform .3s var(--out); }
@@ -566,7 +566,7 @@ body.bar-away .top { transform: translateY(-100%); }
 }
 /* a dimmer background behind settled words on phones (owner: "make the text more bright or the background dimmer") */
 @media (max-width: 760px) {
-  .stage canvas { opacity: calc(1 - var(--read) * .9); filter: saturate(calc(1 - var(--read) * .7)); }
+  .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .9); filter: saturate(calc(1 - var(--read) * .7)); }
   .stage::after { background: linear-gradient(transparent 16%, color-mix(in srgb, var(--page) 90%, transparent) 40%, var(--page) 60%); }
 }
 
@@ -597,7 +597,7 @@ body.bar-away .top { transform: translateY(-100%); }
    while scrolling (--read 0) the scene is centre screen at full strength and nothing covers it; once the words are
    in (--read 1) a fade comes in behind the text only, and the scene above it stays visible, a little softer */
 @media (max-width: 760px) {
-  .stage canvas { opacity: calc(1 - var(--read) * .4); filter: saturate(calc(1 - var(--read) * .3)); }
+  .stage canvas, .stage .poster { opacity: calc(1 - var(--read) * .4); filter: saturate(calc(1 - var(--read) * .3)); }
   .stage::after { opacity: var(--read); background: linear-gradient(transparent 34%, color-mix(in srgb, var(--page) 92%, transparent) 50%, var(--page) 62%); }
   .at-hero .stage::after { opacity: 1; }
   /* hero buttons and the top bar fit any phone width */
@@ -634,7 +634,7 @@ body.bar-away .top { transform: translateY(-100%); }
   .card > .actions { margin-top: 8px; }
   /* the glass panel carries the contrast now: no page fade, the scene stays bright around it */
   .stage::after { opacity: 0 !important; }
-  .stage canvas { opacity: 1; filter: none; }
+  .stage canvas, .stage .poster { opacity: 1; filter: none; }
   .step.scrub > .pin { padding: 0 12px calc(max(16px, env(safe-area-inset-bottom)) + 88px); }
 }
 /* the same glass on the bottom bar and the 3D labels */
@@ -1726,3 +1726,26 @@ body.in-app .page.narrow { margin-left: 0; margin-right: auto; }
 /* 3. the hint under the hero buttons is a solid pill, above the 3D scene's labels and its pulsing ring (a glass pill showed both through it) */
 .explore-hint { position: relative; z-index: 6; background: var(--card); backdrop-filter: none; -webkit-backdrop-filter: none; }
 .eh-dot::after { inset: -4px; }
+
+/* The first view draws no 3D (world-lazy.js): the stage shows a poster, an image of the same scene, until the engine has loaded. It takes the canvas's own look (masks, fades). */
+.stage .poster, .dash-stage .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; pointer-events: none; user-select: none; transition: opacity .5s ease; }
+.stage[data-three="on"] .poster, .stage[data-three="none"] .poster, .dash-stage[data-three="on"] .poster, .dash-stage[data-three="none"] .poster { opacity: 0 !important; visibility: hidden; transition: opacity .5s ease, visibility 0s .5s; }
+.stage[data-three="on"] canvas, .dash-stage[data-three="on"] canvas { animation: tk-fade-in .5s ease; }
+@keyframes tk-fade-in { from { opacity: 0; } }
+/* "Play in 3D": where the 3D does not start by itself (a weak phone, Data Saver, less motion asked for) */
+.play3d { position: absolute; right: 14px; bottom: 14px; z-index: 3; pointer-events: auto; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line, rgb(128 128 150 / .4)); background: color-mix(in srgb, var(--page) 82%, transparent); color: var(--ink, inherit); font: 600 14px/1 var(--sans, inherit); cursor: pointer; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.play3d::before { content: "▶"; font-size: 11px; margin-right: 8px; }
+.play3d:hover { border-color: var(--ink-3, currentColor); }
+.play3d:focus-visible { outline: 2px solid var(--focus, #6d7bff); outline-offset: 2px; }
+html.lite .stage .poster { transition: none; }
+@media (prefers-reduced-motion: reduce) { .stage .poster, .stage[data-three="on"] canvas { transition: none; animation: none; } }
+
+/* Reading: Story | Text (an article's header), and Text mode: the words first, a still diagram beside them */
+.reading-wrap { display: inline-flex; align-items: center; gap: 10px; margin-top: 14px; }
+.step.hero .actions + .reading-wrap, .actions .reading-wrap { margin-top: 0; }
+.reading-l { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.article-story.text-mode, .article-story.text-mode .step.hero { min-height: 0; height: auto; }
+.article-story.text-mode .step.hero { padding: 36px 16px 8px; align-items: flex-start; text-align: left; }
+@media (min-width: 761px) { .article-story.text-mode .step.hero { padding-top: 56px; } .article-story.text-mode .step.hero > * { max-width: 760px; } }
+.fig-card .fig-svg { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px 14px 44px; }
+.fig-card .fig-svg svg { width: 100%; height: auto; max-height: 100%; }

@@ -1,7 +1,7 @@
 // Learn: four tabs (concepts, components, interview questions, real systems), the real articles grouped as the site
 // groups them. Beside the list, a live 3D preview of each article's figure rebuilds as you hover (wide screens) or as
 // a row passes the middle of the screen (phones, where the preview stays at the top).
-import { createWorld } from '../world.js';
+import { createWorld } from '../world-lazy.js';
 import { listArticles, listNow, splitTitle, SECTIONS, FREE } from '../articles.js';
 import { recipeFor, RECIPES, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
@@ -88,7 +88,7 @@ export function mount(view, [sectionId], { reduced }) {
     view.querySelectorAll('[data-jumpg]').forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); view.querySelector(`#g-${l.dataset.jumpg}`)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }));
     const card = view.querySelector('.preview-card');
     world?.destroy(); world = null;
-    if (card) { try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; } card.classList.toggle('flat', !world); }
+    if (card) { try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true, start: 'visible', button: false, onFail: () => card.classList.add('flat') }); } catch { world = null; } card.classList.toggle('flat', !world); }
     world?.setLabelBand(0.8); world?.setLabelTop(10); // clear of the caption at the bottom
     const capT = card?.querySelector('.cap-t'), capS = card?.querySelector('.cap-s');
     const bySlug = Object.fromEntries(mine.map((a) => [a.slug, a]));
