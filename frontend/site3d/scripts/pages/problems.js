@@ -14,7 +14,7 @@
 // sidebar's rows set too. The Sandbox is one quiet line at the end.
 //
 // What it reads is the canvas's own record in this browser (solve.js): nothing here writes to it.
-import { createWorld } from '../world.js';
+import { createWorld } from '../world-lazy.js';
 import { listArticles, listNow, splitTitle } from '../articles.js';
 import { recipeFor, PREVIEW } from '../figures.js';
 import { ensureStories } from '../articles.js';
@@ -132,7 +132,7 @@ export function mount(view, _p, { reduced }) {
     world?.destroy(); world = null;
     if (innerWidth <= 900) return;
     const card = view.querySelector('.preview-card');
-    try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true }); } catch { world = null; }
+    try { world = createWorld(card.querySelector('canvas'), card.querySelector('.overlay'), { reduced, still: true, start: 'visible', button: false, onFail: () => card.classList.add('flat') }); } catch { world = null; }
     card.classList.toggle('flat', !world);
     world?.setLabelBand(0.8); world?.setLabelTop(10);
     const capT = card.querySelector('.cap-t'), capS = card.querySelector('.cap-s');
