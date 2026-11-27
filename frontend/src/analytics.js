@@ -10,7 +10,14 @@ const KEY="tk-visitor",FLUSH_MS=5000,MAX_QUEUE=50;
 // Vercel Web Analytics (anonymous page counts, no cookies) follows the same rule: nothing from browsers
 // that ask not to be tracked, or from automated ones (our own test runs).
 export const vercelGate=e=>off()?null:e;
-const off=()=>{try{return navigator.globalPrivacyControl===true||navigator.doNotTrack==="1"||navigator.webdriver===true}catch{return false}};
+// Our own scripts and tests say so explicitly: localStorage "tk-internal"=1 (or ?tk-internal=1 in the address, which sets it). It holds even where a test hides navigator.webdriver (the Report button
+// is not drawn in an automated browser, so its tests say they are not one): they set this mark, and nothing they do is counted as a visitor.
+export const INTERNAL_KEY="tk-internal",STAFF_KEY="tk-staff";
+const marked=()=>{try{if(/[?&]tk-internal=1(&|$)/.test(location.search))localStorage.setItem(INTERNAL_KEY,"1");return localStorage.getItem(INTERNAL_KEY)==="1"}catch{return false}};
+const off=()=>{try{return navigator.globalPrivacyControl===true||navigator.doNotTrack==="1"||navigator.webdriver===true||marked()}catch{return false}};
+// A browser that has ever been signed in as an internal account (the API says so in the account's view) is marked, so its visits before and after sign-in are marked too.
+export const markStaff=u=>{try{if(u?.internal)localStorage.setItem(STAFF_KEY,"1")}catch{}};
+const staff=()=>{try{return localStorage.getItem(STAFF_KEY)==="1"}catch{return false}};
 let visitorId=null;
 export function visitor(){if(visitorId)return visitorId;let v=null;try{v=localStorage.getItem(KEY)}catch{}
 if(!v||!/^[a-z0-9]{16,40}$/.test(v)){v=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>(b%36).toString(36)).join("");try{localStorage.setItem(KEY,v)}catch{}}return visitorId=v}
@@ -19,7 +26,7 @@ const page=()=>location.pathname+location.hash;
 
 let queue=[],timer=0,wired=false;
 function send(useBeacon){if(!queue.length)return;const now=Date.now();
-const body=JSON.stringify({visitor:visitor(),device:device(),events:queue.splice(0,MAX_QUEUE).map(({at,...e})=>({...e,age:now-at}))});
+const body=JSON.stringify({visitor:visitor(),device:device(),...(staff()?{internal:true}:{}),events:queue.splice(0,MAX_QUEUE).map(({at,...e})=>({...e,age:now-at}))});
 // text/plain keeps it a simple request (no preflight); the API reads the JSON either way
 if(useBeacon&&navigator.sendBeacon&&navigator.sendBeacon(API+"/v1/events",new Blob([body],{type:"text/plain"})))return;
 fetch(API+"/v1/events",{method:"POST",credentials:"include",keepalive:true,headers:{"Content-Type":"text/plain"},body}).catch(()=>{})}

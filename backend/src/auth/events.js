@@ -2,7 +2,8 @@
 // added for this: a visitor is a random id the browser keeps (localStorage), and a signed-in visitor's
 // account id is added from their existing session. Only the events and fields below are stored, so
 // nothing else a client sends ends up in the database. Events are deleted after RETENTION_DAYS.
-//   { name, at, visitor, userId?, device, page, props }
+//   { name, at, visitor, userId?, internal?, device, page, props }
+// internal: true when the signed-in account is internal (accounts.js isInternal), or the visitor's browser says it has been seen signed in as one (body.internal, set at sign-in).
 export const RETENTION_DAYS = 395; // 13 months
 
 const S = 'string', N = 'number', B = 'boolean';
@@ -39,8 +40,9 @@ const TEXT = /^[\w.:/ -]{0,80}$/;
 
 // One batch from the site → documents to store (invalid events are dropped, not the whole batch).
 // `now` is the server's clock; each event's `age` (ms before sending) is trusted for at most 15 min.
-export function cleanBatch(body, { now = Date.now(), userId = null } = {}) {
+export function cleanBatch(body, { now = Date.now(), userId = null, internal = false } = {}) {
   if (!body || typeof body !== 'object' || !VISITOR.test(String(body.visitor || ''))) return [];
+  const isInternal = internal === true || body.internal === true;
   const device = body.device === 'phone' ? 'phone' : 'desktop';
   const list = Array.isArray(body.events) ? body.events.slice(0, MAX_BATCH) : [];
   const docs = [];
@@ -56,7 +58,7 @@ export function cleanBatch(body, { now = Date.now(), userId = null } = {}) {
     }
     const age = Math.min(Math.max(Number(e.age) || 0, 0), 15 * 60_000);
     const page = typeof e.page === 'string' ? e.page.slice(0, 200).replace(/[^\w./#:-]/g, '') : '';
-    docs.push({ name: e.name, at: new Date(now - age), visitor: body.visitor, ...(userId ? { userId } : {}), device, page, props });
+    docs.push({ name: e.name, at: new Date(now - age), visitor: body.visitor, ...(userId ? { userId } : {}), ...(isInternal ? { internal: true } : {}), device, page, props });
   }
   return docs;
 }

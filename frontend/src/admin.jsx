@@ -11,7 +11,7 @@ const secs=s=>s==null?"–":s<60?`${s}s`:`${Math.floor(s/60)}m ${s%60}s`;
 const day=iso=>new Date(iso).toLocaleDateString("en-IN",{day:"numeric",month:"short"});
 const when=iso=>iso?new Date(iso).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}):"–";
 
-async function load(days){const r=await fetch(`${API}/v1/admin/summary?days=${days}`,{credentials:"include"});if(r.status===401)return{state:"signed_out"};if(r.status===403)return{state:"not_admin"};if(!r.ok)throw new Error(`HTTP ${r.status}`);return{state:"ok",data:await r.json()}}
+async function load(days,internal){const r=await fetch(`${API}/v1/admin/summary?days=${days}${internal?"&internal=1":""}`,{credentials:"include"});if(r.status===401)return{state:"signed_out"};if(r.status===403)return{state:"not_admin"};if(!r.ok)throw new Error(`HTTP ${r.status}`);return{state:"ok",data:await r.json()}}
 
 function Tile({label,value,sub}){return <div className="a-tile"><span>{label}</span><b>{value}</b>{sub&&<small>{sub}</small>}</div>}
 
@@ -60,12 +60,13 @@ return <>
 <Card title="Newest accounts" note="All time, newest first. Personal data: don't share screenshots of this table."><Table cols={["Name","Email","Country","Joined","Last sign-in","Ads"]} rows={a.recent.map(u=>[u.name||"–",u.email,u.country||"–",when(u.createdAt),when(u.lastLoginAt),u.ads?"Yes":"No"])} empty="No accounts yet."/></Card>
 <Card title="All events in this range"><Table cols={["Event","Count"]} rows={Object.entries(d.byName).map(([k,v])=>[k,fmt(v)])}/></Card></>}
 
-function App(){const[days,setDays]=useState(()=>{try{return Number(localStorage.getItem("tk-analytics-days"))||7}catch{return 7}});const[st,setSt]=useState({state:"loading"});const tick=useRef(0);
-const go=()=>{const id=++tick.current;setSt(s=>s.data?{...s,refreshing:true}:{state:"loading"});load(days).then(r=>{if(id===tick.current)setSt(r)},e=>{if(id===tick.current)setSt({state:"error",message:e.message})})};
-useEffect(()=>{try{localStorage.setItem("tk-analytics-days",String(days))}catch{}go()},[days]);// eslint-disable-line
+function App(){const[days,setDays]=useState(()=>{try{return Number(localStorage.getItem("tk-analytics-days"))||7}catch{return 7}});const[internal,setInternal]=useState(false);const[st,setSt]=useState({state:"loading"});const tick=useRef(0);
+const go=()=>{const id=++tick.current;setSt(s=>s.data?{...s,refreshing:true}:{state:"loading"});load(days,internal).then(r=>{if(id===tick.current)setSt(r)},e=>{if(id===tick.current)setSt({state:"error",message:e.message})})};
+useEffect(()=>{try{localStorage.setItem("tk-analytics-days",String(days))}catch{}go()},[days,internal]);// eslint-disable-line
 return <div className="a-page"><header className="a-head"><div><b>Tech Katta</b><span>Analytics</span></div>
 <span className="a-head-r">{st.state==="ok"&&<a className="a-btn ghost" href={`${API}/v1/admin/audience.csv`}>Meta audience CSV</a>}<ThemeToggle/></span></header>
-<nav className="a-range" aria-label="Time range">{RANGES.map(([d,l])=><button key={d} type="button" aria-pressed={days===d} onClick={()=>setDays(d)}>{l}</button>)}<button type="button" className="a-refresh" onClick={go} disabled={st.state==="loading"||st.refreshing}>{st.refreshing?"Refreshing…":"Refresh"}</button></nav>
+<nav className="a-range" aria-label="Time range">{RANGES.map(([d,l])=><button key={d} type="button" aria-pressed={days===d} onClick={()=>setDays(d)}>{l}</button>)}<button type="button" className="a-refresh" onClick={go} disabled={st.state==="loading"||st.refreshing}>{st.refreshing?"Refreshing…":"Refresh"}</button>
+<label className="a-int" title="Our own visits and our accounts' events are kept but left out by default"><input type="checkbox" checked={internal} onChange={e=>setInternal(e.target.checked)}/> Include internal traffic{!internal&&st.data?.internalEventsLeftOut>0?` (${fmt(st.data.internalEventsLeftOut)} events left out)`:""}</label></nav>
 <main>{st.state==="loading"?<p className="a-msg">Loading…</p>
 :st.state==="signed_out"?<div className="a-msg"><b>Sign in first</b><p>Sign in on <a href={SITE+"/#ind-vs-pak"}>tech.katta.cc</a> with the owner's Google account, then come back and press Refresh.</p></div>
 :st.state==="not_admin"?<div className="a-msg"><b>Not an admin account</b><p>This Google account can't see the analytics. Sign out on tech.katta.cc and sign in with the owner's account.</p></div>
